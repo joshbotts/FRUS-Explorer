@@ -153,6 +153,96 @@ import Testing
         #expect(notes[1].note == "Eisenhower Library, Dulles papers.")
     }
 
+    @Test func unrecognizedNoteTypesFollowTheAppsUnclassifiedSemantics() {
+        // The app's FootnoteType maps an absent OR unrecognized `type` to
+        // .unclassified, and its seg-source path accepts .source or .unclassified.
+        // The extractor must mirror that (adversarial review 2026-07-04 finding 6):
+        // type="summary" (unrecognized) is seg-visible; type="footnote" /
+        // "editorial" (recognized non-source) are not.
+        let xml = """
+        <TEI><text><body>
+        <div type="document" xml:id="d7">
+          <head>7. Memo<note n="1" type="summary">
+            <p><seg type="source">Source: Kennedy Library, President's Office Files.</seg></p>
+          </note></head>
+          <p>Body.</p>
+        </div>
+        <div type="document" xml:id="d8">
+          <head>8. Memo<note n="1" type="footnote">
+            <p><seg type="source">Not a provenance note in the app's chain.</seg></p>
+          </note></head>
+          <p>Body.</p>
+        </div>
+        </body></text></TEI>
+        """
+        let notes = DocumentNoteExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(notes.count == 1)
+        #expect(notes.first?.documentId == "d7")
+        #expect(notes.first?.note == "Source: Kennedy Library, President's Office Files.")
+        #expect(DocumentNoteExtractor.isUnclassified(nil))
+        #expect(DocumentNoteExtractor.isUnclassified("summary"))
+        #expect(!DocumentNoteExtractor.isUnclassified("footnote"))
+        #expect(!DocumentNoteExtractor.isUnclassified("editorial"))
+        #expect(!DocumentNoteExtractor.isUnclassified("source"))
+    }
+
+    @Test func onlyDirectHeadChildrenAreHeadNested() {
+        // The app scans direct .footnote children of the head AST node; a note
+        // wrapped deeper inside the head must be invisible to the extractor too
+        // (adversarial review 2026-07-04 finding 6).
+        let xml = """
+        <TEI><text><body>
+        <div type="document" xml:id="d9">
+          <head>9. Memo<hi rend="italic"><note n="1" type="source">
+            <p>Source: Wrapped note the app never sees.</p>
+          </note></hi></head>
+          <p>Body.</p>
+        </div>
+        </body></text></TEI>
+        """
+        #expect(DocumentNoteExtractor.extract(fromXML: Data(xml.utf8)).isEmpty)
+    }
+
+    @Test func elementBoundariesJoinWithASpaceLikeTheAppsPlainText() {
+        // FRUSASTNode.plainText joins every AST child with " ", so the pipeline
+        // stores "MSP /3–1952" for `<gloss>MSP</gloss>/3–1952` — the extractor must
+        // produce the identical text (pinned corpus-wide by RealTEINoteParityTests).
+        let xml = """
+        <TEI><text><body>
+        <div type="document" xml:id="d10">
+          <note rend="inline" type="source">700.5 <gloss target="#t_MSP1">MSP</gloss>/3–1952</note>
+          <head>10. Note</head>
+          <p>Body.</p>
+        </div>
+        </body></text></TEI>
+        """
+        let notes = DocumentNoteExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(notes.count == 1)
+        #expect(notes[0].note == "700.5 MSP /3–1952")
+    }
+
+    @Test func editorialWrappedDocumentsYieldNoNotes() {
+        // The app wraps `subtype="editorial-note"` documents (and
+        // `type="editorialNote"` divs) in a single .editorialNote AST node, so their
+        // notes are never top-level and extractSourceNote stores none — the
+        // extractor mirrors that (real case: frus1952-54v01p1 d108).
+        let xml = """
+        <TEI><text><body>
+        <div type="document" subtype="editorial-note" xml:id="d11">
+          <note rend="inline" type="source">Eisenhower Library, Randall Commission records</note>
+          <head>11. Editorial Note</head>
+          <p>Body.</p>
+        </div>
+        <div type="editorialNote" xml:id="d12">
+          <note rend="inline" type="source">Truman Library, PSF</note>
+          <head>12. Editorial Note</head>
+          <p>Body.</p>
+        </div>
+        </body></text></TEI>
+        """
+        #expect(DocumentNoteExtractor.extract(fromXML: Data(xml.utf8)).isEmpty)
+    }
+
     @Test func documentsWithoutSourceNotesYieldNothing() {
         let xml = """
         <TEI><text><body>

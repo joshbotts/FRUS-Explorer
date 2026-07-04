@@ -236,7 +236,11 @@ public enum ReferenceBuilder {
             ? String(row.text[..<(row.text.firstIndex(of: ":") ?? row.text.endIndex)])
                 .trimmingCharacters(in: .whitespaces)
             : row.text
+        // RG 59 defaults only when the central-files override actually re-bucketed
+        // the row to Department of State — a library-held "Central Files…" row keeps
+        // its library identity (and no State record group).
         let central = isCentralFilesSegment(segment)
+            && identity.repository == "Department of State"
         let effectiveRG = central ? (row.recordGroup ?? "59") : row.recordGroup
         let context = Level1Context(repository: identity.repository, recordGroup: effectiveRG,
                                     lotFileNorm: nil, rawLot: nil,

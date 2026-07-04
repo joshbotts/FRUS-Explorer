@@ -240,6 +240,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          the authority's lot key and then its merged alias forms are retried
 ///          through the same match paths, bridging the Phase-3 grain mismatches
 ///          (library sub-collections, heading-level series names).
+///  4.10 — Source Explorer Phase 4 adversarial review (Session 2026-07-04): no
+///          parse-output change, so no index-version bump. `collectionNeighbors`
+///          lists a whole authority record's neighbors through the **same** OR-union
+///          clause `localCollectionStats` counts with (`collectionMatchClause` —
+///          one clause, one truth; the Collection detail sheet total now always
+///          equals the S5 count), and the form window widens 8 → 13
+///          (`collectionMatchFormCap`: canonical name + the artifact's 12-alias cap).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -5218,16 +5225,20 @@ public actor IndexingPipeline {
         }
     }
 
-    /// Computes the S5 local stats for an authority record — indexed documents citing
-    /// it plus their distinct volumes — in **one** SQL round-trip over the
-    /// normalized-key columns.
-    ///
-    /// The `WHERE` clause is the union (`OR`) of the same match shapes the neighbors
-    /// matcher uses, so the counts always agree with what the Archival Neighbors sheet
-    /// would list:
+    /// Maximum distinct name/alias forms folded into the record-level OR-union match
+    /// clause — covers a record's canonical name plus the artifact's full alias cap
+    /// (12), so the S5 counts and the record-level neighbors query never window the
+    /// alias list differently.
+    private static let collectionMatchFormCap = 13
+
+    /// Builds the record-level OR-union `WHERE` clause over `document_sources ds` for
+    /// one bundled collection-authority record — **the single source of truth** shared
+    /// by `localCollectionStats` (the S5 counts) and `collectionNeighbors` (the
+    /// record-level Archival Neighbors sheet), so the two surfaces agree by
+    /// construction:
     ///
     /// - the record's canonical lot key → `lot_file_norm` equality (indexed seek);
-    /// - each name/alias form (≥4 chars, capped at 8) →
+    /// - each name/alias form (≥4 chars, capped at `collectionMatchFormCap`) →
     ///   - presidential-library records: repository keyword + collection prefix
     ///     (`relatedByPresidentialLibrary` shape),
     ///   - record-group records: RG (both stored forms) + comma-boundary series prefix
@@ -5235,23 +5246,13 @@ public actor IndexingPipeline {
     ///   - unattributed records: bare comma-boundary series prefix
     ///     (`relatedBySeriesName` shape).
     ///
-    /// Class-keyed sub-series are **not** folded in: their citing documents are their
-    /// own `decimal_class` queries (the class child's Archival Neighbors action), and
-    /// folding them into the parent would count the whole central-files corpus.
-    ///
-    /// - Parameters:
-    ///   - lotFileNorm: The record's canonical compact lot key, if lot-keyed.
-    ///   - repository: The record's canonical repository keyword, if any.
-    ///   - recordGroup: The record's record-group number, if any.
-    ///   - names: The record's canonical name followed by its alias forms.
-    /// - Returns: The local document / distinct-volume counts (zero when the user's
-    ///   index cites nothing from the collection).
-    public func localCollectionStats(
+    /// Returns `nil` when the record yields no usable branch.
+    private func collectionMatchClause(
         lotFileNorm: String?,
         repository: String?,
         recordGroup: String?,
         names: [String]
-    ) throws -> CollectionLocalStats {
+    ) -> (clause: String, params: [String])? {
         var branches: [String] = []
         var params: [String] = []
 
@@ -5272,7 +5273,7 @@ public actor IndexingPipeline {
         for form in names {
             let name = form.trimmingCharacters(in: .whitespaces)
             guard name.count >= 4, seenNames.insert(name.lowercased()).inserted,
-                  seenNames.count <= 8 else { continue }
+                  seenNames.count <= Self.collectionMatchFormCap else { continue }
             let esc = Self.likeEscaped(name)
             if isLibrary, let repo {
                 let keyword = Self.libraryKeyword(from: repo)
@@ -5296,16 +5297,50 @@ public actor IndexingPipeline {
                 params.append(contentsOf: [esc, esc + ",%"])
             }
         }
-        guard !branches.isEmpty else { return CollectionLocalStats(documentCount: 0, volumeCount: 0) }
+        guard !branches.isEmpty else { return nil }
+        return (branches.joined(separator: " OR "), params)
+    }
 
+    /// Computes the S5 local stats for an authority record — indexed documents citing
+    /// it plus their distinct volumes — in **one** SQL round-trip over the
+    /// normalized-key columns.
+    ///
+    /// The `WHERE` clause is `collectionMatchClause` — the exact clause
+    /// `collectionNeighbors` runs — so these counts always agree with the record-level
+    /// Archival Neighbors sheet. (The *entry-level* neighbors path,
+    /// `archivalNeighbors(forLotFile:…)`, is intentionally different: it resolves one
+    /// citation row by its most specific key, not a whole authority record.)
+    ///
+    /// Class-keyed sub-series are **not** folded in: their citing documents are their
+    /// own `decimal_class` queries (the class child's Archival Neighbors action), and
+    /// folding them into the parent would count the whole central-files corpus.
+    ///
+    /// - Parameters:
+    ///   - lotFileNorm: The record's canonical compact lot key, if lot-keyed.
+    ///   - repository: The record's canonical repository keyword, if any.
+    ///   - recordGroup: The record's record-group number, if any.
+    ///   - names: The record's canonical name followed by its alias forms.
+    /// - Returns: The local document / distinct-volume counts (zero when the user's
+    ///   index cites nothing from the collection).
+    public func localCollectionStats(
+        lotFileNorm: String?,
+        repository: String?,
+        recordGroup: String?,
+        names: [String]
+    ) throws -> CollectionLocalStats {
+        guard let match = collectionMatchClause(
+            lotFileNorm: lotFileNorm, repository: repository,
+            recordGroup: recordGroup, names: names) else {
+            return CollectionLocalStats(documentCount: 0, volumeCount: 0)
+        }
         let sql = """
             SELECT COUNT(*), COUNT(DISTINCT ds.volume_id)
             FROM document_sources ds
-            WHERE \(branches.joined(separator: " OR "))
+            WHERE \(match.clause)
             """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, p) in params.enumerated() {
+        for (i, p) in match.params.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
         }
         guard sqlite3_step(stmt) == SQLITE_ROW else {
@@ -5315,6 +5350,58 @@ public actor IndexingPipeline {
             documentCount: Int(sqlite3_column_int64(stmt, 0)),
             volumeCount: Int(sqlite3_column_int64(stmt, 1))
         )
+    }
+
+    /// Returns archival neighbors for a **whole authority record** (the Collection
+    /// detail surface): the union of every match shape the record carries, via the
+    /// same `collectionMatchClause` that `localCollectionStats` counts with — one
+    /// clause, one truth, so the sheet's total always equals the S5 count
+    /// (adversarial review 2026-07-04, finding 3; the previous record-level path
+    /// short-circuited on the lot branch and could list fewer documents than the
+    /// count shown beside the button).
+    ///
+    /// - Parameters:
+    ///   - lotFileNorm: The record's canonical compact lot key, if lot-keyed.
+    ///   - repository: The record's canonical repository keyword, if any.
+    ///   - recordGroup: The record's record-group number, if any.
+    ///   - names: The record's canonical name followed by its alias forms.
+    ///   - limit: Maximum neighbors to return. Default 30.
+    /// - Returns: Matched documents (≤ `limit`), the total match count, and the
+    ///   human-readable `basis` (the record's canonical name), or `basis == nil`
+    ///   when the record yields no usable match shape.
+    public func collectionNeighbors(
+        lotFileNorm: String?,
+        repository: String?,
+        recordGroup: String?,
+        names: [String],
+        limit: Int = 30
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        guard let match = collectionMatchClause(
+            lotFileNorm: lotFileNorm, repository: repository,
+            recordGroup: recordGroup, names: names) else {
+            return ([], 0, nil)
+        }
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(match.clause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(match.clause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        let r = try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: match.params, selectParams: match.params,
+            limit: limit
+        )
+        let basis = names.first?.trimmingCharacters(in: .whitespaces)
+            ?? lotFileNorm.map {
+                String(localized: "archivalNeighbors.basis.lot", defaultValue: "Lot \($0)")
+            }
+        return (r.documents, r.totalCount, basis)
     }
 
     /// Shared executor for COUNT + SELECT related-document queries.

@@ -88,6 +88,9 @@ public enum CollectionAuthorityRunner {
         let parser = SourceNoteParser()
         var references: [CollectionReference] = []
         var parsedNoteCount = 0
+        // Per-volume level-1 keys of the clusterable document notes — the per-era
+        // doc-note coverage input for the report.
+        var docNoteKeysByVolume: [String: [String]] = [:]
         for extraction in extractions {
             references.append(contentsOf: ReferenceBuilder.references(
                 volumeId: extraction.volumeId, frontRows: extraction.frontRows))
@@ -97,6 +100,9 @@ public enum CollectionAuthorityRunner {
                 if let ref = ReferenceBuilder.reference(volumeId: extraction.volumeId,
                                                         note: note.note, parsed: parsed) {
                     references.append(ref)
+                    if let key = AuthorityBuilder.level1Key(for: ref) {
+                        docNoteKeysByVolume[extraction.volumeId, default: []].append(key)
+                    }
                 }
             }
         }
@@ -116,6 +122,7 @@ public enum CollectionAuthorityRunner {
         // MARK: Phase E — report.
         let report = makeReport(generated: generated, result: result,
                                 extractions: extractions, totalNotes: totalNotes,
+                                docNoteKeysByVolume: docNoteKeysByVolume,
                                 artifactBytes: data.count)
         try Data(report.utf8).write(to: URL(fileURLWithPath: reportPath))
         log(report)
@@ -134,10 +141,11 @@ public enum CollectionAuthorityRunner {
 
     // MARK: - Report
 
-    /// Assembles the regeneration report: artifact stats, keyed-row coverage, and the
-    /// ambiguous clusters left unmerged.
+    /// Assembles the regeneration report: artifact stats, keyed-row coverage, per-era
+    /// document-note coverage, and the ambiguous clusters left unmerged.
     static func makeReport(generated: String, result: AuthorityBuilder.BuildResult,
                            extractions: [VolumeExtraction], totalNotes: Int,
+                           docNoteKeysByVolume: [String: [String]] = [:],
                            artifactBytes: Int) -> String {
         let records = result.collections
         let lotRecords = records.filter { $0.lotFileNorm != nil }
@@ -153,7 +161,7 @@ public enum CollectionAuthorityRunner {
         for record in records {
             let repo = ReferenceBuilder.normalized(record.repository ?? "")
             for child in record.children where child.decimalClass == nil {
-                childNamesByRepo.insert(repo + "|" + ReferenceBuilder.normalized(child.name))
+                childNamesByRepo.insert(repo + "|" + CollectionKeying.segmentNorm(child.name))
             }
         }
         var keyed = 0, landed = 0
@@ -174,11 +182,12 @@ public enum CollectionAuthorityRunner {
                 } else if row.repository != nil || row.recordGroup != nil {
                     keyed += 1; keyedText += 1
                     if let segment = ReferenceBuilder.leadingMergeSegment(of: row.text) {
+                        let canonical = ReferenceBuilder.canonicalRepository(row.repository)
                         let repo = ReferenceBuilder.isCentralFilesSegment(segment)
+                                && CollectionKeying.centralFilesOverrideApplies(to: canonical)
                             ? "department of state"
-                            : ReferenceBuilder.normalized(
-                                ReferenceBuilder.canonicalRepository(row.repository) ?? "")
-                        let norm = ReferenceBuilder.normalized(segment)
+                            : ReferenceBuilder.normalized(canonical ?? "")
+                        let norm = CollectionKeying.segmentNorm(segment)
                         if ids.contains("txt:" + repo + "|" + norm)
                             || childNamesByRepo.contains(repo + "|" + norm)
                             || (row.repository == nil && ids.contains("txt:|" + norm)) {
@@ -209,6 +218,41 @@ public enum CollectionAuthorityRunner {
         lines.append("  text-keyed:  \(landedText)/\(keyedText) (\(pct(landedText, keyedText)))")
         lines.append("  overall:     \(landed)/\(keyed) (\(pct(landed, keyed)))")
         lines.append("")
+
+        // Per-era document-note coverage: parsed notes → clusterable (a level-1
+        // identity exists) → landed (the identity's record ships in the artifact).
+        // Notes below the doc-note-only volume threshold intentionally do not land.
+        if !docNoteKeysByVolume.isEmpty {
+            struct EraBucket { var notes = 0; var clusterable = 0; var landed = 0 }
+            var eras: [String: EraBucket] = [:]
+            func eraName(of volumeId: String) -> String {
+                let digits = volumeId.dropFirst(4).prefix(while: \.isNumber)
+                guard digits.count == 4, let year = Int(digits) else { return "other" }
+                switch year {
+                case ..<1946: return "…–1945"
+                case ..<1961: return "1946–1960"
+                case ..<1969: return "1961–1968"
+                case ..<1977: return "1969–1976"
+                case ..<1989: return "1977–1988"
+                default: return "1989–…"
+                }
+            }
+            for extraction in extractions {
+                let era = eraName(of: extraction.volumeId)
+                var bucket = eras[era] ?? EraBucket()
+                bucket.notes += extraction.notes.count
+                for key in docNoteKeysByVolume[extraction.volumeId] ?? [] {
+                    bucket.clusterable += 1
+                    if ids.contains(key) { bucket.landed += 1 }
+                }
+                eras[era] = bucket
+            }
+            lines.append("Coverage — document source notes by era (parsed → clusterable → landed):")
+            for (era, b) in eras.sorted(by: { $0.key < $1.key }) {
+                lines.append("  \(era): \(b.notes) notes → \(b.clusterable) clusterable (\(pct(b.clusterable, b.notes))) → \(b.landed) landed (\(pct(b.landed, b.notes)) of notes, \(pct(b.landed, b.clusterable)) of clusterable)")
+            }
+            lines.append("")
+        }
         lines.append("Ambiguous clusters left unmerged (same leading segment, different repositories): \(result.ambiguous.count)")
         for cluster in result.ambiguous.prefix(200) {
             lines.append("  \(cluster.segment)  ←  \(cluster.repositories.joined(separator: " | "))")

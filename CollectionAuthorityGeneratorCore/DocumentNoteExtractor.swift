@@ -21,6 +21,21 @@ import Foundation
 /// 4. Top-level untyped note containing `<seg type="source">`.
 /// 5. The deferred pattern-2 text, when nothing else matched.
 ///
+/// Parity with the app is **structural, and pinned by a test**
+/// (`RealTEINoteParityTests` compares this extractor against the pipeline's stored
+/// notes over real volumes):
+/// - "`<head>`-nested" means a **direct child** of the document's direct-child
+///   `<head>` — the app scans only direct `.footnote` children of the head AST node,
+///   so a note wrapped deeper inside the head is invisible to both sides;
+/// - "untyped" mirrors the app's `FootnoteType.unclassified`: a `type` attribute that
+///   is **absent or unrecognized** (anything but `footnote` / `editorial` / `source`);
+/// - text accumulates with a **space at every element boundary**, the app's
+///   `FRUSASTNode.plainText` child-join rule (`<gloss>MSP</gloss>/3–1952` stores
+///   `"MSP /3–1952"`), collapsed by the shared whitespace normalization;
+/// - **editorial notes yield nothing**: the app wraps `<div type="editorialNote">`
+///   and `subtype="editorial-note"` documents in a single `.editorialNote` AST node,
+///   so their notes are never top-level and `extractSourceNote` stores none.
+///
 /// All returned text passes through the same `[Source: …]` wrapper normalization the
 /// pipeline applies, so `SourceNoteParser` receives the stored shape.
 public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
@@ -49,7 +64,8 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
 
     /// One `<note>` observed inside the current document div.
     struct NoteCapture {
-        /// Whether the note is nested in the document's direct-child `<head>`.
+        /// Whether the note is a **direct child** of the document's direct-child
+        /// `<head>` (the only nesting the app's AST scan sees).
         let headNested: Bool
         /// The note's `type` attribute (lowercased), or `nil` when absent.
         let type: String?
@@ -66,6 +82,11 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
     /// Depth of the open `<div type="document">` / `editorialNote`, or -1.
     private var documentDepth = -1
     private var documentId = ""
+
+    /// Whether the open document is one the app wraps in a single `.editorialNote`
+    /// AST node (`type="editorialNote"` or `subtype="editorial-note"`) — its notes
+    /// are never top-level on the app side, so it yields no source note.
+    private var documentIsEditorialWrapped = false
 
     /// Depth of the document's direct-child `<head>`, or -1.
     private var headDepth = -1
@@ -93,6 +114,10 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
                        qualifiedName qName: String?,
                        attributes attributeDict: [String: String] = [:]) {
         elementDepth += 1
+        // The app's `plainText` joins every AST child with a single space, so an
+        // element boundary inside a note always contributes one — mirror it before
+        // any capture state changes (the whitespace normalization collapses runs).
+        appendBoundarySpace()
         switch elementName {
         case "div":
             if documentDepth < 0,
@@ -102,14 +127,19 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
                 documentId = attributeDict["xml:id"] ?? ""
                 captures = []
                 headDepth = -1
+                documentIsEditorialWrapped = type == "editorialnote"
+                    || attributeDict["subtype"]?.lowercased() == "editorial-note"
             }
         case "head":
             if documentDepth >= 0, elementDepth == documentDepth + 1 {
                 headDepth = elementDepth
             }
         case "note":
-            guard documentDepth >= 0, openNoteIndex == nil else { break }
-            let headNested = headDepth >= 0 && elementDepth > headDepth
+            guard documentDepth >= 0, !documentIsEditorialWrapped,
+                  openNoteIndex == nil else { break }
+            // Direct child of the head only — the app's `extractSourceNote` scans
+            // direct `.footnote` children of the head AST node, never deeper.
+            let headNested = headDepth >= 0 && elementDepth == headDepth + 1
             let topLevel = elementDepth == documentDepth + 1
             guard headNested || topLevel else { break }
             captures.append(NoteCapture(headNested: headNested,
@@ -140,6 +170,18 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
         if segSourceDepth >= 0 { captures[idx].segSourceText += string }
     }
 
+    /// Appends the app's `plainText` child-join separator (one space) to every open
+    /// buffer of the current note. Called on each element start **and** end while a
+    /// note is open, so `<gloss>MSP</gloss>/3–1952` accumulates as `"MSP /3–1952"` —
+    /// exactly the `c.map(\.plainText).joined(separator: " ")` shape the pipeline
+    /// stores (leading/trailing runs are trimmed by `normalizedWhitespace`).
+    private func appendBoundarySpace() {
+        guard let idx = openNoteIndex else { return }
+        captures[idx].wholeText += " "
+        if noteParagraphDepth >= 0 { noteParagraphBuffer += " " }
+        if segSourceDepth >= 0 { captures[idx].segSourceText += " " }
+    }
+
     /// Closes segments, paragraphs, notes, the head, and the document scope (applying
     /// the locator chain when the document div ends).
     public func parser(_ parser: XMLParser,
@@ -147,6 +189,8 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
                        namespaceURI: String?,
                        qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
+        // Closing edge of the child-join boundary — see `appendBoundarySpace()`.
+        appendBoundarySpace()
         if segSourceDepth == elementDepth, elementName == "seg" {
             segSourceDepth = -1
         }
@@ -176,13 +220,22 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
 
     // MARK: Locator chain
 
+    /// Mirrors the app's `FootnoteType` mapping (`FRUSDocumentParser`:
+    /// `FootnoteType(rawValue:) ?? .unclassified`): a `type` attribute that is absent
+    /// or unrecognized is *unclassified* — only `footnote` / `editorial` / `source`
+    /// are recognized values.
+    static func isUnclassified(_ type: String?) -> Bool {
+        guard let type else { return true }
+        return type != "footnote" && type != "editorial" && type != "source"
+    }
+
     /// Applies the pipeline's priority chain over the document's captured notes.
     static func selectNote(from captures: [NoteCapture]) -> String? {
         var deferredHeadNote: String?
         // Patterns 1 + 2: head-nested notes.
         for capture in captures where capture.headNested {
             let isSource = capture.type == "source"
-            let isUntyped = capture.type == nil
+            let isUntyped = isUnclassified(capture.type)
             guard isSource || isUntyped else { continue }
             let seg = normalizedWhitespace(capture.segSourceText)
             if !seg.isEmpty { return normalizeSourceNoteWrapper(seg) }
@@ -198,7 +251,7 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
             if capture.type == "source" {
                 let t = normalizedWhitespace(capture.wholeText)
                 if !t.isEmpty { return normalizeSourceNoteWrapper(t) }
-            } else if capture.type == nil {
+            } else if isUnclassified(capture.type) {
                 let seg = normalizedWhitespace(capture.segSourceText)
                 if !seg.isEmpty { return normalizeSourceNoteWrapper(seg) }
             }

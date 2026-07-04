@@ -140,11 +140,17 @@ struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable {
 ///
 /// 1. **Lot key** — `"lot:" + lotFileNorm` (corpus-unique; always wins when present).
 /// 2. **Repository-scoped text key** — `"txt:" + repoNorm + "|" + segmentNorm`
-///    (the canonical repository keyword and the gated leading citation segment,
-///    both in `CollectionKeying.normalized` form).
+///    (the canonical repository keyword in `CollectionKeying.normalized` form and the
+///    gated leading citation segment in the plural-folded
+///    `CollectionKeying.segmentNorm` form).
 /// 3. **Unattributed text key** — `"txt:|" + segmentNorm` (doc-note named series the
-///    corpus never attributes to a repository).
-/// 4. **Alias** — the normalized segment against every record's merged alias forms;
+///    corpus never attributes to a repository). Guarded like step 4: the segment must
+///    not be a generic lead (`CollectionKeying.isGenericLead` — a bare `"Subject
+///    File"` never bridges to the unattributed grab-bag), and the unattributed record
+///    must be the **sole** text record carrying the segment (an attributed citation
+///    never silently resolves to the unattributed bucket while attributed records for
+///    the same segment exist elsewhere).
+/// 4. **Alias** — the plural-folded segment against every record's merged alias forms;
 ///    only an **unambiguous** hit (exactly one record) resolves, so a shared alias
 ///    can never route to the wrong collection.
 ///
@@ -164,6 +170,10 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
     /// Record indices by normalized alias / name form. Multi-valued: a form shared by
     /// several records is ambiguous and never resolves through the alias path.
     private let byAlias: [String: [Int]]
+    /// Text-record indices by key segment (the part after `"|"` in a `"txt:"` id).
+    /// Multi-valued: lookup step 3 bridges to the unattributed record only when it is
+    /// the sole record carrying the segment.
+    private let bySegment: [String: [Int]]
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, generated, collections
@@ -179,10 +189,17 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
         var ids: [String: Int] = [:]
         ids.reserveCapacity(records.count)
         var aliasMap: [String: [Int]] = [:]
+        var segmentMap: [String: [Int]] = [:]
         for (i, record) in records.enumerated() {
             if ids[record.id] == nil { ids[record.id] = i }
+            if record.id.hasPrefix("txt:"), let bar = record.id.firstIndex(of: "|") {
+                let segment = String(record.id[record.id.index(after: bar)...])
+                if segmentMap[segment]?.contains(i) != true {
+                    segmentMap[segment, default: []].append(i)
+                }
+            }
             for form in [record.name] + record.aliases {
-                let norm = CollectionKeying.normalized(form)
+                let norm = CollectionKeying.segmentNorm(form)
                 guard !norm.isEmpty else { continue }
                 if aliasMap[norm]?.contains(i) != true {
                     aliasMap[norm, default: []].append(i)
@@ -191,6 +208,7 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
         }
         byId = ids
         byAlias = aliasMap
+        bySegment = segmentMap
     }
 
     // MARK: - Lookups
@@ -208,14 +226,21 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
 
     /// The record for a repository + leading citation segment, following the
     /// documented lookup order (steps 2–4): the repository-scoped text key, then the
-    /// unattributed bucket, then an unambiguous alias.
+    /// guarded unattributed bucket, then an unambiguous alias.
     func record(repository: String?, leadingSegment: String) -> AuthorityCollectionRecord? {
-        let segNorm = CollectionKeying.normalized(leadingSegment)
+        let segNorm = CollectionKeying.segmentNorm(leadingSegment)
         guard !segNorm.isEmpty else { return nil }
         let repoNorm = CollectionKeying
             .normalized(CollectionKeying.canonicalRepository(repository) ?? "")
         if let hit = record(id: "txt:" + repoNorm + "|" + segNorm) { return hit }
-        if !repoNorm.isEmpty, let hit = record(id: "txt:|" + segNorm) { return hit }
+        // Step 3, guarded (see the lookup-order contract): never bridge a generic
+        // segment, and only when the unattributed record is the sole text record
+        // carrying the segment — mirroring step 4's uniqueness rule.
+        if !repoNorm.isEmpty, !CollectionKeying.isGenericLead(segNorm),
+           let hits = bySegment[segNorm], hits.count == 1,
+           collections[hits[0]].id == "txt:|" + segNorm {
+            return collections[hits[0]]
+        }
         return uniqueRecord(forAliasNorm: segNorm)
     }
 
@@ -247,9 +272,10 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
         return record(repository: identity.repository, leadingSegment: segment)
     }
 
-    /// The single record whose merged alias forms contain `norm`, or `nil` when no —
-    /// or more than one — record carries the form (lookup-order step 4: a shared
-    /// alias is ambiguous and never resolves).
+    /// The single record whose merged alias forms contain `norm` (a
+    /// `CollectionKeying.segmentNorm` form), or `nil` when no — or more than one —
+    /// record carries the form (lookup-order step 4: a shared alias is ambiguous and
+    /// never resolves).
     func uniqueRecord(forAliasNorm norm: String) -> AuthorityCollectionRecord? {
         guard let hits = byAlias[norm], hits.count == 1 else { return nil }
         return collections[hits[0]]
@@ -279,6 +305,11 @@ extension IndexingPipeline.CollectionAliasFallback {
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-03 (Source Explorer Phase 4 step 2): initial implementation
+///   1.1 — Session 2026-07-04 (Phase 4 verification): alias/segment lookups use the
+///          plural-folded `CollectionKeying.segmentNorm`
+///   1.2 — Session 2026-07-04 (Phase 4 adversarial review): lookup step 3 (the
+///          unattributed bucket) is guarded — generic segments never bridge, and the
+///          unattributed record must be the sole text record carrying the segment
 enum CollectionAuthorityStore {
 
     /// The bundled collection authority, or `nil` if unavailable. Loaded once.

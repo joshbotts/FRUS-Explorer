@@ -2153,15 +2153,11 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     /// Repository keywords, in match-priority order. Includes the presidential libraries,
     /// so a child inheriting its repository from a library heading carries the library
-    /// identity the presidential-library match path needs.
-    private static let repoKeywords = [
-        "National Archives", "Library of Congress", "Washington National Records Center",
-        "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
-        "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
-        "Truman Library", "Roosevelt Library", "Hoover Institution",
-        "Central Intelligence Agency", "Department of State",
-        "Department of Defense", "Naval Historical", "Center of Military History",
-    ]
+    /// identity the presidential-library match path needs. **The one shared list** —
+    /// `CollectionKeying.repositoryKeywords` — so front-matter repository identity can
+    /// never fork from the collection-authority keying (adversarial review 2026-07-04,
+    /// finding 6: this was the last key-producing list not actually shared).
+    private static let repoKeywords = CollectionKeying.repositoryKeywords
 
     /// Extracts the first repository keyword found in `text`, or `nil`.
     private static func extractRepository(from text: String) -> String? {

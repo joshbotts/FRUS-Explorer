@@ -284,3 +284,267 @@ struct RealTEIVolumeSourcesTests {
         }
     }
 }
+
+// MARK: - Phase 4: S5 local counts against ground truth
+
+/// Rows fetched for the independent S5 ground truth: every `document_sources` row of
+/// the temp index, with the columns the match shapes read.
+private struct SourceRow {
+    let volumeId: String
+    let lotFileNorm: String?
+    let recordGroup: String?
+    let repository: String?
+    let seriesName: String?
+}
+
+/// Fetches every `document_sources` row from the test database at `dbURL`.
+private func fetchAllSourceRows(dbURL: URL) throws -> [SourceRow] {
+    var db: OpaquePointer?
+    guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+          let handle = db else {
+        sqlite3_close(db)
+        throw NSError(domain: "RealTEICoverageTests", code: 4)
+    }
+    defer { sqlite3_close_v2(handle) }
+    var stmt: OpaquePointer?
+    let sql = "SELECT volume_id, lot_file_norm, record_group, repository, series_name FROM document_sources"
+    guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+        throw NSError(domain: "RealTEICoverageTests", code: 5)
+    }
+    defer { sqlite3_finalize(stmt) }
+    var rows: [SourceRow] = []
+    while sqlite3_step(stmt) == SQLITE_ROW {
+        func col(_ i: Int32) -> String? { sqlite3_column_text(stmt, i).map { String(cString: $0) } }
+        rows.append(SourceRow(volumeId: col(0) ?? "", lotFileNorm: col(1),
+                              recordGroup: col(2), repository: col(3), seriesName: col(4)))
+    }
+    return rows
+}
+
+/// Evaluates `IndexingPipeline.localCollectionStats`' documented match semantics in
+/// **Swift string operations** — an implementation independent of the production
+/// single-round-trip SQL, so branch assembly, parameter order, and dedup bugs surface
+/// as count mismatches.
+private func groundTruthStats(rows: [SourceRow], lotFileNorm: String?, repository: String?,
+                              recordGroup: String?, names: [String]) -> (docs: Int, volumes: Int) {
+    let lot = lotFileNorm?.trimmingCharacters(in: .whitespaces)
+    let repo = repository?.trimmingCharacters(in: .whitespaces)
+    let isLibrary = repo.map { r in
+        let l = r.lowercased()
+        return l.contains("library") || l.contains("nixon") || l.contains("hoover institution")
+    } ?? false
+    let bareRG = recordGroup?.replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
+                                                   options: [.regularExpression, .caseInsensitive])
+        .trimmingCharacters(in: .whitespaces)
+    // The same first-13-distinct-forms window the production query binds
+    // (`IndexingPipeline.collectionMatchFormCap`: canonical name + the artifact's
+    // 12-alias cap).
+    var seen: Set<String> = []
+    var forms: [String] = []
+    for form in names {
+        let name = form.trimmingCharacters(in: .whitespaces)
+        guard name.count >= 4, seen.insert(name.lowercased()).inserted, seen.count <= 13
+        else { continue }
+        forms.append(name)
+    }
+    // The library keyword the production query derives ("Eisenhower Library" → "Eisenhower").
+    let libraryKeyword = repo.map { r -> String in
+        let skip: Set<String> = ["Library", "Presidential", "Institution", "The"]
+        let parts = r.components(separatedBy: " ").filter { !skip.contains($0) && $0.count > 2 }
+        return parts.first ?? (r.components(separatedBy: " ").first ?? "")
+    } ?? ""
+
+    var docs = 0
+    var volumes: Set<String> = []
+    for row in rows {
+        var matched = false
+        if let lot, !lot.isEmpty, row.lotFileNorm == lot { matched = true }
+        if !matched {
+            let series = (row.seriesName ?? "").lowercased()
+            for name in forms {
+                let n = name.lowercased()
+                if isLibrary {
+                    guard !libraryKeyword.isEmpty,
+                          (row.repository ?? "").lowercased().contains(libraryKeyword.lowercased())
+                    else { continue }
+                    if series.hasPrefix(String(n.prefix(50))) { matched = true; break }
+                } else if let bareRG, !bareRG.isEmpty {
+                    guard row.recordGroup == bareRG || row.recordGroup == "RG-\(bareRG)"
+                    else { continue }
+                    if series == n || series.hasPrefix(n + ",") { matched = true; break }
+                } else {
+                    if series == n || series.hasPrefix(n + ",") { matched = true; break }
+                }
+            }
+        }
+        if matched {
+            docs += 1
+            volumes.insert(row.volumeId)
+        }
+    }
+    return (docs, volumes.count)
+}
+
+/// Owner decision **S5** verification against real volumes: a bundled authority
+/// record's local counts (`IndexingPipeline.localCollectionStats`, one SQL round
+/// trip) must equal a ground truth computed independently in Swift over every
+/// `document_sources` row of a temp index of six published volumes.
+///
+/// Volumes: six 64 D 199–citing volumes across two subseries (small ones, for test
+/// runtime). Exercises both branch families — the lot + RG/series shapes
+/// (Lot 64 D 199, Department of State) and the presidential-library shape
+/// (Dulles Papers, Eisenhower Library).
+/// Six real 64 D 199–citing volumes (1955–57 and 1958–60 subseries) for the S5 suite.
+/// File-scope so the `@Suite` enablement condition can reference it without a macro
+/// self-reference cycle.
+private let s5TestVolumes = ["frus1955-57v04", "frus1955-57v08", "frus1955-57v09",
+                             "frus1955-57v23p1", "frus1955-57v23p2", "frus1958-60v17"]
+
+@Suite("Collection authority — S5 local counts vs ground truth (Phase 4)",
+       .enabled(if: RealTEICorpus.hasVolumes(s5TestVolumes),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEIS5LocalStatsTests {
+
+    @Test("localCollectionStats equals the independent Swift ground truth")
+    func localStatsMatchGroundTruth() async throws {
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            for v in s5TestVolumes { try await pipeline.indexVolume(v) }
+            let rows = try fetchAllSourceRows(dbURL: dbURL)
+            #expect(rows.count > 1000, "sanity: six volumes yield thousands of source rows")
+
+            let index = try #require(CollectionAuthorityStore.shared)
+
+            // (a) Lot + RG/series branches: Lot 64 D 199 (Department of State, RG 59).
+            let lotRecord = try #require(index.record(forLotNorm: "64D199"))
+            let lotStats = try await pipeline.localCollectionStats(
+                lotFileNorm: lotRecord.lotFileNorm, repository: lotRecord.repository,
+                recordGroup: lotRecord.recordGroup,
+                names: [lotRecord.name] + lotRecord.aliases)
+            let lotTruth = groundTruthStats(
+                rows: rows, lotFileNorm: lotRecord.lotFileNorm,
+                repository: lotRecord.repository, recordGroup: lotRecord.recordGroup,
+                names: [lotRecord.name] + lotRecord.aliases)
+            #expect(lotStats.documentCount > 0, "these six volumes cite Lot 64 D 199")
+            #expect(lotStats.documentCount == lotTruth.docs,
+                    "S5 doc count must equal ground truth; got \(lotStats.documentCount) vs \(lotTruth.docs)")
+            #expect(lotStats.volumeCount == lotTruth.volumes,
+                    "S5 volume count must equal ground truth; got \(lotStats.volumeCount) vs \(lotTruth.volumes)")
+
+            // (b) Presidential-library branch: Dulles Papers (Eisenhower Library).
+            let dulles = try #require(index.record(repository: "Eisenhower Library",
+                                                   leadingSegment: "Dulles Papers"))
+            let dullesStats = try await pipeline.localCollectionStats(
+                lotFileNorm: dulles.lotFileNorm, repository: dulles.repository,
+                recordGroup: dulles.recordGroup, names: [dulles.name] + dulles.aliases)
+            let dullesTruth = groundTruthStats(
+                rows: rows, lotFileNorm: dulles.lotFileNorm, repository: dulles.repository,
+                recordGroup: dulles.recordGroup, names: [dulles.name] + dulles.aliases)
+            #expect(dullesStats.documentCount == dullesTruth.docs,
+                    "library-shape doc count must equal ground truth; got \(dullesStats.documentCount) vs \(dullesTruth.docs)")
+            #expect(dullesStats.volumeCount == dullesTruth.volumes)
+
+            // (c) One clause, one truth (adversarial review 2026-07-04 finding 3):
+            // the record-level Archival Neighbors sheet total must equal the S5
+            // count shown beside the button, for both branch families.
+            for record in [lotRecord, dulles] {
+                let stats = try await pipeline.localCollectionStats(
+                    lotFileNorm: record.lotFileNorm, repository: record.repository,
+                    recordGroup: record.recordGroup, names: [record.name] + record.aliases)
+                let neighbors = try await pipeline.collectionNeighbors(
+                    lotFileNorm: record.lotFileNorm, repository: record.repository,
+                    recordGroup: record.recordGroup, names: [record.name] + record.aliases,
+                    limit: 5)
+                #expect(neighbors.totalCount == stats.documentCount,
+                        "\(record.id): sheet total \(neighbors.totalCount) must equal S5 count \(stats.documentCount)")
+            }
+        }
+    }
+}
+
+// MARK: - Phase 4: generator ↔ app document-note parity
+
+/// Volumes for the note-parity suite: one head-nested-era volume (1955+ encodings,
+/// patterns 1/2) and one pre-1955 volume (top-level notes, patterns 3/4) — the same
+/// small volumes the Phase-1 coverage suite indexes.
+private let noteParityVolumes = ["frus1961-63v06", "frus1952-54v01p1"]
+
+/// Generator ↔ app note-extraction parity (adversarial review 2026-07-04 finding 6):
+/// `DocumentNoteExtractor.extract(fromXML:)` (the collection-authority generator's
+/// single-pass XML extractor, compiled into this test bundle from the SPM source)
+/// must reproduce **exactly** the notes `IndexingPipeline` stores to
+/// `document_cache.source_note` — same documents, same normalized text. This pins the
+/// two asserted-but-untested divergences the review found (head-nesting depth and the
+/// untyped/unclassified `type` semantics).
+@Suite("Collection authority — generator/app note-extraction parity (Phase 4)",
+       .enabled(if: RealTEICorpus.hasVolumes(noteParityVolumes),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEINoteParityTests {
+
+    @Test("DocumentNoteExtractor equals the pipeline's stored source notes")
+    func extractorMatchesStoredNotes() async throws {
+        let volDir = try #require(RealTEICorpus.volumesDirectory)
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            for v in noteParityVolumes { try await pipeline.indexVolume(v) }
+            for volumeId in noteParityVolumes {
+                let xml = try Data(contentsOf: volDir.appendingPathComponent("\(volumeId).xml"))
+                var generatorNotes: [String: String] = [:]
+                for note in DocumentNoteExtractor.extract(fromXML: xml)
+                where !note.documentId.isEmpty {
+                    generatorNotes[note.documentId] = note.note
+                }
+                let appNotes = try fetchStoredSourceNotes(dbURL: dbURL, volumeId: volumeId)
+                #expect(appNotes.count > 100, "\(volumeId): sanity — the app stored notes")
+                // Same documents, both directions…
+                let missing = appNotes.keys.filter { generatorNotes[$0] == nil }.sorted()
+                #expect(missing.isEmpty,
+                        "\(volumeId): app stored notes the generator missed: \(missing.prefix(5))")
+                let extra = generatorNotes.keys.filter { appNotes[$0] == nil }.sorted()
+                #expect(extra.isEmpty,
+                        "\(volumeId): generator extracted notes the app does not store: \(extra.prefix(5))")
+                // …and the same text per document.
+                var mismatches = 0
+                for (docId, appNote) in appNotes where generatorNotes[docId] != appNote {
+                    mismatches += 1
+                    if mismatches <= 3 {
+                        Issue.record("\(volumeId)/\(docId): app『\(appNote.prefix(80))』 vs generator『\((generatorNotes[docId] ?? "<nil>").prefix(80))』")
+                    }
+                }
+                #expect(mismatches == 0, "\(volumeId): \(mismatches) note-text mismatches")
+            }
+        }
+    }
+}
+
+/// Fetches every stored, non-empty `document_cache.source_note` for `volumeId`,
+/// keyed by document id.
+private func fetchStoredSourceNotes(dbURL: URL, volumeId: String) throws -> [String: String] {
+    var db: OpaquePointer?
+    guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+          let handle = db else {
+        sqlite3_close(db)
+        throw NSError(domain: "RealTEICoverageTests", code: 6)
+    }
+    defer { sqlite3_close_v2(handle) }
+    var stmt: OpaquePointer?
+    let sql = """
+        SELECT document_id, source_note FROM document_cache
+        WHERE volume_id = ? AND source_note IS NOT NULL AND source_note != ''
+          AND is_front_matter = 0
+        """
+    guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+        throw NSError(domain: "RealTEICoverageTests", code: 7)
+    }
+    defer { sqlite3_finalize(stmt) }
+    let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    sqlite3_bind_text(stmt, 1, volumeId, -1, transient)
+    var notes: [String: String] = [:]
+    while sqlite3_step(stmt) == SQLITE_ROW {
+        guard let id = sqlite3_column_text(stmt, 0).map({ String(cString: $0) }),
+              let note = sqlite3_column_text(stmt, 1).map({ String(cString: $0) })
+        else { continue }
+        notes[id] = note
+    }
+    return notes
+}

@@ -125,9 +125,10 @@ public enum AuthorityBuilder {
             if let segment = ref.leadingSegment { agg.aliases.insert(segment) }
             if let name = ref.displayName { agg.aliases.insert(name) }
 
-            // Level 2.
+            // Level 2. Textual children merge on the plural-folded segment form,
+            // like level-1 keys ("Country File" ≡ "Country Files").
             if let childKey = ref.subDecimalClass
-                ?? ref.subSegment.map({ ReferenceBuilder.normalized($0) }) {
+                ?? ref.subSegment.map({ CollectionKeying.segmentNorm($0) }) {
                 var child = agg.children[childKey] ?? ChildAgg()
                 child.decimalClass = child.decimalClass ?? ref.subDecimalClass
                 let childName = ref.subDecimalClass ?? ref.subSegment ?? childKey

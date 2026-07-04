@@ -78,7 +78,8 @@ import Testing
         ]
         let result = AuthorityBuilder.build(references: refs, resolver: nil)
         #expect(result.collections.count == 2)
-        #expect(result.ambiguous.contains { $0.segment == "conference files" })
+        // Ambiguity buckets carry the plural-folded segment form.
+        #expect(result.ambiguous.contains { $0.segment == "conference file" })
     }
 
     @Test func subSeriesMergeUnderTheirCollection() {

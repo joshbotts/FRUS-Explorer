@@ -35,6 +35,10 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-03 (Source Explorer Phase 4 step 2): initial implementation
+///   1.1 — Session 2026-07-04 (Phase 4 adversarial review): the collection-level
+///          Archival Neighbors action runs `IndexingPipeline.collectionNeighbors`
+///          (the same OR-union clause the S5 count uses), so the sheet total always
+///          equals the "N documents in M volumes" line
 struct CollectionDetailView: View {
 
     /// The bundled authority record being shown.
@@ -285,6 +289,10 @@ struct CollectionDetailView: View {
     }
 
     /// Runs the Archival Neighbors query for the collection (or a class sub-series).
+    ///
+    /// The collection-level query is `IndexingPipeline.collectionNeighbors` — the
+    /// same OR-union clause `localCollectionStats` counts with, so the sheet's total
+    /// always equals the "N documents in M volumes" line above the button.
     private func loadNeighbors(for target: CollectionNeighborsTarget) async -> ArchivalNeighborsResult {
         guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
         if let cls = target.decimalClass {
@@ -292,13 +300,11 @@ struct CollectionDetailView: View {
                 forLotFile: nil, recordGroup: nil, series: nil,
                 repository: nil, decimalClass: cls)) ?? ([], 0, nil)
         }
-        return (try? await pipeline.archivalNeighbors(
-            forLotFile: record.lotFileNorm,
-            recordGroup: record.recordGroup,
-            series: record.name,
+        return (try? await pipeline.collectionNeighbors(
+            lotFileNorm: record.lotFileNorm,
             repository: record.repository,
-            decimalClass: nil,
-            aliasFallback: .init(record: record))) ?? ([], 0, nil)
+            recordGroup: record.recordGroup,
+            names: [record.name] + record.aliases)) ?? ([], 0, nil)
     }
 }
 
