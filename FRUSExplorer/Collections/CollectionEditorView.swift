@@ -119,6 +119,12 @@ import UIKit
 ///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
 ///          sections and collapsed sections are hopped whole — reordering no longer
 ///          requires EditButton drag handles
+///   2.9 — Collections Manager M2 (D3/D5): document rows became pure reports; the
+///          per-entry editor promoted from a per-row `.sheet` to a shared trailing
+///          `.inspector` column on iPad (regular width) — a `.sheet` on iPhone — driven by
+///          `inspectedEntryId`; adds the `NoteCreateContext` struct + `noteCreateContext`
+///          state so the inspector's "New Note…" opens a shared `InlineNoteCreateSheet`
+///          targeting the entry
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -177,6 +183,24 @@ struct CollectionEditorView: View {
     @State private var compositionExpanded = false
     /// iPad metadata/composition inspector visibility.
     @State private var showDetailsInspector = true
+    /// The document entry whose per-entry inspector is open (Collections Manager M2, D3/
+    /// M2.4). On iPad (regular width) this drives the shared trailing `.inspector` column
+    /// — set = show the entry inspector, `nil` = show the collection-metadata inspector
+    /// (one inspector surface, either/or). On iPhone (compact) it drives the `.sheet`.
+    @State private var inspectedEntryId: UUID?
+    /// Pending inline note-create context (Collections Manager M2, D5): the "New Note…"
+    /// affordance in the entry inspector's per-note list opens `InlineNoteCreateSheet`
+    /// for this document, linking the created note to the entry when appropriate.
+    @State private var noteCreateContext: NoteCreateContext?
+
+    /// Identifies the document an inline `InlineNoteCreateSheet` is creating a note for
+    /// (Collections Manager M2, D5); `entryIndex` locates the owning entry to link.
+    private struct NoteCreateContext: Identifiable {
+        let id = UUID()
+        let documentId: String
+        let volumeId: String
+        let entryIndex: Int
+    }
     /// iPhone Outline | Preview pane selection (Authoring Phase 2b; view-local).
     @State private var editorPane: EditorPane = .outline
     /// iPad side-by-side preview pane visibility (Authoring Phase 2b).
@@ -531,6 +555,35 @@ struct CollectionEditorView: View {
         } message: { msg in
             Text(msg)
         }
+        // Per-entry inspector (Collections Manager M2, D3): iPhone (compact) opens it as
+        // a `.sheet`; iPad (regular) hosts it in the shared trailing `.inspector` column
+        // instead (see `iPadCollectionLayout`), so the outline stays visible while it edits.
+        .sheet(isPresented: Binding(
+            get: { inspectedEntryId != nil && !isRegularWidth },
+            set: { if !$0 { inspectedEntryId = nil } }
+        )) {
+            if let entry = inspectedEntry {
+                entryInspectorContent(entry)
+            }
+        }
+        // Inline note-create (Collections Manager M2, D5): the entry inspector's
+        // "New Note…" affordance links the created note to its document entry.
+        .sheet(item: $noteCreateContext) { ctx in
+            InlineNoteCreateSheet(
+                documentId: ctx.documentId,
+                volumeId: ctx.volumeId,
+                activeProjectId: appState.activeProjectId
+            ) { newNote in
+                // D5: the note is on this document, so an untouched entry (empty = all)
+                // already includes it. Only append when the user has an explicit partial
+                // selection so the new note joins it.
+                if ctx.entryIndex < sortedEntries.count,
+                   !sortedEntries[ctx.entryIndex].selectedNoteIds.isEmpty {
+                    sortedEntries[ctx.entryIndex].selectedNoteIds.append(newNote.id)
+                }
+            }
+            .environment(appState)
+        }
         .onAppear {
             if isNewCollection {
                 modelContext.insert(collection)
@@ -640,17 +693,27 @@ struct CollectionEditorView: View {
                     .frame(minWidth: 320, maxWidth: .infinity)
             }
         }
+        // One trailing inspector surface, either/or (Collections Manager M2, M2.4):
+        // selecting an entry's ⓘ shows the per-entry inspector; toggling the details
+        // button shows collection metadata (and clears the entry selection). This mirrors
+        // the macOS manager's B8 column pattern without stacking two inspectors.
         .inspector(isPresented: $showDetailsInspector) {
-            Form {
-                nameSection
-                noteSection
-                frontMatterSection
-                compositionSection
-                smartCollectionSection
+            Group {
+                if let entry = inspectedEntry {
+                    entryInspectorContent(entry)
+                } else {
+                    Form {
+                        nameSection
+                        noteSection
+                        frontMatterSection
+                        compositionSection
+                        smartCollectionSection
+                    }
+                    .formStyle(.grouped)
+                }
             }
-            .formStyle(.grouped)
             #if os(iOS)
-            .inspectorColumnWidth(min: 300, ideal: 340, max: 440)
+            .inspectorColumnWidth(min: 320, ideal: 380, max: 460)
             #endif
         }
         .toolbar {
@@ -670,12 +733,19 @@ struct CollectionEditorView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    showDetailsInspector.toggle()
+                    // The details button always shows collection metadata: clearing the
+                    // entry selection hands the shared inspector column back to metadata.
+                    if inspectedEntryId != nil {
+                        inspectedEntryId = nil
+                        showDetailsInspector = true
+                    } else {
+                        showDetailsInspector.toggle()
+                    }
                 } label: {
                     Image(systemName: "sidebar.trailing")
                 }
                 // A6: stateful label (see the preview toggle above).
-                .accessibilityLabel(showDetailsInspector
+                .accessibilityLabel(showDetailsInspector && inspectedEntryId == nil
                     ? String(localized: "collection.editor.inspector.toggle.hide",
                              defaultValue: "Hide collection details")
                     : String(localized: "collection.editor.inspector.toggle",
@@ -1223,7 +1293,7 @@ struct CollectionEditorView: View {
                      volumeTitle: volumeTitle(for: entry),
                      documentDate: documentDates[key],
                      isDuplicate: duplicateKeys.contains(key),
-                     onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                     onInspect: { presentEntryInspector(for: entry.id) },
                      onMoveUp: moveUp,
                      onMoveDown: moveDown)
         case .heading:
@@ -1285,6 +1355,18 @@ struct CollectionEditorView: View {
     private var isMacOS: Bool {
         #if os(macOS)
         true
+        #else
+        false
+        #endif
+    }
+
+    /// Whether the layout is at regular width (iPad) — where the per-entry inspector is
+    /// promoted to the shared trailing `.inspector` column rather than an iPhone `.sheet`
+    /// (Collections Manager M2, M2.4). `false` on iPhone (compact) and on macOS (the
+    /// macOS sheet editor keeps the per-entry `.sheet`).
+    private var isRegularWidth: Bool {
+        #if os(iOS)
+        sizeClass == .regular
         #else
         false
         #endif
@@ -1555,6 +1637,46 @@ struct CollectionEditorView: View {
         allNotes.filter {
             $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
         }
+    }
+
+    // MARK: - Per-entry inspector (Collections Manager M2, D3 / M2.4)
+
+    /// The document entry currently shown in the per-entry inspector, if any.
+    private var inspectedEntry: CollectionEntry? {
+        inspectedEntryId.flatMap { id in sortedEntries.first { $0.id == id } }
+    }
+
+    /// Opens the per-entry inspector for a row's ⓘ (Collections Manager M2). On iPad
+    /// (regular width) it takes over the shared trailing `.inspector` column — so it
+    /// also ensures the inspector is visible and hands the column to the entry (versus
+    /// collection metadata); on iPhone (compact) it drives the `.sheet`.
+    private func presentEntryInspector(for entryId: UUID) {
+        inspectedEntryId = entryId
+        #if os(iOS)
+        if sizeClass == .regular { showDetailsInspector = true }
+        #endif
+    }
+
+    /// The shared per-entry inspector content — the same `CollectionEntryInspector` used
+    /// as an iPhone `.sheet` and an iPad `.inspector` column. `onNewNote` opens the inline
+    /// note-create sheet for the entry's document (D5); `onInsertExcerpt` keeps the entry
+    /// list in sync when a highlight is inserted as an excerpt.
+    @ViewBuilder
+    private func entryInspectorContent(_ entry: CollectionEntry) -> some View {
+        CollectionEntryInspector(
+            entry: entry,
+            onInsertExcerpt: { capture in appendExcerpts([capture]) },
+            onNewNote: {
+                if let idx = sortedEntries.firstIndex(where: { $0.id == entry.id }) {
+                    noteCreateContext = NoteCreateContext(
+                        documentId: entry.documentId,
+                        volumeId: entry.volumeId,
+                        entryIndex: idx)
+                }
+            }
+        )
+        .id(entry.id)
+        .environment(appState)
     }
 
     private func reindexEntries() {

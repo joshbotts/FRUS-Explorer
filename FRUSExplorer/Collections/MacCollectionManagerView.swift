@@ -97,6 +97,12 @@ import UniformTypeIdentifiers
 ///          `entryMoveControls`; `moveVisibleRowUp/Down` reuse the drag engine
 ///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
 ///          sections and collapsed sections are hopped whole
+///   1.16 — Collections Manager M2 (D3): `MacEntryRow` became a pure report — its inline
+///          note previews and multi-note picker (`noteMenu`) were removed in favor of the
+///          shared read-only `entryStatusChips`; all per-document editing (body depth, note
+///          selection) now lives in the trailing `CollectionEntryInspector` column, whose
+///          "New Note…" opens the `InlineNoteCreateSheet` still hosted here at the pane
+///          level via `noteCreateContext`
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -523,9 +529,12 @@ private struct CollectionDetailPane: View {
                 volumeId: ctx.volumeId,
                 activeProjectId: appState.activeProjectId
             ) { newNote in
-                // Associate new note with the entry
-                if ctx.entryIndex < sortedEntries.count {
-                    sortedEntries[ctx.entryIndex].researchNoteId = newNote.id
+                // D5: the new note is on this document, so an untouched entry (empty
+                // selection = all) already includes it — do nothing. Only when the user
+                // has an explicit partial selection do we append it so it's included.
+                if ctx.entryIndex < sortedEntries.count,
+                   !sortedEntries[ctx.entryIndex].selectedNoteIds.isEmpty {
+                    sortedEntries[ctx.entryIndex].selectedNoteIds.append(newNote.id)
                 }
             }
             .environment(appState)
@@ -545,6 +554,17 @@ private struct CollectionDetailPane: View {
                 CollectionEntryInspector(
                     entry: entry,
                     onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                    // D5: "New Note…" in the inspector's per-note list opens the same
+                    // inline note-create sheet the row's note menu used to (now removed),
+                    // targeting this entry so the created note links to it.
+                    onNewNote: entry.entryKind == .document ? {
+                        if let idx = sortedEntries.firstIndex(where: { $0.id == entry.id }) {
+                            noteCreateContext = NoteCreateContext(
+                                documentId: entry.documentId,
+                                volumeId: entry.volumeId,
+                                entryIndex: idx)
+                        }
+                    } : nil,
                     isInspectorColumn: true
                 )
                 .id(entry.id)
@@ -870,12 +890,6 @@ private struct CollectionDetailPane: View {
                 documentHeader: documentHeaders[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
                 onInspect: { toggleInspector(for: entry.id) },
-                onNewNote: {
-                    noteCreateContext = NoteCreateContext(
-                        documentId: entry.documentId,
-                        volumeId: entry.volumeId,
-                        entryIndex: row.index)
-                },
                 onDelete: { deleteEntry(at: row.index) },
                 onMoveUp: moveUp,
                 onMoveDown: moveDown
@@ -1231,11 +1245,12 @@ private struct CollectionDetailPane: View {
 
 // MARK: - MacEntryRow
 
-/// A single row in the collection's document list.
-///
-/// Displays document number, header (loaded from `document_cache`), volume title,
-/// and note previews. Provides:
-/// - A multi-note picker backed by `CollectionEntry.selectedNoteIds`
+/// A single **document** row in the collection's outline — a pure report (Collections
+/// Manager M2, D3). Displays document number, header (loaded from `document_cache`), and
+/// volume title, plus the shared read-only `entryStatusChips` (body depth, note count or
+/// "Notes off", override flags). All per-document editing — body depth and per-note
+/// selection — lives in the trailing `CollectionEntryInspector` column, not the row; the
+/// row's earlier inline note previews and multi-note picker are gone. Provides:
 /// - A delete button that removes this entry from the collection
 /// - An external-link button to open the document on history.state.gov
 /// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column
@@ -1255,7 +1270,6 @@ private struct MacEntryRow: View {
     /// calls it, and `CollectionDetailPane` shows/retargets/closes the trailing
     /// `CollectionEntryInspector` accordingly.
     let onInspect: () -> Void
-    let onNewNote: () -> Void
     let onDelete: () -> Void
     /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
     var onMoveUp: (() -> Void)? = nil
@@ -1263,22 +1277,6 @@ private struct MacEntryRow: View {
     var onMoveDown: (() -> Void)? = nil
 
     @Environment(\.openURL) private var openURL
-
-    /// This entry's body-depth override (`nil` = follow the collection default).
-    private var bodyDepthOverride: Binding<String?> {
-        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
-    }
-
-    /// Depths offered here: those available on this device, plus the entry's current override
-    /// even when it isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
-    private var entryDepthOptions: [CollectionBodyDepth] {
-        let available = CollectionBodyDepth.available
-        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
-           !available.contains(d) {
-            return available + [d]
-        }
-        return available
-    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -1309,42 +1307,14 @@ private struct MacEntryRow: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Per-entry body depth (overrides the collection default for this document)
-                Picker(selection: bodyDepthOverride) {
-                    Text(String(localized: "collection.entry.bodyDepth.default",
-                                defaultValue: "Default")).tag(String?.none)
-                    ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
-                } label: {
-                    Text(String(localized: "collection.entry.bodyDepth.label",
-                                defaultValue: "Body depth"))
+                // Read-only status chips (Collections Manager M2, D3): the row is now a
+                // pure report — body depth, note count, and override flags project the
+                // inspector's state so the list stays scannable. All editing is in the ⓘ
+                // inspector.
+                BreadcrumbFlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
+                    entryStatusChips(entry: entry, availableNoteCount: availableNotes.count)
                 }
-                .pickerStyle(.menu)
-                .font(.caption)
-                .fixedSize()
                 .padding(.top, 2)
-
-                // Note preview(s)
-                let effective = effectiveNoteIds
-                if !effective.isEmpty {
-                    let attached = effective.compactMap { id in
-                        availableNotes.first(where: { $0.id == id })
-                    }
-                    if attached.count == 1, let n = attached.first, !n.bodyText.isEmpty {
-                        Text(n.bodyText)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else if attached.count > 1 {
-                        Text(String(
-                            format: String(localized: "collection.entry.noteCount %lld",
-                                           defaultValue: "%lld notes attached"),
-                            Int64(attached.count)
-                        ))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                    }
-                }
             }
 
             Spacer()
@@ -1377,9 +1347,6 @@ private struct MacEntryRow: View {
                 .help(String(localized: "collection.entry.openExternal.help",
                              defaultValue: "Open this document on history.state.gov"))
 
-                // Multi-note picker
-                noteMenu
-
                 // Delete from collection
                 Button(role: .destructive) {
                     onDelete()
@@ -1399,97 +1366,9 @@ private struct MacEntryRow: View {
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
     }
 
-    // MARK: - Note Menu
-
-    /// The effective set of attached note IDs.
-    ///
-    /// Uses `selectedNoteIds` when non-empty (new multi-note path); otherwise falls back
-    /// to `researchNoteId` (legacy single-note path) for backward compatibility.
-    private var effectiveNoteIds: [UUID] {
-        if !entry.selectedNoteIds.isEmpty { return entry.selectedNoteIds }
-        if let id = entry.researchNoteId  { return [id] }
-        return []
-    }
-
-    private var noteMenu: some View {
-        Menu {
-            // Clear all
-            Button {
-                entry.selectedNoteIds = []
-                entry.researchNoteId  = nil
-            } label: {
-                Label(
-                    String(localized: "collection.entry.noteMenu.clearAll",
-                           defaultValue: "No Notes"),
-                    systemImage: effectiveNoteIds.isEmpty ? "checkmark" : ""
-                )
-            }
-
-            if !availableNotes.isEmpty {
-                Divider()
-                ForEach(availableNotes) { note in
-                    Button {
-                        toggleNote(note.id)
-                    } label: {
-                        Label(
-                            noteLabel(note),
-                            systemImage: effectiveNoteIds.contains(note.id) ? "checkmark" : ""
-                        )
-                    }
-                }
-            }
-
-            Divider()
-
-            Button {
-                onNewNote()
-            } label: {
-                Label(
-                    String(localized: "collection.entry.noteMenu.newNote",
-                           defaultValue: "New Note…"),
-                    systemImage: "plus"
-                )
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "note.text")
-                    .font(.caption)
-                Text(noteMenuLabel)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .frame(maxWidth: 120, alignment: .leading)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9))
-            }
-            .foregroundStyle(effectiveNoteIds.isEmpty ? .secondary : .primary)
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .help(String(
-            localized: "collection.entry.noteMenu.help",
-            defaultValue: "Attach one or more research notes to this entry for inclusion in exports"
-        ))
-    }
-
     // MARK: - Helpers
 
-    /// Toggles a note in/out of `selectedNoteIds`, migrating from `researchNoteId` if needed.
-    private func toggleNote(_ id: UUID) {
-        // Migrate legacy single-note to selectedNoteIds on first multi-note interaction.
-        var current = entry.selectedNoteIds
-        if current.isEmpty, let legacy = entry.researchNoteId {
-            current = [legacy]
-        }
-        if let idx = current.firstIndex(of: id) {
-            current.remove(at: idx)
-        } else {
-            current.append(id)
-        }
-        entry.selectedNoteIds = current
-        // Keep researchNoteId in sync with the first selected note for export backward compat.
-        entry.researchNoteId = current.first
-    }
-
+    /// The row's document label — "Document N" for the `dN` id form, else the raw id.
     private var documentLabel: String {
         if entry.documentId.hasPrefix("d"), let n = Int(entry.documentId.dropFirst()) {
             return String(
@@ -1499,108 +1378,6 @@ private struct MacEntryRow: View {
             )
         }
         return entry.documentId
-    }
-
-    private var noteMenuLabel: String {
-        let ids = effectiveNoteIds
-        switch ids.count {
-        case 0:
-            return String(localized: "collection.entry.noteMenu.noNote",
-                          defaultValue: "No Notes")
-        case 1:
-            if let note = availableNotes.first(where: { $0.id == ids[0] }) {
-                return noteLabel(note)
-            }
-            return String(localized: "collection.entry.noteMenu.noNote",
-                          defaultValue: "No Notes")
-        default:
-            return String(
-                format: String(localized: "collection.entry.noteMenu.count %lld",
-                               defaultValue: "%lld Notes"),
-                Int64(ids.count)
-            )
-        }
-    }
-
-    private func noteLabel(_ note: ResearchNote) -> String {
-        let preview = note.bodyText.prefix(40).trimmingCharacters(in: .whitespacesAndNewlines)
-        return preview.isEmpty ? String(localized: "collection.entry.noteMenu.untitled",
-                                        defaultValue: "Untitled Note")
-                               : String(preview)
-    }
-}
-
-// MARK: - InlineNoteCreateSheet
-
-/// Focused sheet for creating a new `ResearchNote` from within the collection editor.
-/// For full note editing (tags, projects, summaries) use `ResearchNoteEditorView` from
-/// the document view.
-private struct InlineNoteCreateSheet: View {
-
-    @Environment(\.modelContext) private var modelContext
-    @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
-
-    let documentId: String
-    let volumeId: String
-    let activeProjectId: UUID?
-    let onCreated: (ResearchNote) -> Void
-
-    @State private var bodyText = ""
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("New Research Note").font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-
-            Divider()
-
-            TextEditor(text: $bodyText)
-                .font(.body)
-                .padding(12)
-                .frame(minHeight: 140)
-                .scrollContentBackground(.hidden)
-
-            Divider()
-
-            HStack {
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                Button("Save Note") {
-                    let trimmed = bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let note = ResearchNote(
-                        documentId: documentId,
-                        volumeId: volumeId,
-                        bodyText: trimmed,
-                        projectIds: activeProjectId.map { [$0] } ?? []
-                    )
-                    modelContext.insert(note)
-                    try? modelContext.save()   // ensure Research window @Query updates promptly
-                    // Push immediately so note text is searchable in this session.
-                    if let pipeline = appState.indexingPipeline {
-                        let vid = volumeId
-                        let did = documentId
-                        Task { try? await pipeline.updateNoteText(
-                            volumeId: vid, documentId: did,
-                            bodyText: trimmed, userTagIds: nil
-                        ) }
-                    }
-                    onCreated(note)
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-        }
-        .frame(minWidth: 440, minHeight: 280)
     }
 }
 
