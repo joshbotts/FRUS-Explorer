@@ -1291,3 +1291,28 @@ correctly #if os(iOS)-gated or intentional), and boot-race guards present in all
 window scenes. 1146/1146; both platforms build. **Deferred:** A1/A2 Dynamic Type (own pass);
 consolidated docs pass now covers the windows/shortcuts story for the manuals + TestFlight.
 Reindex version unchanged (18 — no parse-output changes).
+
+### Session 2026-07-04 (later) — Dynamic Type accessibility pass (UI audit A1/A2)
+Branch claude/dynamic-type-a11y, 4 commits. Careful, scoped pass (NOT find-replace) —
+the app had exactly ONE scaled-font site before this. **Foundation:** documented
+size→text-style convention + `@ScaledMetric` pattern in FRUSTheme (scalable captionFont/
+captionSmallFont tokens; `cappedGlyphSize` helper), worklist at
+Planning/Dynamic-Type-Worklist.md classifying all 346 `.system(size:)` sites. **Converted
+40 sites** (iOS-primary: OnboardingView, OnboardingIntroView, IndexingBannerView,
+IndexingQueueBannerView, IndexingContextCard, IndexingSummaryCard, DocumentView, SearchView,
+ResearchView — text→text-styles, hero glyphs→@ScaledMetric with a working 1.6× cap).
+**A2 (the flagged item):** RichTextEditor iOS gets `adjustsFontForContentSizeCategory` +
+`displayScaledForDynamicType` (UIFontMetrics remap of stored concrete RTF fonts, display-only)
++ `baseNormalizedForStorage` (collapse to canonical 13pt base on serialize — chosen over
+inverting the non-linear metrics curve; RTF bytes byte-identical at every content size,
+proven: no exporter/plain-projection consumer reads point size); highlight-picker detent
+[.height(180)]→[.height(180),.medium] + ScrollView so it grows not clips. **Deferred (worklist-
+backed): 284** — 262 macOS-chrome (FRUSSettingsView 145/SupportingViews 72/SearchSheet 45,
+lower value + higher layout risk) + 22 permanent LEAVE-FIXED (graph-canvas labels scale with
+zoom not type; word cloud has bespoke sizing). Review APPROVED (verified no canvas/word-cloud/
+chrome wrongly scaled — all deferred files byte-untouched); 3 low findings fixed (missed 4th
+sibling badge; inert `.dynamicTypeSize(...accessibility3)` caps on `.system(size:)` glyphs →
+`cappedGlyphSize`; multi-detent sheet opening clipped → ScrollView). 1146/1146; both platforms
+build; no index-version bump. **Worth a manual/simulator AX5 spot-check before release**
+(large type is a visual property). **Remaining before testers: the consolidated docs pass +
+build bump** (reindex v18).
