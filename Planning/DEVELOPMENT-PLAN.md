@@ -1316,3 +1316,22 @@ sibling badge; inert `.dynamicTypeSize(...accessibility3)` caps on `.system(size
 build; no index-version bump. **Worth a manual/simulator AX5 spot-check before release**
 (large type is a visual property). **Remaining before testers: the consolidated docs pass +
 build bump** (reindex v18).
+
+### Session 2026-07-03 — Analytics architecture split: corpus vs. series (planning only)
+Revised the analytics roadmap into a two-feature architecture per design direction.
+**Corpus Analytics** (what the series contains — term/person/place/topic/citation content)
+stays in its current home (Browse "Analysis Tools" menu on iOS; frus.analytics /
+frus.wordcloud windows on macOS). **Series Analytics** (how the volumes were produced —
+production, timeliness, editorial organization, archival sourcing over time) becomes an
+interactive part of the Research Guide (ResearchGuideView/IndexingEducationView; macOS
+frus.researchGuide Help window, iOS Settings sheet), most naturally as a new "About the
+Series" EducationCategory beside the existing "163 Years in Progress" narrative page.
+Series feature anchored by the Production & Timeliness Dashboard, expanded with a new
+**Archival Sourcing Over Time** dashboard synthesizing Source Explorer data
+(majorCollections.volumeIds × manifest coverage dates → record-group/repository mix by era;
+citation_era as editorial-practice proxy) — confirmed feasible from existing bundled JSON
++ volume_sources, with coverage caveats (volume_sources 258/552 volumes; citation_era is
+citation-grammar not diplomatic era). Re-homed all 12 prior recommendations; two
+("Geographic Attention," "Administration profiles") split across both features. New doc
+`Planning/BigPicture-Analytics-CorpusVsSeries.md` supersedes and removes
+`BigPicture-CorpusAnalytics-Roadmap.md`. No code changes.
