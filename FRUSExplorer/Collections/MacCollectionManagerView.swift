@@ -97,6 +97,12 @@ import UniformTypeIdentifiers
 ///          `entryMoveControls`; `moveVisibleRowUp/Down` reuse the drag engine
 ///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
 ///          sections and collapsed sections are hopped whole
+///   1.16 — Collections Manager M2 (D3): `MacEntryRow` became a pure report — its inline
+///          note previews and multi-note picker (`noteMenu`) were removed in favor of the
+///          shared read-only `entryStatusChips`; all per-document editing (body depth, note
+///          selection) now lives in the trailing `CollectionEntryInspector` column, whose
+///          "New Note…" opens the `InlineNoteCreateSheet` still hosted here at the pane
+///          level via `noteCreateContext`
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -1239,11 +1245,12 @@ private struct CollectionDetailPane: View {
 
 // MARK: - MacEntryRow
 
-/// A single row in the collection's document list.
-///
-/// Displays document number, header (loaded from `document_cache`), volume title,
-/// and note previews. Provides:
-/// - A multi-note picker backed by `CollectionEntry.selectedNoteIds`
+/// A single **document** row in the collection's outline — a pure report (Collections
+/// Manager M2, D3). Displays document number, header (loaded from `document_cache`), and
+/// volume title, plus the shared read-only `entryStatusChips` (body depth, note count or
+/// "Notes off", override flags). All per-document editing — body depth and per-note
+/// selection — lives in the trailing `CollectionEntryInspector` column, not the row; the
+/// row's earlier inline note previews and multi-note picker are gone. Provides:
 /// - A delete button that removes this entry from the collection
 /// - An external-link button to open the document on history.state.gov
 /// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column

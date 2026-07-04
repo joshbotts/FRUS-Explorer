@@ -369,6 +369,12 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 ///          on every existing entry); generated entries use no other content fields, and
 ///          block rows are re-resolved from the collection's documents at every resolve,
 ///          never stored. Old builds see the kind as `.unrecognized` (inert)
+///   1.12 — Collections Manager M2 (D5): `selectedNoteIds` empty now means **all** of the
+///          document's notes (mirroring `selectedHighlightIds`), not none — so enabling
+///          notes on an untouched entry exports them and future notes auto-flow in. No
+///          schema/format change; the ids are still never serialized into
+///          `.fruscollection`. Resolution lives in `CollectionContentResolver` and the
+///          native-export closure; both honor empty = all
 @Model final class CollectionEntry {
 
     // MARK: - Identity

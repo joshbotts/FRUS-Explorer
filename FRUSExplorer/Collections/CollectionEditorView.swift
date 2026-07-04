@@ -119,6 +119,12 @@ import UIKit
 ///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
 ///          sections and collapsed sections are hopped whole — reordering no longer
 ///          requires EditButton drag handles
+///   2.9 — Collections Manager M2 (D3/D5): document rows became pure reports; the
+///          per-entry editor promoted from a per-row `.sheet` to a shared trailing
+///          `.inspector` column on iPad (regular width) — a `.sheet` on iPhone — driven by
+///          `inspectedEntryId`; adds the `NoteCreateContext` struct + `noteCreateContext`
+///          state so the inspector's "New Note…" opens a shared `InlineNoteCreateSheet`
+///          targeting the entry
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState

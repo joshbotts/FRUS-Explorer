@@ -1264,6 +1264,67 @@ struct CollectionTests {
         #expect(docs[0].includeNotesOverride == false)
     }
 
+    /// D5 empty=all must hold on the native `.fruscollection` export too, not just the
+    /// rendered formats: an untouched entry (empty `selectedNoteIds`, no legacy link) whose
+    /// notes are opted into the shared file must carry **all** of the document's notes in
+    /// the `notes` array — matching what the resolver produces for PDF/HTML/DOCX. This pins
+    /// the closure in `CollectionExportSheet.runNativeExport`, which is the sole production
+    /// caller of `NativeCollectionSerializer.makeFile`, so the two paths cannot drift.
+    @Test("M2 D5: native .fruscollection export carries all doc notes for an untouched entry (empty = all)")
+    func nativeEmptyNotesMeansAll() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let coll = Collection(name: "Native Notes")
+        coll.includeNotes = true
+        context.insert(coll)
+
+        // Two notes on d1 (the untouched entry) + one on d2 (a partial-selection entry).
+        let a = ResearchNote(documentId: "d1", volumeId: "nvol", bodyText: "Alpha note.")
+        let b = ResearchNote(documentId: "d1", volumeId: "nvol", bodyText: "Beta note.")
+        let c = ResearchNote(documentId: "d2", volumeId: "nvol", bodyText: "Gamma note.")
+        let unrelated = ResearchNote(documentId: "d9", volumeId: "othervol", bodyText: "Unrelated note.")
+        for n in [a, b, c, unrelated] { context.insert(n) }
+
+        // Untouched entry: empty selection, no legacy link → D5 all.
+        let untouched = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "nvol", sortOrder: 0)
+        untouched.collection = coll
+        // Partial-selection entry on d2: only Gamma explicitly chosen.
+        let partial = CollectionEntry(collectionId: coll.id, documentId: "d2", volumeId: "nvol", sortOrder: 1)
+        partial.selectedNoteIds = [c.id]
+        partial.collection = coll
+        for e in [untouched, partial] { context.insert(e) }
+        try context.save()
+
+        // Mirrors the production closure in CollectionExportSheet.runNativeExport (D5).
+        let allNotes = [a, b, c, unrelated]
+        let resolveNoteTexts: (CollectionEntry) -> [String] = { entry in
+            if !entry.selectedNoteIds.isEmpty {
+                return entry.selectedNoteIds.compactMap { id in
+                    allNotes.first { $0.id == id }?.bodyText
+                }.filter { !$0.isEmpty }
+            }
+            if let legacyId = entry.researchNoteId,
+               let legacy = allNotes.first(where: { $0.id == legacyId }) {
+                return legacy.bodyText.isEmpty ? [] : [legacy.bodyText]
+            }
+            return allNotes
+                .filter { $0.documentId == entry.documentId && $0.volumeId == entry.volumeId }
+                .map(\.bodyText)
+                .filter { !$0.isEmpty }
+        }
+
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: true, resolveNoteTexts: resolveNoteTexts)
+        let docEntries = file.entries.filter { $0.kind == CollectionEntryKind.document.rawValue }
+        try #require(docEntries.count == 2)
+
+        // Untouched d1 entry: both of its notes travel; the unrelated-doc note does not.
+        #expect(Set(docEntries[0].notes ?? []) == ["Alpha note.", "Beta note."])
+        // Partial d2 entry: only the explicitly chosen note.
+        #expect(docEntries[1].notes == ["Gamma note."])
+    }
+
     @Test("Unified smart path: smart documents now carry collection-level composition (notes, highlights, body depth)")
     @MainActor
     func smartPathHonorsCollectionComposition() async throws {

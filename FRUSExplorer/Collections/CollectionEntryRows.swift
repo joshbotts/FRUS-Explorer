@@ -736,10 +736,11 @@ struct EntryStatusChip: View {
 }
 
 /// The read-only status chips for one **document** entry — body depth (when overridden),
-/// the effective research-note count, and the override flags (highlights off, headnote,
-/// see-also). Shared by `MacEntryRow` (macOS) and `EntryRow` (iOS) so both rows report
-/// identically (Collections Manager M2, D3). Emits nothing when the entry is at its
-/// defaults, keeping an untouched row clean.
+/// the research-note projection (effective count, or "Notes off" when notes are turned off
+/// for the entry), and the override flags (highlights off, headnote, see-also). Shared by
+/// `MacEntryRow` (macOS) and `EntryRow` (iOS) so both rows report identically (Collections
+/// Manager M2, D3). Emits nothing when the entry is at its defaults, keeping an untouched
+/// row clean.
 ///
 /// - Parameters:
 ///   - entry: The document entry whose configuration is projected.
@@ -753,19 +754,29 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
         EntryStatusChip(systemImage: "doc.text", text: depth.displayName)
     }
 
-    // Effective research-note count (D5 semantics): explicit selection wins; else the
-    // legacy single-note link counts as one; else empty = all of the document's notes.
-    let noteCount: Int = {
-        if !entry.selectedNoteIds.isEmpty { return entry.selectedNoteIds.count }
-        if entry.researchNoteId != nil { return 1 }
-        return availableNoteCount
-    }()
-    if noteCount > 0 {
+    // Research notes: when the entry has turned notes off (D5 uncheck-last end state, or
+    // an explicit override) no notes export, so report "Notes off" — mirroring the
+    // "Highlights off" chip — rather than a misleading count. Otherwise show the effective
+    // note count (D5 semantics): explicit selection wins; else the legacy single-note link
+    // counts as one; else empty = all of the document's notes.
+    if entry.includeNotesOverride == false {
         EntryStatusChip(
             systemImage: "note.text",
-            text: String(format: String(localized: "collection.entry.chip.notes %lld",
-                                        defaultValue: "%lld notes"),
-                         Int64(noteCount)))
+            text: String(localized: "collection.entry.chip.notesOff",
+                         defaultValue: "Notes off"))
+    } else {
+        let noteCount: Int = {
+            if !entry.selectedNoteIds.isEmpty { return entry.selectedNoteIds.count }
+            if entry.researchNoteId != nil { return 1 }
+            return availableNoteCount
+        }()
+        if noteCount > 0 {
+            EntryStatusChip(
+                systemImage: "note.text",
+                text: String(format: String(localized: "collection.entry.chip.notes %lld",
+                                            defaultValue: "%lld notes"),
+                             Int64(noteCount)))
+        }
     }
 
     // Highlights explicitly turned off for this entry.

@@ -381,10 +381,24 @@ struct ExportSheetView: View {
         defer { isExporting = false }
         do {
             let resolveNoteTexts: (CollectionEntry) -> [String] = { entry in
-                let ids = entry.selectedNoteIds.isEmpty
-                    ? (entry.researchNoteId.map { [$0] } ?? [])
-                    : entry.selectedNoteIds
-                return ids.compactMap { id in allNotes.first { $0.id == id }?.bodyText }
+                // Mirror CollectionContentResolver's note-resolution (D5): explicit
+                // selection wins; else an un-migrated legacy single-note link counts; else
+                // an empty selection with no legacy link means **all** of the document's
+                // notes — so this native export stays in lockstep with every rendered
+                // format instead of silently dropping notes on untouched entries.
+                if !entry.selectedNoteIds.isEmpty {
+                    return entry.selectedNoteIds.compactMap { id in
+                        allNotes.first { $0.id == id }?.bodyText
+                    }.filter { !$0.isEmpty }
+                }
+                if let legacyId = entry.researchNoteId,
+                   let legacy = allNotes.first(where: { $0.id == legacyId }) {
+                    return legacy.bodyText.isEmpty ? [] : [legacy.bodyText]
+                }
+                return allNotes
+                    .filter { $0.documentId == entry.documentId && $0.volumeId == entry.volumeId }
+                    .map(\.bodyText)
+                    .filter { !$0.isEmpty }
             }
             let file = NativeCollectionSerializer.makeFile(
                 from: collection,
