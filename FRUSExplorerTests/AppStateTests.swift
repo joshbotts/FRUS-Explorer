@@ -310,14 +310,20 @@ struct CommandFocusedValueTests {
     private func detailActions(
         collectionId: UUID,
         isPreviewShown: Bool = false,
-        canExport: Bool = true
+        canExport: Bool = true,
+        hasEntries: Bool = true,
+        hasDocuments: Bool = true
     ) -> CollectionDetailCommandActions {
         CollectionDetailCommandActions(
             collectionId: collectionId,
             isPreviewShown: isPreviewShown,
             canExport: canExport,
+            hasEntries: hasEntries,
+            hasDocuments: hasDocuments,
             addDocuments: {}, addHeading: {}, addProse: {},
-            togglePreview: {}, exportCollection: {}
+            addHighlights: {}, addApparatus: { _ in }, sortByDate: {},
+            togglePreview: {}, toggleComposition: {}, toggleFrontMatter: {},
+            exportCollection: {}
         )
     }
 
@@ -355,9 +361,12 @@ struct CommandFocusedValueTests {
         let a = detailActions(collectionId: id)
         let b = CollectionDetailCommandActions(
             collectionId: id, isPreviewShown: false, canExport: true,
+            hasEntries: true, hasDocuments: true,
             addDocuments: { sideEffect += 1 }, addHeading: { sideEffect += 1 },
-            addProse: { sideEffect += 1 }, togglePreview: { sideEffect += 1 },
-            exportCollection: { sideEffect += 1 }
+            addProse: { sideEffect += 1 }, addHighlights: { sideEffect += 1 },
+            addApparatus: { _ in sideEffect += 1 }, sortByDate: { sideEffect += 1 },
+            togglePreview: { sideEffect += 1 }, toggleComposition: { sideEffect += 1 },
+            toggleFrontMatter: { sideEffect += 1 }, exportCollection: { sideEffect += 1 }
         )
         #expect(a == b)
         #expect(sideEffect == 0)
@@ -370,6 +379,8 @@ struct CommandFocusedValueTests {
         #expect(detailActions(collectionId: UUID()) != base)
         #expect(detailActions(collectionId: id, isPreviewShown: true) != base)
         #expect(detailActions(collectionId: id, canExport: false) != base)
+        #expect(detailActions(collectionId: id, hasEntries: false) != base)
+        #expect(detailActions(collectionId: id, hasDocuments: false) != base)
     }
 
     @Test("CollectionManagerCommandActions: stateless — any two instances are interchangeable")

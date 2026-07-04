@@ -486,6 +486,11 @@ struct CollectionEditorView: View {
                 }
             }
         }
+        // Collections Manager M1: the list-level authoring verbs in native chrome —
+        // iPad labeled toolbar items, iPhone labeled nav-bar menu.
+        #if os(iOS)
+        .toolbar { collectionAuthoringToolbar }
+        #endif
         .sheet(isPresented: $showAddDocuments) {
             CollectionAddDocumentsSheet(
                 allTags: allTags,
@@ -991,7 +996,7 @@ struct CollectionEditorView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     Text(String(localized: "collection.editor.docs.empty",
-                                defaultValue: "No documents yet. Add some with Add Documents below."))
+                                defaultValue: "No content yet. Add documents, headings, notes, and apparatus from the toolbar above."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -1014,57 +1019,15 @@ struct CollectionEditorView: View {
             }
         } header: {
             HStack {
-                Text(String(localized: "collection.editor.docs.header", defaultValue: "Documents"))
+                // Collections Manager M1 (D1): the region is "Contents" — it holds
+                // documents plus headings, prose, excerpts, and apparatus.
+                Text(String(localized: "collection.editor.docs.header", defaultValue: "Contents"))
                 Spacer()
-                Menu {
-                    Button {
-                        showAddDocuments = true
-                    } label: {
-                        Label(String(localized: "collection.editor.addDocuments.button",
-                                     defaultValue: "Add Documents…"),
-                              systemImage: "plus.rectangle.on.folder")
-                    }
-                    Divider()
-                    Button {
-                        addStructuralEntry(kind: .heading)
-                    } label: {
-                        Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
-                              systemImage: "number")
-                    }
-                    Button {
-                        addStructuralEntry(kind: .prose)
-                    } label: {
-                        Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
-                              systemImage: "text.alignleft")
-                    }
-                    Button {
-                        showAddHighlights = true
-                    } label: {
-                        Label(String(localized: "collection.add.highlights",
-                                     defaultValue: "Add Highlighted Passages…"),
-                              systemImage: "text.quote")
-                    }
-                    .disabled(orderedDocumentKeys.isEmpty)
-                    // Apparatus (Authoring Phase 6): placeable generated blocks —
-                    // inserted at the type's default position, movable afterwards.
-                    Menu {
-                        ForEach(CollectionGeneratedBlockType.allCases) { blockType in
-                            Button {
-                                addGeneratedEntry(type: blockType)
-                            } label: {
-                                Label(blockType.displayName, systemImage: blockType.systemImage)
-                            }
-                        }
-                    } label: {
-                        Label(String(localized: "collection.add.apparatus",
-                                     defaultValue: "Apparatus"),
-                              systemImage: "list.bullet.rectangle")
-                    }
-                } label: {
-                    Image(systemName: "plus").font(.caption)
-                }
-                .accessibilityLabel(String(localized: "collection.add.menu",
-                                           defaultValue: "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"))
+                // M1: the structural/apparatus verbs move to native chrome — the iPad
+                // toolbar (labeled `ToolbarItem`s, gated to regular width) and the
+                // iPhone nav-bar `primaryAction` menu (labeled, not a bare "+" glyph),
+                // both wired in `collectionAuthoringToolbar`. The in-list header keeps
+                // only the timeline glance and the edit-mode toggle.
                 if !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
@@ -1090,6 +1053,145 @@ struct CollectionEditorView: View {
             }
         }
     }
+
+    // MARK: - Authoring toolbar (Collections Manager M1)
+
+    /// The list-level authoring verbs promoted into native chrome (M1): on iPad
+    /// (regular width) each verb is a labeled `ToolbarItem`; on iPhone (compact
+    /// width) they collapse into one labeled `primaryAction` nav-bar menu — no bare
+    /// glyphs on either. The parity win is text+glyph labels everywhere.
+    #if os(iOS)
+    @ToolbarContentBuilder
+    private var collectionAuthoringToolbar: some ToolbarContent {
+        if sizeClass == .regular {
+            // iPad: each verb as its own labeled toolbar item.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    sortByDate()
+                } label: {
+                    Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
+                          systemImage: "arrow.up.arrow.down")
+                }
+                .disabled(sortedEntries.isEmpty)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    addStructuralEntry(kind: .heading)
+                } label: {
+                    Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                          systemImage: "number")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    addStructuralEntry(kind: .prose)
+                } label: {
+                    Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                          systemImage: "text.alignleft")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showAddHighlights = true
+                } label: {
+                    Label(String(localized: "collection.add.highlights",
+                                 defaultValue: "Add Highlighted Passages…"),
+                          systemImage: "text.quote")
+                }
+                .disabled(orderedDocumentKeys.isEmpty)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                        Button {
+                            addGeneratedEntry(type: blockType)
+                        } label: {
+                            Label(blockType.displayName, systemImage: blockType.systemImage)
+                        }
+                    }
+                } label: {
+                    Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
+                          systemImage: "list.bullet.rectangle")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showAddDocuments = true
+                } label: {
+                    Label(String(localized: "collection.editor.addDocuments.button",
+                                 defaultValue: "Add Documents…"),
+                          systemImage: "plus.rectangle.on.folder")
+                }
+            }
+        } else {
+            // iPhone: one labeled nav-bar menu (Labels, not a bare "+" glyph).
+            ToolbarItem(placement: .primaryAction) {
+                iPhoneAddMenu
+            }
+        }
+    }
+
+    /// iPhone (compact width): a single labeled `primaryAction` menu carrying every
+    /// list-level authoring verb — Add Documents plus the structural/apparatus items
+    /// (M1). The Outline | Preview segmented control stays put in the layout.
+    private var iPhoneAddMenu: some View {
+        Menu {
+            Button {
+                showAddDocuments = true
+            } label: {
+                Label(String(localized: "collection.editor.addDocuments.button",
+                             defaultValue: "Add Documents…"),
+                      systemImage: "plus.rectangle.on.folder")
+            }
+            Divider()
+            Button {
+                addStructuralEntry(kind: .heading)
+            } label: {
+                Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                      systemImage: "number")
+            }
+            Button {
+                addStructuralEntry(kind: .prose)
+            } label: {
+                Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                      systemImage: "text.alignleft")
+            }
+            Button {
+                showAddHighlights = true
+            } label: {
+                Label(String(localized: "collection.add.highlights",
+                             defaultValue: "Add Highlighted Passages…"),
+                      systemImage: "text.quote")
+            }
+            .disabled(orderedDocumentKeys.isEmpty)
+            Menu {
+                ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                    Button {
+                        addGeneratedEntry(type: blockType)
+                    } label: {
+                        Label(blockType.displayName, systemImage: blockType.systemImage)
+                    }
+                }
+            } label: {
+                Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
+                      systemImage: "list.bullet.rectangle")
+            }
+            Divider()
+            Button {
+                sortByDate()
+            } label: {
+                Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
+                      systemImage: "arrow.up.arrow.down")
+            }
+            .disabled(sortedEntries.isEmpty)
+        } label: {
+            Label(String(localized: "collection.add.menu.label", defaultValue: "Add"),
+                  systemImage: "plus")
+        }
+        .accessibilityLabel(String(localized: "collection.add.menu",
+                                   defaultValue: "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"))
+    }
+    #endif
 
     // MARK: - Outline rows (Authoring Phase 4)
 
