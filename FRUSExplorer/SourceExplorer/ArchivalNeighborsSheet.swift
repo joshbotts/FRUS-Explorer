@@ -178,10 +178,31 @@ struct ArchivalNeighborsContent: View {
     @State private var docs: [IndexingPipeline.RelatedDocument] = []
     @State private var totalCount = 0
     @State private var isLoading = true
+    /// Guards the load task against duplicate runs. The body is a `Group`, and SwiftUI
+    /// applies `Group` modifiers to each child — so `.task` fires again when the loading
+    /// branch swaps to the loaded one (the codebase's documented Group gotcha; see
+    /// `VolumeSourcesView.didLoad`). Without the guard every open ran the full neighbors
+    /// query twice, including the alias fallback's expensive non-indexed scans.
+    @State private var didLoad = false
+
+    /// Whether the live index exists to query. `false` during app boot — a restored
+    /// macOS Archival Neighbors window's `.task` typically fires before
+    /// `bootDownloadManager()` assigns `appState.indexingPipeline`, and querying then
+    /// would render the definitive "No Archival Neighbors" verdict as a lie. Reading
+    /// the `@Observable` property in `body` (via the `.task(id:)` value) re-evaluates
+    /// the view and re-fires the task when the pipeline becomes available.
+    private var pipelineReady: Bool { appState.indexingPipeline != nil }
 
     var body: some View {
         Group {
-            if isLoading {
+            if !pipelineReady {
+                // Pipeline not created yet (app still booting): show a preparing
+                // placeholder, never the honest-empty verdict — that state is reserved
+                // for a real zero-row query result against the live index.
+                ProgressView(String(localized: "archivalNeighbors.preparingIndex",
+                                    defaultValue: "Preparing your index…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if docs.isEmpty {
@@ -214,7 +235,13 @@ struct ArchivalNeighborsContent: View {
                 .listStyle(.plain)
             }
         }
-        .task {
+        // Keyed on pipeline availability so a window restored (or opened) before boot
+        // finishes re-runs the load once `appState.indexingPipeline` is assigned; the
+        // `didLoad` guard absorbs the Group-modifier replication (branch swaps re-fire
+        // the task) so the query itself runs exactly once.
+        .task(id: pipelineReady) {
+            guard pipelineReady, !didLoad else { return }
+            didLoad = true
             let result = await load()
             docs       = result.documents
             totalCount = result.totalCount
@@ -284,6 +311,14 @@ struct ArchivalNeighborsContent: View {
 ///          sheet wraps with `NavigationStack` + Done chrome. On macOS every neighbors
 ///          surface now opens the `ArchivalNeighborsRequest` window instead of this
 ///          sheet, so the sheet is presented by the iOS surfaces only.
+///   1.3 — Session 2026-07-04 (Phase 5 adversarial-review fixes): the shared content
+///          core (a) shows a "Preparing your index…" placeholder — never the
+///          honest-empty verdict — while `appState.indexingPipeline` is nil, and
+///          re-runs the load when it appears (`.task(id:)` on pipeline readiness):
+///          a restored macOS neighbors window races app boot and previously showed
+///          a false, permanent "No Archival Neighbors"; (b) guards the load with
+///          `didLoad` — the `.task` sits on a branch-swapping `Group`, so per the
+///          documented Group gotcha every query ran twice.
 struct ArchivalNeighborsSheet: View {
 
     /// Shared app state, used to navigate to a tapped neighbor.
@@ -366,6 +401,10 @@ struct ArchivalNeighborsSheet: View {
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-04 (Source Explorer Phase 5 S6): initial implementation
+///   1.1 — Session 2026-07-04 (Phase 5 adversarial-review fixes): windows restored at
+///          relaunch no longer race app boot — the shared content core now waits on
+///          `appState.indexingPipeline` (placeholder + `.task(id:)` re-fire) instead
+///          of rendering a false, permanent "No Archival Neighbors" verdict.
 struct ArchivalNeighborsWindowView: View {
 
     /// The restorable query description this window presents.

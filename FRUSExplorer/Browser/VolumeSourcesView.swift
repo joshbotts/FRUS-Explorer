@@ -68,6 +68,12 @@ import SwiftUI
 ///          setting the hoisted sheet binding — `openWindow` is an action, not a
 ///          presentation modifier, so it is safe inside this section-emitting view.
 ///          `sourceNeighborsTarget` is now written on iOS only.
+///   1.7 — Session 2026-07-04 (Phase 5 adversarial-review fixes): neighbor-count
+///          badges refresh when a bulk indexing run finishes
+///          (`currentIndexingProgress` → `nil`, mirroring CompilationView's
+///          observer) — previously a stale subdued 0 kept asserting "no documents
+///          in your indexed volumes cite this collection" after the user indexed
+///          more volumes mid-session.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
@@ -129,6 +135,12 @@ struct VolumeSourcesView: View {
     /// (0 → subdued + honest hint, N → count badge). Counts use direct keys only —
     /// no alias fallback — so an opened sheet may exceed its badge.
     @State private var neighborCounts: [IndexingPipeline.ArchivalNeighborCountKey: Int]? = nil
+
+    /// Collapses the replicated `onChange` firings from the Group-modifier gotcha (this
+    /// body emits multiple sections, so modifiers on the `Group` apply per child) into
+    /// one count refresh per indexing-run completion. Set synchronously on the main
+    /// actor before the refresh `Task` starts, so sibling firings bail out.
+    @State private var isRefreshingCounts = false
 
     var body: some View {
         Group {
@@ -198,6 +210,20 @@ struct VolumeSourcesView: View {
             }
         }
         .task { await loadSources() }
+        // Refresh the count badges when a bulk indexing run finishes (Settings-triggered
+        // or otherwise): newly indexed volumes can add neighbors, and a stale subdued 0
+        // asserts "no documents in your indexed volumes cite this collection" — now
+        // false. Mirrors CompilationView's `currentIndexingProgress` observer for its
+        // document list. The `isRefreshingCounts` flag absorbs the Group-modifier
+        // replication (this body emits sections, so `.onChange` fires once per child).
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            guard progress == nil, didLoad, !isRefreshingCounts else { return }
+            isRefreshingCounts = true
+            Task {
+                await loadNeighborCounts()
+                isRefreshingCounts = false
+            }
+        }
     }
 
     /// One archival-collection outline row: its own text (bold for a major named collection —
@@ -446,7 +472,18 @@ struct VolumeSourcesView: View {
         // Phase 5: ONE batched round-trip per key family resolves neighbor counts
         // for every keyed entry (never per-row). Runs after the rows render, so the
         // list never waits on the counts; rows upgrade in place when they arrive.
-        let keys = entries.compactMap { entry -> IndexingPipeline.ArchivalNeighborCountKey? in
+        await loadNeighborCounts()
+    }
+
+    /// Resolves (or re-resolves) the batched neighbor counts for the loaded entries —
+    /// ONE `IndexingPipeline.archivalNeighborCounts(forKeys:)` round-trip per call,
+    /// never per row. Called once from `loadSources()` and again whenever a bulk
+    /// indexing run finishes (`currentIndexingProgress` → `nil`): newly indexed
+    /// volumes can turn a subdued 0 badge into a real count, and a stale 0 would
+    /// falsely assert "no documents in your indexed volumes cite this collection".
+    private func loadNeighborCounts() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        let keys = sources.compactMap { entry -> IndexingPipeline.ArchivalNeighborCountKey? in
             guard let target = Self.makeNeighborsTarget(for: entry) else { return nil }
             return IndexingPipeline.neighborCountKey(
                 forLotFile: target.lotFile, recordGroup: target.recordGroup,
