@@ -54,6 +54,7 @@ import os
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
+/// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
 ///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
@@ -102,6 +103,10 @@ import os
 ///   4.0 — Session 2026-07-03 (ui-audit #2): TextFormattingCommands() added to .commands —
 ///          the macOS rich-text prose editors (NSTextView-backed) rely on the Format menu
 ///          for their ⌘B/⌘I/⌘U key equivalents, which were inoperative without it
+///   4.1 — Session 2026-07-04 (Source Explorer Phase 5 S6): macOS Archival Neighbors
+///          window scene added — value-based WindowGroup(for: ArchivalNeighborsRequest.self)
+///          replacing every macOS `.sheet` presentation of ArchivalNeighborsSheet
+///          (window-per-distinct-request, Codable restoration; see the scene comment)
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -534,6 +539,42 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 700, height: 440)
+
+        // MARK: - Archival Neighbors Window (Source Explorer Phase 5, S6)
+        //
+        // Owner decision S6 (Source-Explorer-Provenance-Scope.md / UI audit B1):
+        // Archival Neighbors is a WINDOW on macOS, not a sheet — the result is a
+        // work list the researcher steps through, and a sheet dies on the first
+        // navigation. Value-based `WindowGroup(for:)`: the Codable+Hashable
+        // `ArchivalNeighborsRequest` fully describes the query (all four shapes
+        // resolve through appState.indexingPipeline), so the fetch is reconstructed
+        // from the value inside the window — no pending-state hand-off — and SwiftUI
+        // restores the window across relaunches by re-running the cheap local query.
+        // Reuse semantics: `openWindow(value:)` focuses the existing window for an
+        // equal request and opens a new one otherwise — one window per distinct
+        // archival source, browsable side by side next to the reading window. Row
+        // taps hand the document to the main window via `pendingBrowseDocument`;
+        // this window stays open. iOS keeps its `.sheet` presentations.
+        WindowGroup(for: ArchivalNeighborsRequest.self) { $request in
+            Group {
+                if let request {
+                    ArchivalNeighborsWindowView(request: request)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "archivalNeighbors.window.empty.title",
+                               defaultValue: "No Archival Source"),
+                        systemImage: "archivebox",
+                        description: Text(
+                            String(localized: "archivalNeighbors.window.empty.detail",
+                                   defaultValue: "Open Archival Neighbors from a document, search result, or a volume's Sources list.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 520, height: 560)
 
         // MARK: - Analytics Window
         Window("Corpus Analytics", id: "frus.analytics") {

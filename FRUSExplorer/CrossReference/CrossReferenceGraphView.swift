@@ -93,16 +93,27 @@ private enum CompactGraphContent {
 ///          central decimal file, record-group series, or presidential-library
 ///          collection) and the shared `ArchivalNeighborsSheet`. The lot-file-only
 ///          `LotFileDocumentsSheet`/`LotFileSheetID` were removed.
+///   2.0 — Session 2026-07-04 (Source Explorer Phase 5 S6): the node context-menu
+///          "Archival Neighbors…" opens the value-based window on macOS
+///          (`openWindow(value: ArchivalNeighborsRequest.document…)`); the sheet and
+///          its target state are now iOS-only
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var vm: CrossReferenceGraphViewModel
     @State private var showInfoPopover = false
-    /// When set, presents the "Archival Neighbors" discovery sheet for a node's document.
+    #if os(iOS)
+    /// When set, presents the "Archival Neighbors" discovery sheet for a node's document
+    /// (iOS only — macOS opens the S6 Archival Neighbors window instead).
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
+    #endif
     /// Volumes the user queued for download from this graph during the current
     /// presentation; drives the "Download queued" state in the node info panel.
     @State private var requestedDownloadVolumeIds: Set<String> = []
@@ -224,10 +235,12 @@ struct CrossReferenceGraphView: View {
                 revealDetailPanelIfNeeded()
             }
         }
+        #if os(iOS)
         .sheet(item: $archivalNeighborsTarget) { target in
             ArchivalNeighborsSheet(appState: appState, docKey: target)
                 .environment(appState)
         }
+        #endif
     }
 
     // MARK: - Content Area
@@ -769,11 +782,21 @@ struct CrossReferenceGraphView: View {
 
             Button {
                 guard let meta = vm.graph?.nodeMetadata[node.id] else { return }
+                // S6: window on macOS (survives row navigation, sits beside the
+                // graph); sheet on iOS.
+                #if os(macOS)
+                openWindow(value: ArchivalNeighborsRequest.document(
+                    volumeId:     meta.volumeId,
+                    documentId:   meta.documentId,
+                    documentYear: meta.dateISO.flatMap { Int($0.prefix(4)) }
+                ))
+                #else
                 archivalNeighborsTarget = ArchivalNeighborsDocKey(
                     volumeId:     meta.volumeId,
                     documentId:   meta.documentId,
                     documentYear: meta.dateISO.flatMap { Int($0.prefix(4)) }
                 )
+                #endif
             } label: {
                 Label(
                     String(localized: "graph.contextMenu.archivalNeighbors",

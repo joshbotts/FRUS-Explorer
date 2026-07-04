@@ -54,6 +54,11 @@ import SwiftUI
 ///   1.7 — Session 2026-07-03: complete long titles — the full section title heads the
 ///          list (nav-bar title switched to inline; it truncates long chapter titles),
 ///          and `DocumentRowLabel` wraps document headers instead of clipping at two lines
+///   1.8 — Session 2026-07-04 (Source Explorer Phase 5 S6): Archival Neighbors is a
+///          window on macOS — the document context-menu action calls
+///          `openWindow(value: ArchivalNeighborsRequest…)` and both neighbors sheets
+///          (doc-keyed + hoisted volume-source) are now `#if os(iOS)`; the other
+///          hoisted sheets (cross-volume, collection detail, person) are unchanged
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -61,8 +66,13 @@ struct CompilationView: View {
     let section: VolumeSection
 
     @Environment(AppState.self) private var appState
+    #if os(macOS)
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
-    /// When set, presents the Archival Neighbors sheet for a document row.
+    /// When set, presents the Archival Neighbors sheet for a document row (iOS only —
+    /// on macOS the row action opens the S6 Archival Neighbors window instead).
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
     /// Hoisted presentation targets for the section-emitting front-matter subviews
     /// (`VolumeSourcesView` / `FrontMatterPersonsView`) — see the List-level sheets in
@@ -138,6 +148,10 @@ struct CompilationView: View {
                 Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
             }
         }
+        // The two Archival Neighbors presentations are iOS-only (S6): on macOS the
+        // row actions open the value-based Archival Neighbors window instead, so
+        // neither target binding is ever set there.
+        #if os(iOS)
         .sheet(item: $archivalNeighborsTarget) { key in
             ArchivalNeighborsSheet(appState: appState, docKey: key)
                 .environment(appState)
@@ -162,6 +176,7 @@ struct CompilationView: View {
             }
             .environment(appState)
         }
+        #endif
         .sheet(item: $crossVolumeTarget) { target in
             VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
                 .environment(appState)
@@ -295,11 +310,21 @@ struct CompilationView: View {
                     .buttonStyle(.plain)
                     .contextMenu {
                         Button {
+                            // S6: window on macOS (browsable beside the document);
+                            // sheet on iOS.
+                            #if os(macOS)
+                            openWindow(value: ArchivalNeighborsRequest.document(
+                                volumeId:     doc.volumeId,
+                                documentId:   doc.documentId,
+                                documentYear: nil
+                            ))
+                            #else
                             archivalNeighborsTarget = ArchivalNeighborsDocKey(
                                 volumeId:     doc.volumeId,
                                 documentId:   doc.documentId,
                                 documentYear: nil
                             )
+                            #endif
                         } label: {
                             Label(String(localized: "browser.compilation.archivalNeighbors",
                                          defaultValue: "Archival Neighbors…"),

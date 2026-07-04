@@ -62,12 +62,24 @@ import SwiftUI
 ///          direct key paths only — the Phase-4 alias fallback is excluded (cost:
 ///          it fans out per record; see `archivalNeighborCounts`), so an opened
 ///          sheet can exceed its badge (including 0 → N) when the fallback fires.
+///   1.6 — Session 2026-07-04 (Source Explorer Phase 5 S6): on macOS the neighbors
+///          affordance opens the Archival Neighbors WINDOW
+///          (`openWindow(value: ArchivalNeighborsRequest(volumeSource:))`) instead of
+///          setting the hoisted sheet binding — `openWindow` is an action, not a
+///          presentation modifier, so it is safe inside this section-emitting view.
+///          `sourceNeighborsTarget` is now written on iOS only.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
     let volumeId: String
 
     @Environment(AppState.self) private var appState
+    #if os(macOS)
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    /// Calling `openWindow` from row content is safe — unlike presentation modifiers,
+    /// it is an action, so the Group/Section-in-List anchoring rule does not apply.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var sources: [VolumeSourceEntry] = []
     @State private var isLoading = true
@@ -78,6 +90,8 @@ struct VolumeSourcesView: View {
     /// collapsing the outline's disclosure state.
     @State private var didLoad = false
     /// When set by a row's button, the PARENT presents the Archival Neighbors sheet.
+    /// **iOS only** — on macOS the row opens the S6 Archival Neighbors window directly
+    /// and this binding is never written.
     ///
     /// Presentation state is deliberately hoisted to the embedding view: this view emits
     /// list sections, and modifiers attached to `Group`/`Section` inside `List` content
@@ -235,7 +249,13 @@ struct VolumeSourcesView: View {
                         if let authority {
                             presented.aliasFallback = .init(record: authority)
                         }
+                        #if os(macOS)
+                        // S6: neighbors open in their own window (browsable beside
+                        // the reading window); iOS keeps the hoisted parent sheet.
+                        openWindow(value: ArchivalNeighborsRequest(volumeSource: presented))
+                        #else
                         sourceNeighborsTarget = presented
+                        #endif
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: "archivebox")

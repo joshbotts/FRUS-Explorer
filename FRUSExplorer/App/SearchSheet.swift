@@ -78,6 +78,11 @@ import SwiftUI
 ///          a separate window per the user's "Prefer tabs" setting since document
 ///          windows share a `WindowGroup`. Default click still opens in the main
 ///          window (`navigateToResult` → `pendingBrowseDocument`).
+///   1.11 — Session 2026-07-04 (Source Explorer Phase 5 S6): the result row's
+///          "Archival Neighbors…" action opens the value-based Archival Neighbors
+///          window (`openWindow(value: ArchivalNeighborsRequest.document…)`) instead
+///          of a sheet, so the neighbors list survives row navigation; the
+///          `archivalNeighborsTarget` state and its `.sheet` were removed
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -91,8 +96,6 @@ struct MacSearchWindowView: View {
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
-    /// When set, presents the Archival Neighbors sheet for a search result's document.
-    @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
 
     /// All user tags fetched from SwiftData. Passed to `SearchResultRow` so tag UUID
     /// strings in results can be resolved to human-readable names.
@@ -178,10 +181,6 @@ struct MacSearchWindowView: View {
             if let filterVM = searchVM.filterVM {
                 SearchFilterView(vm: filterVM)
             }
-        }
-        .sheet(item: $archivalNeighborsTarget) { key in
-            ArchivalNeighborsSheet(appState: appState, docKey: key)
-                .environment(appState)
         }
         .sheet(isPresented: $showCitationLookup) {
             CitationLookupView()
@@ -788,11 +787,13 @@ struct MacSearchWindowView: View {
                         )
                     }
                     Button {
-                        archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                        // S6: Archival Neighbors opens in its own window so the
+                        // result list survives every row navigation.
+                        openWindow(value: ArchivalNeighborsRequest.document(
                             volumeId:     result.volumeId,
                             documentId:   result.documentId,
                             documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
-                        )
+                        ))
                     } label: {
                         Label(
                             String(localized: "search.result.archivalNeighbors",

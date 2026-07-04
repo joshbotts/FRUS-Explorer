@@ -39,18 +39,29 @@ import SwiftUI
 ///          Archival Neighbors action runs `IndexingPipeline.collectionNeighbors`
 ///          (the same OR-union clause the S5 count uses), so the sheet total always
 ///          equals the "N documents in M volumes" line
+///   1.2 — Session 2026-07-04 (Source Explorer Phase 5 S6): both Archival Neighbors
+///          actions (collection-level and class sub-series) open the value-based
+///          window on macOS (`ArchivalNeighborsRequest.collection` /
+///          `.decimalClass`); the sheet, its target, and its loader are now iOS-only
 struct CollectionDetailView: View {
 
     /// The bundled authority record being shown.
     let record: AuthorityCollectionRecord
 
     @Environment(AppState.self) private var appState
+    #if os(macOS)
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     /// The S5 local counts, loaded from the user's index on appear.
     @State private var localStats: IndexingPipeline.CollectionLocalStats? = nil
+    #if os(iOS)
     /// When set, the Archival Neighbors sheet presents for the collection (or one of
-    /// its class-keyed sub-series). Anchored once, on this view's `List`.
+    /// its class-keyed sub-series). Anchored once, on this view's `List`. iOS only —
+    /// macOS opens the S6 Archival Neighbors window instead.
     @State private var neighborsTarget: CollectionNeighborsTarget? = nil
+    #endif
 
     /// Maximum alias forms shown in the Overview section.
     private static let aliasDisplayCap = 6
@@ -71,13 +82,13 @@ struct CollectionDetailView: View {
                                 defaultValue: "Collection"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        #endif
         .sheet(item: $neighborsTarget) { target in
             ArchivalNeighborsSheet(appState: appState) {
                 await loadNeighbors(for: target)
             }
             .environment(appState)
         }
+        #endif
         .task {
             await loadLocalStats()
         }
@@ -175,7 +186,13 @@ struct CollectionDetailView: View {
                         Int64(stats.documentCount), Int64(stats.volumeCount)))
                         .font(.callout)
                     Button {
+                        // S6: window on macOS (the neighbor list is a work list —
+                        // it must survive row navigation); sheet on iOS.
+                        #if os(macOS)
+                        openWindow(value: ArchivalNeighborsRequest(collectionRecord: record))
+                        #else
                         neighborsTarget = CollectionNeighborsTarget(decimalClass: nil)
+                        #endif
                     } label: {
                         Label(String(localized: "collection.detail.neighbors",
                                      defaultValue: "Show Archival Neighbors"),
@@ -253,7 +270,11 @@ struct CollectionDetailView: View {
                     Spacer(minLength: 8)
                     if let cls = child.decimalClass {
                         Button {
+                            #if os(macOS)
+                            openWindow(value: ArchivalNeighborsRequest.decimalClass(cls))
+                            #else
                             neighborsTarget = CollectionNeighborsTarget(decimalClass: cls)
+                            #endif
                         } label: {
                             Image(systemName: "archivebox")
                         }
@@ -288,7 +309,10 @@ struct CollectionDetailView: View {
         )) ?? IndexingPipeline.CollectionLocalStats(documentCount: 0, volumeCount: 0)
     }
 
+    #if os(iOS)
     /// Runs the Archival Neighbors query for the collection (or a class sub-series).
+    /// iOS sheet loader only — the macOS window reconstructs the identical queries
+    /// from its `ArchivalNeighborsRequest` value.
     ///
     /// The collection-level query is `IndexingPipeline.collectionNeighbors` — the
     /// same OR-union clause `localCollectionStats` counts with, so the sheet's total
@@ -306,18 +330,24 @@ struct CollectionDetailView: View {
             recordGroup: record.recordGroup,
             names: [record.name] + record.aliases)) ?? ([], 0, nil)
     }
+    #endif
 }
+
+#if os(iOS)
 
 // MARK: - CollectionNeighborsTarget
 
 /// Identifiable `.sheet(item:)` target for the detail view's Archival Neighbors
 /// actions: `decimalClass == nil` queries the collection itself; a class key queries
-/// one class-keyed sub-series.
+/// one class-keyed sub-series. iOS only — macOS routes both actions to the S6
+/// Archival Neighbors window via `ArchivalNeighborsRequest`.
 private struct CollectionNeighborsTarget: Identifiable {
     /// The sub-series class key, or `nil` for the collection-level query.
     let decimalClass: String?
     let id = UUID()
 }
+
+#endif
 
 // MARK: - CollectionDetailSheet
 

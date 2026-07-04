@@ -3675,6 +3675,10 @@ private struct DiscoveredMetadataRow: View {
 ///   1.2 — Session 170: pushed into the detail column instead of presented as a sheet
 ///   1.3 — Session 2026-07-03: full-title header above the routed content — the window
 ///          title truncates long chapter/compilation titles
+///   1.4 — Session 2026-07-04 (Source Explorer Phase 5 S6): the Archival Neighbors
+///          sheet for volume-source rows removed — `VolumeSourcesView` opens the
+///          value-based Archival Neighbors window directly on macOS, so the hoisted
+///          binding is never set here anymore
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
@@ -3688,6 +3692,9 @@ private struct CorpusSectionDocumentView: View {
     @State private var isLoading = true
     /// Hoisted presentation targets for the section-emitting front-matter subviews —
     /// the sheets anchor on this view's Lists, exactly once (see the body comments).
+    /// `sourceNeighborsTarget` is required by `VolumeSourcesView`'s shared init but is
+    /// never written on macOS (S6): the row action opens the Archival Neighbors
+    /// window directly, so no sheet anchors for it here.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
     @State private var crossVolumeTarget: CrossVolumeTarget? = nil
     /// Hoisted Collection-detail target (Phase 4) — presented on this view's List.
@@ -3754,7 +3761,10 @@ private struct CorpusSectionDocumentView: View {
                     }
             } else if isSourcesSection {
                 // VolumeSourcesView emits Section content and must live inside a List.
-                // Both sheets anchor HERE on the List (see above).
+                // The remaining sheets anchor HERE on the List (see above). No sheet
+                // for `sourceNeighborsTarget`: on macOS the neighbors affordance opens
+                // the S6 Archival Neighbors window from the row action, so the binding
+                // is never set (it exists only for the shared iOS init).
                 List {
                     VolumeSourcesView(volumeId: volumeId,
                                       sourceNeighborsTarget: $sourceNeighborsTarget,
@@ -3762,20 +3772,6 @@ private struct CorpusSectionDocumentView: View {
                                       collectionDetailTarget: $collectionDetailTarget)
                 }
                 .listStyle(.inset)
-                .sheet(item: $sourceNeighborsTarget) { target in
-                    ArchivalNeighborsSheet(appState: appState) {
-                        guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
-                        return (try? await pipeline.archivalNeighbors(
-                            forLotFile:   target.lotFile,
-                            recordGroup:  target.recordGroup,
-                            series:       target.series,
-                            repository:   target.repository,
-                            decimalClass: target.decimalClass,
-                            aliasFallback: target.aliasFallback
-                        )) ?? ([], 0, nil)
-                    }
-                    .environment(appState)
-                }
                 .sheet(item: $crossVolumeTarget) { target in
                     VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
                         .environment(appState)

@@ -863,3 +863,88 @@ struct ArchivalNeighborMatchingTests {
         #expect(ParsedSourceNote.cfpfFile(fileIdentifier: "P-reel 12").archivalNeighborKey == nil)
     }
 }
+
+// MARK: - ArchivalNeighborsRequestTests (Source Explorer Phase 5, S6)
+
+/// The macOS Archival Neighbors window hand-off value: every case must survive a
+/// Codable round-trip (SwiftUI restores the window from the encoded value), the
+/// convenience initializers must map surface targets losslessly, and the flattened
+/// alias fallback must reconstruct exactly what the sheet loader used to pass.
+struct ArchivalNeighborsRequestTests {
+
+    /// Encodes then decodes a request and expects payload equality.
+    private func roundTrip(_ request: ArchivalNeighborsRequest) throws -> ArchivalNeighborsRequest {
+        let data = try JSONEncoder().encode(request)
+        return try JSONDecoder().decode(ArchivalNeighborsRequest.self, from: data)
+    }
+
+    @Test("every request shape survives the Codable round-trip window restoration relies on")
+    func codableRoundTrip() throws {
+        let requests: [ArchivalNeighborsRequest] = [
+            .document(volumeId: "frus1961-63v01", documentId: "d42", documentYear: 1962),
+            .document(volumeId: "frus1961-63v01", documentId: "d42", documentYear: nil),
+            .volumeSource(lotFile: "64 D 199", recordGroup: "59", series: "PPS Files",
+                          repository: nil, decimalClass: nil,
+                          aliasLotFileNorm: "64D199", aliasNames: ["PPS Files", "Policy Planning Staff Files"]),
+            .volumeSource(lotFile: nil, recordGroup: nil, series: "National Security Files",
+                          repository: "Kennedy Library", decimalClass: nil,
+                          aliasLotFileNorm: nil, aliasNames: []),
+            .collection(lotFileNorm: "64D199", repository: nil, recordGroup: "59",
+                        names: ["PPS Files", "Policy Planning Staff Files"]),
+            .decimalClass("POL 27 ARAB-ISR")
+        ]
+        for request in requests {
+            #expect(try roundTrip(request) == request)
+        }
+    }
+
+    @Test("docKey init maps the document-keyed surfaces' sheet item losslessly")
+    func docKeyInit() {
+        let key = ArchivalNeighborsDocKey(volumeId: "frus1969-76v33", documentId: "d7", documentYear: 1971)
+        #expect(ArchivalNeighborsRequest(docKey: key)
+                == .document(volumeId: "frus1969-76v33", documentId: "d7", documentYear: 1971))
+    }
+
+    @Test("volumeSource init flattens the alias fallback and reconstruction restores it")
+    func volumeSourceAliasFallbackRoundTrip() {
+        var target = VolumeSourceNeighborsTarget(
+            lotFile: "64 D 199", recordGroup: "59", series: "PPS Files",
+            repository: nil, decimalClass: nil)
+        target.aliasFallback = IndexingPipeline.CollectionAliasFallback(
+            lotFileNorm: "64D199", names: ["PPS Files", "Policy Planning Staff Files"])
+        let request = ArchivalNeighborsRequest(volumeSource: target)
+        #expect(request.reconstructedAliasFallback == target.aliasFallback)
+
+        // No fallback attached → none reconstructed (nil and empty are "no fallback").
+        let bare = ArchivalNeighborsRequest(volumeSource: VolumeSourceNeighborsTarget(
+            lotFile: nil, recordGroup: "84", series: "Saigon Embassy Files",
+            repository: nil, decimalClass: nil))
+        #expect(bare.reconstructedAliasFallback == nil)
+
+        // Non-volumeSource shapes never carry a fallback.
+        #expect(ArchivalNeighborsRequest.decimalClass("POL 27").reconstructedAliasFallback == nil)
+    }
+
+    @Test("collectionRecord init carries the record keys and the canonical-name-first form list")
+    func collectionRecordInit() {
+        let record = AuthorityCollectionRecord(
+            id: "lot:64D199", name: "PPS Files", repository: nil, recordGroup: "59",
+            lotFileNorm: "64D199", aliases: ["Policy Planning Staff Files"],
+            volumeIds: ["frus1952-54v02"])
+        #expect(ArchivalNeighborsRequest(collectionRecord: record)
+                == .collection(lotFileNorm: "64D199", repository: nil, recordGroup: "59",
+                               names: ["PPS Files", "Policy Planning Staff Files"]))
+    }
+
+    @Test("value identity drives window reuse: equal payloads focus, distinct payloads spawn")
+    func hashableIdentity() {
+        let a = ArchivalNeighborsRequest.document(volumeId: "v", documentId: "d1", documentYear: nil)
+        let b = ArchivalNeighborsRequest.document(volumeId: "v", documentId: "d1", documentYear: nil)
+        let c = ArchivalNeighborsRequest.document(volumeId: "v", documentId: "d2", documentYear: nil)
+        #expect(a == b)
+        #expect(a.hashValue == b.hashValue)
+        #expect(a != c)
+        #expect(ArchivalNeighborsRequest.decimalClass("POL 27")
+                != ArchivalNeighborsRequest.decimalClass("POL 27 ARAB-ISR"))
+    }
+}
