@@ -1,7 +1,10 @@
 # Big Picture: Analytics Architecture — Corpus Analytics vs. Series Analytics
 
-**Date:** 2026-07-03
-**Status:** Recommendations (no code changes yet)
+**Date:** 2026-07-03 (roadmap statuses updated 2026-07-04)
+**Status:** Blueprint. A subset is now scheduled — see
+[`Analytics-Session-Plan.md`](Analytics-Session-Plan.md) (2026-07-04), which formalizes the
+enabling prep + the whole Series feature + four Corpus content sessions. The remaining
+priorities (8, 10, 11, 12) are **postponed** — marked in the roadmap table below.
 **Supersedes:** `BigPicture-CorpusAnalytics-Roadmap.md` (2026-07-02) — this revision splits that
 roadmap's 12 recommendations across two distinct features.
 
@@ -207,24 +210,50 @@ All items below are document-content analysis over the local FTS5 index and enti
 Sequenced so Series Analytics stands up first as a self-contained, zero-index feature (it is
 small and unblocks the Research Guide integration), then the high-value corpus content items.
 
-| Priority | Item | Feature | New data? | Effort |
-|---|---|---|---|---|
-| 1 | Series Production & Timeliness Dashboard (S1) | Series | No | S |
-| 2 | Corpus-baseline normalization toggle (C1) | Corpus | No | S |
-| 3 | Administration Production Profiles (S2) | Series | No (small lookup) | S–M |
-| 4 | Person trajectory + comparison; most-mentioned-by-era (C2, part) | Corpus | No | M |
-| 5 | Archival Sourcing Over Time (S4) | Series | No | M |
-| 6 | Volume Organization & Geographic Emphasis (S3) | Series | No | M |
-| 7 | Cross-reference statistics (C3) | Corpus | No | M |
-| 8 | Geographic/topic content + "By Administration" axis (C4, C5) | Corpus | No | M |
-| 9 | Person co-mention network + relationship dynamics (C2, rest) | Corpus | No | M–L |
-| 10 | `place_mentions` + country attention (C6) | Corpus | **Yes** (schema) | L |
-| 11 | Document similarity / "More like this" (C7) | Corpus | No | M |
-| 12 | VIAF/Wikidata person enrichment (C8) | Corpus | External fetch | L |
+The **Scheduled** column maps each priority to its session in
+[`Analytics-Session-Plan.md`](Analytics-Session-Plan.md); **Postponed** rows are not
+scheduled there (tracked here only).
 
-Items 1–9 run on data already available (bundled JSON + current index); the one schema
-change (10) stays deferred until the entity UX proves out. Items 1, 3, 5, 6 constitute the
-whole Series Analytics feature and can ship as one Research-Guide-integrated milestone.
+| Priority | Item | Feature | New data? | Effort | Scheduled |
+|---|---|---|---|---|---|
+| 1 | Series Production & Timeliness Dashboard (S1) | Series | No | S | **SA-1** |
+| 2 | Corpus-baseline normalization toggle (C1) | Corpus | No | S | **CA-4** |
+| 3 | Administration Production Profiles (S2) | Series | No (small lookup) | S–M | **SA-2** |
+| 4 | Person trajectory + comparison; most-mentioned-by-era (C2, part) | Corpus | No | M | **CA-5** |
+| 5 | Archival Sourcing Over Time (S4) | Series | No | M | **SA-3** |
+| 6 | Volume Organization & Geographic Emphasis (S3) | Series | No | M | **SA-2** |
+| 7 | Cross-reference statistics (C3) | Corpus | No | M | **CA-6** |
+| 8 | Geographic/topic content + "By Administration" axis (C4, C5) | Corpus | No | M | **POSTPONED** |
+| 9 | Person co-mention network + relationship dynamics (C2, rest) | Corpus | No | M–L | **CA-8** |
+| 10 | `place_mentions` + country attention (C6) | Corpus | **Yes** (schema) | L | **POSTPONED** |
+| 11 | Document similarity / "More like this" (C7) | Corpus | No | M | **POSTPONED** |
+| 12 | VIAF/Wikidata person enrichment (C8) | Corpus | External fetch | L | **POSTPONED** |
+
+Items 1–7 and 9 run on data already available (bundled JSON + current index) and are
+scheduled across the enabling prep, the Series milestone (priorities 1, 3, 5, 6 = the whole
+Series feature, one Research-Guide-integrated milestone), and the selected Corpus content
+sessions.
+
+### Postponed (not scheduled)
+
+Four priorities are deliberately held back from the current plan:
+
+- **Priority 8 — Geographic/topic content + "By Administration" axis (C4, C5).** Corpus
+  regional-attention charts and an administration analytics axis. Deferred to keep the
+  Corpus content sessions focused on the person/citation entity work (CA-5, CA-6, CA-8);
+  the taxonomy-`places` derivation it needs overlaps with Series SA-2, so it is cheaper to
+  revisit after that ships.
+- **Priority 10 — `place_mentions` + country attention (C6).** The one **schema change**
+  (a new index table + re-index). Stays deferred until the entity-analytics UX (CA-5 /
+  CA-8) proves out, per the original blueprint gating.
+- **Priority 11 — Document similarity / "More like this" (C7).** A per-document DocumentView
+  affordance, not a chart — separable from the analytics chassis work and postponable
+  without blocking anything.
+- **Priority 12 — VIAF/Wikidata person enrichment (C8).** The **only external-fetch** item;
+  postponed to keep the scheduled work fully on-device/offline-first.
+
+When any of these is picked up, fold it into `Analytics-Session-Plan.md` as a new session
+and flip its **Scheduled** cell above.
 
 ## Cross-cutting implementation notes
 
