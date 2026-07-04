@@ -179,6 +179,43 @@ struct NavigationStateTests {
         let state = AppState()
         #expect(state.pendingVolumeGraph == nil)
     }
+
+    @Test("AppState.pendingNoteComposer initialises to nil")
+    func pendingNoteComposerInitiallyNil() {
+        let state = AppState()
+        #expect(state.pendingNoteComposer == nil)
+    }
+}
+
+// MARK: - NoteComposerRequestTests
+
+/// Tests `NoteComposerRequest` hand-off identity (Session 2026-07-04, UI audit C1).
+///
+/// `NoteComposerWindowView` re-keys the editor with `.id(request.handoffId)`, so two
+/// hand-offs for the same document must still compare distinct — otherwise a second
+/// "Add note" on the same document would silently reuse the stale editor state.
+struct NoteComposerRequestTests {
+
+    @Test("Two requests for the same document are distinct hand-offs")
+    func sameDocumentDistinctHandoffs() {
+        let a = NoteComposerRequest(documentId: "d1", volumeId: "frus1969-76v01")
+        let b = NoteComposerRequest(documentId: "d1", volumeId: "frus1969-76v01")
+        #expect(a != b)
+        #expect(a.handoffId != b.handoffId)
+    }
+
+    @Test("Explicit handoffId round-trips and equal values compare equal")
+    func explicitHandoffIdEquality() {
+        let id = UUID()
+        let noteId = UUID()
+        let a = NoteComposerRequest(documentId: "d1", volumeId: "v1",
+                                    noteId: noteId, handoffId: id)
+        let b = NoteComposerRequest(documentId: "d1", volumeId: "v1",
+                                    noteId: noteId, handoffId: id)
+        #expect(a == b)
+        #expect(a.noteId == noteId)
+        #expect(a.linkedHighlightId == nil)
+    }
 }
 
 // MARK: - DocumentWindowIDTests

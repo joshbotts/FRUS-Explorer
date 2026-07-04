@@ -112,6 +112,9 @@ import CloudKit
 ///          Corpus Browser's per-volume graph buttons hand the volume to the
 ///          frus.crossReferenceGraph window's volume-connections stage instead of
 ///          presenting VolumeConnectionGraphView in a local sheet
+///   4.5 — Session 2026-07-04 (macOS UI audit C1): pendingNoteComposer added — the
+///          macOS research-note editor is the frus.noteComposer utility window
+///          (document stays readable while composing) instead of a modal sheet
 
 // MARK: - CloudKitSyncState
 
@@ -593,6 +596,21 @@ final class AppState {
     /// `pendingCollectionSelection` pattern. macOS-only in practice; iOS presents
     /// `NARACatalogLookupView` as a local sheet.
     var pendingNARALookup: String? = nil
+
+    /// Cross-window hand-off into the research-note composer window (UI audit C1):
+    /// the document context (and optional existing note / linked highlight) a note
+    /// should be composed against.
+    ///
+    /// Set by the macOS note entry points (ResearchStripView's "Add note" and
+    /// highlight-note buttons; MacDocumentView's research-panel note rows and
+    /// "Add Note" button) immediately before `openWindow(id: "frus.noteComposer")`.
+    /// `NoteComposerWindowView` consumes it (`.task` for a freshly created window,
+    /// `.onChange` for one already open) and clears it — mirroring the
+    /// `pendingNARALookup` pattern, including the fresh view identity per hand-off
+    /// (`handoffId`) so the editor repopulates. One composer at a time by design:
+    /// a new hand-off replaces the window's content. macOS-only in practice; iOS
+    /// keeps its local `ResearchNoteEditorView` sheets.
+    var pendingNoteComposer: NoteComposerRequest? = nil
 
     /// `EducationPage.id` to open the Research Guide to directly, or `nil` to
     /// open at the first page.

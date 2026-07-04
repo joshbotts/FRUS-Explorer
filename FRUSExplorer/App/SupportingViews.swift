@@ -93,6 +93,15 @@ final class HighlightCoordinator {
 ///          `HighlightCoordinator.makeExcerptCaptureAction` (built by MacDocumentView
 ///          from the flat text) so the frozen passage matches its stored anchors and
 ///          never embeds `data-skip` footnote-marker digits from `sel.toString()`
+///   1.6 — Session 2026-07-04 (macOS UI audit C1): "Add note" and "Add Note to
+///          Highlight" open the frus.noteComposer window via `openNoteComposer`
+///          (pendingNoteComposer hand-off) instead of presenting
+///          `ResearchNoteEditorView` sheets over the document
+///   1.7 — Session 2026-07-04 (macOS UI audit gap 19): action buttons moved into a
+///          horizontal `ScrollView` (`stripButtons`) with the Read/Research picker
+///          pinned trailing — the strip's ~920 pt ideal width was what forced the
+///          main window's old 980 pt minWidth; scrolling lets it degrade gracefully
+///          at the new 700 pt minimum instead of truncating every label
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
@@ -120,10 +129,8 @@ struct ResearchStripView: View {
     @Environment(\.openWindow) private var openWindow
 
     @State private var showAddToCollection: Bool = false
-    @State private var showAddNote: Bool = false
     @State private var showTagPicker: Bool = false
     @State private var showHighlightColorPicker: Bool = false
-    @State private var showHighlightNoteEditor: Bool = false
     /// The selection capture pending collection choice — non-nil presents the picker
     /// in excerpt mode (Authoring Phase 5, creation path b).
     @State private var pendingExcerptCapture: CollectionExcerptCapture? = nil
@@ -159,6 +166,79 @@ struct ResearchStripView: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            // The action buttons scroll horizontally when the window is narrower
+            // than their ideal width (~920 pt with a selection active). This is
+            // what lets the main window's minWidth sit at 700 pt for side-by-side
+            // tiling on 13″ displays (UI audit gap 19) without truncating every
+            // button label; at typical widths the scroll view is inert.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    stripButtons
+                }
+            }
+
+            // Research panel toggle — segmented Read / Research picker, pinned
+            // trailing outside the scrollable region so it is always visible.
+            // Persisted via AppStorage so the preference survives document navigation.
+            Picker(
+                String(localized: "researchStrip.panelMode",
+                       defaultValue: "View mode"),
+                selection: Binding(
+                    get: { researchPanelVisible },
+                    set: { newVal in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            researchPanelVisible = newVal
+                        }
+                    }
+                )
+            ) {
+                Text(String(localized: "researchStrip.panelMode.read",
+                            defaultValue: "Read"))
+                    .tag(false)
+                Text(String(localized: "researchStrip.panelMode.research",
+                            defaultValue: "Research"))
+                    .tag(true)
+            }
+            .pickerStyle(.segmented)
+            .fixedSize()
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            .padding(.horizontal, 6)
+            .help(researchPanelVisible
+                  ? String(localized: "researchStrip.panel.hide.help",
+                           defaultValue: "Switch to focused reading view")
+                  : String(localized: "researchStrip.panel.show.help",
+                           defaultValue: "Open the Notes, Tags, and Summary panel"))
+        }
+        .frame(minHeight: 32)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+        .sheet(isPresented: $showAddToCollection) {
+            if let entry {
+                CollectionPickerSheet(entry: entry)
+            }
+        }
+        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
+            if let entry, let capture = pendingExcerptCapture {
+                CollectionPickerSheet(entry: entry, excerpt: capture)
+            }
+        }
+        .sheet(isPresented: $showTagPicker) {
+            if let entry {
+                MacTagPickerSheet(
+                    entry: entry,
+                    indexingPipeline: appState.indexingPipeline,
+                    initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
+                )
+            }
+        }
+    }
+
+    /// The strip's leading action buttons, hosted inside the horizontal scroll
+    /// region of `body`.
+    @ViewBuilder
+    private var stripButtons: some View {
             Text("Research")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.tertiary)
@@ -180,7 +260,9 @@ struct ResearchStripView: View {
                 title: "Add note",
                 systemImage: "note.text.badge.plus",
                 isDisabled: isDisabled
-            ) { showAddNote = true }
+            ) {
+                if let entry { openNoteComposer(for: entry) }
+            }
             .help(String(
                 localized: "researchStrip.addNote.help",
                 defaultValue: "Create a research note attached to this document"
@@ -279,13 +361,21 @@ struct ResearchStripView: View {
                 highlightColorPicker
             }
 
-            // Add Note to Highlight — enabled after a highlight is created
+            // Add Note to Highlight — enabled after a highlight is created.
+            // Opens the composer window with the highlight link captured in the
+            // request; the pending link clears at hand-off (the button used to
+            // persist until the editor sheet was dismissed — same lifetime).
             if highlightCoordinator.pendingHighlightLink != nil {
                 ResearchStripButton(
                     title: "Add Note",
                     systemImage: "note.text.badge.plus",
                     isDisabled: false
-                ) { showHighlightNoteEditor = true }
+                ) {
+                    if let entry, let hlId = highlightCoordinator.pendingHighlightLink {
+                        openNoteComposer(for: entry, linkedHighlightId: hlId)
+                        highlightCoordinator.pendingHighlightLink = nil
+                    }
+                }
                 .help(String(
                     localized: "researchStrip.highlightNote.help",
                     defaultValue: "Attach a research note to the highlight you just created"
@@ -405,87 +495,20 @@ struct ResearchStripView: View {
                 localized: "researchStrip.newWindow.help",
                 defaultValue: "Open this document in its own window — drag windows together for tabs"
             ))
+    }
 
-            Spacer()
-
-            // Research panel toggle — segmented Read / Research picker.
-            // Persisted via AppStorage so the preference survives document navigation.
-            Picker(
-                String(localized: "researchStrip.panelMode",
-                       defaultValue: "View mode"),
-                selection: Binding(
-                    get: { researchPanelVisible },
-                    set: { newVal in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            researchPanelVisible = newVal
-                        }
-                    }
-                )
-            ) {
-                Text(String(localized: "researchStrip.panelMode.read",
-                            defaultValue: "Read"))
-                    .tag(false)
-                Text(String(localized: "researchStrip.panelMode.research",
-                            defaultValue: "Research"))
-                    .tag(true)
-            }
-            .pickerStyle(.segmented)
-            .fixedSize()
-            #if os(macOS)
-            .controlSize(.small)
-            #endif
-            .padding(.horizontal, 6)
-            .help(researchPanelVisible
-                  ? String(localized: "researchStrip.panel.hide.help",
-                           defaultValue: "Switch to focused reading view")
-                  : String(localized: "researchStrip.panel.show.help",
-                           defaultValue: "Open the Notes, Tags, and Summary panel"))
-        }
-        .frame(minHeight: 32)
-        .background(.bar)
-        .overlay(alignment: .bottom) { Divider() }
-        .sheet(isPresented: $showAddToCollection) {
-            if let entry {
-                CollectionPickerSheet(entry: entry)
-            }
-        }
-        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
-            if let entry, let capture = pendingExcerptCapture {
-                CollectionPickerSheet(entry: entry, excerpt: capture)
-            }
-        }
-        .sheet(isPresented: $showAddNote) {
-            if let entry {
-                ResearchNoteEditorView(
-                    documentId: entry.documentId,
-                    volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId,
-                    indexingPipeline: appState.indexingPipeline
-                )
-            }
-        }
-        .sheet(isPresented: $showTagPicker) {
-            if let entry {
-                MacTagPickerSheet(
-                    entry: entry,
-                    indexingPipeline: appState.indexingPipeline,
-                    initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
-                )
-            }
-        }
-        .sheet(isPresented: $showHighlightNoteEditor, onDismiss: {
-            highlightCoordinator.pendingHighlightLink = nil
-        }) {
-            if let hlId = highlightCoordinator.pendingHighlightLink, let entry {
-                ResearchNoteEditorView(
-                    documentId: entry.documentId,
-                    volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId,
-                    linkedHighlightId: hlId,
-                    indexingPipeline: appState.indexingPipeline
-                )
-            }
-        }
+    /// Hands the document (and optional highlight link) to the research-note
+    /// composer window (UI audit C1) — composition happens beside the document,
+    /// never over it.
+    private func openNoteComposer(for entry: DocumentBrowserEntry,
+                                  linkedHighlightId: UUID? = nil) {
+        appState.pendingNoteComposer = NoteComposerRequest(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            linkedHighlightId: linkedHighlightId
+        )
+        openWindow(id: "frus.noteComposer")
+        bringMacWindowToFront(id: "frus.noteComposer")
     }
 
     // MARK: - Highlight Color Picker

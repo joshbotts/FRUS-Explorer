@@ -584,4 +584,42 @@ struct SearchDefaultsWiringTests {
         #expect(vm.includeSummaries == false)
         #expect(vm.documentTypeFilter == .documentsOnly)
     }
+
+    @Test("advancedFilterSignature changes on applied filter edits, ignores legacy fields")
+    func advancedFilterSignatureTracksAppliedFields() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchSig-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let vm = SearchViewModel(searchService: try makeService(dir: dir))
+
+        // Stable across repeated reads with no edits.
+        let base = vm.advancedFilterSignature
+        #expect(vm.advancedFilterSignature == base)
+
+        // Every field applyAdvancedFilters() copies must perturb the signature —
+        // this is what makes the macOS live filter popover (UI audit C4) apply edits.
+        vm.documentTypeFilter = .editorialNotesOnly
+        let afterType = vm.advancedFilterSignature
+        #expect(afterType != base)
+
+        vm.selectedSubseriesIds.insert("1969-76")
+        let afterScope = vm.advancedFilterSignature
+        #expect(afterScope != afterType)
+
+        vm.dateRangeEnabled = true
+        let afterDate = vm.advancedFilterSignature
+        #expect(afterDate != afterScope)
+
+        vm.personRefText = "p_N1"
+        let afterPerson = vm.advancedFilterSignature
+        #expect(afterPerson != afterDate)
+
+        // Legacy non-editable fields are deliberately excluded (cannot change while
+        // the popover is open; excluding them avoids spurious re-searches).
+        vm.phrase = "détente"
+        vm.excludedTermsText = "telegram"
+        #expect(vm.advancedFilterSignature == afterPerson)
+    }
 }

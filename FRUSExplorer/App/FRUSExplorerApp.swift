@@ -118,6 +118,12 @@ import os
 ///   4.3 — Session 2026-07-04 (macOS UI audit B5): People window scene added
 ///          (frus.people hosting PeopleWindowView) — replaces the Corpus Browser's
 ///          PersonIndexView sheet and its stacked person-detail sheet
+///   4.4 — Session 2026-07-04 (macOS UI audit C1 + gaps 16/19): Research Note
+///          composer window scene added (frus.noteComposer hosting
+///          NoteComposerWindowView) — replaces the document-window note-editor
+///          sheets; Cross-Reference Graph defaultSize 480×440 → 900×640 (Session-94
+///          class of bug: cramped for a graph canvas + legend); main window
+///          minWidth 980 → 700 so it can tile side-by-side on 13″ displays
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -578,7 +584,11 @@ struct FRUSExplorerApp: App {
             CrossReferenceGraphWindowView()
                 .environment(appState)
         }
-        .defaultSize(width: 480, height: 440)
+        // Sized for a graph canvas + side legend/info panel (UI audit gap 16).
+        // Same class of bug Session 94 fixed for Source Explorer: the old
+        // 480×440 default forced an immediate manual resize before the volume
+        // and corpus graphs were readable.
+        .defaultSize(width: 900, height: 640)
 
         // MARK: - Source Explorer Window
         Window("Source Explorer", id: "frus.sourceExplorer") {
@@ -698,6 +708,23 @@ struct FRUSExplorerApp: App {
         .defaultSize(width: 760, height: 600)
         .keyboardShortcut("k", modifiers: [.command, .shift])
 
+        // MARK: - Research Note Composer Window (UI audit C1)
+        //
+        // Utility window for composing/editing a research note while the document
+        // being annotated stays readable — the modal sheets this replaces covered
+        // the passage the user was writing about. Pending-state hand-off
+        // (`appState.pendingNoteComposer`), one composer at a time by design; a
+        // window restored at launch shows a neutral placeholder (no boot race —
+        // it renders nothing definitive without a hand-off).
+        Window(String(localized: "note.composer.window.title",
+                      defaultValue: "Research Note"),
+               id: "frus.noteComposer") {
+            NoteComposerWindowView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 560, height: 620)
+
         // MARK: - Complete History Window
         //
         // Standalone combined reading + search history list with an optional
@@ -750,14 +777,19 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 #if os(macOS)
-                // Widened from the implicit default so the toolbar's leading
-                // back button, centred document title, and trailing tool
-                // launchers (Search/Graph/Info/Research) never need to
-                // collapse into the system overflow chevron at typical
-                // window widths — that collapse was combining the custom
-                // "Search" button with the system back-history popover into
-                // a single confusing overflow menu.
-                .frame(minWidth: 980, minHeight: 600)
+                // 700 pt fits a split-screen half of a 13″ MacBook Air
+                // (≈722 pt), so the main window can tile side-by-side with a
+                // Search/Graph/Source Explorer window on small displays
+                // (UI audit gap 19; was 980). Below ~980 the trailing toolbar
+                // tool launchers progressively collapse into the system
+                // overflow chevron — at 700 the combined overflow menu (custom
+                // buttons next to the back-history popover) is mildly
+                // confusing but everything stays reachable and labelled, and
+                // graceful degradation beats forbidding tiling outright.
+                // The other former constraint — ResearchStripView's ~920 pt of
+                // action buttons — now scrolls horizontally below its ideal
+                // width, so no strip label truncates at 700.
+                .frame(minWidth: 700, minHeight: 600)
                 #endif
                 .task {
                     await bootDownloadManager()

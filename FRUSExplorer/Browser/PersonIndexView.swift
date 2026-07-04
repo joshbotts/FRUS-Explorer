@@ -226,6 +226,18 @@ private struct PersonIndexRow: View {
 /// asynchronously on appear so callers can pass any initial value (including 0) without a
 /// blocking actor call at the tap site. The "Find all mentions" button triggers a
 /// person-filtered search and dismisses the sheet.
+///
+/// ## Platform layout
+/// iOS keeps `NavigationStack` + toolbar Done. The macOS body follows the codebase's
+/// documented sheet pattern (UI audit gap 11): plain `VStack` with a header row, the
+/// shared list, and a bottom-right Done button — no `NavigationStack` chrome, which
+/// renders sidebar-style artifacts inside macOS sheets.
+///
+/// Version history:
+///   1.0 — Person rollup program: initial implementation (merge/split corrections added
+///          across Phases 2–5)
+///   1.1 — Session 2026-07-04 (macOS UI audit gap 11): macOS body normalized to
+///          VStack + bottom-right Done; shared `detailList` extracted
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
@@ -258,8 +270,84 @@ struct PersonIndexDetailSheet: View {
     private var effectiveViafId: String? { indexEntry.viafId ?? resolvedViafId }
 
     var body: some View {
+        Group {
+            #if os(macOS)
+            macBody
+            #else
+            iOSBody
+            #endif
+        }
+        .task {
+            // Browser rollup entries already carry the correct count + rollup id. A per-volume
+            // front-matter entry resolves its rollup here for the cross-corpus count and search.
+            if indexEntry.rollupId == nil,
+               let volumeId = indexEntry.sourceVolumeId,
+               let store = appState.personMentionStore {
+                if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
+                    resolvedRollupId = resolved.rollupId
+                    resolvedMentionCount = resolved.mentionCount
+                    resolvedAuthorityId = resolved.authorityId
+                    resolvedViafId = resolved.viafId
+                } else {
+                    resolvedMentionCount = 0
+                }
+            }
+            await loadCorrectionContext()
+        }
+    }
+
+    // MARK: - Platform bodies
+
+    #if os(macOS)
+    /// macOS-native sheet layout (UI audit gap 11): header row + shared list +
+    /// bottom-right Done — no `NavigationStack` chrome inside the sheet.
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(indexEntry.entry.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            detailList
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 360, minHeight: 320)
+    }
+    #else
+    /// iOS sheet layout — `NavigationStack` with an inline title and toolbar Done.
+    private var iOSBody: some View {
         NavigationStack {
-            List {
+            detailList
+                .navigationTitle(indexEntry.entry.name)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    }
+                }
+        }
+    }
+    #endif
+
+    /// The sectioned person detail shared by both platform bodies.
+    private var detailList: some View {
+        List {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(indexEntry.entry.name)
@@ -399,40 +487,6 @@ struct PersonIndexDetailSheet: View {
                                     defaultValue: "Separate a record if it refers to a different person."))
                     }
                 }
-            }
-            .navigationTitle(indexEntry.entry.name)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
-            }
-            #else
-            .frame(minWidth: 360, minHeight: 260)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
-            }
-            #endif
-        }
-        .task {
-            // Browser rollup entries already carry the correct count + rollup id. A per-volume
-            // front-matter entry resolves its rollup here for the cross-corpus count and search.
-            if indexEntry.rollupId == nil,
-               let volumeId = indexEntry.sourceVolumeId,
-               let store = appState.personMentionStore {
-                if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
-                    resolvedRollupId = resolved.rollupId
-                    resolvedMentionCount = resolved.mentionCount
-                    resolvedAuthorityId = resolved.authorityId
-                    resolvedViafId = resolved.viafId
-                } else {
-                    resolvedMentionCount = 0
-                }
-            }
-            await loadCorrectionContext()
         }
     }
 

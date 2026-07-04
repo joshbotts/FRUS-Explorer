@@ -41,10 +41,12 @@ import SwiftUI
 /// ensure the window is open before the parameters arrive.
 ///
 /// ## Advanced Filters
-/// Tapping "Advanced…" in the filter row opens `SearchFilterView` as a sheet.
-/// On dismiss, `searchVM.applyAdvancedFilters()` copies filter state back into
-/// `parameters` and bumps `parametersVersion`, which triggers a new search via
-/// `.task(id: searchVM.searchTrigger)`.
+/// Tapping "Advanced…" in the filter row opens `SearchFilterView` in a popover
+/// anchored to the button (UI audit C4). Filters apply **live**: an `.onChange`
+/// on `filterVM.advancedFilterSignature` calls `searchVM.applyAdvancedFilters()`
+/// per edit, which copies filter state into `parameters` and bumps
+/// `parametersVersion`, re-running the search via `.task(id: searchVM.searchTrigger)`
+/// while the result list stays visible behind the popover.
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; uses MacSearchViewModel)
@@ -86,6 +88,10 @@ import SwiftUI
 ///   1.12 — Session 2026-07-04 (macOS UI audit B4): "Find by Citation" opens the
 ///          frus.citationLookup window (⌘⇧F, the sibling find flow) instead of a
 ///          sheet; the `showCitationLookup` state and its `.sheet` were removed
+///   1.13 — Session 2026-07-04 (macOS UI audit C4): advanced filters became a live
+///          popover anchored to the "Advanced…" button — edits apply immediately
+///          via `.onChange(of: filterVM.advancedFilterSignature)`; the modal sheet
+///          and its `onDismiss` batch `applyAdvancedFilters()` call were removed
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -177,12 +183,6 @@ struct MacSearchWindowView: View {
         .onChange(of: appState.indexGeneration) { _, _ in
             searchVM.results = []
             searchVM.queryText = ""
-        }
-        .sheet(isPresented: $showAdvancedFilters,
-               onDismiss: { searchVM.applyAdvancedFilters() }) {
-            if let filterVM = searchVM.filterVM {
-                SearchFilterView(vm: filterVM)
-            }
         }
         .sheet(isPresented: $showSaveSearchSheet) {
             saveSearchSheet
@@ -491,8 +491,22 @@ struct MacSearchWindowView: View {
             .accessibilityLabel("Open advanced search filters")
             .help(String(
                 localized: "search.filter.advanced.help",
-                defaultValue: "Open advanced filters — phrase search, boolean mode, prefix wildcard, excluded terms, person reference"
+                defaultValue: "Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately."
             ))
+            // Live filter popover (UI audit C4): anchored to the button so the
+            // result list stays visible while filtering — the modal sheet this
+            // replaces hid the very results being narrowed. Edits apply
+            // immediately via the `advancedFilterSignature` observation below;
+            // there is no dismiss-time batch.
+            .popover(isPresented: $showAdvancedFilters, arrowEdge: .bottom) {
+                if let filterVM = searchVM.filterVM {
+                    SearchFilterView(vm: filterVM)
+                        .frame(width: 480, height: 560)
+                        .onChange(of: filterVM.advancedFilterSignature) { _, _ in
+                            searchVM.applyAdvancedFilters()
+                        }
+                }
+            }
         }
     }
 

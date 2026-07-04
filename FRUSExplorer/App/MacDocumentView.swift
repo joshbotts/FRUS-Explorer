@@ -59,6 +59,10 @@ import SwiftData
 ///   2.0 — Session 2026-07-03 (people-eval finding G): PersonDetailSheet's "Find all
 ///          mentions" searches the resolved rollup identity (matching the displayed
 ///          cross-corpus count) instead of the cross-volume-colliding raw `personRef`
+///   2.1 — Session 2026-07-04 (macOS UI audit C1): research-panel note rows and
+///          "Add Note" open the frus.noteComposer window (`openNoteComposer`,
+///          pendingNoteComposer hand-off) instead of `ResearchNoteEditorView`
+///          sheets — the document stays readable while composing
 @MainActor
 struct MacDocumentView: View {
 
@@ -70,6 +74,8 @@ struct MacDocumentView: View {
     @Environment(\.modelContext) private var modelContext
     /// Opens external (non-FRUS) cross-reference URLs in the system browser.
     @Environment(\.openURL) private var openURL
+    /// Opens the research-note composer window (UI audit C1).
+    @Environment(\.openWindow) private var openWindow
 
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
@@ -82,8 +88,6 @@ struct MacDocumentView: View {
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     @State private var showTagPicker = false
-    @State private var showAddNote = false
-    @State private var noteToEdit: ResearchNote? = nil
 
     @Query private var highlights:              [DocumentHighlight]
     @Query private var documentNotes:           [ResearchNote]
@@ -219,23 +223,6 @@ struct MacDocumentView: View {
                 entry: entry,
                 indexingPipeline: appState.indexingPipeline,
                 initialTagIds: Set(documentTagAssignments.map(\.tagId))
-            )
-        }
-        .sheet(isPresented: $showAddNote) {
-            ResearchNoteEditorView(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                activeProjectId: appState.activeProjectId,
-                indexingPipeline: appState.indexingPipeline
-            )
-        }
-        .sheet(item: $noteToEdit) { note in
-            ResearchNoteEditorView(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                activeProjectId: appState.activeProjectId,
-                noteToEdit: note,
-                indexingPipeline: appState.indexingPipeline
             )
         }
         .sheet(item: $vm.selectedPerson) { person in
@@ -483,7 +470,7 @@ struct MacDocumentView: View {
                 Divider()
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(documentNotes) { note in
-                        Button { noteToEdit = note } label: {
+                        Button { openNoteComposer(noteId: note.id) } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(note.bodyText.isEmpty
                                      ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
@@ -503,7 +490,7 @@ struct MacDocumentView: View {
                         Divider()
                     }
                     Button {
-                        showAddNote = true
+                        openNoteComposer()
                     } label: {
                         Label(
                             String(localized: "panel.notes.add", defaultValue: "Add Note"),
@@ -560,6 +547,19 @@ struct MacDocumentView: View {
                 .padding(.vertical, 10)
             }
         }
+    }
+
+    /// Hands this document (and optionally an existing note) to the research-note
+    /// composer window (UI audit C1) — the note is composed beside the document
+    /// instead of in a sheet covering the passage being annotated.
+    private func openNoteComposer(noteId: UUID? = nil) {
+        appState.pendingNoteComposer = NoteComposerRequest(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            noteId: noteId
+        )
+        openWindow(id: "frus.noteComposer")
+        bringMacWindowToFront(id: "frus.noteComposer")
     }
 
     /// Reusable accordion section header: label + optional badge + chevron.
