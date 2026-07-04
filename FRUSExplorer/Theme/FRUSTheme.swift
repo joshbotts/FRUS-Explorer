@@ -165,6 +165,9 @@ struct FeatureInfoButton: View {
 ///
 /// Version history:
 ///   1.0 — Session 91: initial design token system + shared components
+///   1.1 — Dynamic Type pass 2026-07-04: added scalable `captionFont` /
+///         `captionSmallFont` text tokens + the size→text-style convention;
+///         `EditorialNoteBadge` and `FRUSTagChip` now use scalable caption text.
 enum FRUSTheme {
 
     // MARK: Typography
@@ -174,6 +177,49 @@ enum FRUSTheme {
     static let sectionLabelSize: CGFloat = 10
     static let sectionLabelWeight: Font.Weight = .medium
     static let sectionLabelKerning: CGFloat = 0.8
+
+    // MARK: Dynamic Type — scalable text tokens
+    //
+    // ## Convention (Dynamic Type pass, 2026-07-04)
+    //
+    // Fixed `.font(.system(size: N))` does NOT respond to the user's Dynamic Type
+    // setting, so any *text* using it is frozen at one size — a Severity-1 a11y gap
+    // (UI-Audit §3 A1). The idiomatic fix is to map each fixed size to the nearest
+    // built-in **text style**, which scales automatically. Use this table when
+    // converting a `.system(size: N)` text site:
+    //
+    // | Fixed pt | Text style   | Typical use                                  |
+    // |----------|--------------|----------------------------------------------|
+    // | 10       | `.caption2`  | smallest captions, section-label glyphs      |
+    // | 11–12    | `.caption`   | caption / metadata / badge text              |
+    // | 13       | `.footnote`  | dense secondary text                         |
+    // | 15       | `.subheadline` | secondary body                             |
+    // | 17       | `.body`      | primary body text                            |
+    // | 20       | `.title3`    | small headings                               |
+    // | 28+      | `.largeTitle`| hero / empty-state glyphs (see below)        |
+    //
+    // For a *non-standard* size that must stay proportional to a specific style
+    // (e.g. a hero glyph that should track the largest text but at a bespoke point
+    // size), declare `@ScaledMetric(relativeTo: .largeTitle) private var glyph: CGFloat = N`
+    // in the view and feed it to `.font(.system(size: glyph))`. Cap runaway growth
+    // on decorative hero glyphs with `.dynamicTypeSize(...DynamicTypeSize.accessibility3)`.
+    //
+    // Do NOT convert: graph-canvas node/edge labels (they scale with graph zoom,
+    // not Dynamic Type), the word cloud's bespoke `word.fontSize` system, and
+    // monospaced count/tally badges that align in a grid.
+    //
+    // The two tokens below are the scalable equivalents of `captionSize` /
+    // `captionSmallSize` for the caption text that used them. The CGFloat
+    // constants above are retained for layout metrics and macOS chrome not yet
+    // migrated; new *text* sites should prefer these `Font` tokens or a text style.
+
+    /// Scalable equivalent of `captionSize` (11 pt) — maps to the `.caption`
+    /// text style so caption text tracks the user's Dynamic Type setting.
+    static let captionFont: Font = .caption
+
+    /// Scalable equivalent of `captionSmallSize` / `sectionLabelSize` (10 pt) —
+    /// maps to the `.caption2` text style for the smallest scalable caption text.
+    static let captionSmallFont: Font = .caption2
 
     // MARK: Document Layout
 
@@ -318,7 +364,7 @@ enum FRUSTheme {
 struct EditorialNoteBadge: View {
     var body: some View {
         Text(String(localized: "badge.editorialNote", defaultValue: "Editorial note"))
-            .font(.system(size: FRUSTheme.captionSmallSize, weight: .medium))
+            .font(FRUSTheme.captionSmallFont.weight(.medium))
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(FRUSTheme.editorialNoteBackground)
@@ -348,11 +394,11 @@ struct FRUSTagChip: View {
     var body: some View {
         HStack(spacing: 3) {
             Text(label)
-                .font(.system(size: FRUSTheme.captionSize))
+                .font(FRUSTheme.captionFont)
             if let onRemove {
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
-                        .font(.system(size: FRUSTheme.captionSize - 1, weight: .semibold))
+                        .font(FRUSTheme.captionSmallFont.weight(.semibold))
                 }
                 .buttonStyle(.plain)
             }

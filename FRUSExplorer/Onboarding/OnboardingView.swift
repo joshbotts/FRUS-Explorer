@@ -36,6 +36,8 @@ import SwiftData
 ///   2.0 — Session 49: redesigned to three-step flow
 ///   3.0 — New UI: self-contained flow; project setup removed (created silently)
 ///   3.1 — Replaced flat volume list with scope picker (corpus/subseries/volume)
+///   3.2 — Dynamic Type pass 2026-07-04: hero glyphs scale (`@ScaledMetric`,
+///         capped at accessibility3); StepDot label uses `.caption2`.
 @MainActor
 struct OnboardingView: View {
 
@@ -43,6 +45,12 @@ struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var step: OnboardingStep = .welcome
+
+    /// Point size of the welcome / ready hero glyphs, scaled with Dynamic Type
+    /// (relative to `.largeTitle`) so the icon grows with the body text it pairs
+    /// with. Growth is capped at accessibility3 at the glyph sites so extreme
+    /// sizes don't overwhelm the step layout.
+    @ScaledMetric(relativeTo: .largeTitle) private var heroGlyphSize: CGFloat = 56
 
     // MARK: - Step 2 State
 
@@ -99,7 +107,8 @@ struct OnboardingView: View {
     private var welcomeView: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 56))
+                .font(.system(size: heroGlyphSize))
+                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                 .foregroundStyle(.tint)
                 .padding(.bottom, 4)
 
@@ -268,7 +277,8 @@ struct OnboardingView: View {
     private var readyView: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 56))
+                .font(.system(size: heroGlyphSize))
+                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                 .foregroundStyle(.green)
                 .padding(.bottom, 4)
 
@@ -506,6 +516,9 @@ private struct StepDot: View {
                 Circle()
                     .fill(isCurrent ? Color.accentColor : (isPast ? Color.accentColor.opacity(0.3) : Color.secondary.opacity(0.15)))
                     .frame(width: 28, height: 28)
+                // The number / checkmark sits inside a fixed 28 pt circle, so its
+                // glyph stays a fixed point size — scaling it with Dynamic Type
+                // would clip inside the badge. The label below scales freely.
                 if isPast {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
@@ -517,7 +530,7 @@ private struct StepDot: View {
                 }
             }
             Text(label)
-                .font(.system(size: 10))
+                .font(.caption2)
                 .foregroundStyle(isCurrent ? Color.accentColor : .secondary)
         }
     }

@@ -22,10 +22,17 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 10: initial implementation
 ///   2.0 — Session 49: CTA advances to .downloadScope (was .volumePicker)
+///   2.1 — Dynamic Type pass 2026-07-04: hero glyph now actually scales
+///         (`@ScaledMetric`); the existing accessibility3 cap was dead against
+///         the former fixed `.system(size: 52)`.
 @MainActor
 struct OnboardingIntroView: View {
 
     @Bindable var viewModel: OnboardingViewModel
+
+    /// Point size of the hero glyph, scaled with Dynamic Type relative to
+    /// `.largeTitle`. Capped at accessibility3 at the glyph site.
+    @ScaledMetric(relativeTo: .largeTitle) private var heroGlyphSize: CGFloat = 52
 
     /// The link tapped most recently within `viewModel.introText` —
     /// presented in `InAppBrowserView` instead of the system browser, so
@@ -39,7 +46,7 @@ struct OnboardingIntroView: View {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 52))
+                        .font(.system(size: heroGlyphSize))
                         // Cap the hero icon at accessibility3 so extreme Dynamic Type sizes
                         // don't push the icon into oversized territory (F-007).
                         .dynamicTypeSize(...DynamicTypeSize.accessibility3)

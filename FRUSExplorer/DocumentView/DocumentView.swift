@@ -195,12 +195,22 @@ enum DocumentSheet: Identifiable {
 ///   3.8 — Session 2026-07-04 (UI audit A3): highlight color picker swatches use the
 ///          localized `displayName` for their accessibility label and show the color's
 ///          initial under Differentiate Without Color
+///   3.9 — Dynamic Type pass 2026-07-04 (UI audit A1/A2): not-found empty-state
+///          glyphs scale via `@ScaledMetric` (capped at accessibility3); the tag
+///          button + panel disclosure chevron use scalable caption text; the
+///          highlight color-picker sheet gains a `.medium` detent so its content
+///          isn't clipped by the fixed 180 pt detent at large Dynamic Type sizes.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
     let entry: DocumentBrowserEntry
+
+    /// Point size of the "…unavailable" empty-state glyphs (person / gloss not
+    /// found sheets), scaled with Dynamic Type relative to `.largeTitle` so the
+    /// glyph tracks the message text. Capped at accessibility3 at each site.
+    @ScaledMetric(relativeTo: .largeTitle) private var notFoundGlyphSize: CGFloat = 44
 
     @State private var vm: DocumentViewModel?
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
@@ -1236,7 +1246,8 @@ struct DocumentView: View {
         NavigationStack {
             VStack(spacing: 16) {
                 Image(systemName: "person.crop.circle.badge.questionmark")
-                    .font(.system(size: 44))
+                    .font(.system(size: notFoundGlyphSize))
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                     .foregroundStyle(.secondary)
                 Text(String(localized: "personNotFound.title",
                             defaultValue: "Person Information Unavailable"))
@@ -1269,7 +1280,8 @@ struct DocumentView: View {
         NavigationStack {
             VStack(spacing: 16) {
                 Image(systemName: "text.book.closed")
-                    .font(.system(size: 44))
+                    .font(.system(size: notFoundGlyphSize))
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                     .foregroundStyle(.secondary)
                 Text(String(localized: "glossNotFound.title",
                             defaultValue: "Term Definition Unavailable"))
@@ -1662,7 +1674,7 @@ struct DocumentView: View {
                                                 defaultValue: "Add Tag"))
                                 }
                             }
-                            .font(.system(size: FRUSTheme.captionSize, weight: .medium))
+                            .font(FRUSTheme.captionFont.weight(.medium))
                             .padding(.horizontal, 8)
                             .padding(.vertical, FRUSTheme.tagPaddingV)
                             .background(Color.accentColor.opacity(0.10))
@@ -1701,7 +1713,7 @@ struct DocumentView: View {
                 }
                 Spacer()
                 Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 10))
+                    .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
@@ -1855,7 +1867,9 @@ struct DocumentView: View {
                 }
             }
         }
-        .presentationDetents([.height(180)])
+        // A2: the fixed 180 pt detent clipped the swatch row at large Dynamic Type
+        // sizes; adding `.medium` lets the sheet grow so the content stays visible.
+        .presentationDetents([.height(180), .medium])
     }
 
     // MARK: - Clipboard
