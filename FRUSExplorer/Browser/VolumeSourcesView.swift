@@ -37,9 +37,13 @@ import SwiftUI
 ///          types and `VolumeSourcesCrossVolumeSheet` became internal for the parents
 ///   1.2 — Session 2026-07-03 (Source Explorer Phase 3 step 2): `makeNeighborsTarget`
 ///          gains the presidential-library and decimal-class target kinds (and became
-///          a testable static); bibliography (`listofworks`) rows render as plain rows
-///          in their own section, excluded by construction from every neighbor/catalog
-///          affordance.
+///          a testable static); bibliography rows render as plain rows in their own
+///          section, excluded by construction from every neighbor/catalog affordance.
+///   1.3 — Session 2026-07-03 (Phase 3 adversarial-review fixes): the bibliography
+///          kind is now detected from the encodings the corpus actually uses
+///          (`Published Sources` pseudo-heading subtrees and published-sources
+///          section heads, not just the corpus-unused `listofworks`), so this view's
+///          Published Sources section renders for real volumes.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
@@ -70,7 +74,8 @@ struct VolumeSourcesView: View {
     /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
     private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
 
-    /// Published-works bibliography rows (`listofworks`), shown as plain rows —
+    /// Published-works bibliography rows (a `Published Sources` pseudo-heading
+    /// subtree, a published-sources section, or `listofworks`), shown as plain rows —
     /// deliberately without neighbor or catalog affordances (they cite books, not
     /// archival collections; audit §2.3 counted 2,634 masquerading as resolvable).
     private var bibliographyEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .bibliography } }

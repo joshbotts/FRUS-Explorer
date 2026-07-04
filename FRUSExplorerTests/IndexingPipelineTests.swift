@@ -3674,7 +3674,11 @@ struct HeadNestedSourceNoteTests {
 /// Writes a volume whose front matter exercises every Phase 3 front-matter keying case:
 /// designator-agnostic lots (F/W/M), run-together boundaries, `Lot File(s)` prefixes,
 /// three-level outline inheritance, decimal/subject-numeric class leaves, junk series
-/// tails, and a `listofworks` bibliography section.
+/// tails, and all three published-works bibliography encodings — a `Published Sources`
+/// pseudo-heading subtree inside the ordinary sources div (preamble, item list,
+/// p-encoded periodical citation, `Note:` annotation, and the long-narrative exit back
+/// to prose), a whole section headed `Published sources`, and a `listofworks` div (the
+/// canonical TEI encoding, unused by the current corpus but kept as the contract).
 private func writeKeyingFixtureVolume(to url: URL, volumeId: String) throws {
     let xml = """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -3723,9 +3727,34 @@ private func writeKeyingFixtureVolume(to url: URL, volumeId: String) throws {
               <item>Lot W 130, Records of the Department</item>
               <item>Miscellaneous Lot M–88 Records</item>
             </list>
+            <p rend="center"><hi rend="strong">Published Sources</hi></p>
+            <p>The following publications, including secondary accounts, were particularly
+               useful in the preparation of this volume. Citations to additional published
+               documents, memoirs, and other primary sources are provided throughout the
+               volume as appropriate. No responsibility is taken by the Department of State
+               for the accuracy of events set forth in unofficial sources.</p>
+            <list>
+              <item>Eden, Anthony. Memoirs: Full Circle. Boston: Houghton Mifflin, 1960. Cites Lot 99 D 999.</item>
+            </list>
+            <p>New York Times.</p>
+            <p><hi rend="italic">Note:</hi> The following publications were consulted at the
+               time this volume was prepared in 1980 and 1981. The Department of State takes
+               no responsibility for their accuracy nor endorses their interpretation of the
+               events described therein by their respective authors.</p>
+            <p>Eisenhower, Dwight D. Waging Peace: The White House Years, 1956–1961. Garden City: Doubleday, 1965.</p>
+            <p>In compliance with the Foreign Relations of the United States statute that
+               requires inclusion of comprehensive documentation on major foreign policy
+               decisions, the editors have further identified within this section the files
+               and collections reviewed but not selected, returning the narrative to
+               ordinary prose after the published rows above.</p>
+            <p>Additional narrative that must stay prose.</p>
+          </div>
+          <div type="section" subtype="sources" xml:id="published">
+            <head>Published sources</head>
+            <p rend="flushleft">Kissinger, Henry A. White House Years. Boston: Little, Brown, 1979.</p>
           </div>
           <div type="section" subtype="listofworks" xml:id="listofworks">
-            <head>Published Sources</head>
+            <head>List of Works Cited</head>
             <list>
               <item>Acheson, Dean. Present at the Creation. New York: Norton, 1969. Cites Lot 64 D 199.</item>
             </list>
@@ -3909,6 +3938,55 @@ struct VolumeSourcesKeyingTests {
         // The archival sections are untouched by the marker.
         #expect(entries.contains { $0.kind == .item })
         #expect(entries.contains { $0.kind == .prose })
+    }
+
+    @Test("A Published Sources pseudo-heading subtree marks its rows bibliography (the real corpus encoding)")
+    func publishedPseudoHeadingSubtree() async throws {
+        let entries = try await parseFixtureEntries()
+
+        // The pseudo-heading paragraph itself stays prose, like every other
+        // pseudo-heading in the narrative flow.
+        let heading = try entry(entries, containing: "Published Sources")
+        #expect(heading.kind == .prose)
+
+        // A long editorial preamble BEFORE any published row stays in the subtree
+        // (frus1952-54v13's Part B shape) — it describes the list.
+        let preamble = try entry(entries, containing: "particularly useful")
+        #expect(preamble.kind == .bibliography)
+
+        // The published items are bibliography and never keyed — even when a book
+        // title cites a lot number.
+        let book = try entry(entries, containing: "Full Circle")
+        #expect(book.kind == .bibliography)
+        #expect(book.lotFile == nil)
+        #expect(book.lotFileNorm == nil)
+        #expect(book.decimalClass == nil)
+
+        // P-encoded periodical citations inside the subtree are bibliography
+        // (frus1981-88v01's newspaper list shape).
+        let paper = try entry(entries, containing: "New York Times")
+        #expect(paper.kind == .bibliography)
+
+        // A long `Note:` annotation about the list stays in the subtree
+        // (frus1958-60v05's memoirs shape), and the citation after it too.
+        let note = try entry(entries, containing: "were consulted at the time")
+        #expect(note.kind == .bibliography)
+        let memoir = try entry(entries, containing: "Waging Peace")
+        #expect(memoir.kind == .bibliography)
+
+        // A long narrative paragraph AFTER the published rows exits the subtree
+        // (frus1964-68v06 continues its sources div with a covert-actions note).
+        let exit = try entry(entries, containing: "In compliance with the Foreign Relations")
+        #expect(exit.kind == .prose)
+        let after = try entry(entries, containing: "Additional narrative")
+        #expect(after.kind == .prose)
+    }
+
+    @Test("A section headed Published sources is a bibliography wholesale (frus1969-76v34/v36 shape)")
+    func publishedHeadSection() async throws {
+        let entries = try await parseFixtureEntries()
+        let book = try entry(entries, containing: "Kissinger")
+        #expect(book.kind == .bibliography)
     }
 
     @Test("Front-matter and document-side lot keys normalize identically (norm parity)")

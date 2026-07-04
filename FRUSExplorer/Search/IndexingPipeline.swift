@@ -221,6 +221,15 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          column (the era-gated `series_name` LIKE fan-out retired — it starved:
 ///          structured rows were invisible to it and narrative decimal rows often
 ///          stored no location). `currentDateIndexVersion` → 19.
+///   4.8 — Source Explorer Phase 3 adversarial-review fixes (Session 2026-07-03):
+///          real bibliography detection (`Published Sources` pseudo-heading subtrees
+///          and section heads — the Version-18 `listofworks` trigger matched zero
+///          corpus volumes), class-gate hardening (run-together `RG59`/`NYFRC`,
+///          numbered issuances, PRC accessions rejected; citation class scan bounded
+///          to the citation sentence), plural/spaced-suffix lot grammar, and
+///          matcher doc-comment corrections (`relatedByDecimalClass` is a covering-
+///          index scan, not a seek — SQLite's LIKE prefix optimization cannot engage
+///          on the BINARY-collated column). `currentDateIndexVersion` → 20.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -447,8 +456,9 @@ public actor IndexingPipeline {
     ///   form as `document_sources.lot_file_norm`) and `volume_sources.decimal_class`
     ///   (subject-numeric / decimal class-leaf location, doc-side verbatim form);
     ///   (4) gates the junk-prone series-name heuristic (bad captures store nil);
-    ///   (5) marks `listofworks` bibliography rows `kind='bibliography'` so 2,634
-    ///   published works stop masquerading as archival collections. The table is
+    ///   (5) introduces `kind='bibliography'` for `listofworks` rows — an encoding
+    ///   later found unused by the corpus (see Version 20, which detects the real
+    ///   published-works encodings). The table is
     ///   dropped and recreated when the new columns are missing; a reindex repopulates
     ///   `volume_sources` corpus-wide with the new keys. The shared lot grammar also
     ///   lets loose document notes match `Lot File 57 D 577` styles, refining some
@@ -470,7 +480,28 @@ public actor IndexingPipeline {
     ///   `POL 27 ARAB-ISR` (hyphen), so the step-1 "verbatim" storage could never
     ///   match. Both tables drop and recreate on the missing column; a reindex
     ///   repopulates them corpus-wide.
-    public static let currentDateIndexVersion: Int = 19
+    /// - Version 20: Source Explorer Phase 3 adversarial-review fixes
+    ///   (Session 2026-07-03). (1) The bibliography exclusion is detected from the
+    ///   encodings the corpus actually uses — the Version-18 `listofworks` trigger
+    ///   matched **zero** of the 694 mirrored volumes, so the audit's ~2,600
+    ///   masquerading published-works rows were still keyed `item`:
+    ///   `SourcesParserDelegate` now recognizes `Published Sources` pseudo-heading
+    ///   paragraphs inside ordinary sources divs (~3,000 items across ~160 volumes,
+    ///   plus p-encoded periodical citations) and published-sources section heads
+    ///   (frus1969-76v34/v36), marking their rows `kind='bibliography'`.
+    ///   (2) The shared class gate rejects run-together record-group /
+    ///   records-center / numbered-issuance identifiers (`RG59`, `NYFRC 84-84-002`,
+    ///   `NSDM 93`, `PL 480`, PRC accessions) that previously stored junk
+    ///   `decimal_class` keys — on the doc side `RG59` also masked the row's
+    ///   genuine class. (3) The doc-side class scan is bounded to the citation
+    ///   sentence — the first sentence naming the central files (which keeps the
+    ///   1961–1963 abstract notes' tail citations), else sentence 1 — so remark
+    ///   sentences (`… For the full text of NSDM 91, see …`, ibid. secondary
+    ///   references) can never contribute a class key. (4) The shared lot grammar accepts
+    ///   plural `Lots …` leads (83 front-matter rows) and the spaced letter suffix
+    ///   `Lot 61 D 282 A` (norm parity with the legacy doc-side captures).
+    ///   Parse output changes on both tables; a reindex repopulates them.
+    public static let currentDateIndexVersion: Int = 20
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -4723,12 +4754,14 @@ public actor IndexingPipeline {
     /// directions. This replaces the former 4-variant `IN` over raw `lot_file`, which
     /// dash variants defeated (audit §2.4).
     ///
-    /// **No raw-variant fallback is kept** — norm coverage is structural, not
-    /// statistical: the same inserts that write `lot_file` write `lot_file_norm`
-    /// (`documentSourceRow` for the doc side, `SourcesParserDelegate.makeItemEntry`
-    /// for the front-matter side), and the index-version bumps that introduced the
-    /// columns (16 and 18) force a reindex, so a lot-keyed row without a norm cannot
-    /// exist in a current-version database.
+    /// **No raw-variant fallback is kept** — norm coverage is structural for every
+    /// row this path can match: wherever a `.lotFile` / `.naraCollection` lot is
+    /// stored, the same insert writes `lot_file_norm` (`documentSourceRow` for the
+    /// doc side, `SourcesParserDelegate.makeItemEntry` for the front-matter side),
+    /// and the index-version bumps that introduced the columns (16 and 18) force a
+    /// reindex. (`.ciaCollection` rows reuse the `lot_file` column for CIA job
+    /// numbers and deliberately carry no norm — job numbers are not lot keys and
+    /// never route through this path.)
     private func relatedByLotFile(
         _ rawLot: String,
         limit: Int,
@@ -4894,7 +4927,7 @@ public actor IndexingPipeline {
     /// Returns documents citing a decimal / subject-numeric **class** from a
     /// volume-level front-matter leaf (`"POL 27 ARAB–ISR"`, `"DEF 6 MLF"`, `"711.11"`).
     ///
-    /// Matches the indexed `document_sources.decimal_class` column, which stores the
+    /// Matches the `document_sources.decimal_class` column, which stores the
     /// canonical class location (`SourceNoteParser.decimalClassKey` — whitespace
     /// collapsed, Unicode dashes → ASCII hyphen, item suffix and sentence tail cut)
     /// for every central-files-shaped citation regardless of era — the narrative
@@ -4902,6 +4935,14 @@ public actor IndexingPipeline {
     /// `structured` rows (`"…RG 59, Central Files 1967–69, POL 27 ARAB-ISR"`), and
     /// CFPF rows. The query key is canonicalized the same way, so the en-dash the TEI
     /// front matter carries matches the hyphen document notes use.
+    ///
+    /// **Cost: a covering-index scan, not a seek.** The four LIKE patterns walk
+    /// `idx_doc_src_class` end to end — SQLite's LIKE prefix optimization requires
+    /// a NOCASE-collated (or `PRAGMA case_sensitive_like`) column, and
+    /// `decimal_class` is BINARY-collated. The covering index keeps the walk in
+    /// index pages only (~126k keyed rows corpus-wide), which is well within budget
+    /// for a per-tap query; revisit with a `COLLATE NOCASE` declaration (a schema
+    /// change riding the drop-and-recreate migration) if the corpus grows.
     ///
     /// The key matches at four boundaries — exact, `class + " …"` (a subject/country
     /// token boundary, so `"POL 27"` finds `"POL 27 ARAB-ISR"`), `class + "-…"` (a

@@ -623,11 +623,16 @@ public enum VolumeSourceKind: String, Sendable {
     case prose
     /// An archival-collection outline node (a repository, record group, series, or lot file).
     case item
-    /// An entry from a `<div type="listofworks">` bibliography section — a *published*
-    /// work, not an archival collection. Stored for completeness but excluded from the
-    /// collection outline and from every archival-match affordance: the audit found
-    /// 2,634 bibliography rows masquerading as resolvable collections. Bibliography
-    /// rows carry no extracted keys (a book citation's numbers are never archival keys).
+    /// A *published* work (book, memoir, periodical), not an archival collection.
+    /// Detected from the encodings the corpus actually uses — a `Published Sources`
+    /// pseudo-heading paragraph inside an ordinary sources div (~3,000 items across
+    /// ~160 volumes; the audit's §2.3 masquerading bucket), a whole published-sources
+    /// section head (frus1969-76v34/v36's p-encoded book lists), or a
+    /// `<div type="listofworks">` section (the canonical TEI name; unused by the
+    /// current 694-volume mirror but kept as the contract). Stored for completeness
+    /// but excluded from the collection outline and from every archival-match
+    /// affordance; bibliography rows carry no extracted keys (a book citation's
+    /// numbers are never archival keys).
     case bibliography
 }
 
@@ -1783,9 +1788,18 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
 /// "Record Group 59" heading identifies exactly the same records as a row stating
 /// RG 59 itself (display renders `rawText` only, so no distinction is ever needed).
 ///
-/// Entries from a `<div type="listofworks">` bibliography section are marked
-/// `kind == .bibliography` (published works, not archival collections) and carry no
-/// extracted keys.
+/// Published-works entries are marked `kind == .bibliography` (books and periodicals,
+/// not archival collections) and carry no extracted keys. The corpus encodes them
+/// three ways, all detected here:
+/// - a **pseudo-heading paragraph** inside an ordinary sources div —
+///   `<p><hi rend="strong">Published Sources</hi></p>` followed by `<item>` lists
+///   (the dominant shape: ~3,000 items across ~160 volumes; "Selected Published
+///   Sources", "Part B. Published Sources", and "Published References" variants);
+/// - a **whole `<div subtype="sources">` section headed** `Published sources`
+///   (frus1969-76v34/v36, where the books are `<p rend="flushleft">` paragraphs);
+/// - a `<div type="listofworks">` section (no volume in the current 694-volume
+///   mirror uses this encoding, but it is the canonical TEI name for the section,
+///   so the detection is kept as the contract for future volumes).
 private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// Flat, document-order (pre-order) rows: the narrative `.prose` paragraphs first, then
@@ -1796,10 +1810,31 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var elementDepth = 0
     private var sectionDepth = -1
 
-    /// Whether the current section is a `listofworks` bibliography: its rows are
-    /// published works, marked `kind == .bibliography` so display and matching can
-    /// exclude them without losing the data.
+    /// Whether the current section is entirely a published-works bibliography: a
+    /// `listofworks` div, or a sources div whose `<head>` is a published-sources
+    /// title (`Published sources` — frus1969-76v34/v36). Every row in such a
+    /// section is marked `kind == .bibliography` so display and matching can
+    /// exclude it without losing the data.
     private var sectionIsBibliography = false
+
+    /// Whether the parse position is inside a published-works subtree of an
+    /// ordinary sources section, opened by a pseudo-heading paragraph
+    /// (`<p><hi rend="strong">Published Sources</hi></p>` and variants — the
+    /// dominant corpus encoding for published works). Rows in the subtree are
+    /// marked `.bibliography`; see `didEndElement`'s `p` case for the exit rules.
+    private var inPublishedSubtree = false
+
+    /// Whether any row has been emitted since the published subtree opened. A long
+    /// narrative paragraph *after* the published rows ends the subtree (e.g.
+    /// frus1964-68v06 continues its sources div with a covert-actions note), but a
+    /// long editorial preamble *before* them must not (frus1952-54v13's "The
+    /// following publications … were particularly useful" leads its Part B list).
+    private var publishedSubtreeSawRows = false
+
+    /// Accumulates the section-level `<head>` text (a published-sources head marks
+    /// the whole section as bibliography).
+    private var inSectionHead = false
+    private var sectionHeadBuffer = ""
 
     /// Monotonic open-order counter. Assigned when a paragraph or item *opens*, so the
     /// final list can be sorted into document (pre-order) order — necessary because
@@ -1827,6 +1862,32 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
+
+    /// Anchored published-works heading shape, matched against a normalized candidate
+    /// (lowercased, whitespace collapsed, trailing periods stripped). Covers every
+    /// form the 694-volume mirror writes: `Published Sources` (×137 pseudo-heading
+    /// paragraphs), `Published sources` (section heads, frus1969-76v34/v36),
+    /// `Selected Published Sources` (×7), `Part B. Published Sources`, and
+    /// `Published References`.
+    private static let publishedHeadingPat = try? NSRegularExpression(
+        pattern: #"^(?:part [a-z][.:]? )?(?:selected )?published (?:sources|references)$"#)
+
+    /// Anchored unpublished-sources heading shape (`Unpublished Sources`,
+    /// `Part A. Unpublished Sources`) — closes a published subtree if one is open.
+    private static let unpublishedHeadingPat = try? NSRegularExpression(
+        pattern: #"^(?:part [a-z][.:]? )?unpublished sources$"#)
+
+    /// Normalizes a candidate heading and tests it against `pattern`. Candidates
+    /// longer than 60 characters are never headings (they are narrative paragraphs
+    /// that happen to contain the words).
+    private static func matchesHeading(_ text: String, _ pattern: NSRegularExpression?) -> Bool {
+        guard let pattern, text.count <= 60 else { return false }
+        var s = text.lowercased()
+        while s.hasSuffix(".") { s = String(s.dropLast()) }
+        s = s.trimmingCharacters(in: .whitespaces)
+        let ns = NSRange(s.startIndex..., in: s)
+        return pattern.firstMatch(in: s, range: ns) != nil
+    }
 
     // Deliberately excludes "listofabbreviations": that glossary is a `terms` section owned
     // by `TermsParserDelegate`; matching it here double-consumed it as bogus source items.
@@ -1862,6 +1923,14 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         switch elementName {
         case "list":
             listDepth += 1
+        case "head":
+            // The section-level title. A published-sources head (frus1969-76v34/v36's
+            // `<head>Published sources</head>` divs) marks the whole section as a
+            // bibliography when it closes.
+            if itemStack.isEmpty {
+                inSectionHead = true
+                sectionHeadBuffer = ""
+            }
         case "item":
             openCounter += 1
             itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter))
@@ -1889,9 +1958,12 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard inSourcesSection else { return }
-        // Characters belong to the innermost open item, else the current prose paragraph.
+        // Characters belong to the innermost open item, else the section head or the
+        // current prose paragraph.
         if !itemStack.isEmpty {
             itemStack[itemStack.count - 1].text += string
+        } else if inSectionHead {
+            sectionHeadBuffer += string
         } else if inProse {
             proseBuffer += string
         }
@@ -1907,14 +1979,24 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         switch elementName {
         case "list":
             listDepth = max(0, listDepth - 1)
+        case "head":
+            if inSectionHead {
+                if Self.matchesHeading(Self.collapseWhitespace(sectionHeadBuffer),
+                                       Self.publishedHeadingPat) {
+                    sectionIsBibliography = true
+                }
+                inSectionHead = false
+                sectionHeadBuffer = ""
+            }
         case "item":
             if let frame = itemStack.popLast() {
                 let text = Self.collapseWhitespace(frame.text)
                 if !text.isEmpty {
                     let entry: VolumeSourceEntry
-                    if sectionIsBibliography {
+                    if sectionIsBibliography || inPublishedSubtree {
                         // Published work, not an archival collection: no keys, so no
                         // match affordance can ever attach to it.
+                        publishedSubtreeSawRows = true
                         entry = VolumeSourceEntry(kind: .bibliography, depth: frame.depth,
                                                   isHeading: frame.isHeading, rawText: text)
                     } else {
@@ -1933,7 +2015,8 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             if inProse && itemStack.isEmpty {
                 let text = Self.collapseWhitespace(proseBuffer)
                 if !text.isEmpty {
-                    collected.append((proseOrder, VolumeSourceEntry(kind: .prose, rawText: text)))
+                    collected.append((proseOrder,
+                                      VolumeSourceEntry(kind: proseKind(for: text), rawText: text)))
                 }
                 inProse = false
                 proseBuffer = ""
@@ -1952,11 +2035,57 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             inSourcesSection = false
             sectionDepth = -1
             sectionIsBibliography = false
+            inPublishedSubtree = false
+            publishedSubtreeSawRows = false
+            inSectionHead = false
+            sectionHeadBuffer = ""
             inProse = false
             proseBuffer = ""
             itemStack.removeAll()
             listDepth = 0
         }
+    }
+
+    /// Decides whether a closing top-level paragraph is narrative `.prose` or a
+    /// published-works `.bibliography` row, updating the published-subtree state.
+    ///
+    /// Rules, derived from a full-corpus survey of the pseudo-heading encoding:
+    /// - in a whole-section bibliography (`listofworks` / published-sources head),
+    ///   every paragraph is `.bibliography` (frus1969-76v34/v36 encode their books
+    ///   as `<p rend="flushleft">`);
+    /// - a published pseudo-heading (`Published Sources` and variants) opens the
+    ///   subtree; an unpublished one closes it; the heading paragraphs themselves
+    ///   stay `.prose`, like every other pseudo-heading in the narrative flow;
+    /// - inside the subtree, paragraphs are `.bibliography` — p-encoded periodical
+    ///   citations (`The Christian Science Monitor.`) and short editorial
+    ///   annotations both belong to the published list;
+    /// - a **long narrative paragraph after the published rows closes the subtree**
+    ///   (frus1964-68v06 continues its sources div with a multi-paragraph covert-
+    ///   actions note) — but a long editorial *preamble* before any row does not
+    ///   (frus1952-54v13's "The following publications … were particularly useful"
+    ///   leads its Part B list), and neither does a `Note:` annotation *about* the
+    ///   list (frus1958-60v05's memoirs subsection).
+    private func proseKind(for text: String) -> VolumeSourceKind {
+        if sectionIsBibliography { return .bibliography }
+        if Self.matchesHeading(text, Self.publishedHeadingPat) {
+            inPublishedSubtree = true
+            publishedSubtreeSawRows = false
+            return .prose
+        }
+        if Self.matchesHeading(text, Self.unpublishedHeadingPat) {
+            inPublishedSubtree = false
+            return .prose
+        }
+        guard inPublishedSubtree else { return .prose }
+        let isNarrativeExit = text.count > 200
+            && publishedSubtreeSawRows
+            && !text.lowercased().hasPrefix("note:")
+        if isNarrativeExit {
+            inPublishedSubtree = false
+            return .prose
+        }
+        publishedSubtreeSawRows = true
+        return .bibliography
     }
 
     /// Collapses interior whitespace runs (hard line breaks, ragged TEI indentation) to

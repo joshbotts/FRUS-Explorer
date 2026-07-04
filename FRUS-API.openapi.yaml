@@ -2007,7 +2007,13 @@ components:
         `document_sources` row additionally stores `lot_file_norm`, a canonical
         compact uppercase lot key (`"64D199"`) derived from `lotNumber` for
         exact-match archival-neighbor keying; it is a derived normalization of
-        `lotNumber`, not a separate field of this schema.
+        `lotNumber`, not a separate field of this schema. Source Explorer
+        Phase 3 (2026-07-03) likewise added the derived `decimal_class` column:
+        the canonical decimal / subject-numeric class location
+        (`"POL 27 ARAB-ISR"`, `"788.5"` — whitespace collapsed, Unicode dashes
+        mapped to the ASCII hyphen) extracted from the citation sentence of
+        central-files-shaped notes for class-leaf archival-neighbor matching;
+        also a derived normalization, not a field of this schema.
       required:
         - documentId
         - volumeId

@@ -505,6 +505,10 @@ struct SourceNoteParserGrammarTests {
             ("Lot Files 74 D 131", "74 D 131"),
             ("E–CFEP Files, Lot 61 D 282A", "61 D 282A"),        // letter suffix kept
             ("CFEP Files: Lot 61 D 282a, Soviet Economic Penetration", "61 D 282a"),
+            ("CFEP Files: Lot 61 D 282 A, Export of Ferrous Scrap", "61 D 282 A"), // spaced suffix
+            ("Lots 64 D 563 and 65 D 101", "64 D 563"),          // plural: first lot keys
+            ("Lots 57 F 24 and 58 M 27 (311)", "57 F 24"),
+            ("Lots 76D186 and 78D184", "76D186"),
           ])
     func firstLotReferenceVariants(_ text: String, _ expected: String) {
         let found = SourceNoteParser.firstLotReference(in: text)
@@ -550,7 +554,14 @@ struct SourceNoteParserGrammarTests {
     @Test("decimalClassKey rejects prose, record groups, and non-class shapes",
           arguments: ["RG 59", "FRC 330–78–0011", "Arab unity", "NEA Files",
                       "Records of the Executive Secretariat", "1977–1980",
-                      "POL Near East 1", "Vol. 12", "as maintained by the Executive Secretariat."])
+                      "POL Near East 1", "Vol. 12", "as maintained by the Executive Secretariat.",
+                      // Run-together record-group / records-center forms (no word
+                      // boundary exists between a letter and a digit, so `RG\b`
+                      // missed these — adversarial-review finding).
+                      "RG59", "RG330", "RG-84", "NYFRC 84-84-002",
+                      // Numbered issuances and accessions are not file classes.
+                      "NSDM 93", "NSSM 114", "NSAM 55", "NSC 5412", "NIE 11-8",
+                      "SNIE 100-5", "PL 480", "PRC 64 A 2382"])
     func decimalClassKeyRejects(_ candidate: String) {
         #expect(SourceNoteParser.decimalClassKey(candidate) == nil)
     }
@@ -575,5 +586,21 @@ struct SourceNoteParserGrammarTests {
         // Library citations carry no class-shaped segment.
         #expect(SourceNoteParser.decimalClassLocation(
             inCitation: "Johnson Library, National Security File, Country File, Vietnam, Vol. 12. Top Secret.") == nil)
+    }
+
+    @Test("decimalClassLocation never reads past the citation sentence")
+    func decimalClassLocationIsSentenceBounded() {
+        // A citation-less first sentence followed by remarks citing numbered
+        // issuances: the remarks must not contribute a key (adversarial-review
+        // finding — NSDM/NSSM/SCC/PRC numbers were stored as classes).
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Carter Library, National Security Affairs, Staff Material. Secret. For the full text of NSDM 91, see Document 12. Approved as SCC 288.") == nil)
+        // The run-together RG form is rejected by the gate, and the genuine class
+        // in the citation sentence still keys the row.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "National Archives, RG59, Central Files 1970–73, UN 3 SC. Secret. See also NSSM 114.") == "UN 3 SC")
+        // A class after the sentence boundary is out of scope even when class-shaped.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Department of State, Central Files. Secret. Filed under POL 27 ARAB-ISR.") == nil)
     }
 }

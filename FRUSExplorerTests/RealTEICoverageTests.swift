@@ -263,7 +263,9 @@ struct RealTEIVolumeSourcesTests {
             }
 
             let keyed = keyedByPath.values.reduce(0, +)
-            #expect(items > 380, "sanity: the two volumes list ~439 source items")
+            // 439 raw items, minus the 16 published-works rows the bibliography
+            // detection now correctly excludes from the archival outline.
+            #expect(items > 380, "sanity: the two volumes list ~423 archival source items")
             #expect(Double(keyed) >= 0.5 * Double(items),
                     "keyed rate must stay ≥50% (audit baseline 14.5%); got \(keyed)/\(items)")
             for path in ["lot", "class", "library"] {
