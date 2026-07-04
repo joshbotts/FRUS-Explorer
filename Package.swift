@@ -237,6 +237,38 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - SourceProvenanceIndexGenerator
+
+        /// Builds the bundled `source-provenance-index.json` (SA-3a): parses every
+        /// FRUS volume's per-document source notes with the app's real `SourceNoteParser`
+        /// grammar, maps each parse to a stable `ProvenanceCategory`, and aggregates the
+        /// counts by coverage decade (from the enriched `manifest.json` date ranges) so
+        /// the SA-3 "Archival Sourcing Over Time" dashboard can render the corpus-wide
+        /// provenance evolution offline / zero-index. Entirely offline.
+        .target(
+            name: "SourceProvenanceIndexGeneratorCore",
+            dependencies: [.target(name: "SourceNoteKit")],
+            path: "SourceProvenanceIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls SourceProvenanceIndexRunner.run() and exits.
+        .executableTarget(
+            name: "SourceProvenanceIndexGenerator",
+            dependencies: [.target(name: "SourceProvenanceIndexGeneratorCore")],
+            path: "SourceProvenanceIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for SourceProvenanceIndexGeneratorCore (category mapping,
+        /// full-parser pipeline, decade bucketing, aggregation, determinism).
+        .testTarget(
+            name: "SourceProvenanceIndexGeneratorTests",
+            dependencies: [.target(name: "SourceProvenanceIndexGeneratorCore")],
+            path: "SourceProvenanceIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - SourceNoteKit
 
         /// The FRUS source-note parser (`SourceNoteParser`, `ParsedSourceNote`,
