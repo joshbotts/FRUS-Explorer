@@ -1265,3 +1265,29 @@ gate; Group-gotcha double query; stale count badges refresh on indexing completi
 unrecognized 24.3% → 2.8%; front-matter resolution 25% → ~85% predicted (86% ceiling);
 corpus-wide collection authority; truthful UI.** Remaining before testers: consolidated docs
 pass + build bump (reindex v18).
+
+### Session 2026-07-04 (later) — macOS UI audit pass (window conversions + a11y quick wins)
+Branch claude/macos-ui-audit, 5 commits (workflow ran the first 4 stages; a11y stage was
+interrupted by a credit limit mid-A8 and finished + verified manually on Opus 4.8).
+**Windows (owner rule: prefer windows over modal sheets):** B2 Cross-Volume Provenance →
+value window + navigable rows (new AppState.pendingBrowseVolume hand-off); B3 NARA Lookup →
+third segment of the Source Explorer window; B4 Citation Lookup → own frus.citationLookup
+window (⌘⇧F moved to the scene); B5 People index → frus.people window (single window-level
+detail sheet, no more stacked sheets); B6 volume graph → frus.crossReferenceGraph via
+pendingVolumeGraph; B7 macOS WhileIndexing auto-modal removed (banner button opens the
+Research Guide window); B8 entry inspector → .inspector column on the Collections window.
+Every new scene copies the Phase-5 boot-race guard ("Preparing your index…"); Cross-Volume
+window is manifest-backed so needs none. **Borderlines:** C1 note composition → utility
+window (frus.noteComposer) so the document stays readable; C4 advanced search filters →
+live-apply popover; gaps 16/19 window sizing. **Keyboard:** Collection + Document CommandMenus
+via focusedSceneValue (New/Export/Add Documents/headings/preview; prev/next doc ⌥⌘↑↓, add
+note ⌘⇧N, highlight ⌘⇧H, research panel ⌘⇧R — all collision-checked); List(selection:)
+keyboard-navigable rows. **A11y quick wins:** A3 highlight-picker labels + no-color glyph;
+A4 VoiceOver Move Up/Down on outline rows; A5 .isSelected traits; A6 stateful toggle labels;
+A8 sentiment cloud +/− marks (screen + PNG/PDF export); A10 graph control labels. **Self-review
+(the workflow's adversarial stage was cut by the credit limit):** verified the two
+highest-risk categories — no orphaned macOS sheet presentations of converted views (all
+correctly #if os(iOS)-gated or intentional), and boot-race guards present in all four new
+window scenes. 1146/1146; both platforms build. **Deferred:** A1/A2 Dynamic Type (own pass);
+consolidated docs pass now covers the windows/shortcuts story for the manuals + TestFlight.
+Reindex version unchanged (18 — no parse-output changes).
