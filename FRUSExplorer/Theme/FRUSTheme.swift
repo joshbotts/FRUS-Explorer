@@ -168,6 +168,9 @@ struct FeatureInfoButton: View {
 ///   1.1 — Dynamic Type pass 2026-07-04: added scalable `captionFont` /
 ///         `captionSmallFont` text tokens + the size→text-style convention;
 ///         `EditorialNoteBadge` and `FRUSTagChip` now use scalable caption text.
+///   1.2 — Dynamic Type review 2026-07-04: added `cappedGlyphSize(_:base:)` to
+///         cap `@ScaledMetric` hero glyphs in code (the prior `.dynamicTypeSize`
+///         cap was inert against a `.system(size:)` font).
 enum FRUSTheme {
 
     // MARK: Typography
@@ -202,7 +205,16 @@ enum FRUSTheme {
     // (e.g. a hero glyph that should track the largest text but at a bespoke point
     // size), declare `@ScaledMetric(relativeTo: .largeTitle) private var glyph: CGFloat = N`
     // in the view and feed it to `.font(.system(size: glyph))`. Cap runaway growth
-    // on decorative hero glyphs with `.dynamicTypeSize(...DynamicTypeSize.accessibility3)`.
+    // on decorative hero glyphs by clamping the scaled value with
+    // `FRUSTheme.cappedGlyphSize(glyph, base: N)`.
+    //
+    // NOTE — why clamp in code, not `.dynamicTypeSize(...):` A `.dynamicTypeSize`
+    // modifier applied to an `Image(systemName:).font(.system(size: scaled))` is
+    // *inert* for the glyph size: `@ScaledMetric` resolves its `CGFloat` from the
+    // environment where the property wrapper is installed (the parent's ambient,
+    // uncapped `dynamicTypeSize`), and `.system(size:)` is a *fixed*-size font that
+    // ignores the downstream environment the modifier changes. The clamp below
+    // caps the resolved point value directly, so it actually holds at every size.
     //
     // Do NOT convert: graph-canvas node/edge labels (they scale with graph zoom,
     // not Dynamic Type), the word cloud's bespoke `word.fontSize` system, and
@@ -220,6 +232,34 @@ enum FRUSTheme {
     /// Scalable equivalent of `captionSmallSize` / `sectionLabelSize` (10 pt) —
     /// maps to the `.caption2` text style for the smallest scalable caption text.
     static let captionSmallFont: Font = .caption2
+
+    /// Ceiling multiple applied to a `@ScaledMetric` hero-glyph base size to cap
+    /// runaway growth at extreme Dynamic Type sizes. `1.6` keeps decorative glyphs
+    /// growing with accessibility sizes (so they still track larger text) while
+    /// holding them near the accessibility-large tier instead of the ~1.9× that the
+    /// largest accessibility categories would otherwise produce.
+    static let heroGlyphMaxScale: CGFloat = 1.6
+
+    /// Clamps a `@ScaledMetric`-resolved hero/empty-state glyph point size to a
+    /// proportional ceiling, so decorative glyphs scale with Dynamic Type but do
+    /// not grow without bound at the largest accessibility categories.
+    ///
+    /// Use this instead of a `.dynamicTypeSize(...)` modifier on the glyph: that
+    /// modifier is inert for a `.system(size:)` font (see the convention note
+    /// above). This caps the resolved value directly.
+    ///
+    /// - Parameters:
+    ///   - scaled: The `@ScaledMetric` point size resolved from the environment.
+    ///   - base: The unscaled base point size the `@ScaledMetric` was declared with.
+    ///   - maxScale: Ceiling as a multiple of `base`. Defaults to ``heroGlyphMaxScale``.
+    /// - Returns: `min(scaled, base * maxScale)`.
+    static func cappedGlyphSize(
+        _ scaled: CGFloat,
+        base: CGFloat,
+        maxScale: CGFloat = heroGlyphMaxScale
+    ) -> CGFloat {
+        min(scaled, base * maxScale)
+    }
 
     // MARK: Document Layout
 

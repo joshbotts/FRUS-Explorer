@@ -32,6 +32,9 @@ import SwiftUI
 ///   1.1 — Dynamic Type pass 2026-07-04: iOS banner caption fonts scale via
 ///          `FRUSTheme.captionFont` / `captionSmallFont`; the macOS sheet hero
 ///          glyph scales via `@ScaledMetric` (capped at accessibility3).
+///   1.2 — Dynamic Type review 2026-07-04: glyph cap enforced in code via
+///          `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
+///          on a `.system(size:)` font).
 struct IndexingSummaryCard: View {
 
     /// Aggregate metrics from the completed indexing pass.
@@ -116,8 +119,7 @@ struct IndexingSummaryCard: View {
     private var sheetBody: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: successGlyphSize))
-                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
+                .font(.system(size: FRUSTheme.cappedGlyphSize(successGlyphSize, base: 48)))
                 .foregroundStyle(.green)
 
             VStack(spacing: 6) {

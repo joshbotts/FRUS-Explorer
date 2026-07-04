@@ -70,7 +70,7 @@ they stay deferred as macOS chrome.
 
 | File | Sites | SCALE | ICON | LEAVE-FIXED | Notes |
 |------|------:|------:|-----:|------------:|-------|
-| `Research/ResearchView.swift` | 6 | 4 | 2 | — | Shared iOS-tab / macOS-window. Four sidebar count badges (`12`) → `captionFont`; the "By Tag" `◆` glyph (`10`, in the Label `icon:` slot beside scaling text) → `captionSmallFont`; the document-row collection `tray.2` glyph (`8`) → dropped its override so it inherits the HStack's `.caption2` and tracks its adjacent label. Version history 1.3 → 1.4. |
+| `Research/ResearchView.swift` | 6 | 4 | 2 | — | Shared iOS-tab / macOS-window. All **four** sidebar count badges (`12`, at source lines 150/171/195/221 — All-Documents, By-Collection, By-Tag, **By-Highlight**) → `captionFont`; the "By Tag" `◆` glyph (`10`, in the Label `icon:` slot beside scaling text) → `captionSmallFont`; the document-row collection `tray.2` glyph (`8`) → dropped its override so it inherits the HStack's `.caption2` and tracks its adjacent label. Version history 1.3 → 1.4. (Review 2026-07-04: the By-Highlight badge had been missed on the first pass — now 4-of-4.) |
 | **Stage-3 total** | **6** | **4** | **2** | — | The only iOS-reachable residual text surface; now scales. |
 
 ### `.frame(height:)` audit (iOS-reachable)
@@ -131,3 +131,32 @@ DONE, DEFERRED (macOS chrome), or LEAVE-FIXED (permanent)**:
 The **A2 rich-text editor** work (`CollectionRichTextEditor` `adjustsFontForContentSizeCategory`
 + `UIFontMetrics`) shipped in commit `ebe4011` (its own item). The one residual `11`pt site in that
 file is the macOS toolbar label, folded into the deferred macOS-chrome count above.
+
+---
+
+## Adversarial-review fixes (2026-07-04)
+
+Three low-severity findings from the review of the pass:
+
+1. **ResearchView "By Highlight" badge missed** — the fourth of four identical sidebar
+   count badges (source line 221) was left at `.system(size: 12)` while its three siblings
+   moved to `captionFont`. Fixed → `captionFont`; the file is now genuinely 4-of-4 (the
+   Stage-3 row above is corrected to name all four line numbers).
+
+2. **`@ScaledMetric` hero-glyph caps were inert** — every hero/empty-state glyph used
+   `.font(.system(size: <scaledMetric>)).dynamicTypeSize(...accessibility3)`. That modifier
+   is a no-op for the glyph size: `@ScaledMetric` resolves its `CGFloat` from the *parent's*
+   uncapped environment, and a `.system(size:)` font ignores the downstream environment the
+   modifier changes — so glyphs grew past AX3 to their full AX5 size. Replaced the modifier
+   at all seven sites (OnboardingIntroView, OnboardingView ×2, SearchView, IndexingSummaryCard,
+   DocumentView ×2) with a code clamp: `FRUSTheme.cappedGlyphSize(scaled, base: N)` =
+   `min(scaled, base * 1.6)`, added to `FRUSTheme`. Glyphs still scale with Dynamic Type but
+   now actually hold near the accessibility-large tier.
+
+3. **Highlight-picker sheet still opened clipped at the smallest detent** — a multi-detent
+   sheet opens at its *smallest* detent, so `[.height(180), .medium]` still presents at 180 pt,
+   where the grown title/nav chrome can clip the swatch row. Wrapped the sheet content in a
+   `ScrollView` so the overflow scrolls (every control stays reachable) without removing the
+   `.medium` drag-to-grow affordance.
+
+All three are UI-only; no parse-output change, no index-version bump.

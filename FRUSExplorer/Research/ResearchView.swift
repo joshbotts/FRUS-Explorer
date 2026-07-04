@@ -219,7 +219,7 @@ struct ResearchView: View {
                                 Text(item.color.displayName)
                                 Spacer()
                                 Text("\(item.count)")
-                                    .font(.system(size: 12))
+                                    .font(FRUSTheme.captionFont)
                                     .foregroundStyle(.secondary)
                             }
                         } icon: {

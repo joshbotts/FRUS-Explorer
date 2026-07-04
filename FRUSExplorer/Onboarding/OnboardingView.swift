@@ -38,6 +38,9 @@ import SwiftData
 ///   3.1 — Replaced flat volume list with scope picker (corpus/subseries/volume)
 ///   3.2 — Dynamic Type pass 2026-07-04: hero glyphs scale (`@ScaledMetric`,
 ///         capped at accessibility3); StepDot label uses `.caption2`.
+///   3.3 — Dynamic Type review 2026-07-04: hero-glyph caps now enforced in code
+///         via `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
+///         on a `.system(size:)` font).
 @MainActor
 struct OnboardingView: View {
 
@@ -48,8 +51,8 @@ struct OnboardingView: View {
 
     /// Point size of the welcome / ready hero glyphs, scaled with Dynamic Type
     /// (relative to `.largeTitle`) so the icon grows with the body text it pairs
-    /// with. Growth is capped at accessibility3 at the glyph sites so extreme
-    /// sizes don't overwhelm the step layout.
+    /// with. Growth is clamped via `FRUSTheme.cappedGlyphSize` at the glyph sites
+    /// so extreme sizes don't overwhelm the step layout.
     @ScaledMetric(relativeTo: .largeTitle) private var heroGlyphSize: CGFloat = 56
 
     // MARK: - Step 2 State
@@ -107,8 +110,7 @@ struct OnboardingView: View {
     private var welcomeView: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: heroGlyphSize))
-                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
+                .font(.system(size: FRUSTheme.cappedGlyphSize(heroGlyphSize, base: 56)))
                 .foregroundStyle(.tint)
                 .padding(.bottom, 4)
 
@@ -277,8 +279,7 @@ struct OnboardingView: View {
     private var readyView: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: heroGlyphSize))
-                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
+                .font(.system(size: FRUSTheme.cappedGlyphSize(heroGlyphSize, base: 56)))
                 .foregroundStyle(.green)
                 .padding(.bottom, 4)
 
