@@ -43,7 +43,7 @@ xcodebuild test \
 
 **SPM command-line tools (run from repo root):**
 ```bash
-swift run ManifestGenerator   # Regenerate manifest.json from GitHub FRUS TEI headers
+swift run ManifestGenerator   # Regenerate manifest.json from GitHub FRUS TEI headers. Env: OUTPUT_PATH override; GITHUB_TOKEN. VOLUMES_DIR=<local corpus> switches to OFFLINE local overlay mode (no GitHub): loads the existing manifest at OUTPUT_PATH as the base and re-derives ONLY publicationDate (publicationStmt/date[@type="publication-date"] TEXT = print year) and dateRange (content-date @notBefore/@notAfter, else creation/date) from each VOLUMES_DIR/<filename> header, preserving all other fields
 swift run TaxonomyGenerator   # Regenerate volume-tag-taxonomy.json
 CATALOG_API_KEY=<key> swift run CentralFilesIndexGenerator   # Harvest NARA Catalog → central-files-index.json (Phase 1: 1906–1910 Numerical File; Phase 2: diplomatic series)
 CATALOG_API_KEY=<key> SURVEY_SERIES=603720 swift run CentralFilesIndexGenerator   # Survey a series' structure. Diplomatic: 603720/593313/594363/597272. Consular (Phase 3): 302031 Despatches / 604019 Instructions / 1076611 Notes-to / 1076629 Notes-from

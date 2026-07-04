@@ -55,6 +55,60 @@ struct TEIHeaderParserTests {
         #expect(result.tags.sorted() == ["arms-control-and-disarmament", "iran", "kissinger-henry-a"])
     }
 
+    // MARK: - Date Extraction (SA-1a)
+
+    @Test("Old printed volume: publication-date TEXT → publicationDate; content-date attrs → range")
+    func oldPrintedVolumeDates() throws {
+        let result = try parse(TEIFixtures.oldPrintedVolume)
+        // Print year from the publication-date element's TEXT, not the @when build stamp.
+        #expect(result.publicationDate == "1861")
+        // Coverage range from content-date @notBefore/@notAfter (its "1860 to 1861" text is ignored).
+        #expect(result.earliestDate == "1860-12-31T00:00:00-05:00")
+        #expect(result.latestDate == "1861-12-31T23:59:59-05:00")
+    }
+
+    @Test("In-progress modern volume: empty publication-date → nil; content-date attrs → range")
+    func inProgressModernVolumeDates() throws {
+        let result = try parse(TEIFixtures.inProgressModernVolume)
+        #expect(result.publicationDate == nil)
+        #expect(result.earliestDate == "1982-01-01T00:00:00-05:00")
+        #expect(result.latestDate == "1988-12-31T23:59:59-05:00")
+    }
+
+    @Test("creation/date range still works when no content-date is present")
+    func creationDateRangeStillWorks() throws {
+        let result = try parse(TEIFixtures.fullHeader)
+        #expect(result.earliestDate == "1969-01-01")
+        #expect(result.latestDate == "1972-12-31")
+    }
+
+    @Test("publication-date with @when timestamp only does NOT populate publicationDate")
+    func publicationDateWhenTimestampIgnored() throws {
+        let result = try parse(TEIFixtures.publicationDateWhenTimestampOnly)
+        #expect(result.publicationDate == nil)
+    }
+
+    @Test("Oldest volumes: empty typed publication-date falls back to untyped sibling print year")
+    func untypedPrintYearFallback() throws {
+        let result = try parse(TEIFixtures.untypedPrintYearVolume)
+        // Real frus1862 shape: typed publication-date is an empty @when stamp; the print year
+        // lives on a sibling untyped <date calendar="gregorian">1862</date>.
+        #expect(result.publicationDate == "1862")
+        // Range still comes from the content-date @notBefore/@notAfter, never the untyped date.
+        #expect(result.earliestDate == "1860-08-01T00:00:00-05:00")
+        #expect(result.latestDate == "1862-12-31T23:59:59-05:00")
+    }
+
+    @Test("Typed publication-date text wins over an untyped sibling date")
+    func typedPublicationDateWinsOverUntyped() throws {
+        // fullHeader has a text-bearing type="publication-date" (2003) and no untyped print-year
+        // sibling; oldPrintedVolume has a text-bearing publication-date (1861) with sibling <idno>
+        // but no untyped date. Verify both still resolve to the typed year (untyped fallback must
+        // never clobber a real typed print year).
+        #expect(try parse(TEIFixtures.fullHeader).publicationDate == "2003")
+        #expect(try parse(TEIFixtures.oldPrintedVolume).publicationDate == "1861")
+    }
+
     // MARK: - No Publication Date
 
     @Test("Header without publication date: publicationDate is nil")
