@@ -474,8 +474,10 @@ Headings, prose, and excerpts turn a collection from a document list into an aut
 
 ### 10.3 The Inspector: Per-Document Control Surface
 
-Tap the **ⓘ** on any document entry to open its **inspector**. It still gathers everything the app knows about that document in one place — your research notes and highlights, the tags you've applied, its AI summaries, its archival source note, and its cross-reference count — but it is now also where you **shape what that one document contributes to the export**:
+Each **document row** in the collection is now a scannable **report**: its title, volume, date, and small status chips (body depth, note count, "Highlights off", "Headnote", "See also") that reflect how it's configured — all editing lives in the inspector. Tap the **ⓘ** on any document entry to open its **inspector**. It gathers everything the app knows about that document in one place — your research notes and highlights, the tags you've applied, its AI summaries, its archival source note, and its cross-reference count — and it is where you **shape what that one document contributes to the export**:
 
+- **Body depth** — the per-document body-depth override (Default / Full / Summary only / Index) now lives here, at the top of the export overrides, as the parent setting the others refine.
+- **Research notes** — a checkbox for each of the document's notes selects which travel into the export; leaving them all checked means **all** (including notes you add later), and unchecking every note turns notes off for the document. A **New Note…** action writes one inline. This mirrors the per-highlight selection below.
 - **Headnote** — show a chosen AI summary as an italic abstract *above* the document's full body (labelled by the prompt that produced it; "Automatic" picks the collection prompt's summary). This is different from the "summary only" body depth, which replaces the body.
 - **Export overrides** — per-document **Highlights**, **Research notes**, **Source note**, **Footnotes**, **Summary prompt**, and **Related documents** controls, each **Default / On / Off**. *Default* inherits the section's setting when its heading sets one, else the collection's composition — so overrides are the exception, not a second settings sheet to maintain. Every one of these settings — footnotes included — applies to all three rich export formats (PDF, HTML, Word) and the live preview.
 - **Per-highlight selection** — each highlight row has a checkbox; when highlights apply to this document, only checked passages are annotated. Leaving everything checked means "all, including future highlights"; unchecking every passage turns highlights off for the document.
@@ -494,7 +496,7 @@ Composition settings are **saved on the collection** and edited in the manager's
 - **Include footnotes** and **Include source note** — two independent toggles (they used to be one three-way choice): keep or drop each document's footnotes, and separately append its archival "Source:" line. "All footnotes *and* the source note" is now expressible.
 - **Table-of-contents label style** — list each document by its formatted citation, or by its header and dateline.
 - **Include highlights** — when on, highlights you've made on the included documents are annotated inline in the export: coloured `<mark>` spans in HTML, background shading in PDF, and highlighted runs in DOCX (DOCX's limited palette renders blue as cyan and pink as magenta — the closest named colours).
-- **Include research notes** — show your attached notes below each document's body.
+- **Include research notes** — show your attached notes below each document's body. Research notes now export **by default** when notes are enabled; to leave specific notes out, deselect them in the entry inspector (10.3).
 - **Include word cloud** — prepend a frequency overview (PDF and HTML).
 - **Summary prompt** — which summarization prompt to use when the body depth is "summary only".
 

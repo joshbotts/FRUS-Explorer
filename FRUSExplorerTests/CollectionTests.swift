@@ -932,6 +932,26 @@ struct CollectionTests {
         #expect(docEntry?.selectedNoteIds.isEmpty == true)
     }
 
+    /// M2 (D5): `selectedNoteIds` is device-local and must never be serialized into a
+    /// `.fruscollection` file (mirroring `selectedHighlightIds`) — a recipient lacks the
+    /// referenced notes. Only the *resolved* note texts travel (in the `notes` array),
+    /// and only when notes are opted in. The exported JSON must not contain the note id.
+    @Test("M2 D5: selectedNoteIds note ids are never serialized into the .fruscollection file")
+    func nativeSelectedNoteIdsNotSerialized() throws {
+        let source = try ModelContainer.makeTestContainer()
+        let sourceCtx = ModelContext(source)
+        let (coll, note) = try makeNativeSourceCollection(in: sourceCtx)   // doc entry links note
+
+        // Notes OPTED IN: the note *text* travels, but the id must not.
+        let file = NativeCollectionSerializer.makeFile(
+            from: coll, includeNotes: true, resolveNoteTexts: noteTextResolver(sourceCtx))
+        let json = String(decoding: try NativeCollectionSerializer.encode(file), as: UTF8.self)
+
+        #expect(json.contains("Compare with the Clay telegrams."))   // resolved text travels
+        #expect(!json.contains(note.id.uuidString))                  // the id does not
+        #expect(!json.lowercased().contains("selectednoteids"))      // no such key in the schema
+    }
+
     @Test("Sync guard: unknown entry kinds read as .unrecognized, are never persisted, and are skipped by native export/import")
     func unrecognizedKindGuard() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -1147,6 +1167,101 @@ struct CollectionTests {
         #expect(docs[2].documentId == "d3")
         #expect(docs[2].bodyDepth == .full)                  // Part II reset the section override
         #expect(docs[2].noteTexts == ["Legacy note."])       // legacy researchNoteId path
+    }
+
+    // MARK: - Collections Manager M2 (D5: notes default = all)
+
+    /// D5: an untouched document entry (empty `selectedNoteIds`, no legacy link) now
+    /// resolves to **all** of the document's notes — mirroring `selectedHighlightIds`.
+    /// Deselecting one (an explicit partial selection) narrows the export to the rest,
+    /// and the legacy single-note link is still honored for un-migrated entries.
+    @Test("M2 D5: empty selectedNoteIds resolves to all doc notes; partial narrows; legacy link honored")
+    @MainActor
+    func notesEmptyMeansAll() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()   // citation-only resolution (no manifest/XML)
+
+        let coll = Collection(name: "Notes M2")
+        coll.defaultBodyDepth = "full"
+        context.insert(coll)
+
+        // Three notes on d1, one on d2 (the legacy-link document).
+        let n1 = ResearchNote(documentId: "d1", volumeId: "m2vol", bodyText: "Note one.")
+        let n2 = ResearchNote(documentId: "d1", volumeId: "m2vol", bodyText: "Note two.")
+        let n3 = ResearchNote(documentId: "d1", volumeId: "m2vol", bodyText: "Note three.")
+        let legacy = ResearchNote(documentId: "d2", volumeId: "m2vol", bodyText: "Legacy note.")
+        for n in [n1, n2, n3, legacy] { context.insert(n) }
+
+        // Untouched entry on d1 — empty selection, no legacy link (D5 = all).
+        let dAll = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "m2vol", sortOrder: 0)
+        dAll.collection = coll
+        // Partial-selection entry on d1 — two of the three notes chosen.
+        let dPartial = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "m2vol", sortOrder: 1)
+        dPartial.selectedNoteIds = [n1.id, n3.id]
+        dPartial.collection = coll
+        // Legacy single-note link on d2.
+        let dLegacy = CollectionEntry(collectionId: coll.id, documentId: "d2", volumeId: "m2vol",
+                                      sortOrder: 2, researchNoteId: legacy.id)
+        dLegacy.collection = coll
+
+        for e in [dAll, dPartial, dLegacy] { context.insert(e) }
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(
+            collection: coll,
+            entries: [dAll, dPartial, dLegacy],
+            allNotes: [n1, n2, n3, legacy],
+            purpose: .export)
+        let docs = items.documents
+        try #require(docs.count == 3)
+
+        // Untouched entry (empty = all): every note on d1 travels.
+        #expect(Set(docs[0].noteTexts) == ["Note one.", "Note two.", "Note three."])
+        // Partial selection: only the two chosen notes.
+        #expect(Set(docs[1].noteTexts) == ["Note one.", "Note three."])
+        // Legacy researchNoteId path still resolves the single linked note.
+        #expect(docs[2].noteTexts == ["Legacy note."])
+    }
+
+    /// The inspector's uncheck-last convention (D5, mirroring `setHighlightIncluded`):
+    /// deselecting the final note collapses `selectedNoteIds` to empty **and** turns the
+    /// notes gate off — since empty means "all", "none" must be the override-off flag.
+    /// Verified through the resolver: with the gate off, no notes export even though the
+    /// document has notes and the collection default includes them.
+    @Test("M2 D5: uncheck-last (selectedNoteIds empty + includeNotesOverride false) exports no notes")
+    @MainActor
+    func notesUncheckLastGatesOff() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+
+        let coll = Collection(name: "Gate")
+        coll.defaultBodyDepth = "full"
+        coll.includeNotes = true                 // collection default: notes on
+        context.insert(coll)
+
+        let n = ResearchNote(documentId: "d1", volumeId: "gatevol", bodyText: "Only note.")
+        context.insert(n)
+
+        // The uncheck-last end state: empty selection + gate explicitly off.
+        let gated = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "gatevol", sortOrder: 0)
+        gated.selectedNoteIds = []
+        gated.includeNotesOverride = false
+        gated.collection = coll
+        context.insert(gated)
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(
+            collection: coll, entries: [gated], allNotes: [n], purpose: .export)
+        let docs = items.documents
+        try #require(docs.count == 1)
+        // The renderers read `includeNotesOverride ?? options.includeNotes` as the
+        // whether-gate; the uncheck-last convention set the override to false, so no
+        // notes render for this entry even though the collection default includes them.
+        #expect(docs[0].includeNotesOverride == false)
     }
 
     @Test("Unified smart path: smart documents now carry collection-level composition (notes, highlights, body depth)")

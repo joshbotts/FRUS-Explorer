@@ -431,8 +431,22 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
         didSet { lastModified = .now }
     }
 
-    /// IDs of `ResearchNote` records to include with this entry in exports.
-    /// When non-empty, overrides `researchNoteId`. CloudKit-compatible (same pattern as `Collection.projectIds`).
+    /// IDs of `ResearchNote` records to include with this entry in exports (decision D5,
+    /// mirroring `selectedHighlightIds`). **Empty means all of the document's research
+    /// notes** — the write-on-first-deselect convention: an untouched entry keeps the
+    /// empty set, so future notes on the document auto-flow into exports, and the set is
+    /// only populated once the user deselects a specific note in the inspector. The
+    /// legacy single-note `researchNoteId` link is honored only while `selectedNoteIds`
+    /// is empty *and* `researchNoteId` is set (an un-migrated entry). CloudKit-compatible
+    /// (same pattern as `Collection.projectIds`); like `selectedHighlightIds`, note ids
+    /// are meaningful across the author's own synced devices but are **never serialized
+    /// into `.fruscollection` files** (a recipient lacks the referenced notes).
+    ///
+    /// > **D5 behavior change (2026-07-04).** Empty previously meant "no notes." It now
+    /// > means "all notes," matching `selectedHighlightIds`. Existing untouched-note
+    /// > entries therefore gain their notes on the next export when notes are enabled —
+    /// > the one intentional export-default change of the Collections Manager M2 program,
+    /// > applied with no data migration (empty is never written until the first deselect).
     var selectedNoteIds: [UUID] = [] {
         didSet { lastModified = .now }
     }

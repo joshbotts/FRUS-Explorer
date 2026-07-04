@@ -58,6 +58,14 @@ import SwiftData
 ///          sheet's min-size frame) so the outline stays visible and editable while
 ///          overrides and "Insert as Excerpt" act on it; the sheet presentations
 ///          (iOS/iPad, shared heading row) are unchanged
+///   1.7 — Collections Manager M2 (D3/D5): the inspector is now the single per-entry
+///          edit surface. It absorbs the **body-depth Picker** (leading Export Overrides
+///          as the parent gate the rest refine — moved verbatim from the reporting rows)
+///          and gains **per-note include toggles** (D5, empty = all, mirroring the
+///          per-highlight checkboxes and `setHighlightIncluded`) co-located with the
+///          Research-notes whether-gate, plus the "New Note…" affordance threaded from
+///          the editors via `onNewNote`. The reporting rows now show read-only status
+///          chips only
 struct CollectionEntryInspector: View {
 
     /// One stored summary choice for the headnote picker: identity, producing-prompt
@@ -90,6 +98,15 @@ struct CollectionEntryInspector: View {
         let name: String
     }
 
+    /// One research note offered by the per-note include toggles (D5). Row identity is
+    /// the note's id (also the `selectedNoteIds` element); the preview is its first line.
+    private struct NoteChoice: Identifiable {
+        /// The `ResearchNote.id` — row identity and the `selectedNoteIds` element.
+        let id: UUID
+        /// A short single-line preview of the note body, or the untitled fallback.
+        let preview: String
+    }
+
     /// The entry whose document is being inspected.
     let entry: CollectionEntry
 
@@ -97,6 +114,12 @@ struct CollectionEntryInspector: View {
     /// path c) — supplied by the presenting editor so its entry list stays in sync.
     /// `nil` (e.g. a future read-only presentation) hides the insert buttons.
     var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
+
+    /// Creates a new `ResearchNote` for this document and links it to the entry (D5) —
+    /// supplied by the presenting editor (it owns the note-create sheet + entry list).
+    /// `nil` (the heading variant, or a future read-only presentation) hides the
+    /// "New Note…" affordance in the per-note include list.
+    var onNewNote: (() -> Void)? = nil
 
     /// Whether this presentation is the macOS Collections manager's trailing
     /// `.inspector` column (UI audit B8) rather than a sheet. In the column the
@@ -116,6 +139,8 @@ struct CollectionEntryInspector: View {
     @State private var summaryPromptName: String?
     @State private var summaryChoices: [SummaryChoice] = []
     @State private var noteTexts: [String] = []
+    /// The document's research notes as include-toggle rows (D5).
+    @State private var noteChoices: [NoteChoice] = []
     @State private var tags: [String] = []
     @State private var highlightCount = 0
     /// The document's highlights as insertable rows (Authoring Phase 5).
@@ -216,15 +241,58 @@ struct CollectionEntryInspector: View {
 
     @ViewBuilder private var annotationsSection: some View {
         Section(String(localized: "collection.inspector.yourData", defaultValue: "Your Annotations")) {
-            if noteTexts.isEmpty {
+            // Per-note include toggles (D5): identical in shape to the per-highlight
+            // rows below — a checkbox (macOS) / switch (iOS) + note preview. An empty
+            // `selectedNoteIds` means **all**, so every row reads checked until the
+            // user deselects one; unchecking the last note turns notes off for the
+            // entry (empty can't mean "none"). Co-located with the whether-gate (the
+            // Research-notes Default/On/Off picker in Export Overrides) so which +
+            // whether are visible together.
+            if noteChoices.isEmpty {
                 Label(String(localized: "collection.inspector.noNotes", defaultValue: "No research notes"),
                       systemImage: "note.text")
                     .foregroundStyle(.secondary).font(.callout)
             } else {
-                ForEach(Array(noteTexts.enumerated()), id: \.offset) { _, text in
-                    Label { Text(text).font(.callout).lineLimit(3) }
-                        icon: { Image(systemName: "note.text") }
+                ForEach(noteChoices) { choice in
+                    HStack(alignment: .top, spacing: 8) {
+                        Toggle(isOn: Binding(
+                            get: { noteIncluded(choice.id) },
+                            set: { setNoteIncluded(choice.id, $0) }
+                        )) {
+                            EmptyView()
+                        }
+                        .labelsHidden()
+                        #if os(macOS)
+                        .toggleStyle(.checkbox)
+                        #else
+                        .toggleStyle(.switch)
+                        .controlSize(.mini)
+                        #endif
+                        .accessibilityLabel(String(localized: "collection.inspector.note.include",
+                                                   defaultValue: "Include this research note when notes apply"))
+                        Image(systemName: "note.text")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
+                        Text(choice.preview)
+                            .font(.callout)
+                            .lineLimit(3)
+                    }
                 }
+                Text(String(localized: "collection.inspector.note.selectionCaption",
+                            defaultValue: "Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let onNewNote {
+                Button {
+                    onNewNote()
+                } label: {
+                    Label(String(localized: "collection.inspector.note.new",
+                                 defaultValue: "New Note\u{2026}"),
+                          systemImage: "plus")
+                }
+                .font(.callout)
             }
 
             Label {
@@ -388,10 +456,44 @@ struct CollectionEntryInspector: View {
             .foregroundStyle(.secondary)
     }
 
+    /// This entry's body-depth override (`nil` = follow the section/collection default);
+    /// the parent gate the other overrides refine — highlights only apply at `.full`
+    /// (moved here from the reporting row in Collections Manager M2, D3).
+    private var bodyDepthOverride: Binding<String?> {
+        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
+    }
+
+    /// Depths offered here: those available on this device, plus the entry's current
+    /// override even when it isn't otherwise offered (a synced `.summaryOnly` on an
+    /// AI-less device). Moved verbatim from the reporting row (Collections Manager M2).
+    private var entryDepthOptions: [CollectionBodyDepth] {
+        let available = CollectionBodyDepth.available
+        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
+           !available.contains(d) {
+            return available + [d]
+        }
+        return available
+    }
+
+    /// The body-depth Picker — the parent gate the rest of the overrides refine, so it
+    /// leads both the document Export Overrides and the heading Section Defaults sections.
+    private var bodyDepthPicker: some View {
+        Picker(selection: bodyDepthOverride) {
+            Text(String(localized: "collection.entry.bodyDepth.default",
+                        defaultValue: "Default")).tag(String?.none)
+            ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
+        } label: {
+            Text(String(localized: "collection.entry.bodyDepth.label",
+                        defaultValue: "Body depth"))
+        }
+        .pickerStyle(.menu)
+    }
+
     /// The document entry's Export Overrides section.
     @ViewBuilder private var overridesSection: some View {
         Section(String(localized: "collection.inspector.overrides",
                        defaultValue: "Export Overrides")) {
+            bodyDepthPicker
             overrideControls
             Text(String(localized: "collection.inspector.overrides.caption",
                         defaultValue: "Default follows the section's setting when its heading sets one, else the collection's composition."))
@@ -441,6 +543,54 @@ struct CollectionEntryInspector: View {
             entry.applyHighlightsOverride = false
         } else {
             entry.selectedHighlightIds = selected
+        }
+    }
+
+    // MARK: - Per-note selection (D5)
+
+    /// Whether a research note is included when notes apply: an empty `selectedNoteIds`
+    /// means **all** (mirroring `highlightIncluded` / `selectedHighlightIds`). While the
+    /// entry is still on the legacy single-note path (`selectedNoteIds` empty and
+    /// `researchNoteId` set), that link scopes the "all" set to the one linked note so
+    /// the row reflects what actually exports — matching the resolver's precedence.
+    private func noteIncluded(_ id: UUID) -> Bool {
+        if !entry.selectedNoteIds.isEmpty { return entry.selectedNoteIds.contains(id) }
+        if let legacy = entry.researchNoteId { return legacy == id }
+        return true
+    }
+
+    /// Writes one note's inclusion, keeping the canonical D5 forms exactly as
+    /// `setHighlightIncluded`: selecting every note collapses back to the empty set (so
+    /// future notes on the document keep flowing in automatically), and unselecting the
+    /// last note turns the entry's notes override off — the empty set cannot mean "none",
+    /// so "none" is expressed as `includeNotesOverride = false` (the row caption says so).
+    /// Migrates the legacy single-note `researchNoteId` into the array on first edit.
+    private func setNoteIncluded(_ id: UUID, _ include: Bool) {
+        let allIds = noteChoices.map(\.id)
+        // Seed from the effective set so the first edit preserves the current meaning:
+        // an empty selection currently means "all" (or, un-migrated, the one legacy note).
+        var selected: [UUID]
+        if !entry.selectedNoteIds.isEmpty {
+            selected = entry.selectedNoteIds
+        } else if let legacy = entry.researchNoteId {
+            selected = [legacy]
+        } else {
+            selected = allIds
+        }
+        // Clear the legacy link once we start writing the array (single source of truth).
+        entry.researchNoteId = nil
+        if include {
+            if !selected.contains(id) { selected.append(id) }
+        } else {
+            selected.removeAll { $0 == id }
+        }
+        if Set(selected).isSuperset(of: allIds) {
+            entry.selectedNoteIds = []
+        } else if selected.isEmpty {
+            entry.selectedNoteIds = []
+            entry.includeNotesOverride = false
+        } else {
+            entry.selectedNoteIds = selected
         }
     }
 
@@ -562,6 +712,21 @@ struct CollectionEntryInspector: View {
             documentId: did, volumeId: vid, context: modelContext)
         tags = docTags
         noteTexts = docNotes
+
+        // Per-note include rows (D5): the document's own research notes, ordered newest
+        // first (matching the editors' `notes(for:)` ordering by `lastModified`).
+        let docNoteRecords = ((try? modelContext.fetch(FetchDescriptor<ResearchNote>(
+            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? [])
+            .sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
+        noteChoices = docNoteRecords.map { note in
+            let trimmed = note.bodyText.prefix(60).trimmingCharacters(in: .whitespacesAndNewlines)
+            return NoteChoice(
+                id: note.id,
+                preview: trimmed.isEmpty
+                    ? String(localized: "collection.entry.note.emptyPreview",
+                             defaultValue: "Untitled Note")
+                    : String(trimmed))
+        }
 
         let highlights = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>(
             predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? []

@@ -991,9 +991,18 @@ class CollectionContentResolver {
             } else if let legacyNote = legacyNoteId.flatMap({ nid in
                 batch.allNotes.first { $0.id == nid }
             }) {
+                // Un-migrated legacy single-note link: honored only while no multi-note
+                // selection exists (write paths migrate legacy → array on first edit).
                 resolvedNoteTexts = legacyNote.bodyText.isEmpty ? [] : [legacyNote.bodyText]
             } else {
-                resolvedNoteTexts = []
+                // D5: an empty selection with no legacy link means **all** of the
+                // document's notes (mirroring `selectedHighlightIds` and `.allDocumentNotes`),
+                // so future notes auto-flow in and enabling notes on an untouched entry
+                // actually exports them. Populated only on the first inspector deselect.
+                resolvedNoteTexts = batch.allNotes
+                    .filter { $0.documentId == ref.documentId && $0.volumeId == ref.volumeId }
+                    .map(\.bodyText)
+                    .filter { !$0.isEmpty }
             }
         case .allDocumentNotes:
             // Smart entries: every research note on the document travels, matching what

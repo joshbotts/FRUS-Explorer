@@ -575,11 +575,13 @@ struct CollectionGeneratedEntryRow: View {
 
 // MARK: - EntryRow
 
-/// A single row in the documents list that lets the user configure per-entry export options.
-///
-/// Users can:
-/// - Toggle whether the document body is included in the export.
-/// - Select zero or more research notes to include alongside the document.
+/// A single **reporting** row in the documents list (Collections Manager M2, D3): the
+/// document's identity plus read-only status chips projecting its per-entry export
+/// configuration. All editing routes to the shared `CollectionEntryInspector` via the ⓘ
+/// button — on iPhone the presenting editor opens it as a `.sheet`, on iPad as a trailing
+/// system `.inspector` column (selection-driven, matching macOS). The row keeps only the
+/// navigational/structural affordances: ⓘ inspect and the A4 Move Up / Move Down actions
+/// (delete stays on swipe in the owning `List`).
 ///
 /// Version history:
 ///   1.0 — extracted from CollectionEditorView.swift (Session 2026-07-02, Collections
@@ -590,6 +592,11 @@ struct CollectionGeneratedEntryRow: View {
 ///          action into the inspector's per-highlight "Insert as Excerpt" rows
 ///   1.3 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
 ///          via the shared `entryMoveControls`
+///   1.4 — Collections Manager M2 (D3): the row became **pure reporting**. The inline
+///          body-depth Picker and per-note toggle list moved into the inspector; the
+///          row now shows read-only status chips and delegates opening the inspector to
+///          the presenting editor via `onInspect` (so iPad can promote the sheet to an
+///          `.inspector` column). `onInsertExcerpt`/`showInspector`/`appState` moved out
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -604,33 +611,14 @@ struct EntryRow: View {
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
-    /// Appends an excerpt entry to the owning collection (Authoring Phase 5) — supplied
-    /// by the editor so the inspector's "Insert as Excerpt" keeps the pane's entry list
-    /// in sync. `nil` hides the inspector's insert affordance.
-    var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
+    /// Opens the per-entry inspector for this row (Collections Manager M2, D3). The
+    /// presenting editor decides the surface: an iPhone `.sheet` or an iPad selection-
+    /// driven `.inspector` column.
+    var onInspect: () -> Void
     /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
     var onMoveUp: (() -> Void)? = nil
     /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
     var onMoveDown: (() -> Void)? = nil
-
-    @Environment(AppState.self) private var appState
-    @State private var showInspector = false
-
-    /// This entry's body-depth override (`nil` = follow the collection default).
-    private var bodyDepthOverride: Binding<String?> {
-        Binding(get: { entry.bodyDepthOverride }, set: { entry.bodyDepthOverride = $0 })
-    }
-
-    /// Depths offered here: those available on this device, plus the entry's current override
-    /// even when it isn't otherwise offered (a synced `.summaryOnly` on an AI-less device).
-    private var entryDepthOptions: [CollectionBodyDepth] {
-        let available = CollectionBodyDepth.available
-        if let raw = entry.bodyDepthOverride, let d = CollectionBodyDepth(rawValue: raw),
-           !available.contains(d) {
-            return available + [d]
-        }
-        return available
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -646,7 +634,7 @@ struct EntryRow: View {
                     )
                 Spacer(minLength: 8)
                 Button {
-                    showInspector = true
+                    onInspect()
                 } label: {
                     Image(systemName: "info.circle")
                 }
@@ -675,75 +663,15 @@ struct EntryRow: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Per-entry body depth (overrides the collection default for this document)
-            Picker(selection: bodyDepthOverride) {
-                Text(String(localized: "collection.entry.bodyDepth.default",
-                            defaultValue: "Default")).tag(String?.none)
-                ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
-            } label: {
-                Text(String(localized: "collection.entry.bodyDepth.label",
-                            defaultValue: "Body depth"))
-            }
-            .pickerStyle(.menu)
-            .font(.caption)
-
-            // Per-note selection (multi-select)
-            if !availableNotes.isEmpty {
-                Text(String(localized: "collection.entry.notes.header",
-                            defaultValue: "Include notes:"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(availableNotes) { note in
-                        let isOn = Binding<Bool>(
-                            get: {
-                                // Prefer selectedNoteIds when non-empty; fall back to researchNoteId.
-                                if !entry.selectedNoteIds.isEmpty {
-                                    return entry.selectedNoteIds.contains(note.id)
-                                }
-                                return entry.researchNoteId == note.id
-                            },
-                            set: { include in
-                                // Migrate from legacy single-note to multi-note on first edit.
-                                if entry.selectedNoteIds.isEmpty, let legacy = entry.researchNoteId {
-                                    entry.selectedNoteIds = [legacy]
-                                    entry.researchNoteId = nil
-                                }
-                                if include {
-                                    if !entry.selectedNoteIds.contains(note.id) {
-                                        entry.selectedNoteIds.append(note.id)
-                                    }
-                                } else {
-                                    entry.selectedNoteIds.removeAll { $0 == note.id }
-                                }
-                            }
-                        )
-                        Toggle(isOn: isOn) {
-                            Text(noteLabel(note))
-                                .font(.caption)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        #if os(macOS)
-                        .toggleStyle(.checkbox)
-                        #endif
-                    }
-                }
-                .padding(.top, 2)
+            // Read-only status chips (Collections Manager M2, D3): body depth, note
+            // count, and override flags project the inspector's state so the list stays
+            // scannable. Editing lives in the ⓘ inspector.
+            BreadcrumbFlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
+                entryStatusChips(entry: entry, availableNoteCount: availableNotes.count)
             }
         }
         .padding(.vertical, 4)
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
-        .sheet(isPresented: $showInspector) {
-            CollectionEntryInspector(entry: entry, onInsertExcerpt: onInsertExcerpt)
-                .environment(appState)
-        }
-    }
-
-    private func noteLabel(_ note: ResearchNote) -> String {
-        let preview = note.bodyText.prefix(50).trimmingCharacters(in: .whitespacesAndNewlines)
-        return preview.isEmpty ? String(localized: "collection.entry.note.emptyPreview",
-                                        defaultValue: "Untitled Note") : String(preview)
     }
 }
 
@@ -774,5 +702,178 @@ struct UnrecognizedEntryRow: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Entry status chips (Collections Manager M2, D3)
+
+/// One quiet, read-only status chip projecting a slice of a document entry's inspector
+/// state onto the (now pure-reporting) row, so the collection list stays scannable
+/// while still communicating configuration at a glance (Collections Manager M2, D3).
+/// Compact and capsule-styled; never a control — every edit routes to the inspector.
+///
+/// Version history:
+///   1.0 — Collections Manager M2 (D3): initial implementation
+struct EntryStatusChip: View {
+    /// The chip's SF Symbol.
+    let systemImage: String
+    /// The chip's short localized label.
+    let text: String
+
+    var body: some View {
+        Label {
+            Text(text)
+        } icon: {
+            Image(systemName: systemImage)
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(.quaternary.opacity(0.5), in: Capsule())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The read-only status chips for one **document** entry — body depth (when overridden),
+/// the effective research-note count, and the override flags (highlights off, headnote,
+/// see-also). Shared by `MacEntryRow` (macOS) and `EntryRow` (iOS) so both rows report
+/// identically (Collections Manager M2, D3). Emits nothing when the entry is at its
+/// defaults, keeping an untouched row clean.
+///
+/// - Parameters:
+///   - entry: The document entry whose configuration is projected.
+///   - availableNoteCount: How many research notes the document has — used to size the
+///     note-count chip in the empty-`selectedNoteIds` (= all) case (D5).
+@MainActor @ViewBuilder
+func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some View {
+    // Body depth — only when the entry overrides the collection/section default.
+    if let raw = entry.bodyDepthOverride,
+       let depth = CollectionBodyDepth(rawValue: raw) {
+        EntryStatusChip(systemImage: "doc.text", text: depth.displayName)
+    }
+
+    // Effective research-note count (D5 semantics): explicit selection wins; else the
+    // legacy single-note link counts as one; else empty = all of the document's notes.
+    let noteCount: Int = {
+        if !entry.selectedNoteIds.isEmpty { return entry.selectedNoteIds.count }
+        if entry.researchNoteId != nil { return 1 }
+        return availableNoteCount
+    }()
+    if noteCount > 0 {
+        EntryStatusChip(
+            systemImage: "note.text",
+            text: String(format: String(localized: "collection.entry.chip.notes %lld",
+                                        defaultValue: "%lld notes"),
+                         Int64(noteCount)))
+    }
+
+    // Highlights explicitly turned off for this entry.
+    if entry.applyHighlightsOverride == false {
+        EntryStatusChip(
+            systemImage: "highlighter",
+            text: String(localized: "collection.entry.chip.highlightsOff",
+                         defaultValue: "Highlights off"))
+    }
+
+    // Headnote opted in.
+    if entry.includeHeadnote {
+        EntryStatusChip(
+            systemImage: "text.aligncenter",
+            text: String(localized: "collection.entry.chip.headnote",
+                         defaultValue: "Headnote"))
+    }
+
+    // Related-documents "See also" line opted in.
+    if entry.includeRelatedDocuments == true {
+        EntryStatusChip(
+            systemImage: "arrow.triangle.branch",
+            text: String(localized: "collection.entry.chip.seeAlso",
+                         defaultValue: "See also"))
+    }
+}
+
+// MARK: - InlineNoteCreateSheet
+
+/// Focused sheet for creating a new `ResearchNote` from within a collection editor. For
+/// full note editing (tags, projects, summaries) use `ResearchNoteEditorView` from the
+/// document view. Shared by the macOS manager and the iOS `CollectionEditorView` — the
+/// per-entry inspector's "New Note…" affordance (Collections Manager M2, D5).
+///
+/// Version history:
+///   1.0 — extracted from MacCollectionManagerView (Collections Manager M2): made
+///          cross-platform + localized so the iOS editor's inspector can open it too
+struct InlineNoteCreateSheet: View {
+
+    @Environment(\.modelContext) private var modelContext
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    /// The document the note is filed under.
+    let documentId: String
+    /// The document's volume.
+    let volumeId: String
+    /// The active project to file the note under, if any.
+    let activeProjectId: UUID?
+    /// Called with the newly created note after it is inserted and indexed.
+    let onCreated: (ResearchNote) -> Void
+
+    @State private var bodyText = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "collection.entry.newNote.title",
+                            defaultValue: "New Research Note")).font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            TextEditor(text: $bodyText)
+                .font(.body)
+                .padding(12)
+                .frame(minHeight: 140)
+                .scrollContentBackground(.hidden)
+
+            Divider()
+
+            HStack {
+                Button(String(localized: "common.cancel", defaultValue: "Cancel")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button(String(localized: "collection.entry.newNote.save",
+                              defaultValue: "Save Note")) {
+                    let trimmed = bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let note = ResearchNote(
+                        documentId: documentId,
+                        volumeId: volumeId,
+                        bodyText: trimmed,
+                        projectIds: activeProjectId.map { [$0] } ?? []
+                    )
+                    modelContext.insert(note)
+                    try? modelContext.save()   // ensure Research window @Query updates promptly
+                    // Push immediately so note text is searchable in this session.
+                    if let pipeline = appState.indexingPipeline {
+                        let vid = volumeId
+                        let did = documentId
+                        Task { try? await pipeline.updateNoteText(
+                            volumeId: vid, documentId: did,
+                            bodyText: trimmed, userTagIds: nil
+                        ) }
+                    }
+                    onCreated(note)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 440, minHeight: 280)
     }
 }

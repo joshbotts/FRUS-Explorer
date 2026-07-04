@@ -215,6 +215,10 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         var generatedBlockType: String?
         /// Inline research-note texts for this document (opt-in — populated only when the
         /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
+        /// These are the *resolved* note texts the entry's `selectedNoteIds` filter chose
+        /// (empty = all of the document's notes, D5); the device-local `selectedNoteIds`
+        /// ids themselves are **never** serialized — like `selectedHighlightIds` they
+        /// reference records the recipient lacks (see the 2.7 version note).
         var notes: [String]?
     }
 }
@@ -285,6 +289,13 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          skipped at resolve — the CloudKit path delivers the same string to old
 ///          builds anyway, so inert-entry is the one coherent decision; only an unknown
 ///          entry KIND is skipped on import, per the Phase 1 rule)
+///   1.7 — Collections Manager M2 (D5, notes default = all): no schema/format change.
+///          `selectedNoteIds` now means empty = all of the document's notes (mirroring
+///          `selectedHighlightIds`), so the exporter resolves *which* note texts travel
+///          in the existing `notes: [String]?` field; the ids themselves stay device-local
+///          and are still **never** serialized. Import unchanged — recreated notes are
+///          pinned via `selectedNoteIds`, and an entry with no `notes` keeps the empty
+///          set (= all of the recipient's notes when notes apply)
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
