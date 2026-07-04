@@ -269,3 +269,116 @@ struct DocumentWindowIDTests {
         #expect(decoded.header == "Memo")
     }
 }
+
+// MARK: - CommandFocusedValueTests
+
+/// Tests the equality contracts of the menu-bar command structs (Session
+/// 2026-07-04, UI audit gaps 5/6).
+///
+/// The "Document"/"Collection" CommandMenus consume these via the Equatable
+/// `focusedSceneValue(_:_:)` overload, which uses `==` to decide whether a
+/// republish reaches the menu. Two properties are load-bearing:
+///   1. closures are EXCLUDED from equality (they can't be compared), so two
+///      instances with identical state must compare equal even with different
+///      closures — otherwise every body evaluation would churn the menu;
+///   2. every fact the menu renders or gates on (enablement booleans, toggle
+///      state, document/collection identity) MUST participate, or the menu
+///      would go stale when only that fact changed.
+@MainActor
+struct CommandFocusedValueTests {
+
+    /// Builds a `DocumentCommandActions` with no-op closures and the given state.
+    private func documentActions(
+        documentKey: String = "frus1969-76v01/d1",
+        canGoPrevious: Bool = true,
+        canGoNext: Bool = true,
+        canHighlight: Bool = false,
+        isResearchPanelVisible: Bool = true
+    ) -> DocumentCommandActions {
+        DocumentCommandActions(
+            documentKey: documentKey,
+            canGoPrevious: canGoPrevious,
+            canGoNext: canGoNext,
+            canHighlight: canHighlight,
+            isResearchPanelVisible: isResearchPanelVisible,
+            goPrevious: {}, goNext: {}, addNote: {},
+            highlightSelection: { _ in }, toggleResearchPanel: {}
+        )
+    }
+
+    /// Builds a `CollectionDetailCommandActions` with no-op closures.
+    private func detailActions(
+        collectionId: UUID,
+        isPreviewShown: Bool = false,
+        canExport: Bool = true
+    ) -> CollectionDetailCommandActions {
+        CollectionDetailCommandActions(
+            collectionId: collectionId,
+            isPreviewShown: isPreviewShown,
+            canExport: canExport,
+            addDocuments: {}, addHeading: {}, addProse: {},
+            togglePreview: {}, exportCollection: {}
+        )
+    }
+
+    @Test("DocumentCommandActions: identical state compares equal across distinct closures")
+    func documentEqualityIgnoresClosures() {
+        var sideEffect = 0
+        let a = documentActions()
+        let b = DocumentCommandActions(
+            documentKey: "frus1969-76v01/d1",
+            canGoPrevious: true, canGoNext: true,
+            canHighlight: false, isResearchPanelVisible: true,
+            goPrevious: { sideEffect += 1 }, goNext: { sideEffect += 1 },
+            addNote: { sideEffect += 1 },
+            highlightSelection: { _ in sideEffect += 1 },
+            toggleResearchPanel: { sideEffect += 1 }
+        )
+        #expect(a == b)
+        #expect(sideEffect == 0)
+    }
+
+    @Test("DocumentCommandActions: each menu-rendered field breaks equality")
+    func documentEqualityTracksEveryStateField() {
+        let base = documentActions()
+        #expect(documentActions(documentKey: "frus1969-76v01/d2") != base)
+        #expect(documentActions(canGoPrevious: false) != base)
+        #expect(documentActions(canGoNext: false) != base)
+        #expect(documentActions(canHighlight: true) != base)
+        #expect(documentActions(isResearchPanelVisible: false) != base)
+    }
+
+    @Test("CollectionDetailCommandActions: identical state compares equal across distinct closures")
+    func detailEqualityIgnoresClosures() {
+        let id = UUID()
+        var sideEffect = 0
+        let a = detailActions(collectionId: id)
+        let b = CollectionDetailCommandActions(
+            collectionId: id, isPreviewShown: false, canExport: true,
+            addDocuments: { sideEffect += 1 }, addHeading: { sideEffect += 1 },
+            addProse: { sideEffect += 1 }, togglePreview: { sideEffect += 1 },
+            exportCollection: { sideEffect += 1 }
+        )
+        #expect(a == b)
+        #expect(sideEffect == 0)
+    }
+
+    @Test("CollectionDetailCommandActions: each menu-rendered field breaks equality")
+    func detailEqualityTracksEveryStateField() {
+        let id = UUID()
+        let base = detailActions(collectionId: id)
+        #expect(detailActions(collectionId: UUID()) != base)
+        #expect(detailActions(collectionId: id, isPreviewShown: true) != base)
+        #expect(detailActions(collectionId: id, canExport: false) != base)
+    }
+
+    @Test("CollectionManagerCommandActions: stateless — any two instances are interchangeable")
+    func managerActionsAreStateless() {
+        let a = CollectionManagerCommandActions(newCollection: {})
+        var fired = false
+        let b = CollectionManagerCommandActions(newCollection: { fired = true })
+        #expect(a == b)
+        b.newCollection()
+        #expect(fired)
+    }
+}

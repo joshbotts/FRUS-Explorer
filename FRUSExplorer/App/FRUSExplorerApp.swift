@@ -124,6 +124,16 @@ import os
 ///          sheets; Cross-Reference Graph defaultSize 480×440 → 900×640 (Session-94
 ///          class of bug: cramped for a graph canvas + legend); main window
 ///          minWidth 980 → 700 so it can tile side-by-side on 13″ displays
+///   4.5 — Session 2026-07-04 (macOS UI audit gaps 5/6): "Document" and "Collection"
+///          CommandMenus added, routed through focused-scene values
+///          (`DocumentCommandActions`, published by MacDocumentView;
+///          `CollectionManagerCommandActions`/`CollectionDetailCommandActions`,
+///          published by the Collections window) so each menu is enabled exactly
+///          when its window is key — reading shortcuts ⌥⌘↑/⌥⌘↓ (prev/next document),
+///          ⌘⇧N (add note), ⌘⇧H (highlight selection), ⌘⇧R (research panel);
+///          authoring shortcuts ⌥⌘N (new collection), ⌘⇧A (add documents — moved
+///          here from the toolbar button so the equivalent has a single owner),
+///          ⌥⌘P (preview), ⌘E (export)
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -867,6 +877,30 @@ struct FRUSExplorerApp: App {
             // Citation Lookup (⌘⇧F) is handled by the "frus.citationLookup" Window
             // scene shortcut, exactly as Search (⌘F) is handled by "frus.search" —
             // both find flows are windows with scene-owned shortcuts (UI audit B4).
+
+            // "Document" menu (UI audit gap 6) — reading shortcuts for whichever
+            // document surface is frontmost (the main window's pushed document or a
+            // standalone document window). Routed through the focused-scene value
+            // `\.documentCommands` that MacDocumentView publishes, so every item is
+            // enabled exactly when a document window is key and a document is loaded,
+            // and each acts on THAT window's navigation/highlight/panel state. The
+            // items mirror existing buttons only (Prev/Next volume navigation, the
+            // research strip's Highlight color picker and Add note, the Read/Research
+            // panel toggle) — no new behaviors.
+            CommandMenu(String(localized: "menu.document", defaultValue: "Document")) {
+                DocumentMenuContent()
+            }
+
+            // "Collection" menu (UI audit gap 5) — collection-authoring commands,
+            // enabled only while the Collections window (frus.collections) is key:
+            // `\.collectionManagerCommands` is published by the window's root view
+            // (New Collection works with nothing selected) and
+            // `\.collectionDetailCommands` by its detail pane (everything else needs
+            // a selected collection). ⌘⇧A moved here from the detail pane's toolbar
+            // button so the key equivalent has a single owner in the menu bar.
+            CommandMenu(String(localized: "menu.collection", defaultValue: "Collection")) {
+                CollectionMenuContent()
+            }
 
             // "History" menu — last ten documents visited and searches executed,
             // plus a "Complete History…" item opening the combined, project-
@@ -1618,3 +1652,341 @@ private extension Int {
     /// Returns this value if positive, otherwise returns `default`.
     func nonZeroOrDefault(_ default: Int) -> Int { self > 0 ? self : `default` }
 }
+
+// MARK: - Menu-Bar Command Plumbing (UI audit gaps 5/6)
+//
+// The "Document" and "Collection" CommandMenus act on whichever window is key via
+// SwiftUI's focused-value mechanism: the window's content publishes an actions
+// struct with `.focusedSceneValue(...)`, and the menu content reads it back with
+// `@FocusedValue`. When no publishing window is key the value is nil and every
+// item is disabled — the gating the audit asked for, with no global state.
+//
+// The structs are Equatable BY THEIR STATE FIELDS ONLY (closures are excluded —
+// they can't be compared). This is load-bearing for the Equatable
+// `focusedSceneValue(_:_:)` overload, which uses `==` to decide whether a
+// republish is needed: the identity fields must therefore cover every fact the
+// menu renders or gates on (enablement booleans, toggle state, the document/
+// collection identity), and the closures must only capture values that are
+// constant while those fields are unchanged. Publishers keep that contract —
+// e.g. MacDocumentView's prev/next entries are loaded once per document, so a
+// closure can only go stale if `canGoPrevious`/`canGoNext`/`documentKey` flipped,
+// which forces a republish. The types are deliberately NOT platform-guarded (the
+// menus are macOS-only, but the plain value types compile everywhere) so the
+// equality contract is exercised by the iOS-simulator unit-test runs.
+
+/// Actions the frontmost macOS document surface publishes for the "Document"
+/// menu (UI audit gap 6), via `.focusedSceneValue(\.documentCommands, ...)`.
+///
+/// Published by `MacDocumentView` — which exists in both the main window's
+/// navigation stack and standalone `DocumentWindowID` windows — so the menu
+/// always drives the key window's own document, and is disabled when no
+/// document surface is key (e.g. while the Search or Collections window is
+/// frontmost, or the main window is still on its placeholder).
+struct DocumentCommandActions: Equatable {
+
+    /// Stable identity of the published document (`volumeId/documentId`).
+    /// Part of the equality contract so a navigation to a different document
+    /// republishes even when every capability flag happens to match.
+    let documentKey: String
+
+    /// Whether a previous document exists in the volume's reading sequence
+    /// (mirrors the in-document "Previous" button's presence).
+    let canGoPrevious: Bool
+
+    /// Whether a next document exists in the volume's reading sequence
+    /// (mirrors the in-document "Next" button's presence).
+    let canGoNext: Bool
+
+    /// Whether an in-document text selection is active (mirrors the research
+    /// strip's Highlight button enablement).
+    let canHighlight: Bool
+
+    /// Whether the Notes/Tags/Summary research panel is currently shown —
+    /// renders the menu toggle's checkmark.
+    let isResearchPanelVisible: Bool
+
+    /// Navigates to the previous document in the volume (the "Previous" button).
+    let goPrevious: @MainActor () -> Void
+
+    /// Navigates to the next document in the volume (the "Next" button).
+    let goNext: @MainActor () -> Void
+
+    /// Opens the research-note composer window for this document (the research
+    /// strip's "Add note" button).
+    let addNote: @MainActor () -> Void
+
+    /// Saves the current selection as a highlight of the given color (the
+    /// research strip's Highlight button → color picker).
+    let highlightSelection: @MainActor (DocumentHighlight.Color) -> Void
+
+    /// Toggles the research panel (the strip's Read/Research segmented picker).
+    let toggleResearchPanel: @MainActor () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.documentKey == rhs.documentKey
+            && lhs.canGoPrevious == rhs.canGoPrevious
+            && lhs.canGoNext == rhs.canGoNext
+            && lhs.canHighlight == rhs.canHighlight
+            && lhs.isResearchPanelVisible == rhs.isResearchPanelVisible
+    }
+}
+
+/// Actions the Collections window's root view publishes for the "Collection"
+/// menu (UI audit gap 5), via `.focusedSceneValue(\.collectionManagerCommands, ...)`.
+///
+/// Separate from `CollectionDetailCommandActions` because "New Collection" must
+/// work while no collection is selected — the root view always exists while the
+/// window is key, whereas the detail pane exists only with a selection.
+struct CollectionManagerCommandActions: Equatable {
+
+    /// Opens the New Collection sheet (the sidebar toolbar's "+" button).
+    let newCollection: @MainActor () -> Void
+
+    /// Stateless by design — the struct carries no menu-rendered state, so any
+    /// two published instances are interchangeable (the closure captures only
+    /// the window's stable `@State` storage).
+    static func == (lhs: Self, rhs: Self) -> Bool { true }
+}
+
+/// Actions the Collections window's detail pane publishes for the "Collection"
+/// menu (UI audit gap 5), via `.focusedSceneValue(\.collectionDetailCommands, ...)`.
+///
+/// Nil (menu items disabled) whenever no collection is selected or the
+/// Collections window is not key. Every action mirrors an existing detail-pane
+/// control: the Add Documents / Export toolbar buttons, the structural-add
+/// menu's heading/prose items, and the Preview toolbar toggle.
+struct CollectionDetailCommandActions: Equatable {
+
+    /// The selected collection's identity — forces a republish when the
+    /// selection changes even if the capability flags happen to match.
+    let collectionId: UUID
+
+    /// Whether the live preview pane is currently shown — renders the menu
+    /// toggle's checkmark.
+    let isPreviewShown: Bool
+
+    /// Whether Export is available (entries exist, or the collection is smart —
+    /// mirrors the Export toolbar button's `disabled` condition).
+    let canExport: Bool
+
+    /// Opens the Add Documents sheet (⌘⇧A — the shortcut the toolbar button
+    /// used to own; the menu item owns it now).
+    let addDocuments: @MainActor () -> Void
+
+    /// Appends a section heading to the outline (the structural-add menu item).
+    let addHeading: @MainActor () -> Void
+
+    /// Appends a prose note block to the outline (the structural-add menu item).
+    let addProse: @MainActor () -> Void
+
+    /// Toggles the live preview pane (the Preview toolbar button).
+    let togglePreview: @MainActor () -> Void
+
+    /// Opens the Export sheet (the Export… toolbar button).
+    let exportCollection: @MainActor () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.collectionId == rhs.collectionId
+            && lhs.isPreviewShown == rhs.isPreviewShown
+            && lhs.canExport == rhs.canExport
+    }
+}
+
+/// Focused-value key for `DocumentCommandActions` (see `FocusedValues.documentCommands`).
+private struct DocumentCommandsKey: FocusedValueKey {
+    /// The published value type.
+    typealias Value = DocumentCommandActions
+}
+
+/// Focused-value key for `CollectionManagerCommandActions`
+/// (see `FocusedValues.collectionManagerCommands`).
+private struct CollectionManagerCommandsKey: FocusedValueKey {
+    /// The published value type.
+    typealias Value = CollectionManagerCommandActions
+}
+
+/// Focused-value key for `CollectionDetailCommandActions`
+/// (see `FocusedValues.collectionDetailCommands`).
+private struct CollectionDetailCommandsKey: FocusedValueKey {
+    /// The published value type.
+    typealias Value = CollectionDetailCommandActions
+}
+
+extension FocusedValues {
+
+    /// The key document window's reading actions (UI audit gap 6), published by
+    /// `MacDocumentView` and consumed by `DocumentMenuContent`.
+    var documentCommands: DocumentCommandActions? {
+        get { self[DocumentCommandsKey.self] }
+        set { self[DocumentCommandsKey.self] = newValue }
+    }
+
+    /// The Collections window's selection-independent actions (UI audit gap 5),
+    /// published by `MacCollectionManagerView` and consumed by `CollectionMenuContent`.
+    var collectionManagerCommands: CollectionManagerCommandActions? {
+        get { self[CollectionManagerCommandsKey.self] }
+        set { self[CollectionManagerCommandsKey.self] = newValue }
+    }
+
+    /// The Collections window's selected-collection actions (UI audit gap 5),
+    /// published by its detail pane and consumed by `CollectionMenuContent`.
+    var collectionDetailCommands: CollectionDetailCommandActions? {
+        get { self[CollectionDetailCommandsKey.self] }
+        set { self[CollectionDetailCommandsKey.self] = newValue }
+    }
+}
+
+#if os(macOS)
+
+// MARK: - Document Menu Content
+
+/// Body of the "Document" CommandMenu (UI audit gap 6).
+///
+/// Reads `\.documentCommands` — nil (every item disabled) unless a document
+/// surface is key with a loaded document. Shortcut choices, checked against the
+/// app and system for collisions:
+///   - ⌥⌘↑ / ⌥⌘↓ prev/next document: ⌘←/⌘→ were rejected because menu key
+///     equivalents pre-empt the field editor's line-start/line-end navigation in
+///     every text field app-wide; ⌥⌘↑/↓ has no NSTextView binding and no other
+///     claimant in this app.
+///   - ⌘⇧N add note: free (⌘N is the system "New Window" on the main WindowGroup).
+///   - ⌘⇧H highlight selection (on the Yellow item — the picker's first color;
+///     the submenu carries all four): free app-wide.
+///   - ⌘⇧R research panel: free (Research *window* is ⌥⌘R).
+struct DocumentMenuContent: View {
+
+    /// The key document window's published actions; nil disables every item.
+    @FocusedValue(\.documentCommands) private var commands
+
+    var body: some View {
+        Button(String(localized: "menu.document.previous",
+                      defaultValue: "Previous Document")) {
+            commands?.goPrevious()
+        }
+        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+        .disabled(commands?.canGoPrevious != true)
+
+        Button(String(localized: "menu.document.next",
+                      defaultValue: "Next Document")) {
+            commands?.goNext()
+        }
+        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+        .disabled(commands?.canGoNext != true)
+
+        Divider()
+
+        Button(String(localized: "menu.document.addNote",
+                      defaultValue: "Add Note…")) {
+            commands?.addNote()
+        }
+        .keyboardShortcut("n", modifiers: [.command, .shift])
+        .disabled(commands == nil)
+
+        // Highlight Selection — a submenu of the same four colors the research
+        // strip's picker offers (no new behavior: the strip button opens a
+        // color-picker popover, so a single unqualified item would have had to
+        // invent a default). The first color (yellow) carries the key equivalent.
+        Menu(String(localized: "menu.document.highlight",
+                    defaultValue: "Highlight Selection")) {
+            ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                if color == .yellow {
+                    Button(color.displayName) { commands?.highlightSelection(color) }
+                        .keyboardShortcut("h", modifiers: [.command, .shift])
+                } else {
+                    Button(color.displayName) { commands?.highlightSelection(color) }
+                }
+            }
+        }
+        .disabled(commands?.canHighlight != true)
+
+        Divider()
+
+        Toggle(isOn: Binding(
+            get: { commands?.isResearchPanelVisible ?? false },
+            set: { _ in commands?.toggleResearchPanel() }
+        )) {
+            Text(String(localized: "menu.document.researchPanel",
+                        defaultValue: "Show Research Panel"))
+        }
+        .keyboardShortcut("r", modifiers: [.command, .shift])
+        .disabled(commands == nil)
+    }
+}
+
+// MARK: - Collection Menu Content
+
+/// Body of the "Collection" CommandMenu (UI audit gap 5).
+///
+/// Reads two focused values published by the Collections window:
+/// `\.collectionManagerCommands` (root view — New Collection works with nothing
+/// selected) and `\.collectionDetailCommands` (detail pane — everything else
+/// requires a selected collection). Both are nil while any other window is key,
+/// disabling the whole menu. Shortcut choices, checked for collisions:
+///   - ⌥⌘N new collection: ⌘N is the system "New Window" item the main
+///     WindowGroup contributes, so the audit's suggested ⌘N was taken.
+///   - ⌘⇧A add documents: moved from the detail pane's toolbar button (which
+///     used to declare it) so the equivalent has exactly one menu-bar owner.
+///   - ⌥⌘P preview: ⌘P is conventionally Print; ⌥⌘P is unclaimed here.
+///   - ⌘E export: free — the app declares no Find menu, so the system's
+///     "Use Selection for Find" (⌘E) has no item to collide with.
+struct CollectionMenuContent: View {
+
+    /// The Collections window's selection-independent actions; nil disables
+    /// New Collection.
+    @FocusedValue(\.collectionManagerCommands) private var manager
+
+    /// The Collections window's selected-collection actions; nil disables the
+    /// authoring and export items.
+    @FocusedValue(\.collectionDetailCommands) private var detail
+
+    var body: some View {
+        Button(String(localized: "menu.collection.new",
+                      defaultValue: "New Collection…")) {
+            manager?.newCollection()
+        }
+        .keyboardShortcut("n", modifiers: [.command, .option])
+        .disabled(manager == nil)
+
+        Divider()
+
+        Button(String(localized: "menu.collection.addDocuments",
+                      defaultValue: "Add Documents…")) {
+            detail?.addDocuments()
+        }
+        .keyboardShortcut("a", modifiers: [.command, .shift])
+        .disabled(detail == nil)
+
+        Button(String(localized: "menu.collection.addHeading",
+                      defaultValue: "Add Section Heading")) {
+            detail?.addHeading()
+        }
+        .disabled(detail == nil)
+
+        Button(String(localized: "menu.collection.addProse",
+                      defaultValue: "Add Note Block")) {
+            detail?.addProse()
+        }
+        .disabled(detail == nil)
+
+        Divider()
+
+        Toggle(isOn: Binding(
+            get: { detail?.isPreviewShown ?? false },
+            set: { _ in detail?.togglePreview() }
+        )) {
+            Text(String(localized: "menu.collection.preview",
+                        defaultValue: "Show Preview"))
+        }
+        .keyboardShortcut("p", modifiers: [.command, .option])
+        .disabled(detail == nil)
+
+        Button(String(localized: "menu.collection.export",
+                      defaultValue: "Export Collection…")) {
+            detail?.exportCollection()
+        }
+        .keyboardShortcut("e", modifiers: .command)
+        .disabled(detail?.canExport != true)
+    }
+}
+
+#endif // os(macOS)

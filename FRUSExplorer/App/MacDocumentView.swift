@@ -63,6 +63,11 @@ import SwiftData
 ///          "Add Note" open the frus.noteComposer window (`openNoteComposer`,
 ///          pendingNoteComposer hand-off) instead of `ResearchNoteEditorView`
 ///          sheets — the document stays readable while composing
+///   2.2 — Session 2026-07-04 (macOS UI audit gap 6): publishes
+///          `DocumentCommandActions` as the `\.documentCommands` focused-scene
+///          value, wiring the "Document" menu's reading shortcuts (⌥⌘↑/⌥⌘↓
+///          prev/next, ⌘⇧N add note, ⌘⇧H highlight selection, ⌘⇧R research
+///          panel) to this view's existing actions in whichever window is key
 @MainActor
 struct MacDocumentView: View {
 
@@ -218,6 +223,13 @@ struct MacDocumentView: View {
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
             activity.isEligibleForHandoff = true
         }
+        // "Document" menu wiring (UI audit gap 6): publish this document's reading
+        // actions to the menu bar for as long as this view's scene is key. Reading
+        // the coordinator's selection range here also makes body observe it, so the
+        // menu's "Highlight Selection" enablement tracks live selection changes.
+        // Optional-typed so the Equatable focusedSceneValue overload is selected
+        // (the non-optional variant is deprecated on macOS 15).
+        .focusedSceneValue(\.documentCommands, documentCommands)
         .sheet(isPresented: $showTagPicker) {
             MacTagPickerSheet(
                 entry: entry,
@@ -547,6 +559,35 @@ struct MacDocumentView: View {
                 .padding(.vertical, 10)
             }
         }
+    }
+
+    /// The "Document" menu's command surface for this document (UI audit gap 6),
+    /// published as the `\.documentCommands` focused-scene value.
+    ///
+    /// Every closure routes to an action that already exists as a button: prev/next
+    /// mirror `volumeNavigationView`, add-note mirrors the research panel's "Add
+    /// Note" (`openNoteComposer`), highlight mirrors the research strip's color
+    /// picker (`createWebKitHighlight`), and the panel toggle mirrors the strip's
+    /// Read/Research picker (same `AppStorage` key). Equality contract (see
+    /// `DocumentCommandActions`): the closures capture only `prevEntry`/`nextEntry`,
+    /// which are loaded once per document — any change to them flips
+    /// `canGoPrevious`/`canGoNext` (or `documentKey`), forcing a republish, so a
+    /// stale closure can never survive an equality check.
+    private var documentCommands: DocumentCommandActions? {
+        DocumentCommandActions(
+            documentKey: "\(entry.volumeId)/\(entry.documentId)",
+            canGoPrevious: prevEntry != nil,
+            canGoNext: nextEntry != nil,
+            canHighlight: highlightCoordinator.webKitSelectionRange != nil,
+            isResearchPanelVisible: panelVisible,
+            goPrevious: { if let prev = prevEntry { navigationPath.append(prev) } },
+            goNext: { if let next = nextEntry { navigationPath.append(next) } },
+            addNote: { openNoteComposer() },
+            highlightSelection: { color in createWebKitHighlight(color: color) },
+            toggleResearchPanel: {
+                withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
+            }
+        )
     }
 
     /// Hands this document (and optionally an existing note) to the research-note
