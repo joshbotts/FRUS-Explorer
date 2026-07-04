@@ -230,6 +230,23 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          matcher doc-comment corrections (`relatedByDecimalClass` is a covering-
 ///          index scan, not a seek — SQLite's LIKE prefix optimization cannot engage
 ///          on the BINARY-collated column). `currentDateIndexVersion` → 20.
+///   4.9 — Source Explorer Phase 4 step 2 (Session 2026-07-03): collection-authority
+///          app wiring — no parse-output change, so no index-version bump.
+///          `localCollectionStats` computes the S5 local counts for a bundled
+///          authority record (indexed documents citing it + their distinct volumes)
+///          from the normalized-key columns; `archivalNeighbors(forLotFile:…)` gains
+///          a display-time **alias fallback** (`CollectionAliasFallback`, built from
+///          the bundled authority record): when every direct key path returns zero,
+///          the authority's lot key and then its merged alias forms are retried
+///          through the same match paths, bridging the Phase-3 grain mismatches
+///          (library sub-collections, heading-level series names).
+///  4.10 — Source Explorer Phase 4 adversarial review (Session 2026-07-04): no
+///          parse-output change, so no index-version bump. `collectionNeighbors`
+///          lists a whole authority record's neighbors through the **same** OR-union
+///          clause `localCollectionStats` counts with (`collectionMatchClause` —
+///          one clause, one truth; the Collection detail sheet total now always
+///          equals the S5 count), and the form window widens 8 → 13
+///          (`collectionMatchFormCap`: canonical name + the artifact's 12-alias cap).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -4689,6 +4706,23 @@ public actor IndexingPipeline {
     ///
     /// Entries with no key on any path return empty with `basis == nil`.
     ///
+    /// ## Alias fallback (Source Explorer Phase 4 — display-time only)
+    ///
+    /// When **every direct path returns zero matches** and an `aliasFallback` (built
+    /// from the bundled collection-authority record the entry resolved to) is
+    /// provided, the lookup continues in this documented order:
+    ///
+    /// 1. The authority's **canonical lot key** (`lotFileNorm`) — the record may be
+    ///    lot-keyed even when the entry's own row carries no lot (a heading-level
+    ///    series name whose lot lives on a sibling citation).
+    /// 2. Each of the authority's **merged name/alias forms**, in order, retried
+    ///    through the same series-scoped path the entry would use (presidential
+    ///    library → record group + series → bare series name); the first form with
+    ///    matches wins and is named in the returned `basis`.
+    ///
+    /// The fallback never runs when a direct path matched (most-specific-first), and
+    /// nothing is persisted — the schema is unchanged.
+    ///
     /// - Parameters:
     ///   - lotFile: The entry's lot file (e.g. `"64 D 199"`), if any.
     ///   - recordGroup: The entry's record group (e.g. `"59"`), if any.
@@ -4697,6 +4731,8 @@ public actor IndexingPipeline {
     ///   - repository: The entry's holding repository, if any; only library
     ///     repositories participate in matching (path 3).
     ///   - decimalClass: The entry's decimal / subject-numeric class key, if any.
+    ///   - aliasFallback: The bundled authority record's keys and alias forms, tried
+    ///     only after every direct path returns zero (see above). Default `nil`.
     ///   - limit: Maximum neighbors to return. Default 30.
     /// - Returns: Matched documents (≤ `limit`), the total match count, and the
     ///   human-readable archival `basis`, or `basis == nil` when nothing matched.
@@ -4706,7 +4742,31 @@ public actor IndexingPipeline {
         series: String?,
         repository: String? = nil,
         decimalClass: String? = nil,
+        aliasFallback: CollectionAliasFallback? = nil,
         limit: Int = 30
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        let direct = try directArchivalNeighbors(
+            forLotFile: lotFile, recordGroup: recordGroup, series: series,
+            repository: repository, decimalClass: decimalClass, limit: limit)
+        if direct.totalCount > 0 { return direct }
+        guard let aliasFallback else { return direct }
+        if let viaAuthority = try aliasNeighbors(
+            fallback: aliasFallback, directLotFile: lotFile, recordGroup: recordGroup,
+            series: series, repository: repository, limit: limit) {
+            return viaAuthority
+        }
+        return direct
+    }
+
+    /// The direct (pre-Phase-4) key paths of `archivalNeighbors(forLotFile:…)`,
+    /// most-specific first: lot → class leaf → presidential library → RG + series.
+    private func directArchivalNeighbors(
+        forLotFile lotFile: String?,
+        recordGroup: String?,
+        series: String?,
+        repository: String?,
+        decimalClass: String?,
+        limit: Int
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
         if let lot = lotFile?.trimmingCharacters(in: .whitespaces), !lot.isEmpty {
             let r = try relatedByLotFile(lot, limit: limit)
@@ -4736,6 +4796,57 @@ public actor IndexingPipeline {
                            defaultValue: "RG \(rg): \(s)"))
         }
         return ([], 0, nil)
+    }
+
+    /// The Phase-4 alias-fallback pass (see `archivalNeighbors(forLotFile:…)` for the
+    /// documented order): the authority's lot key first, then each merged name/alias
+    /// form through the entry's series-scoped path. Returns `nil` when no fallback
+    /// form matched anything.
+    private func aliasNeighbors(
+        fallback: CollectionAliasFallback,
+        directLotFile: String?,
+        recordGroup: String?,
+        series: String?,
+        repository: String?,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?)? {
+        // 1. The authority's canonical lot key (unless the direct path already was it).
+        if let lotNorm = fallback.lotFileNorm, !lotNorm.isEmpty {
+            let directNorm = directLotFile.map { SourceNoteParser.lotFileNorm($0) }
+            if directNorm != lotNorm {
+                let r = try relatedByLotFile(lotNorm, limit: limit)
+                if r.totalCount > 0 {
+                    return (r.documents, r.totalCount,
+                            String(localized: "archivalNeighbors.basis.lot",
+                                   defaultValue: "Lot \(lotNorm)"))
+                }
+            }
+        }
+        // 2. Each merged name/alias form through the entry's series-scoped path.
+        let directSeries = series?.trimmingCharacters(in: .whitespaces)
+        let libraryRepo: String? = repository
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .flatMap { Self.isLibraryRepository($0) ? $0 : nil }
+        let bareRG = recordGroup?.trimmingCharacters(in: .whitespaces)
+        for form in fallback.names {
+            let name = form.trimmingCharacters(in: .whitespaces)
+            guard name.count >= 4, name != directSeries else { continue }
+            let r: (documents: [RelatedDocument], totalCount: Int)
+            if let libraryRepo {
+                r = try relatedByPresidentialLibrary(library: libraryRepo,
+                                                     collection: name, limit: limit)
+            } else if let rg = bareRG, !rg.isEmpty {
+                r = try relatedByCollection(recordGroup: rg, series: name, limit: limit)
+            } else {
+                r = try relatedBySeriesName(name, limit: limit)
+            }
+            if r.totalCount > 0 {
+                return (r.documents, r.totalCount,
+                        String(localized: "archivalNeighbors.basis.alias",
+                               defaultValue: "\(name) (collection authority)"))
+            }
+        }
+        return nil
     }
 
     // MARK: - Related Document Helpers
@@ -5041,6 +5152,256 @@ public actor IndexingPipeline {
             selectParams: [repoLike, collectionLike],
             limit: limit
         )
+    }
+
+    /// Returns documents citing a **bare series name** (no record group, no repository
+    /// scope) — the unattributed named-series grain (`citation_era = 'named_series'`
+    /// rows and heading-level series the corpus never attributes). Same comma-boundary
+    /// prefix rules as `relatedByCollection` (exact, or `name + ",…"` for locator
+    /// tails), with the same ≥4-character guard. Used only by the Phase-4 alias
+    /// fallback and the S5 local-stats query — direct entry paths always carry a
+    /// stronger key.
+    private func relatedBySeriesName(
+        _ series: String,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        let s = series.trimmingCharacters(in: .whitespaces)
+        guard s.count >= 4 else { return ([], 0) }
+        let esc = Self.likeEscaped(s)
+        let whereClause = "(ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')"
+        let params = [esc, esc + ",%"]
+
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: params, selectParams: params,
+            limit: limit
+        )
+    }
+
+    // MARK: - Collection Authority Fallback (Source Explorer Phase 4)
+
+    /// The bundled collection-authority record's match keys, passed by display
+    /// surfaces into `archivalNeighbors(forLotFile:…)` for the display-time alias
+    /// fallback. Carrying the values (rather than consulting the bundle inside the
+    /// matcher) keeps the matcher deterministic and fixture-testable.
+    public struct CollectionAliasFallback: Sendable, Equatable {
+        /// The authority record's canonical compact lot key, when lot-keyed.
+        public let lotFileNorm: String?
+        /// The record's canonical name followed by its merged alias forms, in the
+        /// artifact's order.
+        public let names: [String]
+        /// Memberwise initializer.
+        public init(lotFileNorm: String?, names: [String]) {
+            self.lotFileNorm = lotFileNorm
+            self.names = names
+        }
+    }
+
+    // MARK: - Collection Authority Local Stats (Source Explorer Phase 4, S5)
+
+    /// Local per-user statistics for one bundled collection-authority record: how much
+    /// of the user's **own index** cites the collection. Owner decision **S5**: the
+    /// artifact never ships document counts — these are always recomputed here.
+    public struct CollectionLocalStats: Sendable, Equatable {
+        /// Indexed documents whose source note cites the collection.
+        public let documentCount: Int
+        /// Distinct indexed volumes those documents span.
+        public let volumeCount: Int
+        /// Memberwise initializer.
+        public init(documentCount: Int, volumeCount: Int) {
+            self.documentCount = documentCount
+            self.volumeCount = volumeCount
+        }
+    }
+
+    /// Maximum distinct name/alias forms folded into the record-level OR-union match
+    /// clause — covers a record's canonical name plus the artifact's full alias cap
+    /// (12), so the S5 counts and the record-level neighbors query never window the
+    /// alias list differently.
+    private static let collectionMatchFormCap = 13
+
+    /// Builds the record-level OR-union `WHERE` clause over `document_sources ds` for
+    /// one bundled collection-authority record — **the single source of truth** shared
+    /// by `localCollectionStats` (the S5 counts) and `collectionNeighbors` (the
+    /// record-level Archival Neighbors sheet), so the two surfaces agree by
+    /// construction:
+    ///
+    /// - the record's canonical lot key → `lot_file_norm` equality (indexed seek);
+    /// - each name/alias form (≥4 chars, capped at `collectionMatchFormCap`) →
+    ///   - presidential-library records: repository keyword + collection prefix
+    ///     (`relatedByPresidentialLibrary` shape),
+    ///   - record-group records: RG (both stored forms) + comma-boundary series prefix
+    ///     (`relatedByCollection` shape),
+    ///   - unattributed records: bare comma-boundary series prefix
+    ///     (`relatedBySeriesName` shape).
+    ///
+    /// Returns `nil` when the record yields no usable branch.
+    private func collectionMatchClause(
+        lotFileNorm: String?,
+        repository: String?,
+        recordGroup: String?,
+        names: [String]
+    ) -> (clause: String, params: [String])? {
+        var branches: [String] = []
+        var params: [String] = []
+
+        if let lot = lotFileNorm?.trimmingCharacters(in: .whitespaces), !lot.isEmpty {
+            branches.append("ds.lot_file_norm = ?")
+            params.append(lot)
+        }
+
+        let repo = repository?.trimmingCharacters(in: .whitespaces)
+        let isLibrary = repo.map(Self.isLibraryRepository) ?? false
+        let bareRG = recordGroup.map {
+            $0.replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
+                                    options: [.regularExpression, .caseInsensitive])
+                .trimmingCharacters(in: .whitespaces)
+        }.flatMap { $0.isEmpty ? nil : $0 }
+
+        var seenNames: Set<String> = []
+        for form in names {
+            let name = form.trimmingCharacters(in: .whitespaces)
+            guard name.count >= 4, seenNames.insert(name.lowercased()).inserted,
+                  seenNames.count <= Self.collectionMatchFormCap else { continue }
+            let esc = Self.likeEscaped(name)
+            if isLibrary, let repo {
+                let keyword = Self.libraryKeyword(from: repo)
+                guard !keyword.isEmpty else { continue }
+                branches.append("""
+                    (UPPER(ds.repository) LIKE UPPER(?) ESCAPE '\\' \
+                    AND UPPER(ds.series_name) LIKE UPPER(?) ESCAPE '\\')
+                    """)
+                params.append("%\(Self.likeEscaped(keyword))%")
+                params.append(Self.likeEscaped(String(name.prefix(50))) + "%")
+            } else if let bareRG {
+                branches.append("""
+                    (ds.record_group IN (?, ?) \
+                    AND (ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\'))
+                    """)
+                params.append(contentsOf: [bareRG, "RG-\(bareRG)", esc, esc + ",%"])
+            } else {
+                branches.append("""
+                    (ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')
+                    """)
+                params.append(contentsOf: [esc, esc + ",%"])
+            }
+        }
+        guard !branches.isEmpty else { return nil }
+        return (branches.joined(separator: " OR "), params)
+    }
+
+    /// Computes the S5 local stats for an authority record — indexed documents citing
+    /// it plus their distinct volumes — in **one** SQL round-trip over the
+    /// normalized-key columns.
+    ///
+    /// The `WHERE` clause is `collectionMatchClause` — the exact clause
+    /// `collectionNeighbors` runs — so these counts always agree with the record-level
+    /// Archival Neighbors sheet. (The *entry-level* neighbors path,
+    /// `archivalNeighbors(forLotFile:…)`, is intentionally different: it resolves one
+    /// citation row by its most specific key, not a whole authority record.)
+    ///
+    /// Class-keyed sub-series are **not** folded in: their citing documents are their
+    /// own `decimal_class` queries (the class child's Archival Neighbors action), and
+    /// folding them into the parent would count the whole central-files corpus.
+    ///
+    /// - Parameters:
+    ///   - lotFileNorm: The record's canonical compact lot key, if lot-keyed.
+    ///   - repository: The record's canonical repository keyword, if any.
+    ///   - recordGroup: The record's record-group number, if any.
+    ///   - names: The record's canonical name followed by its alias forms.
+    /// - Returns: The local document / distinct-volume counts (zero when the user's
+    ///   index cites nothing from the collection).
+    public func localCollectionStats(
+        lotFileNorm: String?,
+        repository: String?,
+        recordGroup: String?,
+        names: [String]
+    ) throws -> CollectionLocalStats {
+        guard let match = collectionMatchClause(
+            lotFileNorm: lotFileNorm, repository: repository,
+            recordGroup: recordGroup, names: names) else {
+            return CollectionLocalStats(documentCount: 0, volumeCount: 0)
+        }
+        let sql = """
+            SELECT COUNT(*), COUNT(DISTINCT ds.volume_id)
+            FROM document_sources ds
+            WHERE \(match.clause)
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, p) in match.params.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard sqlite3_step(stmt) == SQLITE_ROW else {
+            return CollectionLocalStats(documentCount: 0, volumeCount: 0)
+        }
+        return CollectionLocalStats(
+            documentCount: Int(sqlite3_column_int64(stmt, 0)),
+            volumeCount: Int(sqlite3_column_int64(stmt, 1))
+        )
+    }
+
+    /// Returns archival neighbors for a **whole authority record** (the Collection
+    /// detail surface): the union of every match shape the record carries, via the
+    /// same `collectionMatchClause` that `localCollectionStats` counts with — one
+    /// clause, one truth, so the sheet's total always equals the S5 count
+    /// (adversarial review 2026-07-04, finding 3; the previous record-level path
+    /// short-circuited on the lot branch and could list fewer documents than the
+    /// count shown beside the button).
+    ///
+    /// - Parameters:
+    ///   - lotFileNorm: The record's canonical compact lot key, if lot-keyed.
+    ///   - repository: The record's canonical repository keyword, if any.
+    ///   - recordGroup: The record's record-group number, if any.
+    ///   - names: The record's canonical name followed by its alias forms.
+    ///   - limit: Maximum neighbors to return. Default 30.
+    /// - Returns: Matched documents (≤ `limit`), the total match count, and the
+    ///   human-readable `basis` (the record's canonical name), or `basis == nil`
+    ///   when the record yields no usable match shape.
+    public func collectionNeighbors(
+        lotFileNorm: String?,
+        repository: String?,
+        recordGroup: String?,
+        names: [String],
+        limit: Int = 30
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        guard let match = collectionMatchClause(
+            lotFileNorm: lotFileNorm, repository: repository,
+            recordGroup: recordGroup, names: names) else {
+            return ([], 0, nil)
+        }
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(match.clause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(match.clause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        let r = try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: match.params, selectParams: match.params,
+            limit: limit
+        )
+        let basis = names.first?.trimmingCharacters(in: .whitespaces)
+            ?? lotFileNorm.map {
+                String(localized: "archivalNeighbors.basis.lot", defaultValue: "Lot \($0)")
+            }
+        return (r.documents, r.totalCount, basis)
     }
 
     /// Shared executor for COUNT + SELECT related-document queries.

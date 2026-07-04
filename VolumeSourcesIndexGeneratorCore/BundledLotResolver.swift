@@ -17,6 +17,18 @@ public struct ResolvedNAID: Sendable, Equatable, Codable {
     /// How the match was made: `lot` (bundled lot-file index), `api` (NARA Catalog query),
     /// or `manual` (a curated record-group/repository mapping).
     public let matchType: String
+
+    /// Memberwise initializer (public so sibling generators — the Phase 4
+    /// `CollectionAuthorityGeneratorCore` offline resolver — can construct records
+    /// from cached resolutions).
+    public init(naId: String, catalogURL: String, title: String,
+                recordGroup: String?, matchType: String) {
+        self.naId = naId
+        self.catalogURL = catalogURL
+        self.title = title
+        self.recordGroup = recordGroup
+        self.matchType = matchType
+    }
 }
 
 /// Resolves lot-file citations to NARA Catalog records offline, using the bundled

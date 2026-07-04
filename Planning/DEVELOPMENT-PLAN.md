@@ -1216,3 +1216,28 @@ exclusion keyed on `listofworks`, which a 694-volume survey proved NONEXISTENT (
 hardening; plural "Lots"; spaced letter-suffix parity; doc-comment accuracy. 1100/1100 app +
 279/279 SPM. Remaining: Phase 4 (cross-volume authority; S4/S5) + Phase 5 (three-state UI,
 classification chips, S6 window).
+
+### Session 2026-07-04 — Source Explorer Phase 4 (cross-volume collection authority)
+Three commits on claude/sourceexplorer-phase4-authority. **Owner decisions: S4 = two levels,
+S5 = local counts only.** (1) **generator** — sibling CollectionAuthorityGenerator (Core/exe/
+tests) parses all 694 TEI volumes with the SHARED SourceNoteKit grammar (key-producing rules
+centralized in SourceNoteKit/CollectionKeying.swift — generator and app agree by construction,
+proven by byte-identical artifact across the refactor); two-level conservative clustering
+(lot-norm always merges; textual merges same-repo only; unattributed never joins attributed;
+generic/locator segments never key; central-files → DoS override); bundled
+collection-authority.json = 4,464 records / 7,739 children / 5,473 aliases / 939 NAIDs,
+1.92MB ≤ budget, byte-deterministic; 477 ambiguous clusters deliberately unmerged (committed
+report). Coverage: lot-keyed 100%, overall 81.2% of Phase-3-keyed items. (2) **app** —
+CollectionAuthorityIndex store; CollectionDetailView (aliases, NAID link, corpus volume list,
+S5 local stats via IndexingPipeline.localCollectionStats, neighbors incl. per-child
+decimal_class); VolumeSourcesView rows upgrade to "Collection · cited in N volumes";
+Source Explorer gains Archival Collection sections + browse-by-collection
+(CollectionBrowserView; macOS Collections segment in the window); alias-fallback in the
+matcher (direct-first, display-time only, basis names the alias). Docs rider both manuals +
+TestFlight + education view. (3) **review fixes 6/6** — HIGH: secondary-copy citations minted
+phantom "Department of State" records for presidential-library collections (library-name gate;
+phantom buckets verified gone in regenerated artifact); name-initial truncation merges;
+S5-count/neighbors-agreement doc fix; unattributed-bucket ambiguity guard; symmetric
+central-files override; extractor-parity tests. 1120/1120 app + 317/317 SPM.
+**Remaining: SE Phase 5** (three-state UI, classification chips, S6 = neighbors window on
+macOS — owner call) → then the consolidated docs pass + build bump (reindex v18).

@@ -43,6 +43,10 @@ import AppKit
 ///          Catalog" when `fileId` is nil, matching the iOS fix for the misleading label
 ///   1.4 — Session 150: `load()` uses `resolveLotFileVariants` (variantControlNumber_is);
 ///          `resolvePresidentialLibrary` returns up to 3 results; specific error messages
+///   1.5 — Session 2026-07-03 (Source Explorer Phase 4 step 2): Archival Collection
+///          box — when the parsed note's keys land in the bundled cross-volume
+///          authority, opens the shared Collection detail sheet (aliases, NAID, S5
+///          local counts, citing volumes, sub-series)
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -92,6 +96,12 @@ struct MacSourceExplorerView: View {
     /// Pre-1906 country-series classifications + resolved rolls (Phase 2).
     @State private var countryResolutions: [CountrySeriesResolution] = []
 
+    /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
+    /// or `nil` when the note's keys land in no tracked collection.
+    @State private var authorityRecord: AuthorityCollectionRecord? = nil
+    /// When set, presents the shared Collection detail sheet.
+    @State private var collectionDetailRecord: AuthorityCollectionRecord? = nil
+
     @Environment(\.openURL)  private var openURL
     @Environment(AppState.self) private var appState
 
@@ -108,6 +118,10 @@ struct MacSourceExplorerView: View {
         .task { await load() }
         .frame(minWidth: 640, minHeight: 380)
         .toolbar { explorerToolbar }
+        .sheet(item: $collectionDetailRecord) { record in
+            CollectionDetailSheet(record: record)
+                .environment(appState)
+        }
     }
 
     // MARK: - Toolbar
@@ -188,10 +202,48 @@ struct MacSourceExplorerView: View {
                 if hasSourceNote, let parsed {
                     provenanceBox(for: parsed)
                 }
+
+                // Phase 4: the cross-volume collection this citation belongs to.
+                if authorityRecord != nil {
+                    collectionBox
+                }
             }
             .padding(16)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    // MARK: - Collection Box (Phase 4)
+
+    /// The bundled authority match: canonical collection name, its series-wide citing
+    /// count, and a button opening the shared Collection detail sheet (aliases, NAID
+    /// link, S5 local counts, sub-series).
+    @ViewBuilder
+    private var collectionBox: some View {
+        if let record = authorityRecord {
+            GroupBox(String(localized: "source.explorer.collection.header",
+                            defaultValue: "Archival Collection")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(record.name)
+                        .font(.callout.weight(.medium))
+                        .textSelection(.enabled)
+                    Text(String(format: String(
+                        localized: "source.explorer.collection.cited %lld",
+                        defaultValue: "Cited in %lld volumes across the series"),
+                        Int64(record.volumeIds.count)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        collectionDetailRecord = record
+                    } label: {
+                        Label(String(localized: "source.explorer.collection.open",
+                                     defaultValue: "View Collection"),
+                              systemImage: "books.vertical")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
 
     // MARK: - Right Column
@@ -743,6 +795,16 @@ struct MacSourceExplorerView: View {
     private func load() async {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
+
+        // Phase 4: resolve the note against the bundled cross-volume authority.
+        // Warmed off the main thread (one ~2 MB decode, once per launch).
+        if hasSourceNote {
+            let raw = rawSourceNote
+            authorityRecord = await Task.detached(priority: .userInitiated) {
+                CollectionAuthorityStore.shared?.record(forParsed: note, note: raw)
+            }.value
+        }
+
         hasAPIKey = await client.hasAPIKey()
 
         // Pre-1906 country-series resolution (no source note; no API key).

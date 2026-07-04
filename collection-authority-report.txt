@@ -1,0 +1,226 @@
+collection-authority.json regeneration report — 2026-07-04
+============================================================
+volumes parsed:            501
+document notes parsed:     264464
+authority records:         4431 (lot-keyed: 1727, with NAID: 939)
+sub-series children:       7650
+alias forms:               5436
+unclusterable references:  0
+artifact size:             1911312 bytes
+
+Coverage — Phase-3-keyed front-matter items landing in an authority record:
+  lot-keyed:   4249/4249 (100.0%)
+  class-keyed: 3416/4089 (83.5%)
+  text-keyed:  8601/11761 (73.1%)
+  overall:     16266/20099 (80.9%)
+
+Coverage — document source notes by era (parsed → clusterable → landed):
+  1946–1960: 73657 notes → 25823 clusterable (35.1%) → 25505 landed (34.6% of notes, 98.8% of clusterable)
+  1961–1968: 22481 notes → 19183 clusterable (85.3%) → 18498 landed (82.3% of notes, 96.4% of clusterable)
+  1969–1976: 18489 notes → 15697 clusterable (84.9%) → 15269 landed (82.6% of notes, 97.3% of clusterable)
+  1977–1988: 12083 notes → 8889 clusterable (73.6%) → 8120 landed (67.2% of notes, 91.3% of clusterable)
+  1989–…: 239 notes → 169 clusterable (70.7%) → 89 landed (37.2% of notes, 52.7% of clusterable)
+  …–1945: 137515 notes → 3963 clusterable (2.9%) → 3669 landed (2.7% of notes, 92.6% of clusterable)
+
+Ambiguous clusters left unmerged (same leading segment, different repositories): 464
+  advisory committee on foreign aid: frc 74 a 58  ←  national archives | washington national records center
+  advisory committees on foreign aid: frc 73 a 159  ←  national archives | washington national records center
+  african affairs directorate  ←  department of state | reagan library
+  agency file  ←  (unattributed) | carter library | national archives | nixon
+  aid (ida): aid  ←  (unattributed) | department of state
+  aid administrator files: frc 65 a 481  ←  (unattributed) | national archives | washington national records center
+  aid administrator files: frc 67 a 1530  ←  (unattributed) | national archives | washington national records center
+  aid administrator files: frc 69 a 1866  ←  national archives | washington national records center
+  aid administrator files: frc 73 a 518  ←  national archives | washington national records center
+  aid administrator files: frc 75 a 13  ←  (unattributed) | washington national records center
+  alexander haig paper  ←  (unattributed) | library of congress
+  allen  ←  (unattributed) | department of state
+  ankara embassy file  ←  (unattributed) | department of state
+  areeda paper  ←  (unattributed) | eisenhower library
+  arthur burns paper  ←  (unattributed) | ford library
+  arthur m. schlesinger paper  ←  (unattributed) | kennedy library
+  associate directorate for program  ←  (unattributed) | national archives
+  athens embassy file  ←  (unattributed) | department of state
+  backchannel file  ←  (unattributed) | nixon
+  ball paper  ←  johnson library | kennedy library
+  bandow file  ←  department of state | reagan library
+  bangkok embassy files: frc 68 a 5612  ←  (unattributed) | department of state
+  bowles paper  ←  yale university | yale university library
+  bromley smith paper  ←  (unattributed) | johnson library | kennedy library
+  brzezinski  ←  department of state | national archives
+  brzezinski donated material  ←  carter library | department of state | national archives
+  brzezinski material  ←  carter library | department of state
+  bureau of information  ←  (unattributed) | national archives
+  bureau of intelligence and research  ←  department of state | national archives
+  burke paper  ←  (unattributed) | naval historical
+  bush presidential record  ←  (unattributed) | bush library
+  c. douglas dillon paper  ←  (unattributed) | kennedy library
+  c.d. jackson paper  ←  (unattributed) | eisenhower library
+  cabinet secretariat record  ←  (unattributed) | eisenhower library
+  carlucci file  ←  department of state | reagan library
+  carter  ←  department of state | national archives
+  central file  ←  department of state | eisenhower library | johnson library
+  central policy file  ←  department of state | national archives
+  central policy file: frc 85 a 83  ←  (unattributed) | national archives
+  central policy file: frc 86 a 5  ←  (unattributed) | national archives
+  cfep chairman record  ←  (unattributed) | eisenhower library
+  cfep files: frc 62 a 624  ←  national archives | washington national records center
+  cfep record  ←  (unattributed) | eisenhower library
+  charles s. murphy file  ←  (unattributed) | truman library
+  christian a. herter paper  ←  (unattributed) | kennedy library
+  chronological files of c. tracy barne  ←  (unattributed) | central intelligence agency
+  clifford paper  ←  (unattributed) | johnson library
+  cobb file  ←  department of state | reagan library
+  conference file  ←  (unattributed) | department of state | national archives | washington national records center
+  conference files: frc 59-83-0066  ←  (unattributed) | washington national records center
+  conference files: frc 83-0067  ←  department of state | national archives
+  conference files: frc 83-0068  ←  department of state | national archives | washington national records center
+  congress and the nation  ←  department of state | national archives
+  council on foreign economic policy (cfep) record  ←  (unattributed) | eisenhower library
+  country file  ←  (unattributed) | carter library | johnson library | nixon
+  crisis management center  ←  (unattributed) | reagan library
+  current economic development  ←  (unattributed) | department of state | washington national records center
+  current economic developments: frc 72 a 6248  ←  (unattributed) | department of state | washington national records center
+  d reel  ←  (unattributed) | national archives
+  d-reel  ←  department of state | national archives
+  dac material: frc 70 a 5922  ←  national archives | washington national records center
+  david d. lloyd paper  ←  (unattributed) | truman library
+  david e. bell file  ←  (unattributed) | truman library
+  dci (dulles) files: job 80-b0176r  ←  (unattributed) | central intelligence agency
+  dci (mccone) files: job 80-b01285a  ←  (unattributed) | central intelligence agency
+  dci files: job 54-00499r  ←  (unattributed) | central intelligence agency
+  dci files: job 85-00664r  ←  (unattributed) | central intelligence agency
+  dci files: job 91-00741r  ←  (unattributed) | central intelligence agency
+  dci memoranda  ←  (unattributed) | central intelligence agency
+  dci memos for record  ←  (unattributed) | central intelligence agency
+  dci’s executive registry files: jobs 80-b01086a  ←  (unattributed) | central intelligence agency
+  ddi files: job 79-r1012a  ←  (unattributed) | central intelligence agency
+  ddi files: job 80-r01386r  ←  (unattributed) | central intelligence agency
+  ddi files: job 89-t01385r  ←  (unattributed) | central intelligence agency
+  def 18-3 switz (ge): defense affair  ←  (unattributed) | department of state
+  def 18-3 ussr (mo): defense affair  ←  (unattributed) | department of state
+  defense programs and operation  ←  department of state | national archives
+  department of commerce  ←  (unattributed) | national archives
+  deputy director of intelligence file  ←  (unattributed) | central intelligence agency
+  donated material  ←  carter library | national archives
+  dulle  ←  (unattributed) | eisenhower library
+  dulles paper  ←  (unattributed) | eisenhower library | nixon | princeton university
+  dwight d. eisenhower paper  ←  (unattributed) | eisenhower library
+  dwight d. eisenhower record  ←  (unattributed) | eisenhower library
+  e files: frc 71 a 6682  ←  (unattributed) | department of state | national archives
+  ea files: 74 d 471  ←  (unattributed) | department of state
+  edwin meese file  ←  (unattributed) | reagan library
+  eisenhower record  ←  (unattributed) | eisenhower library
+  electronic reading room  ←  central intelligence agency | department of state
+  elliot richardson paper  ←  (unattributed) | library of congress
+  european and soviet affairs directorate  ←  (unattributed) | department of state | reagan library
+  executive registry file  ←  (unattributed) | central intelligence agency
+  executive secretariat  ←  (unattributed) | department of state | library of congress | national archives | reagan library
+  executive secretariat file  ←  (unattributed) | national archives
+  fairless committee record  ←  (unattributed) | eisenhower library
+  files of deputy director adrian s. fisher for 1961-1969  ←  (unattributed) | washington national records center
+  files of director william c. foster for 1958-1969  ←  (unattributed) | washington national records center
+  files of director william c. foster for 1959-1966  ←  (unattributed) | washington national records center
+  files of directors of central intelligence john a. mccone (1961-1965)  ←  (unattributed) | central intelligence agency
+  files of the assistant secretary of defense  ←  (unattributed) | washington national records center
+  files of the covert collection staff of the western hemisphere division  ←  (unattributed) | central intelligence agency
+  files of the deputy directorate for intelligence  ←  (unattributed) | central intelligence agency
+  files of the national intelligence council  ←  (unattributed) | central intelligence agency
+  files of the office of intelligence coordination  ←  (unattributed) | department of state | national archives
+  files of the office of the deputy director for plans covering 1960  ←  (unattributed) | central intelligence agency
+  files of the office of the deputy director for plans covering 1961  ←  (unattributed) | central intelligence agency
+  files of the office of the director of central intelligence  ←  (unattributed) | central intelligence agency
+  files on the pentagon paper  ←  (unattributed) | washington national records center
+  foia electronic reading room  ←  central intelligence agency | department of state
+  ft (ex) us: u.s. foreign trade  ←  (unattributed) | department of state
+  george elsey paper  ←  department of state | johnson library
+  george h.w. bush presidential record  ←  (unattributed) | bush library
+  george p. shultz paper  ←  (unattributed) | department of state | reagan library
+  george shultz paper  ←  (unattributed) | reagan library
+  george w. ball paper  ←  (unattributed) | kennedy library
+  guhin file  ←  department of state | reagan library
+  h. alexander smith paper  ←  (unattributed) | princeton university
+  hagerty paper  ←  (unattributed) | eisenhower library
+  haldeman  ←  (unattributed) | nixon | washington national records center
+  halperin paper  ←  johnson library | library of congress
+  harlow record  ←  (unattributed) | eisenhower library
+  harriman paper  ←  (unattributed) | columbia university | library of congress
+  havana embassy files: frc 68 a 1814  ←  (unattributed) | national archives
+  headquarter  ←  (unattributed) | national archives | washington national records center
+  headquarters department of the army  ←  (unattributed) | national archives
+  henry a. kissinger file  ←  (unattributed) | nixon
+  henry a. kissinger office file  ←  (unattributed) | national archives | nixon
+  henry a. kissinger paper  ←  (unattributed) | library of congress
+  henry kissinger telephone conversation transcripts (kissinger telcons)  ←  (unattributed) | national archives
+  herter paper  ←  (unattributed) | eisenhower library | johnson library | kennedy library
+  hilsman paper  ←  kennedy library | national defense university | princeton university
+  history staff file  ←  (unattributed) | central intelligence agency | national archives
+  howard c. petersen paper  ←  (unattributed) | kennedy library
+  ica director’s file  ←  (unattributed) | department of state | washington national records center
+  ica director’s files: frc 61 a 32  ←  (unattributed) | washington national records center
+  ica message file  ←  (unattributed) | department of state | washington national records center
+  ica message files: frc 58 a 403  ←  (unattributed) | washington national records center
+  inco-cotton: cotton industry and commoditie  ←  (unattributed) | department of state
+  inco-poultry us: u.s. poultry industry and commoditie  ←  (unattributed) | department of state
+  inco-wool 4: wool trade agreement  ←  (unattributed) | department of state
+  inco-wool it: wool industry and commodities of italy  ←  (unattributed) | department of state
+  inco-wool us: wool industry and commodities of united state  ←  (unattributed) | department of state
+  indonesia  ←  department of state | national archives
+  inr file  ←  (unattributed) | department of state
+  inr historical file  ←  (unattributed) | department of state
+  inr-nie file  ←  (unattributed) | department of state
+  intelligence file  ←  (unattributed) | department of state | national archives | reagan library
+  io file  ←  (unattributed) | department of state
+  iran  ←  central intelligence agency | department of state
+  james c. hagerty paper  ←  (unattributed) | eisenhower library
+  james e. connor file  ←  ford library | national archives
+  james m. cannon file  ←  ford library | national archives
+  jcs file  ←  (unattributed) | department of defense | department of state | national archives
+  jcs record  ←  (unattributed) | national archives | washington national records center
+  john foster dulles paper  ←  (unattributed) | eisenhower library
+  john o. marsh file  ←  ford library | national archives
+  karachi embassy file  ←  (unattributed) | department of state
+  karachi embassy files: frc 68 a 1814  ←  national archives | washington national records center
+  kissinger  ←  (unattributed) | washington national records center
+  kissinger office file  ←  (unattributed) | nixon
+  kissinger paper  ←  (unattributed) | library of congress
+  kissinger telephone conversation  ←  department of state | library of congress | nixon
+  kissinger telephone conversation transcript  ←  (unattributed) | nixon
+  kissinger-scowcroft west wing office file  ←  (unattributed) | ford library
+  l file  ←  (unattributed) | department of state
+  lansdale files: frc 63 a 1803  ←  (unattributed) | department of defense | national archives | washington national records center
+  lansdale paper  ←  hoover institution | stanford university | washington national records center
+  lemnitzer paper  ←  (unattributed) | national defense university
+  lisa r. jameson file  ←  (unattributed) | department of state | reagan library
+  london embassy file  ←  (unattributed) | national archives
+  mansfield library  ←  (unattributed) | university of montana
+  mansfield paper  ←  university of montana | university of montana library
+  manuscript division  ←  (unattributed) | library of congress
+  mccone file  ←  (unattributed) | central intelligence agency
+  mccone paper  ←  (unattributed) | eisenhower library
+  mcfarlane file  ←  department of state | reagan library
+  mcnamara files: frc 31 a 3470  ←  (unattributed) | washington national records center
+  mcnamara files: frc 71 a 3470  ←  (unattributed) | national archives | washington national records center
+  mcnamara vietnam files: frc 77-0075  ←  (unattributed) | national archives | washington national records center
+  meese file  ←  department of state | reagan library
+  meetings with president  ←  (unattributed) | central intelligence agency
+  memoranda of conversation  ←  (unattributed) | ford library | library of congress
+  memoranda of interview  ←  (unattributed) | department of state
+  memoranda to the president  ←  (unattributed) | library of congress
+  minnesota historical society  ←  (unattributed) | johnson library
+  miscellaneous policy and position papers for 1953-1968  ←  (unattributed) | washington national records center
+  mudd manuscript library  ←  (unattributed) | princeton university
+  myer feldman paper  ←  (unattributed) | kennedy library
+  myron c. taylor paper  ←  (unattributed) | truman library
+  n reel  ←  (unattributed) | national archives
+  nac document  ←  (unattributed) | national archives
+  name file  ←  (unattributed) | carter library | johnson library | nixon
+  national aeronautics and space administration  ←  (unattributed) | johnson library
+  national defense university  ←  (unattributed) | national archives | washington national records center
+  national intelligence council  ←  (unattributed) | central intelligence agency
+  national intelligence council file  ←  (unattributed) | central intelligence agency
+  national intelligence estimate  ←  (unattributed) | central intelligence agency
+  national security action memorandum  ←  (unattributed) | department of state | national archives
+  national security adviser  ←  department of state | ford library | library of congress | national archives
+  national security adviser file  ←  ford library | national archives
+  … 264 more

@@ -69,6 +69,8 @@ struct CompilationView: View {
     /// `body` for why these cannot live inside those views.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
     @State private var crossVolumeTarget: CrossVolumeTarget? = nil
+    /// Hoisted Collection-detail target (Phase 4) — presented on this view's List.
+    @State private var collectionDetailTarget: AuthorityCollectionRecord? = nil
     @State private var selectedPerson: PersonIndexEntry? = nil
 
     private var cacheKey: String {
@@ -154,13 +156,18 @@ struct CompilationView: View {
                     recordGroup:  target.recordGroup,
                     series:       target.series,
                     repository:   target.repository,
-                    decimalClass: target.decimalClass
+                    decimalClass: target.decimalClass,
+                    aliasFallback: target.aliasFallback
                 )) ?? ([], 0, nil)
             }
             .environment(appState)
         }
         .sheet(item: $crossVolumeTarget) { target in
             VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                .environment(appState)
+        }
+        .sheet(item: $collectionDetailTarget) { record in
+            CollectionDetailSheet(record: record)
                 .environment(appState)
         }
         .sheet(item: $selectedPerson) { entry in
@@ -239,7 +246,8 @@ struct CompilationView: View {
             // Archival sources list — rendered by VolumeSourcesView from the indexed table.
             VolumeSourcesView(volumeId: volumeId,
                               sourceNeighborsTarget: $sourceNeighborsTarget,
-                              crossVolumeTarget: $crossVolumeTarget)
+                              crossVolumeTarget: $crossVolumeTarget,
+                              collectionDetailTarget: $collectionDetailTarget)
         } else if vm.isIndexing {
             // Indexing in progress — show live progress (takes priority over index check).
             indexingProgressSection

@@ -44,6 +44,14 @@ import SwiftUI
 ///          (`Published Sources` pseudo-heading subtrees and published-sources
 ///          section heads, not just the corpus-unused `listofworks`), so this view's
 ///          Published Sources section renders for real volumes.
+///   1.4 — Session 2026-07-03 (Source Explorer Phase 4 step 2): rows that resolve to
+///          a bundled collection-authority record (`CollectionAuthorityStore`, via the
+///          shared `CollectionKeying.frontMatterIdentity` derivation) upgrade the
+///          cross-volume affordance to the full Collection detail (aliases, NAID link,
+///          S5 local counts, sub-series); the old `VolumeSourcesIndexStore` cross-
+///          volume sheet remains as the fallback for headings the authority does not
+///          track. Neighbors targets carry the record's alias fallback for the
+///          display-time grain-mismatch retry in the matcher.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
@@ -70,6 +78,10 @@ struct VolumeSourcesView: View {
     /// When set by a row's button, the PARENT presents the cross-volume provenance sheet
     /// (see `sourceNeighborsTarget` for why presentation is hoisted).
     @Binding var crossVolumeTarget: CrossVolumeTarget?
+    /// When set by a row's button, the PARENT presents the Collection detail sheet for
+    /// a bundled authority record (see `sourceNeighborsTarget` for why presentation is
+    /// hoisted).
+    @Binding var collectionDetailTarget: AuthorityCollectionRecord?
 
     /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
     private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
@@ -162,10 +174,17 @@ struct VolumeSourcesView: View {
     /// resolvable match key (lot file, or record group + series), and — for a major
     /// collection cited by more than one volume — a cross-volume provenance affordance.
     private func sourceNodeRow(_ entry: VolumeSourceEntry) -> some View {
-        // O(1) lookups into the bundled resolution index (decoded once, warmed off-main).
+        // O(1) lookups into the bundled indexes (decoded once, warmed off-main).
         let resolution = VolumeSourcesIndexStore.shared?.resolution(
             recordGroup: entry.recordGroup, lotFile: entry.lotFile)
-        let crossVolume: MajorCollectionRecord? = entry.isHeading
+        // Phase 4: the collection-authority record this row resolves to, via the
+        // shared front-matter identity derivation (lot key, else repository-scoped
+        // leading segment, else unambiguous alias).
+        let authority = CollectionAuthorityStore.shared?.record(
+            forFrontMatterText: entry.rawText, repository: entry.repository,
+            lotFileNorm: entry.lotFileNorm, decimalClass: entry.decimalClass)
+        // Legacy cross-volume fallback for headings the authority does not track.
+        let crossVolume: MajorCollectionRecord? = (entry.isHeading && authority == nil)
             ? VolumeSourcesIndexStore.shared?.authority(
                 recordGroup: entry.recordGroup, lotFile: entry.lotFile, text: entry.rawText)
             : nil
@@ -185,8 +204,13 @@ struct VolumeSourcesView: View {
                     .accessibilityLabel(String(localized: "browser.sources.catalog",
                                                defaultValue: "View in National Archives Catalog"))
                 }
-                if let target = Self.makeNeighborsTarget(for: entry) {
+                if var target = Self.makeNeighborsTarget(for: entry) {
                     Button {
+                        // The authority record's lot key and alias forms ride along for
+                        // the matcher's display-time fallback when the direct key misses.
+                        if let authority {
+                            target.aliasFallback = .init(record: authority)
+                        }
                         sourceNeighborsTarget = target
                     } label: {
                         Image(systemName: "archivebox")
@@ -198,7 +222,25 @@ struct VolumeSourcesView: View {
                                                defaultValue: "Archival Neighbors"))
                 }
             }
-            if let crossVolume, crossVolume.volumeIds.count > 1 {
+            if let authority {
+                // The upgraded cross-volume affordance: the full Collection detail
+                // (aliases, catalog link, S5 local counts, citing volumes, sub-series).
+                Button {
+                    collectionDetailTarget = authority
+                } label: {
+                    Label {
+                        Text(String(localized: "browser.sources.collection",
+                                    defaultValue: "Collection · cited in \(authority.volumeIds.count) volumes"))
+                    } icon: {
+                        Image(systemName: "books.vertical")
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .accessibilityHint(String(localized: "browser.sources.collection.hint",
+                                          defaultValue: "Opens the collection's cross-volume detail"))
+            } else if let crossVolume, crossVolume.volumeIds.count > 1 {
                 Button {
                     crossVolumeTarget = CrossVolumeTarget(
                         title: entry.rawText, volumeIds: crossVolume.volumeIds)
@@ -300,9 +342,13 @@ struct VolumeSourcesView: View {
     private func loadSources() async {
         guard !didLoad else { return }
         didLoad = true
-        // Warm the bundled resolution index (one ~1 MB decode) off the main thread so the
-        // per-row catalog / cross-volume lookups in `sourceNodeRow` never block rendering.
-        await Task.detached(priority: .utility) { _ = VolumeSourcesIndexStore.shared }.value
+        // Warm the bundled indexes (a ~1 MB and a ~2 MB decode) off the main thread so
+        // the per-row catalog / collection-authority lookups in `sourceNodeRow` never
+        // block rendering.
+        await Task.detached(priority: .utility) {
+            _ = VolumeSourcesIndexStore.shared
+            _ = CollectionAuthorityStore.shared
+        }.value
         guard let pipeline = appState.indexingPipeline else {
             isLoading = false
             return
@@ -332,6 +378,10 @@ struct VolumeSourceNeighborsTarget: Identifiable {
     let repository: String?
     /// The decimal / subject-numeric class-leaf key, when the entry is a class leaf.
     let decimalClass: String?
+    /// The bundled authority record's keys and alias forms (Phase 4), consulted by the
+    /// matcher only when every direct key path returns zero — see
+    /// `IndexingPipeline.archivalNeighbors(forLotFile:…)` for the documented order.
+    var aliasFallback: IndexingPipeline.CollectionAliasFallback? = nil
     let id = UUID()
 }
 

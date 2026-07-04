@@ -304,6 +304,11 @@ targets:
     bundleId: bottsywattsy.FRUS-Explorer.tests
     sources:
       - path: FRUSExplorerTests
+      # The collection-authority generator's document-note extractor, compiled into
+      # the test bundle so RealTEINoteParityTests can pin generator↔app note parity
+      # (the extractor must reproduce exactly the notes IndexingPipeline stores).
+      # Only this one file — it depends on Foundation alone.
+      - path: CollectionAuthorityGeneratorCore/DocumentNoteExtractor.swift
     resources:
       - path: FRUSExplorer/FRUSExplorer-iOS.entitlements
       - path: FRUSExplorer/FRUSExplorer-AppStore.entitlements

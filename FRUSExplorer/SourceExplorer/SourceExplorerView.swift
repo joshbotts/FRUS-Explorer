@@ -49,6 +49,12 @@ import SwiftUI
 ///          1906–1910, and 1963–1973; added per-period filing manual PDF links; fixed
 ///          `lotFilePanel` fallback URL for RG 84 F-designator lot files; fixed `load()`
 ///          to pass actual record group to `resolveLotFileVariants`
+///   1.5 — Session 2026-07-03 (Source Explorer Phase 4 step 2): Archival Collection
+///          section — when the parsed note's keys land in the bundled cross-volume
+///          authority (`CollectionAuthorityStore.record(forParsed:note:)`), links to
+///          the shared Collection detail (aliases, NAID, S5 local counts, citing
+///          volumes); "Browse Archival Collections" pushes the searchable
+///          browse-by-collection list
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -103,6 +109,10 @@ struct SourceExplorerView: View {
     /// Pre-1906 country-series classifications + the rolls each resolves to (Phase 2).
     @State private var countryResolutions: [CountrySeriesResolution] = []
 
+    /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
+    /// or `nil` when the note's keys land in no tracked collection.
+    @State private var authorityRecord: AuthorityCollectionRecord? = nil
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(AppState.self) private var appState
@@ -138,6 +148,8 @@ struct SourceExplorerView: View {
                 if indexingPipeline != nil {
                     relatedDocumentsSection
                 }
+
+                archivalCollectionSection
             }
             .navigationTitle(String(localized: "source.explorer.title",
                                     defaultValue: "Source Explorer"))
@@ -172,6 +184,50 @@ struct SourceExplorerView: View {
         #if os(macOS)
         .frame(minWidth: 480, minHeight: 400)
         #endif
+    }
+
+    // MARK: - Archival Collection Section (Phase 4)
+
+    /// The cross-volume collection surface: when the parsed note resolves to a bundled
+    /// authority record, a link to the shared Collection detail (pushed within this
+    /// sheet's `NavigationStack`); always, the browse-by-collection entry point.
+    @ViewBuilder
+    private var archivalCollectionSection: some View {
+        Section {
+            if let record = authorityRecord {
+                NavigationLink {
+                    CollectionDetailView(record: record)
+                        .environment(appState)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(record.name)
+                            .font(.callout)
+                        Text(String(format: String(
+                            localized: "source.explorer.collection.cited %lld",
+                            defaultValue: "Cited in %lld volumes across the series"),
+                            Int64(record.volumeIds.count)))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            NavigationLink {
+                CollectionBrowserView()
+                    .environment(appState)
+            } label: {
+                Label(String(localized: "source.explorer.collection.browse",
+                             defaultValue: "Browse Archival Collections"),
+                      systemImage: "archivebox")
+            }
+        } header: {
+            Text(String(localized: "source.explorer.collection.header",
+                        defaultValue: "Archival Collection"))
+        } footer: {
+            if authorityRecord != nil {
+                Text(String(localized: "source.explorer.collection.footer",
+                            defaultValue: "Matched against the bundled cross-volume collection authority."))
+            }
+        }
     }
 
     // MARK: - Raw Note Section
@@ -1013,6 +1069,15 @@ struct SourceExplorerView: View {
     private func load() async {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
+
+        // Phase 4: resolve the note against the bundled cross-volume authority.
+        // Warmed off the main thread (one ~2 MB decode, once per launch).
+        if hasSourceNote {
+            let raw = rawSourceNote
+            authorityRecord = await Task.detached(priority: .userInitiated) {
+                CollectionAuthorityStore.shared?.record(forParsed: note, note: raw)
+            }.value
+        }
 
         // Pre-1906 country-series resolution (no source note; no API key). Runs first so
         // the resolved roll links appear even without a NARA Catalog key.
