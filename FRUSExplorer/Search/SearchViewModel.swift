@@ -50,6 +50,9 @@ import Observation
 ///          advanced-filter volume/subseries pickers; `effectiveVolumeIds` unions the
 ///          two selections; `applyParameters`/`reconstructScope` round-trip a flat
 ///          `volumeIds` scope back into the two pickers.
+///   1.8 — Session 2026-07-04 (macOS UI audit C4): `advancedFilterSignature` added —
+///          Equatable fingerprint of the applied advanced-filter fields, observed by
+///          the macOS Search window's live filter popover to apply edits immediately.
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -165,6 +168,32 @@ final class SearchViewModel {
     /// `loadAvailableVolumes(allEntries:indexedIds:)`. Only indexed volumes appear so
     /// users cannot scope to a volume that can never return results.
     var availableVolumes: [VolumeManifestEntry] = []
+
+    /// Equatable fingerprint of every advanced-filter field that
+    /// `MacSearchViewModel.applyAdvancedFilters()` copies back into its parameters.
+    ///
+    /// Observed by the macOS Search window (`.onChange` inside the live filter
+    /// popover, UI audit C4) so edits apply to the result list immediately instead
+    /// of batching on dismiss. Reading it inside a view body registers Observation
+    /// tracking on all constituent fields. The legacy non-editable fields (`phrase`,
+    /// `prefixWildcard`, `booleanMode`, `excludedTermsText`) are excluded — they
+    /// cannot change while the popover is open.
+    var advancedFilterSignature: String {
+        var parts: [String] = []
+        parts.append(dateRangeEnabled
+            ? "d1|\(dateRangeStart.timeIntervalSinceReferenceDate)|\(dateRangeEnd.timeIntervalSinceReferenceDate)"
+            : "d0")
+        parts.append(personRefText)
+        parts.append(personRollupId.map(String.init) ?? "")
+        parts.append(personLabel ?? "")
+        parts.append(String(describing: documentTypeFilter))
+        parts.append(includeDocumentText ? "1" : "0")
+        parts.append(includeSummaries ? "1" : "0")
+        parts.append(includeNotes ? "1" : "0")
+        parts.append(selectedSubseriesIds.sorted().joined(separator: ","))
+        parts.append(selectedVolumeIds.joined(separator: ","))
+        return parts.joined(separator: "§")
+    }
 
     // MARK: - Results
 

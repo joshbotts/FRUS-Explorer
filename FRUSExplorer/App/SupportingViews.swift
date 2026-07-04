@@ -93,6 +93,18 @@ final class HighlightCoordinator {
 ///          `HighlightCoordinator.makeExcerptCaptureAction` (built by MacDocumentView
 ///          from the flat text) so the frozen passage matches its stored anchors and
 ///          never embeds `data-skip` footnote-marker digits from `sel.toString()`
+///   1.6 — Session 2026-07-04 (macOS UI audit C1): "Add note" and "Add Note to
+///          Highlight" open the frus.noteComposer window via `openNoteComposer`
+///          (pendingNoteComposer hand-off) instead of presenting
+///          `ResearchNoteEditorView` sheets over the document
+///   1.7 — Session 2026-07-04 (macOS UI audit gap 19): action buttons moved into a
+///          horizontal `ScrollView` (`stripButtons`) with the Read/Research picker
+///          pinned trailing — the strip's ~920 pt ideal width was what forced the
+///          main window's old 980 pt minWidth; scrolling lets it degrade gracefully
+///          at the new 700 pt minimum instead of truncating every label
+///   1.8 — Session 2026-07-04 (UI audit A3): highlight color picker swatches gain a
+///          localized `displayName` accessibility label + help, and show the color's
+///          initial under Differentiate Without Color
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
@@ -118,12 +130,13 @@ struct ResearchStripView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
+    /// Differentiate Without Color (A3): when set, the highlight color swatches also
+    /// show the color's initial so the choices are never conveyed by hue alone.
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @State private var showAddToCollection: Bool = false
-    @State private var showAddNote: Bool = false
     @State private var showTagPicker: Bool = false
     @State private var showHighlightColorPicker: Bool = false
-    @State private var showHighlightNoteEditor: Bool = false
     /// The selection capture pending collection choice — non-nil presents the picker
     /// in excerpt mode (Authoring Phase 5, creation path b).
     @State private var pendingExcerptCapture: CollectionExcerptCapture? = nil
@@ -159,6 +172,79 @@ struct ResearchStripView: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            // The action buttons scroll horizontally when the window is narrower
+            // than their ideal width (~920 pt with a selection active). This is
+            // what lets the main window's minWidth sit at 700 pt for side-by-side
+            // tiling on 13″ displays (UI audit gap 19) without truncating every
+            // button label; at typical widths the scroll view is inert.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    stripButtons
+                }
+            }
+
+            // Research panel toggle — segmented Read / Research picker, pinned
+            // trailing outside the scrollable region so it is always visible.
+            // Persisted via AppStorage so the preference survives document navigation.
+            Picker(
+                String(localized: "researchStrip.panelMode",
+                       defaultValue: "View mode"),
+                selection: Binding(
+                    get: { researchPanelVisible },
+                    set: { newVal in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            researchPanelVisible = newVal
+                        }
+                    }
+                )
+            ) {
+                Text(String(localized: "researchStrip.panelMode.read",
+                            defaultValue: "Read"))
+                    .tag(false)
+                Text(String(localized: "researchStrip.panelMode.research",
+                            defaultValue: "Research"))
+                    .tag(true)
+            }
+            .pickerStyle(.segmented)
+            .fixedSize()
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            .padding(.horizontal, 6)
+            .help(researchPanelVisible
+                  ? String(localized: "researchStrip.panel.hide.help",
+                           defaultValue: "Switch to focused reading view")
+                  : String(localized: "researchStrip.panel.show.help",
+                           defaultValue: "Open the Notes, Tags, and Summary panel"))
+        }
+        .frame(minHeight: 32)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+        .sheet(isPresented: $showAddToCollection) {
+            if let entry {
+                CollectionPickerSheet(entry: entry)
+            }
+        }
+        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
+            if let entry, let capture = pendingExcerptCapture {
+                CollectionPickerSheet(entry: entry, excerpt: capture)
+            }
+        }
+        .sheet(isPresented: $showTagPicker) {
+            if let entry {
+                MacTagPickerSheet(
+                    entry: entry,
+                    indexingPipeline: appState.indexingPipeline,
+                    initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
+                )
+            }
+        }
+    }
+
+    /// The strip's leading action buttons, hosted inside the horizontal scroll
+    /// region of `body`.
+    @ViewBuilder
+    private var stripButtons: some View {
             Text("Research")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.tertiary)
@@ -180,7 +266,9 @@ struct ResearchStripView: View {
                 title: "Add note",
                 systemImage: "note.text.badge.plus",
                 isDisabled: isDisabled
-            ) { showAddNote = true }
+            ) {
+                if let entry { openNoteComposer(for: entry) }
+            }
             .help(String(
                 localized: "researchStrip.addNote.help",
                 defaultValue: "Create a research note attached to this document"
@@ -279,13 +367,21 @@ struct ResearchStripView: View {
                 highlightColorPicker
             }
 
-            // Add Note to Highlight — enabled after a highlight is created
+            // Add Note to Highlight — enabled after a highlight is created.
+            // Opens the composer window with the highlight link captured in the
+            // request; the pending link clears at hand-off (the button used to
+            // persist until the editor sheet was dismissed — same lifetime).
             if highlightCoordinator.pendingHighlightLink != nil {
                 ResearchStripButton(
                     title: "Add Note",
                     systemImage: "note.text.badge.plus",
                     isDisabled: false
-                ) { showHighlightNoteEditor = true }
+                ) {
+                    if let entry, let hlId = highlightCoordinator.pendingHighlightLink {
+                        openNoteComposer(for: entry, linkedHighlightId: hlId)
+                        highlightCoordinator.pendingHighlightLink = nil
+                    }
+                }
                 .help(String(
                     localized: "researchStrip.highlightNote.help",
                     defaultValue: "Attach a research note to the highlight you just created"
@@ -405,87 +501,20 @@ struct ResearchStripView: View {
                 localized: "researchStrip.newWindow.help",
                 defaultValue: "Open this document in its own window — drag windows together for tabs"
             ))
+    }
 
-            Spacer()
-
-            // Research panel toggle — segmented Read / Research picker.
-            // Persisted via AppStorage so the preference survives document navigation.
-            Picker(
-                String(localized: "researchStrip.panelMode",
-                       defaultValue: "View mode"),
-                selection: Binding(
-                    get: { researchPanelVisible },
-                    set: { newVal in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            researchPanelVisible = newVal
-                        }
-                    }
-                )
-            ) {
-                Text(String(localized: "researchStrip.panelMode.read",
-                            defaultValue: "Read"))
-                    .tag(false)
-                Text(String(localized: "researchStrip.panelMode.research",
-                            defaultValue: "Research"))
-                    .tag(true)
-            }
-            .pickerStyle(.segmented)
-            .fixedSize()
-            #if os(macOS)
-            .controlSize(.small)
-            #endif
-            .padding(.horizontal, 6)
-            .help(researchPanelVisible
-                  ? String(localized: "researchStrip.panel.hide.help",
-                           defaultValue: "Switch to focused reading view")
-                  : String(localized: "researchStrip.panel.show.help",
-                           defaultValue: "Open the Notes, Tags, and Summary panel"))
-        }
-        .frame(minHeight: 32)
-        .background(.bar)
-        .overlay(alignment: .bottom) { Divider() }
-        .sheet(isPresented: $showAddToCollection) {
-            if let entry {
-                CollectionPickerSheet(entry: entry)
-            }
-        }
-        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
-            if let entry, let capture = pendingExcerptCapture {
-                CollectionPickerSheet(entry: entry, excerpt: capture)
-            }
-        }
-        .sheet(isPresented: $showAddNote) {
-            if let entry {
-                ResearchNoteEditorView(
-                    documentId: entry.documentId,
-                    volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId,
-                    indexingPipeline: appState.indexingPipeline
-                )
-            }
-        }
-        .sheet(isPresented: $showTagPicker) {
-            if let entry {
-                MacTagPickerSheet(
-                    entry: entry,
-                    indexingPipeline: appState.indexingPipeline,
-                    initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
-                )
-            }
-        }
-        .sheet(isPresented: $showHighlightNoteEditor, onDismiss: {
-            highlightCoordinator.pendingHighlightLink = nil
-        }) {
-            if let hlId = highlightCoordinator.pendingHighlightLink, let entry {
-                ResearchNoteEditorView(
-                    documentId: entry.documentId,
-                    volumeId: entry.volumeId,
-                    activeProjectId: appState.activeProjectId,
-                    linkedHighlightId: hlId,
-                    indexingPipeline: appState.indexingPipeline
-                )
-            }
-        }
+    /// Hands the document (and optional highlight link) to the research-note
+    /// composer window (UI audit C1) — composition happens beside the document,
+    /// never over it.
+    private func openNoteComposer(for entry: DocumentBrowserEntry,
+                                  linkedHighlightId: UUID? = nil) {
+        appState.pendingNoteComposer = NoteComposerRequest(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            linkedHighlightId: linkedHighlightId
+        )
+        openWindow(id: "frus.noteComposer")
+        bringMacWindowToFront(id: "frus.noteComposer")
     }
 
     // MARK: - Highlight Color Picker
@@ -507,10 +536,18 @@ struct ResearchStripView: View {
                             Circle()
                                 .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
                                 .frame(width: 32, height: 32)
+                            // A3: under Differentiate Without Color the swatch also
+                            // shows the color's initial, so choices aren't hue-only.
+                            if differentiateWithoutColor {
+                                Text(String(color.displayName.prefix(1)))
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(Color.black.opacity(0.7))
+                            }
                         }
                     }
                     .buttonStyle(.plain)
-                    .help(color.rawValue.capitalized)
+                    .accessibilityLabel(color.displayName)
+                    .help(color.displayName)
                 }
             }
         }
@@ -1014,14 +1051,15 @@ struct SummaryBlockView: View {
 ///   1.1 — Session 118: centre zone tappable during multi-volume batches; opens
 ///          `MacIndexingQueuePopover` with position, progress, ETA, and pending list;
 ///          auto-closes when indexing completes
+///   1.2 — Session 2026-07-04 (macOS UI audit B7): the WhileIndexing sheet is gone —
+///          it auto-presented 0.6 s after indexing started, interrupting whatever the
+///          user was doing. The "Learn" button (and the queue panel's) now opens the
+///          existing frus.researchGuide window instead; nothing auto-presents. iOS
+///          keeps its banner-driven education sheet (`IndexingQueueBannerView`).
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
     @State private var showQueuePopover = false
-    @State private var showWhileIndexing = false
-    /// Reset each app session so a deliberate rebuild always shows the sheet.
-    /// `hasSeen` (AppStorage) is not used here because it persists across launches
-    /// and silently blocked the sheet after the first install.
-    @State private var hasShownThisSession = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -1044,11 +1082,13 @@ struct StatusBarView: View {
             }
 
             // "Learn" button — always visible while any indexing is active,
-            // giving persistent access to the educational sheet even when the
-            // queue panel (which also has the button) isn't open.
+            // giving persistent access to the research guide even when the
+            // queue panel (which also has the button) isn't open. Opens the
+            // frus.researchGuide window (UI audit B7) — a click-through, never
+            // an auto-presented modal.
             if appState.currentIndexingProgress != nil {
                 Button {
-                    showWhileIndexing = true
+                    openResearchGuide()
                 } label: {
                     Label(String(localized: "statusbar.learn.label", defaultValue: "Learn"),
                           systemImage: "book.pages")
@@ -1081,20 +1121,16 @@ struct StatusBarView: View {
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             if progress == nil { showQueuePopover = false }
         }
-        // Auto-open the educational sheet the first time any indexing starts this session.
-        // Uses currentIndexingProgress (set for ALL indexing paths including manual rebuild)
-        // rather than indexingQueuePosition (nil for rebuild — only set by download-triggered indexing).
-        // hasShownThisSession resets on each app launch so a deliberate rebuild sees the sheet.
-        .onChange(of: appState.currentIndexingProgress != nil) { _, isActive in
-            guard isActive, !hasShownThisSession else { return }
-            hasShownThisSession = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                showWhileIndexing = true
-            }
-        }
-        .sheet(isPresented: $showWhileIndexing) {
-            WhileIndexingSheet()
-        }
+        // No auto-presented education modal on macOS (UI audit B7): the sheet that
+        // popped 0.6 s after indexing started interrupted first-run exploration.
+        // The "Learn" button above is the click-through to the research guide window.
+    }
+
+    /// Opens (and foregrounds) the standalone Research Guide window — the same
+    /// educational pages the removed WhileIndexing sheet showed (UI audit B7).
+    private func openResearchGuide() {
+        openWindow(id: "frus.researchGuide")
+        bringMacWindowToFront(id: "frus.researchGuide")
     }
 
     // MARK: - Computed
@@ -1361,10 +1397,10 @@ struct StatusBarView: View {
                     averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
                     averageDocumentCount: appState.indexingQueueAverageDocumentCount,
                     onLearnTapped: {
+                        // B7: a window, not a sheet — no presentation conflict with
+                        // the closing popover, so no async-after dance is needed.
                         showQueuePopover = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                            showWhileIndexing = true
-                        }
+                        openResearchGuide()
                     }
                 )
             }
@@ -1436,8 +1472,9 @@ private struct MacIndexingQueuePanel: View {
     var averageDocsPerSecond: Double = 0
     /// Rolling average document count from completed volumes; falls back to 600.
     var averageDocumentCount: Int = 600
-    /// Called when the user taps "Learn about FRUS while you wait". The popover
-    /// dismisses itself before calling this so the sheet can open cleanly.
+    /// Called when the user taps "Learn about FRUS while you wait" — the presenting
+    /// status bar closes this popover and opens the frus.researchGuide window
+    /// (UI audit B7; formerly the auto-presenting WhileIndexing sheet).
     var onLearnTapped: (() -> Void)? = nil
 
     @State private var isExpanded = false
@@ -2772,8 +2809,8 @@ enum CorpusNavValue: Hashable {
 /// The detail column hosts a `NavigationStack` (`detailPath`), so selecting a volume — and
 /// then a section within it — **pushes** progressively deeper views that each fill the
 /// resizable window, rather than opening a stack of progressively smaller fixed-size sheets.
-/// Only genuinely modal tasks (the per-volume cross-reference graph, the People index) stay
-/// as sheets.
+/// The People index and the per-volume connection graph open in their own windows
+/// (`frus.people`, `frus.crossReferenceGraph`) — no sheets remain here.
 ///
 /// ## Sidebar controls
 /// - **Sort**: toggle between newest-first (descending) and oldest-first (ascending)
@@ -2787,18 +2824,30 @@ enum CorpusNavValue: Hashable {
 ///   1.2 — Session 87: People toolbar button opens `PersonIndexView` sheet
 ///   1.3 — Session 170: volume/section drill-down became a resizable detail-column
 ///          `NavigationStack` (`CorpusNavValue`) instead of nested fixed-size sheets
+///   1.4 — Session 2026-07-04 (macOS UI audit gap 12): consumes the
+///          `AppState.pendingBrowseVolume` hand-off (Cross-Volume Provenance rows) —
+///          selects the volume's subseries and pushes the volume onto the detail path
+///   1.5 — Session 2026-07-04 (macOS UI audit B5): the People toolbar button opens the
+///          frus.people window instead of a `PersonIndexView` sheet (which stacked the
+///          person-detail sheet on top of itself)
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
 
     @State private var selectedSubseries: String? = nil
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
-    @State private var showPeopleSheet: Bool = false
     /// Drill-down path for the detail column: volume → section → deeper section. Owned by
     /// the window so it survives detail re-renders and is shared by every pushed level.
     @State private var detailPath: [CorpusNavValue] = []
+    /// A volume push deferred until the subseries selection change lands (see
+    /// `consumePendingVolume`): the `.onChange(of: selectedSubseries)` observer resets
+    /// `detailPath` after every selection change, so pushing the volume synchronously
+    /// alongside the selection would be wiped by that reset. The observer applies this
+    /// push instead of the reset when it is set.
+    @State private var pendingVolumePush: String? = nil
 
     private var allEntries: [VolumeManifestEntry] {
         appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -2839,7 +2888,12 @@ struct CorpusBrowserWindowView: View {
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
-                    Button { showPeopleSheet = true } label: {
+                    Button {
+                        // B5: the People index is a window (frus.people), browsable
+                        // alongside documents — not a modal over this browser.
+                        openWindow(id: "frus.people")
+                        bringMacWindowToFront(id: "frus.people")
+                    } label: {
                         Image(systemName: "person.2")
                     }
                     .help("Browse people mentioned in indexed volumes")
@@ -2883,25 +2937,46 @@ struct CorpusBrowserWindowView: View {
                 }
             }
         }
-        // Switching subseries returns to the volume-list root (avoids a stale pushed volume).
-        .onChange(of: selectedSubseries) { _, _ in detailPath = [] }
-        .frame(minWidth: 540, minHeight: 440)
-        .sheet(isPresented: $showPeopleSheet) {
-            VStack(spacing: 0) {
-                PersonIndexView()
-                Divider()
-                HStack {
-                    Spacer()
-                    Button(String(localized: "common.done", defaultValue: "Done")) {
-                        showPeopleSheet = false
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+        // Switching subseries returns to the volume-list root (avoids a stale pushed
+        // volume) — unless the change was made by `consumePendingVolume`, whose
+        // deferred volume push is applied here instead of the reset.
+        .onChange(of: selectedSubseries) { _, _ in
+            if let volumeId = pendingVolumePush {
+                detailPath = [.volume(volumeId: volumeId)]
+                pendingVolumePush = nil
+            } else {
+                detailPath = []
             }
-            .frame(minWidth: 480, minHeight: 520)
         }
+        // Consume a volume hand-off (Cross-Volume Provenance rows, UI audit gap 12):
+        // `.task` covers a window freshly created by the hand-off (`.onChange` misses
+        // a value that was already set), `.onChange` covers one already open —
+        // mirroring MacSearchWindowView's pendingSearch pattern.
+        .task { consumePendingVolume() }
+        .onChange(of: appState.pendingBrowseVolume) { _, volumeId in
+            guard volumeId != nil else { return }
+            consumePendingVolume()
+        }
+        .frame(minWidth: 540, minHeight: 440)
+    }
+
+    /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's
+    /// subseries in the sidebar and pushes the volume onto the detail path. When the
+    /// subseries selection has to change, the push is deferred through
+    /// `pendingVolumePush` so the selection observer's path reset doesn't wipe it.
+    private func consumePendingVolume() {
+        guard let volumeId = appState.pendingBrowseVolume,
+              let entry = allEntries.first(where: { $0.volumeId == volumeId }) else { return }
+        appState.pendingBrowseVolume = nil
+        if selectedSubseries == entry.subseries {
+            detailPath = [.volume(volumeId: volumeId)]
+        } else {
+            pendingVolumePush = volumeId
+            selectedSubseries = entry.subseries
+        }
+        #if DEBUG
+        print("[CorpusBrowserWindowView] pendingBrowseVolume consumed: \(volumeId)")
+        #endif
     }
 
     private func subseriesRow(_ sub: String) -> some View {
@@ -2964,11 +3039,11 @@ struct CorpusBrowserWindowView: View {
 
 /// Volume list for a selected FRUS subseries with per-volume cross-reference graph access.
 ///
-/// Each volume row has a small graph button (⌘-tap opens the graph sheet without
-/// navigating away from the list). The graph sheet shows `VolumeConnectionGraphView`
-/// pre-selected to that volume — corpus-wide edges, not restricted to the subseries —
-/// so the user can see every volume that cross-references the chosen volume regardless
-/// of which subseries it belongs to.
+/// Each volume row has a small graph button that opens the Cross-Reference Graph
+/// *window* (`frus.crossReferenceGraph`) in its volume-connections stage, pre-selected
+/// to that volume — corpus-wide edges, not restricted to the subseries — so the user
+/// can see every volume that cross-references the chosen volume regardless of which
+/// subseries it belongs to, while this browser stays open beside it.
 ///
 /// Version history:
 ///   1.0 — extracted from `CorpusBrowserWindowView`
@@ -2976,6 +3051,10 @@ struct CorpusBrowserWindowView: View {
 ///   1.2 — Session 75: subseries filter removed; per-volume graph button replaces toolbar
 ///          toggle; volume detail and graph sheets unified under a single `SheetContent` enum
 ///   1.3 — Session 2026-07-03: volume titles wrap to their full value (three-line clip removed)
+///   1.4 — Session 2026-07-04 (macOS UI audit B6): the graph button routes to the
+///          frus.crossReferenceGraph window via the `pendingVolumeGraph` hand-off
+///          instead of presenting `VolumeConnectionGraphView` in a local sheet — the
+///          graph is browsable content, and the window precedent already existed
 private struct SubseriesVolumeListView: View {
     let subseries: String
     let filteredVolumes: [VolumeManifestEntry]
@@ -2985,10 +3064,7 @@ private struct SubseriesVolumeListView: View {
     @Binding var path: [CorpusNavValue]
 
     @Environment(AppState.self) private var appState
-
-    /// The volume whose cross-reference graph sheet is showing. The graph stays a sheet
-    /// (a self-contained modal task); only the structural drill-down became push navigation.
-    @State private var graphVolume: VolumeManifestEntry?
+    @Environment(\.openWindow) private var openWindow
 
     // MARK: - Body
 
@@ -3001,25 +3077,6 @@ private struct SubseriesVolumeListView: View {
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(subseries)
-        .sheet(item: $graphVolume) { vol in
-            // macOS: remove NavigationStack chrome; Done button in bottom bar
-            VStack(spacing: 0) {
-                VolumeConnectionGraphView(volumeId: vol.volumeId)
-                    .environment(appState)
-                Divider()
-                HStack {
-                    Spacer()
-                    Button(String(localized: "corpus.graph.done",
-                                  defaultValue: "Done")) {
-                        graphVolume = nil
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-            }
-            .frame(minWidth: 680, minHeight: 520)
-        }
     }
 
     // MARK: - Volume Row
@@ -3069,7 +3126,12 @@ private struct SubseriesVolumeListView: View {
                        defaultValue: "Word cloud for \(vol.volumeId)")
             )
             Button {
-                graphVolume = vol
+                // B6: hand the volume to the graph window's volume-connections stage
+                // (a window, so this list stays open while exploring the graph). The
+                // window consumes and clears pendingVolumeGraph.
+                appState.pendingVolumeGraph = vol.volumeId
+                openWindow(id: "frus.crossReferenceGraph")
+                bringMacWindowToFront(id: "frus.crossReferenceGraph")
             } label: {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
                     .font(.system(size: 11))
@@ -3679,6 +3741,10 @@ private struct DiscoveredMetadataRow: View {
 ///          sheet for volume-source rows removed — `VolumeSourcesView` opens the
 ///          value-based Archival Neighbors window directly on macOS, so the hoisted
 ///          binding is never set here anymore
+///   1.5 — Session 2026-07-04 (macOS UI audit B2): the Cross-Volume Provenance sheet
+///          removed the same way — `VolumeSourcesView` opens the value-based
+///          Cross-Volume Provenance window directly on macOS, so `crossVolumeTarget`
+///          is never set here anymore either
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
@@ -3692,9 +3758,10 @@ private struct CorpusSectionDocumentView: View {
     @State private var isLoading = true
     /// Hoisted presentation targets for the section-emitting front-matter subviews —
     /// the sheets anchor on this view's Lists, exactly once (see the body comments).
-    /// `sourceNeighborsTarget` is required by `VolumeSourcesView`'s shared init but is
-    /// never written on macOS (S6): the row action opens the Archival Neighbors
-    /// window directly, so no sheet anchors for it here.
+    /// `sourceNeighborsTarget` and `crossVolumeTarget` are required by
+    /// `VolumeSourcesView`'s shared init but are never written on macOS (S6/B2): the
+    /// row actions open the Archival Neighbors / Cross-Volume Provenance windows
+    /// directly, so no sheets anchor for them here.
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
     @State private var crossVolumeTarget: CrossVolumeTarget? = nil
     /// Hoisted Collection-detail target (Phase 4) — presented on this view's List.
@@ -3761,10 +3828,11 @@ private struct CorpusSectionDocumentView: View {
                     }
             } else if isSourcesSection {
                 // VolumeSourcesView emits Section content and must live inside a List.
-                // The remaining sheets anchor HERE on the List (see above). No sheet
-                // for `sourceNeighborsTarget`: on macOS the neighbors affordance opens
-                // the S6 Archival Neighbors window from the row action, so the binding
-                // is never set (it exists only for the shared iOS init).
+                // The remaining sheet anchors HERE on the List (see above). No sheets
+                // for `sourceNeighborsTarget` / `crossVolumeTarget`: on macOS those
+                // row affordances open the S6 Archival Neighbors / B2 Cross-Volume
+                // Provenance windows directly, so the bindings are never set (they
+                // exist only for the shared iOS init).
                 List {
                     VolumeSourcesView(volumeId: volumeId,
                                       sourceNeighborsTarget: $sourceNeighborsTarget,
@@ -3772,10 +3840,6 @@ private struct CorpusSectionDocumentView: View {
                                       collectionDetailTarget: $collectionDetailTarget)
                 }
                 .listStyle(.inset)
-                .sheet(item: $crossVolumeTarget) { target in
-                    VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
-                        .environment(appState)
-                }
                 .sheet(item: $collectionDetailTarget) { record in
                     CollectionDetailSheet(record: record)
                         .environment(appState)
@@ -3902,13 +3966,42 @@ private struct CorpusSectionDocumentView: View {
     }
 }
 
+/// Content for the macOS **Source Explorer window** (`frus.sourceExplorer`) — the
+/// app's home for NARA integration, in three segments:
+/// - **Source Note**: the current document's parsed source note
+///   (`MacSourceExplorerView`), targeted by the `appState.currentSourceNote*`
+///   pending-state hand-off.
+/// - **Collections**: the corpus-wide browse-by-collection authority list
+///   (Source Explorer Phase 4).
+/// - **NARA Lookup**: the live catalog query form (`NARACatalogLookupView`),
+///   targeted by the `appState.pendingNARALookup` hand-off — a window segment, not
+///   a modal, so the researcher can read the document text they are checking the
+///   citation against while querying (UI audit B3).
+///
+/// Version history:
+///   1.0 — New UI scaffolding: source-note window content
+///   1.1 — Session 2026-07-04 (Source Explorer Phase 4): Collections segment added
+///   1.2 — Session 2026-07-04 (macOS UI audit B3): NARA Lookup segment added,
+///          replacing the modal `NARACatalogLookupView` sheets in `MainWindowView`
+///          and `MacDocumentWindowView`; consumes `pendingNARALookup` (`.task` +
+///          `.onChange`, mirroring MacSearchWindowView's pendingSearch) and re-keys
+///          the lookup view's identity per hand-off so `@State(initialValue:)`
+///          repopulates the query field (the NARACatalogLookupItem rationale)
 struct SourceExplorerWindowView: View {
     @Environment(AppState.self) private var appState
 
-    /// The window's two views: the parsed document note, or the corpus-wide
-    /// browse-by-collection list (Source Explorer Phase 4).
-    private enum Mode: Hashable { case note, collections }
+    /// The window's three views: the parsed document note, the corpus-wide
+    /// browse-by-collection list (Source Explorer Phase 4), or the live NARA
+    /// Catalog lookup form (UI audit B3).
+    private enum Mode: Hashable { case note, collections, naraLookup }
     @State private var mode: Mode = .note
+
+    /// The current NARA Lookup hand-off, wrapped for view identity: a fresh `UUID`
+    /// per hand-off makes SwiftUI create a brand-new `NARACatalogLookupView`, so
+    /// `@State(initialValue:)` is honoured and the query field shows the newly
+    /// selected text (see `NARACatalogLookupItem`). `nil` when the user switched to
+    /// the segment manually — the form opens empty.
+    @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -3918,10 +4011,12 @@ struct SourceExplorerWindowView: View {
                             defaultValue: "Source Note")).tag(Mode.note)
                 Text(String(localized: "source.explorer.window.mode.collections",
                             defaultValue: "Collections")).tag(Mode.collections)
+                Text(String(localized: "source.explorer.window.mode.naraLookup",
+                            defaultValue: "NARA Lookup")).tag(Mode.naraLookup)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 320)
+            .frame(maxWidth: 400)
             .padding(.vertical, 8)
             Divider()
             switch mode {
@@ -3933,8 +4028,30 @@ struct SourceExplorerWindowView: View {
                 NavigationStack {
                     CollectionBrowserView()
                 }
+            case .naraLookup:
+                // Live catalog query form. `.id` re-keys the view per hand-off so a
+                // new selection replaces a stale query field (fresh @State identity).
+                NARACatalogLookupView(initialText: naraLookupItem?.text ?? "")
+                    .id(naraLookupItem?.id)
             }
         }
+        // Consume a NARA Lookup hand-off: `.task` covers a window freshly created by
+        // the hand-off (`.onChange` misses a value that was already set), `.onChange`
+        // covers one already open — mirroring MacSearchWindowView's pendingSearch.
+        .task { consumePendingNARALookup() }
+        .onChange(of: appState.pendingNARALookup) { _, text in
+            guard text != nil else { return }
+            consumePendingNARALookup()
+        }
+    }
+
+    /// Applies (and clears) `AppState.pendingNARALookup`: switches to the NARA Lookup
+    /// segment with a fresh lookup-view identity carrying the handed-off query text.
+    private func consumePendingNARALookup() {
+        guard let text = appState.pendingNARALookup else { return }
+        appState.pendingNARALookup = nil
+        naraLookupItem = NARACatalogLookupItem(text: text)
+        mode = .naraLookup
     }
 
     /// The pre-Phase-4 window content: the current document's parsed source note.

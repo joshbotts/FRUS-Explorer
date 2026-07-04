@@ -69,6 +69,10 @@ enum WordCloudViewMode: String, CaseIterable {
 ///   1.2 — Word Cloud fixes: `load()` no longer cancels `loadTask` (a self-cancel
 ///          when running inside it left the spinner stuck after "Show hidden words");
 ///          call sites cancel the previous load instead
+///   1.3 — Session 2026-07-04 (UI audit A8): the sentiment lens honors Differentiate
+///          Without Color — polarised words gain +/− prefixes (in the layout input,
+///          so packing stays overlap-free), the legend swaps its dots for the same
+///          glyphs, and image exports carry the marks through
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -78,6 +82,10 @@ struct WordCloudView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Differentiate Without Color (UI audit A8): when set, the sentiment lens adds
+    /// +/− prefixes to polarised words (cloud, list, legend, and image exports) so
+    /// polarity is never conveyed by hue alone.
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -234,11 +242,13 @@ struct WordCloudView: View {
     /// Colour key shown under the lens bar while the sentiment lens is active.
     private var sentimentLegend: some View {
         HStack(spacing: 14) {
+            // A8: under Differentiate Without Color the legend swaps its color dots
+            // for the +/− glyphs the cloud prefixes words with.
             Label(String(localized: "wordcloud.sentiment.positive", defaultValue: "Positive"),
-                  systemImage: "circle.fill")
+                  systemImage: differentiateWithoutColor ? "plus.circle.fill" : "circle.fill")
                 .foregroundStyle(.green)
             Label(String(localized: "wordcloud.sentiment.negative", defaultValue: "Negative"),
-                  systemImage: "circle.fill")
+                  systemImage: differentiateWithoutColor ? "minus.circle.fill" : "circle.fill")
                 .foregroundStyle(.red)
             Spacer()
         }
@@ -261,6 +271,12 @@ struct WordCloudView: View {
             ))
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Whether the +/− no-color sentiment marks are active (UI audit A8): the
+    /// sentiment lens is on AND the user asked for Differentiate Without Color.
+    private var useSentimentMarks: Bool {
+        differentiateWithoutColor && lens.colorsBySentiment
     }
 
     /// The colour for a word: sentiment polarity under the sentiment lens, otherwise
@@ -303,14 +319,19 @@ struct WordCloudView: View {
         GeometryReader { geo in
             ZStack {
                 ForEach(placements) { word in
+                    // A8: under the no-color sentiment encoding `word.term` is the
+                    // marked display form (the marks were part of the layout input,
+                    // so packing accounts for their width); hand-offs and polarity
+                    // lookups use the bare term.
                     Text(word.term)
                         .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign.swiftUIDesign))
-                        .foregroundStyle(wordColor(term: word.term, colorIndex: word.colorIndex))
+                        .foregroundStyle(wordColor(term: WordCloudLexicons.bareTerm(word.term),
+                                                   colorIndex: word.colorIndex))
                         .fixedSize()
                         .rotationEffect(.degrees(word.rotationDegrees))
                         .position(word.center)
-                        .onTapGesture { analyze(for: word.term) }
-                        .contextMenu { wordContextMenu(term: word.term) }
+                        .onTapGesture { analyze(for: WordCloudLexicons.bareTerm(word.term)) }
+                        .contextMenu { wordContextMenu(term: WordCloudLexicons.bareTerm(word.term)) }
                         .accessibilityHidden(true)
                 }
             }
@@ -319,9 +340,16 @@ struct WordCloudView: View {
             .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
                                 signature: scope.signature, exclude: excludeBoilerplate,
                                 lens: lens, termCount: result.terms.count,
-                                fontDesign: fontDesign, density: density)) {
+                                fontDesign: fontDesign, density: density,
+                                sentimentMarks: useSentimentMarks)) {
+                // A8: lay out the marked display terms so the +/− prefixes get the
+                // width they render with.
+                let layoutTerms = useSentimentMarks
+                    ? result.terms.map { TermCount(term: WordCloudLexicons.markedTerm($0.term),
+                                                   count: $0.count) }
+                    : result.terms
                 placements = WordCloudLayout.place(
-                    terms: result.terms, in: geo.size,
+                    terms: layoutTerms, in: geo.size,
                     spacingScale: density.spacingScale, widthFactor: fontDesign.widthFactor
                 )
             }
@@ -340,7 +368,9 @@ struct WordCloudView: View {
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.tertiary)
                             .frame(minWidth: 28, alignment: .trailing)
-                        Text(term.term)
+                        // A8: the list shows the same +/− marks as the cloud under
+                        // the no-color sentiment encoding.
+                        Text(useSentimentMarks ? WordCloudLexicons.markedTerm(term.term) : term.term)
                             .font(.body)
                             .foregroundStyle(lens.colorsBySentiment
                                              ? wordColor(term: term.term, colorIndex: index)
@@ -514,7 +544,8 @@ struct WordCloudView: View {
                     Button {
                         exportItem = WordCloudExporter.image(
                             terms: result.terms, title: title, format: .png,
-                            palette: Self.palette, sentimentColors: lens.colorsBySentiment
+                            palette: Self.palette, sentimentColors: lens.colorsBySentiment,
+                            sentimentMarks: useSentimentMarks
                         )
                     } label: {
                         Label(String(localized: "wordcloud.export.png", defaultValue: "Image (PNG)…"),
@@ -523,7 +554,8 @@ struct WordCloudView: View {
                     Button {
                         exportItem = WordCloudExporter.image(
                             terms: result.terms, title: title, format: .pdf,
-                            palette: Self.palette, sentimentColors: lens.colorsBySentiment
+                            palette: Self.palette, sentimentColors: lens.colorsBySentiment,
+                            sentimentMarks: useSentimentMarks
                         )
                     } label: {
                         Label(String(localized: "wordcloud.export.pdf", defaultValue: "PDF…"),
@@ -846,6 +878,9 @@ struct WordCloudView: View {
         let termCount: Int
         let fontDesign: WordCloudFontDesign
         let density: WordCloudDensity
+        /// Whether the A8 +/− marks are in the layout input (re-lays out when the
+        /// Differentiate Without Color setting or the lens flips).
+        let sentimentMarks: Bool
     }
 }
 

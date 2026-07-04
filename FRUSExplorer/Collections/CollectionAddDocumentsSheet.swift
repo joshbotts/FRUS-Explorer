@@ -1316,6 +1316,8 @@ struct CollectionAddDocumentsSheet: View {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation
+///   1.1 — Session 2026-07-04 (UI audit A5): `.isSelected` trait mirrors the
+///          checkmark-symbol swap so selection isn't conveyed by iconography alone
 private struct DiscoveryPickRow: View {
 
     /// The document this row represents.
@@ -1412,6 +1414,8 @@ private struct DiscoveryPickRow: View {
         .accessibilityLabel(String(
             localized: "collection.addDocs.row.accessibility",
             defaultValue: "\(pick.header ?? pick.documentId), \(selectionStateLabel)"))
+        // A5: expose selection as a trait, not just the symbol swap / label suffix.
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     /// Localized selection state for the accessibility label.

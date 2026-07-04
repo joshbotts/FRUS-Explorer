@@ -41,10 +41,12 @@ import SwiftUI
 /// ensure the window is open before the parameters arrive.
 ///
 /// ## Advanced Filters
-/// Tapping "Advanced…" in the filter row opens `SearchFilterView` as a sheet.
-/// On dismiss, `searchVM.applyAdvancedFilters()` copies filter state back into
-/// `parameters` and bumps `parametersVersion`, which triggers a new search via
-/// `.task(id: searchVM.searchTrigger)`.
+/// Tapping "Advanced…" in the filter row opens `SearchFilterView` in a popover
+/// anchored to the button (UI audit C4). Filters apply **live**: an `.onChange`
+/// on `filterVM.advancedFilterSignature` calls `searchVM.applyAdvancedFilters()`
+/// per edit, which copies filter state into `parameters` and bumps
+/// `parametersVersion`, re-running the search via `.task(id: searchVM.searchTrigger)`
+/// while the result list stays visible behind the popover.
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding (macOS-only; uses MacSearchViewModel)
@@ -83,6 +85,18 @@ import SwiftUI
 ///          window (`openWindow(value: ArchivalNeighborsRequest.document…)`) instead
 ///          of a sheet, so the neighbors list survives row navigation; the
 ///          `archivalNeighborsTarget` state and its `.sheet` were removed
+///   1.12 — Session 2026-07-04 (macOS UI audit B4): "Find by Citation" opens the
+///          frus.citationLookup window (⌘⇧F, the sibling find flow) instead of a
+///          sheet; the `showCitationLookup` state and its `.sheet` were removed
+///   1.13 — Session 2026-07-04 (macOS UI audit C4): advanced filters became a live
+///          popover anchored to the "Advanced…" button — edits apply immediately
+///          via `.onChange(of: filterVM.advancedFilterSignature)`; the modal sheet
+///          and its `onDismiss` batch `applyAdvancedFilters()` call were removed
+///   1.14 — Session 2026-07-04 (macOS UI audit A7): result rows are keyboard-
+///          navigable — the results List gained selection (`selectedResultId`),
+///          so ↑/↓ traverse rows natively and ↩ opens the selected result; a row
+///          click now also selects it (so arrow keys continue from the row the
+///          user last opened), preserving the click-to-open behavior
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -92,10 +106,13 @@ struct MacSearchWindowView: View {
     @State private var searchVM = MacSearchViewModel()
     @State private var showAdvancedFilters = false
     @State private var showTimeline = false
-    @State private var showCitationLookup = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
+    /// The result row selected in the results List (UI audit A7): gives the list
+    /// native ↑/↓ keyboard traversal, and ↩ opens the selected result. A stale id
+    /// (after a new search or page change) simply matches no row. Never persisted.
+    @State private var selectedResultId: SearchResult.ID? = nil
 
     /// All user tags fetched from SwiftData. Passed to `SearchResultRow` so tag UUID
     /// strings in results can be resolved to human-readable names.
@@ -176,15 +193,6 @@ struct MacSearchWindowView: View {
             searchVM.results = []
             searchVM.queryText = ""
         }
-        .sheet(isPresented: $showAdvancedFilters,
-               onDismiss: { searchVM.applyAdvancedFilters() }) {
-            if let filterVM = searchVM.filterVM {
-                SearchFilterView(vm: filterVM)
-            }
-        }
-        .sheet(isPresented: $showCitationLookup) {
-            CitationLookupView()
-        }
         .sheet(isPresented: $showSaveSearchSheet) {
             saveSearchSheet
                 .modelContainer(modelContext.container)
@@ -250,7 +258,10 @@ struct MacSearchWindowView: View {
             ))
 
             Button {
-                showCitationLookup = true
+                // B4: Citation Lookup is its own window (⌘⇧F) — the sibling find
+                // flow to this Search window (⌘F).
+                openWindow(id: "frus.citationLookup")
+                bringMacWindowToFront(id: "frus.citationLookup")
             } label: {
                 Label(
                     String(localized: "search.citationLookup.button",
@@ -489,8 +500,22 @@ struct MacSearchWindowView: View {
             .accessibilityLabel("Open advanced search filters")
             .help(String(
                 localized: "search.filter.advanced.help",
-                defaultValue: "Open advanced filters — phrase search, boolean mode, prefix wildcard, excluded terms, person reference"
+                defaultValue: "Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately."
             ))
+            // Live filter popover (UI audit C4): anchored to the button so the
+            // result list stays visible while filtering — the modal sheet this
+            // replaces hid the very results being narrowed. Edits apply
+            // immediately via the `advancedFilterSignature` observation below;
+            // there is no dismiss-time batch.
+            .popover(isPresented: $showAdvancedFilters, arrowEdge: .bottom) {
+                if let filterVM = searchVM.filterVM {
+                    SearchFilterView(vm: filterVM)
+                        .frame(width: 480, height: 560)
+                        .onChange(of: filterVM.advancedFilterSignature) { _, _ in
+                            searchVM.applyAdvancedFilters()
+                        }
+                }
+            }
         }
     }
 
@@ -759,12 +784,20 @@ struct MacSearchWindowView: View {
     }
 
     private var resultsList: some View {
-        List(searchVM.pagedResults, id: \.id) { result in
+        // Selection (UI audit A7) gives the NSTableView-backed List its native
+        // arrow-key traversal once focus is in the list (click a row or Tab to it);
+        // ↩ opens the selected row via `.onKeyPress` below. The tap gesture keeps
+        // the long-standing click-to-open behavior AND records the row as selected,
+        // so ↑/↓ continue from the result the user last opened.
+        List(searchVM.pagedResults, id: \.id, selection: $selectedResultId) { result in
             SearchResultRow(result: result, userTags: allUserTags)
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 .listRowSeparator(.visible, edges: .bottom)
                 .contentShape(Rectangle())
-                .onTapGesture { navigateToResult(result) }
+                .onTapGesture {
+                    selectedResultId = result.id
+                    navigateToResult(result)
+                }
                 .contextMenu {
                     // Default click opens in the main window (navigateToResult →
                     // pendingBrowseDocument); offered explicitly here too.
@@ -804,6 +837,17 @@ struct MacSearchWindowView: View {
                 }
         }
         .listStyle(.plain)
+        // ↩ opens the selected result (A7) — same navigation as a row click. Fires
+        // only while focus is inside the List, so the search field's own Return
+        // (`.onSubmit` → submitSearch) is untouched; `.ignored` hands anything
+        // else back to the system.
+        .onKeyPress(.return) {
+            guard let id = selectedResultId,
+                  let result = searchVM.pagedResults.first(where: { $0.id == id })
+            else { return .ignored }
+            navigateToResult(result)
+            return .handled
+        }
     }
 
     // MARK: - Pagination Bar

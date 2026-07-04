@@ -83,6 +83,9 @@ enum WordCloudExporter {
     ///   - palette: The colour palette to draw words with.
     ///   - sentimentColors: When `true`, words are coloured by sentiment polarity
     ///     instead of the rank palette, matching the on-screen sentiment lens.
+    ///   - sentimentMarks: When `true`, words are prefixed with a polarity mark
+    ///     (`+`/`−`) so the sentiment lens reads without colour (A8 —
+    ///     `differentiateWithoutColor`), matching the on-screen marked terms.
     /// - Returns: The written export item, or `nil` on failure.
     @MainActor
     static func image(
@@ -90,14 +93,20 @@ enum WordCloudExporter {
         title: String,
         format: WordCloudImageFormat,
         palette: [Color],
-        sentimentColors: Bool = false
+        sentimentColors: Bool = false,
+        sentimentMarks: Bool = false
     ) -> WordCloudExportItem? {
         // Leave a caption band at the bottom; lay words out above it.
         let captionBand: CGFloat = 56
         let layoutSize = CGSize(width: canvas.width, height: canvas.height - captionBand)
         let design = WordCloudSettings.fontDesign
+        // A8: lay out the marked display terms so the polarity prefixes get the
+        // width they render with, matching the on-screen path.
+        let layoutTerms = sentimentMarks
+            ? terms.map { TermCount(term: WordCloudLexicons.markedTerm($0.term), count: $0.count) }
+            : terms
         let placements = WordCloudLayout.place(
-            terms: terms, in: layoutSize, maxWords: 140, minFontSize: 16, maxFontSize: 96,
+            terms: layoutTerms, in: layoutSize, maxWords: 140, minFontSize: 16, maxFontSize: 96,
             spacingScale: WordCloudSettings.density.spacingScale, widthFactor: design.widthFactor
         )
         let content = WordCloudImageContent(

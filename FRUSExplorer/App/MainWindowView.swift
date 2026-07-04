@@ -53,6 +53,10 @@ import AppKit
 ///   1.4 — Word Cloud fixes: pendingWordCloud is now consumed and cleared by
 ///          WordCloudWindowContent, so repeated hand-offs to an identical scope
 ///          reopen the window instead of being dropped by `.onChange`
+///   1.5 — Session 2026-07-04 (macOS UI audit B3/B4): NARA Catalog Lookup sheet
+///          replaced by the Source Explorer window's NARA Lookup segment
+///          (`pendingNARALookup` hand-off); Citation Lookup sheet replaced by the
+///          frus.citationLookup Window scene, which owns ⌘⇧F itself
 @MainActor
 struct MainWindowView: View {
 
@@ -62,15 +66,6 @@ struct MainWindowView: View {
 
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
-
-    /// NARA Catalog Lookup sheet item.
-    ///
-    /// Using `.sheet(item:)` rather than `.sheet(isPresented:)` ensures SwiftUI creates
-    /// a fresh `NARACatalogLookupView` on every open. With `.sheet(isPresented:)` SwiftUI
-    /// can reuse the cached view between sessions, causing `@State(initialValue:)` to be
-    /// ignored and leaving the query field empty or stale. Each `NARACatalogLookupItem`
-    /// carries a unique `UUID` so the view identity changes on every call.
-    @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
     /// Shared highlight state passed to ResearchStripView (buttons) and MacDocumentView (text selection / SwiftData insertion).
     @State private var highlightCoordinator = HighlightCoordinator()
@@ -84,8 +79,6 @@ struct MainWindowView: View {
     // MARK: - Body
 
     var body: some View {
-        @Bindable var appStateBindable = appState
-
         VStack(spacing: 0) {
 
             // Research strip — always rendered at full height.
@@ -93,14 +86,14 @@ struct MainWindowView: View {
                 entry: currentEntry,
                 highlightCoordinator: highlightCoordinator,
                 onNARALookup: { text in
-                    // New UUID every time → SwiftUI treats it as a new view identity
-                    // → @State(initialValue:) is honoured → query field shows the text.
-                    naraLookupItem = NARACatalogLookupItem(text: text)
+                    // B3: hand the selection to the Source Explorer window's NARA
+                    // Lookup segment (a window, so the document stays readable while
+                    // querying). The window consumes and clears pendingNARALookup.
+                    appState.pendingNARALookup = text
+                    openWindow(id: "frus.sourceExplorer")
+                    bringMacWindowToFront(id: "frus.sourceExplorer")
                 }
             )
-            .sheet(item: $naraLookupItem) { item in
-                NARACatalogLookupView(initialText: item.text)
-            }
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
@@ -154,11 +147,8 @@ struct MainWindowView: View {
             openWindow(id: "frus.wordcloud")
             bringMacWindowToFront(id: "frus.wordcloud")
         }
-        // Citation Lookup sheet — responds to both the menu command (⌘⇧F) and any
-        // code that sets appState.showCitationLookup = true.
-        .sheet(isPresented: $appStateBindable.showCitationLookup) {
-            CitationLookupView()
-        }
+        // Citation Lookup (⌘⇧F) is the frus.citationLookup Window scene (UI audit
+        // B4) — no sheet here; the scene shortcut opens it directly.
     }
 
     // MARK: - Toolbar
@@ -347,12 +337,14 @@ private struct DocumentPlaceholderView: View {
 
 // MARK: - NARACatalogLookupItem
 
-/// Thin `Identifiable` wrapper used by `MainWindowView` to drive the NARA Catalog Lookup
-/// sheet via `.sheet(item:)`.
+/// Thin `Identifiable` wrapper used by `SourceExplorerWindowView` to key its embedded
+/// `NARACatalogLookupView` (the NARA Lookup segment, UI audit B3).
 ///
-/// Each lookup creates a new instance with a fresh `UUID`. SwiftUI sees a new item
-/// identity each time and creates a brand-new `NARACatalogLookupView`, ensuring that
-/// `@State(initialValue:)` is honoured and the query field shows the newly selected text.
+/// Each hand-off creates a new instance with a fresh `UUID`. SwiftUI sees a new view
+/// identity each time (via `.id`) and creates a brand-new `NARACatalogLookupView`,
+/// ensuring that `@State(initialValue:)` is honoured and the query field shows the
+/// newly selected text. (Originally the `.sheet(item:)` item for the modal lookup
+/// sheets `MainWindowView` and `MacDocumentWindowView` carried before B3.)
 struct NARACatalogLookupItem: Identifiable {
     let id  = UUID()
     let text: String

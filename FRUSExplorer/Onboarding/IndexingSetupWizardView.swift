@@ -21,11 +21,16 @@ import SwiftUI
 /// (the project picker and `CollectionEditorView`), so nothing is lost by dropping the
 /// up-front configuration.
 ///
-/// Presented from `IndexingQueueBannerView` (iOS) and `SupportingViews` (macOS).
+/// Presented from `IndexingQueueBannerView` (iOS only). The macOS status bar's
+/// auto-presented copy was removed by the 2026-07-04 UI audit (B7) — its "Learn"
+/// button now opens the standalone `frus.researchGuide` window instead, so nothing
+/// modal interrupts first-run exploration on macOS.
 ///
 /// Version history:
 ///   1.0 — Session 155: education pages + project/collection setup wizard
 ///   2.0 — Session 163: setup wizard removed; education-only, dismiss on completion
+///   2.1 — Session 2026-07-04 (macOS UI audit B7): macOS presentation removed;
+///          iOS-only from here on (view unchanged)
 struct WhileIndexingSheet: View {
 
     @Environment(\.dismiss) private var dismiss

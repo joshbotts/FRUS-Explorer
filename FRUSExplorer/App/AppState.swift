@@ -102,6 +102,19 @@ import CloudKit
 ///          `citationMatchingEngine.noteVolumeDownloaded(_:)` on each volume's
 ///          `.complete` event so citation resolution sees newly downloaded volumes
 ///          without an app relaunch
+///   4.3 — Session 2026-07-04 (macOS UI audit B2/B3/B4): pendingBrowseVolume
+///          (cross-volume provenance rows → browser hand-off) and pendingNARALookup
+///          (selected text → Source Explorer window's NARA Lookup mode) added;
+///          showCitationLookup removed — Citation Lookup is a Window scene on macOS
+///          (`frus.citationLookup`) and local sheet state on iOS, so the cross-view
+///          flag had no remaining reader
+///   4.4 — Session 2026-07-04 (macOS UI audit B6): pendingVolumeGraph added — the
+///          Corpus Browser's per-volume graph buttons hand the volume to the
+///          frus.crossReferenceGraph window's volume-connections stage instead of
+///          presenting VolumeConnectionGraphView in a local sheet
+///   4.5 — Session 2026-07-04 (macOS UI audit C1): pendingNoteComposer added — the
+///          macOS research-note editor is the frus.noteComposer utility window
+///          (document stays readable while composing) instead of a modal sheet
 
 // MARK: - CloudKitSyncState
 
@@ -520,6 +533,18 @@ final class AppState {
     /// and appends the entry to its path, then this property is cleared.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
 
+    /// Cross-view hand-off for opening a **volume** in the browser (the volume-grain
+    /// sibling of `pendingBrowseDocument`), set by the Cross-Volume Provenance rows
+    /// (UI audit gap 12 — they used to be dead ends).
+    ///
+    /// Set immediately before `openWindow(id: "frus.corpusBrowser")` on macOS —
+    /// `CorpusBrowserWindowView` consumes it (`.task` for a freshly created window,
+    /// `.onChange` for one already open), selects the volume's subseries, pushes the
+    /// volume onto its detail path, and clears it. On iOS `BrowserView` consumes it
+    /// via `.onChange` and appends the volume to the Browse tab's path — mirroring
+    /// the `pendingBrowseDocument` pattern.
+    var pendingBrowseVolume: String? = nil
+
     /// The document currently targeted by the Cross-Reference Graph window.
     ///
     /// Set by `MainWindowView` immediately before `openWindow(id: "frus.crossReferenceGraph")`
@@ -527,6 +552,20 @@ final class AppState {
     /// ego graph. On macOS the "View Document" button in the graph info panel sets
     /// `pendingBrowseDocument` (to open in the main window) rather than navigating inline.
     var currentGraphEntry: DocumentBrowserEntry? = nil
+
+    /// Cross-window hand-off into the Cross-Reference Graph window's **volume
+    /// connections** mode (UI audit B6): the id of the volume whose corpus-wide
+    /// connection graph should be shown.
+    ///
+    /// `currentGraphEntry` is document-scoped (targeted ego-graph mode); this is its
+    /// volume-grain sibling. Set by the Corpus Browser's per-volume graph buttons
+    /// immediately before `openWindow(id: "frus.crossReferenceGraph")`.
+    /// `CrossReferenceGraphWindowView` consumes it (`.task` for a freshly created
+    /// window, `.onChange` for one already open), clears `currentGraphEntry`, jumps
+    /// its picker straight to the volume-connections stage, and clears this —
+    /// mirroring the `pendingSearch` / `pendingNARALookup` pattern. macOS-only in
+    /// practice; iOS shows `VolumeConnectionGraphView` inline in the Browse tab.
+    var pendingVolumeGraph: String? = nil
 
     /// The raw source note of the document currently targeted by the Source Explorer window.
     ///
@@ -543,6 +582,35 @@ final class AppState {
     var currentSourceNoteDateline: String? = nil
     var currentSourceNoteVolumeId: String? = nil
     var currentSourceNoteDocumentId: String? = nil
+
+    /// Cross-window hand-off into the Source Explorer window's **NARA Lookup** mode
+    /// (UI audit B3): the selected document text a caller wants pre-filled as the
+    /// catalog query.
+    ///
+    /// Set by the ResearchStripView `onNARALookup` closures (`MainWindowView`,
+    /// `MacDocumentWindowView`) immediately before
+    /// `openWindow(id: "frus.sourceExplorer")`. `SourceExplorerWindowView` consumes
+    /// it (`.task` for a freshly created window, `.onChange` for one already open),
+    /// switches to the NARA Lookup segment with a fresh view identity so the query
+    /// field shows the new text, and clears it — mirroring the `pendingSearch` /
+    /// `pendingCollectionSelection` pattern. macOS-only in practice; iOS presents
+    /// `NARACatalogLookupView` as a local sheet.
+    var pendingNARALookup: String? = nil
+
+    /// Cross-window hand-off into the research-note composer window (UI audit C1):
+    /// the document context (and optional existing note / linked highlight) a note
+    /// should be composed against.
+    ///
+    /// Set by the macOS note entry points (ResearchStripView's "Add note" and
+    /// highlight-note buttons; MacDocumentView's research-panel note rows and
+    /// "Add Note" button) immediately before `openWindow(id: "frus.noteComposer")`.
+    /// `NoteComposerWindowView` consumes it (`.task` for a freshly created window,
+    /// `.onChange` for one already open) and clears it — mirroring the
+    /// `pendingNARALookup` pattern, including the fresh view identity per hand-off
+    /// (`handoffId`) so the editor repopulates. One composer at a time by design:
+    /// a new hand-off replaces the window's content. macOS-only in practice; iOS
+    /// keeps its local `ResearchNoteEditorView` sheets.
+    var pendingNoteComposer: NoteComposerRequest? = nil
 
     /// `EducationPage.id` to open the Research Guide to directly, or `nil` to
     /// open at the first page.
@@ -566,10 +634,9 @@ final class AppState {
     /// is empty, because its `searchTrigger` never changes and no re-query fires.
     var indexGeneration: Int = 0
 
-    /// Controls presentation of the Citation Lookup sheet.
-    ///
-    /// Promoted from `BrowserView` local `@State` to `AppState`. Session 43.
-    var showCitationLookup: Bool = false
+    // `showCitationLookup` removed in 4.3 — Citation Lookup is a Window scene on
+    // macOS (`frus.citationLookup`, UI audit B4) and a local-state sheet on iOS
+    // (`SearchView`), so no cross-view flag remains.
 
     /// The most recent per-document indexing progress update, or `nil` when no
     /// indexing is in progress.

@@ -30,6 +30,13 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 14: initial implementation
+///   1.1 — Session 2026-07-04 (macOS UI audit C1): on macOS the document-window
+///          entry points present this editor in the `frus.noteComposer` utility
+///          window (`NoteComposerWindowView` below) instead of a modal sheet, so
+///          the passage being annotated stays readable while typing. The view
+///          itself is unchanged — `dismiss()` closes the sheet on iOS and the
+///          composer window on macOS. Sheet presentations remain on iOS and in
+///          macOS list-management surfaces (Settings notes list, All Activity).
 struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -330,6 +337,127 @@ struct ResearchNoteEditorView: View {
         }
     }
 }
+
+// MARK: - NoteComposerRequest
+
+/// Cross-window hand-off value for the macOS research-note composer window
+/// (`frus.noteComposer`, UI audit C1): the document context a note is composed
+/// against, plus the optional existing note to edit or highlight to link.
+///
+/// Carried through `AppState.pendingNoteComposer` (pending-state hand-off, not a
+/// value-based `WindowGroup`): note composition is deliberately **one window at a
+/// time** — a second hand-off retargets the open composer rather than spawning a
+/// second editor over the same SwiftData store. `handoffId` is fresh per hand-off
+/// so `NoteComposerWindowView` can re-key the editor (`.id`) even when the same
+/// document's composer is requested twice in a row.
+///
+/// Declared outside `#if os(macOS)` because `AppState.pendingNoteComposer` is a
+/// cross-platform property (always nil on iOS, which keeps its editor sheets).
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit C1): initial implementation
+struct NoteComposerRequest: Equatable, Hashable, Sendable {
+    /// The document the note is attached to.
+    let documentId: String
+    /// The volume containing `documentId`.
+    let volumeId: String
+    /// The `ResearchNote.id` of an existing note to edit, or `nil` to create a new note.
+    let noteId: UUID?
+    /// The `DocumentHighlight.id` a newly saved note should be linked back to, or `nil`.
+    let linkedHighlightId: UUID?
+    /// Fresh per hand-off; keys the editor's view identity so `@State` repopulates.
+    let handoffId: UUID
+
+    /// Creates a request; `handoffId` defaults to a fresh UUID per hand-off.
+    init(documentId: String,
+         volumeId: String,
+         noteId: UUID? = nil,
+         linkedHighlightId: UUID? = nil,
+         handoffId: UUID = UUID()) {
+        self.documentId = documentId
+        self.volumeId = volumeId
+        self.noteId = noteId
+        self.linkedHighlightId = linkedHighlightId
+        self.handoffId = handoffId
+    }
+}
+
+// MARK: - NoteComposerWindowView
+
+#if os(macOS)
+/// Content of the macOS `frus.noteComposer` utility window (UI audit C1).
+///
+/// Hosts the unchanged `ResearchNoteEditorView` so a researcher can read the
+/// passage they are annotating while typing — the modal sheet this replaces
+/// covered the document. Consumes `AppState.pendingNoteComposer` via the
+/// `.task` + `.onChange` pattern (MacSearchWindowView precedent) and re-keys the
+/// editor with `.id(request.handoffId)` so each hand-off starts from the handed
+/// context. One composer at a time: a new hand-off replaces any in-progress
+/// draft, which is the deliberate trade for never stacking editor windows.
+///
+/// No indexing-pipeline boot guard is needed: the window only ever shows an
+/// editor after a hand-off (a window restored at launch has no pending request
+/// and shows the neutral placeholder, never a false empty state), and
+/// `ResearchNoteEditorView` tolerates a nil pipeline (the FTS5 push is skipped).
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit C1): initial implementation
+struct NoteComposerWindowView: View {
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
+    /// The consumed hand-off currently being composed, or `nil` (placeholder).
+    @State private var request: NoteComposerRequest? = nil
+
+    var body: some View {
+        Group {
+            if let request {
+                ResearchNoteEditorView(
+                    documentId: request.documentId,
+                    volumeId: request.volumeId,
+                    activeProjectId: appState.activeProjectId,
+                    noteToEdit: fetchNote(request.noteId),
+                    linkedHighlightId: request.linkedHighlightId,
+                    indexingPipeline: appState.indexingPipeline
+                )
+                .id(request.handoffId)
+            } else {
+                ContentUnavailableView(
+                    String(localized: "note.composer.empty.title",
+                           defaultValue: "No Note Being Composed"),
+                    systemImage: "note.text",
+                    description: Text(
+                        String(localized: "note.composer.empty.detail",
+                               defaultValue: "Use “Add note” in a document's Research strip, or open a note from its Research panel.")
+                    )
+                )
+            }
+        }
+        .task { consumePending() }
+        .onChange(of: appState.pendingNoteComposer) { _, _ in consumePending() }
+    }
+
+    /// Applies and clears `AppState.pendingNoteComposer`. Idempotent — safe under
+    /// the `.task` + `.onChange` double-fire on window creation.
+    private func consumePending() {
+        guard let pending = appState.pendingNoteComposer else { return }
+        request = pending
+        appState.pendingNoteComposer = nil
+    }
+
+    /// Resolves an existing note id from the hand-off to its SwiftData model.
+    /// Returns `nil` (create-new mode) when the id is absent or the note was
+    /// deleted between hand-off and consumption.
+    private func fetchNote(_ noteId: UUID?) -> ResearchNote? {
+        guard let noteId else { return nil }
+        let descriptor = FetchDescriptor<ResearchNote>(
+            predicate: #Predicate { $0.id == noteId }
+        )
+        return try? modelContext.fetch(descriptor).first
+    }
+}
+#endif
 
 // MARK: - SummaryPromotionRow
 

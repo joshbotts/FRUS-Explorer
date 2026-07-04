@@ -74,6 +74,29 @@ import UniformTypeIdentifiers
 ///          the first entry, back matter → the end — fully movable afterwards);
 ///          `.generated` entries render as `CollectionGeneratedEntryRow` (inline trash;
 ///          movable like prose; no body-depth or inspector controls)
+///   1.13 — Session 2026-07-04 (macOS UI audit B8): the per-entry inspector left its
+///          modal sheet for a selection-driven trailing `.inspector` column on the
+///          detail pane (each ⓘ opens/retargets/toggles it; deletions close it) —
+///          coexisting with the live preview (inspector trailing-most) so override
+///          edits show their effect in the preview instead of hiding it; document
+///          rows (`MacEntryRow.onInspect`) and heading rows
+///          (`CollectionHeadingRow.onInspect`) both route into the column. The
+///          fixed-height header is untouched — the inspector is a sibling column,
+///          not header content
+///   1.14 — Session 2026-07-04 (macOS UI audit gaps 5 + A7): the window publishes
+///          the "Collection" menu's focused-scene values — the root view publishes
+///          `CollectionManagerCommandActions` (New Collection ⌥⌘N) and the detail
+///          pane `CollectionDetailCommandActions` (Add Documents ⌘⇧A — the key
+///          equivalent moved off the toolbar button so the menu is its single
+///          owner — Add Section Heading, Add Note Block, Show Preview ⌥⌘P,
+///          Export ⌘E); the outline List gains selection (A7): ↑/↓ traverse
+///          entries, ↩ (and double-click on document rows) toggles the selected
+///          entry's inspector column
+///   1.15 — Session 2026-07-04 (UI audit A4): every entry row exposes Move Up /
+///          Move Down as VoiceOver actions + context-menu items via the shared
+///          `entryMoveControls`; `moveVisibleRowUp/Down` reuse the drag engine
+///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
+///          sections and collapsed sections are hopped whole
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -156,6 +179,16 @@ struct MacCollectionManagerView: View {
         .onChange(of: appState.pendingCollectionSelection) { _, id in
             if id != nil { consumePendingCollectionSelection() }
         }
+        // "Collection" menu wiring (UI audit gap 5): New Collection is published
+        // from the window root — it must work while nothing is selected — and is
+        // therefore available whenever this window is key. The selection-dependent
+        // items are published separately by CollectionDetailPane. Optional-typed so
+        // the Equatable focusedSceneValue overload is selected.
+        .focusedSceneValue(
+            \.collectionManagerCommands,
+            CollectionManagerCommandActions(newCollection: { showNewCollection = true })
+                as CollectionManagerCommandActions?
+        )
     }
 
     /// Applies a `pendingCollectionSelection` hand-off to the sidebar selection, then
@@ -388,6 +421,16 @@ private struct CollectionDetailPane: View {
     @State private var showFrontMatter = false
     /// Live preview pane visibility (Authoring Phase 2b; toolbar-toggled, not persisted).
     @State private var showPreview = false
+    /// The id of the entry shown in the trailing inspector column (UI audit B8), or
+    /// `nil` when the column is closed. Selection-driven: each row's ⓘ sets it (a
+    /// second click on the same row's ⓘ closes the column), so clicking another ⓘ
+    /// retargets the open inspector. View state only — never persisted.
+    @State private var inspectedEntryId: UUID? = nil
+    /// The outline row selected in the entries List (UI audit A7): gives the list
+    /// native ↑/↓ keyboard traversal, and ↩ toggles the selected entry's inspector.
+    /// Distinct from `inspectedEntryId` — selection moves freely without opening
+    /// the inspector column. View state only — never persisted.
+    @State private var selectedEntryId: UUID? = nil
     /// The preview's "Render All" cap lift, hoisted here so hiding/showing the pane
     /// doesn't reset it (one detail-pane session = one lift).
     @State private var previewRenderAll = false
@@ -487,6 +530,67 @@ private struct CollectionDetailPane: View {
             }
             .environment(appState)
         }
+        // Entry inspector (UI audit B8): a trailing `.inspector` column replacing the
+        // per-row modal sheet, so the outline stays visible — and editable — while the
+        // inspector's overrides and "Insert as Excerpt" act on it. It coexists with the
+        // live preview pane (the inspector sits trailing-most) deliberately: the
+        // inspector edits per-entry export overrides whose effect renders live in the
+        // preview, which a toggle would have hidden at exactly the moment it matters.
+        // `.id(entry.id)` re-creates the inspector per entry so its `@State` loads fresh.
+        .inspector(isPresented: Binding(
+            get: { inspectedEntryId != nil },
+            set: { if !$0 { inspectedEntryId = nil } }
+        )) {
+            if let entry = inspectedEntry {
+                CollectionEntryInspector(
+                    entry: entry,
+                    onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                    isInspectorColumn: true
+                )
+                .id(entry.id)
+                .environment(appState)
+            }
+        }
+        // "Collection" menu wiring (UI audit gap 5): the selection-dependent
+        // authoring/export items act on this pane's existing controls; nil (items
+        // disabled) whenever no collection is selected, since this pane then
+        // doesn't exist. Optional-typed so the Equatable focusedSceneValue
+        // overload is selected.
+        .focusedSceneValue(\.collectionDetailCommands, detailCommands)
+    }
+
+    /// The "Collection" menu's selected-collection command surface (UI audit
+    /// gap 5). Every closure routes to a control that already exists in this
+    /// pane: the Add Documents / Export toolbar buttons, the structural-add
+    /// menu's heading/prose items, and the Preview toolbar toggle. Equality
+    /// contract (see `CollectionDetailCommandActions`): the closures capture only
+    /// this pane's stable `@State` storage, so they cannot go stale while the
+    /// compared identity fields are unchanged.
+    private var detailCommands: CollectionDetailCommandActions? {
+        CollectionDetailCommandActions(
+            collectionId: collection.id,
+            isPreviewShown: showPreview,
+            // Mirrors the Export toolbar button's `.disabled` condition — a smart
+            // collection (savedSearchId set) exports with zero static entries.
+            canExport: !sortedEntries.isEmpty || collection.savedSearchId != nil,
+            addDocuments: { showAddDocuments = true },
+            addHeading: { addStructuralEntry(kind: .heading) },
+            addProse: { addStructuralEntry(kind: .prose) },
+            togglePreview: { showPreview.toggle() },
+            exportCollection: { showExport = true }
+        )
+    }
+
+    /// The entry targeted by the inspector column, resolved by id so deletions and
+    /// reorderings never leave the inspector pointing at a stale model object.
+    private var inspectedEntry: CollectionEntry? {
+        inspectedEntryId.flatMap { id in sortedEntries.first { $0.id == id } }
+    }
+
+    /// Toggles `entryId` in the inspector column (each row's ⓘ): opens it, retargets
+    /// an open column to another entry, or closes it when it's already showing.
+    private func toggleInspector(for entryId: UUID) {
+        inspectedEntryId = (inspectedEntryId == entryId) ? nil : entryId
     }
 
     /// The editing column (name, note, entries list) — the pre-Phase-2b pane body,
@@ -656,7 +760,14 @@ private struct CollectionDetailPane: View {
                              defaultValue: "Add a section heading, a note block, highlighted passages, or an apparatus block"))
             }
 
-            List {
+            // Selection (UI audit A7) makes the outline rows first-class keyboard
+            // citizens: click (or Tab into the list) then ↑/↓ to traverse — List
+            // selection is what gives SwiftUI's NSTableView-backed list its native
+            // arrow-key behavior — and ↩ toggles the selected entry's inspector
+            // column. Coexists with drag reorder (`onMove` is unaffected by
+            // selection) and with every in-row control (buttons/menus keep
+            // receiving their own clicks; the row background click selects).
+            List(selection: $selectedEntryId) {
                 // Composition — inline (Authoring Phase 1 shell), inside the scrolling
                 // list rather than the fixed header, so an expanded group can never grow
                 // the header past the window (the constraint that previously forced a
@@ -712,8 +823,13 @@ private struct CollectionDetailPane: View {
                     let rows = CollectionOutline.visibleRows(
                         in: outline, collapsedHeadingIds: collapsedHeadingIds)
                     ForEach(rows) { row in
-                        outlineRow(row, outline: outline, duplicateKeys: duplicateKeys)
+                        outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
+                                   rows: rows)
                             .padding(.leading, outlineIndent(for: row))
+                            // Selectable identity for A7 keyboard traversal — the
+                            // Composition/Front Matter sections above carry no tag,
+                            // so they stay unselectable.
+                            .tag(row.id)
                     }
                     .onMove { from, to in
                         moveVisibleRows(from, to: to, visible: rows.map(\.index))
@@ -721,6 +837,19 @@ private struct CollectionDetailPane: View {
                 }
             }
             .listStyle(.inset)
+            // ↩ toggles the selected entry's inspector (A7) — same action as the
+            // row's ⓘ button, gated to the kinds the inspector supports. Fires only
+            // while focus is inside the List (an in-row text field consumes its own
+            // Return before it can bubble here); `.ignored` hands anything else back
+            // to the system.
+            .onKeyPress(.return) {
+                guard let id = selectedEntryId,
+                      let entry = sortedEntries.first(where: { $0.id == id }),
+                      entry.entryKind == .document || entry.entryKind == .heading
+                else { return .ignored }
+                toggleInspector(for: id)
+                return .handled
+            }
             .frame(minHeight: 200, maxHeight: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(
@@ -734,12 +863,22 @@ private struct CollectionDetailPane: View {
 
     /// Builds the view for one visible outline row (see the iOS editor's counterpart).
     /// Bindings index into `sortedEntries`, kept in `sortOrder` order (reindexed 0..n
-    /// after every mutation), so positions align with the linearized outline.
+    /// after every mutation), so positions align with the linearized outline. `rows`
+    /// (the full visible-row list) locates this row's visible position for the A4
+    /// Move Up / Move Down actions.
     @ViewBuilder
     private func outlineRow(_ row: CollectionOutline.VisibleRow,
                             outline: [CollectionOutline.OutlineItem],
-                            duplicateKeys: Set<String>) -> some View {
+                            duplicateKeys: Set<String>,
+                            rows: [CollectionOutline.VisibleRow]) -> some View {
         let entry = sortedEntries[row.index]
+        // A4 reorder closures: nil at the outline's edges so the actions disappear
+        // rather than silently no-op.
+        let pos = rows.firstIndex { $0.id == row.id } ?? 0
+        let moveUp: (() -> Void)? = pos > 0
+            ? { moveVisibleRowUp(pos, rows: rows) } : nil
+        let moveDown: (() -> Void)? = canMoveVisibleRowDown(pos, rows: rows)
+            ? { moveVisibleRowDown(pos, rows: rows) } : nil
         switch entry.entryKind {
         case .document:
             let nodeKey = "\(entry.volumeId)/\(entry.documentId)"
@@ -749,15 +888,25 @@ private struct CollectionDetailPane: View {
                 volumeTitle: volumeTitle(for: entry),
                 documentHeader: documentHeaders[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
-                onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                onInspect: { toggleInspector(for: entry.id) },
                 onNewNote: {
                     noteCreateContext = NoteCreateContext(
                         documentId: entry.documentId,
                         volumeId: entry.volumeId,
                         entryIndex: row.index)
                 },
-                onDelete: { deleteEntry(at: row.index) }
+                onDelete: { deleteEntry(at: row.index) },
+                onMoveUp: moveUp,
+                onMoveDown: moveDown
             )
+            // Double-click opens/toggles the inspector (A7), matching the ↩ key on
+            // the selected row. `simultaneousGesture` so the first click still
+            // reaches List selection and the in-row controls keep their own clicks.
+            // Heading rows deliberately get ↩ only — their title TextField owns
+            // double-click for word selection.
+            .simultaneousGesture(TapGesture(count: 2).onEnded {
+                toggleInspector(for: entry.id)
+            })
         case .heading:
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
             CollectionHeadingRow(
@@ -772,20 +921,31 @@ private struct CollectionDetailPane: View {
                 canOutdent: CollectionOutline.canOutdent(row.index, in: outline),
                 onIndent: { indentSection(at: row.index) },
                 onOutdent: { outdentSection(at: row.index) },
-                onDeleteSection: { deleteSection(at: row.index) }
+                onDeleteSection: { deleteSection(at: row.index) },
+                onInspect: { toggleInspector(for: entry.id) },
+                onMoveUp: moveUp,
+                onMoveDown: moveDown
             )
         case .prose:
             CollectionProseRow(entry: $sortedEntries[row.index],
-                               onDelete: { deleteEntry(at: row.index) })
+                               onDelete: { deleteEntry(at: row.index) },
+                               onMoveUp: moveUp,
+                               onMoveDown: moveDown)
         case .excerpt:
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
-                                 onDelete: { deleteEntry(at: row.index) })
+                                 onDelete: { deleteEntry(at: row.index) },
+                                 onMoveUp: moveUp,
+                                 onMoveDown: moveDown)
         case .generated:
             CollectionGeneratedEntryRow(entry: entry,
                                         documentCount: sortedEntries.count { $0.entryKind == .document },
-                                        onDelete: { deleteEntry(at: row.index) })
+                                        onDelete: { deleteEntry(at: row.index) },
+                                        onMoveUp: moveUp,
+                                        onMoveDown: moveDown)
         case .unrecognized:
+            // Deliberately no reorder actions: the entry belongs to a newer build
+            // (Authoring Phase 1 sync guard) and offers no controls at all.
             UnrecognizedEntryRow()
         }
     }
@@ -821,11 +981,57 @@ private struct CollectionDetailPane: View {
         finishOutlineMutation()
     }
 
+    // MARK: - Move Up / Move Down (UI audit A4)
+
+    /// Moves the visible row at `pos` one visible position up — inserts it before the
+    /// previous visible row (hopping a collapsed section whole, matching what the user
+    /// sees). Drives the rows' VoiceOver/context-menu Move Up action; the same engine
+    /// as drag reorder, so heading rows carry their sections.
+    private func moveVisibleRowUp(_ pos: Int, rows: [CollectionOutline.VisibleRow]) {
+        guard pos > 0 else { return }
+        moveVisibleRows(IndexSet(integer: pos), to: pos - 1, visible: rows.map(\.index))
+    }
+
+    /// Whether the visible row at `pos` can move down: something must exist after its
+    /// moved block (a heading's block is its whole `sectionRange`). Any entry after the
+    /// block is visible whenever this row is (a block is followed by a same-or-shallower
+    /// item whose ancestors are also this row's ancestors), so this is exactly "a
+    /// visible target exists".
+    private func canMoveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) -> Bool {
+        guard rows.indices.contains(pos) else { return false }
+        return movedBlockEnd(of: rows[pos].index) < sortedEntries.count
+    }
+
+    /// Moves the visible row at `pos` one visible position down — inserts it after the
+    /// first visible row past its own moved block (so an expanded heading hops its next
+    /// sibling block, and a collapsed section below is hopped whole). Drives the rows'
+    /// VoiceOver/context-menu Move Down action.
+    private func moveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) {
+        let visible = rows.map(\.index)
+        guard rows.indices.contains(pos) else { return }
+        let blockEnd = movedBlockEnd(of: visible[pos])
+        guard let nextPos = visible.indices.first(where: { visible[$0] >= blockEnd }) else { return }
+        moveVisibleRows(IndexSet(integer: pos), to: nextPos + 1, visible: visible)
+    }
+
+    /// The exclusive end of the block `applyingMove` would carry for the entry at
+    /// `fullIndex`: a heading's whole `sectionRange`, any other row just itself.
+    private func movedBlockEnd(of fullIndex: Int) -> Int {
+        guard sortedEntries.indices.contains(fullIndex) else { return sortedEntries.count }
+        if sortedEntries[fullIndex].entryKind == .heading {
+            let items = CollectionOutline.linearize(sortedEntries)
+            return CollectionOutline.sectionRange(of: fullIndex, in: items).upperBound
+        }
+        return fullIndex + 1
+    }
+
     /// Deletes a single entry (a document/prose row's inline trash, or a heading's
     /// "Delete Heading Only" — its contents stay and sub-headings bubble up).
     private func deleteEntry(at index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
         collapsedHeadingIds.remove(sortedEntries[index].id)
+        if inspectedEntryId == sortedEntries[index].id { inspectedEntryId = nil }
+        if selectedEntryId == sortedEntries[index].id { selectedEntryId = nil }
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
         finishOutlineMutation()
@@ -839,6 +1045,8 @@ private struct CollectionDetailPane: View {
         guard range.upperBound <= sortedEntries.count else { return }
         for i in range.reversed() {
             collapsedHeadingIds.remove(sortedEntries[i].id)
+            if inspectedEntryId == sortedEntries[i].id { inspectedEntryId = nil }
+            if selectedEntryId == sortedEntries[i].id { selectedEntryId = nil }
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }
@@ -895,7 +1103,9 @@ private struct CollectionDetailPane: View {
                              defaultValue: "Add Documents…"),
                       systemImage: "plus.rectangle.on.folder")
             }
-            .keyboardShortcut("a", modifiers: [.command, .shift])
+            // ⌘⇧A lives on the Collection ▸ Add Documents… menu item (UI audit
+            // gap 5) — declaring it here too would give the equivalent two active
+            // claimants whenever this window is key.
             .help(String(localized: "collection.toolbar.addDocuments.help",
                          defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
 
@@ -1068,6 +1278,9 @@ private struct CollectionDetailPane: View {
 /// - A multi-note picker backed by `CollectionEntry.selectedNoteIds`
 /// - A delete button that removes this entry from the collection
 /// - An external-link button to open the document on history.state.gov
+/// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column
+///   (UI audit B8 — previously a modal sheet that blocked the outline)
+/// - Move Up / Move Down as VoiceOver actions + context-menu items (UI audit A4)
 private struct MacEntryRow: View {
 
     @Binding var entry: CollectionEntry
@@ -1078,15 +1291,18 @@ private struct MacEntryRow: View {
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
-    /// Appends an excerpt entry to the owning collection (Authoring Phase 5) — threads
-    /// the pane's append action into the inspector's "Insert as Excerpt" rows.
-    var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
+    /// Toggles this entry in the pane's inspector column (UI audit B8): the ⓘ button
+    /// calls it, and `CollectionDetailPane` shows/retargets/closes the trailing
+    /// `CollectionEntryInspector` accordingly.
+    let onInspect: () -> Void
     let onNewNote: () -> Void
     let onDelete: () -> Void
+    /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     @Environment(\.openURL) private var openURL
-    @Environment(AppState.self) private var appState
-    @State private var showInspector = false
 
     /// This entry's body-depth override (`nil` = follow the collection default).
     private var bodyDepthOverride: Binding<String?> {
@@ -1175,16 +1391,16 @@ private struct MacEntryRow: View {
 
             // Action controls
             HStack(spacing: 6) {
-                // Document details inspector
+                // Document details inspector (B8: trailing inspector column, not a sheet)
                 Button {
-                    showInspector = true
+                    onInspect()
                 } label: {
                     Image(systemName: "info.circle")
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .help(String(localized: "collection.entry.inspect.help",
-                             defaultValue: "Show this document's notes, highlights, tags, and provenance"))
+                             defaultValue: "Show this document's notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
 
                 // Open on history.state.gov
                 Button {
@@ -1212,16 +1428,15 @@ private struct MacEntryRow: View {
                         .foregroundStyle(.red.opacity(0.6))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "collection.entry.delete.a11y",
+                                           defaultValue: "Remove entry"))
                 .help(String(localized: "collection.entry.delete.help",
                              defaultValue: "Remove this document from the collection"))
             }
             .padding(.top, 2)
         }
         .padding(.vertical, 4)
-        .sheet(isPresented: $showInspector) {
-            CollectionEntryInspector(entry: entry, onInsertExcerpt: onInsertExcerpt)
-                .environment(appState)
-        }
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
     }
 
     // MARK: - Note Menu

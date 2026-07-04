@@ -10,7 +10,8 @@ import SwiftUI
 
 // MARK: - NARACatalogLookupView
 
-/// Sheet that queries the NARA Catalog using user-selected document text.
+/// Queries the NARA Catalog using user-selected document text — an iOS sheet, and
+/// the content of the macOS Source Explorer window's **NARA Lookup** segment.
 ///
 /// Complements the parsing-based `SourceExplorerView` by letting the researcher
 /// directly select archival citation text in the document (a lot number, decimal
@@ -31,6 +32,10 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 153: initial implementation
+///   1.1 — Session 2026-07-04 (macOS UI audit B3): the macOS body is embedded in the
+///          Source Explorer window's NARA Lookup segment instead of a sheet, so its
+///          Close button (sheet chrome — `dismiss` would now close the whole window)
+///          is gone; the iOS sheet chrome is unchanged
 struct NARACatalogLookupView: View {
 
     let initialText: String
@@ -120,13 +125,11 @@ struct NARACatalogLookupView: View {
 
             Divider()
 
-            // Button bar
+            // Button bar. No Close button: this body lives inside the Source
+            // Explorer window's NARA Lookup segment (B3), not a sheet — the window's
+            // own close control is the exit (UI audit gap 11: no dead sheet chrome
+            // in window contexts).
             HStack(spacing: 10) {
-                Button(String(localized: "nara.lookup.close", defaultValue: "Close")) {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
                 Spacer()
 
                 if isSearching {

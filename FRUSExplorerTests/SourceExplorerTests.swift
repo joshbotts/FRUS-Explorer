@@ -948,3 +948,36 @@ struct ArchivalNeighborsRequestTests {
                 != ArchivalNeighborsRequest.decimalClass("POL 27 ARAB-ISR"))
     }
 }
+
+// MARK: - CrossVolumeProvenanceRequestTests (macOS UI audit B2)
+
+/// The macOS Cross-Volume Provenance window hand-off value: it must survive the
+/// Codable round-trip window restoration relies on, and its value identity drives
+/// `openWindow(value:)` reuse (equal payloads focus the existing window, distinct
+/// payloads spawn a new one).
+struct CrossVolumeProvenanceRequestTests {
+
+    @Test("the request survives the Codable round-trip window restoration relies on")
+    func codableRoundTrip() throws {
+        let request = CrossVolumeProvenanceRequest(
+            title: "Presidential Correspondence: Lot 66 D 204",
+            volumeIds: ["frus1958-60v07p2", "frus1961-63v13", "frus1961-63v14"])
+        let data = try JSONEncoder().encode(request)
+        let decoded = try JSONDecoder().decode(CrossVolumeProvenanceRequest.self, from: data)
+        #expect(decoded == request)
+        #expect(decoded.title == request.title)
+        #expect(decoded.volumeIds == request.volumeIds)
+    }
+
+    @Test("value identity drives window reuse: equal payloads focus, distinct payloads spawn")
+    func hashableIdentity() {
+        let a = CrossVolumeProvenanceRequest(title: "PPS Files", volumeIds: ["v1", "v2"])
+        let b = CrossVolumeProvenanceRequest(title: "PPS Files", volumeIds: ["v1", "v2"])
+        let c = CrossVolumeProvenanceRequest(title: "PPS Files", volumeIds: ["v1", "v3"])
+        let d = CrossVolumeProvenanceRequest(title: "NSC Files", volumeIds: ["v1", "v2"])
+        #expect(a == b)
+        #expect(a.hashValue == b.hashValue)
+        #expect(a != c)
+        #expect(a != d)
+    }
+}

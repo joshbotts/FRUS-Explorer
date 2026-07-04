@@ -59,6 +59,15 @@ import SwiftData
 ///   2.0 — Session 2026-07-03 (people-eval finding G): PersonDetailSheet's "Find all
 ///          mentions" searches the resolved rollup identity (matching the displayed
 ///          cross-corpus count) instead of the cross-volume-colliding raw `personRef`
+///   2.1 — Session 2026-07-04 (macOS UI audit C1): research-panel note rows and
+///          "Add Note" open the frus.noteComposer window (`openNoteComposer`,
+///          pendingNoteComposer hand-off) instead of `ResearchNoteEditorView`
+///          sheets — the document stays readable while composing
+///   2.2 — Session 2026-07-04 (macOS UI audit gap 6): publishes
+///          `DocumentCommandActions` as the `\.documentCommands` focused-scene
+///          value, wiring the "Document" menu's reading shortcuts (⌥⌘↑/⌥⌘↓
+///          prev/next, ⌘⇧N add note, ⌘⇧H highlight selection, ⌘⇧R research
+///          panel) to this view's existing actions in whichever window is key
 @MainActor
 struct MacDocumentView: View {
 
@@ -70,6 +79,8 @@ struct MacDocumentView: View {
     @Environment(\.modelContext) private var modelContext
     /// Opens external (non-FRUS) cross-reference URLs in the system browser.
     @Environment(\.openURL) private var openURL
+    /// Opens the research-note composer window (UI audit C1).
+    @Environment(\.openWindow) private var openWindow
 
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
@@ -82,8 +93,6 @@ struct MacDocumentView: View {
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     @State private var showTagPicker = false
-    @State private var showAddNote = false
-    @State private var noteToEdit: ResearchNote? = nil
 
     @Query private var highlights:              [DocumentHighlight]
     @Query private var documentNotes:           [ResearchNote]
@@ -214,28 +223,18 @@ struct MacDocumentView: View {
             activity.userInfo = ["volumeId": entry.volumeId, "documentId": entry.documentId]
             activity.isEligibleForHandoff = true
         }
+        // "Document" menu wiring (UI audit gap 6): publish this document's reading
+        // actions to the menu bar for as long as this view's scene is key. Reading
+        // the coordinator's selection range here also makes body observe it, so the
+        // menu's "Highlight Selection" enablement tracks live selection changes.
+        // Optional-typed so the Equatable focusedSceneValue overload is selected
+        // (the non-optional variant is deprecated on macOS 15).
+        .focusedSceneValue(\.documentCommands, documentCommands)
         .sheet(isPresented: $showTagPicker) {
             MacTagPickerSheet(
                 entry: entry,
                 indexingPipeline: appState.indexingPipeline,
                 initialTagIds: Set(documentTagAssignments.map(\.tagId))
-            )
-        }
-        .sheet(isPresented: $showAddNote) {
-            ResearchNoteEditorView(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                activeProjectId: appState.activeProjectId,
-                indexingPipeline: appState.indexingPipeline
-            )
-        }
-        .sheet(item: $noteToEdit) { note in
-            ResearchNoteEditorView(
-                documentId: entry.documentId,
-                volumeId: entry.volumeId,
-                activeProjectId: appState.activeProjectId,
-                noteToEdit: note,
-                indexingPipeline: appState.indexingPipeline
             )
         }
         .sheet(item: $vm.selectedPerson) { person in
@@ -483,7 +482,7 @@ struct MacDocumentView: View {
                 Divider()
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(documentNotes) { note in
-                        Button { noteToEdit = note } label: {
+                        Button { openNoteComposer(noteId: note.id) } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(note.bodyText.isEmpty
                                      ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
@@ -503,7 +502,7 @@ struct MacDocumentView: View {
                         Divider()
                     }
                     Button {
-                        showAddNote = true
+                        openNoteComposer()
                     } label: {
                         Label(
                             String(localized: "panel.notes.add", defaultValue: "Add Note"),
@@ -560,6 +559,48 @@ struct MacDocumentView: View {
                 .padding(.vertical, 10)
             }
         }
+    }
+
+    /// The "Document" menu's command surface for this document (UI audit gap 6),
+    /// published as the `\.documentCommands` focused-scene value.
+    ///
+    /// Every closure routes to an action that already exists as a button: prev/next
+    /// mirror `volumeNavigationView`, add-note mirrors the research panel's "Add
+    /// Note" (`openNoteComposer`), highlight mirrors the research strip's color
+    /// picker (`createWebKitHighlight`), and the panel toggle mirrors the strip's
+    /// Read/Research picker (same `AppStorage` key). Equality contract (see
+    /// `DocumentCommandActions`): the closures capture only `prevEntry`/`nextEntry`,
+    /// which are loaded once per document — any change to them flips
+    /// `canGoPrevious`/`canGoNext` (or `documentKey`), forcing a republish, so a
+    /// stale closure can never survive an equality check.
+    private var documentCommands: DocumentCommandActions? {
+        DocumentCommandActions(
+            documentKey: "\(entry.volumeId)/\(entry.documentId)",
+            canGoPrevious: prevEntry != nil,
+            canGoNext: nextEntry != nil,
+            canHighlight: highlightCoordinator.webKitSelectionRange != nil,
+            isResearchPanelVisible: panelVisible,
+            goPrevious: { if let prev = prevEntry { navigationPath.append(prev) } },
+            goNext: { if let next = nextEntry { navigationPath.append(next) } },
+            addNote: { openNoteComposer() },
+            highlightSelection: { color in createWebKitHighlight(color: color) },
+            toggleResearchPanel: {
+                withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
+            }
+        )
+    }
+
+    /// Hands this document (and optionally an existing note) to the research-note
+    /// composer window (UI audit C1) — the note is composed beside the document
+    /// instead of in a sheet covering the passage being annotated.
+    private func openNoteComposer(noteId: UUID? = nil) {
+        appState.pendingNoteComposer = NoteComposerRequest(
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            noteId: noteId
+        )
+        openWindow(id: "frus.noteComposer")
+        bringMacWindowToFront(id: "frus.noteComposer")
     }
 
     /// Reusable accordion section header: label + optional badge + chevron.
@@ -991,20 +1032,22 @@ private struct TrailingIconLabelStyle: LabelStyle {
 /// Version history:
 ///   1.0 — Session 159: initial implementation (iPad/Mac parity Phase 2 —
 ///          macOS native window tabbing)
+///   1.1 — Session 2026-07-04 (macOS UI audit B3): the NARA Catalog Lookup sheet
+///          replaced by the Source Explorer window's NARA Lookup segment
+///          (`pendingNARALookup` hand-off, mirroring `MainWindowView`)
 struct MacDocumentWindowView: View {
 
     /// The document this window opened for.
     let windowID: DocumentWindowID
 
     @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
 
     /// This window's own navigation stack — cross-reference taps push within the
     /// window rather than affecting the main window or other document windows.
     @State private var navigationPath: [DocumentBrowserEntry] = []
     /// This window's own highlight state (text selection, pending highlight link).
     @State private var highlightCoordinator = HighlightCoordinator()
-    /// NARA Catalog Lookup sheet item (see `MainWindowView` for the `.sheet(item:)` rationale).
-    @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
     /// The document the window opened for, as a `DocumentBrowserEntry`.
     private var rootEntry: DocumentBrowserEntry {
@@ -1026,12 +1069,13 @@ struct MacDocumentWindowView: View {
                 entry: currentEntry,
                 highlightCoordinator: highlightCoordinator,
                 onNARALookup: { text in
-                    naraLookupItem = NARACatalogLookupItem(text: text)
+                    // B3: hand the selection to the Source Explorer window's NARA
+                    // Lookup segment (see `MainWindowView`).
+                    appState.pendingNARALookup = text
+                    openWindow(id: "frus.sourceExplorer")
+                    bringMacWindowToFront(id: "frus.sourceExplorer")
                 }
             )
-            .sheet(item: $naraLookupItem) { item in
-                NARACatalogLookupView(initialText: item.text)
-            }
 
             NavigationStack(path: $navigationPath) {
                 MacDocumentView(

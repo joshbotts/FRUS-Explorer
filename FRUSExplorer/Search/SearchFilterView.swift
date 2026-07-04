@@ -18,8 +18,11 @@ import SwiftData
 /// the presentation model changes from an inline expandable VStack to a sheet.
 ///
 /// ## Presentation
-/// - **iOS**: sheet with `.medium, .large` detents
-/// - **macOS**: sheet with a fixed minimum frame
+/// - **iOS**: sheet with `.medium, .large` detents; filters apply on dismiss
+/// - **macOS**: live popover anchored to the Search window's "Advanced…" button
+///   (UI audit C4) — edits apply to the result list immediately (the presenter
+///   observes `SearchViewModel.advancedFilterSignature`); Done just closes the
+///   popover, as does clicking anywhere outside it
 ///
 /// ## Person Autocomplete
 /// `personSearchText` and `personSuggestions` are local state here (moved from
@@ -48,6 +51,9 @@ import SwiftData
 ///          multi-select pickers (iOS push-in `NavigationLink` lists; macOS inline
 ///          `DisclosureGroup` checkboxes) writing `vm.selectedSubseriesIds` /
 ///          `vm.selectedVolumeIds`. Shown only when `vm.availableVolumes` is non-empty.
+///   1.3 — Session 2026-07-04 (macOS UI audit C4): macOS presentation changed from a
+///          modal sheet to a live popover (view content unchanged — the popover host
+///          drives live application; `dismiss()` closes the popover)
 struct SearchFilterView: View {
 
     @Bindable var vm: SearchViewModel

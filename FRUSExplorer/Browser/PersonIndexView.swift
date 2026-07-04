@@ -18,10 +18,15 @@ import SwiftUI
 ///
 /// ## Platform placement
 /// - **iOS**: Navigation destination pushed from `CorpusView` ("People" row).
-/// - **macOS**: Sheet presented from the Corpus Browser toolbar "People" button.
+/// - **macOS**: Hosted by the "People" window (`frus.people`, via `PeopleWindowView`),
+///   opened from the Corpus Browser toolbar "People" button.
 ///
 /// Version history:
 ///   1.0 — Session 87
+///   1.1 — Session 2026-07-04 (macOS UI audit B5): the macOS presentation moved from a
+///          Corpus Browser sheet (which stacked the person-detail sheet on top of
+///          itself) to the frus.people window — the detail sheet is now a single
+///          window-level modal; this view is unchanged apart from placement
 struct PersonIndexView: View {
 
     @Environment(AppState.self) private var appState
@@ -221,6 +226,18 @@ private struct PersonIndexRow: View {
 /// asynchronously on appear so callers can pass any initial value (including 0) without a
 /// blocking actor call at the tap site. The "Find all mentions" button triggers a
 /// person-filtered search and dismisses the sheet.
+///
+/// ## Platform layout
+/// iOS keeps `NavigationStack` + toolbar Done. The macOS body follows the codebase's
+/// documented sheet pattern (UI audit gap 11): plain `VStack` with a header row, the
+/// shared list, and a bottom-right Done button — no `NavigationStack` chrome, which
+/// renders sidebar-style artifacts inside macOS sheets.
+///
+/// Version history:
+///   1.0 — Person rollup program: initial implementation (merge/split corrections added
+///          across Phases 2–5)
+///   1.1 — Session 2026-07-04 (macOS UI audit gap 11): macOS body normalized to
+///          VStack + bottom-right Done; shared `detailList` extracted
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
@@ -253,8 +270,84 @@ struct PersonIndexDetailSheet: View {
     private var effectiveViafId: String? { indexEntry.viafId ?? resolvedViafId }
 
     var body: some View {
+        Group {
+            #if os(macOS)
+            macBody
+            #else
+            iOSBody
+            #endif
+        }
+        .task {
+            // Browser rollup entries already carry the correct count + rollup id. A per-volume
+            // front-matter entry resolves its rollup here for the cross-corpus count and search.
+            if indexEntry.rollupId == nil,
+               let volumeId = indexEntry.sourceVolumeId,
+               let store = appState.personMentionStore {
+                if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
+                    resolvedRollupId = resolved.rollupId
+                    resolvedMentionCount = resolved.mentionCount
+                    resolvedAuthorityId = resolved.authorityId
+                    resolvedViafId = resolved.viafId
+                } else {
+                    resolvedMentionCount = 0
+                }
+            }
+            await loadCorrectionContext()
+        }
+    }
+
+    // MARK: - Platform bodies
+
+    #if os(macOS)
+    /// macOS-native sheet layout (UI audit gap 11): header row + shared list +
+    /// bottom-right Done — no `NavigationStack` chrome inside the sheet.
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(indexEntry.entry.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            detailList
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 360, minHeight: 320)
+    }
+    #else
+    /// iOS sheet layout — `NavigationStack` with an inline title and toolbar Done.
+    private var iOSBody: some View {
         NavigationStack {
-            List {
+            detailList
+                .navigationTitle(indexEntry.entry.name)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    }
+                }
+        }
+    }
+    #endif
+
+    /// The sectioned person detail shared by both platform bodies.
+    private var detailList: some View {
+        List {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(indexEntry.entry.name)
@@ -394,40 +487,6 @@ struct PersonIndexDetailSheet: View {
                                     defaultValue: "Separate a record if it refers to a different person."))
                     }
                 }
-            }
-            .navigationTitle(indexEntry.entry.name)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
-            }
-            #else
-            .frame(minWidth: 360, minHeight: 260)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
-            }
-            #endif
-        }
-        .task {
-            // Browser rollup entries already carry the correct count + rollup id. A per-volume
-            // front-matter entry resolves its rollup here for the cross-corpus count and search.
-            if indexEntry.rollupId == nil,
-               let volumeId = indexEntry.sourceVolumeId,
-               let store = appState.personMentionStore {
-                if let resolved = try? await store.rollupEntry(forVolumeId: volumeId, ref: indexEntry.entry.ref) {
-                    resolvedRollupId = resolved.rollupId
-                    resolvedMentionCount = resolved.mentionCount
-                    resolvedAuthorityId = resolved.authorityId
-                    resolvedViafId = resolved.viafId
-                } else {
-                    resolvedMentionCount = 0
-                }
-            }
-            await loadCorrectionContext()
         }
     }
 
@@ -485,3 +544,50 @@ private struct PersonMergeCandidate: Identifiable {
     let reason: String?
     var id: Int { rollupId }
 }
+
+#if os(macOS)
+
+// MARK: - PeopleWindowView
+
+/// Root content for the "People" macOS window scene (`frus.people`, UI audit B5).
+///
+/// Wraps `PersonIndexView` in a `NavigationStack` so its title and search field
+/// anchor to the window toolbar. Replaces the Corpus Browser's People *sheet*, which
+/// stacked the person-detail sheet on top of itself — as a window, the index stays
+/// browsable beside documents and `PersonIndexView`'s own detail presentation becomes
+/// a single window-level modal (no sheet-on-sheet).
+///
+/// ## Boot guard (copied from the S6 Archival Neighbors pattern)
+/// `PersonIndexView.loadPeople()` renders the definitive "No People Indexed" empty
+/// state when `appState.personMentionStore` is nil — but the store is only assigned
+/// once `bootDownloadManager()` finishes, and a window restored at app launch races
+/// that boot. While the store is nil this view shows a "Preparing your index…"
+/// placeholder instead; reading the `@Observable` property in `body` re-evaluates the
+/// view (and creates `PersonIndexView`, firing its load) once the store appears.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit B5)
+struct PeopleWindowView: View {
+
+    @Environment(AppState.self) private var appState
+
+    /// Whether the person mention store exists to query; `false` while the app boots.
+    private var storeReady: Bool { appState.personMentionStore != nil }
+
+    var body: some View {
+        Group {
+            if storeReady {
+                NavigationStack {
+                    PersonIndexView()
+                }
+            } else {
+                ProgressView(String(localized: "people.window.preparing",
+                                    defaultValue: "Preparing your index…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .frame(minWidth: 440, minHeight: 480)
+    }
+}
+
+#endif // os(macOS)

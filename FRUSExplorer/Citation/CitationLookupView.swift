@@ -25,11 +25,17 @@ import SwiftUI
 /// For undownloaded volumes, a Download button replaces the navigation action.
 ///
 /// ## Navigation integration
-/// Accessible via the toolbar "Find by Citation" button in `BrowserView`.
-/// Pre-populates with the current document's citation when launched from `DocumentView`.
+/// On iOS, presented as a sheet from `SearchView`'s "Find by Citation" button. On
+/// macOS, hosted in the `frus.citationLookup` Window scene (⌘⇧F) via
+/// `CitationLookupWindowView` — a window, not a sheet, so parsed matches stay
+/// around while the researcher reads documents (UI audit B4); result taps push
+/// `MacDocumentView` onto this view's own `NavigationStack`.
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
+///   1.1 — Session 2026-07-04 (macOS UI audit B4): the Done toolbar button became
+///          iOS-only sheet chrome — on macOS the view lives in a window whose own
+///          close control is the exit (gap 11: no dead Done buttons in windows)
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -73,7 +79,8 @@ struct CitationLookupView: View {
                                     defaultValue: "Citation Lookup"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
+            // Done is sheet chrome — iOS only. On macOS the view lives in the
+            // frus.citationLookup window, whose close control is the exit (B4).
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "citation.done", defaultValue: "Done")) {
@@ -81,6 +88,7 @@ struct CitationLookupView: View {
                     }
                 }
             }
+            #endif
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                 #if os(iOS)
                 DocumentView(entry: entry)
@@ -309,6 +317,49 @@ struct CitationLookupView: View {
         Task { await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: downloadUrl) }
     }
 }
+
+#if os(macOS)
+
+// MARK: - CitationLookupWindowView
+
+/// Content for the macOS **Citation Lookup window** (`frus.citationLookup`, ⌘⇧F —
+/// UI audit B4): `CitationLookupView` behind a boot-readiness guard.
+///
+/// A window, not a sheet, for the same reason full-text Search (⌘F) is one — both
+/// are "find a document" flows whose results are worked through one by one, and the
+/// modal died with its matches on every Done.
+///
+/// The guard copies the S6 Archival Neighbors rule: a window restored at relaunch
+/// races app boot, and `appState.citationMatchingEngine` is assigned only when
+/// `bootDownloadManager()` finishes (unconditionally — even with zero downloads), so
+/// `nil` means exactly "still booting". Without the guard, a Look Up pressed in that
+/// window would render the definitive "not available until a volume is downloaded"
+/// error as a lie. Reading the `@Observable` property in `body` re-evaluates the view
+/// and swaps the placeholder for the form the moment the engine exists.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit B4): initial implementation
+struct CitationLookupWindowView: View {
+
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        Group {
+            if appState.citationMatchingEngine == nil {
+                // App still booting: never show the form whose lookup error would
+                // falsely claim citation lookup is unavailable.
+                ProgressView(String(localized: "archivalNeighbors.preparingIndex",
+                                    defaultValue: "Preparing your index…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minWidth: 560, minHeight: 440)
+            } else {
+                CitationLookupView()
+            }
+        }
+    }
+}
+
+#endif // os(macOS)
 
 // MARK: - CitationResultRow
 

@@ -49,8 +49,9 @@ enum SearchSortOrder: CaseIterable {
 /// - Basic scope toggles (`scopeDocuments`, `scopeNotes`, `scopeSummaries`) project
 ///   directly into `parameters`.
 /// - Advanced filter state lives in `filterVM` (`SearchViewModel`), which is presented
-///   via `SearchFilterView`. Call `applyAdvancedFilters()` on sheet dismiss to copy
-///   `filterVM` values into `parameters` and trigger re-search.
+///   via `SearchFilterView` in a live popover (UI audit C4). The presenter calls
+///   `applyAdvancedFilters()` on each `filterVM.advancedFilterSignature` change to copy
+///   `filterVM` values into `parameters` and trigger re-search immediately.
 ///
 /// ## Sorting and Pagination
 /// Sorting is applied client-side on all results. `pagedResults` slices `allSortedResults`
@@ -87,6 +88,9 @@ enum SearchSortOrder: CaseIterable {
 ///          and reconstructs the picker selection from `parameters.volumeIds`;
 ///          `applyAdvancedFilters` writes `filterVM.effectiveVolumeIds` back into
 ///          `parameters.volumeIds` so the new advanced-filter volume pickers apply.
+///   1.6 — Session 2026-07-04 (macOS UI audit C4): `applyAdvancedFilters` is now
+///          called live per filter edit (signature observation in the popover host)
+///          instead of once in the removed sheet's `onDismiss` batch.
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -377,7 +381,9 @@ final class MacSearchViewModel {
     }
 
     /// Copies `filterVM` state back into `parameters` and triggers a re-search.
-    /// Call this in the `onDismiss` handler of the `SearchFilterView` sheet.
+    /// Called live by the Search window on each `filterVM.advancedFilterSignature`
+    /// change while the filter popover is open (UI audit C4) — there is no
+    /// dismiss-time batch anymore.
     func applyAdvancedFilters() {
         guard let filterVM else { return }
 
