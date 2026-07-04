@@ -85,6 +85,11 @@ import SwiftUI
 ///          `CollectionAIAttribution` caption line, with its stylesheet
 ///          (`attributionCSS`) emitted ONLY when some item actually renders one
 ///          (`usesAIAttribution`), so a summary-free collection exports byte-identically
+///   1.10 — Collections Manager M3 (D4 + review finding 2): the document heading and the
+///          citation-only preview card both render `doc.exportHeading` (title override when
+///          set, else `citation.isEmpty ? title : citation`), so an entry's `titleOverride`
+///          shows in the exported heading AND the un-downloaded preview card; byte-identical
+///          to the prior output when no override is set
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -344,16 +349,21 @@ struct CollectionItemHTMLRenderer {
     }
 
     /// The citation-only card emitted (preview only) for a document whose volume is not
-    /// downloaded: a bordered card with the citation and a localized "Volume not
+    /// downloaded: a bordered card with the document heading and a localized "Volume not
     /// downloaded" note. The *download* affordance is native (a bar above the preview's
     /// web view), never in-page JS.
+    ///
+    /// Uses `exportHeading` (M3, finding 2) so a `titleOverride` set on the entry shows here
+    /// too — matching the heading the same document renders once its volume is downloaded and
+    /// in the exported HTML/PDF/DOCX. When no override is set this is byte-identical to the
+    /// former `citation.isEmpty ? title : citation`.
     ///
     /// - Parameter doc: The citation-only document (empty body, no render model).
     /// - Returns: The card's `<div class="citation-card">…</div>` HTML fragment.
     private func citationOnlyCardHTML(_ doc: CollectionExportDocument) -> String {
         let note = String(localized: "collection.preview.volumeNotDownloaded",
                           defaultValue: "Volume not downloaded — citation only")
-        let citation = doc.citation.isEmpty ? doc.title : doc.citation
+        let citation = doc.exportHeading
         var body = ""
         body += "  <div class=\"citation-card\">\n"
         body += "    <p class=\"citation-card-citation\">\(markdownItalics(escaped(citation)))</p>\n"

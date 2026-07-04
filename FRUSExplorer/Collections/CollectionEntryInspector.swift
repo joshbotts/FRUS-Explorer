@@ -70,7 +70,11 @@ import SwiftData
 ///          `TextField` — one field driving both the ToC label and the export heading —
 ///          showing the derived default (`derivedTitlePlaceholder`) as placeholder;
 ///          clearing it restores the derived title (empty → `nil`). Document-only; the
-///          heading variant is unchanged (a section edits its title inline via its row)
+///          heading variant is unchanged (a section edits its title inline via its row).
+///          M3 review finding 1: the placeholder now resolves the true history.state.gov
+///          citation (`resolvedCitation`, from manifest volume metadata + document number)
+///          so it shows exactly what `exportHeading` produces when the field is blank —
+///          previously it showed the source-note header, which `exportHeading` never uses
 struct CollectionEntryInspector: View {
 
     /// One stored summary choice for the headnote picker: identity, producing-prompt
@@ -139,6 +143,11 @@ struct CollectionEntryInspector: View {
 
     @State private var header: String?
     @State private var volumeTitle = ""
+    /// The resolved history.state.gov citation for this document, mirroring the resolver's
+    /// derivation (manifest volume metadata + document number via
+    /// `HistoryAtStateCitationFormatter`). Backs the title-override placeholder so it shows
+    /// the real export-heading fallback (M3, finding 1); empty until `load()` resolves it.
+    @State private var resolvedCitation = ""
     @State private var sourceNote: String?
     @State private var summaryPreview: String?
     @State private var summaryPromptName: String?
@@ -249,12 +258,15 @@ struct CollectionEntryInspector: View {
         }
     }
 
-    /// The derived default title shown as the override field's placeholder: the source
-    /// note header when present, else `"{volumeTitle} — {documentId}"` (the resolver's
-    /// derived-title shape). Mirrors the resolver/exporter derivation so an author sees
-    /// exactly what leaving the field blank will produce.
+    /// The derived default title shown as the override field's placeholder — the exact
+    /// value `CollectionExportDocument.exportHeading` produces when `titleOverride` is nil:
+    /// the resolved history.state.gov citation when non-empty, else `"{volumeTitle} —
+    /// {documentId}"` (the resolver's `"{volumeId}/{documentId}"`-style fallback, shown here
+    /// with the friendly volume title). This mirrors `exportHeading`'s real precedence
+    /// (`citation.isEmpty ? title : citation`), which never consults the source-note header,
+    /// so an author sees exactly what leaving the field blank will produce.
     private var derivedTitlePlaceholder: String {
-        if let header, !header.isEmpty { return header }
+        if !resolvedCitation.isEmpty { return resolvedCitation }
         let vol = volumeTitle.isEmpty ? entry.volumeId : volumeTitle
         return "\(vol) — \(entry.documentId)"
     }
@@ -738,7 +750,22 @@ struct CollectionEntryInspector: View {
         let vid = entry.volumeId
         let did = entry.documentId
 
-        volumeTitle = appState.manifestStore.entry(forVolumeId: vid)?.title ?? ""
+        let manifestEntry = appState.manifestStore.entry(forVolumeId: vid)
+        volumeTitle = manifestEntry?.title ?? ""
+
+        // Resolve the history.state.gov citation exactly as `CollectionContentResolver`
+        // does (manifest volume metadata + document number; the formatter never reads the
+        // document header/dateline), so the override placeholder shows the true
+        // export-heading fallback. Empty when the volume is not in the manifest.
+        if let manifestEntry {
+            let docNum: String? = did.hasPrefix("d")
+                ? Int(did.dropFirst()).map { String($0) }
+                : nil
+            let docMeta = FRUSDocumentMetadata(
+                documentId: did, documentNumber: docNum, header: "", dateline: nil)
+            resolvedCitation = HistoryAtStateCitationFormatter()
+                .format(document: docMeta, volume: FRUSVolumeMetadata(manifestEntry))
+        }
 
         let (docTags, docNotes) = ZoteroJSONExporter.fetchTagsAndNotes(
             documentId: did, volumeId: vid, context: modelContext)

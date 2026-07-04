@@ -4331,6 +4331,18 @@ struct CollectionTests {
             .pageHTML(metadata: metadata, items: [.document(plain)])
         #expect(plainHTML.contains("Boring Citation 511"))
         #expect(!plainHTML.contains("Kennan Long Telegram"))
+
+        // M3 finding 2: the un-downloaded-volume *preview card* also honors the override —
+        // an author who sets a title and previews a not-yet-downloaded document sees the
+        // override in the card, matching the exported heading. With no override the card
+        // still shows the citation (byte-identical to the pre-finding-2 behavior).
+        var previewRenderer = CollectionItemHTMLRenderer()
+        previewRenderer.citationOnlyVolumeIds = ["v1"]
+        let cardHTML = previewRenderer.pageHTML(metadata: metadata, items: items)
+        #expect(cardHTML.contains("Kennan Long Telegram"))
+        #expect(!cardHTML.contains("Boring Citation 511"))
+        let plainCardHTML = previewRenderer.pageHTML(metadata: metadata, items: [.document(plain)])
+        #expect(plainCardHTML.contains("Boring Citation 511"))
     }
 
     @Test("M3 serialization: a non-empty titleOverride forces v2 and round-trips (export→import); an empty/absent override stays formatVersion 1 byte-identical to pre-M3; a v1 file with no key imports as nil (derived title)")
