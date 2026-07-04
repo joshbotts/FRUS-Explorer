@@ -1335,3 +1335,22 @@ citation-grammar not diplomatic era). Re-homed all 12 prior recommendations; two
 ("Geographic Attention," "Administration profiles") split across both features. New doc
 `Planning/BigPicture-Analytics-CorpusVsSeries.md` supersedes and removes
 `BigPicture-CorpusAnalytics-Roadmap.md`. No code changes.
+
+### Session 2026-07-04 (later) — Collections Manager UX rework (M1/M2/M3)
+Owner-driven discoverability rework of the Collections manager. Grounded eval →
+Planning/Collections-Manager-UX-Scope.md (F1–F7; decisions D1–D5). **M1 (PR #164, merged):**
+CollectionRibbonView (faithful ResearchStripView clone, CONTENT/ARRANGE/VIEW + pinned Export;
+ResearchStripButton promoted private→internal + reused) as the macOS detail-pane 2nd row;
+"Documents"→"Contents"; iPad native-toolbar promotion + iPhone labeled nav menu; Collection
+command-menu lockstep. **M2 (PR #165, merged):** rows→pure reporting with status chips;
+inspector absorbs body-depth + highlight-style note checkboxes (macOS-menu/iOS-list divergence
+erased); notes empty=all on ALL export paths incl. native .fruscollection (review caught the
+native-export closure missing it — TWO note-resolution sites); iPad per-entry inspector
+sheet→.inspector column; docs rider for the export-default change. **M3 (PR #167):** shared
+CollectionEntry.titleOverride (ToC label + export heading via one centralized exportHeading;
+Zotero/BibTeX excluded; inspector TextField w/ real derived-citation placeholder; portable
+plain-text — travels in .fruscollection, extends usesV2Features, no format/floor/index bump).
+Reviews independently ran builds+tests each phase. All green (124/124 M3). Manager rework
+COMPLETE. **Remaining before testers: consolidated docs pass + build bump** (reindex v18;
+release notes cover authoring suite + Source Explorer + macOS windows + Dynamic Type +
+manager rework + the M2 notes-default change).
