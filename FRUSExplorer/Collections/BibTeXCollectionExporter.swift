@@ -27,6 +27,11 @@ import Foundation
 /// A `.bib` file is a flat reference list, so only `.document` items apply — section
 /// headings and prose blocks have no BibTeX representation and are dropped.
 ///
+/// The M3 per-entry `titleOverride` is a **display** heading (ToC label + document
+/// heading) and is deliberately **not** applied here: BibTeX/Zotero records carry the
+/// document's true bibliographic `title` from `zoteroItem`, so a reference manager
+/// imports the real citation, not the author's collection-local relabel.
+///
 /// ## File location
 /// Output is written to `FileManager.default.temporaryDirectory`.
 ///

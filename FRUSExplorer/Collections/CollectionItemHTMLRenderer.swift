@@ -233,8 +233,9 @@ struct CollectionItemHTMLRenderer {
     private func documentSectionHTML(_ doc: CollectionExportDocument) -> String {
         var body = ""
         let anchor = Self.anchorId(doc: doc)
-        // Section heading always shows the citation (regardless of ToC style).
-        let heading = doc.citation.isEmpty ? doc.title : doc.citation
+        // Section heading: the per-entry `titleOverride` when set, else the citation
+        // (M3, centralized via `exportHeading`), regardless of ToC style.
+        let heading = doc.exportHeading
         body += "<section id=\"\(anchor)\">\n"
 
         // Citation as heading with external link — apply markdownItalics for _text_ spans.

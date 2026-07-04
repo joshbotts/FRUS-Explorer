@@ -79,6 +79,13 @@ extension UTType {
 ///          reader that doesn't know a future `generatedBlockType` STRING imports the
 ///          entry as an inert generated block (placement preserved, skipped at
 ///          resolve/render, re-exported intact) — degraded, never corrupted
+///   2.5 — Collections Manager M3 (still formatVersion 2, floor stays 1): `Entry.titleOverride`
+///          on document entries — a per-document plain-text override of the ToC label +
+///          export heading (D4). **Portable content** (no device-local UUIDs), so unlike
+///          `selectedHighlightIds`/`selectedNoteIds` it DOES travel; write-minimum omits
+///          the key when empty (byte-identical to pre-M3), a non-empty value forces v2
+///          (`usesV2Features`), and a reader ignoring it degrades to the derived title —
+///          floor stays 1
 struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -161,6 +168,13 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// `CollectionBodyDepth` raw value overriding the collection default — per-document
         /// (document entries) or per-section (heading entries). `nil` = use the default.
         var bodyDepthOverride: String?
+        /// Per-document title override (M3, D4; document entries only; v2 optional key).
+        /// Plain text replacing the derived ToC label + export heading. **This is portable
+        /// content** — unlike `selectedHighlightIds`/`selectedNoteIds` it carries no
+        /// device-local UUIDs, so it travels with the file. Emitted only when non-empty; a
+        /// non-empty value makes the file `formatVersion 2` (`usesV2Features`). A v1 reader
+        /// ignoring the key degrades to the derived title (no `minimumReaderVersion` bump).
+        var titleOverride: String?
         /// Heading nesting level (heading entries only; v2). `nil` = 1. Written as the
         /// outline-resolved level, so files never carry orphan jumps; readers clamp
         /// defensively anyway. Absent from write-minimum files (all headings level 1).
@@ -296,6 +310,13 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          and are still **never** serialized. Import unchanged — recreated notes are
 ///          pinned via `selectedNoteIds`, and an entry with no `notes` keeps the empty
 ///          set (= all of the recipient's notes when notes apply)
+///   1.8 — Collections Manager M3 (D4, per-entry title override): `Entry.titleOverride`
+///          rides v2 as an optional key on document entries (no bump, floor stays 1 — a
+///          reader ignoring it degrades to the derived title). **Unlike the id-set
+///          overrides it IS serialized** — it is portable plain text, so it travels with
+///          the file. Write-minimum omits an empty override (byte-identical to pre-M3);
+///          `usesV2Features` extended so a non-empty override forces v2; `apply`
+///          reconstructs it in the `.document` branch
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -389,6 +410,10 @@ enum NativeCollectionSerializer {
                         documentId: entry.documentId,
                         volumeId: entry.volumeId,
                         bodyDepthOverride: entry.bodyDepthOverride,
+                        // M3 title override — portable plain text (document entries only).
+                        // Write-minimum: an empty/nil override omits the key, keeping the
+                        // file byte-identical to pre-M3.
+                        titleOverride: entry.titleOverride.flatMap { $0.isEmpty ? nil : $0 },
                         text: nil,
                         richText: nil,
                         // Phase 5 headnote keys — the default (false/nil) is omitted so
@@ -501,6 +526,9 @@ enum NativeCollectionSerializer {
             || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
             || entries.contains { $0.kind == CollectionEntryKind.excerpt.rawValue }
             || entries.contains { $0.kind == CollectionEntryKind.generated.rawValue }
+            // M3: any non-empty per-entry title override is a v2 feature (the DTO already
+            // holds nil for an empty override, so this is a pure presence check).
+            || entries.contains { $0.titleOverride != nil }
             || entries.contains {
                 $0.applyHighlightsOverride != nil
                     || $0.includeNotesOverride != nil
@@ -597,6 +625,8 @@ enum NativeCollectionSerializer {
                 // Phase 5 headnote keys (absent in older files → the model defaults).
                 entry.includeHeadnote = dto.includeHeadnote ?? false
                 entry.headnoteSummaryId = dto.headnoteSummaryId
+                // M3 title override (absent in pre-M3 files → nil → derived title).
+                entry.titleOverride = dto.titleOverride
             }
             if kind == .document || kind == .heading {
                 // Phase 5 override keys (absent → nil, i.e. inherit — the model

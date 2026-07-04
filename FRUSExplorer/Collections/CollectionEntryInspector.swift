@@ -66,6 +66,11 @@ import SwiftData
 ///          Research-notes whether-gate, plus the "New Note…" affordance threaded from
 ///          the editors via `onNewNote`. The reporting rows now show read-only status
 ///          chips only
+///   1.8 — Collections Manager M3 (D4): the identity section gains a **title-override**
+///          `TextField` — one field driving both the ToC label and the export heading —
+///          showing the derived default (`derivedTitlePlaceholder`) as placeholder;
+///          clearing it restores the derived title (empty → `nil`). Document-only; the
+///          heading variant is unchanged (a section edits its title inline via its row)
 struct CollectionEntryInspector: View {
 
     /// One stored summary choice for the headnote picker: identity, producing-prompt
@@ -224,7 +229,34 @@ struct CollectionEntryInspector: View {
                            value: entry.documentId)
             LabeledContent(String(localized: "collection.inspector.volume", defaultValue: "Volume"),
                            value: volumeTitle.isEmpty ? entry.volumeId : volumeTitle)
+            // M3 (D4): the per-document title override — one field driving BOTH the
+            // collection ToC label and the top-of-document export heading. The derived
+            // default shows as placeholder; clearing the field restores it (empty → nil).
+            // Document-only — the heading variant edits its title inline via its row.
+            VStack(alignment: .leading, spacing: 4) {
+                TextField(
+                    String(localized: "collection.inspector.titleOverride",
+                           defaultValue: "Title override"),
+                    text: Binding(
+                        get: { entry.titleOverride ?? "" },
+                        set: { entry.titleOverride = $0.isEmpty ? nil : $0 }),
+                    prompt: Text(derivedTitlePlaceholder)
+                )
+                Text(String(localized: "collection.inspector.titleOverride.caption",
+                            defaultValue: "Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
+    }
+
+    /// The derived default title shown as the override field's placeholder: the source
+    /// note header when present, else `"{volumeTitle} — {documentId}"` (the resolver's
+    /// derived-title shape). Mirrors the resolver/exporter derivation so an author sees
+    /// exactly what leaving the field blank will produce.
+    private var derivedTitlePlaceholder: String {
+        if let header, !header.isEmpty { return header }
+        let vol = volumeTitle.isEmpty ? entry.volumeId : volumeTitle
+        return "\(vol) — \(entry.documentId)"
     }
 
     /// Identity for the heading (section-defaults) variant.
