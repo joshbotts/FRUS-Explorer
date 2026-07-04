@@ -65,7 +65,11 @@ enum HTMLTemplate {
         colorScheme: ColorScheme,
         textSize: TextSizePreference = .medium
     ) -> String {
-        let fragment = FRUSRenderNodeHTMLSerializer().serialize(model)
+        // Reading views opt into classification chips on source footnotes
+        // (Source Explorer Phase 5); exports construct their own serializer with
+        // the default (off) so exported output is unchanged.
+        let fragment = FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true)
+            .serialize(model)
         let cssVars  = FRUSTheme.cssVariables(colorScheme: colorScheme, textSize: textSize)
         return """
         <!DOCTYPE html>
@@ -276,6 +280,22 @@ enum HTMLTemplate {
 
     aside.footnote p.body { margin: 0; }
     aside.footnote p.body + p.body { margin-top: 0.5em; }
+
+    /* ─── Classification chip (source footnotes; Source Explorer Phase 5) ───── */
+    /* Quiet, semantic: secondary text in a hairline capsule — the text is the
+       signal (no color coding), matching the native ClassificationChip view. */
+    .classification-chip {
+      display: inline-block;
+      font-size: calc(var(--font-size-footnote) * 0.85);
+      font-weight: 500;
+      color: var(--color-secondary);
+      border: 1px solid var(--color-table-border);
+      border-radius: 999px;
+      padding: 0 8px;
+      margin-left: 6px;
+      white-space: nowrap;
+      vertical-align: baseline;
+    }
 
     /* ─── Page breaks (screen: invisible; Session 146 print CSS shows them) ─── */
     .page-break { display: none; }

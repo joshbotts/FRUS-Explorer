@@ -45,6 +45,13 @@ struct ArchivalNeighborsDocKey: Identifiable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 166: archival-neighbors rollout (generalises the former lot-file sheet)
+///   1.1 — Session 2026-07-04 (Source Explorer Phase 5 step 1): honest empty state.
+///          For keyed rows the "no results" state can no longer mean "we failed to
+///          parse it" (Phases 1–3 killed that); the wording now says exactly what an
+///          empty result means — nothing in *your indexed volumes* cites the source —
+///          and matches the zero-count hint on the three-state row affordance. The
+///          list may also exceed a row's count badge: the badge counts direct keys
+///          only, while this sheet's loader can add the Phase-4 alias fallback.
 struct ArchivalNeighborsSheet: View {
 
     /// Shared app state, used to navigate to a tapped neighbor.
@@ -90,7 +97,7 @@ struct ArchivalNeighborsSheet: View {
                                defaultValue: "No Archival Neighbors"),
                         systemImage: "archivebox",
                         description: Text(String(localized: "archivalNeighbors.empty.detail",
-                            defaultValue: "No other indexed FRUS documents share this archival source. Downloading and indexing more volumes will surface more neighbors."))
+                            defaultValue: "No documents in your indexed volumes cite this archival source — indexing more volumes may surface some."))
                     )
                 } else {
                     List {

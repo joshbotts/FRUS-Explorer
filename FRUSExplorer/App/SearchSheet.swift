@@ -1014,6 +1014,12 @@ private struct SearchResultRow: View {
                         .foregroundStyle(.teal)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
+                // Classification chip (Source Explorer Phase 5) — derived from the
+                // result's already-loaded source note; no per-row query.
+                if let note = result.sourceNote,
+                   let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) {
+                    ClassificationChip(marking: marking)
+                }
 
                 Spacer()
 

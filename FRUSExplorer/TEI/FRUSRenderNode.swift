@@ -238,6 +238,16 @@ public func buildFlatText(from model: FRUSDocumentRenderModel) -> String {
     return flat
 }
 
+/// Builds the flat-text string of an arbitrary render-node list using the same
+/// deterministic DFS as `buildFlatText(from:)`. Used by the HTML serializer to
+/// recover a source footnote's plain text for the classification chip
+/// (Source Explorer Phase 5) without duplicating the traversal.
+func flatText(of nodes: [FRUSRenderNode]) -> String {
+    var flat = ""
+    appendFlatText(from: nodes, into: &flat)
+    return flat
+}
+
 private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout String) {
     for node in nodes {
         switch node {

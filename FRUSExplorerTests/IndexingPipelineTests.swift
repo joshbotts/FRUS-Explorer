@@ -4208,3 +4208,154 @@ struct CollectionAuthorityLocalTests {
         }
     }
 }
+
+// MARK: - BatchedNeighborCountTests (Source Explorer Phase 5 step 1)
+
+/// Verifies the batched three-state neighbor counts behind `VolumeSourcesView`:
+/// `archivalNeighborCounts(forKeys:)` resolves every key family (lot norm,
+/// decimal/subject-numeric class leaf, presidential library, RG + series) in
+/// grouped queries against a fixture index, returns an explicit 0 for keyed
+/// entries nothing matches, agrees with the per-tap `archivalNeighbors` totals
+/// (shared clause builders), and `neighborCountKey` mirrors the matcher's
+/// most-specific-first path selection.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04: Source Explorer Phase 5 step 1
+@Suite("IndexingPipeline — batched neighbor counts")
+struct BatchedNeighborCountTests {
+
+    /// Indexes one volume covering all four key families: two lot-file documents
+    /// (dash variants of one lot), two class-leaf documents (narrative decimal +
+    /// structured subject-numeric), two Johnson Library documents in one collection,
+    /// and two RG 84 documents in one series.
+    private func indexAllFamiliesFixture(dir: URL) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        let notes: [(String, String)] = [
+            ("d1", "SPA Files: Lot 61–D 146, Box 4581"),
+            ("d2", "SPA Files: Lot 61-D 146, Box 4582"),
+            ("d3", "Source: Department of State, Central Files, POL 27 ARAB–ISR. Confidential."),
+            ("d4", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 27 ARAB-ISR. Secret."),
+            ("d5", "Source: Johnson Library, National Security File, Country File, Vietnam, Box 3. Secret."),
+            ("d6", "Source: Johnson Library, National Security File, Memos to the President, Box 1. Secret."),
+            ("d7", "Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret."),
+            ("d8", "Source: National Archives, RG 84, Moscow Embassy Files, Box 57. Confidential."),
+        ]
+        try writeTEIVolume(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: notes.enumerated().map { i, doc in
+                (doc.0, "<head>\(i + 1). Memo</head><note type=\"source\">\(doc.1)</note><p>Text.</p>")
+            }
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+        return pipeline
+    }
+
+    @Test("One batch resolves all four key families with correct zero/N states")
+    func allFamiliesZeroAndN() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexAllFamiliesFixture(dir: dir)
+
+            // Derive keys exactly as VolumeSourcesView does (em-dash lot variant to
+            // prove the norm bridges dash forms; en-dash class key bridging both
+            // stored dash forms).
+            let lotHit  = IndexingPipeline.neighborCountKey(
+                forLotFile: "61—D 146", recordGroup: nil, series: nil)!
+            let lotMiss = IndexingPipeline.neighborCountKey(
+                forLotFile: "99 D 999", recordGroup: nil, series: nil)!
+            let clsHit  = IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "POL 27 ARAB–ISR")!
+            let clsMiss = IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "DEF 6 MLF")!
+            let libHit  = IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: nil, series: "National Security File",
+                repository: "Johnson Library")!
+            let libMiss = IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: nil, series: "National Security Files",
+                repository: "Kennedy Library")!
+            let rgHit   = IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: "84", series: "Moscow Embassy Files")!
+            let rgGuard = IndexingPipeline.neighborCountKey(
+                forLotFile: nil, recordGroup: "84", series: "Mos")!
+
+            let keys = [lotHit, lotMiss, clsHit, clsMiss, libHit, libMiss, rgHit, rgGuard]
+            let counts = try await pipeline.archivalNeighborCounts(forKeys: keys)
+
+            // Every input key gets an explicit entry — 0 is "loaded, zero", never absent.
+            #expect(counts.count == keys.count, "every key must be answered; got \(counts.count)")
+            #expect(counts[lotHit]  == 2, "both dash variants of the lot must count")
+            #expect(counts[lotMiss] == 0)
+            #expect(counts[clsHit]  == 2, "narrative + structured class citations must both count")
+            #expect(counts[clsMiss] == 0)
+            #expect(counts[libHit]  == 2, "both Johnson Library boxes must count")
+            #expect(counts[libMiss] == 0)
+            #expect(counts[rgHit]   == 2, "both Box tails must count at the comma boundary")
+            #expect(counts[rgGuard] == 0, "the ≥4-char series guard must refuse the degenerate prefix")
+        }
+    }
+
+    @Test("Batched counts equal the per-tap archivalNeighbors totals (shared clauses)")
+    func countsAgreeWithPerTapTotals() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexAllFamiliesFixture(dir: dir)
+
+            // (lotFile, recordGroup, series, repository, decimalClass) per family.
+            let targets: [(String?, String?, String?, String?, String?)] = [
+                ("61—D 146", nil, nil, nil, nil),
+                (nil, nil, nil, nil, "POL 27 ARAB–ISR"),
+                (nil, nil, "National Security File", "Johnson Library", nil),
+                (nil, "84", "Moscow Embassy Files", nil, nil),
+            ]
+            for t in targets {
+                let key = IndexingPipeline.neighborCountKey(
+                    forLotFile: t.0, recordGroup: t.1, series: t.2,
+                    repository: t.3, decimalClass: t.4)!
+                let counts = try await pipeline.archivalNeighborCounts(forKeys: [key])
+                let direct = try await pipeline.archivalNeighbors(
+                    forLotFile: t.0, recordGroup: t.1, series: t.2,
+                    repository: t.3, decimalClass: t.4)
+                #expect(counts[key] == direct.totalCount,
+                        "badge and sheet must agree for \(key); \(String(describing: counts[key])) vs \(direct.totalCount)")
+            }
+        }
+    }
+
+    @Test("neighborCountKey mirrors the matcher's most-specific-first path selection")
+    func keySelectionOrder() {
+        // Lot outranks everything.
+        if case .lotFile(let norm)? = IndexingPipeline.neighborCountKey(
+            forLotFile: "Lot 61–D 146", recordGroup: "59", series: "POL 27",
+            repository: "Johnson Library", decimalClass: "POL 27") {
+            #expect(norm == "61D146", "the key stores the canonical compact norm (Lot prefix stripped)")
+        } else {
+            Issue.record("a lot-carrying entry must resolve on the lot path")
+        }
+        // Class leaf outranks library and RG+series.
+        if case .decimalClass? = IndexingPipeline.neighborCountKey(
+            forLotFile: nil, recordGroup: "59", series: "POL 27 ARAB–ISR",
+            repository: "Johnson Library", decimalClass: "POL 27 ARAB–ISR") {
+        } else {
+            Issue.record("a class leaf must resolve on the decimal path")
+        }
+        // Library outranks RG+series; non-library repositories fall through.
+        if case .presidentialLibrary? = IndexingPipeline.neighborCountKey(
+            forLotFile: nil, recordGroup: "59", series: "National Security File",
+            repository: "Johnson Library") {
+        } else {
+            Issue.record("a library repository + collection must resolve on the library path")
+        }
+        if case .collection? = IndexingPipeline.neighborCountKey(
+            forLotFile: nil, recordGroup: "59", series: "Central Files",
+            repository: "Department of State") {
+        } else {
+            Issue.record("a non-library repository must fall through to RG + series")
+        }
+        // No key on any path → nil (the row shows no affordance).
+        #expect(IndexingPipeline.neighborCountKey(
+            forLotFile: nil, recordGroup: nil, series: "Miscellaneous", repository: nil) == nil)
+        #expect(IndexingPipeline.neighborCountKey(
+            forLotFile: " ", recordGroup: nil, series: nil) == nil,
+            "whitespace-only fields never select a path")
+    }
+}

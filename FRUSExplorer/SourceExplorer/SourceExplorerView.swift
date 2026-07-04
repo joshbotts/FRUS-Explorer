@@ -235,10 +235,17 @@ struct SourceExplorerView: View {
     private var rawNoteSection: some View {
         Section(String(localized: "source.explorer.rawNote.header",
                        defaultValue: "Source Note")) {
-            Text(rawSourceNote)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(rawSourceNote)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                // Phase 5: the S1 classification markings (sentence 2 of the note when
+                // it matches the marking vocabulary), as a quiet semantic chip.
+                if let marking = SourceNoteParser.classificationMarking(fromSourceNote: rawSourceNote) {
+                    ClassificationChip(marking: marking)
+                }
+            }
         }
     }
 
