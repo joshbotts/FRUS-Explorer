@@ -228,13 +228,20 @@ struct IndexingEducationView: View {
 
                 Divider()
 
-                // Sections
-                VStack(alignment: .leading, spacing: 18) {
-                    ForEach(page.sections) { section in
-                        MacSectionView(section: section)
+                // Body: a live dashboard replaces the prose sections when the
+                // page carries one (Analytics Prep-A); otherwise the usual
+                // section stack.
+                if let dashboard = page.dashboard {
+                    EducationDashboardView(dashboard: dashboard)
+                        .padding(28)
+                } else {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ForEach(page.sections) { section in
+                            MacSectionView(section: section)
+                        }
                     }
+                    .padding(28)
                 }
-                .padding(28)
             }
             .padding(.bottom, 16)
         }
@@ -386,12 +393,20 @@ private struct iOSPageView: View {
 
                 Divider()
 
-                VStack(alignment: .leading, spacing: 20) {
-                    ForEach(page.sections) { section in
-                        iOSSectionView(section: section)
+                // Body: a live dashboard replaces the prose sections when the
+                // page carries one (Analytics Prep-A); otherwise the usual
+                // section stack.
+                if let dashboard = page.dashboard {
+                    EducationDashboardView(dashboard: dashboard)
+                        .padding(24)
+                } else {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ForEach(page.sections) { section in
+                            iOSSectionView(section: section)
+                        }
                     }
+                    .padding(24)
                 }
-                .padding(24)
             }
         }
     }
@@ -441,21 +456,41 @@ private struct iOSSectionView: View {
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
+///   1.1 — Analytics Prep-A: added `.aboutTheSeries` for the forthcoming live
+///          Series Analytics dashboards (SA-1…SA-3)
 enum EducationCategory: String {
     /// Background on the FRUS series and how to read its documents.
     case aboutFRUS
     /// Catalog of the app's features and how to reach them.
     case usingTheApp
+    /// Live "About the Series" dashboards — production, organization, and
+    /// sourcing analytics of the FRUS series itself. Populated by Series
+    /// Analytics sessions SA-1…SA-3 (Prep-A stands the category up; it simply
+    /// does not appear in the sidebar until a page adopts it, because
+    /// `groupedPages` derives the visible categories from the pages present).
+    case aboutTheSeries
 
     /// Localised sidebar section header.
     var title: String {
         switch self {
-        case .aboutFRUS:   return String(localized: "education.category.about",    defaultValue: "About FRUS")
-        case .usingTheApp: return String(localized: "education.category.features", defaultValue: "Using the app")
+        case .aboutFRUS:      return String(localized: "education.category.about",    defaultValue: "About FRUS")
+        case .usingTheApp:    return String(localized: "education.category.features", defaultValue: "Using the app")
+        case .aboutTheSeries: return String(localized: "education.category.series",   defaultValue: "About the Series")
         }
     }
 }
 
+/// A single Research Guide page.
+///
+/// A page renders either static prose `sections` (the default) or — when
+/// `dashboard` is non-`nil` — a live SwiftUI dashboard in their place (see
+/// `EducationDashboardView`). The dashboard variant is the additive
+/// content-model extension introduced by Analytics Prep-A so the Series
+/// Analytics dashboards (SA-1…SA-3) can live inside the guide.
+///
+/// Version history:
+///   1.0 — Session 163: initial implementation (prose sections only)
+///   1.1 — Analytics Prep-A: added the optional `dashboard` body variant
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -464,22 +499,40 @@ struct EducationPage: Identifiable {
     /// pages need no change.
     let category: EducationCategory
     let sections: [EducationSection]
+    /// When non-`nil`, the page renders this live dashboard in place of its
+    /// prose `sections` (both platform renderers branch on it). `nil` for every
+    /// existing prose page; defaulted to `nil` in the initializer so all prior
+    /// page constructions stay byte-identical.
+    let dashboard: EducationDashboard?
 
     init(
         id: String,
         title: String,
         subtitle: String?,
         category: EducationCategory = .aboutFRUS,
-        sections: [EducationSection]
+        sections: [EducationSection],
+        dashboard: EducationDashboard? = nil
     ) {
         self.id = id
         self.title = title
         self.subtitle = subtitle
         self.category = category
         self.sections = sections
+        self.dashboard = dashboard
     }
 
-    static let all: [EducationPage] = [page1, page2, page3, page4, page5, page6, page7]
+    /// All guide pages in display order.
+    ///
+    /// In `DEBUG` builds this appends the development-only
+    /// `dashboardPlaceholder` (the Prep-A proof-of-pipe). Release builds
+    /// exclude it entirely, so shipping users see no new page.
+    static let all: [EducationPage] = {
+        var pages = [page1, page2, page3, page4, page5, page6, page7]
+        #if DEBUG
+        pages.append(dashboardPlaceholder)
+        #endif
+        return pages
+    }()
 }
 
 struct EducationSection: Identifiable {
@@ -927,3 +980,27 @@ private extension EducationPage {
         ]
     )
 }
+
+// MARK: - DEBUG-only dashboard placeholder (Analytics Prep-A proof-of-pipe)
+
+#if DEBUG
+private extension EducationPage {
+    /// Development-only "About the Series" page that renders a live dashboard
+    /// (`EducationDashboard.placeholder`) in place of prose, proving the Prep-A
+    /// content-model pipe end-to-end on both platforms. Its `sections` are empty
+    /// by design — the renderers show the dashboard, not sections — so it never
+    /// contributes a prose paragraph or a Markdown link to scan. `#if DEBUG`
+    /// keeps it out of release builds; `EducationPage.all` appends it only in
+    /// `DEBUG`.
+    static let dashboardPlaceholder = EducationPage(
+        id: "series-dashboard-placeholder",
+        title: String(localized: "education.dashboard.placeholder.page.title",
+                      defaultValue: "Series Dashboard (Preview)"),
+        subtitle: String(localized: "education.dashboard.placeholder.page.subtitle",
+                         defaultValue: "Development placeholder — proves the live-dashboard pipe"),
+        category: .aboutTheSeries,
+        sections: [],
+        dashboard: .placeholder
+    )
+}
+#endif
