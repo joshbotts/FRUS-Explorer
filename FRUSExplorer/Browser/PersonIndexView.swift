@@ -18,10 +18,15 @@ import SwiftUI
 ///
 /// ## Platform placement
 /// - **iOS**: Navigation destination pushed from `CorpusView` ("People" row).
-/// - **macOS**: Sheet presented from the Corpus Browser toolbar "People" button.
+/// - **macOS**: Hosted by the "People" window (`frus.people`, via `PeopleWindowView`),
+///   opened from the Corpus Browser toolbar "People" button.
 ///
 /// Version history:
 ///   1.0 — Session 87
+///   1.1 — Session 2026-07-04 (macOS UI audit B5): the macOS presentation moved from a
+///          Corpus Browser sheet (which stacked the person-detail sheet on top of
+///          itself) to the frus.people window — the detail sheet is now a single
+///          window-level modal; this view is unchanged apart from placement
 struct PersonIndexView: View {
 
     @Environment(AppState.self) private var appState
@@ -485,3 +490,50 @@ private struct PersonMergeCandidate: Identifiable {
     let reason: String?
     var id: Int { rollupId }
 }
+
+#if os(macOS)
+
+// MARK: - PeopleWindowView
+
+/// Root content for the "People" macOS window scene (`frus.people`, UI audit B5).
+///
+/// Wraps `PersonIndexView` in a `NavigationStack` so its title and search field
+/// anchor to the window toolbar. Replaces the Corpus Browser's People *sheet*, which
+/// stacked the person-detail sheet on top of itself — as a window, the index stays
+/// browsable beside documents and `PersonIndexView`'s own detail presentation becomes
+/// a single window-level modal (no sheet-on-sheet).
+///
+/// ## Boot guard (copied from the S6 Archival Neighbors pattern)
+/// `PersonIndexView.loadPeople()` renders the definitive "No People Indexed" empty
+/// state when `appState.personMentionStore` is nil — but the store is only assigned
+/// once `bootDownloadManager()` finishes, and a window restored at app launch races
+/// that boot. While the store is nil this view shows a "Preparing your index…"
+/// placeholder instead; reading the `@Observable` property in `body` re-evaluates the
+/// view (and creates `PersonIndexView`, firing its load) once the store appears.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (macOS UI audit B5)
+struct PeopleWindowView: View {
+
+    @Environment(AppState.self) private var appState
+
+    /// Whether the person mention store exists to query; `false` while the app boots.
+    private var storeReady: Bool { appState.personMentionStore != nil }
+
+    var body: some View {
+        Group {
+            if storeReady {
+                NavigationStack {
+                    PersonIndexView()
+                }
+            } else {
+                ProgressView(String(localized: "people.window.preparing",
+                                    defaultValue: "Preparing your index…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .frame(minWidth: 440, minHeight: 480)
+    }
+}
+
+#endif // os(macOS)

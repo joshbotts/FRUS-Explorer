@@ -49,6 +49,7 @@ import os
 /// | `"frus.search"`                 | Window        | Full-text search — persists while reading docs   |
 /// | `"frus.citationLookup"`         | Window        | Citation lookup (⌘⇧F) — the other find flow      |
 /// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
+/// | `"frus.people"`                 | Window        | Cross-volume person index (B5)                   |
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
@@ -114,6 +115,9 @@ import os
 ///          same pattern as S6); Citation Lookup became the frus.citationLookup Window
 ///          scene owning ⌘⇧F (mirroring frus.search's ⌘F) — the CommandGroup item that
 ///          set the removed appState.showCitationLookup flag is gone
+///   4.3 — Session 2026-07-04 (macOS UI audit B5): People window scene added
+///          (frus.people hosting PeopleWindowView) — replaces the Corpus Browser's
+///          PersonIndexView sheet and its stacked person-detail sheet
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -550,6 +554,24 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 520, height: 700)
         .keyboardShortcut("b", modifiers: [.command, .shift])
+
+        // MARK: - People Window (UI audit B5)
+        //
+        // The cross-volume person index was a Corpus Browser sheet that stacked a
+        // second sheet (person detail) on top of itself — the audit's sheet-on-sheet
+        // smell. As a window the index is browsable alongside documents and the
+        // detail presentation becomes a single window-level modal.
+        // `PeopleWindowView` copies the S6 boot guard: while
+        // `appState.personMentionStore` is nil (app still booting) it shows a
+        // "Preparing your index…" placeholder, so a window restored at launch never
+        // renders the definitive "No People Indexed" empty state as a lie.
+        Window(String(localized: "people.window.title", defaultValue: "People"),
+               id: "frus.people") {
+            PeopleWindowView()
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 520, height: 640)
 
         // MARK: - Cross-Reference Graph Window
         Window("Cross-Reference Graph", id: "frus.crossReferenceGraph") {

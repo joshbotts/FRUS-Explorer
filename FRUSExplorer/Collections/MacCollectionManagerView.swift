@@ -74,6 +74,15 @@ import UniformTypeIdentifiers
 ///          the first entry, back matter → the end — fully movable afterwards);
 ///          `.generated` entries render as `CollectionGeneratedEntryRow` (inline trash;
 ///          movable like prose; no body-depth or inspector controls)
+///   1.13 — Session 2026-07-04 (macOS UI audit B8): the per-entry inspector left its
+///          modal sheet for a selection-driven trailing `.inspector` column on the
+///          detail pane (each ⓘ opens/retargets/toggles it; deletions close it) —
+///          coexisting with the live preview (inspector trailing-most) so override
+///          edits show their effect in the preview instead of hiding it; document
+///          rows (`MacEntryRow.onInspect`) and heading rows
+///          (`CollectionHeadingRow.onInspect`) both route into the column. The
+///          fixed-height header is untouched — the inspector is a sibling column,
+///          not header content
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -388,6 +397,11 @@ private struct CollectionDetailPane: View {
     @State private var showFrontMatter = false
     /// Live preview pane visibility (Authoring Phase 2b; toolbar-toggled, not persisted).
     @State private var showPreview = false
+    /// The id of the entry shown in the trailing inspector column (UI audit B8), or
+    /// `nil` when the column is closed. Selection-driven: each row's ⓘ sets it (a
+    /// second click on the same row's ⓘ closes the column), so clicking another ⓘ
+    /// retargets the open inspector. View state only — never persisted.
+    @State private var inspectedEntryId: UUID? = nil
     /// The preview's "Render All" cap lift, hoisted here so hiding/showing the pane
     /// doesn't reset it (one detail-pane session = one lift).
     @State private var previewRenderAll = false
@@ -487,6 +501,39 @@ private struct CollectionDetailPane: View {
             }
             .environment(appState)
         }
+        // Entry inspector (UI audit B8): a trailing `.inspector` column replacing the
+        // per-row modal sheet, so the outline stays visible — and editable — while the
+        // inspector's overrides and "Insert as Excerpt" act on it. It coexists with the
+        // live preview pane (the inspector sits trailing-most) deliberately: the
+        // inspector edits per-entry export overrides whose effect renders live in the
+        // preview, which a toggle would have hidden at exactly the moment it matters.
+        // `.id(entry.id)` re-creates the inspector per entry so its `@State` loads fresh.
+        .inspector(isPresented: Binding(
+            get: { inspectedEntryId != nil },
+            set: { if !$0 { inspectedEntryId = nil } }
+        )) {
+            if let entry = inspectedEntry {
+                CollectionEntryInspector(
+                    entry: entry,
+                    onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                    isInspectorColumn: true
+                )
+                .id(entry.id)
+                .environment(appState)
+            }
+        }
+    }
+
+    /// The entry targeted by the inspector column, resolved by id so deletions and
+    /// reorderings never leave the inspector pointing at a stale model object.
+    private var inspectedEntry: CollectionEntry? {
+        inspectedEntryId.flatMap { id in sortedEntries.first { $0.id == id } }
+    }
+
+    /// Toggles `entryId` in the inspector column (each row's ⓘ): opens it, retargets
+    /// an open column to another entry, or closes it when it's already showing.
+    private func toggleInspector(for entryId: UUID) {
+        inspectedEntryId = (inspectedEntryId == entryId) ? nil : entryId
     }
 
     /// The editing column (name, note, entries list) — the pre-Phase-2b pane body,
@@ -749,7 +796,7 @@ private struct CollectionDetailPane: View {
                 volumeTitle: volumeTitle(for: entry),
                 documentHeader: documentHeaders[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
-                onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                onInspect: { toggleInspector(for: entry.id) },
                 onNewNote: {
                     noteCreateContext = NoteCreateContext(
                         documentId: entry.documentId,
@@ -772,7 +819,8 @@ private struct CollectionDetailPane: View {
                 canOutdent: CollectionOutline.canOutdent(row.index, in: outline),
                 onIndent: { indentSection(at: row.index) },
                 onOutdent: { outdentSection(at: row.index) },
-                onDeleteSection: { deleteSection(at: row.index) }
+                onDeleteSection: { deleteSection(at: row.index) },
+                onInspect: { toggleInspector(for: entry.id) }
             )
         case .prose:
             CollectionProseRow(entry: $sortedEntries[row.index],
@@ -826,6 +874,7 @@ private struct CollectionDetailPane: View {
     private func deleteEntry(at index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
         collapsedHeadingIds.remove(sortedEntries[index].id)
+        if inspectedEntryId == sortedEntries[index].id { inspectedEntryId = nil }
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
         finishOutlineMutation()
@@ -839,6 +888,7 @@ private struct CollectionDetailPane: View {
         guard range.upperBound <= sortedEntries.count else { return }
         for i in range.reversed() {
             collapsedHeadingIds.remove(sortedEntries[i].id)
+            if inspectedEntryId == sortedEntries[i].id { inspectedEntryId = nil }
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }
@@ -1068,6 +1118,8 @@ private struct CollectionDetailPane: View {
 /// - A multi-note picker backed by `CollectionEntry.selectedNoteIds`
 /// - A delete button that removes this entry from the collection
 /// - An external-link button to open the document on history.state.gov
+/// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column
+///   (UI audit B8 — previously a modal sheet that blocked the outline)
 private struct MacEntryRow: View {
 
     @Binding var entry: CollectionEntry
@@ -1078,15 +1130,14 @@ private struct MacEntryRow: View {
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
-    /// Appends an excerpt entry to the owning collection (Authoring Phase 5) — threads
-    /// the pane's append action into the inspector's "Insert as Excerpt" rows.
-    var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
+    /// Toggles this entry in the pane's inspector column (UI audit B8): the ⓘ button
+    /// calls it, and `CollectionDetailPane` shows/retargets/closes the trailing
+    /// `CollectionEntryInspector` accordingly.
+    let onInspect: () -> Void
     let onNewNote: () -> Void
     let onDelete: () -> Void
 
     @Environment(\.openURL) private var openURL
-    @Environment(AppState.self) private var appState
-    @State private var showInspector = false
 
     /// This entry's body-depth override (`nil` = follow the collection default).
     private var bodyDepthOverride: Binding<String?> {
@@ -1175,16 +1226,16 @@ private struct MacEntryRow: View {
 
             // Action controls
             HStack(spacing: 6) {
-                // Document details inspector
+                // Document details inspector (B8: trailing inspector column, not a sheet)
                 Button {
-                    showInspector = true
+                    onInspect()
                 } label: {
                     Image(systemName: "info.circle")
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .help(String(localized: "collection.entry.inspect.help",
-                             defaultValue: "Show this document's notes, highlights, tags, and provenance"))
+                             defaultValue: "Show this document's notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
 
                 // Open on history.state.gov
                 Button {
@@ -1218,10 +1269,6 @@ private struct MacEntryRow: View {
             .padding(.top, 2)
         }
         .padding(.vertical, 4)
-        .sheet(isPresented: $showInspector) {
-            CollectionEntryInspector(entry: entry, onInsertExcerpt: onInsertExcerpt)
-                .environment(appState)
-        }
     }
 
     // MARK: - Note Menu

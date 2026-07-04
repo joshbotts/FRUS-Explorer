@@ -108,6 +108,10 @@ import CloudKit
 ///          showCitationLookup removed — Citation Lookup is a Window scene on macOS
 ///          (`frus.citationLookup`) and local sheet state on iOS, so the cross-view
 ///          flag had no remaining reader
+///   4.4 — Session 2026-07-04 (macOS UI audit B6): pendingVolumeGraph added — the
+///          Corpus Browser's per-volume graph buttons hand the volume to the
+///          frus.crossReferenceGraph window's volume-connections stage instead of
+///          presenting VolumeConnectionGraphView in a local sheet
 
 // MARK: - CloudKitSyncState
 
@@ -545,6 +549,20 @@ final class AppState {
     /// ego graph. On macOS the "View Document" button in the graph info panel sets
     /// `pendingBrowseDocument` (to open in the main window) rather than navigating inline.
     var currentGraphEntry: DocumentBrowserEntry? = nil
+
+    /// Cross-window hand-off into the Cross-Reference Graph window's **volume
+    /// connections** mode (UI audit B6): the id of the volume whose corpus-wide
+    /// connection graph should be shown.
+    ///
+    /// `currentGraphEntry` is document-scoped (targeted ego-graph mode); this is its
+    /// volume-grain sibling. Set by the Corpus Browser's per-volume graph buttons
+    /// immediately before `openWindow(id: "frus.crossReferenceGraph")`.
+    /// `CrossReferenceGraphWindowView` consumes it (`.task` for a freshly created
+    /// window, `.onChange` for one already open), clears `currentGraphEntry`, jumps
+    /// its picker straight to the volume-connections stage, and clears this —
+    /// mirroring the `pendingSearch` / `pendingNARALookup` pattern. macOS-only in
+    /// practice; iOS shows `VolumeConnectionGraphView` inline in the Browse tab.
+    var pendingVolumeGraph: String? = nil
 
     /// The raw source note of the document currently targeted by the Source Explorer window.
     ///

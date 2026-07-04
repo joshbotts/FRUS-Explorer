@@ -38,11 +38,21 @@ import SwiftUI
 /// `CrossReferenceGraphView` sets `appState.pendingBrowseDocument` on macOS to open a
 /// document in the main FRUS window rather than pushing inline.
 ///
+/// ## Volume hand-off (UI audit B6)
+/// `AppState.pendingVolumeGraph` — the volume-grain sibling of `currentGraphEntry`,
+/// set by the Corpus Browser's per-volume graph buttons before `openWindow(id:)` —
+/// is consumed here (`.task` for a freshly created window, `.onChange` for one
+/// already open): targeted mode is cleared and the picker jumps straight to its
+/// volume-connections stage. The picker's Back button then works as usual, so the
+/// hand-off lands in the same navigation model the standalone window uses.
+///
 /// Version history:
 ///   1.0 — Initial implementation (replaces two-line placeholder in SupportingViews.swift)
 ///   1.1 — Session 75: two-stage volume/document picker replaces the "No Document Selected"
 ///          placeholder; `VolumeConnectionGraphView` reachable from the picker without
 ///          requiring a prior document-level navigation
+///   1.2 — Session 2026-07-04 (macOS UI audit B6): consumes the `pendingVolumeGraph`
+///          hand-off, replacing the Corpus Browser's `VolumeConnectionGraphView` sheet
 struct CrossReferenceGraphWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -96,18 +106,44 @@ struct CrossReferenceGraphWindowView: View {
     // MARK: - Body
 
     var body: some View {
-        if let entry = appState.currentGraphEntry,
-           let store = appState.crossReferenceStore {
-            CrossReferenceGraphView(
-                entry: entry,
-                crossReferenceStore: store,
-                downloadedVolumeIds: downloadedVolumeIds
-            )
-            .id(entry.id)
-        } else {
-            pickerContent
-                .task { await loadIndexedVolumes() }
+        Group {
+            if let entry = appState.currentGraphEntry,
+               let store = appState.crossReferenceStore {
+                CrossReferenceGraphView(
+                    entry: entry,
+                    crossReferenceStore: store,
+                    downloadedVolumeIds: downloadedVolumeIds
+                )
+                .id(entry.id)
+            } else {
+                pickerContent
+                    .task { await loadIndexedVolumes() }
+            }
         }
+        // Consume a volume hand-off (Corpus Browser graph buttons, UI audit B6):
+        // `.task` covers a window freshly created by the hand-off (`.onChange`
+        // misses a value that was already set), `.onChange` covers one already
+        // open — mirroring MacSearchWindowView's pendingSearch pattern. Both call
+        // the idempotent consumer, so the Group's per-branch `.task` replication
+        // (the documented Group gotcha) is harmless.
+        .task { consumePendingVolumeGraph() }
+        .onChange(of: appState.pendingVolumeGraph) { _, volumeId in
+            guard volumeId != nil else { return }
+            consumePendingVolumeGraph()
+        }
+    }
+
+    /// Applies (and clears) `AppState.pendingVolumeGraph`: leaves targeted mode (the
+    /// document-scoped `currentGraphEntry`) and jumps the picker straight to the
+    /// volume-connections stage for the handed-off volume.
+    private func consumePendingVolumeGraph() {
+        guard let volumeId = appState.pendingVolumeGraph else { return }
+        appState.pendingVolumeGraph = nil
+        appState.currentGraphEntry = nil
+        stage = .volumeGraph(volumeId: volumeId)
+        #if DEBUG
+        print("[CrossReferenceGraphWindowView] pendingVolumeGraph consumed: \(volumeId)")
+        #endif
     }
 
     // MARK: - Picker content

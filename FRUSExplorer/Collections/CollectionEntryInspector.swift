@@ -52,6 +52,12 @@ import SwiftData
 ///   1.5 — Footnote gate closed in PDF/DOCX (owner decision 2026-07-03): the honesty
 ///          caption under the footnote override is gone — the setting now gates all
 ///          three export formats and the preview, so there is no gap left to disclose
+///   1.6 — Session 2026-07-04 (macOS UI audit B8): `isInspectorColumn` presentation
+///          flag — the macOS Collections manager now hosts this view in a trailing
+///          `.inspector` column (sized via `inspectorColumnWidth` instead of the
+///          sheet's min-size frame) so the outline stays visible and editable while
+///          overrides and "Insert as Excerpt" act on it; the sheet presentations
+///          (iOS/iPad, shared heading row) are unchanged
 struct CollectionEntryInspector: View {
 
     /// One stored summary choice for the headnote picker: identity, producing-prompt
@@ -92,6 +98,13 @@ struct CollectionEntryInspector: View {
     /// `nil` (e.g. a future read-only presentation) hides the insert buttons.
     var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
 
+    /// Whether this presentation is the macOS Collections manager's trailing
+    /// `.inspector` column (UI audit B8) rather than a sheet. In the column the
+    /// sheet's min-size frame is replaced by `inspectorColumnWidth` sizing; the Done
+    /// button stays (its `dismiss` closes the inspector column). Defaults to `false`
+    /// — the iOS/iPad sheets and the shared heading-row sheet are unaffected.
+    var isInspectorColumn: Bool = false
+
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -118,6 +131,23 @@ struct CollectionEntryInspector: View {
     private var isHeading: Bool { entry.entryKind == .heading }
 
     var body: some View {
+        if isInspectorColumn {
+            // Inspector-column presentation (macOS Collections manager, B8): the
+            // column's width is negotiated with the split view, not forced by the
+            // sheet's fixed minimum frame.
+            inspectorBody
+                .inspectorColumnWidth(min: 340, ideal: 420, max: 560)
+        } else {
+            inspectorBody
+                #if os(macOS)
+                .frame(minWidth: 420, minHeight: 480)
+                #endif
+        }
+    }
+
+    /// The shared presentation body — a `NavigationStack` hosting the sectioned list,
+    /// used by both the sheet and inspector-column presentations.
+    private var inspectorBody: some View {
         NavigationStack {
             List {
                 if isHeading {
@@ -158,9 +188,6 @@ struct CollectionEntryInspector: View {
             }
             .task { await load() }
         }
-        #if os(macOS)
-        .frame(minWidth: 420, minHeight: 480)
-        #endif
     }
 
     private var identitySection: some View {

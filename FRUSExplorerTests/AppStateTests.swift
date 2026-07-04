@@ -173,6 +173,12 @@ struct NavigationStateTests {
         let state = AppState()
         #expect(state.pendingNARALookup == nil)
     }
+
+    @Test("AppState.pendingVolumeGraph initialises to nil")
+    func pendingVolumeGraphInitiallyNil() {
+        let state = AppState()
+        #expect(state.pendingVolumeGraph == nil)
+    }
 }
 
 // MARK: - DocumentWindowIDTests

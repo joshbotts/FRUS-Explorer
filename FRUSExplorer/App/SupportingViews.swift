@@ -1014,14 +1014,15 @@ struct SummaryBlockView: View {
 ///   1.1 — Session 118: centre zone tappable during multi-volume batches; opens
 ///          `MacIndexingQueuePopover` with position, progress, ETA, and pending list;
 ///          auto-closes when indexing completes
+///   1.2 — Session 2026-07-04 (macOS UI audit B7): the WhileIndexing sheet is gone —
+///          it auto-presented 0.6 s after indexing started, interrupting whatever the
+///          user was doing. The "Learn" button (and the queue panel's) now opens the
+///          existing frus.researchGuide window instead; nothing auto-presents. iOS
+///          keeps its banner-driven education sheet (`IndexingQueueBannerView`).
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
     @State private var showQueuePopover = false
-    @State private var showWhileIndexing = false
-    /// Reset each app session so a deliberate rebuild always shows the sheet.
-    /// `hasSeen` (AppStorage) is not used here because it persists across launches
-    /// and silently blocked the sheet after the first install.
-    @State private var hasShownThisSession = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -1044,11 +1045,13 @@ struct StatusBarView: View {
             }
 
             // "Learn" button — always visible while any indexing is active,
-            // giving persistent access to the educational sheet even when the
-            // queue panel (which also has the button) isn't open.
+            // giving persistent access to the research guide even when the
+            // queue panel (which also has the button) isn't open. Opens the
+            // frus.researchGuide window (UI audit B7) — a click-through, never
+            // an auto-presented modal.
             if appState.currentIndexingProgress != nil {
                 Button {
-                    showWhileIndexing = true
+                    openResearchGuide()
                 } label: {
                     Label(String(localized: "statusbar.learn.label", defaultValue: "Learn"),
                           systemImage: "book.pages")
@@ -1081,20 +1084,16 @@ struct StatusBarView: View {
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             if progress == nil { showQueuePopover = false }
         }
-        // Auto-open the educational sheet the first time any indexing starts this session.
-        // Uses currentIndexingProgress (set for ALL indexing paths including manual rebuild)
-        // rather than indexingQueuePosition (nil for rebuild — only set by download-triggered indexing).
-        // hasShownThisSession resets on each app launch so a deliberate rebuild sees the sheet.
-        .onChange(of: appState.currentIndexingProgress != nil) { _, isActive in
-            guard isActive, !hasShownThisSession else { return }
-            hasShownThisSession = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                showWhileIndexing = true
-            }
-        }
-        .sheet(isPresented: $showWhileIndexing) {
-            WhileIndexingSheet()
-        }
+        // No auto-presented education modal on macOS (UI audit B7): the sheet that
+        // popped 0.6 s after indexing started interrupted first-run exploration.
+        // The "Learn" button above is the click-through to the research guide window.
+    }
+
+    /// Opens (and foregrounds) the standalone Research Guide window — the same
+    /// educational pages the removed WhileIndexing sheet showed (UI audit B7).
+    private func openResearchGuide() {
+        openWindow(id: "frus.researchGuide")
+        bringMacWindowToFront(id: "frus.researchGuide")
     }
 
     // MARK: - Computed
@@ -1361,10 +1360,10 @@ struct StatusBarView: View {
                     averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
                     averageDocumentCount: appState.indexingQueueAverageDocumentCount,
                     onLearnTapped: {
+                        // B7: a window, not a sheet — no presentation conflict with
+                        // the closing popover, so no async-after dance is needed.
                         showQueuePopover = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                            showWhileIndexing = true
-                        }
+                        openResearchGuide()
                     }
                 )
             }
@@ -1436,8 +1435,9 @@ private struct MacIndexingQueuePanel: View {
     var averageDocsPerSecond: Double = 0
     /// Rolling average document count from completed volumes; falls back to 600.
     var averageDocumentCount: Int = 600
-    /// Called when the user taps "Learn about FRUS while you wait". The popover
-    /// dismisses itself before calling this so the sheet can open cleanly.
+    /// Called when the user taps "Learn about FRUS while you wait" — the presenting
+    /// status bar closes this popover and opens the frus.researchGuide window
+    /// (UI audit B7; formerly the auto-presenting WhileIndexing sheet).
     var onLearnTapped: (() -> Void)? = nil
 
     @State private var isExpanded = false
@@ -2772,8 +2772,8 @@ enum CorpusNavValue: Hashable {
 /// The detail column hosts a `NavigationStack` (`detailPath`), so selecting a volume — and
 /// then a section within it — **pushes** progressively deeper views that each fill the
 /// resizable window, rather than opening a stack of progressively smaller fixed-size sheets.
-/// Only genuinely modal tasks (the per-volume cross-reference graph, the People index) stay
-/// as sheets.
+/// The People index and the per-volume connection graph open in their own windows
+/// (`frus.people`, `frus.crossReferenceGraph`) — no sheets remain here.
 ///
 /// ## Sidebar controls
 /// - **Sort**: toggle between newest-first (descending) and oldest-first (ascending)
@@ -2790,15 +2790,18 @@ enum CorpusNavValue: Hashable {
 ///   1.4 — Session 2026-07-04 (macOS UI audit gap 12): consumes the
 ///          `AppState.pendingBrowseVolume` hand-off (Cross-Volume Provenance rows) —
 ///          selects the volume's subseries and pushes the volume onto the detail path
+///   1.5 — Session 2026-07-04 (macOS UI audit B5): the People toolbar button opens the
+///          frus.people window instead of a `PersonIndexView` sheet (which stacked the
+///          person-detail sheet on top of itself)
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
 
     @State private var selectedSubseries: String? = nil
     @State private var searchText: String = ""
     @State private var sortDescending: Bool = true
     @State private var filterDownloaded: Bool = false
-    @State private var showPeopleSheet: Bool = false
     /// Drill-down path for the detail column: volume → section → deeper section. Owned by
     /// the window so it survives detail re-renders and is shared by every pushed level.
     @State private var detailPath: [CorpusNavValue] = []
@@ -2848,7 +2851,12 @@ struct CorpusBrowserWindowView: View {
             .navigationSplitViewColumnWidth(min: 150, ideal: 170)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
-                    Button { showPeopleSheet = true } label: {
+                    Button {
+                        // B5: the People index is a window (frus.people), browsable
+                        // alongside documents — not a modal over this browser.
+                        openWindow(id: "frus.people")
+                        bringMacWindowToFront(id: "frus.people")
+                    } label: {
                         Image(systemName: "person.2")
                     }
                     .help("Browse people mentioned in indexed volumes")
@@ -2913,22 +2921,6 @@ struct CorpusBrowserWindowView: View {
             consumePendingVolume()
         }
         .frame(minWidth: 540, minHeight: 440)
-        .sheet(isPresented: $showPeopleSheet) {
-            VStack(spacing: 0) {
-                PersonIndexView()
-                Divider()
-                HStack {
-                    Spacer()
-                    Button(String(localized: "common.done", defaultValue: "Done")) {
-                        showPeopleSheet = false
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-            }
-            .frame(minWidth: 480, minHeight: 520)
-        }
     }
 
     /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's
@@ -3010,11 +3002,11 @@ struct CorpusBrowserWindowView: View {
 
 /// Volume list for a selected FRUS subseries with per-volume cross-reference graph access.
 ///
-/// Each volume row has a small graph button (⌘-tap opens the graph sheet without
-/// navigating away from the list). The graph sheet shows `VolumeConnectionGraphView`
-/// pre-selected to that volume — corpus-wide edges, not restricted to the subseries —
-/// so the user can see every volume that cross-references the chosen volume regardless
-/// of which subseries it belongs to.
+/// Each volume row has a small graph button that opens the Cross-Reference Graph
+/// *window* (`frus.crossReferenceGraph`) in its volume-connections stage, pre-selected
+/// to that volume — corpus-wide edges, not restricted to the subseries — so the user
+/// can see every volume that cross-references the chosen volume regardless of which
+/// subseries it belongs to, while this browser stays open beside it.
 ///
 /// Version history:
 ///   1.0 — extracted from `CorpusBrowserWindowView`
@@ -3022,6 +3014,10 @@ struct CorpusBrowserWindowView: View {
 ///   1.2 — Session 75: subseries filter removed; per-volume graph button replaces toolbar
 ///          toggle; volume detail and graph sheets unified under a single `SheetContent` enum
 ///   1.3 — Session 2026-07-03: volume titles wrap to their full value (three-line clip removed)
+///   1.4 — Session 2026-07-04 (macOS UI audit B6): the graph button routes to the
+///          frus.crossReferenceGraph window via the `pendingVolumeGraph` hand-off
+///          instead of presenting `VolumeConnectionGraphView` in a local sheet — the
+///          graph is browsable content, and the window precedent already existed
 private struct SubseriesVolumeListView: View {
     let subseries: String
     let filteredVolumes: [VolumeManifestEntry]
@@ -3031,10 +3027,7 @@ private struct SubseriesVolumeListView: View {
     @Binding var path: [CorpusNavValue]
 
     @Environment(AppState.self) private var appState
-
-    /// The volume whose cross-reference graph sheet is showing. The graph stays a sheet
-    /// (a self-contained modal task); only the structural drill-down became push navigation.
-    @State private var graphVolume: VolumeManifestEntry?
+    @Environment(\.openWindow) private var openWindow
 
     // MARK: - Body
 
@@ -3047,25 +3040,6 @@ private struct SubseriesVolumeListView: View {
         .listStyle(.inset)
         .searchable(text: $searchText, prompt: "Search volumes…")
         .navigationTitle(subseries)
-        .sheet(item: $graphVolume) { vol in
-            // macOS: remove NavigationStack chrome; Done button in bottom bar
-            VStack(spacing: 0) {
-                VolumeConnectionGraphView(volumeId: vol.volumeId)
-                    .environment(appState)
-                Divider()
-                HStack {
-                    Spacer()
-                    Button(String(localized: "corpus.graph.done",
-                                  defaultValue: "Done")) {
-                        graphVolume = nil
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-            }
-            .frame(minWidth: 680, minHeight: 520)
-        }
     }
 
     // MARK: - Volume Row
@@ -3115,7 +3089,12 @@ private struct SubseriesVolumeListView: View {
                        defaultValue: "Word cloud for \(vol.volumeId)")
             )
             Button {
-                graphVolume = vol
+                // B6: hand the volume to the graph window's volume-connections stage
+                // (a window, so this list stays open while exploring the graph). The
+                // window consumes and clears pendingVolumeGraph.
+                appState.pendingVolumeGraph = vol.volumeId
+                openWindow(id: "frus.crossReferenceGraph")
+                bringMacWindowToFront(id: "frus.crossReferenceGraph")
             } label: {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
                     .font(.system(size: 11))

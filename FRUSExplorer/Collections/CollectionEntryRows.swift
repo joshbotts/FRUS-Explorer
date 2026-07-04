@@ -35,6 +35,10 @@ import SwiftUI
 ///          the `CollectionEntryInspector` heading variant — the section-defaults
 ///          control surface (highlights / notes / source note / footnotes / summary
 ///          prompt / related documents), cascading to the section's documents
+///   1.3 — Session 2026-07-04 (macOS UI audit B8): optional `onInspect` — the macOS
+///          manager passes it so the section-defaults inspector opens in the pane's
+///          trailing `.inspector` column (matching document rows) instead of the
+///          local sheet; `nil` (the iOS editor) keeps the sheet unchanged
 ///   (file) Authoring Phase 5 (excerpts): `CollectionExcerptRow` added below
 ///   (file) Authoring Phase 6 (generated apparatus): `CollectionGeneratedEntryRow` added below
 struct CollectionHeadingRow: View {
@@ -67,6 +71,10 @@ struct CollectionHeadingRow: View {
     /// Deletes the heading AND every entry in its section range. Invoked only after the
     /// user confirms; `nil` hides the menu item.
     var onDeleteSection: (() -> Void)? = nil
+    /// Shows the section-defaults inspector in the presenting pane's trailing
+    /// `.inspector` column (UI audit B8) — the macOS manager supplies it; `nil`
+    /// (the iOS editor) presents the local `CollectionEntryInspector` sheet instead.
+    var onInspect: (() -> Void)? = nil
 
     /// Focus for the title field, so the context menu's Rename can summon the keyboard.
     @FocusState private var titleFocused: Bool
@@ -134,8 +142,9 @@ struct CollectionHeadingRow: View {
                 }
                 // Section-defaults inspector (Authoring Phase 5): the heading variant of
                 // the entry inspector, cascading overrides to the section's documents.
+                // B8: the macOS manager routes it into its inspector column via onInspect.
                 Button {
-                    showSectionInspector = true
+                    if let onInspect { onInspect() } else { showSectionInspector = true }
                 } label: {
                     Image(systemName: "info.circle")
                         .foregroundStyle(.secondary)
@@ -193,7 +202,7 @@ struct CollectionHeadingRow: View {
                   systemImage: "pencil")
         }
         Button {
-            showSectionInspector = true
+            if let onInspect { onInspect() } else { showSectionInspector = true }
         } label: {
             Label(String(localized: "collection.section.defaults",
                          defaultValue: "Section Defaults…"),
