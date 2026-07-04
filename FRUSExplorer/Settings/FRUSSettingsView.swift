@@ -61,6 +61,11 @@ import AppKit
 ///   1.3 — Session 154: Data pane added (Advanced section) — JSON export via
 ///          NSSavePanel and per-note Markdown export via NSOpenPanel folder picker,
 ///          both built on ResearchDataExporter.
+///   1.4 — Session 2026-07-04 (UI audit A5+A6): `.isSelected` traits on the
+///          symbol-swap selection rows (active project, storage candidate rows,
+///          compact scope cards); the NARA API-key reveal eye (the audit called
+///          it the Zotero eye — the Zotero pane has no reveal control) flips its
+///          accessibility label with state
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -569,6 +574,8 @@ private struct SettingsProjectsPane: View {
                 }
             }
             .buttonStyle(.plain)
+            // A5: expose the active project as a trait, not just the symbol swap.
+            .accessibilityAddTraits(appState.activeProjectId == project.id ? .isSelected : [])
 
             Menu {
                 Button {
@@ -1981,6 +1988,8 @@ private struct ManageStorageSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // A5: expose selection as a trait, not just the symbol swap.
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .padding(.vertical, 4)
     }
 
@@ -2343,6 +2352,8 @@ private struct SettingsAddVolumesPane: View {
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        // A5: expose the chosen scope as a trait, not just the radio-symbol swap.
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: Subseries multi-picker
@@ -2637,6 +2648,13 @@ private struct SettingsNARAPane: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    // A6: the label flips with state so VoiceOver announces the
+                    // action the button will actually perform.
+                    .accessibilityLabel(isRevealed
+                        ? String(localized: "settings.apiKey.conceal",
+                                 defaultValue: "Conceal API key")
+                        : String(localized: "settings.apiKey.reveal",
+                                 defaultValue: "Reveal API key"))
 
                     Button("Save") {
                         saveKey()

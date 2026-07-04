@@ -102,6 +102,9 @@ final class HighlightCoordinator {
 ///          pinned trailing — the strip's ~920 pt ideal width was what forced the
 ///          main window's old 980 pt minWidth; scrolling lets it degrade gracefully
 ///          at the new 700 pt minimum instead of truncating every label
+///   1.8 — Session 2026-07-04 (UI audit A3): highlight color picker swatches gain a
+///          localized `displayName` accessibility label + help, and show the color's
+///          initial under Differentiate Without Color
 struct ResearchStripView: View {
 
     let entry: DocumentBrowserEntry?
@@ -127,6 +130,9 @@ struct ResearchStripView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
+    /// Differentiate Without Color (A3): when set, the highlight color swatches also
+    /// show the color's initial so the choices are never conveyed by hue alone.
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @State private var showAddToCollection: Bool = false
     @State private var showTagPicker: Bool = false
@@ -530,10 +536,18 @@ struct ResearchStripView: View {
                             Circle()
                                 .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
                                 .frame(width: 32, height: 32)
+                            // A3: under Differentiate Without Color the swatch also
+                            // shows the color's initial, so choices aren't hue-only.
+                            if differentiateWithoutColor {
+                                Text(String(color.displayName.prefix(1)))
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(Color.black.opacity(0.7))
+                            }
                         }
                     }
                     .buttonStyle(.plain)
-                    .help(color.rawValue.capitalized)
+                    .accessibilityLabel(color.displayName)
+                    .help(color.displayName)
                 }
             }
         }

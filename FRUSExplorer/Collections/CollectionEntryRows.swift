@@ -39,8 +39,14 @@ import SwiftUI
 ///          manager passes it so the section-defaults inspector opens in the pane's
 ///          trailing `.inspector` column (matching document rows) instead of the
 ///          local sheet; `nil` (the iOS editor) keeps the sheet unchanged
+///   1.4 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` — Move Up /
+///          Move Down as VoiceOver `accessibilityAction`s and section context-menu
+///          items, so reordering doesn't require the drag gesture
 ///   (file) Authoring Phase 5 (excerpts): `CollectionExcerptRow` added below
 ///   (file) Authoring Phase 6 (generated apparatus): `CollectionGeneratedEntryRow` added below
+///   (file) UI audit A4 (2026-07-04): shared Move Up / Move Down helpers
+///          (`entryMoveContextMenuItems`, `View.entryMoveControls`) added beside
+///          `structuralDeleteButton`; every row type gained the optional closures
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
     /// Deletes the heading entry ONLY — its contents stay and any sub-headings bubble up
@@ -75,6 +81,12 @@ struct CollectionHeadingRow: View {
     /// `.inspector` column (UI audit B8) — the macOS manager supplies it; `nil`
     /// (the iOS editor) presents the local `CollectionEntryInspector` sheet instead.
     var onInspect: (() -> Void)? = nil
+    /// Moves the section (heading + contents) one visible position up (UI audit A4);
+    /// `nil` (first row) omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the section one visible position down (UI audit A4); `nil` (last row)
+    /// omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     /// Focus for the title field, so the context menu's Rename can summon the keyboard.
     @FocusState private var titleFocused: Bool
@@ -169,6 +181,9 @@ struct CollectionHeadingRow: View {
         }
         .padding(.vertical, 4)
         .contextMenu { sectionContextMenu }
+        // A4: VoiceOver Move Up / Move Down (menu items live in sectionContextMenu).
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown,
+                           includesContextMenu: false)
         .sheet(isPresented: $showSectionInspector) {
             CollectionEntryInspector(entry: entry)
                 .environment(appState)
@@ -222,6 +237,8 @@ struct CollectionHeadingRow: View {
             }
             .disabled(!canOutdent)
         }
+        // A4: reorder without the drag gesture (shared items; the section moves whole).
+        entryMoveContextMenuItems(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
         Divider()
         if let onDelete {
             Button(role: .destructive, action: onDelete) {
@@ -243,7 +260,8 @@ struct CollectionHeadingRow: View {
 }
 
 /// A trailing delete control shared by the heading and prose rows; renders nothing when
-/// `onDelete` is `nil`.
+/// `onDelete` is `nil`. Carries an explicit localized accessibility label (UI audit A10)
+/// so VoiceOver doesn't fall back to the SF Symbol's inferred name.
 @MainActor @ViewBuilder
 func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
     if let onDelete {
@@ -253,8 +271,104 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
             Image(systemName: "trash").foregroundStyle(.red.opacity(0.6))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(String(localized: "collection.entry.delete.a11y",
+                                   defaultValue: "Remove entry"))
         .help(String(localized: "collection.entry.delete.help",
                      defaultValue: "Remove this document from the collection"))
+    }
+}
+
+// MARK: - Move Up / Move Down (UI audit A4)
+
+/// Localized title for the shared Move Up action (UI audit A4).
+@MainActor
+private var entryMoveUpTitle: String {
+    String(localized: "collection.entry.moveUp", defaultValue: "Move Up")
+}
+
+/// Localized title for the shared Move Down action (UI audit A4).
+@MainActor
+private var entryMoveDownTitle: String {
+    String(localized: "collection.entry.moveDown", defaultValue: "Move Down")
+}
+
+/// Context-menu items for the shared Move Up / Move Down reorder actions (UI audit A4).
+/// The heading row splices these into its existing section context menu; the other row
+/// types get them via ``SwiftUICore/View/entryMoveControls(onMoveUp:onMoveDown:includesContextMenu:)``.
+/// A `nil` closure (edge of the outline, or a presentation without reordering) omits its item.
+@MainActor @ViewBuilder
+func entryMoveContextMenuItems(onMoveUp: (() -> Void)?,
+                               onMoveDown: (() -> Void)?) -> some View {
+    if let onMoveUp {
+        Button(action: onMoveUp) {
+            Label(entryMoveUpTitle, systemImage: "arrow.up")
+        }
+    }
+    if let onMoveDown {
+        Button(action: onMoveDown) {
+            Label(entryMoveDownTitle, systemImage: "arrow.down")
+        }
+    }
+}
+
+/// Adds the named VoiceOver actions (and, unless suppressed, a context menu) that make
+/// outline reordering possible without drag gestures (UI audit A4): drag handles and
+/// `onMove` are invisible to VoiceOver, so every entry row exposes Move Up / Move Down
+/// as `accessibilityAction`s wired to the editors' shared move engine.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04 (UI audit A4): initial implementation
+private struct EntryMoveControls: ViewModifier {
+    /// Moves the row one visible position up; `nil` (first row) omits the action.
+    let onMoveUp: (() -> Void)?
+    /// Moves the row (a heading: its whole section) one visible position down; `nil`
+    /// (last row) omits the action.
+    let onMoveDown: (() -> Void)?
+    /// Whether to also attach a context menu with the same items. The heading row
+    /// passes `false` — it splices `entryMoveContextMenuItems` into its own section
+    /// context menu instead (a second `.contextMenu` would replace the first).
+    let includesContextMenu: Bool
+
+    func body(content: Content) -> some View {
+        if onMoveUp == nil && onMoveDown == nil {
+            content
+        } else {
+            withMenu(content)
+                .accessibilityAction(named: Text(entryMoveUpTitle)) { onMoveUp?() }
+                .accessibilityAction(named: Text(entryMoveDownTitle)) { onMoveDown?() }
+        }
+    }
+
+    /// Attaches the reorder context menu when requested.
+    @ViewBuilder
+    private func withMenu(_ content: Content) -> some View {
+        if includesContextMenu {
+            content.contextMenu {
+                entryMoveContextMenuItems(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Shared Move Up / Move Down reorder affordances for collection entry rows
+    /// (UI audit A4): named VoiceOver actions plus (optionally) a context menu with
+    /// the same items. See ``EntryMoveControls``.
+    ///
+    /// - Parameters:
+    ///   - onMoveUp: Moves the row one visible position up; `nil` omits the action.
+    ///   - onMoveDown: Moves the row one visible position down; `nil` omits the action.
+    ///   - includesContextMenu: Pass `false` when the row already has a context menu
+    ///     and splices `entryMoveContextMenuItems` into it itself (the heading row).
+    @MainActor
+    func entryMoveControls(onMoveUp: (() -> Void)?,
+                           onMoveDown: (() -> Void)?,
+                           includesContextMenu: Bool = true) -> some View {
+        modifier(EntryMoveControls(onMoveUp: onMoveUp,
+                                   onMoveDown: onMoveDown,
+                                   includesContextMenu: includesContextMenu))
     }
 }
 
@@ -264,9 +378,18 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
 /// iOS editor and the macOS manager. `onDelete`, when provided, renders an inline delete
 /// control (see ``CollectionHeadingRow``). Bold/italic/underline/colour are edited with the
 /// native text view and stored as RTF on the entry.
+///
+/// Version history:
+///   1.0 — Authoring Phase 3b (rich text)
+///   1.1 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
+///          via the shared `entryMoveControls`
 struct CollectionProseRow: View {
     @Binding var entry: CollectionEntry
     var onDelete: (() -> Void)? = nil
+    /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -281,6 +404,7 @@ struct CollectionProseRow: View {
             structuralDeleteButton(onDelete)
         }
         .padding(.vertical, 4)
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
         // A pre-RTF (Phase 3b) entry stores its body as a JSON-encoded AttributedString;
         // heal it to RTF on load so exports, sync, and .fruscollection files see RTF.
         // The editor itself decodes either format, so display doesn't depend on this.
@@ -299,6 +423,8 @@ struct CollectionProseRow: View {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 5 (excerpts): initial implementation
+///   1.1 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
+///          via the shared `entryMoveControls`
 struct CollectionExcerptRow: View {
     /// The `.excerpt` entry being displayed (read-only; excerpts are never edited in place).
     let entry: CollectionEntry
@@ -308,6 +434,10 @@ struct CollectionExcerptRow: View {
     /// Deletes the entry — macOS supplies it for the inline trash (its List has no
     /// swipe-to-delete); iOS omits it (swipe handles deletion).
     var onDelete: (() -> Void)? = nil
+    /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     /// The source highlight's colour, when the excerpt was created from one.
     private var accentColor: DocumentHighlight.Color? {
@@ -347,6 +477,7 @@ struct CollectionExcerptRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "collection.entry.excerpt.accessibility",
                                    defaultValue: "Excerpt from \(entry.documentId): \(entry.text ?? "")"))
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
     }
 }
 
@@ -368,6 +499,8 @@ struct CollectionExcerptRow: View {
 ///   1.0 — Authoring Phase 6 (core): initial implementation
 ///   1.1 — Authoring Phase 6 (blocks): `documentCount` live subtitle for the
 ///          document-driven blocks (bibliography/chronology)
+///   1.2 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
+///          via the shared `entryMoveControls`
 struct CollectionGeneratedEntryRow: View {
     /// The `.generated` entry being displayed (read-only; blocks have no editable content).
     let entry: CollectionEntry
@@ -380,6 +513,10 @@ struct CollectionGeneratedEntryRow: View {
     /// Deletes the entry — macOS supplies it for the inline trash (its List has no
     /// swipe-to-delete); iOS omits it (swipe handles deletion).
     var onDelete: (() -> Void)? = nil
+    /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     /// The typed block type, when this build knows the stored raw value.
     private var blockType: CollectionGeneratedBlockType? {
@@ -432,6 +569,7 @@ struct CollectionGeneratedEntryRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "collection.entry.generated.accessibility",
                                    defaultValue: "Generated block: \(title)"))
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
     }
 }
 
@@ -450,6 +588,8 @@ struct CollectionGeneratedEntryRow: View {
 ///          badge when the same document appears on more than one entry (A4)
 ///   1.2 — Authoring Phase 5 (excerpts): `onInsertExcerpt` threads the editors' append
 ///          action into the inspector's per-highlight "Insert as Excerpt" rows
+///   1.3 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
+///          via the shared `entryMoveControls`
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -468,6 +608,10 @@ struct EntryRow: View {
     /// by the editor so the inspector's "Insert as Excerpt" keeps the pane's entry list
     /// in sync. `nil` hides the inspector's insert affordance.
     var onInsertExcerpt: ((CollectionExcerptCapture) -> Void)? = nil
+    /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     @State private var showInspector = false
@@ -589,6 +733,7 @@ struct EntryRow: View {
             }
         }
         .padding(.vertical, 4)
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
         .sheet(isPresented: $showInspector) {
             CollectionEntryInspector(entry: entry, onInsertExcerpt: onInsertExcerpt)
                 .environment(appState)

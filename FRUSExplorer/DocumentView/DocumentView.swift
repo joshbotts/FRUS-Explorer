@@ -192,6 +192,9 @@ enum DocumentSheet: Identifiable {
 ///          `activeTab`, so on iOS nothing visibly happened) and searches the resolved
 ///          rollup identity (`vm.selectedPersonRollupId`, matching the displayed count)
 ///          instead of the cross-volume-colliding raw `personRef`.
+///   3.8 — Session 2026-07-04 (UI audit A3): highlight color picker swatches use the
+///          localized `displayName` for their accessibility label and show the color's
+///          initial under Differentiate Without Color
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -253,6 +256,9 @@ struct DocumentView: View {
     /// would silently no-op. `sizeClass == .regular` is true on *all* iPads and
     /// is therefore the wrong proxy for multi-window capability.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Differentiate Without Color (A3): when set, the highlight color swatches also
+    /// show the color's initial so the choices are never conveyed by hue alone.
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @Query private var highlights:             [DocumentHighlight]
     @Query private var documentNotes:          [ResearchNote]
@@ -1822,10 +1828,17 @@ struct DocumentView: View {
                                 Circle()
                                     .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
                                     .frame(width: 44, height: 44)
+                                // A3: under Differentiate Without Color the swatch also
+                                // shows the color's initial, so choices aren't hue-only.
+                                if differentiateWithoutColor {
+                                    Text(String(color.displayName.prefix(1)))
+                                        .font(.callout.weight(.bold))
+                                        .foregroundStyle(Color.black.opacity(0.7))
+                                }
                             }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(color.rawValue.capitalized)
+                        .accessibilityLabel(color.displayName)
                     }
                 }
             }

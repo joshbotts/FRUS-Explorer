@@ -92,6 +92,11 @@ import UniformTypeIdentifiers
 ///          Export ⌘E); the outline List gains selection (A7): ↑/↓ traverse
 ///          entries, ↩ (and double-click on document rows) toggles the selected
 ///          entry's inspector column
+///   1.15 — Session 2026-07-04 (UI audit A4): every entry row exposes Move Up /
+///          Move Down as VoiceOver actions + context-menu items via the shared
+///          `entryMoveControls`; `moveVisibleRowUp/Down` reuse the drag engine
+///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
+///          sections and collapsed sections are hopped whole
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -818,7 +823,8 @@ private struct CollectionDetailPane: View {
                     let rows = CollectionOutline.visibleRows(
                         in: outline, collapsedHeadingIds: collapsedHeadingIds)
                     ForEach(rows) { row in
-                        outlineRow(row, outline: outline, duplicateKeys: duplicateKeys)
+                        outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
+                                   rows: rows)
                             .padding(.leading, outlineIndent(for: row))
                             // Selectable identity for A7 keyboard traversal — the
                             // Composition/Front Matter sections above carry no tag,
@@ -857,12 +863,22 @@ private struct CollectionDetailPane: View {
 
     /// Builds the view for one visible outline row (see the iOS editor's counterpart).
     /// Bindings index into `sortedEntries`, kept in `sortOrder` order (reindexed 0..n
-    /// after every mutation), so positions align with the linearized outline.
+    /// after every mutation), so positions align with the linearized outline. `rows`
+    /// (the full visible-row list) locates this row's visible position for the A4
+    /// Move Up / Move Down actions.
     @ViewBuilder
     private func outlineRow(_ row: CollectionOutline.VisibleRow,
                             outline: [CollectionOutline.OutlineItem],
-                            duplicateKeys: Set<String>) -> some View {
+                            duplicateKeys: Set<String>,
+                            rows: [CollectionOutline.VisibleRow]) -> some View {
         let entry = sortedEntries[row.index]
+        // A4 reorder closures: nil at the outline's edges so the actions disappear
+        // rather than silently no-op.
+        let pos = rows.firstIndex { $0.id == row.id } ?? 0
+        let moveUp: (() -> Void)? = pos > 0
+            ? { moveVisibleRowUp(pos, rows: rows) } : nil
+        let moveDown: (() -> Void)? = canMoveVisibleRowDown(pos, rows: rows)
+            ? { moveVisibleRowDown(pos, rows: rows) } : nil
         switch entry.entryKind {
         case .document:
             let nodeKey = "\(entry.volumeId)/\(entry.documentId)"
@@ -879,7 +895,9 @@ private struct CollectionDetailPane: View {
                         volumeId: entry.volumeId,
                         entryIndex: row.index)
                 },
-                onDelete: { deleteEntry(at: row.index) }
+                onDelete: { deleteEntry(at: row.index) },
+                onMoveUp: moveUp,
+                onMoveDown: moveDown
             )
             // Double-click opens/toggles the inspector (A7), matching the ↩ key on
             // the selected row. `simultaneousGesture` so the first click still
@@ -904,20 +922,30 @@ private struct CollectionDetailPane: View {
                 onIndent: { indentSection(at: row.index) },
                 onOutdent: { outdentSection(at: row.index) },
                 onDeleteSection: { deleteSection(at: row.index) },
-                onInspect: { toggleInspector(for: entry.id) }
+                onInspect: { toggleInspector(for: entry.id) },
+                onMoveUp: moveUp,
+                onMoveDown: moveDown
             )
         case .prose:
             CollectionProseRow(entry: $sortedEntries[row.index],
-                               onDelete: { deleteEntry(at: row.index) })
+                               onDelete: { deleteEntry(at: row.index) },
+                               onMoveUp: moveUp,
+                               onMoveDown: moveDown)
         case .excerpt:
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
-                                 onDelete: { deleteEntry(at: row.index) })
+                                 onDelete: { deleteEntry(at: row.index) },
+                                 onMoveUp: moveUp,
+                                 onMoveDown: moveDown)
         case .generated:
             CollectionGeneratedEntryRow(entry: entry,
                                         documentCount: sortedEntries.count { $0.entryKind == .document },
-                                        onDelete: { deleteEntry(at: row.index) })
+                                        onDelete: { deleteEntry(at: row.index) },
+                                        onMoveUp: moveUp,
+                                        onMoveDown: moveDown)
         case .unrecognized:
+            // Deliberately no reorder actions: the entry belongs to a newer build
+            // (Authoring Phase 1 sync guard) and offers no controls at all.
             UnrecognizedEntryRow()
         }
     }
@@ -951,6 +979,50 @@ private struct CollectionDetailPane: View {
             sortedEntries, fromIndex: from, toOffset: to) else { return }
         sortedEntries = reordered
         finishOutlineMutation()
+    }
+
+    // MARK: - Move Up / Move Down (UI audit A4)
+
+    /// Moves the visible row at `pos` one visible position up — inserts it before the
+    /// previous visible row (hopping a collapsed section whole, matching what the user
+    /// sees). Drives the rows' VoiceOver/context-menu Move Up action; the same engine
+    /// as drag reorder, so heading rows carry their sections.
+    private func moveVisibleRowUp(_ pos: Int, rows: [CollectionOutline.VisibleRow]) {
+        guard pos > 0 else { return }
+        moveVisibleRows(IndexSet(integer: pos), to: pos - 1, visible: rows.map(\.index))
+    }
+
+    /// Whether the visible row at `pos` can move down: something must exist after its
+    /// moved block (a heading's block is its whole `sectionRange`). Any entry after the
+    /// block is visible whenever this row is (a block is followed by a same-or-shallower
+    /// item whose ancestors are also this row's ancestors), so this is exactly "a
+    /// visible target exists".
+    private func canMoveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) -> Bool {
+        guard rows.indices.contains(pos) else { return false }
+        return movedBlockEnd(of: rows[pos].index) < sortedEntries.count
+    }
+
+    /// Moves the visible row at `pos` one visible position down — inserts it after the
+    /// first visible row past its own moved block (so an expanded heading hops its next
+    /// sibling block, and a collapsed section below is hopped whole). Drives the rows'
+    /// VoiceOver/context-menu Move Down action.
+    private func moveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) {
+        let visible = rows.map(\.index)
+        guard rows.indices.contains(pos) else { return }
+        let blockEnd = movedBlockEnd(of: visible[pos])
+        guard let nextPos = visible.indices.first(where: { visible[$0] >= blockEnd }) else { return }
+        moveVisibleRows(IndexSet(integer: pos), to: nextPos + 1, visible: visible)
+    }
+
+    /// The exclusive end of the block `applyingMove` would carry for the entry at
+    /// `fullIndex`: a heading's whole `sectionRange`, any other row just itself.
+    private func movedBlockEnd(of fullIndex: Int) -> Int {
+        guard sortedEntries.indices.contains(fullIndex) else { return sortedEntries.count }
+        if sortedEntries[fullIndex].entryKind == .heading {
+            let items = CollectionOutline.linearize(sortedEntries)
+            return CollectionOutline.sectionRange(of: fullIndex, in: items).upperBound
+        }
+        return fullIndex + 1
     }
 
     /// Deletes a single entry (a document/prose row's inline trash, or a heading's
@@ -1208,6 +1280,7 @@ private struct CollectionDetailPane: View {
 /// - An external-link button to open the document on history.state.gov
 /// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column
 ///   (UI audit B8 — previously a modal sheet that blocked the outline)
+/// - Move Up / Move Down as VoiceOver actions + context-menu items (UI audit A4)
 private struct MacEntryRow: View {
 
     @Binding var entry: CollectionEntry
@@ -1224,6 +1297,10 @@ private struct MacEntryRow: View {
     let onInspect: () -> Void
     let onNewNote: () -> Void
     let onDelete: () -> Void
+    /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
+    var onMoveUp: (() -> Void)? = nil
+    /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
+    var onMoveDown: (() -> Void)? = nil
 
     @Environment(\.openURL) private var openURL
 
@@ -1351,12 +1428,15 @@ private struct MacEntryRow: View {
                         .foregroundStyle(.red.opacity(0.6))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "collection.entry.delete.a11y",
+                                           defaultValue: "Remove entry"))
                 .help(String(localized: "collection.entry.delete.help",
                              defaultValue: "Remove this document from the collection"))
             }
             .padding(.top, 2)
         }
         .padding(.vertical, 4)
+        .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
     }
 
     // MARK: - Note Menu

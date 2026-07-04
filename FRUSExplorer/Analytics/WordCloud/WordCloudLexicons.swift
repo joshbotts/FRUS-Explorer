@@ -31,6 +31,9 @@ enum WordSentiment: Sendable {
 ///
 /// Version history:
 ///   1.0 — Word Cloud v2: sentiment & concept lenses
+///   1.1 — Session 2026-07-04 (UI audit A8): `noColorMark`/`markedTerm`/`bareTerm` —
+///          the +/− prefix encoding the sentiment lens and its exports use under
+///          Differentiate Without Color
 enum WordCloudLexicons {
 
     /// On-disk shape of `word-cloud-lexicons.json`.
@@ -90,5 +93,35 @@ enum WordCloudLexicons {
         if sentimentPositive.contains(lower) { return .positive }
         if sentimentNegative.contains(lower) { return .negative }
         return nil
+    }
+
+    // MARK: - Differentiate Without Color marks (UI audit A8)
+
+    /// The visible prefix mark for the Differentiate Without Color sentiment
+    /// encoding (UI audit A8): "+" for positive terms, "−" (U+2212) for negative,
+    /// `nil` for neutral — so the sentiment lens is never a hue-only encoding.
+    static func noColorMark(for term: String) -> String? {
+        switch polarity(of: term) {
+        case .positive: return "+"
+        case .negative: return "−"
+        case .none:     return nil
+        }
+    }
+
+    /// The display form of a term under the no-color sentiment encoding: the term
+    /// prefixed with its ``noColorMark(for:)``, or unchanged when neutral.
+    static func markedTerm(_ term: String) -> String {
+        guard let mark = noColorMark(for: term) else { return term }
+        return mark + term
+    }
+
+    /// Strips a leading no-color mark from a display term, recovering the bare
+    /// term for polarity lookups and analyze/search hand-offs. Tokenised terms
+    /// never begin with "+" or "−", so the strip is unambiguous.
+    static func bareTerm(_ display: String) -> String {
+        if display.hasPrefix("+") || display.hasPrefix("−") {
+            return String(display.dropFirst())
+        }
+        return display
     }
 }

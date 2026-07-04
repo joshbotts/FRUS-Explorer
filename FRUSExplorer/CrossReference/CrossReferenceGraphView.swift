@@ -1058,6 +1058,8 @@ struct CrossReferenceGraphView: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(String(localized: "graph.panel.close.a11y",
+                                   defaultValue: "Close details panel"))
         .padding(6)
         .controlHelp(
             String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
@@ -1162,6 +1164,8 @@ struct CrossReferenceGraphView: View {
                         .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
+                        .accessibilityLabel(String(localized: "graph.navigateBack.a11y",
+                                                   defaultValue: "Back to previous focus"))
                         .background(Color.accentColor.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }

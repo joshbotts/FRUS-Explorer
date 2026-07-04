@@ -113,6 +113,12 @@ import UIKit
 ///          entry, back matter at the end — fully movable afterwards); `.generated`
 ///          entries render as `CollectionGeneratedEntryRow` (movable/deletable like
 ///          prose, no body-depth or inspector controls)
+///   2.8 — Session 2026-07-04 (UI audit A4): every entry row exposes Move Up /
+///          Move Down as VoiceOver actions + context-menu items via the shared
+///          `entryMoveControls`; `moveVisibleRowUp/Down` reuse the drag engine
+///          (`moveVisibleRows`) in visible-row coordinates, so headings carry their
+///          sections and collapsed sections are hopped whole — reordering no longer
+///          requires EditButton drag handles
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -649,8 +655,13 @@ struct CollectionEditorView: View {
                 } label: {
                     Image(systemName: showPreviewPane ? "eye.fill" : "eye")
                 }
-                .accessibilityLabel(String(localized: "collection.editor.preview.toggle",
-                                           defaultValue: "Show live preview"))
+                // A6: the label flips with state so VoiceOver announces the action
+                // the button will actually perform.
+                .accessibilityLabel(showPreviewPane
+                    ? String(localized: "collection.editor.preview.toggle.hide",
+                             defaultValue: "Hide live preview")
+                    : String(localized: "collection.editor.preview.toggle",
+                             defaultValue: "Show live preview"))
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -658,8 +669,12 @@ struct CollectionEditorView: View {
                 } label: {
                     Image(systemName: "sidebar.trailing")
                 }
-                .accessibilityLabel(String(localized: "collection.editor.inspector.toggle",
-                                           defaultValue: "Show collection details"))
+                // A6: stateful label (see the preview toggle above).
+                .accessibilityLabel(showDetailsInspector
+                    ? String(localized: "collection.editor.inspector.toggle.hide",
+                             defaultValue: "Hide collection details")
+                    : String(localized: "collection.editor.inspector.toggle",
+                             defaultValue: "Show collection details"))
             }
         }
     }
@@ -986,7 +1001,8 @@ struct CollectionEditorView: View {
                 let rows = CollectionOutline.visibleRows(
                     in: outline, collapsedHeadingIds: collapsedHeadingIds)
                 ForEach(rows) { row in
-                    outlineRow(row, outline: outline, duplicateKeys: duplicateKeys)
+                    outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
+                               rows: rows)
                         .padding(.leading, outlineIndent(for: row))
                 }
                 .onMove { indices, newOffset in
@@ -1081,12 +1097,21 @@ struct CollectionEditorView: View {
     /// from Phase 3; heading rows gain the outline controls (depth typography, collapse
     /// chevron, section context menu). Bindings index into `sortedEntries`, which is
     /// kept in `sortOrder` order (reindexed 0..n after every mutation), so positions
-    /// align with the linearized outline.
+    /// align with the linearized outline. `rows` (the full visible-row list) locates
+    /// this row's visible position for the A4 Move Up / Move Down actions.
     @ViewBuilder
     private func outlineRow(_ row: CollectionOutline.VisibleRow,
                             outline: [CollectionOutline.OutlineItem],
-                            duplicateKeys: Set<String>) -> some View {
+                            duplicateKeys: Set<String>,
+                            rows: [CollectionOutline.VisibleRow]) -> some View {
         let entry = sortedEntries[row.index]
+        // A4 reorder closures: nil at the outline's edges so the actions disappear
+        // rather than silently no-op.
+        let pos = rows.firstIndex { $0.id == row.id } ?? 0
+        let moveUp: (() -> Void)? = pos > 0
+            ? { moveVisibleRowUp(pos, rows: rows) } : nil
+        let moveDown: (() -> Void)? = canMoveVisibleRowDown(pos, rows: rows)
+            ? { moveVisibleRowDown(pos, rows: rows) } : nil
         switch entry.entryKind {
         case .document:
             let key = "\(entry.volumeId)/\(entry.documentId)"
@@ -1096,7 +1121,9 @@ struct CollectionEditorView: View {
                      volumeTitle: volumeTitle(for: entry),
                      documentDate: documentDates[key],
                      isDuplicate: duplicateKeys.contains(key),
-                     onInsertExcerpt: { capture in appendExcerpts([capture]) })
+                     onInsertExcerpt: { capture in appendExcerpts([capture]) },
+                     onMoveUp: moveUp,
+                     onMoveDown: moveDown)
         case .heading:
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
             CollectionHeadingRow(
@@ -1111,22 +1138,32 @@ struct CollectionEditorView: View {
                 canOutdent: CollectionOutline.canOutdent(row.index, in: outline),
                 onIndent: { indentSection(at: row.index) },
                 onOutdent: { outdentSection(at: row.index) },
-                onDeleteSection: { deleteSection(at: row.index) }
+                onDeleteSection: { deleteSection(at: row.index) },
+                onMoveUp: moveUp,
+                onMoveDown: moveDown
             )
         case .prose:
-            CollectionProseRow(entry: $sortedEntries[row.index])
+            CollectionProseRow(entry: $sortedEntries[row.index],
+                               onMoveUp: moveUp,
+                               onMoveDown: moveDown)
         case .excerpt:
             // Movable/deletable like prose; iOS deletion stays on swipe (no inline trash).
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
-                                 onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil)
+                                 onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
+                                 onMoveUp: moveUp,
+                                 onMoveDown: moveDown)
         case .generated:
             // Movable/deletable like prose; no body-depth or inspector controls —
             // the block resolves at export and in the live preview (Phase 6).
             CollectionGeneratedEntryRow(entry: entry,
                                         documentCount: sortedEntries.count { $0.entryKind == .document },
-                                        onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil)
+                                        onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
+                                        onMoveUp: moveUp,
+                                        onMoveDown: moveDown)
         case .unrecognized:
+            // Deliberately no reorder actions: the entry belongs to a newer build
+            // (Authoring Phase 1 sync guard) and offers no controls at all.
             UnrecognizedEntryRow()
         }
     }
@@ -1182,6 +1219,50 @@ struct CollectionEditorView: View {
             sortedEntries, fromIndex: from, toOffset: to) else { return }
         sortedEntries = reordered
         finishOutlineMutation()
+    }
+
+    // MARK: - Move Up / Move Down (UI audit A4)
+
+    /// Moves the visible row at `pos` one visible position up — inserts it before the
+    /// previous visible row (hopping a collapsed section whole, matching what the user
+    /// sees). Drives the rows' VoiceOver/context-menu Move Up action; the same engine
+    /// as drag reorder, so heading rows carry their sections.
+    private func moveVisibleRowUp(_ pos: Int, rows: [CollectionOutline.VisibleRow]) {
+        guard pos > 0 else { return }
+        moveVisibleRows(IndexSet(integer: pos), to: pos - 1, visible: rows.map(\.index))
+    }
+
+    /// Whether the visible row at `pos` can move down: something must exist after its
+    /// moved block (a heading's block is its whole `sectionRange`). Any entry after the
+    /// block is visible whenever this row is (a block is followed by a same-or-shallower
+    /// item whose ancestors are also this row's ancestors), so this is exactly "a
+    /// visible target exists".
+    private func canMoveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) -> Bool {
+        guard rows.indices.contains(pos) else { return false }
+        return movedBlockEnd(of: rows[pos].index) < sortedEntries.count
+    }
+
+    /// Moves the visible row at `pos` one visible position down — inserts it after the
+    /// first visible row past its own moved block (so an expanded heading hops its next
+    /// sibling block, and a collapsed section below is hopped whole). Drives the rows'
+    /// VoiceOver/context-menu Move Down action.
+    private func moveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) {
+        let visible = rows.map(\.index)
+        guard rows.indices.contains(pos) else { return }
+        let blockEnd = movedBlockEnd(of: visible[pos])
+        guard let nextPos = visible.indices.first(where: { visible[$0] >= blockEnd }) else { return }
+        moveVisibleRows(IndexSet(integer: pos), to: nextPos + 1, visible: visible)
+    }
+
+    /// The exclusive end of the block `applyingMove` would carry for the entry at
+    /// `fullIndex`: a heading's whole `sectionRange`, any other row just itself.
+    private func movedBlockEnd(of fullIndex: Int) -> Int {
+        guard sortedEntries.indices.contains(fullIndex) else { return sortedEntries.count }
+        if sortedEntries[fullIndex].entryKind == .heading {
+            let items = CollectionOutline.linearize(sortedEntries)
+            return CollectionOutline.sectionRange(of: fullIndex, in: items).upperBound
+        }
+        return fullIndex + 1
     }
 
     /// Deletes the swiped visible rows (mapped to full-outline coordinates). Deleting a
