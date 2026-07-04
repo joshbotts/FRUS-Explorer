@@ -180,6 +180,13 @@ enum ProseRichText {
 ///          whichever editor's palette button was clicked last — a pick after switching
 ///          editors used to silently recolor (and persist) the previous editor's entry;
 ///          the panel's target is also cleared on editor teardown
+///   1.3 — Dynamic Type A2 (iOS): `UITextView.adjustsFontForContentSizeCategory` is enabled
+///          so newly typed text tracks the reader's text-size setting, and prose loaded from
+///          RTF (which round-trips *concrete* fonts the flag can't rescale) is remapped
+///          through `UIFontMetrics` for display. The scaling is display-only — edits are
+///          normalised back to a canonical base size before serialising, so stored RTF stays
+///          byte-identical across content-size categories and exports/plain-projection are
+///          unaffected. macOS `NSTextView` does not Dynamic-Type the same way and is unchanged.
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
@@ -226,21 +233,102 @@ private struct RichTextPlatformEditor {
     /// The initial attributed content — from RTF, else a legacy Phase 3b JSON blob (converted
     /// with its bold/italic intact, so pre-RTF prose loads faithfully and the first edit
     /// re-saves it as RTF), else the plain fallback.
+    ///
+    /// On iOS the loaded fonts are additionally remapped through `UIFontMetrics` for **display**
+    /// (see ``displayScaledForDynamicType(_:)``): RTF round-trips *concrete* fonts (e.g.
+    /// `systemFont(ofSize: 13)`), which `adjustsFontForContentSizeCategory` cannot rescale on
+    /// its own, so without this step existing prose ignores the reader's text-size setting. The
+    /// scaling is display-only — ``report(_:)`` normalises fonts back to their base size before
+    /// serialising, so stored RTF stays independent of the content-size category.
     fileprivate func initialAttributed() -> NSAttributedString {
-        if let stored = initialRTF {
-            if let ns = ProseRichText.decodedRTF(stored) { return ns }
-            if let legacy = ProseRichText.legacyNSAttributedString(fromJSON: stored) { return legacy }
-        }
-        return NSAttributedString(string: plainFallback)
+        let base: NSAttributedString = {
+            if let stored = initialRTF {
+                if let ns = ProseRichText.decodedRTF(stored) { return ns }
+                if let legacy = ProseRichText.legacyNSAttributedString(fromJSON: stored) { return legacy }
+            }
+            return NSAttributedString(string: plainFallback)
+        }()
+        #if os(iOS)
+        return Self.displayScaledForDynamicType(base)
+        #else
+        return base
+        #endif
     }
 
     /// Serialises the text view's storage to `(rtf, plainText)` and reports it.
+    ///
+    /// On iOS the display fonts carry `UIFontMetrics`-scaled point sizes (see
+    /// ``initialAttributed()``); they are normalised back to their base size here so the stored
+    /// RTF never bakes in the reader's current Dynamic Type setting. Bold/italic/underline/colour/
+    /// link — everything the exporters and the plain projection read — is preserved, so exports
+    /// and `CollectionProse` are unaffected by the display scaling.
     fileprivate func report(_ storage: NSAttributedString) {
-        let rtf = try? storage.data(from: NSRange(location: 0, length: storage.length),
+        #if os(iOS)
+        let toStore = Self.baseNormalizedForStorage(storage)
+        #else
+        let toStore = storage
+        #endif
+        let rtf = try? toStore.data(from: NSRange(location: 0, length: toStore.length),
                                     documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
-        onChange(rtf, storage.string)
+        onChange(rtf, toStore.string)
     }
 }
+
+#if os(iOS)
+extension RichTextPlatformEditor {
+    /// The text style whose `UIFontMetrics` drives display scaling. `.body` is the idiomatic
+    /// reference style for scaling arbitrary body prose and tracks the editor's `.callout`
+    /// typing font closely.
+    fileprivate static var proseMetricsStyle: UIFont.TextStyle { .body }
+
+    /// The canonical point size all fonts collapse to for storage. The exporters and
+    /// `CollectionProse` read only *traits* (bold/italic), underline, colour, and link from a
+    /// run's font — never its point size — so pinning a single base size for storage is
+    /// semantically lossless and makes the serialised RTF fully deterministic (identical bytes
+    /// at every Dynamic Type setting). 13 pt is the historical body size these entries were
+    /// authored at.
+    fileprivate static var storageBaseSize: CGFloat { 13 }
+
+    /// A copy of `attributed` with every `.font` run remapped through `UIFontMetrics` so the
+    /// concrete point sizes RTF stored become Dynamic-Type responsive. Symbolic traits (bold/
+    /// italic) and every other attribute are preserved; only the point size changes. Runs
+    /// without a `.font` are given the metrics-scaled base font so plain-text prose scales too.
+    fileprivate static func displayScaledForDynamicType(_ attributed: NSAttributedString) -> NSAttributedString {
+        let metrics = UIFontMetrics(forTextStyle: proseMetricsStyle)
+        let baseFont = UIFont.preferredFont(forTextStyle: .callout)
+        let result = NSMutableAttributedString(attributedString: attributed)
+        let full = NSRange(location: 0, length: result.length)
+        result.enumerateAttribute(.font, in: full, options: []) { value, range, _ in
+            let source = (value as? UIFont) ?? baseFont
+            result.addAttribute(.font, value: metrics.scaledFont(for: source), range: range)
+        }
+        return result
+    }
+
+    /// Strips display scaling for storage: every `.font` run is reset to ``storageBaseSize``
+    /// while its symbolic traits are preserved, so the serialised RTF is byte-identical
+    /// regardless of the reader's Dynamic Type setting. All non-font attributes (underline,
+    /// colour, link) are untouched. Point size carries no semantics the exporters read, so this
+    /// collapse is lossless for every downstream consumer.
+    fileprivate static func baseNormalizedForStorage(_ attributed: NSAttributedString) -> NSAttributedString {
+        let result = NSMutableAttributedString(attributedString: attributed)
+        let full = NSRange(location: 0, length: result.length)
+        result.enumerateAttribute(.font, in: full, options: []) { value, range, _ in
+            guard let font = value as? UIFont else { return }
+            let traits = font.fontDescriptor.symbolicTraits
+            let base = UIFont.systemFont(ofSize: storageBaseSize)
+            if traits.isEmpty {
+                result.addAttribute(.font, value: base, range: range)
+            } else if let descriptor = base.fontDescriptor.withSymbolicTraits(traits) {
+                result.addAttribute(.font, value: UIFont(descriptor: descriptor, size: storageBaseSize), range: range)
+            } else {
+                result.addAttribute(.font, value: base, range: range)
+            }
+        }
+        return result
+    }
+}
+#endif
 
 #if os(macOS)
 
@@ -576,7 +664,14 @@ extension RichTextPlatformEditor: UIViewRepresentable {
         textView.allowsEditingTextAttributes = true   // Bold / Italic / Underline in the edit menu
         textView.isEditable = true
         textView.backgroundColor = .clear
+        // Dynamic Type (A2): `.preferredFont(forTextStyle:)` is a metrics-scaled font, and
+        // `adjustsFontForContentSizeCategory` re-derives newly typed text's size when the reader
+        // changes their text-size setting. Existing prose loaded from RTF carries *concrete*
+        // fonts that this flag can't rescale, so `initialAttributed()` remaps those runs through
+        // `UIFontMetrics` for display; `report(_:)` normalises them back to a base size for
+        // storage (see those methods).
         textView.font = .preferredFont(forTextStyle: .callout)
+        textView.adjustsFontForContentSizeCategory = true
         textView.delegate = context.coordinator
         textView.attributedText = initialAttributed()
         context.coordinator.textView = textView
