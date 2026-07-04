@@ -190,6 +190,46 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          alternative). `extractHeader` excludes `.footnote` *descendants* of `<head>`
 ///          via `plainTextExcludingFootnotes` (68 titles nested the note inside
 ///          `<hi>`/`<persName>`/`<p>` markup). `currentDateIndexVersion` → 15.
+///   4.5 — Source Explorer Phase 3 step 1 (Session 2026-07-03): `volume_sources` gains
+///          normalized match-key columns `lot_file_norm` (canonical compact lot key,
+///          matching `document_sources.lot_file_norm`) and `decimal_class`
+///          (subject-numeric / decimal class-leaf location), populated from the
+///          reworked `SourcesParserDelegate` (shared lot grammar, outline inheritance,
+///          series validity gate, `kind='bibliography'` for listofworks rows).
+///          Drop-and-recreate migration keyed on the missing `lot_file_norm` column;
+///          `currentDateIndexVersion` → 18.
+///   4.6 — Source Explorer Phase 3 step 2 (Session 2026-07-03): matcher rework — no
+///          parse-output change, so no index-version bump. `relatedByLotFile` is a
+///          single indexed `lot_file_norm` equality (the 4-variant `IN` retired; both
+///          sides write the canonical compact key at parse time, so coverage is
+///          structural). `relatedByCollection` becomes a normalized comma-boundary
+///          prefix match (doc side appends ", Box N") tolerant of both stored
+///          record-group forms ("84" / "RG-84"). New volume-level match paths:
+///          `relatedByDecimalClass` (front-matter class leaves vs decimal/CFPF rows,
+///          S3 lean — prefix match, no period segmenting) and the presidential-library
+///          path (`archivalNeighbors(forLotFile:…)` gains `repository`/`decimalClass`
+///          and routes library repositories through `relatedByPresidentialLibrary`).
+///          LIKE inputs are wildcard-escaped; basis strings localized.
+///   4.7 — Source Explorer Phase 3 verification fixes (Session 2026-07-03): the class
+///          path made real end-to-end. `document_sources` gains an indexed
+///          `decimal_class` column — the canonical class location
+///          (`SourceNoteParser.decimalClassKey`: collapsed whitespace, Unicode
+///          dashes → ASCII hyphen) extracted from central-files-shaped citations
+///          (`.centralFiles`, `.cfpfFile`, and `.naraCollection` rows naming the
+///          central files, whose subject-numeric leaf was previously unstored).
+///          `relatedByDecimalClass` becomes an indexed equality/prefix lookup on that
+///          column (the era-gated `series_name` LIKE fan-out retired — it starved:
+///          structured rows were invisible to it and narrative decimal rows often
+///          stored no location). `currentDateIndexVersion` → 19.
+///   4.8 — Source Explorer Phase 3 adversarial-review fixes (Session 2026-07-03):
+///          real bibliography detection (`Published Sources` pseudo-heading subtrees
+///          and section heads — the Version-18 `listofworks` trigger matched zero
+///          corpus volumes), class-gate hardening (run-together `RG59`/`NYFRC`,
+///          numbered issuances, PRC accessions rejected; citation class scan bounded
+///          to the citation sentence), plural/spaced-suffix lot grammar, and
+///          matcher doc-comment corrections (`relatedByDecimalClass` is a covering-
+///          index scan, not a seek — SQLite's LIKE prefix optimization cannot engage
+///          on the BINARY-collated column). `currentDateIndexVersion` → 20.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -404,7 +444,64 @@ public actor IndexingPipeline {
     ///   their own presidential-library identity instead of `citation_era='foreign'`
     ///   junk (~7k rows); bare `File <number>` citations keep dotted decimals intact.
     ///   A reindex rebuilds `document_sources` with the corrected keys.
-    public static let currentDateIndexVersion: Int = 17
+    /// - Version 18: front-matter keying, inheritance, and normalized keys (Source
+    ///   Explorer Phase 3 step 1, Session 2026-07-03). 85.6% of front-matter source
+    ///   items carried no usable match key. `SourcesParserDelegate` now (1) extracts
+    ///   lots with the corpus-wide grammar shared with the document side
+    ///   (`SourceNoteParser.firstLotReference` — F/W/M designators, en/em-dash and
+    ///   run-together forms, `Lot File(s)` infix; the old D-only regex missed 507
+    ///   items containing "Lot" and keyed junk like `"Files 74 D 131"`); (2) inherits
+    ///   record group / repository from ancestor outline headings down the tree;
+    ///   (3) writes normalized keys — `volume_sources.lot_file_norm` (same compact
+    ///   form as `document_sources.lot_file_norm`) and `volume_sources.decimal_class`
+    ///   (subject-numeric / decimal class-leaf location, doc-side verbatim form);
+    ///   (4) gates the junk-prone series-name heuristic (bad captures store nil);
+    ///   (5) introduces `kind='bibliography'` for `listofworks` rows — an encoding
+    ///   later found unused by the corpus (see Version 20, which detects the real
+    ///   published-works encodings). The table is
+    ///   dropped and recreated when the new columns are missing; a reindex repopulates
+    ///   `volume_sources` corpus-wide with the new keys. The shared lot grammar also
+    ///   lets loose document notes match `Lot File 57 D 577` styles, refining some
+    ///   `document_sources` classifications on re-parse.
+    /// - Version 19: decimal / subject-numeric class keys, end-to-end (Source Explorer
+    ///   Phase 3 verification, Session 2026-07-03). The 13-volume real-TEI
+    ///   verification sample keyed **zero** class leaves and the doc side had nothing
+    ///   to match them against: (1) front-matter `classLeafKey` only tried the
+    ///   after-final-colon segment, but the dominant real shapes lead with the class
+    ///   (`POL 3 UAR: Arab unity`) or list several (`611.80; 611.86; …: subject`) —
+    ///   both now keyed via the shared `SourceNoteParser.decimalClassKey` gate;
+    ///   (2) `document_sources` gains a `decimal_class` column (indexed) storing the
+    ///   canonical class location for central-files-shaped citations — narrative
+    ///   decimal rows (`Central Files, 788.5/9–1361` → `788.5`), subject-numeric
+    ///   `structured` rows (`RG 59, Central Files 1967–69, POL 27 ARAB-ISR` →
+    ///   `POL 27 ARAB-ISR`, previously dropped entirely), and CFPF rows;
+    ///   (3) both sides canonicalize Unicode dashes to the ASCII hyphen — TEI front
+    ///   matter writes `POL 27 ARAB–ISR` (en-dash) while document notes carry
+    ///   `POL 27 ARAB-ISR` (hyphen), so the step-1 "verbatim" storage could never
+    ///   match. Both tables drop and recreate on the missing column; a reindex
+    ///   repopulates them corpus-wide.
+    /// - Version 20: Source Explorer Phase 3 adversarial-review fixes
+    ///   (Session 2026-07-03). (1) The bibliography exclusion is detected from the
+    ///   encodings the corpus actually uses — the Version-18 `listofworks` trigger
+    ///   matched **zero** of the 694 mirrored volumes, so the audit's ~2,600
+    ///   masquerading published-works rows were still keyed `item`:
+    ///   `SourcesParserDelegate` now recognizes `Published Sources` pseudo-heading
+    ///   paragraphs inside ordinary sources divs (~3,000 items across ~160 volumes,
+    ///   plus p-encoded periodical citations) and published-sources section heads
+    ///   (frus1969-76v34/v36), marking their rows `kind='bibliography'`.
+    ///   (2) The shared class gate rejects run-together record-group /
+    ///   records-center / numbered-issuance identifiers (`RG59`, `NYFRC 84-84-002`,
+    ///   `NSDM 93`, `PL 480`, PRC accessions) that previously stored junk
+    ///   `decimal_class` keys — on the doc side `RG59` also masked the row's
+    ///   genuine class. (3) The doc-side class scan is bounded to the citation
+    ///   sentence — the first sentence naming the central files (which keeps the
+    ///   1961–1963 abstract notes' tail citations), else sentence 1 — so remark
+    ///   sentences (`… For the full text of NSDM 91, see …`, ibid. secondary
+    ///   references) can never contribute a class key. (4) The shared lot grammar accepts
+    ///   plural `Lots …` leads (83 front-matter rows) and the spaced letter suffix
+    ///   `Lot 61 D 282 A` (norm parity with the legacy doc-side captures).
+    ///   Parse output changes on both tables; a reindex repopulates them.
+    public static let currentDateIndexVersion: Int = 20
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1686,7 +1783,8 @@ public actor IndexingPipeline {
     /// Used by `VolumeSourcesView` to display the front-matter sources section.
     public func volumeSources(forVolumeId volumeId: String) throws -> [VolumeSourceEntry] {
         let sql = """
-            SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading
+            SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading,
+                   lot_file_norm, decimal_class
             FROM volume_sources
             WHERE volume_id = ?
             ORDER BY sort_order
@@ -1697,14 +1795,16 @@ public actor IndexingPipeline {
         var entries: [VolumeSourceEntry] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             entries.append(VolumeSourceEntry(
-                kind:        VolumeSourceKind(rawValue: auxColumnString(stmt, 5) ?? "item") ?? .item,
-                depth:       auxColumnIntOptional(stmt, 6) ?? 0,
-                isHeading:   (auxColumnIntOptional(stmt, 7) ?? 0) != 0,
-                repository:  auxColumnString(stmt, 0),
-                recordGroup: auxColumnString(stmt, 1),
-                lotFile:     auxColumnString(stmt, 2),
-                seriesName:  auxColumnString(stmt, 3),
-                rawText:     auxColumnString(stmt, 4) ?? ""
+                kind:         VolumeSourceKind(rawValue: auxColumnString(stmt, 5) ?? "item") ?? .item,
+                depth:        auxColumnIntOptional(stmt, 6) ?? 0,
+                isHeading:    (auxColumnIntOptional(stmt, 7) ?? 0) != 0,
+                repository:   auxColumnString(stmt, 0),
+                recordGroup:  auxColumnString(stmt, 1),
+                lotFile:      auxColumnString(stmt, 2),
+                lotFileNorm:  auxColumnString(stmt, 8),
+                seriesName:   auxColumnString(stmt, 3),
+                decimalClass: auxColumnString(stmt, 9),
+                rawText:      auxColumnString(stmt, 4) ?? ""
             ))
         }
         return entries
@@ -2497,7 +2597,9 @@ public actor IndexingPipeline {
                     repository: entry.repository,
                     recordGroup: entry.recordGroup,
                     lotFile: entry.lotFile,
+                    lotFileNorm: entry.lotFileNorm,
                     seriesName: entry.seriesName,
+                    decimalClass: entry.decimalClass,
                     entryText: entry.rawText,
                     kind: entry.kind.rawValue,
                     depth: entry.depth,
@@ -3657,10 +3759,18 @@ public actor IndexingPipeline {
         // canonical compact lot key (`SourceNoteParser.lotFileNorm`, e.g. "64D199")
         // stored alongside the raw `lot_file` so the Phase 3 matcher can use a single
         // indexed equality instead of a formatting-variant fan-out.
+        // Source Explorer Phase 3 verification (2026-07-03): `decimal_class` column
+        // added — the canonical decimal / subject-numeric class location
+        // (`SourceNoteParser.decimalClassKey`, e.g. "POL 27 ARAB-ISR", "788.5"; dashes
+        // hyphen-canonical) written for central-files-shaped citations so front-matter
+        // class leaves resolve neighbors with a single indexed lookup. Before this,
+        // the class location was unstored: structured rows kept only "Central Files
+        // 1967–69" in series_name and narrative decimal rows often stored nothing.
         // The table is fully derived from the TEI, so an old-shape table (detected by
         // the absent newest column) is dropped and recreated — the established
-        // volume_sources migration pattern; the version-16 reindex repopulates it.
-        if tableExists("document_sources") && !columnExists("lot_file_norm", inTable: "document_sources") {
+        // volume_sources migration pattern; the version-19 reindex repopulates it.
+        if tableExists("document_sources") && (!columnExists("lot_file_norm", inTable: "document_sources")
+                                               || !columnExists("decimal_class", inTable: "document_sources")) {
             try? exec("DROP TABLE document_sources")
         }
         try exec("""
@@ -3675,6 +3785,7 @@ public actor IndexingPipeline {
                 citation_era   TEXT NOT NULL DEFAULT 'unrecognized',
                 raw_text       TEXT NOT NULL,
                 classification TEXT,
+                decimal_class  TEXT,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
@@ -3685,6 +3796,8 @@ public actor IndexingPipeline {
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_era_series ON document_sources(citation_era, series_name)")
         // Source Explorer Phase 2: normalized-lot equality lookups (Phase 3 matcher)
         try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_lot_norm ON document_sources(lot_file_norm)")
+        // Source Explorer Phase 3 verification: class-leaf equality/prefix lookups
+        try exec("CREATE INDEX IF NOT EXISTS idx_doc_src_class ON document_sources(decimal_class)")
 
         // Session 170: volume_sources rewritten to a prose + collection-outline model
         // (kind / depth / is_heading), and the primary key changed from
@@ -3692,25 +3805,40 @@ public actor IndexingPipeline {
         // no longer silently de-duplicate. SQLite can't ALTER a primary key, so a pre-170
         // table (detected by the absent `kind` column) is dropped and recreated below. The
         // table is derived from the TEI, so it repopulates on the next (re)index.
-        if tableExists("volume_sources") && !columnExists("kind", inTable: "volume_sources") {
+        //
+        // Source Explorer Phase 3 (2026-07-03): normalized match keys written at parse
+        // time — `lot_file_norm` (canonical compact lot key, `SourceNoteParser.lotFileNorm`,
+        // e.g. "64D199", the same normal form `document_sources.lot_file_norm` stores) and
+        // `decimal_class` (decimal / subject-numeric class-leaf location in the shared
+        // `SourceNoteParser.decimalClassKey` canonical form, e.g. "POL 27 ARAB-ISR" —
+        // the same form `document_sources.decimal_class` stores). Same
+        // drop-and-recreate migration pattern, keyed on the absent newest column; the
+        // version-18/19 reindexes repopulate.
+        if tableExists("volume_sources") && (!columnExists("kind", inTable: "volume_sources")
+                                             || !columnExists("lot_file_norm", inTable: "volume_sources")) {
             try? exec("DROP TABLE volume_sources")
         }
         try exec("""
             CREATE TABLE IF NOT EXISTS volume_sources (
-                volume_id    TEXT NOT NULL,
-                repository   TEXT,
-                record_group TEXT,
-                lot_file     TEXT,
-                series_name  TEXT,
-                entry_text   TEXT NOT NULL,
-                kind         TEXT NOT NULL DEFAULT 'item',
-                depth        INTEGER NOT NULL DEFAULT 0,
-                is_heading   INTEGER NOT NULL DEFAULT 0,
-                sort_order   INTEGER NOT NULL DEFAULT 0,
+                volume_id     TEXT NOT NULL,
+                repository    TEXT,
+                record_group  TEXT,
+                lot_file      TEXT,
+                lot_file_norm TEXT,
+                series_name   TEXT,
+                decimal_class TEXT,
+                entry_text    TEXT NOT NULL,
+                kind          TEXT NOT NULL DEFAULT 'item',
+                depth         INTEGER NOT NULL DEFAULT 0,
+                is_heading    INTEGER NOT NULL DEFAULT 0,
+                sort_order    INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (volume_id, sort_order)
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_rg ON volume_sources(volume_id, record_group)")
+        // Source Explorer Phase 3: normalized-lot lookups from the cross-volume /
+        // collection-authority side (which volumes cite lot X?).
+        try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_lot_norm ON volume_sources(lot_file_norm)")
 
         // Session 2026-06-09: Browser structure cache. One JSON-encoded
         // `VolumeStructure` per indexed volume so browsing never re-parses XML.
@@ -3998,8 +4126,8 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO document_sources
-            (volume_id, document_id, repository, record_group, lot_file, lot_file_norm, series_name, citation_era, raw_text, classification)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (volume_id, document_id, repository, record_group, lot_file, lot_file_norm, series_name, citation_era, raw_text, classification, decimal_class)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -4015,6 +4143,7 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 8, row.citationEra, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 9, row.rawText,     -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 10, row.classification)
+                auxBindOptional(stmt, 11, row.decimalClass)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -4026,9 +4155,9 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO volume_sources
-            (volume_id, repository, record_group, lot_file, series_name, entry_text,
-             kind, depth, is_heading, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (volume_id, repository, record_group, lot_file, lot_file_norm, series_name,
+             decimal_class, entry_text, kind, depth, is_heading, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -4038,12 +4167,14 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 2, row.repository)
                 auxBindOptional(stmt, 3, row.recordGroup)
                 auxBindOptional(stmt, 4, row.lotFile)
-                auxBindOptional(stmt, 5, row.seriesName)
-                sqlite3_bind_text(stmt, 6, row.entryText, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_text(stmt, 7, row.kind, -1, SQLITE_TRANSIENT_IP)
-                sqlite3_bind_int64(stmt, 8, Int64(row.depth))
-                sqlite3_bind_int64(stmt, 9, row.isHeading ? 1 : 0)
-                sqlite3_bind_int64(stmt, 10, Int64(row.sortOrder))
+                auxBindOptional(stmt, 5, row.lotFileNorm)
+                auxBindOptional(stmt, 6, row.seriesName)
+                auxBindOptional(stmt, 7, row.decimalClass)
+                sqlite3_bind_text(stmt, 8, row.entryText, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 9, row.kind, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 10, Int64(row.depth))
+                sqlite3_bind_int64(stmt, 11, row.isHeading ? 1 : 0)
+                sqlite3_bind_int64(stmt, 12, Int64(row.sortOrder))
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -4052,7 +4183,49 @@ public actor IndexingPipeline {
     }
 
     /// Converts a `ParsedSourceNote` into a `DocumentSourceRow` for storage.
+    ///
+    /// Central-files-shaped citations (`.centralFiles`, `.cfpfFile`, and
+    /// `.naraCollection` whose series names the central files) additionally store the
+    /// canonical class location in `decimal_class` (`decimalClassRow(parsed:rawText:)`).
     nonisolated private static func documentSourceRow(
+        volumeId: String, documentId: String,
+        parsed: ParsedSourceNote, rawText: String
+    ) -> DocumentSourceRow {
+        var row = baseDocumentSourceRow(volumeId: volumeId, documentId: documentId,
+                                        parsed: parsed, rawText: rawText)
+        row.decimalClass = decimalClassColumn(parsed: parsed, rawText: rawText)
+        return row
+    }
+
+    /// The `decimal_class` value for a document-source row: the canonical class
+    /// location (`SourceNoteParser.decimalClassLocation(inCitation:)`) when the
+    /// citation is central-files-shaped, else `nil`.
+    ///
+    /// Gated by classification so identifiers in other repositories' citations (CIA
+    /// job numbers, council-document series, presidential-library box strings) can
+    /// never masquerade as a class: only `.centralFiles` / `.cfpfFile` rows, and
+    /// `.naraCollection` rows whose series segment names the central files
+    /// ("Central Files 1967–69", "Central Foreign Policy File"), are scanned.
+    nonisolated private static func decimalClassColumn(
+        parsed: ParsedSourceNote, rawText: String
+    ) -> String? {
+        switch parsed {
+        case .centralFiles, .cfpfFile:
+            return SourceNoteParser.decimalClassLocation(inCitation: rawText)
+        case .naraCollection(_, let series, _, _):
+            guard let series,
+                  series.localizedCaseInsensitiveContains("Central Files")
+                    || series.localizedCaseInsensitiveContains("Central Foreign Policy")
+            else { return nil }
+            return SourceNoteParser.decimalClassLocation(inCitation: rawText)
+        default:
+            return nil
+        }
+    }
+
+    /// The era/columns mapping for each `ParsedSourceNote` case (everything except the
+    /// cross-case `decimal_class` column, which `documentSourceRow` fills).
+    nonisolated private static func baseDocumentSourceRow(
         volumeId: String, documentId: String,
         parsed: ParsedSourceNote, rawText: String
     ) -> DocumentSourceRow {
@@ -4400,8 +4573,9 @@ public actor IndexingPipeline {
     ///
     /// | ParsedSourceNote case | Match key | Index used |
     /// |---|---|---|
-    /// | `.lotFile` | Normalized lot number (4 whitespace variants) | `idx_doc_src_lot` |
-    /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot` |
+    /// | `.lotFile` | Canonical compact lot key (`lot_file_norm`) | `idx_doc_src_lot_norm` |
+    /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot_norm` |
+    /// | `.naraCollection` non-RG-59 | RG + comma-boundary series prefix | `idx_doc_src_rg` |
     /// | `.centralFiles` with decimal ID | Base number before `/` | `idx_doc_src_era_series` |
     /// | `.presidentialLibrary` | Library keyword + collection prefix | `idx_doc_src_repo` |
     /// | All other cases | Returns empty result | — |
@@ -4503,13 +4677,26 @@ public actor IndexingPipeline {
     /// Returns archival neighbors for a **volume-level source entry** (a row in a
     /// volume's front-matter sources list), which has no document key of its own.
     ///
-    /// Matches on the entry's lot file when present, else its `(recordGroup, series)`.
-    /// Entries with neither have no document-level match key and return empty.
+    /// Match paths, most-specific first:
+    /// 1. **Lot file** — normalized `lot_file_norm` equality.
+    /// 2. **Decimal / subject-numeric class leaf** — `relatedByDecimalClass` against
+    ///    the indexed `document_sources.decimal_class` column (canonical class
+    ///    location for central-files-shaped citations of any era).
+    /// 3. **Presidential library** — when `repository` names a library
+    ///    (`isLibraryRepository`), the library keyword plus a collection-name prefix
+    ///    against document-side presidential-library rows.
+    /// 4. **Record group + series** — normalized comma-boundary series prefix.
+    ///
+    /// Entries with no key on any path return empty with `basis == nil`.
     ///
     /// - Parameters:
     ///   - lotFile: The entry's lot file (e.g. `"64 D 199"`), if any.
     ///   - recordGroup: The entry's record group (e.g. `"59"`), if any.
-    ///   - series: The entry's series name, if any.
+    ///   - series: The entry's series / collection name, if any (for a library entry
+    ///     this is the collection compared against document `series_name`).
+    ///   - repository: The entry's holding repository, if any; only library
+    ///     repositories participate in matching (path 3).
+    ///   - decimalClass: The entry's decimal / subject-numeric class key, if any.
     ///   - limit: Maximum neighbors to return. Default 30.
     /// - Returns: Matched documents (≤ `limit`), the total match count, and the
     ///   human-readable archival `basis`, or `basis == nil` when nothing matched.
@@ -4517,16 +4704,36 @@ public actor IndexingPipeline {
         forLotFile lotFile: String?,
         recordGroup: String?,
         series: String?,
+        repository: String? = nil,
+        decimalClass: String? = nil,
         limit: Int = 30
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
         if let lot = lotFile?.trimmingCharacters(in: .whitespaces), !lot.isEmpty {
             let r = try relatedByLotFile(lot, limit: limit)
-            return (r.documents, r.totalCount, "Lot \(lot)")
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.lot",
+                           defaultValue: "Lot \(lot)"))
+        }
+        if let cls = decimalClass?.trimmingCharacters(in: .whitespaces), !cls.isEmpty {
+            let r = try relatedByDecimalClass(cls, limit: limit)
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.decimalClass",
+                           defaultValue: "Central files \(cls)"))
+        }
+        if let repo = repository?.trimmingCharacters(in: .whitespaces),
+           Self.isLibraryRepository(repo),
+           let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
+            let r = try relatedByPresidentialLibrary(library: repo, collection: s, limit: limit)
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.library",
+                           defaultValue: "\(repo): \(s)"))
         }
         if let rg = recordGroup?.trimmingCharacters(in: .whitespaces), !rg.isEmpty,
            let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
             let r = try relatedByCollection(recordGroup: rg, series: s, limit: limit)
-            return (r.documents, r.totalCount, "RG \(rg): \(s)")
+            return (r.documents, r.totalCount,
+                    String(localized: "archivalNeighbors.basis.collection",
+                           defaultValue: "RG \(rg): \(s)"))
         }
         return ([], 0, nil)
     }
@@ -4539,23 +4746,37 @@ public actor IndexingPipeline {
         return (" AND NOT (ds.volume_id = ? AND ds.document_id = ?)", [v, d])
     }
 
-    /// Returns documents indexed with any normalized form of the given lot number.
+    /// Returns documents indexed with the same canonical compact lot key.
     ///
-    /// Queries `document_sources.lot_file` against four variants so that
-    /// compact (`"63D135"`), spaced (`"63 D 135"`), mixed (`"63 D135"`), and
-    /// raw-with-dashes (`"61-D 146"`) stored forms all match.
+    /// A single indexed equality on `document_sources.lot_file_norm`
+    /// (`SourceNoteParser.lotFileNorm`, e.g. `"64D199"`): the query lot is normalized
+    /// here, so every spacing and hyphen/en-dash/em-dash variant matches in both
+    /// directions. This replaces the former 4-variant `IN` over raw `lot_file`, which
+    /// dash variants defeated (audit §2.4).
+    ///
+    /// **No raw-variant fallback is kept** — norm coverage is structural for every
+    /// row this path can match: wherever a `.lotFile` / `.naraCollection` lot is
+    /// stored, the same insert writes `lot_file_norm` (`documentSourceRow` for the
+    /// doc side, `SourcesParserDelegate.makeItemEntry` for the front-matter side),
+    /// and the index-version bumps that introduced the columns (16 and 18) force a
+    /// reindex. (`.ciaCollection` rows reuse the `lot_file` column for CIA job
+    /// numbers and deliberately carry no norm — job numbers are not lot keys and
+    /// never route through this path.)
     private func relatedByLotFile(
         _ rawLot: String,
         limit: Int,
         excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        let variants = Self.lotVariantsForQuery(rawLot)
-        guard !variants.isEmpty else { return ([], 0) }
+        // Defensive: volume-source entries store the bare number, but accept a
+        // "Lot "-prefixed form from any caller (the retired variant helper did too).
+        let bare = rawLot.replacingOccurrences(
+            of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
+        let norm = SourceNoteParser.lotFileNorm(bare)
+        guard !norm.isEmpty else { return ([], 0) }
 
-        let placeholders = variants.map { _ in "?" }.joined(separator: ", ")
         let ex = exclusion(excluding)
-        let whereClause = "ds.lot_file IN (\(placeholders))\(ex.clause)"
-        let params = variants + ex.params
+        let whereClause = "ds.lot_file_norm = ?\(ex.clause)"
+        let params = [norm] + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -4575,19 +4796,49 @@ public actor IndexingPipeline {
         )
     }
 
-    /// Returns documents from the same non-RG-59 archival collection — an exact match on
-    /// record group **and** series name (e.g. RG 306, "Office of Plans, General Subject
-    /// Files"). Exact series matching avoids lumping sibling series together.
+    /// Returns documents from the same archival collection — record group plus a
+    /// **normalized prefix match** on series name.
+    ///
+    /// ## Normalization (deliberate, per audit §2.4)
+    /// - **Case**: both comparisons use `LIKE`, which is ASCII-case-insensitive.
+    /// - **Whitespace**: collapsed to single spaces at write time on *both* sides
+    ///   (`SourceNoteParser` for `document_sources`, `SourcesParserDelegate` for
+    ///   `volume_sources`), so no runtime mapping is needed.
+    /// - **Dashes**: stored verbatim on both sides — series names come from the same
+    ///   TEI vocabulary (en-dash in year ranges on both sides), unlike lot keys where
+    ///   the corpus genuinely mixes forms (those go through `lot_file_norm`).
+    /// - **Record group**: tolerant of both stored forms — `extractRG` rows store the
+    ///   bare number ("84") while lot/decimal-derived rows store "RG-84".
+    ///
+    /// ## Prefix direction and over-broad guard
+    /// The *query* series (a front-matter entry's cleaned name, or a parsed note's
+    /// series component) is the prefix; the *stored* `series_name` may append
+    /// locator tails (`documentSourceRow` writes `"series, Box N"`). Exact equality
+    /// was therefore the wrong grain (81/539 resolved). The prefix only extends
+    /// across a **comma boundary** (`series + ",…"`), so `"Moscow Embassy"` never
+    /// matches `"Moscow Embassy Files, Box 12"` mid-word, and a ≥4-character minimum
+    /// keeps degenerate prefixes from matching broadly.
     private func relatedByCollection(
         recordGroup: String,
         series: String,
         limit: Int,
         excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        guard !series.isEmpty else { return ([], 0) }
+        let s = series.trimmingCharacters(in: .whitespaces)
+        guard s.count >= 4 else { return ([], 0) }
+        // Accept the RG in either stored form regardless of the caller's form.
+        let bareRG = recordGroup
+            .replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
+                                  options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: .whitespaces)
+        guard !bareRG.isEmpty else { return ([], 0) }
+        let esc = Self.likeEscaped(s)
         let ex = exclusion(excluding)
-        let whereClause = "ds.record_group = ? AND ds.series_name = ?\(ex.clause)"
-        let params = [recordGroup, series] + ex.params
+        let whereClause = """
+            ds.record_group IN (?, ?)
+            AND (ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')\(ex.clause)
+            """
+        let params = [bareRG, "RG-\(bareRG)", esc, esc + ",%"] + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -4673,10 +4924,88 @@ public actor IndexingPipeline {
         return (Array(matched.prefix(limit)), matched.count)
     }
 
+    /// Returns documents citing a decimal / subject-numeric **class** from a
+    /// volume-level front-matter leaf (`"POL 27 ARAB–ISR"`, `"DEF 6 MLF"`, `"711.11"`).
+    ///
+    /// Matches the `document_sources.decimal_class` column, which stores the
+    /// canonical class location (`SourceNoteParser.decimalClassKey` — whitespace
+    /// collapsed, Unicode dashes → ASCII hyphen, item suffix and sentence tail cut)
+    /// for every central-files-shaped citation regardless of era — the narrative
+    /// decimal rows (`"…Central Files, 788.5/9–1361"`), the subject-numeric
+    /// `structured` rows (`"…RG 59, Central Files 1967–69, POL 27 ARAB-ISR"`), and
+    /// CFPF rows. The query key is canonicalized the same way, so the en-dash the TEI
+    /// front matter carries matches the hyphen document notes use.
+    ///
+    /// **Cost: a covering-index scan, not a seek.** The four LIKE patterns walk
+    /// `idx_doc_src_class` end to end — SQLite's LIKE prefix optimization requires
+    /// a NOCASE-collated (or `PRAGMA case_sensitive_like`) column, and
+    /// `decimal_class` is BINARY-collated. The covering index keeps the walk in
+    /// index pages only (~126k keyed rows corpus-wide), which is well within budget
+    /// for a per-tap query; revisit with a `COLLATE NOCASE` declaration (a schema
+    /// change riding the drop-and-recreate migration) if the corpus grows.
+    ///
+    /// The key matches at four boundaries — exact, `class + " …"` (a subject/country
+    /// token boundary, so `"POL 27"` finds `"POL 27 ARAB-ISR"`), `class + "-…"` (a
+    /// subdivision, so `"POL 27"` finds `"POL 27-14 ARAB-ISR"`), and `class + ".…"`
+    /// (a dotted-decimal subdivision) — which keep `"711.1"` from matching
+    /// `"711.11"` mid-token.
+    ///
+    /// **S3 resolved to its lean — location prefix only, no `DecimalFileSegment`
+    /// period filtering.** Porting the doc-side segmenter did not turn out cheap:
+    /// (1) a front-matter leaf has no `/item` suffix to derive a filing-period year
+    /// from, and the volume's coverage years live in era-dependent prose
+    /// (`"Central Files 1967–69: …"`) that would need its own parser; (2) the
+    /// subject-numeric leaves that dominate the unkeyed bucket (1963–1973) post-date
+    /// the decimal segment table (segments end 1963), so a period filter could never
+    /// apply to them; (3) a front-matter entry names the class as used across the
+    /// volume's whole span, so *all* indexed citations of the class are the honest
+    /// neighbor set for it.
+    private func relatedByDecimalClass(
+        _ classKey: String,
+        limit: Int
+    ) throws -> (documents: [RelatedDocument], totalCount: Int) {
+        guard let key = SourceNoteParser.decimalClassKey(classKey)
+                ?? Self.fallbackClassKey(classKey) else { return ([], 0) }
+        let esc = Self.likeEscaped(key)
+        let patterns = [esc, esc + " %", esc + "-%", esc + ".%"]
+        let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
+            .joined(separator: " OR ")
+        let whereClause = "(\(likes))"
+
+        let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
+        let selectSQL = """
+            SELECT ds.volume_id, ds.document_id,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM document_sources ds
+            JOIN document_cache dc
+                ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
+            WHERE \(whereClause)
+            ORDER BY ds.volume_id, ds.document_id
+            LIMIT ?
+            """
+        return try runRelatedQuery(
+            countSQL: countSQL, selectSQL: selectSQL,
+            countParams: patterns, selectParams: patterns,
+            limit: limit
+        )
+    }
+
+    /// Defensive canonicalization for a class key that fails the shared shape gate.
+    /// Stored front-matter keys always pass `SourceNoteParser.decimalClassKey`, so this
+    /// only covers direct `archivalNeighbors` callers: whitespace collapsed, Unicode
+    /// dashes → ASCII hyphen; `nil` under 3 characters (too short to be a class).
+    nonisolated private static func fallbackClassKey(_ raw: String) -> String? {
+        let s = raw.replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        return s.count >= 3 ? s : nil
+    }
+
     /// Returns documents from the same presidential library collection.
     ///
     /// Uses a LIKE match on `repository` (e.g. `%KENNEDY%`) and a prefix match on
-    /// `series_name` (first 50 characters of the collection name).
+    /// `series_name` (first 50 characters of the collection name, wildcard-escaped).
     private func relatedByPresidentialLibrary(
         library: String,
         collection: String,
@@ -4685,15 +5014,15 @@ public actor IndexingPipeline {
         // Extract a short keyword from the library name for the LIKE query
         let keyword = Self.libraryKeyword(from: library)
         guard !keyword.isEmpty else { return ([], 0) }
-        let repoLike = "%\(keyword)%"
+        let repoLike = "%\(Self.likeEscaped(keyword))%"
 
         // Use a prefix of the collection name (up to 50 chars) for series matching
-        let collectionPrefix = String(collection.prefix(50))
+        let collectionPrefix = Self.likeEscaped(String(collection.prefix(50)))
         let collectionLike = collectionPrefix.isEmpty ? "%" : collectionPrefix + "%"
 
         let whereClause = """
-            UPPER(ds.repository) LIKE UPPER(?)
-            AND UPPER(ds.series_name) LIKE UPPER(?)
+            UPPER(ds.repository) LIKE UPPER(?) ESCAPE '\\'
+            AND UPPER(ds.series_name) LIKE UPPER(?) ESCAPE '\\'
             """
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -4761,21 +5090,22 @@ public actor IndexingPipeline {
         return (docs, totalCount)
     }
 
-    /// Generates normalized lot number variants for a database query.
-    ///
-    /// Returns the 3 standard forms (compact, spaced, mixed) from
-    /// `NARACatalogClient.lotNumberVariants(from:)` plus the raw
-    /// stripped form to cover lot numbers with dashes (e.g. `"61-D 146"`).
-    private static func lotVariantsForQuery(_ raw: String) -> [String] {
-        let variants = NARACatalogClient.lotNumberVariants(from: raw)
-        let rawStripped = raw
-            .replacingOccurrences(of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
-            .trimmingCharacters(in: .whitespaces)
-        var all = variants
-        if !all.contains(rawStripped) { all.append(rawStripped) }
-        // Deduplicate while preserving order
-        var seen = Set<String>()
-        return all.filter { seen.insert($0).inserted }
+    /// Escapes SQL `LIKE` wildcards (`%`, `_`) and the escape character itself so
+    /// corpus text can be embedded in a `LIKE` pattern with `ESCAPE '\'`.
+    private static func likeEscaped(_ s: String) -> String {
+        s.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+    }
+
+    /// Whether a volume-source repository string names a presidential library (or an
+    /// equivalent manuscript repository) — the gate that routes a volume-level source
+    /// entry through the presidential-library match path instead of the record-group
+    /// one. Mirrors `SourcesParserDelegate.repoKeywords`' library entries: the
+    /// "…Library" names, the Nixon Presidential Materials, and the Hoover Institution.
+    static func isLibraryRepository(_ repository: String) -> Bool {
+        let r = repository.lowercased()
+        return r.contains("library") || r.contains("nixon") || r.contains("hoover institution")
     }
 
     /// Extracts a short keyword from a presidential library name for LIKE queries.
@@ -5131,6 +5461,12 @@ private struct DocumentSourceRow: Sendable {
     /// set for lot-bearing rows only (Source Explorer Phase 2; the Phase 3 matcher
     /// reads it for single-equality neighbor lookups).
     var lotFileNorm: String? = nil
+    /// Canonical decimal / subject-numeric class location
+    /// (`SourceNoteParser.decimalClassKey`, e.g. `"POL 27 ARAB-ISR"`, `"788.5"`), set
+    /// for central-files-shaped citations only — the same normal form
+    /// `volume_sources.decimal_class` stores, so front-matter class leaves resolve
+    /// neighbors with an indexed lookup (Source Explorer Phase 3 verification).
+    var decimalClass: String? = nil
 }
 
 private struct VolumeSourceRow: Sendable {
@@ -5138,7 +5474,12 @@ private struct VolumeSourceRow: Sendable {
     let repository: String?
     let recordGroup: String?
     let lotFile: String?
+    /// Canonical compact lot key (`SourceNoteParser.lotFileNorm`), matching
+    /// `document_sources.lot_file_norm`.
+    let lotFileNorm: String?
     let seriesName: String?
+    /// Decimal / subject-numeric class-leaf location key (doc-side verbatim normal form).
+    let decimalClass: String?
     let entryText: String
     let kind: String
     let depth: Int

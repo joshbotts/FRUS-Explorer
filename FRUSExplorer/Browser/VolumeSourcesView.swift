@@ -35,6 +35,15 @@ import SwiftUI
 ///          loop (the first fix moved the anchor from the Group to a Section, which
 ///          did not help for the same reason). Targets are now `@Binding`s; the target
 ///          types and `VolumeSourcesCrossVolumeSheet` became internal for the parents
+///   1.2 — Session 2026-07-03 (Source Explorer Phase 3 step 2): `makeNeighborsTarget`
+///          gains the presidential-library and decimal-class target kinds (and became
+///          a testable static); bibliography rows render as plain rows in their own
+///          section, excluded by construction from every neighbor/catalog affordance.
+///   1.3 — Session 2026-07-03 (Phase 3 adversarial-review fixes): the bibliography
+///          kind is now detected from the encodings the corpus actually uses
+///          (`Published Sources` pseudo-heading subtrees and published-sources
+///          section heads, not just the corpus-unused `listofworks`), so this view's
+///          Published Sources section renders for real volumes.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
@@ -64,6 +73,12 @@ struct VolumeSourcesView: View {
 
     /// The narrative "Note on Sources" paragraphs, shown as flowing prose.
     private var proseEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .prose } }
+
+    /// Published-works bibliography rows (a `Published Sources` pseudo-heading
+    /// subtree, a published-sources section, or `listofworks`), shown as plain rows —
+    /// deliberately without neighbor or catalog affordances (they cite books, not
+    /// archival collections; audit §2.3 counted 2,634 masquerading as resolvable).
+    private var bibliographyEntries: [VolumeSourceEntry] { sources.filter { $0.kind == .bibliography } }
 
     /// The archival-collection outline, built **once** in `loadSources`. It must be stored
     /// (not recomputed per render): `SourceTreeNode` ids are `UUID`s, so rebuilding the tree
@@ -123,6 +138,19 @@ struct VolumeSourcesView: View {
                         }
                     }
                 }
+                if !bibliographyEntries.isEmpty {
+                    // Plain rows only: published works carry no archival match keys, so
+                    // no neighbor or catalog affordance can ever attach to them.
+                    Section(header: Text(String(localized: "browser.sources.bibliography.header",
+                                                defaultValue: "Published Sources"))) {
+                        ForEach(Array(bibliographyEntries.enumerated()), id: \.offset) { _, entry in
+                            Text(entry.rawText)
+                                .font(.callout)
+                                .textSelection(.enabled)
+                                .padding(.vertical, 2)
+                        }
+                    }
+                }
             }
         }
         .task { await loadSources() }
@@ -157,7 +185,7 @@ struct VolumeSourcesView: View {
                     .accessibilityLabel(String(localized: "browser.sources.catalog",
                                                defaultValue: "View in National Archives Catalog"))
                 }
-                if let target = makeNeighborsTarget(for: entry) {
+                if let target = Self.makeNeighborsTarget(for: entry) {
                     Button {
                         sourceNeighborsTarget = target
                     } label: {
@@ -218,17 +246,52 @@ struct VolumeSourcesView: View {
     }
 
     /// Builds an archival-neighbors target for a source entry, or `nil` when the entry
-    /// has no match key (no lot file and no record-group + series). Used to gate the
-    /// per-row "Archival Neighbors" affordance so it only appears where it can return results.
-    private func makeNeighborsTarget(for entry: VolumeSourceEntry) -> VolumeSourceNeighborsTarget? {
-        let hasLot = entry.lotFile?.trimmingCharacters(in: .whitespaces).isEmpty == false
-        let hasCollection = (entry.recordGroup?.trimmingCharacters(in: .whitespaces).isEmpty == false)
-            && (entry.seriesName?.trimmingCharacters(in: .whitespaces).isEmpty == false)
-        guard hasLot || hasCollection else { return nil }
+    /// has no match key on any path. Used to gate the per-row "Archival Neighbors"
+    /// affordance so it only appears where a query can return results.
+    ///
+    /// Target kinds (mirroring `IndexingPipeline.archivalNeighbors(forLotFile:…)`):
+    /// - **Lot file** (`lotFile`).
+    /// - **Decimal / subject-numeric class leaf** (`decimalClass`).
+    /// - **Presidential library**: `repository` names a library and a collection name
+    ///   exists. Library children rarely pass the series-name gate (it requires an
+    ///   RG or lot on the row), so the entry's own text — which *is* the collection
+    ///   name in the library outline — stands in. The library heading row itself
+    ///   (own text naming the repository) gets no target: its "collection" would be
+    ///   the library's name, not a match key.
+    /// - **Record group + series** (`recordGroup` + `series`).
+    ///
+    /// Bibliography rows never produce a target (published works, not collections).
+    /// Pure and `nonisolated static` so tests can exercise the gating without a
+    /// rendered view or a main-actor hop.
+    nonisolated static func makeNeighborsTarget(for entry: VolumeSourceEntry) -> VolumeSourceNeighborsTarget? {
+        guard entry.kind == .item else { return nil }
+        func trimmed(_ s: String?) -> String? {
+            guard let t = s?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return nil }
+            return t
+        }
+        let lot  = trimmed(entry.lotFile)
+        let cls  = trimmed(entry.decimalClass)
+        let rg   = trimmed(entry.recordGroup)
+        let repo = trimmed(entry.repository)
+        var series = trimmed(entry.seriesName)
+        var libraryRepo: String? = nil
+        if let repo, IndexingPipeline.isLibraryRepository(repo) {
+            if series == nil,
+               !entry.rawText.localizedCaseInsensitiveContains(repo),
+               entry.rawText.count >= 4 {
+                series = entry.rawText
+            }
+            if series != nil { libraryRepo = repo }
+        }
+        let hasKey = lot != nil || cls != nil || libraryRepo != nil
+            || (rg != nil && series != nil)
+        guard hasKey else { return nil }
         return VolumeSourceNeighborsTarget(
-            lotFile:     entry.lotFile,
-            recordGroup: entry.recordGroup,
-            series:      entry.seriesName
+            lotFile:      lot,
+            recordGroup:  rg,
+            series:       series,
+            repository:   libraryRepo,
+            decimalClass: cls
         )
     }
 
@@ -257,11 +320,18 @@ struct VolumeSourcesView: View {
 // MARK: - VolumeSourceNeighborsTarget
 
 /// Identifiable `.sheet(item:)` target carrying a volume source entry's archival match
-/// keys (lot file, or record group + series) for the Archival Neighbors sheet.
+/// keys for the Archival Neighbors sheet: lot file, record group + series,
+/// presidential-library repository + collection (in `series`), or decimal /
+/// subject-numeric class. Fields mirror the parameters of
+/// `IndexingPipeline.archivalNeighbors(forLotFile:recordGroup:series:repository:decimalClass:limit:)`.
 struct VolumeSourceNeighborsTarget: Identifiable {
     let lotFile: String?
     let recordGroup: String?
     let series: String?
+    /// Set only when the entry routes through the presidential-library match path.
+    let repository: String?
+    /// The decimal / subject-numeric class-leaf key, when the entry is a class leaf.
+    let decimalClass: String?
     let id = UUID()
 }
 

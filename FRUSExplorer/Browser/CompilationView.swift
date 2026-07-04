@@ -150,9 +150,11 @@ struct CompilationView: View {
             ArchivalNeighborsSheet(appState: appState) {
                 guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
                 return (try? await pipeline.archivalNeighbors(
-                    forLotFile:  target.lotFile,
-                    recordGroup: target.recordGroup,
-                    series:      target.series
+                    forLotFile:   target.lotFile,
+                    recordGroup:  target.recordGroup,
+                    series:       target.series,
+                    repository:   target.repository,
+                    decimalClass: target.decimalClass
                 )) ?? ([], 0, nil)
             }
             .environment(appState)

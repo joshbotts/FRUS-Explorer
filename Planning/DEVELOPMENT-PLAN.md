@@ -1193,3 +1193,26 @@ decimal file ids) — all fixed with corpus probes. eval-baseline.txt + eval-rep
 committed in SourceNoteKit/ as the permanent regression corpus reports. 1083/1083 app +
 272/272 SPM. Next: Phase 3 (volume_sources keying + inheritance + normalized matcher —
 cashing the 86% ceiling).
+
+### Session 2026-07-03 (later) — Source Explorer Phase 3 (keying, inheritance, normalized matcher)
+Four commits on claude/sourceexplorer-phase3-keying: (1) **front-matter keying** — shared
+lot grammar in SourceNoteKit (`firstLotReference`: designator-agnostic D/F/W/M, en/em-dash,
+run-together, "Lot Files" infix; doc-side tryLooseLotFile delegates to it — one grammar both
+sides, +7 doc-side notes recognized); outline inheritance (ancestor-frame walk fills
+record_group/repository on children); volume_sources gains lot_file_norm + decimal_class
+(verbatim-form class leaves; RG/FRC excluded); series junk-tail gate; currentDateIndexVersion
+→18 (Phase 2 fix had taken 17). (2) **matcher** — single indexed lot_file_norm lookup
+(4-variant IN retired); relatedByCollection → comma-boundary prefix w/ guards; NEW
+relatedByDecimalClass (4 boundary shapes + CFPF prefix; **S3 resolved lean** — DecimalFileSegment
+port declined w/ documented rationale) and presidential-library volume-level path;
+VolumeSourceNeighborsTarget gains repository/decimalClass through both parents; bibliography
+rows render in a "Published Sources" section w/o affordances. (3) **measurement** (13 real
+volumes, 1,713 items, app's own calls): keyed 14.5%→47%; within-sample lot resolution 62%;
+corpus-wide predictor 84–85% ≥ the 80% target (ceiling 86%); class path found DEAD end-to-end
+and fixed in-session (0→228 keyed); F-lots 0→32 keyed/17 resolving; bucket re-run B2/B3≈0
+(cross-volume + genuinely-uncited dominate). (4) **review fixes 7/7** — medium: bibliography
+exclusion keyed on `listofworks`, which a 694-volume survey proved NONEXISTENT (real encoding
+= "Published Sources" pseudo-headings; rebuilt + ~3,008 rows now correctly marked); class-gate
+hardening; plural "Lots"; spaced letter-suffix parity; doc-comment accuracy. 1100/1100 app +
+279/279 SPM. Remaining: Phase 4 (cross-volume authority; S4/S5) + Phase 5 (three-state UI,
+classification chips, S6 window).

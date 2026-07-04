@@ -52,6 +52,14 @@ import Foundation
 ///          `Roosevelt Papers: Telegram`, `J. C. S. Files`) — the audit §2.2
 ///          "named file series" class. Stored as `citation_era='named_series'`;
 ///          no archival-neighbor key yet (the Phase 3 matcher work wires it)
+///   1.6 — Source Explorer Phase 3 adversarial-review fixes (Session 2026-07-03):
+///          shared lot grammar accepts a plural lead (`Lots 64 D 563 and …`) and a
+///          spaced letter suffix (`Lot 61 D 282 A` — norm parity with the legacy
+///          doc-side captures); the class gate rejects run-together record-group /
+///          records-center forms (`RG59`, `NYFRC 84-84-002`) and numbered-issuance
+///          identifiers (NSDM/NSSM/NSAM/NSC/NIE/SNIE/PL, PRC accessions); the
+///          citation class scan (`decimalClassLocation`) is bounded to the citation
+///          sentence so remark sentences can never contribute a class key
 public enum ParsedSourceNote: Sendable, Equatable {
 
     /// State Department central files identified by a decimal file number
@@ -266,6 +274,27 @@ public struct ArchiveCitation: Sendable {
 ///          RG 330 to the NSC H-Files); en/em-dash box numbers (`Box H–115`)
 ///          extracted; (4) `tryFileNo` bare-`File` pattern keeps dotted
 ///          decimals intact (`File 093.11141/21.` → `093.11141/21`, not `093`)
+///   1.9 — Source Explorer Phase 3 step 1 (Session 2026-07-03): the loose-lot
+///          grammar extracted into the public `firstLotReference(in:)` helper so the
+///          front-matter side (`SourcesParserDelegate`) recognizes exactly the same
+///          lot grammar as the document side — one designator-agnostic shape for
+///          both. The shared pattern additionally skips a `File`/`Files` infix
+///          (`Lot File 57 D 577`, `Lot Files 74 D 131` — the audit §2.3 greedy-prefix
+///          pollution, which previously keyed `lot="Files 74 D 131"` on the
+///          front-matter side and missed entirely on the document side)
+///   1.10 — Source Explorer Phase 3 verification fixes (Session 2026-07-03): shared
+///          decimal / subject-numeric class grammar — `decimalClassKey(_:)` (the
+///          anchored shape gate + canonical form: collapsed whitespace, Unicode
+///          dashes → ASCII hyphen, bridging TEI front matter's en-dash against the
+///          hyphen document notes use) and `decimalClassLocation(inCitation:)`
+///          (comma-segment scan with `/`-suffix and sentence-tail cuts) — so the
+///          front-matter class leaves and the citing documents write the identical
+///          key. Verification found the class path dead end-to-end without this:
+///          0 of 2,850 audit class leaves keyed, and no doc-side column to match.
+///          Same pass: the shared lot grammar accepts a single trailing letter
+///          suffix (`Lot 61 D 282A` — the two sides' norms diverged, `61D282` vs
+///          `61D282A`), and the subject-numeric class shape accepts a parenthesized
+///          agency qualifier (`AID (US) 15-4 UAR`)
 public struct SourceNoteParser {
 
     public init() {}
@@ -365,6 +394,154 @@ public struct SourceNoteParser {
         return head.uppercased().filter {
             !$0.isWhitespace && $0 != "-" && $0 != "–" && $0 != "—"
         }
+    }
+
+    // MARK: - Decimal / subject-numeric class keys (shared grammar)
+
+    /// Subject-numeric class-leaf shape (`POL 27 ARAB-ISR`, `DEF 6 MLF`, `E 12 IRAN`),
+    /// anchored to the whole candidate, with an optional parenthesized agency
+    /// qualifier after the class letters (`AID (US) 15-4 UAR` — the P.L. 480 /
+    /// assistance classes, frequent in the 1964–1976 volumes). Applied AFTER dash
+    /// canonicalization, so only the ASCII hyphen needs to match.
+    ///
+    /// The leading negative lookahead excludes identifier families that fit the
+    /// letters-then-digits shape but are never citable file classes:
+    /// - **record-group / records-center forms** — `RG 59`, and the run-together
+    ///   `RG59` the TEI actually writes (a bare `\b` cannot fire between a letter
+    ///   and a digit, so the original `RG\b` let `RG59` through, storing it as a
+    ///   junk class AND masking the genuine class later in the citation);
+    ///   `FRC 330-78-0011`, `NYFRC 84-84-002` accessions;
+    /// - **numbered issuances** — `NSDM 93`, `NSSM 114`, `NSAM 55`, `NSC 5412`,
+    ///   `NIE 11-8`, `SNIE 100-5`, `PL 480` (public-law / program numbers);
+    /// - **FRC-style accessions under other prefixes** — `PRC 64 A 2382`
+    ///   (digits-A-digits accession shape only; a plain `PRC nn` candidate is
+    ///   already unreachable from citation scans, which are sentence-bounded).
+    private static let subjectNumericClassRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?!(?:RG|FRC|NYFRC)[\s\d-]|(?:NSDM|NSSM|NSAM|NSC|NIE|SNIE|PL)\b|PRC\s?\d{1,3}\s?A\s?\d)[A-Z]{1,5}(?:\s?\([A-Z0-9]{1,4}\))?\s?\d{1,3}(?:-\d{1,3})*(?:\s[A-Z0-9]{1,6}(?:-[A-Z0-9]{1,6})*)*$"#,
+        options: [])
+
+    /// Dotted decimal class-leaf shape (`711.11`, `611.61`, `500.A15A4`): the central
+    /// decimal file classification, anchored to the whole candidate.
+    private static let dottedDecimalClassRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+$"#,
+        options: [])
+
+    /// Validates and canonicalizes one decimal / subject-numeric class-leaf candidate.
+    ///
+    /// This is the single class-shape gate for **both** citation sides — the
+    /// front-matter Sources outline (`SourcesParserDelegate.classLeafKey`) and
+    /// document source notes (`decimalClassLocation(inCitation:)`) — so a class keyed
+    /// from front matter and the same class keyed from a citing document always reduce
+    /// to the identical stored form, and the archival-neighbor matcher stays a plain
+    /// indexed equality/prefix lookup.
+    ///
+    /// **Canonical form:** whitespace collapsed to single spaces, trailing periods
+    /// stripped, and every Unicode dash (en/em) mapped to the ASCII hyphen. The dash
+    /// mapping is load-bearing: TEI front matter writes the class with an en-dash
+    /// (`POL 27 ARAB–ISR`) while the same file cited in document source notes uses
+    /// the ASCII hyphen (`POL 27 ARAB-ISR`) — verbatim storage on either side can
+    /// never match the other. Case is preserved (classes are uppercase by vocabulary;
+    /// mixed-case tokens fail the anchored shapes).
+    ///
+    /// - Parameter candidate: One candidate string (a colon/semicolon segment of a
+    ///   front-matter item, or a comma segment of a citation).
+    /// - Returns: The canonical class key, or `nil` when the candidate is not a
+    ///   class-leaf shape.
+    public static func decimalClassKey(_ candidate: String) -> String? {
+        var s = candidate
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        while s.hasSuffix(".") { s = String(s.dropLast()) }
+        s = s.trimmingCharacters(in: .whitespaces)
+        guard s.count >= 3, s.count <= 60 else { return nil }
+        let ns = NSRange(s.startIndex..., in: s)
+        let isSubjectNumeric = subjectNumericClassRegex?.firstMatch(in: s, range: ns) != nil
+        let isDottedDecimal = dottedDecimalClassRegex?.firstMatch(in: s, range: ns) != nil
+        guard isSubjectNumeric || isDottedDecimal else { return nil }
+        return s
+    }
+
+    /// Extracts the decimal / subject-numeric class **location** from a central-files
+    /// document citation, in the canonical form of `decimalClassKey(_:)`.
+    ///
+    /// The scan is **bounded to the citation sentence**: a note's remark sentences
+    /// routinely cite numbered issuances and secondary copies ("… Secret. For the
+    /// full text of NSDM 91, see …"), and an unbounded first-passing-segment scan
+    /// stored those identifiers as the row's class whenever the citation sentence
+    /// itself had no class-shaped segment. The citation sentence is the **first
+    /// sentence naming the central files** ("Central Files", "Central Foreign
+    /// Policy", or the `CF` abbreviation) — not blindly sentence 1, because the
+    /// 1961–1963 abstract notes put the citation in the *tail* ("Discussion of
+    /// import restrictions. Confidential. 13 pp. Department of State, Central
+    /// Files, 100.4/7–2762."). When no sentence names them, sentence 1 stands in
+    /// (the bare decimal-leading notes: "611.41/3–553. Foreign Service despatch.").
+    /// A remark's "ibid., 033.84A11/10–158" secondary reference is never reached:
+    /// either the citation sentence already named the central files (the remark
+    /// sentence is not the first) or the note has none and only sentence 1 is
+    /// scanned.
+    ///
+    /// Within that sentence, comma segments are scanned in order and the first that
+    /// passes the class gate wins, after cutting an item suffix at the first `/`
+    /// (`788.5/9–1361` → `788.5`, `POL 27-14 ARAB-ISR/SANDSTORM` → `POL 27-14 ARAB-ISR`)
+    /// and, failing that, a trailing sentence at the first `". "`
+    /// (`POL 27 ARAB-ISR. Secret; Immediate…` → `POL 27 ARAB-ISR`). The `". "` cut is
+    /// tried second so dotted decimals (`788.5`) are never split on their own dot.
+    ///
+    /// Callers gate by classification: only central-files-shaped notes
+    /// (`.centralFiles`, `.cfpfFile`, and `.naraCollection` whose series names the
+    /// central files) should be scanned, so box numbers or council-document ids in
+    /// other repositories' citations can never masquerade as a class.
+    ///
+    /// - Parameter text: The raw citation text (wrapper already stripped).
+    /// - Returns: The canonical class location, or `nil` when no segment is a class leaf.
+    public static func decimalClassLocation(inCitation text: String) -> String? {
+        let citation = citationSentence(of: text)
+        for segment in citation.components(separatedBy: ",") {
+            var candidate = segment
+            if let slash = candidate.firstIndex(of: "/") {
+                candidate = String(candidate[..<slash])
+            }
+            if let key = decimalClassKey(candidate) { return key }
+            if let tail = candidate.range(of: ". "),
+               let key = decimalClassKey(String(candidate[..<tail.lowerBound])) {
+                return key
+            }
+        }
+        return nil
+    }
+
+    /// Central-files anchor phrases that mark a sentence as the archival citation
+    /// for the class scan. The scoped-case-insensitive group covers the spelled
+    /// forms; `\bCF\b` stays case-sensitive — the abbreviation in
+    /// `"DOS, CF, 033.1161/1–963"` is always capitals, while a lowercase `cf.` is
+    /// a cross-reference.
+    private static let centralFilesAnchorRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?i:central\s+files|central\s+foreign\s+policy)|\bCF\b"#,
+        options: [])
+
+    /// The citation sentence of a source note for the class scan: the **first
+    /// sentence naming the central files**, else sentence 1 (see
+    /// `decimalClassLocation(inCitation:)` for the rationale and shapes).
+    private static func citationSentence(of text: String) -> String {
+        guard let boundary = sentenceBoundaryRegex, let anchor = centralFilesAnchorRegex
+        else { return text }
+        let ns = text as NSString
+        var sentences: [String] = []
+        var start = 0
+        for match in boundary.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let end = match.range.location + match.range.length
+            sentences.append(ns.substring(with: NSRange(location: start, length: end - start)))
+            start = end
+        }
+        if start < ns.length { sentences.append(ns.substring(from: start)) }
+        guard sentences.count > 1 else { return text }
+        for sentence in sentences {
+            let range = NSRange(sentence.startIndex..., in: sentence)
+            if anchor.firstMatch(in: sentence, range: range) != nil { return sentence }
+        }
+        return sentences[0]
     }
 
     // MARK: - Classification markings (frus-sources sentence model)
@@ -1168,26 +1345,64 @@ public struct SourceNoteParser {
 
     // MARK: - Loose Lot Styles
 
-    /// Lot number in any observed style: lowercase `lot`, comma-separated
-    /// (`…files, lot 60 D 665, "…"`), lot-leading (`Lot 71–D 440, Box 19232`),
-    /// en/em-dash separators, and run-together designators (`Lot 54–D270`). The
-    /// digits-designator-digits shape is the validator, so the English word "lot"
-    /// can never match.
-    /// The leading digits are optional so letter-first designators
-    /// (`lot M 88`, `Lot W 130`) also match; a single letter followed by digits
-    /// still cannot occur in English prose after the word "lot".
+    /// The corpus-wide lot-reference grammar, shared by the document side
+    /// (`tryLooseLotFile`) and the front-matter side (`SourcesParserDelegate`), so both
+    /// write keys the same way. Matches a lot number in any observed style:
+    /// - lowercase `lot`, comma-separated (`…files, lot 60 D 665, "…"`);
+    /// - lot-leading (`Lot 71–D 440, Box 19232`);
+    /// - all designator letters (`D` RG 59, `F` RG 84 post records, `W`, `M`, …) —
+    ///   the digits-designator-digits shape is the validator, so the English word
+    ///   "lot" can never match on its own;
+    /// - letter-first designators (`lot M 88`, `Lot W 130`) via the optional leading
+    ///   digits — a single letter followed by digits cannot occur in prose after "lot";
+    /// - en/em-dash separators and run-together designators (`Lot 54–D270`);
+    /// - run-together trailing text (`Lot 90 D 313Records…` — the digits terminate
+    ///   the match, no trailing word boundary is required);
+    /// - a `File`/`Files` infix (`Lot File 57 D 577`, `Lot Files 74 D 131`), skipped
+    ///   before the capture so the key is the bare number, never `"Files 74 D 131"`;
+    /// - a plural lead (`Lots 64 D 563 and 65 D 101`, `Lots 76D186 and 78D184` —
+    ///   83 front-matter rows corpus-wide) — the first lot keys the row, matching
+    ///   the parser-wide first-reference rule for multi-lot notes;
+    /// - a single trailing letter suffix, run-together or spaced (`Lot 61 D 282A`,
+    ///   `Lot 61 D 282a`, `Lot 61 D 282 A`) — a real lot-series form the narrative
+    ///   doc-side extractor already captured, so the shared grammar must too or the
+    ///   two sides' `lotFileNorm` keys diverge (`61D282` vs `61D282A` — found by the
+    ///   Phase 3 verification bucket run; the spaced form by the adversarial-review
+    ///   norm-parity sweep). The negative lookahead keeps run-together prose
+    ///   (`313Records…`) and following words (`563 and…`) out of the key.
     private static let looseLotRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bLot\s+((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+)"#,
+        pattern: #"\bLots?\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:\s?[A-Za-z](?![A-Za-z]))?)"#,
         options: .caseInsensitive
     )
 
-    private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
-        guard let regex = Self.looseLotRegex else { return nil }
+    /// Finds the first lot-file reference in `text` using the shared corpus-wide lot
+    /// grammar (see `looseLotRegex`).
+    ///
+    /// This is the single lot-recognition entry point for **both** citation sides:
+    /// `SourceNoteParser` uses it for loose-style document source notes, and
+    /// `SourcesParserDelegate` (front-matter Sources outline) uses it at parse time —
+    /// so a lot keyed from a volume's front matter and the same lot keyed from a
+    /// document's source note always reduce to the identical `lotFileNorm(_:)` key.
+    ///
+    /// - Parameter text: Any citation or front-matter item text.
+    /// - Returns: The raw lot number (whitespace-trimmed, formatting preserved) and
+    ///   the range of the full `Lot …` match in `text`, or `nil` when no lot shape
+    ///   follows the word "Lot".
+    public static func firstLotReference(
+        in text: String
+    ) -> (lotNumber: String, matchRange: Range<String.Index>)? {
+        guard let regex = looseLotRegex else { return nil }
         let ns = NSRange(text.startIndex..., in: text)
         guard let match = regex.firstMatch(in: text, range: ns),
               let lotRange = Range(match.range(at: 1), in: text),
               let fullRange = Range(match.range, in: text) else { return nil }
         let lotNumber = String(text[lotRange]).trimmingCharacters(in: .whitespaces)
+        guard !lotNumber.isEmpty else { return nil }
+        return (lotNumber, fullRange)
+    }
+
+    private func tryLooseLotFile(_ text: String) -> ParsedSourceNote? {
+        guard let (lotNumber, fullRange) = Self.firstLotReference(in: text) else { return nil }
         let remainder = String(text[fullRange.upperBound...])
         let box = extractBoxOrFileString(from: remainder)
         return .lotFile(recordGroup: lotFileRecordGroup(lotNumber),

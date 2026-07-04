@@ -74,6 +74,25 @@ import Foundation
 ///          (colon-delimited) persons-list names collapse interior whitespace at parse
 ///          time, matching Format A, so hard-wrapped real names are never rejected by
 ///          the new newline rule
+///   2.2 — Source Explorer Phase 3 step 1 (Session 2026-07-03): `SourcesParserDelegate`
+///          front-matter keying rework — lot extraction delegates to the shared
+///          `SourceNoteParser.firstLotReference(in:)` grammar (designator-agnostic
+///          F/W/M lots, `Lot File(s)` infix, run-together boundaries) so both citation
+///          sides key identically; children inherit record group / repository from
+///          ancestor outline headings; `VolumeSourceEntry` gains `lotFileNorm` and
+///          `decimalClass` normalized match keys; the series-name heuristic sits
+///          behind a validity gate (junk tails store nil); `listofworks` bibliography
+///          rows get the new `.bibliography` kind and carry no keys
+///   2.3 — Source Explorer Phase 3 verification fixes (Session 2026-07-03):
+///          `classLeafKey` keys the dominant real class-leaf shapes the step-1
+///          after-final-colon rule missed — leaf-before-colon entries
+///          (`POL 3 UAR: Arab unity`), semicolon class lists
+///          (`611.80; 611.86; POL Near East 1: …`), and comma-described leaves
+///          (`DEF 9 TUR, military personnel, Turkey`) — and delegates the shape gate
+///          and canonical form (Unicode dashes → ASCII hyphen) to the shared
+///          `SourceNoteParser.decimalClassKey(_:)`, matching the new
+///          `document_sources.decimal_class` column. The 13-volume verification
+///          sample keyed 0 class leaves before this fix
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -597,13 +616,24 @@ public struct VolumeFullParseResult: Sendable {
     public let structureSections: [VolumeSection]
 }
 
-/// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph or a node in
-/// the archival-collection outline.
+/// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph, a node in
+/// the archival-collection outline, or a published-works bibliography entry.
 public enum VolumeSourceKind: String, Sendable {
     /// A narrative paragraph from the section's prose introduction.
     case prose
     /// An archival-collection outline node (a repository, record group, series, or lot file).
     case item
+    /// A *published* work (book, memoir, periodical), not an archival collection.
+    /// Detected from the encodings the corpus actually uses — a `Published Sources`
+    /// pseudo-heading paragraph inside an ordinary sources div (~3,000 items across
+    /// ~160 volumes; the audit's §2.3 masquerading bucket), a whole published-sources
+    /// section head (frus1969-76v34/v36's p-encoded book lists), or a
+    /// `<div type="listofworks">` section (the canonical TEI name; unused by the
+    /// current 694-volume mirror but kept as the contract). Stored for completeness
+    /// but excluded from the collection outline and from every archival-match
+    /// affordance; bibliography rows carry no extracted keys (a book citation's
+    /// numbers are never archival keys).
+    case bibliography
 }
 
 /// One row of a FRUS volume's front-matter Sources section.
@@ -620,23 +650,54 @@ public struct VolumeSourceEntry: Sendable {
     public let kind: VolumeSourceKind
     public let depth: Int
     public let isHeading: Bool
+    /// The holding repository (keyword form, e.g. "National Archives", "Johnson Library").
+    ///
+    /// **Inherited from ancestor headings** when the entry's own text names none: in the
+    /// front-matter outline, repository and record group live on parent headings while the
+    /// children name only their series. Inherited and own values are deliberately
+    /// indistinguishable — these columns are archival *match keys*, and a child of a
+    /// "Record Group 59" heading identifies exactly the same records as a row that states
+    /// RG 59 itself; display always renders `rawText`, so no UI distinction exists either.
     public let repository: String?
+    /// The record group number (e.g. "59"). Inherited from ancestor headings when the
+    /// entry's own text names none — see `repository` for why no own-vs-inherited flag exists.
     public let recordGroup: String?
+    /// The raw lot-file number (formatting preserved, e.g. "64 D 199", "71–D 440"),
+    /// recognized by the corpus-wide lot grammar shared with the document side
+    /// (`SourceNoteParser.firstLotReference(in:)`).
     public let lotFile: String?
+    /// Canonical compact form of `lotFile` (`SourceNoteParser.lotFileNorm`, e.g. "64D199").
+    /// The same normal form is written to `document_sources.lot_file_norm`, so the
+    /// archival-neighbor matcher is a single indexed equality.
+    public let lotFileNorm: String?
+    /// The series name within the record group, when a confident capture exists (junk
+    /// heuristic tails — prose fragments, bare year ranges — store `nil` instead).
     public let seriesName: String?
+    /// The decimal / subject-numeric class key for a class-leaf entry ("POL 27 ARAB-ISR",
+    /// "DEF 6 MLF", "711.11"), in the shared canonical form of
+    /// `SourceNoteParser.decimalClassKey(_:)`: whitespace collapsed, Unicode dashes
+    /// mapped to the ASCII hyphen. The same form is written to
+    /// `document_sources.decimal_class` from citing documents' source notes, so the
+    /// archival-neighbor matcher is a plain indexed equality/prefix comparison. (The
+    /// dash mapping bridges TEI front matter's en-dash against the hyphen the same
+    /// files carry in document notes.)
+    public let decimalClass: String?
     /// The entry's own text (whitespace-collapsed), excluding any nested child items.
     public let rawText: String
 
     public init(kind: VolumeSourceKind, depth: Int = 0, isHeading: Bool = false,
                 repository: String? = nil, recordGroup: String? = nil, lotFile: String? = nil,
-                seriesName: String? = nil, rawText: String) {
+                lotFileNorm: String? = nil, seriesName: String? = nil,
+                decimalClass: String? = nil, rawText: String) {
         self.kind = kind
         self.depth = depth
         self.isHeading = isHeading
         self.repository = repository
         self.recordGroup = recordGroup
         self.lotFile = lotFile
+        self.lotFileNorm = lotFileNorm
         self.seriesName = seriesName
+        self.decimalClass = decimalClass
         self.rawText = rawText
     }
 }
@@ -1718,8 +1779,27 @@ private final class FullVolumeParserDelegate: NSObject, XMLParserDelegate, @unch
 /// </div>
 /// ```
 ///
-/// Each `<item>` becomes a `VolumeSourceEntry`. Repository context is carried forward
-/// from the current indentation level.
+/// Each `<item>` becomes a `VolumeSourceEntry`. Repository, record-group, and
+/// presidential-library identity live on parent headings in this outline, so children
+/// **inherit** them at parse time via a walk up the open-item stack (the parent's own
+/// text always precedes its child `<list>` in document order, so it is fully
+/// accumulated by the time any child closes). Inherited values are stored in the same
+/// row columns as own values — they are archival match keys, and a child of a
+/// "Record Group 59" heading identifies exactly the same records as a row stating
+/// RG 59 itself (display renders `rawText` only, so no distinction is ever needed).
+///
+/// Published-works entries are marked `kind == .bibliography` (books and periodicals,
+/// not archival collections) and carry no extracted keys. The corpus encodes them
+/// three ways, all detected here:
+/// - a **pseudo-heading paragraph** inside an ordinary sources div —
+///   `<p><hi rend="strong">Published Sources</hi></p>` followed by `<item>` lists
+///   (the dominant shape: ~3,000 items across ~160 volumes; "Selected Published
+///   Sources", "Part B. Published Sources", and "Published References" variants);
+/// - a **whole `<div subtype="sources">` section headed** `Published sources`
+///   (frus1969-76v34/v36, where the books are `<p rend="flushleft">` paragraphs);
+/// - a `<div type="listofworks">` section (no volume in the current 694-volume
+///   mirror uses this encoding, but it is the canonical TEI name for the section,
+///   so the detection is kept as the contract for future volumes).
 private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// Flat, document-order (pre-order) rows: the narrative `.prose` paragraphs first, then
@@ -1729,6 +1809,32 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private var inSourcesSection = false
     private var elementDepth = 0
     private var sectionDepth = -1
+
+    /// Whether the current section is entirely a published-works bibliography: a
+    /// `listofworks` div, or a sources div whose `<head>` is a published-sources
+    /// title (`Published sources` — frus1969-76v34/v36). Every row in such a
+    /// section is marked `kind == .bibliography` so display and matching can
+    /// exclude it without losing the data.
+    private var sectionIsBibliography = false
+
+    /// Whether the parse position is inside a published-works subtree of an
+    /// ordinary sources section, opened by a pseudo-heading paragraph
+    /// (`<p><hi rend="strong">Published Sources</hi></p>` and variants — the
+    /// dominant corpus encoding for published works). Rows in the subtree are
+    /// marked `.bibliography`; see `didEndElement`'s `p` case for the exit rules.
+    private var inPublishedSubtree = false
+
+    /// Whether any row has been emitted since the published subtree opened. A long
+    /// narrative paragraph *after* the published rows ends the subtree (e.g.
+    /// frus1964-68v06 continues its sources div with a covert-actions note), but a
+    /// long editorial preamble *before* them must not (frus1952-54v13's "The
+    /// following publications … were particularly useful" leads its Part B list).
+    private var publishedSubtreeSawRows = false
+
+    /// Accumulates the section-level `<head>` text (a published-sources head marks
+    /// the whole section as bibliography).
+    private var inSectionHead = false
+    private var sectionHeadBuffer = ""
 
     /// Monotonic open-order counter. Assigned when a paragraph or item *opens*, so the
     /// final list can be sorted into document (pre-order) order — necessary because
@@ -1756,8 +1862,32 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
-    private static let lotPat = try? NSRegularExpression(
-        pattern: #"\bLot\s+([\w\s\-]+?D\s*\d+)\b"#, options: .caseInsensitive)
+
+    /// Anchored published-works heading shape, matched against a normalized candidate
+    /// (lowercased, whitespace collapsed, trailing periods stripped). Covers every
+    /// form the 694-volume mirror writes: `Published Sources` (×137 pseudo-heading
+    /// paragraphs), `Published sources` (section heads, frus1969-76v34/v36),
+    /// `Selected Published Sources` (×7), `Part B. Published Sources`, and
+    /// `Published References`.
+    private static let publishedHeadingPat = try? NSRegularExpression(
+        pattern: #"^(?:part [a-z][.:]? )?(?:selected )?published (?:sources|references)$"#)
+
+    /// Anchored unpublished-sources heading shape (`Unpublished Sources`,
+    /// `Part A. Unpublished Sources`) — closes a published subtree if one is open.
+    private static let unpublishedHeadingPat = try? NSRegularExpression(
+        pattern: #"^(?:part [a-z][.:]? )?unpublished sources$"#)
+
+    /// Normalizes a candidate heading and tests it against `pattern`. Candidates
+    /// longer than 60 characters are never headings (they are narrative paragraphs
+    /// that happen to contain the words).
+    private static func matchesHeading(_ text: String, _ pattern: NSRegularExpression?) -> Bool {
+        guard let pattern, text.count <= 60 else { return false }
+        var s = text.lowercased()
+        while s.hasSuffix(".") { s = String(s.dropLast()) }
+        s = s.trimmingCharacters(in: .whitespaces)
+        let ns = NSRange(s.startIndex..., in: s)
+        return pattern.firstMatch(in: s, range: ns) != nil
+    }
 
     // Deliberately excludes "listofabbreviations": that glossary is a `terms` section owned
     // by `TermsParserDelegate`; matching it here double-consumed it as bogus source items.
@@ -1778,18 +1908,29 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             let type    = attributeDict["type"]?.lowercased() ?? ""
             let subtype = attributeDict["subtype"]?.lowercased() ?? ""
             let xmlId   = attributeDict["xml:id"]?.lowercased() ?? ""
-            if (elementName == "div" && (Self.sourceSectionTypes.contains(type)
-                                         || Self.sourceSectionTypes.contains(subtype)
-                                         || Self.sourceSectionTypes.contains(xmlId)))
-               || elementName == "listBibl" {
+            let matchedKind: String? = elementName == "div"
+                ? [type, subtype, xmlId].first { Self.sourceSectionTypes.contains($0) }
+                : nil
+            if matchedKind != nil || elementName == "listBibl" {
                 inSourcesSection = true
                 sectionDepth     = elementDepth
+                // A listofworks section is a published-works bibliography, not an
+                // archival-collection outline — its rows get the .bibliography kind.
+                sectionIsBibliography = (matchedKind == "listofworks")
             }
         }
         guard inSourcesSection else { return }
         switch elementName {
         case "list":
             listDepth += 1
+        case "head":
+            // The section-level title. A published-sources head (frus1969-76v34/v36's
+            // `<head>Published sources</head>` divs) marks the whole section as a
+            // bibliography when it closes.
+            if itemStack.isEmpty {
+                inSectionHead = true
+                sectionHeadBuffer = ""
+            }
         case "item":
             openCounter += 1
             itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter))
@@ -1817,9 +1958,12 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard inSourcesSection else { return }
-        // Characters belong to the innermost open item, else the current prose paragraph.
+        // Characters belong to the innermost open item, else the section head or the
+        // current prose paragraph.
         if !itemStack.isEmpty {
             itemStack[itemStack.count - 1].text += string
+        } else if inSectionHead {
+            sectionHeadBuffer += string
         } else if inProse {
             proseBuffer += string
         }
@@ -1835,20 +1979,44 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         switch elementName {
         case "list":
             listDepth = max(0, listDepth - 1)
+        case "head":
+            if inSectionHead {
+                if Self.matchesHeading(Self.collapseWhitespace(sectionHeadBuffer),
+                                       Self.publishedHeadingPat) {
+                    sectionIsBibliography = true
+                }
+                inSectionHead = false
+                sectionHeadBuffer = ""
+            }
         case "item":
             if let frame = itemStack.popLast() {
                 let text = Self.collapseWhitespace(frame.text)
                 if !text.isEmpty {
-                    collected.append((frame.order,
-                                      Self.makeItemEntry(text: text, depth: frame.depth,
-                                                         isHeading: frame.isHeading)))
+                    let entry: VolumeSourceEntry
+                    if sectionIsBibliography || inPublishedSubtree {
+                        // Published work, not an archival collection: no keys, so no
+                        // match affordance can ever attach to it.
+                        publishedSubtreeSawRows = true
+                        entry = VolumeSourceEntry(kind: .bibliography, depth: frame.depth,
+                                                  isHeading: frame.isHeading, rawText: text)
+                    } else {
+                        // Ancestor texts for outline inheritance. A parent's own text
+                        // precedes its child <list> in document order, so each open
+                        // ancestor frame's text is complete here (outermost first).
+                        let ancestors = itemStack.map { Self.collapseWhitespace($0.text) }
+                        entry = Self.makeItemEntry(text: text, depth: frame.depth,
+                                                   isHeading: frame.isHeading,
+                                                   ancestorTexts: ancestors)
+                    }
+                    collected.append((frame.order, entry))
                 }
             }
         case "p":
             if inProse && itemStack.isEmpty {
                 let text = Self.collapseWhitespace(proseBuffer)
                 if !text.isEmpty {
-                    collected.append((proseOrder, VolumeSourceEntry(kind: .prose, rawText: text)))
+                    collected.append((proseOrder,
+                                      VolumeSourceEntry(kind: proseKind(for: text), rawText: text)))
                 }
                 inProse = false
                 proseBuffer = ""
@@ -1866,11 +2034,58 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             collected.removeAll()
             inSourcesSection = false
             sectionDepth = -1
+            sectionIsBibliography = false
+            inPublishedSubtree = false
+            publishedSubtreeSawRows = false
+            inSectionHead = false
+            sectionHeadBuffer = ""
             inProse = false
             proseBuffer = ""
             itemStack.removeAll()
             listDepth = 0
         }
+    }
+
+    /// Decides whether a closing top-level paragraph is narrative `.prose` or a
+    /// published-works `.bibliography` row, updating the published-subtree state.
+    ///
+    /// Rules, derived from a full-corpus survey of the pseudo-heading encoding:
+    /// - in a whole-section bibliography (`listofworks` / published-sources head),
+    ///   every paragraph is `.bibliography` (frus1969-76v34/v36 encode their books
+    ///   as `<p rend="flushleft">`);
+    /// - a published pseudo-heading (`Published Sources` and variants) opens the
+    ///   subtree; an unpublished one closes it; the heading paragraphs themselves
+    ///   stay `.prose`, like every other pseudo-heading in the narrative flow;
+    /// - inside the subtree, paragraphs are `.bibliography` — p-encoded periodical
+    ///   citations (`The Christian Science Monitor.`) and short editorial
+    ///   annotations both belong to the published list;
+    /// - a **long narrative paragraph after the published rows closes the subtree**
+    ///   (frus1964-68v06 continues its sources div with a multi-paragraph covert-
+    ///   actions note) — but a long editorial *preamble* before any row does not
+    ///   (frus1952-54v13's "The following publications … were particularly useful"
+    ///   leads its Part B list), and neither does a `Note:` annotation *about* the
+    ///   list (frus1958-60v05's memoirs subsection).
+    private func proseKind(for text: String) -> VolumeSourceKind {
+        if sectionIsBibliography { return .bibliography }
+        if Self.matchesHeading(text, Self.publishedHeadingPat) {
+            inPublishedSubtree = true
+            publishedSubtreeSawRows = false
+            return .prose
+        }
+        if Self.matchesHeading(text, Self.unpublishedHeadingPat) {
+            inPublishedSubtree = false
+            return .prose
+        }
+        guard inPublishedSubtree else { return .prose }
+        let isNarrativeExit = text.count > 200
+            && publishedSubtreeSawRows
+            && !text.lowercased().hasPrefix("note:")
+        if isNarrativeExit {
+            inPublishedSubtree = false
+            return .prose
+        }
+        publishedSubtreeSawRows = true
+        return .bibliography
     }
 
     /// Collapses interior whitespace runs (hard line breaks, ragged TEI indentation) to
@@ -1879,61 +2094,139 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         s.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
-    /// Builds an `.item` entry, extracting record group / lot file / repository / series from
-    /// the node's own text (heuristics unchanged from the previous flat parser).
-    private static func makeItemEntry(text: String, depth: Int, isHeading: Bool) -> VolumeSourceEntry {
-        var rg: String?
-        if let regex = rgPat {
-            let ns = NSRange(text.startIndex..., in: text)
-            if let m = regex.firstMatch(in: text, range: ns) {
-                if m.range(at: 1).location != NSNotFound, let r = Range(m.range(at: 1), in: text) {
-                    rg = String(text[r])
-                } else if m.range(at: 2).location != NSNotFound, let r = Range(m.range(at: 2), in: text) {
-                    rg = String(text[r])
-                }
+    /// Builds an `.item` entry: record group / lot file / repository / class key from the
+    /// node's own text, with record group and repository **inherited** from ancestor
+    /// headings when the own text names none (innermost ancestor wins). Inherited values
+    /// are stored in the same columns as own values — they are archival match keys, and
+    /// no consumer needs the distinction (see the delegate's doc comment).
+    private static func makeItemEntry(text: String, depth: Int, isHeading: Bool,
+                                      ancestorTexts: [String]) -> VolumeSourceEntry {
+        var rg = extractRecordGroup(from: text)
+        var repo = extractRepository(from: text)
+        // The corpus-wide lot grammar shared with the document side, so both sides key
+        // the same lot strings (designator-agnostic, boundary-safe, prefix-clean).
+        let lot = SourceNoteParser.firstLotReference(in: text)?.lotNumber
+
+        // Outline inheritance: walk ancestors innermost-first for whatever is missing.
+        if rg == nil || repo == nil {
+            for ancestor in ancestorTexts.reversed() {
+                if rg == nil { rg = extractRecordGroup(from: ancestor) }
+                if repo == nil { repo = extractRepository(from: ancestor) }
+                if rg != nil && repo != nil { break }
             }
         }
 
-        var lot: String?
-        if let regex = lotPat {
-            let ns = NSRange(text.startIndex..., in: text)
-            if let m = regex.firstMatch(in: text, range: ns),
-               let r = Range(m.range(at: 1), in: text) {
-                lot = String(text[r]).trimmingCharacters(in: .whitespaces)
-            }
-        }
-
-        let repoKeywords = [
-            "National Archives", "Library of Congress", "Washington National Records Center",
-            "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
-            "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
-            "Truman Library", "Roosevelt Library", "Hoover Institution",
-            "Central Intelligence Agency", "Department of State",
-            "Department of Defense", "Naval Historical", "Center of Military History",
-        ]
-        var repo: String?
-        for keyword in repoKeywords {
-            if text.range(of: keyword, options: .caseInsensitive) != nil {
-                repo = keyword
-                break
-            }
-        }
-
-        let seriesName: String?
+        // Series heuristic (last comma segment of the own text, "RG n" removed) behind a
+        // conservative validity gate — a bad capture stores nil, never junk.
+        var seriesName: String? = nil
         if rg != nil || lot != nil {
             var s = text
             if let r = rg { s = s.replacingOccurrences(of: "RG \(r)", with: "", options: .caseInsensitive) }
             s = s.components(separatedBy: ",").last?.trimmingCharacters(in: .whitespaces) ?? s
-            seriesName = s.count > 3 ? s : nil
-        } else {
-            seriesName = nil
+            seriesName = validatedSeriesName(s)
         }
+
+        // Decimal / subject-numeric class-leaf key; a lot-keyed row is never a class leaf.
+        let decimalClass = (lot == nil) ? classLeafKey(from: text) : nil
 
         return VolumeSourceEntry(
             kind: .item, depth: depth, isHeading: isHeading,
             repository: repo, recordGroup: rg, lotFile: lot,
-            seriesName: seriesName, rawText: text
+            lotFileNorm: lot.map { SourceNoteParser.lotFileNorm($0) },
+            seriesName: seriesName, decimalClass: decimalClass, rawText: text
         )
+    }
+
+    /// Extracts a record-group number (`RG 59`, `Record Group 84`) from `text`, or `nil`.
+    private static func extractRecordGroup(from text: String) -> String? {
+        guard let regex = rgPat else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let m = regex.firstMatch(in: text, range: ns) else { return nil }
+        if m.range(at: 1).location != NSNotFound, let r = Range(m.range(at: 1), in: text) {
+            return String(text[r])
+        }
+        if m.range(at: 2).location != NSNotFound, let r = Range(m.range(at: 2), in: text) {
+            return String(text[r])
+        }
+        return nil
+    }
+
+    /// Repository keywords, in match-priority order. Includes the presidential libraries,
+    /// so a child inheriting its repository from a library heading carries the library
+    /// identity the presidential-library match path needs.
+    private static let repoKeywords = [
+        "National Archives", "Library of Congress", "Washington National Records Center",
+        "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
+        "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
+        "Truman Library", "Roosevelt Library", "Hoover Institution",
+        "Central Intelligence Agency", "Department of State",
+        "Department of Defense", "Naval Historical", "Center of Military History",
+    ]
+
+    /// Extracts the first repository keyword found in `text`, or `nil`.
+    private static func extractRepository(from text: String) -> String? {
+        for keyword in repoKeywords where text.range(of: keyword, options: .caseInsensitive) != nil {
+            return keyword
+        }
+        return nil
+    }
+
+    /// Conservative validity gate for the series-name heuristic. The last-comma-segment
+    /// capture is junk-prone (audit §2.3: `"see National Archives and Records
+    /// Administration below."`, `"1977–1980"`, `"as maintained by the Executive
+    /// Secretariat."`); a series name must lead with an uppercase letter (rejects prose
+    /// tails, which begin lowercase, and bare year ranges, which begin with a digit),
+    /// contain a letter, not be a cross-reference, and be plausibly sized.
+    private static func validatedSeriesName(_ candidate: String) -> String? {
+        let s = candidate.trimmingCharacters(in: .whitespaces)
+        guard s.count > 3, s.count <= 120 else { return nil }
+        guard s.contains(where: \.isLetter) else { return nil }
+        guard let first = s.first, first.isUppercase else { return nil }
+        guard s.range(of: #"^see\b"#, options: [.regularExpression, .caseInsensitive]) == nil
+        else { return nil }
+        return s
+    }
+
+    /// The decimal / subject-numeric class key for a class-leaf entry, or `nil` when the
+    /// text is not a class leaf, in the canonical form of
+    /// `SourceNoteParser.decimalClassKey(_:)` (whitespace collapsed, Unicode dashes →
+    /// ASCII hyphen — the same form `document_sources.decimal_class` stores, so the
+    /// matcher is a plain indexed equality/prefix lookup).
+    ///
+    /// Both real front-matter shapes are keyed:
+    /// - **leaf after a colon-prefixed series** — `Central Files 1967–69: POL 27 ARAB–ISR`
+    ///   (the audit §2.3 example; the after-final-colon candidate);
+    /// - **leaf leading a described entry** — `POL 3 UAR: Arab unity`,
+    ///   `AID (US) 15 JORDAN: PL 480…` (the dominant shape in the 1961–1976 volumes;
+    ///   the before-first-colon candidate, tried second so the audit shape keeps
+    ///   priority).
+    ///
+    /// A semicolon-separated candidate lists several classes covering one subject
+    /// (`611.80; 611.86; 780.00; POL Near East 1: …`) — the first segment passing the
+    /// shared gate keys the row (one key column; the leading class is the most
+    /// specific citable form). A comma-described entry (`DEF 9 TUR, military
+    /// personnel, Turkey` — the 1969–1976 shape) keys on its leading comma segment
+    /// when the whole segment fails the gate.
+    private static func classLeafKey(from text: String) -> String? {
+        var candidates: [String] = []
+        if text.contains(":") {
+            let parts = text.components(separatedBy: ":")
+            if let last = parts.last { candidates.append(last) }
+            if let first = parts.first { candidates.append(first) }
+        } else {
+            candidates.append(text)
+        }
+        for candidate in candidates {
+            for segment in candidate.components(separatedBy: ";") {
+                if let key = SourceNoteParser.decimalClassKey(segment) { return key }
+                if segment.contains(","),
+                   let lead = segment.components(separatedBy: ",").first,
+                   let key = SourceNoteParser.decimalClassKey(lead) {
+                    return key
+                }
+            }
+        }
+        return nil
     }
 }
 

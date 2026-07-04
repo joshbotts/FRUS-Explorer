@@ -207,3 +207,80 @@ struct RealTEICoverageTests {
         }
     }
 }
+
+// MARK: - Phase 3: front-matter keying & match-path resolution
+
+/// End-to-end verification for Source Explorer Phase 3 against **real published TEI**:
+/// front-matter source items must carry usable match keys, and every new match path
+/// (normalized lot, decimal / subject-numeric class, presidential library) must
+/// resolve archival neighbors through the app's own
+/// `makeNeighborsTarget` → `archivalNeighbors` route.
+///
+/// Volumes: frus1961-63v17 (lot outline + colon/semicolon class-leaf lists) and
+/// frus1964-68v20 (subject-numeric `structured` document notes, Johnson Library
+/// children, and the audit §2.3 `POL 27 ARAB–ISR` class leaf — its Central Files
+/// 1967–69 outline cites it and 100+ of its documents carry it). The audit measured
+/// 14.5% of front-matter items keyed corpus-wide before Phase 3; these two volumes
+/// key ~59% after it, asserted with margin at ≥50%.
+@Suite("Volume sources — real-TEI keying & match paths (Phase 3)",
+       .enabled(if: RealTEICorpus.hasVolumes(["frus1961-63v17", "frus1964-68v20"]),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEIVolumeSourcesTests {
+
+    /// Indexes both volumes, walks every front-matter item through the app's own
+    /// target factory + matcher, and asserts the keyed rate and one resolution per
+    /// new match path.
+    @Test("keyed rate ≥50% and the lot / class / library paths each resolve neighbors")
+    func frontMatterKeyingAndResolution() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeMirrorPipeline(dir: dir)
+            let volumes = ["frus1961-63v17", "frus1964-68v20"]
+            for v in volumes { try await pipeline.indexVolume(v) }
+
+            var items = 0
+            var keyedByPath: [String: Int] = [:]
+            var firstResolution: [String: Int] = [:]
+            for v in volumes {
+                for entry in try await pipeline.volumeSources(forVolumeId: v)
+                where entry.kind == .item {
+                    items += 1
+                    guard let t = VolumeSourcesView.makeNeighborsTarget(for: entry) else { continue }
+                    let path: String
+                    if t.lotFile != nil { path = "lot" }
+                    else if t.decimalClass != nil { path = "class" }
+                    else if t.repository != nil { path = "library" }
+                    else { path = "rg+series" }
+                    keyedByPath[path, default: 0] += 1
+                    // Query each path's items until one resolves (indexed lookups).
+                    if firstResolution[path] == nil {
+                        let r = try await pipeline.archivalNeighbors(
+                            forLotFile: t.lotFile, recordGroup: t.recordGroup,
+                            series: t.series, repository: t.repository,
+                            decimalClass: t.decimalClass, limit: 1)
+                        if r.totalCount > 0 { firstResolution[path] = r.totalCount }
+                    }
+                }
+            }
+
+            let keyed = keyedByPath.values.reduce(0, +)
+            // 439 raw items, minus the 16 published-works rows the bibliography
+            // detection now correctly excludes from the archival outline.
+            #expect(items > 380, "sanity: the two volumes list ~423 archival source items")
+            #expect(Double(keyed) >= 0.5 * Double(items),
+                    "keyed rate must stay ≥50% (audit baseline 14.5%); got \(keyed)/\(items)")
+            for path in ["lot", "class", "library"] {
+                #expect((keyedByPath[path] ?? 0) > 0, "the \(path) path must key items")
+                #expect(firstResolution[path] != nil,
+                        "at least one \(path)-keyed item must resolve neighbors")
+            }
+
+            // The audit §2.3 known class leaf, queried in its TEI en-dash form, must
+            // bridge to the hyphen form document notes store and resolve.
+            let pol = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil,
+                repository: nil, decimalClass: "POL 27 ARAB–ISR", limit: 5)
+            #expect(pol.totalCount > 0,
+                    "POL 27 ARAB–ISR (en-dash) must resolve against hyphen doc rows")
+        }
+    }
+}

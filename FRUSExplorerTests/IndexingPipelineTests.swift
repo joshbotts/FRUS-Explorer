@@ -925,6 +925,199 @@ struct ArchivalNeighborsTests {
     }
 }
 
+// MARK: - VolumeSourceMatcherTests (Source Explorer Phase 3 step 2)
+
+/// Verifies the normalized matcher and the new volume-level match paths: the single
+/// `lot_file_norm` lookup (dash variants match in both directions), the comma-boundary
+/// series prefix for record-group collections (with the over-broad guard), the
+/// presidential-library path, the decimal / subject-numeric class-leaf path (S3 lean:
+/// boundary-gated prefix, no period segmenting), and the target gating in
+/// `VolumeSourcesView.makeNeighborsTarget` (bibliography rows excluded).
+///
+/// Version history:
+///   1.0 — Session 2026-07-03: Source Explorer Phase 3 step 2
+@Suite("IndexingPipeline — volume source matcher")
+struct VolumeSourceMatcherTests {
+
+    /// Indexes a volume whose documents carry the given source notes and returns the pipeline.
+    private func indexFixture(
+        dir: URL, notes: [(id: String, note: String)]
+    ) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeTEIVolume(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: notes.enumerated().map { i, doc in
+                (doc.id, "<head>\(i + 1). Memo</head><note type=\"source\">\(doc.note)</note><p>Text.</p>")
+            }
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+        return pipeline
+    }
+
+    @Test("Normalized lot lookup bridges hyphen/en-dash/em-dash variants in both directions")
+    func normalizedLotLookupBridgesDashVariants() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "SPA Files: Lot 61–D 146, Box 4581"),   // en-dash stored
+                ("d2", "SPA Files: Lot 61-D 146, Box 4581"),   // hyphen stored
+                ("d3", "PPS files, lot 64 D 563, memoranda"),  // different lot
+            ])
+
+            // Volume-entry path, queried with a THIRD variant (em-dash): both stored
+            // forms match through the shared compact norm.
+            let byEntry = try await pipeline.archivalNeighbors(
+                forLotFile: "61—D 146", recordGroup: nil, series: nil)
+            let entryIds = Set(byEntry.documents.map(\.documentId))
+            #expect(entryIds == ["d1", "d2"],
+                    "all dash variants of one lot must resolve to the same norm; got \(entryIds)")
+
+            // Document-keyed path: the en-dash document finds the hyphen document.
+            let byDoc = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(Set(byDoc.documents.map(\.documentId)) == ["d2"],
+                    "cross-variant neighbors must match from the document side too")
+        }
+    }
+
+    @Test("Collection series prefix matches Box tails at a comma boundary, guarded against over-broad prefixes")
+    func collectionSeriesPrefixAndGuard() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret."),
+                ("d2", "Source: National Archives, RG 84, Moscow Embassy Files, Box 57. Confidential."),
+                ("d3", "Source: National Archives, RG 84, Moscow Embassy General Records, Box 2. Secret."),
+            ])
+
+            // The front-matter series (no box) prefix-matches the doc side's ", Box N" tails.
+            let hit = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Moscow Embassy Files")
+            #expect(Set(hit.documents.map(\.documentId)) == ["d1", "d2"],
+                    "the series must match both boxes and not the sibling series")
+            #expect(hit.basis?.contains("RG 84") == true)
+
+            // A word prefix without a comma boundary must NOT match (over-broad guard).
+            let word = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Moscow Embassy")
+            #expect(word.totalCount == 0,
+                    "'Moscow Embassy' must not prefix-match into 'Moscow Embassy Files'")
+
+            // Degenerate short series are refused outright.
+            let short = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Mos")
+            #expect(short.totalCount == 0, "series under 4 characters must never match")
+        }
+    }
+
+    @Test("Volume-level presidential-library entries match document-side library rows")
+    func libraryEntryMatchesLibraryRows() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Johnson Library, National Security File, Country File, Vietnam, Box 3. Secret."),
+                ("d2", "Source: Johnson Library, National Security File, Memos to the President, Box 1. Secret."),
+                ("d3", "Source: Kennedy Library, National Security Files, Countries Series, Box 8. Secret."),
+            ])
+
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: "National Security File",
+                repository: "Johnson Library")
+            let ids = Set(result.documents.map(\.documentId))
+            #expect(ids == ["d1", "d2"],
+                    "the Johnson Library collection must match its own rows, not the Kennedy ones; got \(ids)")
+            #expect(result.basis?.contains("Johnson Library") == true)
+
+            // A non-library repository never routes through the library path.
+            let nonLibrary = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: "National Security File",
+                repository: "Department of State")
+            #expect(nonLibrary.totalCount == 0 && nonLibrary.basis == nil,
+                    "only library repositories participate in the library match path")
+        }
+    }
+
+    @Test("Decimal / subject-numeric class leaves match the decimal_class column at token boundaries")
+    func decimalClassLeafPath() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Central Files, POL 27 ARAB–ISR. Confidential."),
+                ("d2", "Source: Department of State, Central Files, 711.11/3–1545. Secret."),
+                // Subject-numeric class inside a structured NARA citation — the doc
+                // side stores it in decimal_class now (series_name keeps only
+                // "Central Files 1967–69"). Note the ASCII hyphen: real document
+                // notes carry the hyphen where TEI front matter has an en-dash.
+                ("d3", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 27 ARAB-ISR. Secret; Immediate."),
+            ])
+
+            // The en-dash front-matter key bridges to BOTH doc-side dash forms via the
+            // shared canonical form (narrative decimal row d1, structured row d3).
+            let pol = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "59", series: "POL 27 ARAB–ISR",
+                decimalClass: "POL 27 ARAB–ISR")
+            #expect(Set(pol.documents.map(\.documentId)) == ["d1", "d3"])
+            // The class path outranks the rg+series path for a class leaf.
+            #expect(pol.basis?.contains("POL 27 ARAB–ISR") == true)
+            #expect(pol.basis?.contains("RG") != true,
+                    "a class leaf must resolve on the decimal path, not the collection one")
+
+            // A broader class finds its country/subject subdivisions at the token boundary.
+            let broad = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "POL 27")
+            #expect(Set(broad.documents.map(\.documentId)) == ["d1", "d3"])
+
+            // Dotted decimal leaf: matches the stored location cut from the "/item" form.
+            let dotted = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "711.11")
+            #expect(Set(dotted.documents.map(\.documentId)) == ["d2"])
+
+            // Boundary guard: a shorter class must not match mid-token.
+            let boundary = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "711.1")
+            #expect(boundary.totalCount == 0, "'711.1' must not match '711.11' mid-token")
+        }
+    }
+
+    @Test("makeNeighborsTarget gates every kind and excludes bibliography rows")
+    func makeNeighborsTargetKinds() {
+        // Bibliography rows never get a target, even if a key slipped in.
+        let bib = VolumeSourceEntry(kind: .bibliography, lotFile: "64 D 199",
+                                    rawText: "Acheson, Dean. Present at the Creation.")
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: bib) == nil)
+
+        // A class leaf yields a decimal-class target.
+        let leaf = VolumeSourceEntry(kind: .item, depth: 2, repository: "Department of State",
+                                     recordGroup: "59", seriesName: "POL 27 ARAB–ISR",
+                                     decimalClass: "POL 27 ARAB–ISR",
+                                     rawText: "Central Files 1967–69: POL 27 ARAB–ISR")
+        let leafTarget = VolumeSourcesView.makeNeighborsTarget(for: leaf)
+        #expect(leafTarget?.decimalClass == "POL 27 ARAB–ISR")
+
+        // A library child without a gated series name uses its own text as the collection.
+        let libChild = VolumeSourceEntry(kind: .item, depth: 1, repository: "Johnson Library",
+                                         rawText: "National Security File")
+        let libTarget = VolumeSourcesView.makeNeighborsTarget(for: libChild)
+        #expect(libTarget?.repository == "Johnson Library")
+        #expect(libTarget?.series == "National Security File")
+
+        // The library heading row itself (own text naming the repository) gets no target.
+        let heading = VolumeSourceEntry(kind: .item, isHeading: true, repository: "Johnson Library",
+                                        rawText: "Lyndon B. Johnson Library, Austin, Texas")
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: heading) == nil)
+
+        // A record-group series entry keeps the rg+series target, with no library routing.
+        let rgSeries = VolumeSourceEntry(kind: .item, depth: 1, repository: "National Archives",
+                                         recordGroup: "84", seriesName: "Moscow Embassy Files",
+                                         rawText: "Lot-less RG 84 series, Moscow Embassy Files")
+        let rgTarget = VolumeSourcesView.makeNeighborsTarget(for: rgSeries)
+        #expect(rgTarget?.recordGroup == "84" && rgTarget?.series == "Moscow Embassy Files")
+        #expect(rgTarget?.repository == nil)
+
+        // No key on any path → no affordance.
+        let keyless = VolumeSourceEntry(kind: .item, rawText: "Miscellaneous records")
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: keyless) == nil)
+    }
+}
+
 // MARK: - DateIndexingAccuracyTests
 
 /// Verifies that `extractStructuredDate` extracts dates from `.date` AST nodes
@@ -3472,6 +3665,396 @@ struct HeadNestedSourceNoteTests {
                 volumeId: "frus1969-76v25", documentId: "d1"))
             #expect(row.era == "structured")
             #expect(row.classification == "Secret; Nodis")
+        }
+    }
+}
+
+// MARK: - VolumeSourcesKeyingTests (Source Explorer Phase 3 step 1)
+
+/// Writes a volume whose front matter exercises every Phase 3 front-matter keying case:
+/// designator-agnostic lots (F/W/M), run-together boundaries, `Lot File(s)` prefixes,
+/// three-level outline inheritance, decimal/subject-numeric class leaves, junk series
+/// tails, and all three published-works bibliography encodings — a `Published Sources`
+/// pseudo-heading subtree inside the ordinary sources div (preamble, item list,
+/// p-encoded periodical citation, `Note:` annotation, and the long-narrative exit back
+/// to prose), a whole section headed `Published sources`, and a `listofworks` div (the
+/// canonical TEI encoding, unused by the current corpus but kept as the contract).
+private func writeKeyingFixtureVolume(to url: URL, volumeId: String) throws {
+    let xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+      <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+      <publicationStmt><date when="2010">2010</date></publicationStmt>
+      <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+      <text>
+        <front>
+          <div type="section" subtype="sources" xml:id="sources">
+            <head>Sources</head>
+            <p>The editors drew on the collections below.</p>
+            <list>
+              <item><hi rend="strong">National Archives and Records Administration</hi>
+                <list>
+                  <item>Record Group 59, General Records of the Department of State
+                    <list>
+                      <item>Central Files 1967–69: POL 27 ARAB–ISR</item>
+                      <item>DEF 6 MLF</item>
+                      <item>POL 3 UAR: Arab unity</item>
+                      <item>611.80; 611.86; POL Near East 1: Palestinian refugee question</item>
+                      <item>DEF 9 TUR, military personnel, Turkey</item>
+                      <item>AID (US) 15–4 UAR: P.L. 480 agreements, United Arab Republic</item>
+                      <item>Lot 90 D 313Records of the Executive Secretariat</item>
+                      <item>Lot Files 74 D 131</item>
+                      <item>Conference Files: Lot 66 D 110, see National Archives and Records Administration below.</item>
+                      <item>Central Files, 1977–1980</item>
+                    </list>
+                  </item>
+                  <item>Record Group 84, Foreign Service Post Files
+                    <list>
+                      <item>Lot 62 F 83, Moscow Embassy Files</item>
+                    </list>
+                  </item>
+                </list>
+              </item>
+              <item><hi rend="strong">Lyndon B. Johnson Library, Austin, Texas</hi>
+                <list>
+                  <item>National Security File
+                    <list>
+                      <item>Country File, Vietnam</item>
+                    </list>
+                  </item>
+                </list>
+              </item>
+              <item>Lot W 130, Records of the Department</item>
+              <item>Miscellaneous Lot M–88 Records</item>
+            </list>
+            <p rend="center"><hi rend="strong">Published Sources</hi></p>
+            <p>The following publications, including secondary accounts, were particularly
+               useful in the preparation of this volume. Citations to additional published
+               documents, memoirs, and other primary sources are provided throughout the
+               volume as appropriate. No responsibility is taken by the Department of State
+               for the accuracy of events set forth in unofficial sources.</p>
+            <list>
+              <item>Eden, Anthony. Memoirs: Full Circle. Boston: Houghton Mifflin, 1960. Cites Lot 99 D 999.</item>
+            </list>
+            <p>New York Times.</p>
+            <p><hi rend="italic">Note:</hi> The following publications were consulted at the
+               time this volume was prepared in 1980 and 1981. The Department of State takes
+               no responsibility for their accuracy nor endorses their interpretation of the
+               events described therein by their respective authors.</p>
+            <p>Eisenhower, Dwight D. Waging Peace: The White House Years, 1956–1961. Garden City: Doubleday, 1965.</p>
+            <p>In compliance with the Foreign Relations of the United States statute that
+               requires inclusion of comprehensive documentation on major foreign policy
+               decisions, the editors have further identified within this section the files
+               and collections reviewed but not selected, returning the narrative to
+               ordinary prose after the published rows above.</p>
+            <p>Additional narrative that must stay prose.</p>
+          </div>
+          <div type="section" subtype="sources" xml:id="published">
+            <head>Published sources</head>
+            <p rend="flushleft">Kissinger, Henry A. White House Years. Boston: Little, Brown, 1979.</p>
+          </div>
+          <div type="section" subtype="listofworks" xml:id="listofworks">
+            <head>List of Works Cited</head>
+            <list>
+              <item>Acheson, Dean. Present at the Creation. New York: Norton, 1969. Cites Lot 64 D 199.</item>
+            </list>
+          </div>
+        </front>
+        <body>
+          <div type="compilation" xml:id="comp1">
+            <head>Chapter</head>
+            <div type="document" subtype="historical-document" n="1" xml:id="d1">
+              <head>1. Memorandum</head>
+              <p>Body text.</p>
+            </div>
+          </div>
+        </body>
+      </text>
+    </TEI>
+    """
+    try xml.data(using: .utf8)!.write(to: url)
+}
+
+@Suite("Volume sources keying — Source Explorer Phase 3 step 1")
+struct VolumeSourcesKeyingTests {
+
+    /// Parses the keying fixture and returns its front-matter entries.
+    private func parseFixtureEntries() async throws -> [VolumeSourceEntry] {
+        try await withTempDir { dir in
+            let url = dir.appendingPathComponent("frus1969-76v01.xml")
+            try writeKeyingFixtureVolume(to: url, volumeId: "frus1969-76v01")
+            return try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).volumeSources
+        }
+    }
+
+    /// Finds the single entry whose raw text contains `fragment`.
+    private func entry(_ entries: [VolumeSourceEntry], containing fragment: String) throws -> VolumeSourceEntry {
+        try #require(entries.first { $0.rawText.contains(fragment) },
+                     "expected an entry containing \(fragment)")
+    }
+
+    @Test("F, W, and M designator lots are keyed with compact norms (D-only regex retired)")
+    func designatorAgnosticLots() async throws {
+        let entries = try await parseFixtureEntries()
+
+        let fLot = try entry(entries, containing: "Moscow Embassy Files")
+        #expect(fLot.lotFile == "62 F 83")
+        #expect(fLot.lotFileNorm == "62F83")
+
+        let wLot = try entry(entries, containing: "Lot W 130")
+        #expect(wLot.lotFile == "W 130")
+        #expect(wLot.lotFileNorm == "W130")
+
+        let mLot = try entry(entries, containing: "Miscellaneous Lot")
+        #expect(mLot.lotFile == "M–88")
+        #expect(mLot.lotFileNorm == "M88")
+    }
+
+    @Test("Run-together text after the lot number does not defeat the boundary")
+    func lotRunTogetherBoundary() async throws {
+        let entries = try await parseFixtureEntries()
+        let lot = try entry(entries, containing: "Executive Secretariat")
+        #expect(lot.lotFile == "90 D 313",
+                "'Lot 90 D 313Records...' must key the bare number")
+        #expect(lot.lotFileNorm == "90D313")
+    }
+
+    @Test("A Lot File(s) prefix is skipped, never captured into the key")
+    func lotFilePrefixClean() async throws {
+        let entries = try await parseFixtureEntries()
+        let lot = try entry(entries, containing: "74 D 131")
+        #expect(lot.lotFile == "74 D 131",
+                "the greedy-prefix pollution keyed lot=\"Files 74 D 131\"")
+        #expect(lot.lotFileNorm == "74D131")
+    }
+
+    @Test("Record group and repository inherit from ancestor headings down three levels")
+    func inheritanceThreeLevels() async throws {
+        let entries = try await parseFixtureEntries()
+
+        // Depth-1 RG heading: own-text keyword wins over inheritance ("General Records
+        // of the Department of State" names the agency — exactly the repository string
+        // the doc side stores for lot/decimal rows).
+        let rgHeading = try entry(entries, containing: "General Records of the Department of State")
+        #expect(rgHeading.depth == 1)
+        #expect(rgHeading.recordGroup == "59")
+        #expect(rgHeading.repository == "Department of State")
+
+        // Depth-2 leaves inherit record group and repository from the parent heading.
+        for fragment in ["POL 27 ARAB–ISR", "DEF 6 MLF", "Executive Secretariat"] {
+            let leaf = try entry(entries, containing: fragment)
+            #expect(leaf.depth == 2)
+            #expect(leaf.recordGroup == "59", "leaf \(fragment) must inherit RG 59")
+            #expect(leaf.repository == "Department of State",
+                    "leaf \(fragment) must inherit the nearest ancestor repository")
+        }
+
+        // The RG 84 subtree inherits its own parent, not the sibling's — and its leaf
+        // walks PAST the keyword-less parent heading to the depth-0 repository heading
+        // (three-level inheritance).
+        let rg84Heading = try entry(entries, containing: "Foreign Service Post Files")
+        #expect(rg84Heading.repository == "National Archives",
+                "a heading without its own repository keyword inherits the outline's")
+        let fLot = try entry(entries, containing: "Moscow Embassy Files")
+        #expect(fLot.recordGroup == "84")
+        #expect(fLot.repository == "National Archives",
+                "the leaf inherits the grandparent repository across a keyword-less parent")
+
+        // Presidential-library identity flows down to grandchildren.
+        let libraryLeaf = try entry(entries, containing: "Country File, Vietnam")
+        #expect(libraryLeaf.depth == 2)
+        #expect(libraryLeaf.repository == "Johnson Library")
+        #expect(libraryLeaf.recordGroup == nil)
+    }
+
+    @Test("Decimal / subject-numeric class leaves get a location key in the shared canonical form")
+    func classLeafKeys() async throws {
+        let entries = try await parseFixtureEntries()
+
+        // Colon-prefixed class leaf (audit shape): the class is the segment after the
+        // final colon — and the TEI en-dash canonicalizes to the ASCII hyphen the same
+        // file carries in document source notes.
+        let pol = try entry(entries, containing: "POL 27 ARAB–ISR")
+        #expect(pol.decimalClass == "POL 27 ARAB-ISR")
+        #expect(pol.lotFile == nil)
+
+        let def = try entry(entries, containing: "DEF 6 MLF")
+        #expect(def.decimalClass == "DEF 6 MLF")
+
+        // Leaf-before-colon (the dominant 1961–1976 shape): class leads, prose follows.
+        let leafFirst = try entry(entries, containing: "Arab unity")
+        #expect(leafFirst.decimalClass == "POL 3 UAR")
+
+        // Semicolon class lists key on the first passing segment.
+        let list = try entry(entries, containing: "Palestinian refugee question")
+        #expect(list.decimalClass == "611.80")
+
+        // Comma-described leaves (the 1969–1976 shape) key on the leading segment.
+        let comma = try entry(entries, containing: "military personnel")
+        #expect(comma.decimalClass == "DEF 9 TUR")
+
+        // Parenthesized agency qualifiers pass the shared gate, dash-canonicalized.
+        let aid = try entry(entries, containing: "P.L. 480 agreements")
+        #expect(aid.decimalClass == "AID (US) 15-4 UAR")
+
+        // Lot-keyed rows and prose-ish rows are never class leaves.
+        let lot = try entry(entries, containing: "Executive Secretariat")
+        #expect(lot.decimalClass == nil)
+        let heading = try entry(entries, containing: "General Records of the Department of State")
+        #expect(heading.decimalClass == nil)
+    }
+
+    @Test("Junk series-name captures store nil instead of heuristic tails")
+    func junkSeriesTailsStoreNil() async throws {
+        let entries = try await parseFixtureEntries()
+
+        // Cross-reference tail ("…, see National Archives … below.") is rejected.
+        let crossRef = try entry(entries, containing: "66 D 110")
+        #expect(crossRef.seriesName == nil,
+                "a 'see …' tail must not become a series name")
+        #expect(crossRef.lotFile == "66 D 110", "the lot key itself is kept")
+
+        // Bare year-range tail ("Central Files, 1977–1980") is rejected.
+        let yearRange = try entry(entries, containing: "1977–1980")
+        #expect(yearRange.seriesName == nil,
+                "a bare year range must not become a series name")
+
+        // A real series tail still passes the gate.
+        let good = try entry(entries, containing: "Moscow Embassy Files")
+        #expect(good.seriesName == "Moscow Embassy Files")
+    }
+
+    @Test("listofworks bibliography rows are marked and carry no archival keys")
+    func bibliographyMarker() async throws {
+        let entries = try await parseFixtureEntries()
+        let bib = try entry(entries, containing: "Present at the Creation")
+        #expect(bib.kind == .bibliography)
+        #expect(bib.lotFile == nil,
+                "a lot number cited inside a book title must not key the row")
+        #expect(bib.lotFileNorm == nil)
+        #expect(bib.recordGroup == nil)
+        #expect(bib.decimalClass == nil)
+
+        // The archival sections are untouched by the marker.
+        #expect(entries.contains { $0.kind == .item })
+        #expect(entries.contains { $0.kind == .prose })
+    }
+
+    @Test("A Published Sources pseudo-heading subtree marks its rows bibliography (the real corpus encoding)")
+    func publishedPseudoHeadingSubtree() async throws {
+        let entries = try await parseFixtureEntries()
+
+        // The pseudo-heading paragraph itself stays prose, like every other
+        // pseudo-heading in the narrative flow.
+        let heading = try entry(entries, containing: "Published Sources")
+        #expect(heading.kind == .prose)
+
+        // A long editorial preamble BEFORE any published row stays in the subtree
+        // (frus1952-54v13's Part B shape) — it describes the list.
+        let preamble = try entry(entries, containing: "particularly useful")
+        #expect(preamble.kind == .bibliography)
+
+        // The published items are bibliography and never keyed — even when a book
+        // title cites a lot number.
+        let book = try entry(entries, containing: "Full Circle")
+        #expect(book.kind == .bibliography)
+        #expect(book.lotFile == nil)
+        #expect(book.lotFileNorm == nil)
+        #expect(book.decimalClass == nil)
+
+        // P-encoded periodical citations inside the subtree are bibliography
+        // (frus1981-88v01's newspaper list shape).
+        let paper = try entry(entries, containing: "New York Times")
+        #expect(paper.kind == .bibliography)
+
+        // A long `Note:` annotation about the list stays in the subtree
+        // (frus1958-60v05's memoirs shape), and the citation after it too.
+        let note = try entry(entries, containing: "were consulted at the time")
+        #expect(note.kind == .bibliography)
+        let memoir = try entry(entries, containing: "Waging Peace")
+        #expect(memoir.kind == .bibliography)
+
+        // A long narrative paragraph AFTER the published rows exits the subtree
+        // (frus1964-68v06 continues its sources div with a covert-actions note).
+        let exit = try entry(entries, containing: "In compliance with the Foreign Relations")
+        #expect(exit.kind == .prose)
+        let after = try entry(entries, containing: "Additional narrative")
+        #expect(after.kind == .prose)
+    }
+
+    @Test("A section headed Published sources is a bibliography wholesale (frus1969-76v34/v36 shape)")
+    func publishedHeadSection() async throws {
+        let entries = try await parseFixtureEntries()
+        let book = try entry(entries, containing: "Kissinger")
+        #expect(book.kind == .bibliography)
+    }
+
+    @Test("Front-matter and document-side lot keys normalize identically (norm parity)")
+    func lotNormParityAcrossSides() async throws {
+        // The same lot cited in four formatting variants: front-matter items on one
+        // side, loose document source notes on the other. Both must reduce to the
+        // one canonical compact key.
+        let variants = ["64 D 199", "64-D-199", "64–D 199", "64D199"]
+        for variant in variants {
+            // Front-matter side: SourcesParserDelegate keys via the shared grammar.
+            let entries = try await withTempDir { dir -> [VolumeSourceEntry] in
+                let url = dir.appendingPathComponent("v.xml")
+                let xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                  <teiHeader><fileDesc><titleStmt><title>v</title></titleStmt>
+                  <publicationStmt><date>2010</date></publicationStmt>
+                  <sourceDesc><p>f</p></sourceDesc></fileDesc></teiHeader>
+                  <text><front>
+                    <div type="section" subtype="sources" xml:id="sources">
+                      <head>Sources</head>
+                      <list><item>Lot \(variant), Records of the Policy Planning Staff</item></list>
+                    </div>
+                  </front><body>
+                    <div type="document" xml:id="d1"><head>1. Doc</head><p>t</p></div>
+                  </body></text>
+                </TEI>
+                """
+                try xml.data(using: .utf8)!.write(to: url)
+                return try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).volumeSources
+            }
+            let frontMatterEntry = try #require(entries.first { $0.kind == .item })
+            #expect(frontMatterEntry.lotFileNorm == "64D199",
+                    "front-matter variant \(variant) must normalize to 64D199")
+
+            // Document side: SourceNoteParser keys the same variant the same way.
+            let parsed = SourceNoteParser().parse("PPS files, lot \(variant), memoranda of conversation")
+            guard case .lotFile(_, let docLot, _) = parsed else {
+                Issue.record("doc-side variant \(variant) did not parse as a lot file")
+                continue
+            }
+            #expect(SourceNoteParser.lotFileNorm(docLot) == frontMatterEntry.lotFileNorm,
+                    "both sides must write the identical compact key for \(variant)")
+        }
+    }
+
+    @Test("New key columns and the bibliography kind round-trip through volume_sources")
+    func volumeSourcesRoundTripNewColumns() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let url = volDir.appendingPathComponent("frus1969-76v01.xml")
+            try writeKeyingFixtureVolume(to: url, volumeId: "frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let sources = try await pipeline.volumeSources(forVolumeId: "frus1969-76v01")
+
+            let lot = try #require(sources.first { $0.rawText.contains("Moscow Embassy Files") })
+            #expect(lot.lotFileNorm == "62F83")
+            #expect(lot.recordGroup == "84")
+
+            let classLeaf = try #require(sources.first { $0.rawText.contains("DEF 6 MLF") })
+            #expect(classLeaf.decimalClass == "DEF 6 MLF")
+            #expect(classLeaf.recordGroup == "59", "inherited RG survives the round-trip")
+
+            let bib = try #require(sources.first { $0.rawText.contains("Present at the Creation") })
+            #expect(bib.kind == .bibliography)
+            #expect(bib.lotFileNorm == nil)
         }
     }
 }
