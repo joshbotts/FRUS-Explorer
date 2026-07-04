@@ -47,6 +47,10 @@ import SwiftUI
 ///          banner view during active indexing (e.g. on each progress update).
 ///   1.2 — Dynamic Type pass 2026-07-04: fixed-point caption fonts replaced with
 ///          scalable `FRUSTheme.captionFont` / `captionSmallFont` (icons track too).
+///   1.3 — SA-1b review fix: explicitly re-inject `AppState` into the
+///          `WhileIndexingSheet` presentation so the mid-onboarding series-production
+///          dashboard reads real manifest data via the project's explicit
+///          environment-re-injection convention, not ambient inheritance.
 struct IndexingQueueBannerView: View {
 
     /// Current volume's indexing progress.
@@ -61,6 +65,12 @@ struct IndexingQueueBannerView: View {
     var averageDocsPerSecond: Double = 0
     /// Rolling average document count from completed volumes; falls back to 600.
     var averageDocumentCount: Int = 600
+
+    /// Shared app state, re-injected into the onboarding sheet below so the
+    /// mid-onboarding dashboard reads real manifest data rather than relying on
+    /// ambient `@Observable` environment inheritance (matches the explicit
+    /// re-injection convention used at `MainTabView`'s `pendingWordCloud` sheet).
+    @Environment(AppState.self) private var appState
 
     @State private var isExpanded = false
     @State private var showWhileIndexing = false
@@ -89,6 +99,7 @@ struct IndexingQueueBannerView: View {
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
         .sheet(isPresented: $showWhileIndexing) {
             WhileIndexingSheet()
+                .environment(appState)
         }
         .onAppear {
             // Auto-open the educational sheet the first time this banner appears
