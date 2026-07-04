@@ -195,12 +195,28 @@ enum DocumentSheet: Identifiable {
 ///   3.8 — Session 2026-07-04 (UI audit A3): highlight color picker swatches use the
 ///          localized `displayName` for their accessibility label and show the color's
 ///          initial under Differentiate Without Color
+///   3.9 — Dynamic Type pass 2026-07-04 (UI audit A1/A2): not-found empty-state
+///          glyphs scale via `@ScaledMetric` (capped at accessibility3); the tag
+///          button + panel disclosure chevron use scalable caption text; the
+///          highlight color-picker sheet gains a `.medium` detent so its content
+///          isn't clipped by the fixed 180 pt detent at large Dynamic Type sizes.
+///   3.10 — Dynamic Type review 2026-07-04: not-found glyph caps enforced in code
+///          via `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
+///          on a `.system(size:)` font); the highlight color-picker sheet content
+///          is wrapped in a `ScrollView` so the grown chrome scrolls instead of
+///          clipping at the smallest (`.height(180)`) detent.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
     let entry: DocumentBrowserEntry
+
+    /// Point size of the "…unavailable" empty-state glyphs (person / gloss not
+    /// found sheets), scaled with Dynamic Type relative to `.largeTitle` so the
+    /// glyph tracks the message text. Clamped via `FRUSTheme.cappedGlyphSize`
+    /// at each site.
+    @ScaledMetric(relativeTo: .largeTitle) private var notFoundGlyphSize: CGFloat = 44
 
     @State private var vm: DocumentViewModel?
     /// Drives the single consolidated sheet for all DocumentView-level presentations (F-024).
@@ -1236,7 +1252,7 @@ struct DocumentView: View {
         NavigationStack {
             VStack(spacing: 16) {
                 Image(systemName: "person.crop.circle.badge.questionmark")
-                    .font(.system(size: 44))
+                    .font(.system(size: FRUSTheme.cappedGlyphSize(notFoundGlyphSize, base: 44)))
                     .foregroundStyle(.secondary)
                 Text(String(localized: "personNotFound.title",
                             defaultValue: "Person Information Unavailable"))
@@ -1269,7 +1285,7 @@ struct DocumentView: View {
         NavigationStack {
             VStack(spacing: 16) {
                 Image(systemName: "text.book.closed")
-                    .font(.system(size: 44))
+                    .font(.system(size: FRUSTheme.cappedGlyphSize(notFoundGlyphSize, base: 44)))
                     .foregroundStyle(.secondary)
                 Text(String(localized: "glossNotFound.title",
                             defaultValue: "Term Definition Unavailable"))
@@ -1662,7 +1678,7 @@ struct DocumentView: View {
                                                 defaultValue: "Add Tag"))
                                 }
                             }
-                            .font(.system(size: FRUSTheme.captionSize, weight: .medium))
+                            .font(FRUSTheme.captionFont.weight(.medium))
                             .padding(.horizontal, 8)
                             .padding(.vertical, FRUSTheme.tagPaddingV)
                             .background(Color.accentColor.opacity(0.10))
@@ -1701,7 +1717,7 @@ struct DocumentView: View {
                 }
                 Spacer()
                 Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 10))
+                    .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
@@ -1811,38 +1827,45 @@ struct DocumentView: View {
 
     private var highlightColorPickerSheet: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                Text(String(localized: "doc.highlight.pickColor",
-                            defaultValue: "Highlight Color"))
-                    .font(.headline)
-                HStack(spacing: 16) {
-                    ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
-                        Button {
-                            createHighlight(color: color)
-                            showHighlightColorPicker = false
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(swiftUIColor(for: color))
-                                    .frame(width: 44, height: 44)
-                                Circle()
-                                    .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
-                                    .frame(width: 44, height: 44)
-                                // A3: under Differentiate Without Color the swatch also
-                                // shows the color's initial, so choices aren't hue-only.
-                                if differentiateWithoutColor {
-                                    Text(String(color.displayName.prefix(1)))
-                                        .font(.callout.weight(.bold))
-                                        .foregroundStyle(Color.black.opacity(0.7))
+            // A2: wrap in a ScrollView so that at large Dynamic Type sizes the
+            // title/nav chrome growth scrolls instead of clipping the swatch row.
+            // A multi-detent sheet opens at its SMALLEST detent, so `.height(180)`
+            // alone would still clip the (grown) chrome; scrolling keeps every
+            // control reachable even before the user drags up to `.medium`.
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text(String(localized: "doc.highlight.pickColor",
+                                defaultValue: "Highlight Color"))
+                        .font(.headline)
+                    HStack(spacing: 16) {
+                        ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
+                            Button {
+                                createHighlight(color: color)
+                                showHighlightColorPicker = false
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(swiftUIColor(for: color))
+                                        .frame(width: 44, height: 44)
+                                    Circle()
+                                        .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                                        .frame(width: 44, height: 44)
+                                    // A3: under Differentiate Without Color the swatch also
+                                    // shows the color's initial, so choices aren't hue-only.
+                                    if differentiateWithoutColor {
+                                        Text(String(color.displayName.prefix(1)))
+                                            .font(.callout.weight(.bold))
+                                            .foregroundStyle(Color.black.opacity(0.7))
+                                    }
                                 }
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(color.displayName)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(color.displayName)
                     }
                 }
+                .padding()
             }
-            .padding()
             .navigationTitle(String(localized: "doc.highlight.sheet.title",
                                     defaultValue: "Choose Color"))
             .navigationBarTitleDisplayMode(.inline)
@@ -1855,7 +1878,11 @@ struct DocumentView: View {
                 }
             }
         }
-        .presentationDetents([.height(180)])
+        // A2: a multi-detent sheet opens at its SMALLEST detent, so `.height(180)`
+        // can still clip the grown title/nav chrome at large Dynamic Type sizes.
+        // The ScrollView above lets that overflow scroll (every control stays
+        // reachable); `.medium` additionally lets the user drag the sheet taller.
+        .presentationDetents([.height(180), .medium])
     }
 
     // MARK: - Clipboard

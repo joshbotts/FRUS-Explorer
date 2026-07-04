@@ -45,6 +45,8 @@ import SwiftUI
 ///   1.1 — Fix: `hasShownThisSession` moved from `@State` to `@AppStorage` so the
 ///          educational sheet is not re-triggered every time SwiftUI recreates the
 ///          banner view during active indexing (e.g. on each progress update).
+///   1.2 — Dynamic Type pass 2026-07-04: fixed-point caption fonts replaced with
+///          scalable `FRUSTheme.captionFont` / `captionSmallFont` (icons track too).
 struct IndexingQueueBannerView: View {
 
     /// Current volume's indexing progress.
@@ -106,7 +108,7 @@ struct IndexingQueueBannerView: View {
             Image(systemName: update.stage == .optimizing
                   ? "wand.and.stars"
                   : "square.and.arrow.down.on.square")
-                .font(.system(size: FRUSTheme.captionSize))
+                .font(FRUSTheme.captionFont)
                 .foregroundStyle(.secondary)
 
             Text(update.stage == .optimizing
@@ -114,7 +116,7 @@ struct IndexingQueueBannerView: View {
                           defaultValue: "Finalizing index…")
                  : String(localized: "indexing.queue.position",
                           defaultValue: "Volume \(queuePosition.current) of \(queuePosition.total)"))
-            .font(.system(size: FRUSTheme.captionSize))
+            .font(FRUSTheme.captionFont)
             .foregroundStyle(.secondary)
             .lineLimit(1)
 
@@ -136,7 +138,7 @@ struct IndexingQueueBannerView: View {
 
                 if let eta = totalETAString {
                     Text(eta)
-                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
                         .monospacedDigit()
                 }
@@ -151,7 +153,7 @@ struct IndexingQueueBannerView: View {
                     isExpanded.toggle()
                 } label: {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
@@ -165,7 +167,7 @@ struct IndexingQueueBannerView: View {
 
     private var subtitleRow: some View {
         Text(update.volumeId)
-            .font(.system(size: FRUSTheme.captionSmallSize))
+            .font(FRUSTheme.captionSmallFont)
             .foregroundStyle(.tertiary)
             .lineLimit(1)
             .truncationMode(.middle)
@@ -177,10 +179,10 @@ struct IndexingQueueBannerView: View {
             ForEach(volumeTitles.prefix(6), id: \.self) { title in
                 HStack(spacing: 5) {
                     Image(systemName: "clock")
-                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
                     Text(title)
-                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                 }
@@ -195,7 +197,7 @@ struct IndexingQueueBannerView: View {
                            defaultValue: "Learn about FRUS while you wait →"),
                     systemImage: "book.pages"
                 )
-                .font(.system(size: FRUSTheme.captionSmallSize))
+                .font(FRUSTheme.captionSmallFont)
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.accentColor)

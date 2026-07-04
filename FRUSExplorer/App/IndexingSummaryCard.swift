@@ -29,6 +29,12 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 114: initial implementation
+///   1.1 — Dynamic Type pass 2026-07-04: iOS banner caption fonts scale via
+///          `FRUSTheme.captionFont` / `captionSmallFont`; the macOS sheet hero
+///          glyph scales via `@ScaledMetric` (capped at accessibility3).
+///   1.2 — Dynamic Type review 2026-07-04: glyph cap enforced in code via
+///          `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
+///          on a `.system(size:)` font).
 struct IndexingSummaryCard: View {
 
     /// Aggregate metrics from the completed indexing pass.
@@ -41,6 +47,12 @@ struct IndexingSummaryCard: View {
     let onSearchVolume: (String) -> Void
     /// Called when the card should be dismissed: after auto-dismiss or on action tap.
     let onDismiss: () -> Void
+
+    #if os(macOS)
+    /// Point size of the macOS sheet's success glyph, scaled with Dynamic Type
+    /// relative to `.largeTitle` so it tracks the `.headline` title beside it.
+    @ScaledMetric(relativeTo: .largeTitle) private var successGlyphSize: CGFloat = 48
+    #endif
 
     var body: some View {
         #if os(iOS)
@@ -59,14 +71,14 @@ struct IndexingSummaryCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: FRUSTheme.captionSize))
+                        .font(FRUSTheme.captionFont)
                         .foregroundStyle(.green)
 
                     Text(String(
                         localized: "indexing.summary.banner.title",
                         defaultValue: "Indexed \(volumeTitle ?? metadata.volumeId)"
                     ))
-                    .font(.system(size: FRUSTheme.captionSize))
+                    .font(FRUSTheme.captionFont)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -78,14 +90,14 @@ struct IndexingSummaryCard: View {
                         onDismiss()
                     } label: {
                         Text(String(localized: "indexing.summary.search", defaultValue: "Search →"))
-                            .font(.system(size: FRUSTheme.captionSize, weight: .medium))
+                            .font(FRUSTheme.captionFont.weight(.medium))
                     }
                     .buttonStyle(.borderless)
                 }
 
                 if let summary = statsSummaryLine {
                     Text(summary)
-                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                 }
@@ -107,7 +119,7 @@ struct IndexingSummaryCard: View {
     private var sheetBody: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
+                .font(.system(size: FRUSTheme.cappedGlyphSize(successGlyphSize, base: 48)))
                 .foregroundStyle(.green)
 
             VStack(spacing: 6) {

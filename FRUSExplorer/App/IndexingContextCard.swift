@@ -34,6 +34,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 116: initial implementation
+///   1.1 — Dynamic Type pass 2026-07-04: fixed-point caption font replaced with
+///          scalable `FRUSTheme.captionFont`.
 struct IndexingContextCard: View {
 
     /// The manifest entry for the volume being indexed.
@@ -125,7 +127,7 @@ struct IndexingContextCard: View {
                             onPersonSearch?(name)
                         } label: {
                             Text(name)
-                                .font(.system(size: FRUSTheme.captionSize))
+                                .font(FRUSTheme.captionFont)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
                                 .background(Color.accentColor.opacity(0.12),

@@ -40,6 +40,8 @@ import SwiftUI
 ///   1.1 — Session 113: `metadata` parameter; secondary discovery-counts row
 ///   1.2 — Session 116: `IndexingContextCard` added for iPad (regular horizontal size class);
 ///          `onPersonSearch` callback for scoped person search from the card
+///   1.3 — Dynamic Type pass 2026-07-04: fixed-point caption fonts replaced with
+///          scalable `FRUSTheme.captionFont` / `captionSmallFont` (icons track too).
 struct IndexingBannerView: View {
 
     let update: IndexingProgressUpdate
@@ -61,14 +63,14 @@ struct IndexingBannerView: View {
                     // for 30–60 s while FTS5 segments are merged.
                     if update.stage == .optimizing {
                         Image(systemName: "wand.and.stars")
-                            .font(.system(size: FRUSTheme.captionSize))
+                            .font(FRUSTheme.captionFont)
                             .foregroundStyle(.secondary)
 
                         Text(String(
                             localized: "indexing.banner.finalizing",
                             defaultValue: "Finalizing index…"
                         ))
-                        .font(.system(size: FRUSTheme.captionSize))
+                        .font(FRUSTheme.captionFont)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
 
@@ -80,14 +82,14 @@ struct IndexingBannerView: View {
                             .tint(.accentColor)
                     } else {
                         Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: FRUSTheme.captionSize))
+                            .font(FRUSTheme.captionFont)
                             .foregroundStyle(.secondary)
 
                         Text(String(
                             localized: "indexing.banner.label",
                             defaultValue: "Indexing \(update.volumeId)…"
                         ))
-                        .font(.system(size: FRUSTheme.captionSize))
+                        .font(FRUSTheme.captionFont)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -105,7 +107,7 @@ struct IndexingBannerView: View {
 
                             if let eta = etaString {
                                 Text(eta)
-                                    .font(.system(size: FRUSTheme.captionSmallSize))
+                                    .font(FRUSTheme.captionSmallFont)
                                     .foregroundStyle(.tertiary)
                                     .monospacedDigit()
                             }
@@ -121,7 +123,7 @@ struct IndexingBannerView: View {
                 if let meta = metadata, meta.volumeId == update.volumeId,
                    let summary = discoverySummary(meta) {
                     Text(summary)
-                        .font(.system(size: FRUSTheme.captionSmallSize))
+                        .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                         .truncationMode(.tail)

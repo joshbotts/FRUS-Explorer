@@ -59,6 +59,11 @@ import SwiftData
 ///          turn); per-document window identity focuses an already-open document
 ///          rather than duplicating it. A row context-menu "Open in Place" pushes
 ///          inline instead. iPhone / non-Stage-Manager keeps the push behaviour.
+///   1.13 — Dynamic Type pass 2026-07-04 (UI audit A1): the empty-prompt hero
+///          glyph scales via `@ScaledMetric` (capped at accessibility3).
+///   1.14 — Dynamic Type review 2026-07-04: glyph cap enforced in code via
+///          `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
+///          on a `.system(size:)` font).
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -73,6 +78,11 @@ struct SearchView: View {
     /// results list stays visible alongside; otherwise the document is pushed onto
     /// the search navigation stack as before.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+
+    /// Point size of the empty-prompt hero glyph, scaled with Dynamic Type
+    /// relative to `.largeTitle` so it tracks the prompt text. Clamped via
+    /// `FRUSTheme.cappedGlyphSize` at the glyph site.
+    @ScaledMetric(relativeTo: .largeTitle) private var promptGlyphSize: CGFloat = 48
 
     @State private var vm: SearchViewModel
     @State private var showTimeline = false
@@ -466,7 +476,7 @@ struct SearchView: View {
             // prompt reflects that the next query will be scoped to that volume.
             VStack(spacing: 8) {
                 Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: 48))
+                    .font(.system(size: FRUSTheme.cappedGlyphSize(promptGlyphSize, base: 48)))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
                 Text(vm.effectiveVolumeIds.isEmpty
