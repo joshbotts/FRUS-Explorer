@@ -4058,3 +4058,153 @@ struct VolumeSourcesKeyingTests {
         }
     }
 }
+
+// MARK: - CollectionAuthorityLocalTests (Source Explorer Phase 4 step 2)
+
+/// Verifies the Phase-4 app wiring on a fixture index: the S5 local-stats query
+/// (`localCollectionStats` — documents + distinct volumes per authority record, counted
+/// from the user's own index) and the display-time alias fallback in
+/// `archivalNeighbors(forLotFile:…)` (authority lot key first, then alias forms through
+/// the entry's series-scoped path; never consulted when a direct key matched).
+///
+/// Version history:
+///   1.0 — Session 2026-07-03: initial implementation
+@Suite("IndexingPipeline — collection authority local stats & alias fallback")
+struct CollectionAuthorityLocalTests {
+
+    /// Indexes two volumes of documents with the given source notes.
+    private func indexFixture(
+        dir: URL,
+        volumes: [(volumeId: String, notes: [(id: String, note: String)])]
+    ) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        for volume in volumes {
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("\(volume.volumeId).xml"),
+                volumeId: volume.volumeId,
+                documents: volume.notes.enumerated().map { i, doc in
+                    (doc.id, "<head>\(i + 1). Memo</head><note type=\"source\">\(doc.note)</note><p>Text.</p>")
+                }
+            )
+            try await pipeline.indexVolume(volume.volumeId)
+        }
+        return pipeline
+    }
+
+    @Test("localCollectionStats counts lot-keyed documents and their distinct volumes")
+    func lotStats() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, volumes: [
+                ("frus1969-76v01", [
+                    ("d1", "SPA Files: Lot 61–D 146, Box 4581"),   // en-dash variant
+                    ("d2", "SPA Files: Lot 61-D 146, Box 4582"),   // hyphen variant
+                    ("d3", "PPS files, lot 64 D 563, memoranda"),  // different lot
+                ]),
+                ("frus1969-76v02", [
+                    ("d1", "SPA Files: Lot 61 D 146, Box 4590"),   // spaced variant
+                ]),
+            ])
+            let stats = try await pipeline.localCollectionStats(
+                lotFileNorm: "61D146", repository: "Department of State",
+                recordGroup: "59", names: [])
+            #expect(stats.documentCount == 3,
+                    "all dash/space variants share the norm; got \(stats.documentCount)")
+            #expect(stats.volumeCount == 2)
+        }
+    }
+
+    @Test("localCollectionStats folds name and alias forms through the RG-scoped shape")
+    func nameAndAliasStats() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, volumes: [
+                ("frus1969-76v01", [
+                    ("d1", "Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret."),
+                    ("d2", "Source: National Archives, RG 84, Moscow Post Records, Box 3. Secret."),
+                    ("d3", "Source: National Archives, RG 84, Leningrad Consulate Files, Box 1. Secret."),
+                ]),
+            ])
+            // The record's canonical name plus one alias — both forms count; the
+            // unrelated series does not.
+            let stats = try await pipeline.localCollectionStats(
+                lotFileNorm: nil, repository: "National Archives", recordGroup: "84",
+                names: ["Moscow Embassy Files", "Moscow Post Records"])
+            #expect(stats.documentCount == 2)
+            #expect(stats.volumeCount == 1)
+
+            // Degenerate short forms are refused; nothing matches.
+            let short = try await pipeline.localCollectionStats(
+                lotFileNorm: nil, repository: "National Archives", recordGroup: "84",
+                names: ["Mos"])
+            #expect(short.documentCount == 0)
+        }
+    }
+
+    @Test("Alias fallback: an authority alias matches when the entry's own series misses")
+    func aliasFallbackSeriesForm() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, volumes: [
+                ("frus1969-76v01", [
+                    ("d1", "Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret."),
+                    ("d2", "Source: National Archives, RG 84, Moscow Embassy Files, Box 57. Secret."),
+                ]),
+            ])
+            // The front-matter heading writes a different grain than the doc notes —
+            // the direct series misses; the authority's alias bridges it.
+            let fallback = IndexingPipeline.CollectionAliasFallback(
+                lotFileNorm: nil,
+                names: ["Records of the Moscow Embassy", "Moscow Embassy Files"])
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Embassy Moscow Records",
+                aliasFallback: fallback)
+            #expect(Set(result.documents.map(\.documentId)) == ["d1", "d2"],
+                    "the second alias form must match through the RG-scoped path")
+            #expect(result.basis?.contains("Moscow Embassy Files") == true,
+                    "the basis names the alias that matched")
+        }
+    }
+
+    @Test("Alias fallback: the authority's lot key matches a lot-less heading entry")
+    func aliasFallbackLotKey() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, volumes: [
+                ("frus1969-76v01", [
+                    ("d1", "SPA Files: Lot 61-D 146, Box 4581"),
+                    ("d2", "SPA Files: Lot 61-D 146, Box 4582"),
+                ]),
+            ])
+            // A heading-level series row carries no lot of its own and no RG; the
+            // direct paths have no key. The authority record is lot-keyed.
+            let fallback = IndexingPipeline.CollectionAliasFallback(
+                lotFileNorm: "61D146", names: ["SPA Files"])
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: "Records of the Special Assistant",
+                aliasFallback: fallback)
+            #expect(Set(result.documents.map(\.documentId)) == ["d1", "d2"],
+                    "the authority lot key is tried first in the fallback order")
+            #expect(result.basis?.contains("61D146") == true)
+        }
+    }
+
+    @Test("Alias fallback never runs when a direct key path matched")
+    func directMatchWins() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, volumes: [
+                ("frus1969-76v01", [
+                    ("d1", "Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret."),
+                    ("d2", "SPA Files: Lot 61-D 146, Box 4581"),
+                ]),
+            ])
+            // The direct RG+series path matches d1; the fallback (which would match
+            // d2's lot) must not be consulted.
+            let fallback = IndexingPipeline.CollectionAliasFallback(
+                lotFileNorm: "61D146", names: ["SPA Files"])
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "84", series: "Moscow Embassy Files",
+                aliasFallback: fallback)
+            #expect(Set(result.documents.map(\.documentId)) == ["d1"])
+            #expect(result.basis?.contains("RG 84") == true,
+                    "the basis stays the direct path's, not the alias form")
+        }
+    }
+}

@@ -3690,6 +3690,8 @@ private struct CorpusSectionDocumentView: View {
     /// the sheets anchor on this view's Lists, exactly once (see the body comments).
     @State private var sourceNeighborsTarget: VolumeSourceNeighborsTarget? = nil
     @State private var crossVolumeTarget: CrossVolumeTarget? = nil
+    /// Hoisted Collection-detail target (Phase 4) — presented on this view's List.
+    @State private var collectionDetailTarget: AuthorityCollectionRecord? = nil
     @State private var selectedPerson: PersonIndexEntry? = nil
 
     // MARK: - Section Routing
@@ -3756,7 +3758,8 @@ private struct CorpusSectionDocumentView: View {
                 List {
                     VolumeSourcesView(volumeId: volumeId,
                                       sourceNeighborsTarget: $sourceNeighborsTarget,
-                                      crossVolumeTarget: $crossVolumeTarget)
+                                      crossVolumeTarget: $crossVolumeTarget,
+                                      collectionDetailTarget: $collectionDetailTarget)
                 }
                 .listStyle(.inset)
                 .sheet(item: $sourceNeighborsTarget) { target in
@@ -3767,13 +3770,18 @@ private struct CorpusSectionDocumentView: View {
                             recordGroup:  target.recordGroup,
                             series:       target.series,
                             repository:   target.repository,
-                            decimalClass: target.decimalClass
+                            decimalClass: target.decimalClass,
+                            aliasFallback: target.aliasFallback
                         )) ?? ([], 0, nil)
                     }
                     .environment(appState)
                 }
                 .sheet(item: $crossVolumeTarget) { target in
                     VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
+                        .environment(appState)
+                }
+                .sheet(item: $collectionDetailTarget) { record in
+                    CollectionDetailSheet(record: record)
                         .environment(appState)
                 }
             } else {
@@ -3901,7 +3909,41 @@ private struct CorpusSectionDocumentView: View {
 struct SourceExplorerWindowView: View {
     @Environment(AppState.self) private var appState
 
+    /// The window's two views: the parsed document note, or the corpus-wide
+    /// browse-by-collection list (Source Explorer Phase 4).
+    private enum Mode: Hashable { case note, collections }
+    @State private var mode: Mode = .note
+
     var body: some View {
+        VStack(spacing: 0) {
+            Picker(String(localized: "source.explorer.window.mode", defaultValue: "View"),
+                   selection: $mode) {
+                Text(String(localized: "source.explorer.window.mode.note",
+                            defaultValue: "Source Note")).tag(Mode.note)
+                Text(String(localized: "source.explorer.window.mode.collections",
+                            defaultValue: "Collections")).tag(Mode.collections)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 320)
+            .padding(.vertical, 8)
+            Divider()
+            switch mode {
+            case .note:
+                noteContent
+            case .collections:
+                // The searchable, repository-grouped authority list; rows open the
+                // shared Collection detail.
+                NavigationStack {
+                    CollectionBrowserView()
+                }
+            }
+        }
+    }
+
+    /// The pre-Phase-4 window content: the current document's parsed source note.
+    @ViewBuilder
+    private var noteContent: some View {
         if let note = appState.currentSourceNote {
             MacSourceExplorerView(
                 rawSourceNote: note,
@@ -3921,9 +3963,11 @@ struct SourceExplorerWindowView: View {
             )
         } else {
             ContentUnavailableView(
-                "No Document Selected",
+                String(localized: "source.explorer.window.empty",
+                       defaultValue: "No Document Selected"),
                 systemImage: "archivebox",
-                description: Text("Open a document with a source note, then tap Sources in the toolbar.")
+                description: Text(String(localized: "source.explorer.window.empty.detail",
+                    defaultValue: "Open a document with a source note, then tap Sources in the toolbar. Or switch to Collections to browse the archival collections FRUS cites."))
             )
         }
     }

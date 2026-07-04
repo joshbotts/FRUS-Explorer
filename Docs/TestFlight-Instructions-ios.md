@@ -18,7 +18,7 @@ Open a volume, tap a document, and read (Previous/Next to move between them). Ta
 
 For a corpus-wide index, open Browse → **People**. From the toolbar, **Source Explorer** resolves where a document came from (NARA record group, lot file, decimal/central file, presidential library, CIA) and links to the finding aid. To find other documents drawn from the same archival source (lot file, central file, series, or library), long-press a document — in the graph, a search result, or a volume's document list — and choose **Archival Neighbors**. Tap many of these; report any that misfire.
 
-Also open a volume's **Sources** section (in its front matter): resolved collections show a **catalog link** (columns icon) to the National Archives record, and a collection cited by several volumes shows a **Cited in N volumes** control. Try both and report anything that misfires or looks wrong.
+Also open a volume's **Sources** section (in its front matter): resolved collections show a **catalog link** (columns icon) to the National Archives record, and a collection cited by several volumes shows a **Cited in N volumes** control. Try both and report anything that misfires or looks wrong. New this build: entries matched by the bundled collection authority upgrade that control to a full **Collection** view (aliases, catalog link, series-wide citing volumes, and "in your library" counts from your own index), and Source Explorer gains **Browse Archival Collections** — a searchable, repository-grouped list of every collection FRUS cites; open several and check the counts and links.
 
 ## Step 3 — The cross-reference graph
 

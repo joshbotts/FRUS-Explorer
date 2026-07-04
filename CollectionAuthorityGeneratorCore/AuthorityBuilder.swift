@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SourceNoteKit
 import VolumeSourcesIndexGeneratorCore
 
 /// Merges `CollectionReference`s corpus-wide into two-level authority records under the
@@ -82,10 +83,9 @@ public enum AuthorityBuilder {
     /// The level-1 merge key for a reference, or `nil` when it carries no clusterable
     /// identity (`"lot:64D199"` / `"txt:<repoNorm>|<segmentNorm>"`).
     public static func level1Key(for ref: CollectionReference) -> String? {
-        if let lot = ref.lotFileNorm { return "lot:" + lot }
-        guard let segment = ref.leadingSegment else { return nil }
-        let repo = ReferenceBuilder.normalized(ref.repository ?? "")
-        return "txt:" + repo + "|" + ReferenceBuilder.normalized(segment)
+        CollectionKeying.level1Key(lotFileNorm: ref.lotFileNorm,
+                                   repository: ref.repository,
+                                   leadingSegment: ref.leadingSegment)
     }
 
     // MARK: - Build

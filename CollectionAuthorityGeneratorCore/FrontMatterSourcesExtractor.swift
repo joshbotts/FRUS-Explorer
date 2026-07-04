@@ -330,14 +330,9 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
 
     /// Repository keywords in match-priority order — identical to the app delegate's
     /// `repoKeywords`, so inherited repository identity matches the runtime rows.
-    public static let repoKeywords = [
-        "National Archives", "Library of Congress", "Washington National Records Center",
-        "Kennedy Library", "Johnson Library", "Nixon", "Ford Library", "Carter Library",
-        "Reagan Library", "Bush Library", "Clinton Library", "Eisenhower Library",
-        "Truman Library", "Roosevelt Library", "Hoover Institution",
-        "Central Intelligence Agency", "Department of State",
-        "Department of Defense", "Naval Historical", "Center of Military History",
-    ]
+    /// Shared through `SourceNoteKit.CollectionKeying` (Phase 4 step 2) so the app's
+    /// authority lookups canonicalize repositories with the same list.
+    public static let repoKeywords = CollectionKeying.repositoryKeywords
 
     /// Extracts the first repository keyword found in `text`, or `nil`.
     static func extractRepository(from text: String) -> String? {

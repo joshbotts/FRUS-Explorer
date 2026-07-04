@@ -17,156 +17,45 @@ import SourceNoteKit
 /// segments; the leading segment under the repository is the collection (level 1); the
 /// next segment is the sub-series (level 2). Segments that are locators (boxes,
 /// folders, reels, quoted folder titles, file identifiers) never become authority keys.
+///
+/// Every key-producing rule (the normal form, repository canonicalization, segment
+/// tokenization and gating, and the per-provenance level-1 identity) lives in
+/// `SourceNoteKit.CollectionKeying`, which the app's authority lookups share — the thin
+/// wrappers here keep the generator's original call surface. This file owns only the
+/// generator-side concerns: the front-matter outline walk and the level-2 / alias
+/// harvesting around the shared identity.
 public enum ReferenceBuilder {
 
-    // MARK: - Normalization
+    // MARK: - Shared keying rules (SourceNoteKit.CollectionKeying)
 
-    /// Normal form for merge keys: lowercased, whitespace collapsed, Unicode dashes →
-    /// ASCII hyphen with adjacent spaces removed (`"1967- 69"` ≡ `"1967–69"`), trailing
-    /// `.`/`,`/`;`/`:` stripped. Applied to repository names and citation segments;
-    /// **merging requires equality of this form** (conservative).
+    /// Normal form for merge keys — see `CollectionKeying.normalized`.
     public static func normalized(_ text: String) -> String {
-        var s = text
-            .replacingOccurrences(of: "–", with: "-")
-            .replacingOccurrences(of: "—", with: "-")
-            .split(whereSeparator: \.isWhitespace)
-            .joined(separator: " ")
-            .lowercased()
-            .replacingOccurrences(of: " -", with: "-")
-            .replacingOccurrences(of: "- ", with: "-")
-        while let last = s.last, ".,;:".contains(last) { s = String(s.dropLast()) }
-        return s.trimmingCharacters(in: .whitespaces)
+        CollectionKeying.normalized(text)
     }
 
-    /// Presidential surnames whose libraries FRUS cites with full names
-    /// (`"Lyndon B. Johnson Library"`, `"Gerald R. Ford Presidential Library"`).
-    private static let presidentialSurnames = [
-        "Roosevelt", "Truman", "Eisenhower", "Kennedy", "Johnson", "Nixon",
-        "Ford", "Carter", "Reagan", "Bush", "Clinton",
-    ]
-
-    /// Canonical repository keyword for any repository string: the first keyword of the
-    /// shared front-matter list (`FrontMatterSourcesExtractor.repoKeywords`) the string
-    /// contains; else, for a presidential-library full name (`"Gerald R. Ford
-    /// Presidential Library"`), the keyword form of its surname (`"Ford Library"`;
-    /// `"Nixon"` matches the app's bare keyword); else the trimmed string itself.
-    /// Bridges doc-note and heading library-name variants to one repository bucket.
+    /// Canonical repository keyword — see `CollectionKeying.canonicalRepository`.
     public static func canonicalRepository(_ repository: String?) -> String? {
-        guard let repository else { return nil }
-        let trimmed = repository.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return nil }
-        for keyword in FrontMatterSourcesExtractor.repoKeywords
-        where trimmed.range(of: keyword, options: .caseInsensitive) != nil {
-            return keyword
-        }
-        if trimmed.range(of: "Librar", options: .caseInsensitive) != nil {
-            for surname in presidentialSurnames
-            where trimmed.range(of: surname, options: .caseInsensitive) != nil {
-                return surname == "Nixon" ? "Nixon" : "\(surname) Library"
-            }
-        }
-        return trimmed
+        CollectionKeying.canonicalRepository(repository)
     }
 
-    // MARK: - Segment tokenization & gating
-
-    /// Tokenizes a citation sentence on `", "` into trimmed segments (the `merge.xq`
-    /// segment model over the class-scan citation sentence).
+    /// Citation-sentence tokenization — see `CollectionKeying.segments(ofCitation:)`.
     public static func segments(ofCitation text: String) -> [String] {
-        SourceNoteParser.citationSentence(of: text)
-            .components(separatedBy: ", ")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
+        CollectionKeying.segments(ofCitation: text)
     }
 
-    /// Locator lead words: a segment starting with one of these is a box/folder-level
-    /// locator, never a collection or sub-series name.
-    private static let locatorLeads = [
-        "box", "boxes", "folder", "entry", "reel", "roll", "tab", "vol", "volume",
-        "file no", "frc", "job", "lot", "lots", "rg", "record group", "microfilm",
-        "accession", "drawer", "tape", "conversation no", "item",
-    ]
-
-    /// Whether `segment` is a plausible collection / sub-series name: leads with an
-    /// uppercase letter, contains a letter, is 4–80 characters, is not quoted (quoted
-    /// segments are folder titles), is not a locator, is not a bare class key (classes
-    /// are level-2 identities via `decimalClassKey`, not series names), and contains no
-    /// `/` (file identifiers).
+    /// Series-segment gate — see `CollectionKeying.isSeriesSegment`.
     public static func isSeriesSegment(_ segment: String) -> Bool {
-        let s = segment.trimmingCharacters(in: .whitespaces)
-        guard s.count >= 4, s.count <= 80 else { return false }
-        guard let first = s.first, first.isUppercase, first.isLetter else { return false }
-        guard !s.contains("/") else { return false }
-        guard s.first != "\"", s.first != "“", s.first != "‘", s.first != "'" else { return false }
-        let lower = s.lowercased()
-        for lead in locatorLeads {
-            if lower == lead { return false }
-            if lower.hasPrefix(lead) {
-                // Word-bounded: "Box 12" is a locator, "Boxer Rebellion File" is not.
-                let next = lower[lower.index(lower.startIndex, offsetBy: lead.count)...].first
-                if next == nil || next == " " || next == "." || next == ":" || next == "#" {
-                    return false
-                }
-            }
-        }
-        guard SourceNoteParser.decimalClassKey(s) == nil else { return false }
-        return true
+        CollectionKeying.isSeriesSegment(segment)
     }
 
-    /// Generic grouping headings that must not become collections of their own
-    /// (`"Lot Files"` under an RG heading groups the real lot collections below it).
-    private static let groupingDenylist: Set<String> = [
-        "lot files", "lot file", "other lot files", "office files", "miscellaneous files",
-        "unpublished sources", "published sources", "archival sources", "archives",
-    ]
-
-    /// Generic first segments too broad to merge on alone: a reference whose leading
-    /// segment normalizes to one of these keeps its **full text** as the merge key
-    /// (no cross-variant merging — conservative rather than over-merged).
-    private static let genericLeads: Set<String> = [
-        "records", "papers", "files", "general records", "miscellaneous records",
-        "subject files", "country files", "memoranda", "correspondence", "documents",
-    ]
-
-    /// The level-1 merge segment for a front-matter item text or citation: the first
-    /// `", "` segment when it is distinctive, else the whole text (see `genericLeads`).
-    /// A prose-ish lead is additionally cut at its first sentence boundary (`". "`)
-    /// when the cut still passes the gate (`"Central Files. During the 1964–1968
-    /// period…"` → `"Central Files"`; dotted forms like `"U.S. Delegation Files"`
-    /// fail the cut's gate and keep the uncut segment).
+    /// Level-1 merge segment — see `CollectionKeying.leadingMergeSegment`.
     public static func leadingMergeSegment(of text: String) -> String? {
-        var first = text.components(separatedBy: ", ")
-            .first?.trimmingCharacters(in: .whitespaces) ?? text
-        if let dot = first.range(of: ". ") {
-            let cut = String(first[..<dot.lowerBound]).trimmingCharacters(in: .whitespaces)
-            if isSeriesSegment(cut) { first = cut }
-        }
-        guard isSeriesSegment(first) else { return nil }
-        if genericLeads.contains(normalized(first)) {
-            return text.trimmingCharacters(in: .whitespaces)
-        }
-        return first
+        CollectionKeying.leadingMergeSegment(of: text)
     }
 
-    /// Central-files leading prefixes (normalized). A collection whose leading segment
-    /// starts with one of these is the State Department central files regardless of the
-    /// holding-institution phrasing around it — doc notes attribute them to
-    /// `"Department of State"` (the pipeline's `.centralFiles` convention) while front
-    /// matter nests them under a National Archives heading, and without this override
-    /// the same file series splits across two repository buckets.
-    private static let centralFilesLeads = [
-        "central files", "central foreign policy", "central decimal file",
-        "decimal central files", "subject-numeric indexed central files",
-        "decimal and subject-numeric indexed central files", "indexed central files",
-        "subject-numeric central files",
-    ]
-
-    /// Whether `segment` names the State Department central files (see
-    /// `centralFilesLeads`). `"White House Central Files"` (a library collection)
-    /// does not lead with the phrase and is not overridden.
+    /// Central-files override gate — see `CollectionKeying.isCentralFilesSegment`.
     public static func isCentralFilesSegment(_ segment: String) -> Bool {
-        let norm = normalized(segment)
-        return centralFilesLeads.contains { norm.hasPrefix($0) }
+        CollectionKeying.isCentralFilesSegment(segment)
     }
 
     // MARK: - Front-matter outline → references
@@ -191,6 +80,13 @@ public enum ReferenceBuilder {
         return nodes
     }
 
+    /// Generic grouping headings that must not become collections of their own
+    /// (`"Lot Files"` under an RG heading groups the real lot collections below it).
+    private static let groupingDenylist: Set<String> = [
+        "lot files", "lot file", "other lot files", "office files", "miscellaneous files",
+        "unpublished sources", "published sources", "archival sources", "archives",
+    ]
+
     /// Whether an outline node is **structural** — a repository / record-group heading
     /// or a generic grouping — that scopes its children but is not a collection itself.
     /// A heading is a repository heading when its *first comma segment* names a
@@ -201,7 +97,7 @@ public enum ReferenceBuilder {
         if FrontMatterSourcesExtractor.extractRecordGroup(from: row.text) != nil { return true }
         let first = row.text.components(separatedBy: ", ")
             .first?.trimmingCharacters(in: .whitespaces) ?? row.text
-        for keyword in FrontMatterSourcesExtractor.repoKeywords
+        for keyword in CollectionKeying.repositoryKeywords
         where first.range(of: keyword, options: .caseInsensitive) != nil {
             return true
         }
@@ -328,34 +224,27 @@ public enum ReferenceBuilder {
     /// `"Collection: CLASS"` shape by splitting on the colon.
     private static func textualLevel1(row: FrontSourceRow, repo: String?, volumeId: String,
                                       refs: inout [CollectionReference]) -> Level1Context? {
-        var leadText = row.text
-        var classChild: String? = nil
-        if let cls = row.decimalClass {
-            if let colon = row.text.firstIndex(of: ":") {
-                leadText = String(row.text[..<colon]).trimmingCharacters(in: .whitespaces)
-                classChild = cls
-            } else if SourceNoteParser.decimalClassKey(row.text) != nil
-                        || row.text.components(separatedBy: ",").first
-                            .map({ SourceNoteParser.decimalClassKey($0) != nil }) == true {
-                // A bare class leaf with no enclosing collection — not clusterable
-                // at level 1 (conservative; logged as unclustered by the runner).
-                return nil
-            }
-        }
-        guard let segment = leadingMergeSegment(of: leadText) else { return nil }
-        // Central-files override: the same file series must not split across the
-        // National-Archives (front-matter heading) and Department-of-State (doc-note
-        // convention) buckets.
+        // Level-1 identity (colon-split class leaves, bare-class refusal, segment gate,
+        // and the central-files repository override) is the shared derivation — the
+        // same one the app's authority lookups apply to `volume_sources` rows.
+        guard let identity = CollectionKeying.frontMatterIdentity(
+            text: row.text, repository: repo, lotFileNorm: nil,
+            decimalClass: row.decimalClass), let segment = identity.leadingSegment
+        else { return nil }
+        // Display name: the colon-split lead when a class child split off, else the text.
+        let leadText = identity.decimalClass != nil
+            ? String(row.text[..<(row.text.firstIndex(of: ":") ?? row.text.endIndex)])
+                .trimmingCharacters(in: .whitespaces)
+            : row.text
         let central = isCentralFilesSegment(segment)
-        let effectiveRepo = central ? "Department of State" : repo
         let effectiveRG = central ? (row.recordGroup ?? "59") : row.recordGroup
-        let context = Level1Context(repository: effectiveRepo, recordGroup: effectiveRG,
+        let context = Level1Context(repository: identity.repository, recordGroup: effectiveRG,
                                     lotFileNorm: nil, rawLot: nil,
                                     leadingSegment: segment, displayName: leadText)
         refs.append(CollectionReference(
-            volumeId: volumeId, origin: .frontMatter, repository: effectiveRepo,
+            volumeId: volumeId, origin: .frontMatter, repository: identity.repository,
             recordGroup: effectiveRG, leadingSegment: segment,
-            subSegment: nil, subDecimalClass: classChild, displayName: leadText))
+            subSegment: nil, subDecimalClass: identity.decimalClass, displayName: leadText))
         return context
     }
 
@@ -393,63 +282,54 @@ public enum ReferenceBuilder {
 
     // MARK: - Document source notes → references
 
-    /// Converts one parsed document source note into a reference, mirroring the
-    /// pipeline's `documentSourceRow` key derivations (same classifications, same
-    /// class-column gating), then deriving the two-level segments from the citation
-    /// sentence.
+    /// Converts one parsed document source note into a reference: the level-1 identity
+    /// comes from the shared `CollectionKeying.identity(of:note:)` (the same derivation
+    /// the app's authority lookups use), and this wrapper adds the generator-side
+    /// extras — record group, the level-2 segment from the citation sentence, and the
+    /// named-series alias harvested around a lot reference.
     public static func reference(volumeId: String, note: String,
                                  parsed: ParsedSourceNote) -> CollectionReference? {
+        guard let identity = CollectionKeying.identity(of: parsed, note: note) else { return nil }
+
+        // Lot-keyed identities: harvest the raw lot and its preceding series alias.
+        if let lotNorm = identity.lotFileNorm {
+            let (rawLot, rg): (String, String?) = {
+                switch parsed {
+                case .lotFile(let rg, let lot, _): return (lot, CollectionKeying.bareRG(rg))
+                case .naraCollection(let rg, _, let lot, _): return (lot ?? "", CollectionKeying.bareRG(rg))
+                default: return ("", nil)
+                }
+            }()
+            return lotReference(volumeId: volumeId, note: note, rawLot: rawLot,
+                                lotNorm: lotNorm, recordGroup: rg)
+        }
+
+        guard let segment = identity.leadingSegment else { return nil }
         switch parsed {
-        case .lotFile(let rg, let lot, _):
-            return lotReference(volumeId: volumeId, note: note, rawLot: lot,
-                                recordGroup: bareRG(rg))
-        case .naraCollection(let rg, let series, let lot, _):
-            if let lot {
-                return lotReference(volumeId: volumeId, note: note, rawLot: lot,
-                                    recordGroup: bareRG(rg))
-            }
-            let cls = centralFilesClass(parsed: parsed, note: note)
-            guard let series, let segment = leadingMergeSegment(of: series) else { return nil }
+        case .naraCollection(let rg, _, _, _):
             let segs = segments(ofCitation: note)
-            let sub = cls == nil ? followingSegment(after: segment, in: segs) : nil
-            // Central-files override — see `textualLevel1`.
-            let repo = isCentralFilesSegment(segment) ? "Department of State" : "National Archives"
+            let sub = identity.decimalClass == nil
+                ? followingSegment(after: segment, in: segs) : nil
             return CollectionReference(volumeId: volumeId, origin: .documentNote,
-                                       repository: repo, recordGroup: bareRG(rg),
+                                       repository: identity.repository,
+                                       recordGroup: CollectionKeying.bareRG(rg),
                                        leadingSegment: segment, subSegment: sub,
-                                       subDecimalClass: cls)
-        case .presidentialLibrary(let library, let collection, _):
-            guard let repo = canonicalRepository(library),
-                  let segment = leadingMergeSegment(of: collection) else { return nil }
+                                       subDecimalClass: identity.decimalClass)
+        case .presidentialLibrary:
             let segs = segments(ofCitation: note)
             let sub = followingSegment(after: segment, in: segs)
             return CollectionReference(volumeId: volumeId, origin: .documentNote,
-                                       repository: repo, recordGroup: nil,
+                                       repository: identity.repository, recordGroup: nil,
                                        leadingSegment: segment, subSegment: sub)
         case .centralFiles, .cfpfFile:
-            guard let cls = centralFilesClass(parsed: parsed, note: note) else { return nil }
-            // The anchor segment naming the central files is the level-1 collection;
-            // a bare decimal note has none and is not clusterable (conservative).
-            guard let anchor = centralFilesAnchorSegment(in: note) else { return nil }
             return CollectionReference(volumeId: volumeId, origin: .documentNote,
-                                       repository: "Department of State", recordGroup: "59",
-                                       leadingSegment: anchor, subDecimalClass: cls)
-        case .namedFileSeries(let series, _):
-            guard let segment = leadingMergeSegment(of: series) else { return nil }
+                                       repository: identity.repository, recordGroup: "59",
+                                       leadingSegment: segment,
+                                       subDecimalClass: identity.decimalClass)
+        case .namedFileSeries, .ciaCollection:
             return CollectionReference(volumeId: volumeId, origin: .documentNote,
-                                       repository: nil, recordGroup: nil,
+                                       repository: identity.repository, recordGroup: nil,
                                        leadingSegment: segment)
-        case .ciaCollection:
-            let segs = segments(ofCitation: note)
-            guard let anchorIdx = segs.firstIndex(where: {
-                $0.range(of: "Central Intelligence Agency", options: .caseInsensitive) != nil
-                    || $0.range(of: #"^(?:Source:\s*)?CIA\b"#, options: .regularExpression) != nil
-            }) else { return nil }
-            guard let segment = segs.dropFirst(anchorIdx + 1).first(where: isSeriesSegment)
-            else { return nil }
-            return CollectionReference(volumeId: volumeId, origin: .documentNote,
-                                       repository: "Central Intelligence Agency",
-                                       recordGroup: nil, leadingSegment: segment)
         default:
             return nil
         }
@@ -459,7 +339,7 @@ public enum ReferenceBuilder {
     /// the lot in the citation sentence as an alias (`"PPS Files: Lot 64 D 199"`,
     /// `"Secretary's Memoranda of Conversation, lot 64 D 199"`).
     private static func lotReference(volumeId: String, note: String, rawLot: String,
-                                     recordGroup: String?) -> CollectionReference {
+                                     lotNorm: String, recordGroup: String?) -> CollectionReference {
         var alias: String? = nil
         let sentence = SourceNoteParser.citationSentence(of: note)
         if let (_, range) = SourceNoteParser.firstLotReference(in: sentence) {
@@ -476,7 +356,7 @@ public enum ReferenceBuilder {
         return CollectionReference(volumeId: volumeId, origin: .documentNote,
                                    repository: "Department of State",
                                    recordGroup: recordGroup,
-                                   lotFileNorm: SourceNoteParser.lotFileNorm(rawLot),
+                                   lotFileNorm: lotNorm,
                                    rawLot: rawLot, seriesAlias: alias)
     }
 
@@ -489,47 +369,5 @@ public enum ReferenceBuilder {
         }) else { return nil }
         guard let next = segs.dropFirst(idx + 1).first else { return nil }
         return isSeriesSegment(next) ? next : nil
-    }
-
-    /// The `decimal_class` derivation for a parsed note — the pipeline's
-    /// `decimalClassColumn` gating verbatim.
-    static func centralFilesClass(parsed: ParsedSourceNote, note: String) -> String? {
-        switch parsed {
-        case .centralFiles, .cfpfFile:
-            return SourceNoteParser.decimalClassLocation(inCitation: note)
-        case .naraCollection(_, let series, _, _):
-            guard let series,
-                  series.range(of: "Central Files", options: .caseInsensitive) != nil
-                    || series.range(of: "Central Foreign Policy", options: .caseInsensitive) != nil
-            else { return nil }
-            return SourceNoteParser.decimalClassLocation(inCitation: note)
-        default:
-            return nil
-        }
-    }
-
-    /// The citation-sentence segment naming the central files (`"Central Files
-    /// 1967–69"`, `"Central Foreign Policy File"`), or `nil` for bare decimal notes.
-    static func centralFilesAnchorSegment(in note: String) -> String? {
-        for segment in segments(ofCitation: note) {
-            let lower = segment.lowercased()
-            if lower.contains("central files") || lower.contains("central foreign policy") {
-                // Trim a trailing colon-attached class ("Central Files 1967-69: POL…").
-                let lead = segment.components(separatedBy: ":").first?
-                    .trimmingCharacters(in: .whitespaces) ?? segment
-                return isSeriesSegment(lead) ? lead : nil
-            }
-        }
-        return nil
-    }
-
-    /// Strips the `RG-` prefix the parser writes (`"RG-59"` → `"59"`), matching the
-    /// bare record-group numbers front matter stores.
-    static func bareRG(_ rg: String?) -> String? {
-        guard let rg else { return nil }
-        let bare = rg.replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
-                                           options: [.regularExpression, .caseInsensitive])
-            .trimmingCharacters(in: .whitespaces)
-        return bare.isEmpty ? nil : bare
     }
 }
