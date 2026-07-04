@@ -1241,3 +1241,27 @@ S5-count/neighbors-agreement doc fix; unattributed-bucket ambiguity guard; symme
 central-files override; extractor-parity tests. 1120/1120 app + 317/317 SPM.
 **Remaining: SE Phase 5** (three-state UI, classification chips, S6 = neighbors window on
 macOS — owner call) → then the consolidated docs pass + build bump (reindex v18).
+
+### Session 2026-07-04 (later) — Source Explorer Phase 5 (UI truth, S6 window) — PROGRAM COMPLETE
+Four commits on claude/sourceexplorer-phase5-ui. **S6 owner-resolved: Archival Neighbors is
+a WINDOW on macOS.** (1) **UI truth** — three-state neighbor affordance: ONE batched count
+query per key family at volume load (neighborCountKey = single path-selection truth shared
+with the per-tap query, so badge ≡ sheet by construction); keyed-0 rows render subdued w/
+honest "no documents in your indexed volumes" help text; alias fallback EXCLUDED from counts
+(13 non-indexed LIKEs — documented may-exceed-badge caveat). Classification chips (S1 column)
+on Source Explorer both platforms, reading views (opt-in serializer annotation — exports
+byte-identical), and search rows (free — sourceNote already loaded). (2) **S6** —
+ArchivalNeighborsRequest (Codable/Hashable, 4 query shapes, alias fallback flattened +
+reconstructed) via WindowGroup(for:); window-per-distinct-request, restoration enabled;
+shared ArchivalNeighborsContent core (iOS sheets unchanged); every macOS presenter converted
+(SearchSheet, CompilationView, VolumeSourcesView via openWindow-as-action, CorpusSectionDocumentView,
+graph node menu); row taps hand off via pendingBrowseDocument, window stays open; UI-audit
+doc line marked converted. (3) **program docs pass** — both manuals §12 rewritten coherently,
+TestFlight paragraphs replaced, guide/education verified, README updated, scope Status closed
+with S1–S6 resolutions. (4) **review fixes 3/3** (fix agent died mid-commit; staged work
+verified + committed by orchestrator): restored-window boot race → "Preparing your index…"
+gate; Group-gotcha double query; stale count badges refresh on indexing completion.
+1133/1133. **The Source Explorer Provenance program is complete: <1% modern coverage → 87–98%;
+unrecognized 24.3% → 2.8%; front-matter resolution 25% → ~85% predicted (86% ceiling);
+corpus-wide collection authority; truthful UI.** Remaining before testers: consolidated docs
+pass + build bump (reindex v18).

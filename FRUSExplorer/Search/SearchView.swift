@@ -787,6 +787,14 @@ private struct SearchResultRow: View {
                     .padding(.top, 1)
             }
 
+            // Classification chip (Source Explorer Phase 5) — derived from the
+            // result's already-loaded source note, so no per-row query is added.
+            if let note = result.sourceNote,
+               let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) {
+                ClassificationChip(marking: marking)
+                    .padding(.top, 1)
+            }
+
             // Document-type badges
             if result.isEditorialNote || result.isFrontMatter {
                 HStack(spacing: 6) {

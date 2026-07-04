@@ -52,12 +52,40 @@ import SwiftUI
 ///          volume sheet remains as the fallback for headings the authority does not
 ///          track. Neighbors targets carry the record's alias fallback for the
 ///          display-time grain-mismatch retry in the matcher.
+///   1.5 — Session 2026-07-04 (Source Explorer Phase 5 step 1): three-state neighbor
+///          affordance. After `loadSources`, ONE batched query
+///          (`IndexingPipeline.archivalNeighborCounts(forKeys:)`) resolves neighbor
+///          counts for every keyed entry (grouped per key family — no per-row
+///          queries), and rows render: no key → no affordance; keyed with 0 → a
+///          subdued affordance with an honest "nothing in your index cites this"
+///          hint; keyed with N → the button with a count badge. Counts use the
+///          direct key paths only — the Phase-4 alias fallback is excluded (cost:
+///          it fans out per record; see `archivalNeighborCounts`), so an opened
+///          sheet can exceed its badge (including 0 → N) when the fallback fires.
+///   1.6 — Session 2026-07-04 (Source Explorer Phase 5 S6): on macOS the neighbors
+///          affordance opens the Archival Neighbors WINDOW
+///          (`openWindow(value: ArchivalNeighborsRequest(volumeSource:))`) instead of
+///          setting the hoisted sheet binding — `openWindow` is an action, not a
+///          presentation modifier, so it is safe inside this section-emitting view.
+///          `sourceNeighborsTarget` is now written on iOS only.
+///   1.7 — Session 2026-07-04 (Phase 5 adversarial-review fixes): neighbor-count
+///          badges refresh when a bulk indexing run finishes
+///          (`currentIndexingProgress` → `nil`, mirroring CompilationView's
+///          observer) — previously a stale subdued 0 kept asserting "no documents
+///          in your indexed volumes cite this collection" after the user indexed
+///          more volumes mid-session.
 struct VolumeSourcesView: View {
 
     /// The volume whose sources list is being shown.
     let volumeId: String
 
     @Environment(AppState.self) private var appState
+    #if os(macOS)
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    /// Calling `openWindow` from row content is safe — unlike presentation modifiers,
+    /// it is an action, so the Group/Section-in-List anchoring rule does not apply.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var sources: [VolumeSourceEntry] = []
     @State private var isLoading = true
@@ -68,6 +96,8 @@ struct VolumeSourcesView: View {
     /// collapsing the outline's disclosure state.
     @State private var didLoad = false
     /// When set by a row's button, the PARENT presents the Archival Neighbors sheet.
+    /// **iOS only** — on macOS the row opens the S6 Archival Neighbors window directly
+    /// and this binding is never written.
     ///
     /// Presentation state is deliberately hoisted to the embedding view: this view emits
     /// list sections, and modifiers attached to `Group`/`Section` inside `List` content
@@ -97,6 +127,20 @@ struct VolumeSourcesView: View {
     /// on each body evaluation would hand `OutlineGroup` fresh identities and collapse the
     /// user's expanded disclosure state on any re-render (e.g. opening the neighbors sheet).
     @State private var collectionTree: [SourceTreeNode] = []
+
+    /// Neighbor counts for every keyed entry, resolved by ONE batched query after
+    /// `loadSources` (`IndexingPipeline.archivalNeighborCounts(forKeys:)` — grouped
+    /// per key family, never per row). `nil` until loaded (rows show the plain
+    /// button); once loaded, every keyed row renders its three-state affordance
+    /// (0 → subdued + honest hint, N → count badge). Counts use direct keys only —
+    /// no alias fallback — so an opened sheet may exceed its badge.
+    @State private var neighborCounts: [IndexingPipeline.ArchivalNeighborCountKey: Int]? = nil
+
+    /// Collapses the replicated `onChange` firings from the Group-modifier gotcha (this
+    /// body emits multiple sections, so modifiers on the `Group` apply per child) into
+    /// one count refresh per indexing-run completion. Set synchronously on the main
+    /// actor before the refresh `Task` starts, so sibling firings bail out.
+    @State private var isRefreshingCounts = false
 
     var body: some View {
         Group {
@@ -166,6 +210,20 @@ struct VolumeSourcesView: View {
             }
         }
         .task { await loadSources() }
+        // Refresh the count badges when a bulk indexing run finishes (Settings-triggered
+        // or otherwise): newly indexed volumes can add neighbors, and a stale subdued 0
+        // asserts "no documents in your indexed volumes cite this collection" — now
+        // false. Mirrors CompilationView's `currentIndexingProgress` observer for its
+        // document list. The `isRefreshingCounts` flag absorbs the Group-modifier
+        // replication (this body emits sections, so `.onChange` fires once per child).
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            guard progress == nil, didLoad, !isRefreshingCounts else { return }
+            isRefreshingCounts = true
+            Task {
+                await loadNeighborCounts()
+                isRefreshingCounts = false
+            }
+        }
     }
 
     /// One archival-collection outline row: its own text (bold for a major named collection —
@@ -204,22 +262,43 @@ struct VolumeSourcesView: View {
                     .accessibilityLabel(String(localized: "browser.sources.catalog",
                                                defaultValue: "View in National Archives Catalog"))
                 }
-                if var target = Self.makeNeighborsTarget(for: entry) {
+                if let target = Self.makeNeighborsTarget(for: entry) {
+                    // Three-state affordance (Phase 5): nil count = batch still
+                    // loading (plain button), 0 = subdued + honest hint (still
+                    // tappable — the alias fallback may rescue the opened sheet),
+                    // N = count badge.
+                    let count = neighborCount(for: target)
                     Button {
                         // The authority record's lot key and alias forms ride along for
                         // the matcher's display-time fallback when the direct key misses.
+                        var presented = target
                         if let authority {
-                            target.aliasFallback = .init(record: authority)
+                            presented.aliasFallback = .init(record: authority)
                         }
-                        sourceNeighborsTarget = target
+                        #if os(macOS)
+                        // S6: neighbors open in their own window (browsable beside
+                        // the reading window); iOS keeps the hoisted parent sheet.
+                        openWindow(value: ArchivalNeighborsRequest(volumeSource: presented))
+                        #else
+                        sourceNeighborsTarget = presented
+                        #endif
                     } label: {
-                        Image(systemName: "archivebox")
+                        HStack(spacing: 3) {
+                            Image(systemName: "archivebox")
+                            if let count {
+                                Text(count, format: .number)
+                                    .font(.caption.monospacedDigit())
+                            }
+                        }
                     }
                     .buttonStyle(.borderless)
-                    .help(String(localized: "browser.sources.archivalNeighbors.help",
-                                 defaultValue: "Show indexed documents drawn from this archival source"))
-                    .accessibilityLabel(String(localized: "browser.sources.archivalNeighbors",
-                                               defaultValue: "Archival Neighbors"))
+                    .foregroundStyle(count == 0 ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
+                    .help(count == 0
+                          ? String(localized: "browser.sources.archivalNeighbors.zero.help",
+                                   defaultValue: "No documents in your indexed volumes cite this collection — indexing more volumes may surface some")
+                          : String(localized: "browser.sources.archivalNeighbors.help",
+                                   defaultValue: "Show indexed documents drawn from this archival source"))
+                    .accessibilityLabel(neighborsAccessibilityLabel(count: count))
                 }
             }
             if let authority {
@@ -260,6 +339,36 @@ struct VolumeSourcesView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    // MARK: - Neighbor Counts (Phase 5)
+
+    /// The batched neighbor count for a row's target: `nil` while the batch is
+    /// loading (or when the batch failed — the row keeps the plain button rather
+    /// than lying with a 0), otherwise the count under the row's derived key.
+    private func neighborCount(for target: VolumeSourceNeighborsTarget) -> Int? {
+        guard let counts = neighborCounts,
+              let key = IndexingPipeline.neighborCountKey(
+                  forLotFile: target.lotFile, recordGroup: target.recordGroup,
+                  series: target.series, repository: target.repository,
+                  decimalClass: target.decimalClass) else { return nil }
+        return counts[key] ?? 0
+    }
+
+    /// VoiceOver label for the three-state neighbors affordance.
+    private func neighborsAccessibilityLabel(count: Int?) -> String {
+        switch count {
+        case .some(0):
+            return String(localized: "browser.sources.archivalNeighbors.zero.accessibility",
+                          defaultValue: "Archival Neighbors — no documents in your indexed volumes cite this collection; indexing more volumes may surface some")
+        case .some(let n):
+            return String(format: String(localized: "browser.sources.archivalNeighbors.count.accessibility %lld",
+                                         defaultValue: "Archival Neighbors — %lld indexed documents"),
+                          Int64(n))
+        case nil:
+            return String(localized: "browser.sources.archivalNeighbors",
+                          defaultValue: "Archival Neighbors")
+        }
     }
 
     // MARK: - Outline Reconstruction
@@ -359,6 +468,33 @@ struct VolumeSourcesView: View {
         isLoading = false
         #if DEBUG
         print("[VolumeSourcesView] Loaded \(entries.count) sources for \(volumeId)")
+        #endif
+        // Phase 5: ONE batched round-trip per key family resolves neighbor counts
+        // for every keyed entry (never per-row). Runs after the rows render, so the
+        // list never waits on the counts; rows upgrade in place when they arrive.
+        await loadNeighborCounts()
+    }
+
+    /// Resolves (or re-resolves) the batched neighbor counts for the loaded entries —
+    /// ONE `IndexingPipeline.archivalNeighborCounts(forKeys:)` round-trip per call,
+    /// never per row. Called once from `loadSources()` and again whenever a bulk
+    /// indexing run finishes (`currentIndexingProgress` → `nil`): newly indexed
+    /// volumes can turn a subdued 0 badge into a real count, and a stale 0 would
+    /// falsely assert "no documents in your indexed volumes cite this collection".
+    private func loadNeighborCounts() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        let keys = sources.compactMap { entry -> IndexingPipeline.ArchivalNeighborCountKey? in
+            guard let target = Self.makeNeighborsTarget(for: entry) else { return nil }
+            return IndexingPipeline.neighborCountKey(
+                forLotFile: target.lotFile, recordGroup: target.recordGroup,
+                series: target.series, repository: target.repository,
+                decimalClass: target.decimalClass)
+        }
+        neighborCounts = keys.isEmpty
+            ? [:]
+            : try? await pipeline.archivalNeighborCounts(forKeys: keys)
+        #if DEBUG
+        print("[VolumeSourcesView] Neighbor counts loaded for \(keys.count) keyed entries")
         #endif
     }
 }

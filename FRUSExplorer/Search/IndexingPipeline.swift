@@ -247,6 +247,16 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          one clause, one truth; the Collection detail sheet total now always
 ///          equals the S5 count), and the form window widens 8 → 13
 ///          (`collectionMatchFormCap`: canonical name + the artifact's 12-alias cap).
+///  4.11 — Source Explorer Phase 5 step 1 (Session 2026-07-04): no parse-output
+///          change, so no index-version bump. Batched three-state neighbor counts:
+///          `neighborCountKey(forLotFile:…)` is the single path-selection truth
+///          (`directArchivalNeighbors` now dispatches on it) and
+///          `archivalNeighborCounts(forKeys:)` resolves a whole volume's keyed
+///          source entries in one round-trip per key family (lot IN + GROUP BY;
+///          UNION ALL of per-key COUNT branches reusing the per-tap WHERE builders
+///          `classLeafPatterns` / `libraryMatchClause` / `rgSeriesClause`). The
+///          Phase-4 alias fallback is deliberately excluded from counts (a zero
+///          badge stays tappable and the sheet may exceed it — documented there).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -4760,6 +4770,11 @@ public actor IndexingPipeline {
 
     /// The direct (pre-Phase-4) key paths of `archivalNeighbors(forLotFile:…)`,
     /// most-specific first: lot → class leaf → presidential library → RG + series.
+    ///
+    /// Path selection is delegated to `neighborCountKey(forLotFile:…)` — the same
+    /// derivation the batched three-state counts use — so the per-tap result and the
+    /// row's count badge agree on which key family a source entry resolves through
+    /// (Source Explorer Phase 5). The queries and `basis` strings are unchanged.
     private func directArchivalNeighbors(
         forLotFile lotFile: String?,
         recordGroup: String?,
@@ -4768,34 +4783,37 @@ public actor IndexingPipeline {
         decimalClass: String?,
         limit: Int
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
-        if let lot = lotFile?.trimmingCharacters(in: .whitespaces), !lot.isEmpty {
+        guard let key = Self.neighborCountKey(
+            forLotFile: lotFile, recordGroup: recordGroup, series: series,
+            repository: repository, decimalClass: decimalClass) else {
+            return ([], 0, nil)
+        }
+        switch key {
+        case .lotFile:
+            // Raw (untrimmed-of-designators) lot for the basis string; key selection
+            // guarantees the field is present and non-empty.
+            let lot = (lotFile ?? "").trimmingCharacters(in: .whitespaces)
             let r = try relatedByLotFile(lot, limit: limit)
             return (r.documents, r.totalCount,
                     String(localized: "archivalNeighbors.basis.lot",
                            defaultValue: "Lot \(lot)"))
-        }
-        if let cls = decimalClass?.trimmingCharacters(in: .whitespaces), !cls.isEmpty {
+        case .decimalClass:
+            let cls = (decimalClass ?? "").trimmingCharacters(in: .whitespaces)
             let r = try relatedByDecimalClass(cls, limit: limit)
             return (r.documents, r.totalCount,
                     String(localized: "archivalNeighbors.basis.decimalClass",
                            defaultValue: "Central files \(cls)"))
-        }
-        if let repo = repository?.trimmingCharacters(in: .whitespaces),
-           Self.isLibraryRepository(repo),
-           let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
+        case .presidentialLibrary(let repo, let s):
             let r = try relatedByPresidentialLibrary(library: repo, collection: s, limit: limit)
             return (r.documents, r.totalCount,
                     String(localized: "archivalNeighbors.basis.library",
                            defaultValue: "\(repo): \(s)"))
-        }
-        if let rg = recordGroup?.trimmingCharacters(in: .whitespaces), !rg.isEmpty,
-           let s = series?.trimmingCharacters(in: .whitespaces), !s.isEmpty {
+        case .collection(let rg, let s):
             let r = try relatedByCollection(recordGroup: rg, series: s, limit: limit)
             return (r.documents, r.totalCount,
                     String(localized: "archivalNeighbors.basis.collection",
                            defaultValue: "RG \(rg): \(s)"))
         }
-        return ([], 0, nil)
     }
 
     /// The Phase-4 alias-fallback pass (see `archivalNeighbors(forLotFile:…)` for the
@@ -4847,6 +4865,186 @@ public actor IndexingPipeline {
             }
         }
         return nil
+    }
+
+    // MARK: - Batched Neighbor Counts (Source Explorer Phase 5)
+
+    /// The normalized match key a volume-source entry resolves through, used both to
+    /// select the direct per-tap path (`directArchivalNeighbors`) and as the dictionary
+    /// key of the batched three-state counts (`archivalNeighborCounts(forKeys:)`) —
+    /// one derivation, so the badge and the opened sheet agree by construction.
+    public enum ArchivalNeighborCountKey: Sendable, Hashable {
+        /// Lot-file path: the canonical compact lot key (`SourceNoteParser.lotFileNorm`,
+        /// e.g. `"64D199"`); empty when the raw lot normalizes to nothing (count 0).
+        case lotFile(norm: String)
+        /// Decimal / subject-numeric class-leaf path: the canonical class location
+        /// (`SourceNoteParser.decimalClassKey`); empty when canonicalization fails.
+        case decimalClass(key: String)
+        /// Presidential-library path: trimmed repository + collection name.
+        case presidentialLibrary(repository: String, collection: String)
+        /// Record group + series path: trimmed RG (either stored form) + series name.
+        case collection(recordGroup: String, series: String)
+    }
+
+    /// Derives the `ArchivalNeighborCountKey` for a volume-source entry's match keys,
+    /// or `nil` when no path applies — **the single source of truth for path
+    /// selection**, mirrored exactly by `directArchivalNeighbors` (which dispatches on
+    /// this key). Most-specific first: lot → class leaf → presidential library →
+    /// RG + series.
+    ///
+    /// Pure and `nonisolated static` so display surfaces can derive a row's key
+    /// without an actor hop, and tests can pin the selection order.
+    nonisolated public static func neighborCountKey(
+        forLotFile lotFile: String?,
+        recordGroup: String?,
+        series: String?,
+        repository: String? = nil,
+        decimalClass: String? = nil
+    ) -> ArchivalNeighborCountKey? {
+        func trimmed(_ s: String?) -> String? {
+            guard let t = s?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return nil }
+            return t
+        }
+        if let lot = trimmed(lotFile) {
+            // Accept a "Lot "-prefixed form from any caller (as `relatedByLotFile` does).
+            let bare = lot.replacingOccurrences(
+                of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
+            return .lotFile(norm: SourceNoteParser.lotFileNorm(bare))
+        }
+        if let cls = trimmed(decimalClass) {
+            return .decimalClass(key: SourceNoteParser.decimalClassKey(cls)
+                                 ?? Self.fallbackClassKey(cls) ?? "")
+        }
+        if let repo = trimmed(repository), isLibraryRepository(repo),
+           let s = trimmed(series) {
+            return .presidentialLibrary(repository: repo, collection: s)
+        }
+        if let rg = trimmed(recordGroup), let s = trimmed(series) {
+            return .collection(recordGroup: rg, series: s)
+        }
+        return nil
+    }
+
+    /// Resolves neighbor **counts** for a whole volume's keyed source entries in a
+    /// fixed number of SQL round-trips — the batched query behind the three-state
+    /// affordance in `VolumeSourcesView` (no key / keyed-zero / keyed-N), replacing
+    /// what would otherwise be one `archivalNeighbors` query per row.
+    ///
+    /// ## Batching design
+    /// Keys are grouped by family and each family resolves in one statement shape:
+    /// - **Lot** — all lot norms in a single `WHERE lot_file_norm IN (…) GROUP BY
+    ///   lot_file_norm` (index seeks on `idx_doc_src_lot_norm`).
+    /// - **Class leaf / presidential library / RG + series** — one `UNION ALL` of
+    ///   per-key `SELECT branch, COUNT(*)` subqueries, each branch reusing the *exact*
+    ///   `WHERE` clause of its per-tap helper (`classLeafPatterns` /
+    ///   `libraryMatchClause` / `rgSeriesClause`), so counts equal the sheet's
+    ///   `totalCount` by construction.
+    ///
+    /// Statements are chunked defensively (≤ 100 branches / ≤ 400 IN values) to stay
+    /// far below SQLite's bound-parameter and compound-select limits; a volume's
+    /// sources list never approaches the chunk size in practice, so this is one
+    /// round-trip per key family.
+    ///
+    /// ## Alias fallback is deliberately excluded (decision, Phase 5)
+    /// The Phase-4 collection-authority alias fallback is **not** folded into the
+    /// counts: it fires only after every direct path returns zero and fans out into
+    /// up to 13 name-form `LIKE` scans *per record* — not one more indexed lookup,
+    /// but an order-of-magnitude cost multiplier applied exactly to the rows that
+    /// matched nothing. A row whose badge shows 0 therefore stays tappable, and the
+    /// opened sheet may exceed the badge (including 0 → N) when the alias fallback
+    /// rescues the query.
+    ///
+    /// - Parameter keys: The derived keys (`neighborCountKey`) of the volume's keyed
+    ///   entries; duplicates collapse.
+    /// - Returns: A count for **every** input key (0 when nothing in the user's index
+    ///   matches), so callers can distinguish "loaded, zero" from "not yet loaded".
+    public func archivalNeighborCounts(
+        forKeys keys: [ArchivalNeighborCountKey]
+    ) throws -> [ArchivalNeighborCountKey: Int] {
+        var counts: [ArchivalNeighborCountKey: Int] = [:]
+        for key in keys { counts[key] = 0 }
+        guard !counts.isEmpty else { return counts }
+        // Snapshot: `counts` is mutated below, and Swift dictionaries must not be
+        // written through while a `keys` view is being iterated.
+        let uniqueKeys = Array(counts.keys)
+
+        // ── Family 1: lot norms — one grouped IN-seek per ≤400-key chunk. ──
+        let lotNorms = uniqueKeys.compactMap { key -> String? in
+            guard case .lotFile(let norm) = key, !norm.isEmpty else { return nil }
+            return norm
+        }
+        var lotCounts: [String: Int] = [:]
+        for chunk in Self.chunked(lotNorms, size: 400) {
+            let placeholders = Array(repeating: "?", count: chunk.count).joined(separator: ",")
+            let sql = """
+                SELECT lot_file_norm, COUNT(*)
+                FROM document_sources
+                WHERE lot_file_norm IN (\(placeholders))
+                GROUP BY lot_file_norm
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, norm) in chunk.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), norm, -1, SQLITE_TRANSIENT_IP)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let norm = auxColumnString(stmt, 0) {
+                    lotCounts[norm] = Int(sqlite3_column_int64(stmt, 1))
+                }
+            }
+        }
+        for key in uniqueKeys {
+            if case .lotFile(let norm) = key { counts[key] = lotCounts[norm] ?? 0 }
+        }
+
+        // ── Families 2–4: one labeled COUNT branch per key, UNION ALL per chunk. ──
+        // Each branch's WHERE is built by the same helper its per-tap query uses.
+        var branches: [(key: ArchivalNeighborCountKey, clause: String, params: [String])] = []
+        for key in uniqueKeys {
+            switch key {
+            case .lotFile:
+                continue
+            case .decimalClass(let canonical):
+                guard let patterns = Self.classLeafPatterns(forCanonicalKey: canonical) else { continue }
+                let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
+                    .joined(separator: " OR ")
+                branches.append((key, "(\(likes))", patterns))
+            case .presidentialLibrary(let repo, let collection):
+                guard let m = Self.libraryMatchClause(library: repo, collection: collection) else { continue }
+                branches.append((key, m.clause, m.params))
+            case .collection(let rg, let series):
+                guard let m = Self.rgSeriesClause(recordGroup: rg, series: series) else { continue }
+                branches.append((key, m.clause, m.params))
+            }
+        }
+        for chunk in Self.chunked(branches, size: 100) {
+            let sql = chunk.enumerated().map { i, branch in
+                "SELECT \(i) AS branch, COUNT(*) FROM document_sources ds WHERE \(branch.clause)"
+            }.joined(separator: " UNION ALL ")
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var bind = 1
+            for branch in chunk {
+                for p in branch.params {
+                    sqlite3_bind_text(stmt, Int32(bind), p, -1, SQLITE_TRANSIENT_IP)
+                    bind += 1
+                }
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let idx = Int(sqlite3_column_int64(stmt, 0))
+                guard chunk.indices.contains(idx) else { continue }
+                counts[chunk[idx].key] = Int(sqlite3_column_int64(stmt, 1))
+            }
+        }
+        return counts
+    }
+
+    /// Splits `items` into consecutive slices of at most `size` elements.
+    nonisolated private static func chunked<T>(_ items: [T], size: Int) -> [[T]] {
+        guard !items.isEmpty else { return [] }
+        return stride(from: 0, to: items.count, by: size).map {
+            Array(items[$0..<min($0 + size, items.count)])
+        }
     }
 
     // MARK: - Related Document Helpers
@@ -4935,21 +5133,12 @@ public actor IndexingPipeline {
         limit: Int,
         excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        let s = series.trimmingCharacters(in: .whitespaces)
-        guard s.count >= 4 else { return ([], 0) }
-        // Accept the RG in either stored form regardless of the caller's form.
-        let bareRG = recordGroup
-            .replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
-                                  options: [.regularExpression, .caseInsensitive])
-            .trimmingCharacters(in: .whitespaces)
-        guard !bareRG.isEmpty else { return ([], 0) }
-        let esc = Self.likeEscaped(s)
+        guard let match = Self.rgSeriesClause(recordGroup: recordGroup, series: series) else {
+            return ([], 0)
+        }
         let ex = exclusion(excluding)
-        let whereClause = """
-            ds.record_group IN (?, ?)
-            AND (ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')\(ex.clause)
-            """
-        let params = [bareRG, "RG-\(bareRG)", esc, esc + ",%"] + ex.params
+        let whereClause = "\(match.clause)\(ex.clause)"
+        let params = match.params + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -5076,9 +5265,8 @@ public actor IndexingPipeline {
         limit: Int
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         guard let key = SourceNoteParser.decimalClassKey(classKey)
-                ?? Self.fallbackClassKey(classKey) else { return ([], 0) }
-        let esc = Self.likeEscaped(key)
-        let patterns = [esc, esc + " %", esc + "-%", esc + ".%"]
+                ?? Self.fallbackClassKey(classKey),
+              let patterns = Self.classLeafPatterns(forCanonicalKey: key) else { return ([], 0) }
         let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
             .joined(separator: " OR ")
         let whereClause = "(\(likes))"
@@ -5113,6 +5301,62 @@ public actor IndexingPipeline {
         return s.count >= 3 ? s : nil
     }
 
+    // MARK: - Shared match-clause builders (per-tap queries + batched counts)
+
+    /// The four boundary-gated LIKE patterns for a decimal / subject-numeric class
+    /// leaf (exact, token, subdivision, dotted subdivision) — shared verbatim by
+    /// `relatedByDecimalClass` and the batched `archivalNeighborCounts` so the badge
+    /// and the opened sheet count the same rows. `nil` for an empty key.
+    nonisolated private static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
+        guard !key.isEmpty else { return nil }
+        let esc = likeEscaped(key)
+        return [esc, esc + " %", esc + "-%", esc + ".%"]
+    }
+
+    /// The presidential-library `WHERE` over `document_sources ds` — library keyword
+    /// LIKE on `repository` plus a ≤50-char collection prefix on `series_name` —
+    /// shared verbatim by `relatedByPresidentialLibrary` and the batched
+    /// `archivalNeighborCounts`. `nil` when the library name yields no keyword.
+    nonisolated private static func libraryMatchClause(
+        library: String,
+        collection: String
+    ) -> (clause: String, params: [String])? {
+        let keyword = libraryKeyword(from: library)
+        guard !keyword.isEmpty else { return nil }
+        let repoLike = "%\(likeEscaped(keyword))%"
+        let collectionPrefix = likeEscaped(String(collection.prefix(50)))
+        let collectionLike = collectionPrefix.isEmpty ? "%" : collectionPrefix + "%"
+        let clause = """
+            UPPER(ds.repository) LIKE UPPER(?) ESCAPE '\\'
+            AND UPPER(ds.series_name) LIKE UPPER(?) ESCAPE '\\'
+            """
+        return (clause, [repoLike, collectionLike])
+    }
+
+    /// The record-group + comma-boundary series-prefix `WHERE` over
+    /// `document_sources ds` (both stored RG forms; over-broad guard: series ≥ 4
+    /// chars) — shared verbatim by `relatedByCollection` and the batched
+    /// `archivalNeighborCounts`. `nil` when a guard refuses the key.
+    nonisolated private static func rgSeriesClause(
+        recordGroup: String,
+        series: String
+    ) -> (clause: String, params: [String])? {
+        let s = series.trimmingCharacters(in: .whitespaces)
+        guard s.count >= 4 else { return nil }
+        // Accept the RG in either stored form regardless of the caller's form.
+        let bareRG = recordGroup
+            .replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
+                                  options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: .whitespaces)
+        guard !bareRG.isEmpty else { return nil }
+        let esc = likeEscaped(s)
+        let clause = """
+            ds.record_group IN (?, ?)
+            AND (ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')
+            """
+        return (clause, [bareRG, "RG-\(bareRG)", esc, esc + ",%"])
+    }
+
     /// Returns documents from the same presidential library collection.
     ///
     /// Uses a LIKE match on `repository` (e.g. `%KENNEDY%`) and a prefix match on
@@ -5122,19 +5366,10 @@ public actor IndexingPipeline {
         collection: String,
         limit: Int
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
-        // Extract a short keyword from the library name for the LIKE query
-        let keyword = Self.libraryKeyword(from: library)
-        guard !keyword.isEmpty else { return ([], 0) }
-        let repoLike = "%\(Self.likeEscaped(keyword))%"
-
-        // Use a prefix of the collection name (up to 50 chars) for series matching
-        let collectionPrefix = Self.likeEscaped(String(collection.prefix(50)))
-        let collectionLike = collectionPrefix.isEmpty ? "%" : collectionPrefix + "%"
-
-        let whereClause = """
-            UPPER(ds.repository) LIKE UPPER(?) ESCAPE '\\'
-            AND UPPER(ds.series_name) LIKE UPPER(?) ESCAPE '\\'
-            """
+        guard let match = Self.libraryMatchClause(library: library, collection: collection) else {
+            return ([], 0)
+        }
+        let whereClause = match.clause
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
             SELECT ds.volume_id, ds.document_id,
@@ -5148,8 +5383,8 @@ public actor IndexingPipeline {
             """
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
-            countParams: [repoLike, collectionLike],
-            selectParams: [repoLike, collectionLike],
+            countParams: match.params,
+            selectParams: match.params,
             limit: limit
         )
     }

@@ -186,15 +186,23 @@ struct MacSourceExplorerView: View {
             VStack(alignment: .leading, spacing: 14) {
                 GroupBox(String(localized: "source.explorer.rawNote.header",
                                 defaultValue: "Source Note")) {
-                    Text(hasSourceNote
-                         ? rawSourceNote
-                         : String(localized: "source.explorer.noNote.body",
-                                  defaultValue: "This document has no archival source note. Its likely filing is predicted from its dateline and FRUS chapter — see the resolution on the right."))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(hasSourceNote
+                             ? rawSourceNote
+                             : String(localized: "source.explorer.noNote.body",
+                                      defaultValue: "This document has no archival source note. Its likely filing is predicted from its dateline and FRUS chapter — see the resolution on the right."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // Phase 5: the S1 classification markings (sentence 2 of the
+                        // note when it matches the marking vocabulary), as a quiet chip.
+                        if hasSourceNote,
+                           let marking = SourceNoteParser.classificationMarking(fromSourceNote: rawSourceNote) {
+                            ClassificationChip(marking: marking)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 // Only show parsed provenance when there is a note to parse; an absent note

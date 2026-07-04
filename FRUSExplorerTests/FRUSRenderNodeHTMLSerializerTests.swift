@@ -560,3 +560,86 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(!out.contains("data-skip"))
     }
 }
+
+// MARK: - ClassificationChipSerializationTests (Source Explorer Phase 5)
+
+/// Verifies the opt-in classification chip on `.source` footnotes: present in both
+/// the popover aside and the visible footnotes section when the serializer is
+/// created with `annotateSourceClassification: true` and the note carries a
+/// confident marking sentence; absent by default (exports byte-identical), absent
+/// for non-source footnotes, and absent when the note has no marking sentence.
+///
+/// Version history:
+///   1.0 — Session 2026-07-04: Source Explorer Phase 5 step 1
+@Suite("FRUSRenderNodeHTMLSerializer — classification chip")
+struct ClassificationChipSerializationTests {
+
+    /// A source footnote whose sentence 2 is a classification-markings sentence.
+    private let sourceWithMarking = FRUSRenderNode.footnoteBody(
+        id: "fn1", type: .source, printedNumber: "1",
+        sequentialNumber: 1, displayLabel: "1",
+        children: [.paragraph([.plainText(
+            "Source: National Archives, RG 59, Central Files 1967-69, POL 27 ARAB-ISR. Secret; Nodis. Drafted by Read.")])]
+    )
+
+    private func serialize(_ footnote: FRUSRenderNode, annotate: Bool) -> String {
+        FRUSRenderNodeHTMLSerializer(annotateSourceClassification: annotate)
+            .serialize(FRUSDocumentRenderModel(documentId: "doc-1", bodyNodes: [], footnotes: [footnote]))
+    }
+
+    @Test("Annotated source footnote gets the chip in aside AND footnotes section")
+    func chipPresentWhenAnnotated() {
+        let out = serialize(sourceWithMarking, annotate: true)
+        let occurrences = out.components(separatedBy: "class=\"classification-chip\"").count - 1
+        #expect(occurrences == 2,
+                "the chip must appear in the popover aside and the visible footnotes section; got \(occurrences)")
+        #expect(out.contains(">Secret; Nodis</span>"),
+                "the chip text is the extracted marking sentence")
+        #expect(out.contains("aria-label=\"Classification markings: Secret; Nodis\""),
+                "assistive tech gets an explicit prefix")
+    }
+
+    @Test("Default serializer (exports) emits no chip")
+    func chipAbsentByDefault() {
+        let out = serialize(sourceWithMarking, annotate: false)
+        #expect(!out.contains("classification-chip"),
+                "export output must be unchanged by the Phase 5 chip")
+    }
+
+    @Test("Non-source footnotes never get a chip")
+    func chipAbsentForRegularFootnote() {
+        let fn = FRUSRenderNode.footnoteBody(
+            id: "fn2", type: .footnote, printedNumber: "2",
+            sequentialNumber: 2, displayLabel: "2",
+            children: [.paragraph([.plainText("See document 12. Secret; Nodis.")])]
+        )
+        let out = serialize(fn, annotate: true)
+        #expect(!out.contains("classification-chip"))
+    }
+
+    @Test("Source note without a marking sentence gets no chip")
+    func chipAbsentWithoutMarking() {
+        let fn = FRUSRenderNode.footnoteBody(
+            id: "fn3", type: .source, printedNumber: "1",
+            sequentialNumber: 1, displayLabel: "1",
+            children: [.paragraph([.plainText(
+                "Source: Department of State, Central Files, 711.11/3-1545.")])]
+        )
+        let out = serialize(fn, annotate: true)
+        #expect(!out.contains("classification-chip"),
+                "a citation-only note has no sentence 2 marking — no chip, no junk")
+    }
+
+    @Test("Bracket-wrapped [Source: …] notes normalize before marking extraction")
+    func chipHandlesBracketWrapper() {
+        let fn = FRUSRenderNode.footnoteBody(
+            id: "fn4", type: .source, printedNumber: "1",
+            sequentialNumber: 1, displayLabel: "1",
+            children: [.paragraph([.plainText(
+                "[Source: Johnson Library, National Security File, Country File, Vietnam. Top Secret; Sensitive.]")])]
+        )
+        let out = serialize(fn, annotate: true)
+        #expect(out.contains(">Top Secret; Sensitive</span>"),
+                "the [Source: …] wrapper must collapse exactly as indexing does before extraction")
+    }
+}

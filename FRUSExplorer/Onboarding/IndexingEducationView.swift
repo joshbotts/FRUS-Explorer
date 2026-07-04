@@ -61,6 +61,11 @@ import SwiftUI
 ///   1.8 — Session 2026-07-03 (AI attribution): AI Summaries copy notes that summaries
 ///          in exported collections are labeled as AI-generated content attributed to
 ///          Apple Intelligence
+///   1.9 — Source Explorer Phase 5 (program docs pass): "Reading a Source Note" notes
+///          all-era extraction coverage and the classification-markings chip;
+///          "Source Explorer & NARA Catalog" describes the honest empty state for
+///          Archival Neighbors, the per-source macOS neighbors window, and the
+///          volume Sources list's local counts + cross-volume Collection view
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -645,7 +650,8 @@ private extension EducationPage {
                     "Document source notes identify the archival provenance of the records published in FRUS. A source note for a document in the Reagan subseries might read:",
                     "\"Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Secret; Nodis.\"",
                     "This tells you: the original record was collected from the National Archives; it's in Record Group 59 (State Department records); it's part of the Central Foreign Policy File series; the reel identifier is P840114–1808; and it was classified Secret with a special handling caption.",
-                    "One way this app helps researchers is by connecting archival citations detected in source notes directly to NARA's finding aids — so you can navigate from a FRUS document directly to the archive where the original record lives. This makes it easier than ever to follow the archival roadmap FRUS offers for deeper research.",
+                    "One way this app helps researchers is by connecting archival citations detected in source notes directly to NARA's finding aids — so you can navigate from a FRUS document directly to the archive where the original record lives. Source notes are extracted for every era of the series, including the modern volumes whose notes are embedded in the document heading. This makes it easier than ever to follow the archival roadmap FRUS offers for deeper research.",
+                    "When a source note records classification markings — \"Secret; Nodis\", or explicitly \"No classification marking\" — the app separates them from the archival citation and shows them as a small chip beside the source note in the reading view, in Source Explorer, and on search results. The markings describe how the original record was handled at the time; the published text has been declassified.",
                     "The app also ships a corpus-wide authority of the archival collections FRUS cites: from Source Explorer you can open any matched collection to see its variant citation forms, its National Archives catalog record, every volume across the series that cites it, and how many documents in your own indexed volumes came from it."
                 ]
             ),
@@ -834,8 +840,8 @@ private extension EducationPage {
                 paragraphs: [
                     "Open the Source Explorer from any document to read its source note broken into structured archival fields, and to follow detected citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.",
                     "You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies use a free NARA Catalog API key you add in Settings.",
-                    "From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document\u{2019}s row in a volume\u{2019}s sources list, a search result, or a node in the cross-reference graph.",
-                    "A volume\u{2019}s front matter names the archival collections its editors drew on. In the volume\u{2019}s Sources section, each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, and a major collection cited by more than one volume shows how many, opening the list of those volumes so you can follow a body of records across the series."
+                    "From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document\u{2019}s row in a volume\u{2019}s sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.",
+                    "A volume\u{2019}s front matter names the archival collections its editors drew on. In the volume\u{2019}s Sources section, each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app\u{2019}s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series."
                 ]
             ),
             EducationSection(

@@ -58,9 +58,28 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 140: initial implementation
+///   1.1 — Session 2026-07-04 (Source Explorer Phase 5 step 1): opt-in classification
+///          chips. When `annotateSourceClassification` is `true` (the reading views,
+///          via `HTMLTemplate.build`), each `.source` footnote whose text carries a
+///          classification-markings sentence (`SourceNoteParser.classificationMarking`)
+///          gets a quiet `<span class="classification-chip">` appended — in both the
+///          popover aside (already `data-skip="1"`) and the visible footnotes section
+///          (outside the offset engine's DFS root), so flat-text offsets and existing
+///          highlights are untouched. Default `false` keeps every export byte-identical.
 public struct FRUSRenderNodeHTMLSerializer {
 
-    public init() {}
+    /// When `true`, `.source` footnotes are annotated with a classification chip
+    /// (see the version-1.1 note above). Reading views pass `true`; exports keep
+    /// the default `false` so exported HTML/PDF/DOCX output is unchanged.
+    private let annotateSourceClassification: Bool
+
+    /// Creates a serializer.
+    ///
+    /// - Parameter annotateSourceClassification: Whether `.source` footnotes get a
+    ///   classification-markings chip. Default `false` (exports).
+    public init(annotateSourceClassification: Bool = false) {
+        self.annotateSourceClassification = annotateSourceClassification
+    }
 
     // MARK: - Public API
 
@@ -253,9 +272,12 @@ public struct FRUSRenderNodeHTMLSerializer {
     private func footnoteSectionHTML(_ footnotes: [FRUSRenderNode]) -> String {
         var html = "<section class=\"footnotes-section\"><hr class=\"fn-rule\"><h2 class=\"fn-section-heading\">Footnotes</h2><ol class=\"fn-list\">"
         for footnote in footnotes {
-            guard case .footnoteBody(_, _, _, _, let label, let children) = footnote else { continue }
+            guard case .footnoteBody(_, let type, _, _, let label, let children) = footnote else { continue }
             html += "<li class=\"fn-list-item\" id=\"fnote-\(escaped(label))\"><span class=\"fn-list-label\">\(escaped(label))</span>"
             html += block(children)
+            // The footnotes section sits outside .frus-document (the offset engine's
+            // DFS root), so the chip cannot perturb flat-text offsets.
+            html += classificationChipHTML(type: type, children: children)
             html += "</li>"
         }
         html += "</ol></section>"
@@ -442,7 +464,34 @@ public struct FRUSRenderNodeHTMLSerializer {
         // No whitespace inside or after the aside — it has data-skip="1" so the
         // JS walker skips the element, but sibling text nodes (e.g. "\n" after
         // </aside>) ARE visible to the walker and would cause mismatches.
-        return "<aside class=\"footnote \(typeClass)\" id=\"fn-\(escaped(label))\" popover data-skip=\"1\">\(block(children))</aside>"
+        // The chip rides inside the (already offset-invisible) aside.
+        return "<aside class=\"footnote \(typeClass)\" id=\"fn-\(escaped(label))\" popover data-skip=\"1\">\(block(children))\(classificationChipHTML(type: type, children: children))</aside>"
+    }
+
+    // MARK: - Classification Chip (Source Explorer Phase 5)
+
+    /// Builds the classification chip for a `.source` footnote, or `""` when chips
+    /// are disabled (exports), the footnote is not a source note, or the note carries
+    /// no confident classification-markings sentence.
+    ///
+    /// The note text is recovered with the shared flat-text DFS, its `[Source: …]`
+    /// wrapper collapsed exactly as indexing does (`normalizeSourceNoteWrapper`),
+    /// and the marking extracted by the same S1 derivation stored in
+    /// `document_sources.classification` — so the chip in the reading view always
+    /// matches the Source Explorer's.
+    private func classificationChipHTML(type: FootnoteType, children: [FRUSRenderNode]) -> String {
+        guard annotateSourceClassification, type == .source else { return "" }
+        // Collapse whitespace the same way indexing's `normalizedWhitespace` does
+        // (that helper is file-private to IndexingPipeline.swift).
+        let collapsed = flatText(of: children)
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let note = IndexingPipeline.normalizeSourceNoteWrapper(collapsed)
+        guard let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) else {
+            return ""
+        }
+        // data-skip is belt-and-suspenders: both insertion points are already
+        // offset-invisible (aside data-skip; footnotes section outside the DFS root).
+        return "<span class=\"classification-chip\" data-skip=\"1\" aria-label=\"Classification markings: \(escaped(marking))\">\(escaped(marking))</span>"
     }
 
     // MARK: - Aggregation Helpers
