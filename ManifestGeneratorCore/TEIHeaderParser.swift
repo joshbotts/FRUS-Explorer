@@ -25,7 +25,7 @@ public enum TEIHeaderParserError: Error, Sendable {
 /// | `//titleStmt/title[@type="complete"]` | `title` |
 /// | `//titleStmt/editor` (non-general) | `editors` |
 /// | `//titleStmt/editor[@role="general"]` | `generalEditor` |
-/// | `//publicationStmt/date[@type="publication-date"]` (TEXT) | `publicationDate` |
+/// | `//publicationStmt/date[@type="publication-date"]` (TEXT), else untyped `//publicationStmt/date` (TEXT) | `publicationDate` |
 /// | `//publicationStmt/date[@type="content-date"][@notBefore][@notAfter]` | `earliestDate`, `latestDate` |
 /// | `//profileDesc/creation/date[@from][@to]` (fallback `@notBefore`/`@notAfter`) | `earliestDate`, `latestDate` |
 /// | `//keywords[@scheme="https://history.state.gov/tags"]/term` | `tags` |
@@ -34,8 +34,13 @@ public enum TEIHeaderParserError: Error, Sendable {
 /// - `publicationDate` is the historical **print year** — the *text content* of the
 ///   `publicationStmt/date[@type="publication-date"]` element (e.g. `"1861"`). It is
 ///   NOT the digital `@when` timestamp (a 2010–2025 build stamp on sibling `<bibl>`
-///   elements) and NOT the coverage range. In-progress modern volumes carry a
-///   self-closing / empty `publication-date`, which yields `publicationDate == nil`.
+///   elements) and NOT the coverage range. The 10 oldest volumes (1860s Civil War era,
+///   e.g. `frus1862`, `frus1865p1`) instead carry an **empty self-closing**
+///   `date[@type="publication-date"]` `@when` build stamp and place the real print year
+///   on a sibling **untyped** `publicationStmt/date` (e.g. `<date calendar="gregorian">1862</date>`);
+///   the parser falls back to that untyped element's text when the typed one is empty.
+///   In-progress modern volumes carry an empty `publication-date` and no untyped print
+///   year, which yields `publicationDate == nil`.
 /// - `earliestDate`/`latestDate` are the **coverage range**, taken from the
 ///   `@notBefore`/`@notAfter` attributes of `publicationStmt/date[@type="content-date"]`
 ///   when present, else from `profileDesc/creation/date` (`@from`/`@to`, falling back to
@@ -48,6 +53,9 @@ public enum TEIHeaderParserError: Error, Sendable {
 ///   1.0 — Session 02: initial implementation
 ///   1.1 — SA-1a: publicationDate = publication-date TEXT only (no `@when`, no content-date);
 ///         coverage range now also read from content-date `@notBefore`/`@notAfter`.
+///   1.2 — SA-1a (review fix): fall back to an untyped `publicationStmt/date` text for the
+///         print year when the typed `publication-date` element is empty (the legacy encoding
+///         used by the 10 oldest 1860s volumes), still never taking `@when` or content-date.
 public struct TEIHeaderParser {
 
     private init() {}
@@ -98,6 +106,14 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
     // Flags
     private var inTagsKeywords = false
     private var bestTitleType = ""   // track which title type we've captured
+
+    // Print-year resolution: the typed `publication-date` element always wins. When it is
+    // empty/self-closing (the 10 oldest volumes), fall back to the text of an untyped
+    // `publicationStmt/date` element. `sawTypedPublicationDate` locks out the fallback once a
+    // typed publication-date has supplied a non-empty year, so a later untyped sibling cannot
+    // override it and the ordering of siblings within publicationStmt does not matter.
+    private var sawTypedPublicationDate = false
+    private var untypedPublicationYearCandidate: String?
 
     // MARK: - Convenience
 
@@ -196,11 +212,26 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
         case "date" where parent == "publicationStmt" && attrs["type"] == "publication-date":
             // Print year: ONLY the TEXT content of the publication-date element (e.g. "1861").
             // Never the digital @when timestamp (a build stamp on sibling <bibl> elements) and
-            // never the content-date range. An empty / self-closing publication-date (in-progress
-            // modern volumes) leaves publicationDate nil. characterBuffer already isolates this
-            // element's own text, so sibling <idno> text cannot bleed in.
+            // never the content-date range. An empty / self-closing publication-date leaves the
+            // typed year unset; the untyped fallback below may then supply it (10 oldest volumes).
+            // characterBuffer already isolates this element's own text, so sibling <idno> text
+            // cannot bleed in.
             if !text.isEmpty {
                 result.publicationDate = text
+                sawTypedPublicationDate = true
+            }
+
+        case "date" where parent == "publicationStmt" && attrs["type"] == nil:
+            // Legacy print-year encoding (10 oldest 1860s volumes): the real print year lives on
+            // an untyped <date calendar="gregorian">YEAR</date> sibling while the typed
+            // publication-date is an empty @when build stamp. Record it as a fallback candidate;
+            // it is applied at endDocument only if no typed publication-date supplied a year.
+            // Untyped dates carrying @notBefore/@notAfter etc. are content-date rows handled above
+            // (they have type="content-date"), so an untyped element with range attrs is not a
+            // print year — but the pre-1866 print-year elements carry no range attrs, so a plain
+            // text-only untyped date is the safe fallback.
+            if !text.isEmpty, untypedPublicationYearCandidate == nil {
+                untypedPublicationYearCandidate = text
             }
 
         case "term" where inTagsKeywords:
@@ -213,6 +244,15 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
 
         default:
             break
+        }
+    }
+
+    func parserDidEndDocument(_ parser: XMLParser) {
+        // Apply the untyped print-year fallback only when no typed publication-date supplied a
+        // year (the 10 oldest 1860s volumes). This runs after the whole header is walked so the
+        // typed element always takes precedence regardless of sibling ordering.
+        if !sawTypedPublicationDate, let candidate = untypedPublicationYearCandidate {
+            result.publicationDate = candidate
         }
     }
 }

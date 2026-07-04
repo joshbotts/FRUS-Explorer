@@ -55,6 +55,7 @@
 
     ],
     "filename" : "frus1862.xml",
+    "publicationDate" : "1862",
     "sizeBytes" : 6219930,
     "status" : "published",
     "subseries" : "1862",
@@ -111,6 +112,7 @@
 
     ],
     "filename" : "frus1863p1.xml",
+    "publicationDate" : "1864",
     "sizeBytes" : 6109311,
     "status" : "published",
     "subseries" : "1863",
@@ -137,6 +139,7 @@
 
     ],
     "filename" : "frus1863p2.xml",
+    "publicationDate" : "1864",
     "sizeBytes" : 4784553,
     "status" : "published",
     "subseries" : "1863",
@@ -188,6 +191,7 @@
 
     ],
     "filename" : "frus1864p1.xml",
+    "publicationDate" : "1864",
     "sizeBytes" : 6556114,
     "status" : "published",
     "subseries" : "1864",
@@ -216,6 +220,7 @@
 
     ],
     "filename" : "frus1864p2.xml",
+    "publicationDate" : "1865",
     "sizeBytes" : 5967192,
     "status" : "published",
     "subseries" : "1864",
@@ -246,6 +251,7 @@
 
     ],
     "filename" : "frus1864p3.xml",
+    "publicationDate" : "1865",
     "sizeBytes" : 4361469,
     "status" : "published",
     "subseries" : "1864",
@@ -278,6 +284,7 @@
 
     ],
     "filename" : "frus1864p4.xml",
+    "publicationDate" : "1866",
     "sizeBytes" : 3417223,
     "status" : "published",
     "subseries" : "1864",
@@ -319,6 +326,7 @@
 
     ],
     "filename" : "frus1865p1.xml",
+    "publicationDate" : "1866",
     "sizeBytes" : 6167919,
     "status" : "published",
     "subseries" : "1865",
@@ -354,6 +362,7 @@
 
     ],
     "filename" : "frus1865p2.xml",
+    "publicationDate" : "1866",
     "sizeBytes" : 4922227,
     "status" : "published",
     "subseries" : "1865",
@@ -389,6 +398,7 @@
 
     ],
     "filename" : "frus1865p3.xml",
+    "publicationDate" : "1866",
     "sizeBytes" : 7154191,
     "status" : "published",
     "subseries" : "1865",

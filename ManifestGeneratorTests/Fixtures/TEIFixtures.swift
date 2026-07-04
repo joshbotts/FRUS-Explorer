@@ -201,6 +201,33 @@ enum TEIFixtures {
     </teiHeader></TEI>
     """
 
+    /// Oldest-volumes legacy print-year encoding (real `frus1862` shape): the
+    /// `type="publication-date"` element is an EMPTY self-closing `@when` build stamp, and the
+    /// real historical print year lives on a SIBLING UNTYPED `<date calendar="gregorian">1862</date>`.
+    /// A `content-date` sibling carries the coverage range on `@notBefore`/`@notAfter`. Expected:
+    /// `publicationDate == "1862"` (from the untyped fallback), range from content-date attrs.
+    static let untypedPrintYearVolume = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+      <fileDesc>
+        <titleStmt>
+          <title type="complete">Papers Relating to Foreign Affairs, 1862</title>
+          <editor role="primary">Gaillard Hunt</editor>
+        </titleStmt>
+        <publicationStmt>
+          <publisher>United States Government Printing Office</publisher>
+          <pubPlace>Washington</pubPlace>
+          <date calendar="gregorian">1862</date>
+          <idno type="frus">frus1862</idno>
+          <date type="publication-date" when="2020-11-25T14:23:15.000Z"/>
+          <date calendar="gregorian" notAfter="1862-12-31T23:59:59-05:00"
+              notBefore="1860-08-01T00:00:00-05:00" type="content-date">1860 to 1862</date>
+        </publicationStmt>
+      </fileDesc>
+    </teiHeader></TEI>
+    """
+
     /// Self-closing `publication-date` carrying only a digital `@when` build timestamp — this
     /// must NOT populate `publicationDate` (the @when is a build stamp, not a print year).
     static let publicationDateWhenTimestampOnly = """
