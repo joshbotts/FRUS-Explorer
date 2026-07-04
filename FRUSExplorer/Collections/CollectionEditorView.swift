@@ -996,7 +996,7 @@ struct CollectionEditorView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     Text(String(localized: "collection.editor.docs.empty",
-                                defaultValue: "No content yet. Add documents, headings, notes, and apparatus with the Add menu above."))
+                                defaultValue: "No content yet. Add documents, headings, notes, and apparatus from the toolbar above."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }

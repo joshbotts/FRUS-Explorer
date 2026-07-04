@@ -1626,6 +1626,8 @@ private struct InlineNoteCreateSheet: View {
 /// Version history:
 ///   1.0 — Collections Manager M1: initial ribbon (CONTENT / ARRANGE / VIEW +
 ///          pinned Export), reusing `ResearchStripButton`
+///   1.1 — Collections Manager M1 review: the Apparatus `Menu` label wears the
+///          `ResearchStripButton` capsule chrome so the cluster reads uniformly
 struct CollectionRibbonView: View {
 
     /// Whether the collection has any entries — gates Sort by Date.
@@ -1744,11 +1746,25 @@ struct CollectionRibbonView: View {
                 }
             }
         } label: {
+            // Match the `ResearchStripButton` capsule chrome (finding 3, adversarial
+            // review): the Apparatus control is a `Menu`, not a `Button`, so it cannot
+            // literally reuse `ResearchStripButton`; instead it wears the same
+            // font/padding/tint so it reads as one control family in the strip.
             Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
                   systemImage: "list.bullet.rectangle")
                 .font(.system(size: 11))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.secondary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 0.5)
+                )
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .fixedSize()
         .help(String(localized: "collection.add.apparatus.help",
                      defaultValue: "Insert a generated apparatus block — bibliography, chronology, sources, persons, or thematic index"))
