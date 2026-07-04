@@ -66,6 +66,8 @@ import SwiftUI
 ///          "Source Explorer & NARA Catalog" describes the honest empty state for
 ///          Archival Neighbors, the per-source macOS neighbors window, and the
 ///          volume Sources list's local counts + cross-volume Collection view
+///   1.10 — Analytics SA-1b: added the real "Production & Timeliness" dashboard
+///          page (`.aboutTheSeries`), replacing the DEBUG-only Prep-A placeholder
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -491,6 +493,8 @@ enum EducationCategory: String {
 /// Version history:
 ///   1.0 — Session 163: initial implementation (prose sections only)
 ///   1.1 — Analytics Prep-A: added the optional `dashboard` body variant
+///   1.2 — Analytics SA-1b: `all` now includes the unconditional
+///          `seriesProduction` dashboard page (Prep-A's DEBUG placeholder removed)
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -523,16 +527,13 @@ struct EducationPage: Identifiable {
 
     /// All guide pages in display order.
     ///
-    /// In `DEBUG` builds this appends the development-only
-    /// `dashboardPlaceholder` (the Prep-A proof-of-pipe). Release builds
-    /// exclude it entirely, so shipping users see no new page.
-    static let all: [EducationPage] = {
-        var pages = [page1, page2, page3, page4, page5, page6, page7]
-        #if DEBUG
-        pages.append(dashboardPlaceholder)
-        #endif
-        return pages
-    }()
+    /// The final page is the live "Production & Timeliness" dashboard
+    /// (`seriesProduction`), the first real "About the Series" dashboard
+    /// (Analytics SA-1b). It is unconditional — shipped in both debug and
+    /// release builds.
+    static let all: [EducationPage] = [
+        page1, page2, page3, page4, page5, page6, page7, seriesProduction,
+    ]
 }
 
 struct EducationSection: Identifiable {
@@ -981,26 +982,22 @@ private extension EducationPage {
     )
 }
 
-// MARK: - DEBUG-only dashboard placeholder (Analytics Prep-A proof-of-pipe)
+// MARK: - Series Production dashboard page (Analytics SA-1b)
 
-#if DEBUG
 private extension EducationPage {
-    /// Development-only "About the Series" page that renders a live dashboard
-    /// (`EducationDashboard.placeholder`) in place of prose, proving the Prep-A
-    /// content-model pipe end-to-end on both platforms. Its `sections` are empty
-    /// by design — the renderers show the dashboard, not sections — so it never
-    /// contributes a prose paragraph or a Markdown link to scan. `#if DEBUG`
-    /// keeps it out of release builds; `EducationPage.all` appends it only in
-    /// `DEBUG`.
-    static let dashboardPlaceholder = EducationPage(
-        id: "series-dashboard-placeholder",
-        title: String(localized: "education.dashboard.placeholder.page.title",
-                      defaultValue: "Series Dashboard (Preview)"),
-        subtitle: String(localized: "education.dashboard.placeholder.page.subtitle",
-                         defaultValue: "Development placeholder — proves the live-dashboard pipe"),
+    /// The live "About the Series" page that renders the Production &
+    /// Timeliness dashboard (`EducationDashboard.seriesProduction`) in place of
+    /// prose. Its `sections` are empty by design — the renderers show the
+    /// dashboard, not sections — so it contributes no prose paragraph or
+    /// Markdown link to scan. Unconditional (shipped in debug and release).
+    static let seriesProduction = EducationPage(
+        id: "series-production",
+        title: String(localized: "education.series.production.page.title",
+                      defaultValue: "Production & Timeliness"),
+        subtitle: String(localized: "education.series.production.page.subtitle",
+                         defaultValue: "How long the official record takes to reach print"),
         category: .aboutTheSeries,
         sections: [],
-        dashboard: .placeholder
+        dashboard: .seriesProduction
     )
 }
-#endif

@@ -11,59 +11,69 @@ import Testing
 
 // MARK: - EducationDashboardTests
 
-/// Pure model tests for the Analytics Prep-A content-model extension: the
-/// optional `EducationPage.dashboard` variant, the new `.aboutTheSeries`
-/// category, and the `DEBUG`-only placeholder page.
+/// Pure model tests for the "About the Series" content-model dashboards: the
+/// optional `EducationPage.dashboard` variant, the `.aboutTheSeries` category,
+/// and the real `.seriesProduction` page (Analytics SA-1b, which replaced the
+/// Prep-A DEBUG placeholder).
 ///
 /// These assert the content model only — no SwiftUI view is instantiated — so
-/// they run without an `AppState` environment. They guard against three
-/// regressions: an accidental release-visible dashboard page (the placeholder
-/// must stay `DEBUG`-only), a stray `dashboard` on an existing prose page, and
-/// a broken deep-link contract for the placeholder id.
+/// they run without an `AppState` environment. They guard against: a missing or
+/// duplicated dashboard page, a stray `dashboard` on a prose page (which must be
+/// `.aboutTheSeries`), and a broken deep-link contract for the page id.
 ///
 /// Version history:
 ///   1.0 — Analytics Prep-A: initial implementation
+///   1.1 — Analytics SA-1b: retargeted from the DEBUG placeholder to the real,
+///          unconditional `series-production` page
 @MainActor
 struct EducationDashboardTests {
 
-    /// The new category carries a non-empty localised title.
+    /// The dashboard page's stable id.
+    private static let productionPageID = "series-production"
+
+    /// The category carries a non-empty localised title.
     @Test("EducationDashboard: aboutTheSeries category has a non-empty title")
     func aboutTheSeriesTitleNonEmpty() {
         #expect(!EducationCategory.aboutTheSeries.title.isEmpty)
     }
 
-    #if DEBUG
-    /// In DEBUG, exactly one page carries the placeholder dashboard, and it has
-    /// the expected id, category, and empty sections.
-    @Test("EducationDashboard: DEBUG placeholder page is well-formed and unique")
-    func debugPlaceholderPageIsWellFormed() {
-        let dashboardPages = EducationPage.all.filter { $0.dashboard == .placeholder }
+    /// Exactly one page carries the production dashboard, in both debug and
+    /// release, with the expected id, category, dashboard, and empty sections.
+    @Test("EducationDashboard: the series-production page is well-formed and unique")
+    func productionPageIsWellFormed() {
+        let dashboardPages = EducationPage.all.filter { $0.dashboard == .seriesProduction }
         #expect(dashboardPages.count == 1)
 
         guard let page = dashboardPages.first else { return }
-        #expect(page.id == "series-dashboard-placeholder")
+        #expect(page.id == Self.productionPageID)
         #expect(page.category == .aboutTheSeries)
+        #expect(page.dashboard == .seriesProduction)
         #expect(page.sections.isEmpty)
 
         // The id is unique across all pages.
-        let matchingIds = EducationPage.all.filter { $0.id == "series-dashboard-placeholder" }
+        let matchingIds = EducationPage.all.filter { $0.id == Self.productionPageID }
         #expect(matchingIds.count == 1)
     }
 
-    /// The deep-link contract still resolves the placeholder page by id.
-    @Test("EducationDashboard: DEBUG placeholder resolves via the deep-link firstIndex lookup")
-    func debugPlaceholderResolvesViaDeepLink() {
-        let index = EducationPage.all.firstIndex { $0.id == "series-dashboard-placeholder" }
+    /// The deep-link contract resolves the production page by id.
+    @Test("EducationDashboard: series-production resolves via the deep-link firstIndex lookup")
+    func productionResolvesViaDeepLink() {
+        let index = EducationPage.all.firstIndex { $0.id == Self.productionPageID }
         #expect(index != nil)
     }
-    #endif
 
-    /// Every non-placeholder page has a `nil` dashboard — guards against a
+    /// Every page that carries a dashboard is an `.aboutTheSeries` page, and
+    /// every non-dashboard page carries a `nil` dashboard — guards against a
     /// prose page accidentally sprouting a dashboard.
-    @Test("EducationDashboard: only the placeholder page carries a dashboard")
-    func onlyPlaceholderCarriesDashboard() {
-        for page in EducationPage.all where page.id != "series-dashboard-placeholder" {
-            #expect(page.dashboard == nil, "Page \(page.id) unexpectedly carries a dashboard")
+    @Test("EducationDashboard: only aboutTheSeries pages carry a dashboard")
+    func onlyAboutTheSeriesPagesCarryDashboards() {
+        for page in EducationPage.all {
+            if page.dashboard != nil {
+                #expect(page.category == .aboutTheSeries,
+                        "Page \(page.id) carries a dashboard but is not .aboutTheSeries")
+            } else {
+                #expect(page.dashboard == nil, "Page \(page.id) unexpectedly carries a dashboard")
+            }
         }
     }
 }
