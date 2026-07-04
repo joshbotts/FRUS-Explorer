@@ -1769,6 +1769,12 @@ struct CollectionDetailCommandActions: Equatable {
     /// mirrors the Export toolbar button's `disabled` condition).
     let canExport: Bool
 
+    /// Whether the collection has any entries — gates Sort by Date (M1).
+    let hasEntries: Bool
+
+    /// Whether the collection has any document entries — gates Add Passages (M1).
+    let hasDocuments: Bool
+
     /// Opens the Add Documents sheet (⌘⇧A — the shortcut the toolbar button
     /// used to own; the menu item owns it now).
     let addDocuments: @MainActor () -> Void
@@ -1779,8 +1785,26 @@ struct CollectionDetailCommandActions: Equatable {
     /// Appends a prose note block to the outline (the structural-add menu item).
     let addProse: @MainActor () -> Void
 
+    /// Opens the bulk Add Highlighted Passages sheet (M1 — the ribbon's
+    /// Add Passages button).
+    let addHighlights: @MainActor () -> Void
+
+    /// Inserts a generated apparatus block of the given type (M1 — the ribbon's
+    /// Apparatus menu).
+    let addApparatus: @MainActor (CollectionGeneratedBlockType) -> Void
+
+    /// Re-orders the collection's entries chronologically (M1 — the ribbon's
+    /// Sort by Date button).
+    let sortByDate: @MainActor () -> Void
+
     /// Toggles the live preview pane (the Preview toolbar button).
     let togglePreview: @MainActor () -> Void
+
+    /// Toggles the inline Composition disclosure (M1 — the ribbon's VIEW group).
+    let toggleComposition: @MainActor () -> Void
+
+    /// Toggles the inline Front Matter disclosure (M1 — the ribbon's VIEW group).
+    let toggleFrontMatter: @MainActor () -> Void
 
     /// Opens the Export sheet (the Export… toolbar button).
     let exportCollection: @MainActor () -> Void
@@ -1789,6 +1813,8 @@ struct CollectionDetailCommandActions: Equatable {
         lhs.collectionId == rhs.collectionId
             && lhs.isPreviewShown == rhs.isPreviewShown
             && lhs.canExport == rhs.canExport
+            && lhs.hasEntries == rhs.hasEntries
+            && lhs.hasDocuments == rhs.hasDocuments
     }
 }
 
@@ -1968,6 +1994,33 @@ struct CollectionMenuContent: View {
         }
         .disabled(detail == nil)
 
+        Button(String(localized: "menu.collection.addHighlights",
+                      defaultValue: "Add Highlighted Passages…")) {
+            detail?.addHighlights()
+        }
+        .disabled(detail?.hasDocuments != true)
+
+        // Apparatus (M1): the five generated-block types, mirroring the ribbon's
+        // Apparatus menu so the Collection menu and ribbon drive one action set.
+        Menu(String(localized: "menu.collection.apparatus", defaultValue: "Insert Apparatus")) {
+            ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                Button {
+                    detail?.addApparatus(blockType)
+                } label: {
+                    Label(blockType.displayName, systemImage: blockType.systemImage)
+                }
+            }
+        }
+        .disabled(detail == nil)
+
+        Divider()
+
+        Button(String(localized: "menu.collection.sortByDate",
+                      defaultValue: "Sort by Date")) {
+            detail?.sortByDate()
+        }
+        .disabled(detail?.hasEntries != true)
+
         Divider()
 
         Toggle(isOn: Binding(
@@ -1978,6 +2031,18 @@ struct CollectionMenuContent: View {
                         defaultValue: "Show Preview"))
         }
         .keyboardShortcut("p", modifiers: [.command, .option])
+        .disabled(detail == nil)
+
+        Button(String(localized: "menu.collection.composition",
+                      defaultValue: "Toggle Composition Panel")) {
+            detail?.toggleComposition()
+        }
+        .disabled(detail == nil)
+
+        Button(String(localized: "menu.collection.frontMatter",
+                      defaultValue: "Toggle Front Matter Panel")) {
+            detail?.toggleFrontMatter()
+        }
         .disabled(detail == nil)
 
         Button(String(localized: "menu.collection.export",

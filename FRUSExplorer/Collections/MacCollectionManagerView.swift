@@ -573,10 +573,17 @@ private struct CollectionDetailPane: View {
             // Mirrors the Export toolbar button's `.disabled` condition — a smart
             // collection (savedSearchId set) exports with zero static entries.
             canExport: !sortedEntries.isEmpty || collection.savedSearchId != nil,
+            hasEntries: !sortedEntries.isEmpty,
+            hasDocuments: !orderedDocumentKeys.isEmpty,
             addDocuments: { showAddDocuments = true },
             addHeading: { addStructuralEntry(kind: .heading) },
             addProse: { addStructuralEntry(kind: .prose) },
+            addHighlights: { showAddHighlights = true },
+            addApparatus: { addGeneratedEntry(type: $0) },
+            sortByDate: { sortByDate() },
             togglePreview: { showPreview.toggle() },
+            toggleComposition: { showComposition.toggle() },
+            toggleFrontMatter: { showFrontMatter.toggle() },
             exportCollection: { showExport = true }
         )
     }
@@ -607,11 +614,39 @@ private struct CollectionDetailPane: View {
             .padding([.horizontal, .top], 24)
             .padding(.bottom, 16)
 
-            // Document list fills the rest of the available window height.
+            // Collections Manager M1: the labeled control ribbon (second row of the
+            // editor column) — a faithful `ResearchStripView` clone. It gathers every
+            // list-level authoring verb that was previously scattered across the
+            // Contents-header "+" glyph and the titlebar toolbar into one labeled
+            // `.bar` strip, killing the context-less "+" and the three-register split.
+            collectionRibbon
+
+            // Content list fills the rest of the available window height.
             documentsSection
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
         }
+    }
+
+    /// The Collections Manager M1 control ribbon, bound directly to this pane's
+    /// per-collection `@State` (the pane is re-created per collection via
+    /// `.id(c.id)`), so no focused-value round-trip is needed.
+    private var collectionRibbon: some View {
+        CollectionRibbonView(
+            hasEntries: !sortedEntries.isEmpty,
+            hasDocuments: !orderedDocumentKeys.isEmpty,
+            canExport: !sortedEntries.isEmpty || collection.savedSearchId != nil,
+            showComposition: $showComposition,
+            showFrontMatter: $showFrontMatter,
+            showPreview: $showPreview,
+            addDocuments: { showAddDocuments = true },
+            addHeading: { addStructuralEntry(kind: .heading) },
+            addProse: { addStructuralEntry(kind: .prose) },
+            addHighlights: { showAddHighlights = true },
+            addApparatus: { addGeneratedEntry(type: $0) },
+            sortByDate: { sortByDate() },
+            export: { showExport = true }
+        )
     }
 
     // MARK: - Name
@@ -692,72 +727,18 @@ private struct CollectionDetailPane: View {
         VStack(alignment: .leading, spacing: 10) {
             // Section header with inline sort control
             HStack(spacing: 8) {
+                // Collections Manager M1: the region is now labeled "Contents"
+                // (D1) — it holds documents plus headings, prose, excerpts, and
+                // apparatus, not documents alone. All list-level authoring verbs
+                // (Sort, Add-structural, Apparatus, Add Documents) moved up into
+                // `CollectionRibbonView`, so this header is now just its label.
                 Text(String(localized: "collection.section.documents",
-                            defaultValue: "Documents"))
+                            defaultValue: "Contents"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
 
                 Spacer()
-
-                Button {
-                    sortByDate()
-                } label: {
-                    Label(String(localized: "collection.sort.date",
-                                 defaultValue: "Sort by Date"),
-                          systemImage: "arrow.up.arrow.down")
-                        .font(.caption)
-                        .foregroundStyle(sortedEntries.isEmpty ? .tertiary : .secondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(sortedEntries.isEmpty)
-                .help(String(localized: "collection.sort.date.help",
-                             defaultValue: "Re-order documents chronologically by volume date"))
-
-                Menu {
-                    Button {
-                        addStructuralEntry(kind: .heading)
-                    } label: {
-                        Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
-                              systemImage: "number")
-                    }
-                    Button {
-                        addStructuralEntry(kind: .prose)
-                    } label: {
-                        Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
-                              systemImage: "text.alignleft")
-                    }
-                    Button {
-                        showAddHighlights = true
-                    } label: {
-                        Label(String(localized: "collection.add.highlights",
-                                     defaultValue: "Add Highlighted Passages…"),
-                              systemImage: "text.quote")
-                    }
-                    .disabled(orderedDocumentKeys.isEmpty)
-                    // Apparatus (Authoring Phase 6): placeable generated blocks —
-                    // inserted at the type's default position, movable afterwards.
-                    Menu {
-                        ForEach(CollectionGeneratedBlockType.allCases) { blockType in
-                            Button {
-                                addGeneratedEntry(type: blockType)
-                            } label: {
-                                Label(blockType.displayName, systemImage: blockType.systemImage)
-                            }
-                        }
-                    } label: {
-                        Label(String(localized: "collection.add.apparatus",
-                                     defaultValue: "Apparatus"),
-                              systemImage: "list.bullet.rectangle")
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help(String(localized: "collection.add.structural",
-                             defaultValue: "Add a section heading, a note block, highlighted passages, or an apparatus block"))
             }
 
             // Selection (UI audit A7) makes the outline rows first-class keyboard
@@ -813,7 +794,7 @@ private struct CollectionDetailPane: View {
 
                 if sortedEntries.isEmpty {
                     Text(String(localized: "collection.documents.empty",
-                                defaultValue: "No documents yet. Use Add Documents in the toolbar to add documents."))
+                                defaultValue: "No content yet. Use Add Documents in the ribbon above to add documents, headings, notes, and apparatus."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
@@ -1096,31 +1077,10 @@ private struct CollectionDetailPane: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
-            Button {
-                showAddDocuments = true
-            } label: {
-                Label(String(localized: "collection.toolbar.addDocuments",
-                             defaultValue: "Add Documents…"),
-                      systemImage: "plus.rectangle.on.folder")
-            }
-            // ⌘⇧A lives on the Collection ▸ Add Documents… menu item (UI audit
-            // gap 5) — declaring it here too would give the equivalent two active
-            // claimants whenever this window is key.
-            .help(String(localized: "collection.toolbar.addDocuments.help",
-                         defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
-
-            Divider()
-
-            Button {
-                showPreview.toggle()
-            } label: {
-                Label(String(localized: "collection.toolbar.preview",
-                             defaultValue: "Preview"),
-                      systemImage: showPreview ? "eye.fill" : "eye")
-            }
-            .help(String(localized: "collection.toolbar.preview.help",
-                         defaultValue: "Show a live preview of this collection as it will export — updates as you edit"))
-
+            // Collections Manager M1: Add Documents and Preview moved into
+            // `CollectionRibbonView` (the labeled second row of the editor column).
+            // Export stays on the titlebar too as a small, familiar redundancy —
+            // it is the collection's single terminal action.
             Button {
                 showExport = true
             } label: {
@@ -1641,6 +1601,221 @@ private struct InlineNoteCreateSheet: View {
             .padding(.vertical, 14)
         }
         .frame(minWidth: 440, minHeight: 280)
+    }
+}
+
+// MARK: - CollectionRibbonView
+
+/// The Collections manager control ribbon (Collections Manager M1, D2 lean A) —
+/// a faithful clone of `ResearchStripView`'s chrome hosted as the second row of
+/// `CollectionDetailPane.editorColumn`.
+///
+/// It gathers every list-level authoring verb — previously scattered across the
+/// Contents-header "+" glyph (F1) and the titlebar toolbar (F2) — into one labeled
+/// `.bar` strip of `ResearchStripButton`s (the same component the research strip
+/// uses), grouped CONTENT / ARRANGE / VIEW with Export pinned trailing outside the
+/// horizontal scroll region (mirroring the strip's Read/Research picker). No
+/// collapse: the strip's own collapse was removed in v1.1, so "no collapse" is the
+/// honest house pattern, and the horizontal `ScrollView` degrades narrow windows
+/// without truncating labels.
+///
+/// All state is owned by `CollectionDetailPane` and passed in as bindings/closures;
+/// the pane is per-collection (`.id(c.id)`), so the ribbon needs no focused-value
+/// round-trip.
+///
+/// Version history:
+///   1.0 — Collections Manager M1: initial ribbon (CONTENT / ARRANGE / VIEW +
+///          pinned Export), reusing `ResearchStripButton`
+struct CollectionRibbonView: View {
+
+    /// Whether the collection has any entries — gates Sort by Date.
+    let hasEntries: Bool
+    /// Whether the collection has any document entries — gates Add Passages.
+    let hasDocuments: Bool
+    /// Whether Export is available (entries exist, or the collection is smart).
+    let canExport: Bool
+
+    /// Reveals the inline Composition disclosure (VIEW group toggle).
+    @Binding var showComposition: Bool
+    /// Reveals the inline Front Matter disclosure (VIEW group toggle).
+    @Binding var showFrontMatter: Bool
+    /// Shows the live preview pane (VIEW group toggle).
+    @Binding var showPreview: Bool
+
+    /// Opens the Add Documents sheet.
+    let addDocuments: () -> Void
+    /// Appends a section heading to the outline.
+    let addHeading: () -> Void
+    /// Appends a prose note block to the outline.
+    let addProse: () -> Void
+    /// Opens the bulk Add Highlighted Passages sheet.
+    let addHighlights: () -> Void
+    /// Inserts a generated apparatus block of the given type.
+    let addApparatus: (CollectionGeneratedBlockType) -> Void
+    /// Re-orders the collection's entries chronologically.
+    let sortByDate: () -> Void
+    /// Opens the Export sheet.
+    let export: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            // The action buttons scroll horizontally when the window is narrower
+            // than their ideal width, exactly as the research strip does — labels
+            // never truncate, and Export stays pinned trailing.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ribbonButtons
+                }
+            }
+
+            // Export — pinned trailing outside the scroll region, mirroring the
+            // research strip's Read/Research picker.
+            ResearchStripButton(
+                title: String(localized: "collection.ribbon.export",
+                              defaultValue: "Export…"),
+                systemImage: "square.and.arrow.up",
+                isDisabled: !canExport,
+                action: export
+            )
+            .help(String(localized: "collection.ribbon.export.help",
+                         defaultValue: "Export this collection as a PDF, HTML page, or Word document"))
+            .padding(.trailing, 12)
+        }
+        .frame(minHeight: 32)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+    }
+
+    /// The ribbon's leading CONTENT / ARRANGE / VIEW clusters, hosted inside the
+    /// horizontal scroll region of `body`.
+    @ViewBuilder
+    private var ribbonButtons: some View {
+        // CONTENT
+        groupLabel(String(localized: "collection.ribbon.group.content",
+                          defaultValue: "Content"))
+            .padding(.leading, 16)
+
+        ResearchStripButton(
+            title: String(localized: "collection.ribbon.addDocuments",
+                          defaultValue: "Add Documents…"),
+            systemImage: "plus.rectangle.on.folder",
+            isDisabled: false,
+            action: addDocuments
+        )
+        .help(String(localized: "collection.toolbar.addDocuments.help",
+                     defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
+
+        ResearchStripButton(
+            title: String(localized: "collection.add.heading",
+                          defaultValue: "Add Section Heading"),
+            systemImage: "number",
+            isDisabled: false,
+            action: addHeading
+        )
+        .help(String(localized: "collection.add.heading.help",
+                     defaultValue: "Insert a section heading into the outline"))
+
+        ResearchStripButton(
+            title: String(localized: "collection.add.prose",
+                          defaultValue: "Add Note Block"),
+            systemImage: "text.alignleft",
+            isDisabled: false,
+            action: addProse
+        )
+        .help(String(localized: "collection.add.prose.help",
+                     defaultValue: "Insert an editorial note block into the outline"))
+
+        ResearchStripButton(
+            title: String(localized: "collection.ribbon.addPassages",
+                          defaultValue: "Add Passages…"),
+            systemImage: "text.quote",
+            isDisabled: !hasDocuments,
+            action: addHighlights
+        )
+        .help(String(localized: "collection.add.highlights.help",
+                     defaultValue: "Add highlighted passages from this collection's documents as quoted excerpts"))
+
+        Menu {
+            ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                Button {
+                    addApparatus(blockType)
+                } label: {
+                    Label(blockType.displayName, systemImage: blockType.systemImage)
+                }
+            }
+        } label: {
+            Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
+                  systemImage: "list.bullet.rectangle")
+                .font(.system(size: 11))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help(String(localized: "collection.add.apparatus.help",
+                     defaultValue: "Insert a generated apparatus block — bibliography, chronology, sources, persons, or thematic index"))
+
+        clusterDivider
+
+        // ARRANGE
+        groupLabel(String(localized: "collection.ribbon.group.arrange",
+                          defaultValue: "Arrange"))
+
+        ResearchStripButton(
+            title: String(localized: "collection.sort.date",
+                          defaultValue: "Sort by Date"),
+            systemImage: "arrow.up.arrow.down",
+            isDisabled: !hasEntries,
+            action: sortByDate
+        )
+        .help(String(localized: "collection.sort.date.help",
+                     defaultValue: "Re-order documents chronologically by volume date"))
+
+        clusterDivider
+
+        // VIEW
+        groupLabel(String(localized: "collection.ribbon.group.view",
+                          defaultValue: "View"))
+
+        ResearchStripButton(
+            title: String(localized: "composition.header", defaultValue: "Composition"),
+            systemImage: "slider.horizontal.3",
+            isDisabled: false,
+            action: { showComposition.toggle() }
+        )
+        .help(String(localized: "collection.ribbon.composition.help",
+                     defaultValue: "Show the Composition panel — choose what an export contains"))
+
+        ResearchStripButton(
+            title: String(localized: "collection.frontmatter.disclosure",
+                          defaultValue: "Front Matter"),
+            systemImage: "text.book.closed",
+            isDisabled: false,
+            action: { showFrontMatter.toggle() }
+        )
+        .help(String(localized: "collection.ribbon.frontMatter.help",
+                     defaultValue: "Show the Front Matter panel — introduction and colophon"))
+
+        ResearchStripButton(
+            title: String(localized: "collection.toolbar.preview", defaultValue: "Preview"),
+            systemImage: showPreview ? "eye.fill" : "eye",
+            isDisabled: false,
+            action: { showPreview.toggle() }
+        )
+        .help(String(localized: "collection.toolbar.preview.help",
+                     defaultValue: "Show a live preview of this collection as it will export — updates as you edit"))
+    }
+
+    /// An uppercased tertiary cluster label, the research strip's "RESEARCH" pattern.
+    private func groupLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.tertiary)
+            .textCase(.uppercase)
+            .kerning(0.8)
+    }
+
+    /// A thin vertical rule between clusters, as the main window toolbar uses.
+    private var clusterDivider: some View {
+        Divider().frame(height: 20)
     }
 }
 #endif

@@ -830,10 +830,27 @@ private struct CollectionPickerSheet: View {
 
 // MARK: - ResearchStripButton
 
-private struct ResearchStripButton: View {
+/// A labeled glyph+text button styled for the macOS control strips — a subtle
+/// tinted capsule that dims to `.tertiary` when disabled.
+///
+/// Shared (Collections Manager M1) between `ResearchStripView` (the document
+/// research strip) and `CollectionRibbonView` (the Collections manager ribbon)
+/// so both surfaces render sibling actions identically. It was `private` to this
+/// file when the research strip was its only client; the M1 ribbon reuses the
+/// exact chrome rather than cloning it, so it is now `internal`.
+///
+/// Version history:
+///   1.0 — Research strip control button
+///   1.1 — Collections Manager M1: promoted `private` → `internal` for reuse by
+///          `CollectionRibbonView`
+struct ResearchStripButton: View {
+    /// The button's visible label text (also its accessibility label).
     let title: String
+    /// The SF Symbol shown alongside the title.
     let systemImage: String
+    /// When `true` the button is disabled and its label dims to `.tertiary`.
     let isDisabled: Bool
+    /// The action performed on tap.
     let action: () -> Void
 
     var body: some View {
