@@ -29,6 +29,12 @@ import PackageDescription
 ///   1906–1910 Numerical File (microfilm M862). Requires `CATALOG_API_KEY`; caches raw
 ///   pages to disk. Run when refreshing the bundled index.
 ///
+/// - **CollectionAuthorityGenerator**: builds the bundled `collection-authority.json`
+///   (Source Explorer Phase 4) — a corpus-wide two-level authority of the archival
+///   collections cited across all FRUS volumes (front matter + document source notes),
+///   with alias forms, citing-volume lists, and offline-resolved NARA NAIDs. Entirely
+///   offline; run against a local TEI mirror when refreshing the bundled artifact.
+///
 /// - **SourceNoteEvalGenerator**: runs `SourceNoteParser` over the offline
 ///   `citations.csv` eval corpus (267k source notes, 520 volumes) and writes a
 ///   deterministic, diffable classification-rate report bucketed by FRUS era.
@@ -191,6 +197,43 @@ let package = Package(
             name: "VolumeSourcesIndexGeneratorTests",
             dependencies: [.target(name: "VolumeSourcesIndexGeneratorCore")],
             path: "VolumeSourcesIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - CollectionAuthorityGenerator
+
+        /// Source Explorer Phase 4: builds the bundled `collection-authority.json` — a
+        /// corpus-wide, two-level authority of the archival collections FRUS editors cite
+        /// (front-matter Sources sections + document source notes across all 694 TEI
+        /// volumes), clustered by normalized lot key / leading citation segment (the
+        /// frus-sources `merge.xq` reconciliation model at two-level depth) with alias
+        /// forms, citing-volume lists, and offline-resolved NARA NAIDs. Ships identity
+        /// only — never document counts (S5: counts are recomputed from the user's index).
+        .target(
+            name: "CollectionAuthorityGeneratorCore",
+            dependencies: [
+                .target(name: "SourceNoteKit"),
+                .target(name: "VolumeSourcesIndexGeneratorCore"),
+            ],
+            path: "CollectionAuthorityGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls CollectionAuthorityRunner.run() and exits.
+        .executableTarget(
+            name: "CollectionAuthorityGenerator",
+            dependencies: [.target(name: "CollectionAuthorityGeneratorCore")],
+            path: "CollectionAuthorityGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for CollectionAuthorityGeneratorCore (segment tokenization,
+        /// two-level merge, conservative-merge guardrails, extraction parity,
+        /// determinism).
+        .testTarget(
+            name: "CollectionAuthorityGeneratorTests",
+            dependencies: [.target(name: "CollectionAuthorityGeneratorCore")],
+            path: "CollectionAuthorityGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

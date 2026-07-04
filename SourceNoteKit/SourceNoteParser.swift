@@ -295,6 +295,10 @@ public struct ArchiveCitation: Sendable {
 ///          suffix (`Lot 61 D 282A` — the two sides' norms diverged, `61D282` vs
 ///          `61D282A`), and the subject-numeric class shape accepts a parenthesized
 ///          agency qualifier (`AID (US) 15-4 UAR`)
+///   1.11 — Source Explorer Phase 4 step 1 (Session 2026-07-03): `citationSentence(of:)`
+///          made public (grammar unchanged) so the collection-authority generator
+///          (`CollectionAuthorityGeneratorCore`) tokenizes exactly the sentence the
+///          class scan is bounded to when deriving leading-segment authority keys
 public struct SourceNoteParser {
 
     public init() {}
@@ -524,7 +528,11 @@ public struct SourceNoteParser {
     /// The citation sentence of a source note for the class scan: the **first
     /// sentence naming the central files**, else sentence 1 (see
     /// `decimalClassLocation(inCitation:)` for the rationale and shapes).
-    private static func citationSentence(of text: String) -> String {
+    ///
+    /// Public since Phase 4: the collection-authority generator tokenizes the same
+    /// citation sentence on `", "` (the frus-sources `merge.xq` segment model), so its
+    /// leading-segment keys are bounded to the citation exactly as the class scan is.
+    public static func citationSentence(of text: String) -> String {
         guard let boundary = sentenceBoundaryRegex, let anchor = centralFilesAnchorRegex
         else { return text }
         let ns = text as NSString

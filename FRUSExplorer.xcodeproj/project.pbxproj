@@ -175,6 +175,7 @@
 		57936A3F8F0DBD340B8453B3 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85FA098FBFD49BBDDCE10EB6 /* OnboardingFlowTests.swift */; };
 		58631740ADC031C73FEC9C9C /* GlobalContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAA37AF54A23793804F86A33 /* GlobalContextView.swift */; };
 		591BF510DC7FF0D9F4308083 /* IndexingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4796534819AD8F60335063F5 /* IndexingPipeline.swift */; };
+		5A0A7A65B981A73FE3239404 /* collection-authority.json in Resources */ = {isa = PBXBuildFile; fileRef = 738BAEE751AC5D8B7B786885 /* collection-authority.json */; };
 		5A3FD3816DD086B1052C00E2 /* PersonClusterOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */; };
 		5AAA76063AD14C36CDB8A2FB /* IndexingContextCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B92FF355B906D07F1DE187 /* IndexingContextCard.swift */; };
 		5AAC8948C386860029BDBC83 /* CollectionItemHTMLRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB62E70AEA3D9A8CFBD2C8E /* CollectionItemHTMLRenderer.swift */; };
@@ -201,6 +202,7 @@
 		6564D1B530F383DD8BBAA9B9 /* IndexingPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC28DDC19E5D2D71E5E031D /* IndexingPipelineTests.swift */; };
 		65B60DD5E9810F0D554339A1 /* AppActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4822CCAB395C9147304BB90 /* AppActivityTypes.swift */; };
 		65DE67CA03ED616524E6CCEB /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
+		66E67CC84B101DA495601896 /* collection-authority.json in Resources */ = {isa = PBXBuildFile; fileRef = 738BAEE751AC5D8B7B786885 /* collection-authority.json */; };
 		67FD209B468290636592662C /* SessionLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8EF6D3CD276F57B49D03422 /* SessionLogView.swift */; };
 		68A79012C4F5584D611874A3 /* DecimalFileSegmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B96612540EB50673701274 /* DecimalFileSegmentTests.swift */; };
 		68BA1099B5A3E26A1EE512E6 /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6000E386B1EB64D795D8F282 /* IntegrationTests.swift */; };
@@ -708,6 +710,7 @@
 		7054B9A8AF2304B2C17F34BF /* SourceNoteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
 		71424C2AA6C6C985A477647A /* ResetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetService.swift; sourceTree = "<group>"; };
 		735F8F29E4561F559519B1C7 /* AccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
+		738BAEE751AC5D8B7B786885 /* collection-authority.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "collection-authority.json"; sourceTree = "<group>"; };
 		73AD5E4C3F5410E494B55EEF /* NARAAPIKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NARAAPIKeyStore.swift; sourceTree = "<group>"; };
 		75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSExplorerUITests.swift; sourceTree = "<group>"; };
 		76FE996BF10FA9666F16732F /* SavedSearchesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSearchesView.swift; sourceTree = "<group>"; };
@@ -1224,6 +1227,7 @@
 			children = (
 				9863245E183A705A15D03E63 /* Assets.xcassets */,
 				59B54DD2D462AC96F50C4030 /* central-files-index.json */,
+				738BAEE751AC5D8B7B786885 /* collection-authority.json */,
 				B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */,
 				048277CFCB4CE54315008DB9 /* frus-offset-engine.js */,
 				39BF8068D53FC3128464360F /* frus-print.css */,
@@ -1624,6 +1628,7 @@
 				F98B32B579F89D6B63DB432A /* Assets.xcassets in Resources */,
 				F38326ED7268F68B3EC17242 /* Localizable.strings in Resources */,
 				A1EE332B08BEA5586CF9C5B3 /* central-files-index.json in Resources */,
+				66E67CC84B101DA495601896 /* collection-authority.json in Resources */,
 				E44167532316A537E2B69962 /* frus-highlights.js in Resources */,
 				5C2433FBC73CBDB81E77B226 /* frus-offset-engine.js in Resources */,
 				209063A7FB3FD9DAC85D85DD /* frus-print.css in Resources */,
@@ -1647,6 +1652,7 @@
 				68D62986C8C96F92E90045BD /* Assets.xcassets in Resources */,
 				EFD9C62455CC8C3876EE4B5E /* Localizable.strings in Resources */,
 				76256CBC3247EF289F96263C /* central-files-index.json in Resources */,
+				5A0A7A65B981A73FE3239404 /* collection-authority.json in Resources */,
 				C6CE3386656EC85C8513C72E /* frus-highlights.js in Resources */,
 				6EBEF52FF2480C0D43466D10 /* frus-offset-engine.js in Resources */,
 				8D7866F2C8D6154A6D91AD5C /* frus-print.css in Resources */,
