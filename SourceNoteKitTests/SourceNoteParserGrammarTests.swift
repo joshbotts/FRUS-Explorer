@@ -503,6 +503,8 @@ struct SourceNoteParserGrammarTests {
             ("Lot 90 D 313Records of the Executive Secretariat", "90 D 313"),
             ("Lot File 57 D 577, Box 3", "57 D 577"),
             ("Lot Files 74 D 131", "74 D 131"),
+            ("E–CFEP Files, Lot 61 D 282A", "61 D 282A"),        // letter suffix kept
+            ("CFEP Files: Lot 61 D 282a, Soviet Economic Penetration", "61 D 282a"),
           ])
     func firstLotReferenceVariants(_ text: String, _ expected: String) {
         let found = SourceNoteParser.firstLotReference(in: text)
@@ -524,5 +526,54 @@ struct SourceNoteParserGrammarTests {
         }
         #expect(lot == "57 D 577")
         #expect(SourceNoteParser.lotFileNorm(lot) == "57D577")
+    }
+
+    // MARK: - Shared class grammar (Phase 3 verification: decimalClassKey)
+
+    @Test("decimalClassKey canonicalizes class-leaf shapes (dashes → hyphen)",
+          arguments: [
+            ("POL 27 ARAB–ISR", "POL 27 ARAB-ISR"),   // en-dash → hyphen
+            ("POL 27 ARAB-ISR", "POL 27 ARAB-ISR"),   // hyphen fixed point
+            ("POL 15–1 IRAN", "POL 15-1 IRAN"),
+            ("DEF 6 MLF", "DEF 6 MLF"),
+            ("E 12 IRAN", "E 12 IRAN"),
+            ("711.11", "711.11"),
+            ("500.A15A4", "500.A15A4"),
+            ("484A.8612", "484A.8612"),
+            ("AID (US) 15–4 UAR", "AID (US) 15-4 UAR"), // parenthesized agency qualifier
+            (" 611.80. ", "611.80"),                    // trims + strips trailing period
+          ])
+    func decimalClassKeyVariants(_ candidate: String, _ expected: String) {
+        #expect(SourceNoteParser.decimalClassKey(candidate) == expected)
+    }
+
+    @Test("decimalClassKey rejects prose, record groups, and non-class shapes",
+          arguments: ["RG 59", "FRC 330–78–0011", "Arab unity", "NEA Files",
+                      "Records of the Executive Secretariat", "1977–1980",
+                      "POL Near East 1", "Vol. 12", "as maintained by the Executive Secretariat."])
+    func decimalClassKeyRejects(_ candidate: String) {
+        #expect(SourceNoteParser.decimalClassKey(candidate) == nil)
+    }
+
+    @Test("decimalClassLocation extracts the class location from citations")
+    func decimalClassLocationShapes() {
+        // Narrative decimal: item suffix cut at "/".
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Department of State, Central Files, 788.5/9–1361. Top Secret.") == "788.5")
+        // Subject-numeric structured: sentence tail cut at ". ".
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "National Archives and Records Administration, RG 59, Central Files 1967–69, POL 27 ARAB-ISR. Secret; Immediate.") == "POL 27 ARAB-ISR")
+        // Subdivision with an item suffix.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "RG 59, Central Files 1967–69, POL 27-14 ARAB-ISR/SANDSTORM. Secret.") == "POL 27-14 ARAB-ISR")
+        // Old-style decimal-leading note (no narrative prefix).
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "611.41/3–553. Foreign Service despatch.") == "611.41")
+        // CFPF reel identifiers are not classes.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Department of State, Central Foreign Policy File, P840114–1808") == nil)
+        // Library citations carry no class-shaped segment.
+        #expect(SourceNoteParser.decimalClassLocation(
+            inCitation: "Johnson Library, National Security File, Country File, Vietnam, Vol. 12. Top Secret.") == nil)
     }
 }

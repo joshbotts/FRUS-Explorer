@@ -1036,25 +1036,36 @@ struct VolumeSourceMatcherTests {
         }
     }
 
-    @Test("Decimal / subject-numeric class leaves match decimal rows at token boundaries")
+    @Test("Decimal / subject-numeric class leaves match the decimal_class column at token boundaries")
     func decimalClassLeafPath() async throws {
         try await withTempDir { dir in
             let pipeline = try await indexFixture(dir: dir, notes: [
                 ("d1", "Source: Department of State, Central Files, POL 27 ARAB–ISR. Confidential."),
                 ("d2", "Source: Department of State, Central Files, 711.11/3–1545. Secret."),
+                // Subject-numeric class inside a structured NARA citation — the doc
+                // side stores it in decimal_class now (series_name keeps only
+                // "Central Files 1967–69"). Note the ASCII hyphen: real document
+                // notes carry the hyphen where TEI front matter has an en-dash.
+                ("d3", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 27 ARAB-ISR. Secret; Immediate."),
             ])
 
-            // Subject-numeric leaf: matches across the stored sentence tail (". Confidential.").
+            // The en-dash front-matter key bridges to BOTH doc-side dash forms via the
+            // shared canonical form (narrative decimal row d1, structured row d3).
             let pol = try await pipeline.archivalNeighbors(
                 forLotFile: nil, recordGroup: "59", series: "POL 27 ARAB–ISR",
                 decimalClass: "POL 27 ARAB–ISR")
-            #expect(Set(pol.documents.map(\.documentId)) == ["d1"])
+            #expect(Set(pol.documents.map(\.documentId)) == ["d1", "d3"])
             // The class path outranks the rg+series path for a class leaf.
             #expect(pol.basis?.contains("POL 27 ARAB–ISR") == true)
             #expect(pol.basis?.contains("RG") != true,
                     "a class leaf must resolve on the decimal path, not the collection one")
 
-            // Dotted decimal leaf: matches the "/item" suffix form.
+            // A broader class finds its country/subject subdivisions at the token boundary.
+            let broad = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "POL 27")
+            #expect(Set(broad.documents.map(\.documentId)) == ["d1", "d3"])
+
+            // Dotted decimal leaf: matches the stored location cut from the "/item" form.
             let dotted = try await pipeline.archivalNeighbors(
                 forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "711.11")
             #expect(Set(dotted.documents.map(\.documentId)) == ["d2"])
@@ -1062,7 +1073,7 @@ struct VolumeSourceMatcherTests {
             // Boundary guard: a shorter class must not match mid-token.
             let boundary = try await pipeline.archivalNeighbors(
                 forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "711.1")
-            #expect(boundary.totalCount == 0, "'711.1' must not match '711.11/…' mid-token")
+            #expect(boundary.totalCount == 0, "'711.1' must not match '711.11' mid-token")
         }
     }
 
@@ -3683,6 +3694,10 @@ private func writeKeyingFixtureVolume(to url: URL, volumeId: String) throws {
                     <list>
                       <item>Central Files 1967–69: POL 27 ARAB–ISR</item>
                       <item>DEF 6 MLF</item>
+                      <item>POL 3 UAR: Arab unity</item>
+                      <item>611.80; 611.86; POL Near East 1: Palestinian refugee question</item>
+                      <item>DEF 9 TUR, military personnel, Turkey</item>
+                      <item>AID (US) 15–4 UAR: P.L. 480 agreements, United Arab Republic</item>
                       <item>Lot 90 D 313Records of the Executive Secretariat</item>
                       <item>Lot Files 74 D 131</item>
                       <item>Conference Files: Lot 66 D 110, see National Archives and Records Administration below.</item>
@@ -3823,17 +3838,35 @@ struct VolumeSourcesKeyingTests {
         #expect(libraryLeaf.recordGroup == nil)
     }
 
-    @Test("Decimal / subject-numeric class leaves get a location key in doc-side normal form")
+    @Test("Decimal / subject-numeric class leaves get a location key in the shared canonical form")
     func classLeafKeys() async throws {
         let entries = try await parseFixtureEntries()
 
-        // Colon-prefixed class leaf: the class is the segment after the final colon.
+        // Colon-prefixed class leaf (audit shape): the class is the segment after the
+        // final colon — and the TEI en-dash canonicalizes to the ASCII hyphen the same
+        // file carries in document source notes.
         let pol = try entry(entries, containing: "POL 27 ARAB–ISR")
-        #expect(pol.decimalClass == "POL 27 ARAB–ISR")
+        #expect(pol.decimalClass == "POL 27 ARAB-ISR")
         #expect(pol.lotFile == nil)
 
         let def = try entry(entries, containing: "DEF 6 MLF")
         #expect(def.decimalClass == "DEF 6 MLF")
+
+        // Leaf-before-colon (the dominant 1961–1976 shape): class leads, prose follows.
+        let leafFirst = try entry(entries, containing: "Arab unity")
+        #expect(leafFirst.decimalClass == "POL 3 UAR")
+
+        // Semicolon class lists key on the first passing segment.
+        let list = try entry(entries, containing: "Palestinian refugee question")
+        #expect(list.decimalClass == "611.80")
+
+        // Comma-described leaves (the 1969–1976 shape) key on the leading segment.
+        let comma = try entry(entries, containing: "military personnel")
+        #expect(comma.decimalClass == "DEF 9 TUR")
+
+        // Parenthesized agency qualifiers pass the shared gate, dash-canonicalized.
+        let aid = try entry(entries, containing: "P.L. 480 agreements")
+        #expect(aid.decimalClass == "AID (US) 15-4 UAR")
 
         // Lot-keyed rows and prose-ish rows are never class leaves.
         let lot = try entry(entries, containing: "Executive Secretariat")

@@ -274,6 +274,19 @@ public struct ArchiveCitation: Sendable {
 ///          (`Lot File 57 D 577`, `Lot Files 74 D 131` — the audit §2.3 greedy-prefix
 ///          pollution, which previously keyed `lot="Files 74 D 131"` on the
 ///          front-matter side and missed entirely on the document side)
+///   1.10 — Source Explorer Phase 3 verification fixes (Session 2026-07-03): shared
+///          decimal / subject-numeric class grammar — `decimalClassKey(_:)` (the
+///          anchored shape gate + canonical form: collapsed whitespace, Unicode
+///          dashes → ASCII hyphen, bridging TEI front matter's en-dash against the
+///          hyphen document notes use) and `decimalClassLocation(inCitation:)`
+///          (comma-segment scan with `/`-suffix and sentence-tail cuts) — so the
+///          front-matter class leaves and the citing documents write the identical
+///          key. Verification found the class path dead end-to-end without this:
+///          0 of 2,850 audit class leaves keyed, and no doc-side column to match.
+///          Same pass: the shared lot grammar accepts a single trailing letter
+///          suffix (`Lot 61 D 282A` — the two sides' norms diverged, `61D282` vs
+///          `61D282A`), and the subject-numeric class shape accepts a parenthesized
+///          agency qualifier (`AID (US) 15-4 UAR`)
 public struct SourceNoteParser {
 
     public init() {}
@@ -373,6 +386,93 @@ public struct SourceNoteParser {
         return head.uppercased().filter {
             !$0.isWhitespace && $0 != "-" && $0 != "–" && $0 != "—"
         }
+    }
+
+    // MARK: - Decimal / subject-numeric class keys (shared grammar)
+
+    /// Subject-numeric class-leaf shape (`POL 27 ARAB-ISR`, `DEF 6 MLF`, `E 12 IRAN`),
+    /// anchored to the whole candidate, with an optional parenthesized agency
+    /// qualifier after the class letters (`AID (US) 15-4 UAR` — the P.L. 480 /
+    /// assistance classes, frequent in the 1964–1976 volumes). `RG`/`FRC`
+    /// record-group forms excluded. Applied AFTER dash canonicalization, so only the
+    /// ASCII hyphen needs to match.
+    private static let subjectNumericClassRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?!RG\b|FRC\b)[A-Z]{1,5}(?:\s?\([A-Z0-9]{1,4}\))?\s?\d{1,3}(?:-\d{1,3})*(?:\s[A-Z0-9]{1,6}(?:-[A-Z0-9]{1,6})*)*$"#,
+        options: [])
+
+    /// Dotted decimal class-leaf shape (`711.11`, `611.61`, `500.A15A4`): the central
+    /// decimal file classification, anchored to the whole candidate.
+    private static let dottedDecimalClassRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+$"#,
+        options: [])
+
+    /// Validates and canonicalizes one decimal / subject-numeric class-leaf candidate.
+    ///
+    /// This is the single class-shape gate for **both** citation sides — the
+    /// front-matter Sources outline (`SourcesParserDelegate.classLeafKey`) and
+    /// document source notes (`decimalClassLocation(inCitation:)`) — so a class keyed
+    /// from front matter and the same class keyed from a citing document always reduce
+    /// to the identical stored form, and the archival-neighbor matcher stays a plain
+    /// indexed equality/prefix lookup.
+    ///
+    /// **Canonical form:** whitespace collapsed to single spaces, trailing periods
+    /// stripped, and every Unicode dash (en/em) mapped to the ASCII hyphen. The dash
+    /// mapping is load-bearing: TEI front matter writes the class with an en-dash
+    /// (`POL 27 ARAB–ISR`) while the same file cited in document source notes uses
+    /// the ASCII hyphen (`POL 27 ARAB-ISR`) — verbatim storage on either side can
+    /// never match the other. Case is preserved (classes are uppercase by vocabulary;
+    /// mixed-case tokens fail the anchored shapes).
+    ///
+    /// - Parameter candidate: One candidate string (a colon/semicolon segment of a
+    ///   front-matter item, or a comma segment of a citation).
+    /// - Returns: The canonical class key, or `nil` when the candidate is not a
+    ///   class-leaf shape.
+    public static func decimalClassKey(_ candidate: String) -> String? {
+        var s = candidate
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        while s.hasSuffix(".") { s = String(s.dropLast()) }
+        s = s.trimmingCharacters(in: .whitespaces)
+        guard s.count >= 3, s.count <= 60 else { return nil }
+        let ns = NSRange(s.startIndex..., in: s)
+        let isSubjectNumeric = subjectNumericClassRegex?.firstMatch(in: s, range: ns) != nil
+        let isDottedDecimal = dottedDecimalClassRegex?.firstMatch(in: s, range: ns) != nil
+        guard isSubjectNumeric || isDottedDecimal else { return nil }
+        return s
+    }
+
+    /// Extracts the decimal / subject-numeric class **location** from a central-files
+    /// document citation, in the canonical form of `decimalClassKey(_:)`.
+    ///
+    /// Scans the citation's comma segments in order and returns the first that passes
+    /// the class gate, after cutting an item suffix at the first `/`
+    /// (`788.5/9–1361` → `788.5`, `POL 27-14 ARAB-ISR/SANDSTORM` → `POL 27-14 ARAB-ISR`)
+    /// and, failing that, a trailing sentence at the first `". "`
+    /// (`POL 27 ARAB-ISR. Secret; Immediate…` → `POL 27 ARAB-ISR`). The `". "` cut is
+    /// tried second so dotted decimals (`788.5`) are never split on their own dot.
+    ///
+    /// Callers gate by classification: only central-files-shaped notes
+    /// (`.centralFiles`, `.cfpfFile`, and `.naraCollection` whose series names the
+    /// central files) should be scanned, so box numbers or council-document ids in
+    /// other repositories' citations can never masquerade as a class.
+    ///
+    /// - Parameter text: The raw citation text (wrapper already stripped).
+    /// - Returns: The canonical class location, or `nil` when no segment is a class leaf.
+    public static func decimalClassLocation(inCitation text: String) -> String? {
+        for segment in text.components(separatedBy: ",") {
+            var candidate = segment
+            if let slash = candidate.firstIndex(of: "/") {
+                candidate = String(candidate[..<slash])
+            }
+            if let key = decimalClassKey(candidate) { return key }
+            if let tail = candidate.range(of: ". "),
+               let key = decimalClassKey(String(candidate[..<tail.lowerBound])) {
+                return key
+            }
+        }
+        return nil
     }
 
     // MARK: - Classification markings (frus-sources sentence model)
@@ -1190,9 +1290,14 @@ public struct SourceNoteParser {
     /// - run-together trailing text (`Lot 90 D 313Records…` — the digits terminate
     ///   the match, no trailing word boundary is required);
     /// - a `File`/`Files` infix (`Lot File 57 D 577`, `Lot Files 74 D 131`), skipped
-    ///   before the capture so the key is the bare number, never `"Files 74 D 131"`.
+    ///   before the capture so the key is the bare number, never `"Files 74 D 131"`;
+    /// - a single trailing letter suffix (`Lot 61 D 282A`, `Lot 61 D 282a`) — a real
+    ///   lot-series form the narrative doc-side extractor already captured, so the
+    ///   shared grammar must too or the two sides' `lotFileNorm` keys diverge
+    ///   (`61D282` vs `61D282A` — found by the Phase 3 verification bucket run). The
+    ///   negative lookahead keeps run-together prose (`313Records…`) out of the key.
     private static let looseLotRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"\bLot\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+)"#,
+        pattern: #"\bLot\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:[A-Za-z](?![A-Za-z]))?)"#,
         options: .caseInsensitive
     )
 

@@ -83,6 +83,16 @@ import Foundation
 ///          `decimalClass` normalized match keys; the series-name heuristic sits
 ///          behind a validity gate (junk tails store nil); `listofworks` bibliography
 ///          rows get the new `.bibliography` kind and carry no keys
+///   2.3 — Source Explorer Phase 3 verification fixes (Session 2026-07-03):
+///          `classLeafKey` keys the dominant real class-leaf shapes the step-1
+///          after-final-colon rule missed — leaf-before-colon entries
+///          (`POL 3 UAR: Arab unity`), semicolon class lists
+///          (`611.80; 611.86; POL Near East 1: …`), and comma-described leaves
+///          (`DEF 9 TUR, military personnel, Turkey`) — and delegates the shape gate
+///          and canonical form (Unicode dashes → ASCII hyphen) to the shared
+///          `SourceNoteParser.decimalClassKey(_:)`, matching the new
+///          `document_sources.decimal_class` column. The 13-volume verification
+///          sample keyed 0 class leaves before this fix
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -658,12 +668,14 @@ public struct VolumeSourceEntry: Sendable {
     /// The series name within the record group, when a confident capture exists (junk
     /// heuristic tails — prose fragments, bare year ranges — store `nil` instead).
     public let seriesName: String?
-    /// The decimal / subject-numeric class key for a class-leaf entry ("POL 27 ARAB–ISR",
-    /// "DEF 6 MLF", "711.11"), in the document side's location normal form: verbatim text
-    /// (case and en-dash preserved, whitespace collapsed) exactly as
-    /// `DecimalFileSegment.location(from:)` yields it from a document citation of the same
-    /// file — `document_sources.series_name` stores decimal/CFPF locations verbatim, so
-    /// matching is a plain equality/prefix comparison.
+    /// The decimal / subject-numeric class key for a class-leaf entry ("POL 27 ARAB-ISR",
+    /// "DEF 6 MLF", "711.11"), in the shared canonical form of
+    /// `SourceNoteParser.decimalClassKey(_:)`: whitespace collapsed, Unicode dashes
+    /// mapped to the ASCII hyphen. The same form is written to
+    /// `document_sources.decimal_class` from citing documents' source notes, so the
+    /// archival-neighbor matcher is a plain indexed equality/prefix comparison. (The
+    /// dash mapping bridges TEI front matter's en-dash against the hyphen the same
+    /// files carry in document notes.)
     public let decimalClass: String?
     /// The entry's own text (whitespace-collapsed), excluding any nested child items.
     public let rawText: String
@@ -1816,21 +1828,6 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
 
-    /// Subject-numeric class-leaf shape (`POL 27 ARAB–ISR`, `DEF 6 MLF`, `E 2–2 US`):
-    /// an uppercase class prefix, a class number with optional dashed subdivisions,
-    /// then optional country/subject tokens. Anchored to the whole candidate so prose
-    /// can never match; `RG`/`FRC` prefixes are excluded (record-group and
-    /// records-center accession numbers share the letters-then-digits shape).
-    private static let subjectNumericClassPat = try? NSRegularExpression(
-        pattern: #"^(?!RG\b|FRC\b)[A-Z]{1,5}\s?\d{1,3}(?:[–—\-]\d{1,3})*(?:\s[A-Z0-9]{1,6}(?:[–—\-][A-Z0-9]{1,6})*)*$"#,
-        options: [])
-
-    /// Dotted decimal class-leaf shape (`711.11`, `611.61`, `500.A15A4`): the central
-    /// decimal file classification, anchored to the whole candidate.
-    private static let dottedDecimalClassPat = try? NSRegularExpression(
-        pattern: #"^\d{2,3}[A-Za-z]{0,2}(?:\.[0-9A-Za-z]+)+$"#,
-        options: [])
-
     // Deliberately excludes "listofabbreviations": that glossary is a `terms` section owned
     // by `TermsParserDelegate`; matching it here double-consumed it as bogus source items.
     private static let sourceSectionTypes: Set<String> = [
@@ -2062,30 +2059,45 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
     }
 
     /// The decimal / subject-numeric class key for a class-leaf entry, or `nil` when the
-    /// text is not a class leaf. The class may carry a series prefix
-    /// (`Central Files 1967–69: POL 27 ARAB–ISR`) — the candidate is the segment after
-    /// the final colon, trailing periods stripped.
+    /// text is not a class leaf, in the canonical form of
+    /// `SourceNoteParser.decimalClassKey(_:)` (whitespace collapsed, Unicode dashes →
+    /// ASCII hyphen — the same form `document_sources.decimal_class` stores, so the
+    /// matcher is a plain indexed equality/prefix lookup).
     ///
-    /// **Normal form** (must match how the document side stores decimal/CFPF locations):
-    /// `document_sources.series_name` stores the citation's location verbatim — case and
-    /// en-dashes preserved, whitespace single-spaced — and `relatedByDecimal` compares
-    /// `DecimalFileSegment.location(from:)` (the text before `/`, trimmed) against it
-    /// with plain equality/prefix. Front-matter class leaves have no `/item` tail, so
-    /// the collapsed, trimmed candidate already *is* that normal form; no case or dash
-    /// mapping is applied, because the document side applies none.
+    /// Both real front-matter shapes are keyed:
+    /// - **leaf after a colon-prefixed series** — `Central Files 1967–69: POL 27 ARAB–ISR`
+    ///   (the audit §2.3 example; the after-final-colon candidate);
+    /// - **leaf leading a described entry** — `POL 3 UAR: Arab unity`,
+    ///   `AID (US) 15 JORDAN: PL 480…` (the dominant shape in the 1961–1976 volumes;
+    ///   the before-first-colon candidate, tried second so the audit shape keeps
+    ///   priority).
+    ///
+    /// A semicolon-separated candidate lists several classes covering one subject
+    /// (`611.80; 611.86; 780.00; POL Near East 1: …`) — the first segment passing the
+    /// shared gate keys the row (one key column; the leading class is the most
+    /// specific citable form). A comma-described entry (`DEF 9 TUR, military
+    /// personnel, Turkey` — the 1969–1976 shape) keys on its leading comma segment
+    /// when the whole segment fails the gate.
     private static func classLeafKey(from text: String) -> String? {
-        var candidate = (text.components(separatedBy: ":").last ?? text)
-            .trimmingCharacters(in: .whitespaces)
-        while candidate.hasSuffix(".") { candidate = String(candidate.dropLast()) }
-        candidate = candidate.trimmingCharacters(in: .whitespaces)
-        guard !candidate.isEmpty, candidate.count <= 60 else { return nil }
-        let ns = NSRange(candidate.startIndex..., in: candidate)
-        let isSubjectNumeric = subjectNumericClassPat?
-            .firstMatch(in: candidate, range: ns) != nil
-        let isDottedDecimal = dottedDecimalClassPat?
-            .firstMatch(in: candidate, range: ns) != nil
-        guard isSubjectNumeric || isDottedDecimal else { return nil }
-        return candidate
+        var candidates: [String] = []
+        if text.contains(":") {
+            let parts = text.components(separatedBy: ":")
+            if let last = parts.last { candidates.append(last) }
+            if let first = parts.first { candidates.append(first) }
+        } else {
+            candidates.append(text)
+        }
+        for candidate in candidates {
+            for segment in candidate.components(separatedBy: ";") {
+                if let key = SourceNoteParser.decimalClassKey(segment) { return key }
+                if segment.contains(","),
+                   let lead = segment.components(separatedBy: ",").first,
+                   let key = SourceNoteParser.decimalClassKey(lead) {
+                    return key
+                }
+            }
+        }
+        return nil
     }
 }
 
