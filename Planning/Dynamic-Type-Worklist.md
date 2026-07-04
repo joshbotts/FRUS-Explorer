@@ -57,17 +57,44 @@ convention already in place to reuse.
 | `App/SearchSheet.swift` | 45 | macOS search-window chrome + result rows. |
 | **Deferred macOS-chrome total** | **262** | Convert with the `FRUSTheme` convention when their pass is scheduled. |
 
-## Deferred — other files (secondary macOS / mixed, next passes)
+## Stage 3 — converted this pass (iOS-reachable SECONDARY text surfaces)
+
+Stage 3 targets the iOS-reachable secondary text surfaces not covered by stage 1's
+iOS-primary reading/onboarding/banner batch. The audit of the "deferred other" table
+below (re-checked platform reachability at each file's `#if os(...)` guard and every
+call site) found **exactly one** genuinely iOS-reachable file: `ResearchView`, which is
+hosted at BOTH `MainTabView.swift:79` (the iOS **Research tab**) and `FRUSExplorerApp.swift:705`
+(the macOS `frus.research` window). It had been mis-labelled "macOS" in the stage-1
+deferred table. Every other "deferred other" file is `#if os(macOS)`-gated (verified) —
+they stay deferred as macOS chrome.
+
+| File | Sites | SCALE | ICON | LEAVE-FIXED | Notes |
+|------|------:|------:|-----:|------------:|-------|
+| `Research/ResearchView.swift` | 6 | 4 | 2 | — | Shared iOS-tab / macOS-window. Four sidebar count badges (`12`) → `captionFont`; the "By Tag" `◆` glyph (`10`, in the Label `icon:` slot beside scaling text) → `captionSmallFont`; the document-row collection `tray.2` glyph (`8`) → dropped its override so it inherits the HStack's `.caption2` and tracks its adjacent label. Version history 1.3 → 1.4. |
+| **Stage-3 total** | **6** | **4** | **2** | — | The only iOS-reachable residual text surface; now scales. |
+
+### `.frame(height:)` audit (iOS-reachable)
+The audit's "22 fixed `.frame(height:)`" was a rough at-audit grep. Re-swept every numeric
+`.frame(height:)` and split by platform + purpose:
+- **Named A2 clip (DocumentView highlight-picker detent):** fixed in stage 1 (`[.height(180), .medium]`).
+- **iOS-reachable numeric `.frame(height:)` remaining:** all are **fixed chart/graph CANVAS**
+  heights, not text containers — `Analytics/AnalyticsView.swift` (6× `280`/`220` Swift-Charts
+  canvases), `Chronology/ChronologyView.swift` (`150` chart) — a chart canvas is sized in
+  points by design and does not clip text (its axis labels are separate, scalable). **LEAVE.**
+- **macOS-only:** `SearchSheet` (6), `MainWindowView` (4), `FRUSSettingsView` (2),
+  `CrossReferenceGraphView` (2 graph canvas), `SupportingViews:1111` (24pt status bar) —
+  deferred macOS chrome / graph canvas. No iOS-reachable fixed-height *text* container remains.
+
+## Deferred — other files (secondary macOS / mixed, next passes) — all `#if os(macOS)`-verified
 
 | File | Sites | Triage | Notes |
 |------|------:|--------|-------|
-| `App/MacDocumentView.swift` | 8 | SCALE (macOS) | Document-window strip captions (all `11`/`captionSize`) — same tokens apply; macOS reading chrome, next pass. |
-| `Research/ResearchView.swift` | 6 | SCALE (macOS) | Research window rows (`12`/`10`/`8`). |
-| `App/HistoryWindowView.swift` | 6 | SCALE (macOS) | History list rows (`13`/`11`). |
-| `App/MainWindowView.swift` | 5 | mixed | 40pt empty glyph + `15`/`13`/`12` texts SCALE; the `12` monospaced count → **LEAVE** (grid-aligned tally). |
-| `Collections/CollectionRichTextEditor.swift` | 1 | SCALE + **A2** | Toolbar label `11`. **A2 core** (`adjustsFontForContentSizeCategory` + `UIFontMetrics` display-time mapping) is its own dedicated item — NOT done this pass. |
-| `Collections/CollectionExportSheet.swift` | 1 | SCALE | 48pt export glyph → `@ScaledMetric` when the Collections pass runs. |
-| `Collections/MacCollectionManagerView.swift` | 1 | LEAVE | `9`pt provenance micro-label in a dense grid row. |
+| `App/MacDocumentView.swift` | 8 | SCALE (macOS) | Document-window strip captions (all `11`/`captionSize`) — same tokens apply; macOS reading chrome, next pass. `#if os(macOS)`. |
+| `App/HistoryWindowView.swift` | 6 | SCALE (macOS) | History list rows (`13`/`11`). Whole file `#if os(macOS)`; `frus.history` window only. |
+| `App/MainWindowView.swift` | 5 | mixed (macOS) | 40pt empty glyph + `15`/`13`/`12` texts SCALE; the `12` monospaced count → **LEAVE** (grid-aligned tally). Whole file `#if os(macOS)`. |
+| `Collections/CollectionRichTextEditor.swift` | 1 | SCALE + **A2** | Toolbar label `11` (macOS toolbar). **A2 core** shipped in commit `ebe4011` (iOS `adjustsFontForContentSizeCategory` + `UIFontMetrics` remap). The residual `11` is macOS toolbar chrome. |
+| `Collections/CollectionExportSheet.swift` | 1 | SCALE (macOS) | 48pt success glyph in `MacExportCompleteView` (macOS Save-panel flow) → `@ScaledMetric` when the Collections macOS pass runs. |
+| `Collections/MacCollectionManagerView.swift` | 1 | LEAVE (macOS) | `9`pt provenance micro-label in a dense grid row; macOS-only manager window. |
 
 ## LEAVE-FIXED (permanent) — graph canvas + word cloud
 
@@ -85,13 +112,22 @@ Per the discrimination rules these are correct as fixed points and must **not** 
 
 ## Summary counts (346 total)
 
-- **Converted this pass (Stage 1):** 34 sites across 9 files (28 SCALE, 6 ICON-track, 2 LEAVE) + 1 detent clip fix.
-- **Deferred macOS-chrome bulk:** 262 (FRUSSettingsView 145, SupportingViews 72, SearchSheet 45).
-- **Deferred other (next passes):** 28 (MacDocumentView 8, ResearchView 6, HistoryWindowView 6, MainWindowView 5, plus 3 Collections singles).
-- **LEAVE-FIXED permanent (graph + word cloud):** 22 (CrossReferenceGraphView 11, VolumeConnectionGraphView 5, WordCloud files 6).
-- Rounding note: a handful of the "deferred other" files also contain 1–2 LEAVE sites
-  (e.g. MainWindowView's monospaced count, MacCollectionManagerView's grid micro-label)
-  folded into their rows above; those are called out per-file.
+Reconciled after Stage 3 — **every one of the 346 sites is now classified as
+DONE, DEFERRED (macOS chrome), or LEAVE-FIXED (permanent)**:
+
+- **Converted — Stage 1** (iOS-primary reading / onboarding / banner): **34** sites / 9 files (28 SCALE, 6 ICON, 2 LEAVE) + 1 detent clip fix.
+- **Converted — Stage 3** (iOS-reachable secondary — `ResearchView`): **6** sites (4 SCALE, 2 ICON).
+- **Converted total: 40 sites.**
+- **Deferred — macOS-chrome bulk:** **262** (FRUSSettingsView 145, SupportingViews 72, SearchSheet 45).
+- **Deferred — other macOS-only files** (all `#if os(macOS)`-verified, next macOS passes): **22**
+  (MacDocumentView 8, HistoryWindowView 6, MainWindowView 5, CollectionRichTextEditor 1 macOS-toolbar,
+  CollectionExportSheet 1, MacCollectionManagerView 1). ResearchView's 6 moved to *converted*.
+- **LEAVE-FIXED permanent (graph + word cloud):** **22** (CrossReferenceGraphView 11, VolumeConnectionGraphView 5, WordCloud files 6).
+- **Reconciliation: 40 done + 262 + 22 deferred + 22 leave-fixed = 346.** ✓
+- Rounding note: a handful of the deferred macOS files also contain 1–2 in-file LEAVE sites
+  (e.g. MainWindowView's monospaced count, MacCollectionManagerView's grid micro-label) — those are
+  folded into their file rows and will be marked LEAVE when that file's macOS pass runs.
 
 The **A2 rich-text editor** work (`CollectionRichTextEditor` `adjustsFontForContentSizeCategory`
-+ `UIFontMetrics`) is tracked as its own item and is not part of this font-site pass.
++ `UIFontMetrics`) shipped in commit `ebe4011` (its own item). The one residual `11`pt site in that
+file is the macOS toolbar label, folded into the deferred macOS-chrome count above.

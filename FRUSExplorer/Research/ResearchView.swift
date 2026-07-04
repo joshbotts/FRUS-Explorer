@@ -81,6 +81,9 @@ struct ResearchDocumentEntry: Identifiable {
 ///   1.2 — Session 130: directly-tagged documents merged as a first-class data source
 ///   1.3 — Session 130: collection membership merged as a third data source; "By Collection"
 ///          sidebar section; collection chips in document rows; ResearchSidebarItem.collection
+///   1.4 — Dynamic Type (UI-Audit A1): sidebar count badges + tag/collection glyphs moved
+///          off fixed points onto scalable caption tokens so this shared iOS-tab / macOS-window
+///          surface tracks the reader's text-size setting.
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -145,7 +148,7 @@ struct ResearchView: View {
                                     defaultValue: "All Research Documents"))
                         Spacer()
                         Text("\(allAnnotatedDocumentCount)")
-                            .font(.system(size: 12))
+                            .font(FRUSTheme.captionFont)
                             .foregroundStyle(.secondary)
                     }
                 } icon: {
@@ -166,7 +169,7 @@ struct ResearchView: View {
                                      : item.collection.name)
                                 Spacer()
                                 Text("\(item.count)")
-                                    .font(.system(size: 12))
+                                    .font(FRUSTheme.captionFont)
                                     .foregroundStyle(.secondary)
                             }
                         } icon: {
@@ -190,12 +193,12 @@ struct ResearchView: View {
                                 Text(item.tag.name)
                                 Spacer()
                                 Text("\(item.count)")
-                                    .font(.system(size: 12))
+                                    .font(FRUSTheme.captionFont)
                                     .foregroundStyle(.secondary)
                             }
                         } icon: {
                             Text("◆")
-                                .font(.system(size: 10))
+                                .font(FRUSTheme.captionSmallFont)
                                 .foregroundStyle(Color.accentColor)
                         }
                         .tag(ResearchSidebarItem.tag(item.tag.id))
@@ -373,7 +376,6 @@ struct ResearchView: View {
                     ForEach(collectionNames, id: \.self) { name in
                         HStack(spacing: 2) {
                             Image(systemName: "tray.2")
-                                .font(.system(size: 8))
                             Text(name.isEmpty
                                  ? String(localized: "research.row.untitledCollection",
                                           defaultValue: "Untitled Collection")
