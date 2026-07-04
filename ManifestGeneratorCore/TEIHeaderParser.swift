@@ -25,14 +25,29 @@ public enum TEIHeaderParserError: Error, Sendable {
 /// | `//titleStmt/title[@type="complete"]` | `title` |
 /// | `//titleStmt/editor` (non-general) | `editors` |
 /// | `//titleStmt/editor[@role="general"]` | `generalEditor` |
-/// | `//publicationStmt/date` | `publicationDate` |
-/// | `//profileDesc/creation/date[@from][@to]` | `earliestDate`, `latestDate` |
+/// | `//publicationStmt/date[@type="publication-date"]` (TEXT) | `publicationDate` |
+/// | `//publicationStmt/date[@type="content-date"][@notBefore][@notAfter]` | `earliestDate`, `latestDate` |
+/// | `//profileDesc/creation/date[@from][@to]` (fallback `@notBefore`/`@notAfter`) | `earliestDate`, `latestDate` |
 /// | `//keywords[@scheme="https://history.state.gov/tags"]/term` | `tags` |
+///
+/// ### Date semantics
+/// - `publicationDate` is the historical **print year** — the *text content* of the
+///   `publicationStmt/date[@type="publication-date"]` element (e.g. `"1861"`). It is
+///   NOT the digital `@when` timestamp (a 2010–2025 build stamp on sibling `<bibl>`
+///   elements) and NOT the coverage range. In-progress modern volumes carry a
+///   self-closing / empty `publication-date`, which yields `publicationDate == nil`.
+/// - `earliestDate`/`latestDate` are the **coverage range**, taken from the
+///   `@notBefore`/`@notAfter` attributes of `publicationStmt/date[@type="content-date"]`
+///   when present, else from `profileDesc/creation/date` (`@from`/`@to`, falling back to
+///   `@notBefore`/`@notAfter`). The human-readable range TEXT (e.g. `"1860 to 1861"`) is
+///   never parsed for the range; only attributes are used.
 ///
 /// `documentCount` is always 0 — it cannot be determined from the header alone.
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — SA-1a: publicationDate = publication-date TEXT only (no `@when`, no content-date);
+///         coverage range now also read from content-date `@notBefore`/`@notAfter`.
 public struct TEIHeaderParser {
 
     private init() {}
@@ -114,11 +129,21 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
 
         switch elementName {
         case "date" where hasAncestor("creation"):
-            // Date range: prefer @from/@to; fall back to @notBefore/@notAfter.
+            // Coverage range from profileDesc/creation/date: prefer @from/@to; fall back to
+            // @notBefore/@notAfter. This is the historical fallback source; modern volumes
+            // instead carry the range on publicationStmt/date[@type="content-date"] (below).
             if let from = attributes["from"] { result.earliestDate = from }
             if let to = attributes["to"] { result.latestDate = to }
             if result.earliestDate == nil, let nb = attributes["notBefore"] { result.earliestDate = nb }
             if result.latestDate == nil, let na = attributes["notAfter"] { result.latestDate = na }
+
+        case "date" where parentName() == "publicationStmt" && attributes["type"] == "content-date":
+            // Coverage range carried on the content-date element via @notBefore/@notAfter.
+            // Precedence: content-date wins over creation when both supply a bound, since it is
+            // the authoritative range on every current FRUS volume. The human-readable TEXT of
+            // this element (e.g. "1860 to 1861") is intentionally NOT parsed for the range.
+            if let nb = attributes["notBefore"] { result.earliestDate = nb }
+            if let na = attributes["notAfter"] { result.latestDate = na }
 
         case "keywords":
             inTagsKeywords = (attributes["scheme"] == "https://history.state.gov/tags")
@@ -168,13 +193,13 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
                 result.editors.append(text)
             }
 
-        case "date" where parent == "publicationStmt":
-            // Prefer @when attribute — it reliably encodes the publication year as ISO 8601
-            // and is unambiguous. Text content may contain prose descriptions or coverage
-            // year ranges (e.g. "1969–1976") that are not the print year.
-            if let when = attrs["when"], !when.isEmpty {
-                result.publicationDate = when
-            } else if !text.isEmpty {
+        case "date" where parent == "publicationStmt" && attrs["type"] == "publication-date":
+            // Print year: ONLY the TEXT content of the publication-date element (e.g. "1861").
+            // Never the digital @when timestamp (a build stamp on sibling <bibl> elements) and
+            // never the content-date range. An empty / self-closing publication-date (in-progress
+            // modern volumes) leaves publicationDate nil. characterBuffer already isolates this
+            // element's own text, so sibling <idno> text cannot bleed in.
+            if !text.isEmpty {
                 result.publicationDate = text
             }
 

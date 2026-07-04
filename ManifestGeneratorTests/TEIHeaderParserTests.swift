@@ -55,6 +55,39 @@ struct TEIHeaderParserTests {
         #expect(result.tags.sorted() == ["arms-control-and-disarmament", "iran", "kissinger-henry-a"])
     }
 
+    // MARK: - Date Extraction (SA-1a)
+
+    @Test("Old printed volume: publication-date TEXT → publicationDate; content-date attrs → range")
+    func oldPrintedVolumeDates() throws {
+        let result = try parse(TEIFixtures.oldPrintedVolume)
+        // Print year from the publication-date element's TEXT, not the @when build stamp.
+        #expect(result.publicationDate == "1861")
+        // Coverage range from content-date @notBefore/@notAfter (its "1860 to 1861" text is ignored).
+        #expect(result.earliestDate == "1860-12-31T00:00:00-05:00")
+        #expect(result.latestDate == "1861-12-31T23:59:59-05:00")
+    }
+
+    @Test("In-progress modern volume: empty publication-date → nil; content-date attrs → range")
+    func inProgressModernVolumeDates() throws {
+        let result = try parse(TEIFixtures.inProgressModernVolume)
+        #expect(result.publicationDate == nil)
+        #expect(result.earliestDate == "1982-01-01T00:00:00-05:00")
+        #expect(result.latestDate == "1988-12-31T23:59:59-05:00")
+    }
+
+    @Test("creation/date range still works when no content-date is present")
+    func creationDateRangeStillWorks() throws {
+        let result = try parse(TEIFixtures.fullHeader)
+        #expect(result.earliestDate == "1969-01-01")
+        #expect(result.latestDate == "1972-12-31")
+    }
+
+    @Test("publication-date with @when timestamp only does NOT populate publicationDate")
+    func publicationDateWhenTimestampIgnored() throws {
+        let result = try parse(TEIFixtures.publicationDateWhenTimestampOnly)
+        #expect(result.publicationDate == nil)
+    }
+
     // MARK: - No Publication Date
 
     @Test("Header without publication date: publicationDate is nil")
