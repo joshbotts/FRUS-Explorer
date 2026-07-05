@@ -138,6 +138,76 @@ enum PersonAnalyticsMath {
     }
 }
 
+// MARK: - PersonAnalyticsMode
+
+/// Top-level surface of `PersonAnalyticsView` (CA-8): the scrolling trends dashboard vs
+/// the full-frame co-mention network. A `Canvas` and a `ScrollView` do not mix, so the
+/// network takes the whole frame rather than living as a section inside the trends scroll.
+///
+/// Version history:
+///   1.0 — CA-8 (analytics CA-track): initial implementation
+enum PersonAnalyticsMode: String, CaseIterable {
+    /// Rankings, trajectories, and the two-person relationship-dynamics chart.
+    case trends
+    /// The person co-mention ego network (`PersonCoMentionGraphView`).
+    case network
+
+    /// Segmented-picker label.
+    var pickerLabel: String {
+        switch self {
+        case .trends:
+            return String(localized: "personAnalytics.mode.trends", defaultValue: "Trends")
+        case .network:
+            return String(localized: "personAnalytics.mode.network", defaultValue: "Network")
+        }
+    }
+}
+
+// MARK: - PersonRelationshipPoint
+
+/// One plotted point in the two-person relationship-dynamics chart (CA-8): a year and the
+/// number of documents co-mentioning both selected people.
+///
+/// Version history:
+///   1.0 — CA-8 (analytics CA-track): initial implementation
+struct PersonRelationshipPoint: Identifiable, Equatable {
+    /// The coverage year (or decade, when bucketed).
+    let year: Int
+    /// Distinct dated documents co-mentioning both people in `year`.
+    let coMentions: Int
+
+    var id: Int { year }
+}
+
+/// Pure transforms for the two-person relationship-dynamics chart, factored out for unit
+/// testing without a SwiftUI host or a live database (CA-8).
+///
+/// Version history:
+///   1.0 — CA-8 (analytics CA-track): initial implementation
+enum PersonRelationshipMath {
+
+    /// Flattens a `year → co-mention count` map into chart points inside `range`, sorted by
+    /// year. Years outside `range` are dropped so the chart matches the year-range bar.
+    static func points(timeline: [Int: Int], range: ClosedRange<Int>) -> [PersonRelationshipPoint] {
+        timeline
+            .filter { range.contains($0.key) }
+            .map { PersonRelationshipPoint(year: $0.key, coMentions: $0.value) }
+            .sorted { $0.year < $1.year }
+    }
+
+    /// Buckets year-keyed points into decades (year floored to the nearest ten), SUMMING the
+    /// co-mention counts (raw counts, so summation is correct — unlike a share).
+    static func bucketByDecade(_ points: [PersonRelationshipPoint]) -> [PersonRelationshipPoint] {
+        var sums: [Int: Int] = [:]
+        for p in points {
+            let decade = (p.year / 10) * 10
+            sums[decade, default: 0] += p.coMentions
+        }
+        return sums.map { PersonRelationshipPoint(year: $0.key, coMentions: $0.value) }
+            .sorted { $0.year < $1.year }
+    }
+}
+
 // MARK: - PersonAnalyticsView
 
 /// Corpus person analytics (CA-5): the most-mentioned people in a coverage era and a
@@ -174,10 +244,20 @@ enum PersonAnalyticsMath {
 /// - **macOS**: standalone `frus.personAnalytics` Window.
 /// - **iOS**: sheet presented from the Browse "Analysis Tools" menu.
 ///
+/// ## Modes (CA-8)
+/// A top-level **Trends / Network** picker splits the surface: *Trends* is the scrolling
+/// dashboard (rankings + trajectories + the two-person relationship-dynamics chart);
+/// *Network* is the full-frame `PersonCoMentionGraphView` co-mention ego graph (a `Canvas`
+/// and a `ScrollView` do not mix, so the network takes the whole frame). Both share the
+/// store and the no-index placeholder. When EXACTLY two people are in the comparison, a
+/// relationship-dynamics bar chart of their shared-document count over time appears inline.
+///
 /// Version history:
 ///   1.0 — CA-5 (analytics CA-track): initial implementation
 ///   1.1 — CA-5 review fixes: explicit color-scale domain (chip/line color parity) and a
 ///         latest-fetch token guarding the trajectory refetch race
+///   1.2 — CA-8 (analytics CA-track): Trends/Network mode picker, the co-mention ego
+///         network (full-frame), and the two-person relationship-dynamics chart
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -200,6 +280,20 @@ struct PersonAnalyticsView: View {
     @State private var ranking: [PersonMentionRanking] = []
     @State private var viewMode: AnalyticsViewMode = .chart
     @State private var isLoadingRanking = false
+
+    /// Trends vs Network top-level mode (CA-8). The network takes the full frame.
+    @State private var mode: PersonAnalyticsMode = .trends
+
+    /// The focus person driving Network mode (CA-8). Defaults to the top-ranked person, or
+    /// a person the user has tapped/selected.
+    @State private var networkFocus: PersonMentionRanking? = nil
+
+    /// The two-person relationship-dynamics timeline (year → co-mention count), loaded when
+    /// EXACTLY two people are in the comparison (CA-8).
+    @State private var relationshipTimeline: [Int: Int] = [:]
+    @State private var isLoadingRelationship = false
+    /// Latest-fetch token guarding the relationship refetch race (mirrors the trajectory guard).
+    @State private var relationshipFetchToken = 0
 
     /// Selected people (rollups) for the comparison, in add order. Capped at
     /// `maxComparisonPeople`.
@@ -271,6 +365,20 @@ struct PersonAnalyticsView: View {
         return byDecade ? PersonAnalyticsMath.bucketByDecade(base, isShare: isNormalized) : base
     }
 
+    /// Whether EXACTLY two people are selected — the trigger for relationship dynamics (CA-8).
+    private var isTwoPersonComparison: Bool { selectedPeople.count == 2 }
+
+    /// The relationship-dynamics chart points for the current year range + decade toggle (CA-8).
+    private var relationshipPoints: [PersonRelationshipPoint] {
+        let base = PersonRelationshipMath.points(timeline: relationshipTimeline, range: yearRange)
+        return byDecade ? PersonRelationshipMath.bucketByDecade(base) : base
+    }
+
+    /// The current Network-mode focus person: an explicit selection, else the top-ranked (CA-8).
+    private var effectiveNetworkFocus: PersonMentionRanking? {
+        networkFocus ?? ranking.first
+    }
+
     /// Stable color for a person, by their position in the selection.
     private func color(forRollupId rollupId: Int) -> Color {
         let idx = selectedPeople.firstIndex { $0.rollupId == rollupId } ?? 0
@@ -285,7 +393,10 @@ struct PersonAnalyticsView: View {
                 if appState.personMentionStore == nil {
                     unavailablePlaceholder
                 } else {
-                    content
+                    switch mode {
+                    case .trends:  content
+                    case .network: networkContent
+                    }
                 }
             }
             .navigationTitle(
@@ -469,7 +580,172 @@ struct PersonAnalyticsView: View {
                 trajectoryChart
                 trajectoryCaption
             }
+
+            if isTwoPersonComparison {
+                Divider().padding(.vertical, 4)
+                relationshipSection
+            }
         }
+    }
+
+    // MARK: - Relationship Dynamics Section (CA-8)
+
+    @ViewBuilder
+    private var relationshipSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "personAnalytics.relationship.heading",
+                        defaultValue: "Relationship Dynamics"))
+                .font(.headline)
+                .padding(.horizontal)
+
+            Text(String(localized: "personAnalytics.relationship.subtitle",
+                        defaultValue: "How often \(selectedPeople[0].canonicalName) and \(selectedPeople[1].canonicalName) are mentioned together over time."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+
+            if isLoadingRelationship {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } else if relationshipPoints.isEmpty {
+                ContentUnavailableView(
+                    String(localized: "personAnalytics.relationship.empty.title", defaultValue: "No Shared Documents"),
+                    systemImage: "person.2.slash",
+                    description: Text(String(
+                        localized: "personAnalytics.relationship.empty.detail",
+                        defaultValue: "These two people are never co-mentioned in a dated document within this year range."))
+                )
+            } else {
+                relationshipChart
+                Text(String(localized: "personAnalytics.relationship.caption",
+                            defaultValue: "Co-occurrences in dated documents only; documents mentioning both people. Undated documents cannot be placed on the year axis."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+        }
+    }
+
+    private var relationshipChart: some View {
+        Chart(relationshipPoints) { point in
+            BarMark(
+                x: .value(String(localized: "personAnalytics.axis.year", defaultValue: "Year"), point.year),
+                y: .value(String(localized: "personAnalytics.axis.coMentions", defaultValue: "Shared documents"),
+                          point.coMentions)
+            )
+            .foregroundStyle(Color.accentColor)
+        }
+        .chartXScale(domain: yearRange.lowerBound...yearRange.upperBound)
+        .chartXAxis {
+            AxisMarks { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let year = value.as(Int.self) {
+                        Text(verbatim: String(year))
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let count = value.as(Int.self) {
+                        Text(count, format: .number)
+                    }
+                }
+            }
+        }
+        .frame(height: 220)
+        .padding(.horizontal)
+    }
+
+    // MARK: - Network Content (CA-8)
+
+    @ViewBuilder
+    private var networkContent: some View {
+        VStack(spacing: 0) {
+            networkFocusBar
+            Divider()
+            if let store = appState.personMentionStore, let focus = effectiveNetworkFocus {
+                PersonCoMentionGraphView(
+                    focusRollupId: focus.rollupId,
+                    focusName: focus.canonicalName,
+                    store: store,
+                    onOpenPerson: { rollupId, name in
+                        openPersonMentions(PersonMentionRanking(
+                            rollupId: rollupId, canonicalName: name, mentionCount: 0))
+                    }
+                )
+                .id(focus.rollupId)
+            } else {
+                ContentUnavailableView(
+                    String(localized: "personAnalytics.network.noFocus.title", defaultValue: "Pick a Focus Person"),
+                    systemImage: "person.crop.circle.badge.questionmark",
+                    description: Text(String(
+                        localized: "personAnalytics.network.noFocus.detail",
+                        defaultValue: "Search for a person above to centre the co-mention network on them. No people are indexed in this range yet."))
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    private var networkFocusBar: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text(String(localized: "personAnalytics.network.focusLabel", defaultValue: "Focus:"))
+                    .font(.subheadline.weight(.semibold))
+                if let focus = effectiveNetworkFocus {
+                    Text(focus.canonicalName).font(.subheadline)
+                } else {
+                    Text(String(localized: "personAnalytics.network.focusNone", defaultValue: "None"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .padding(.horizontal)
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField(
+                    String(localized: "personAnalytics.network.searchPlaceholder", defaultValue: "Set focus person…"),
+                    text: $searchText
+                )
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: searchText) { _, _ in Task { await runPersonSearch() } }
+            }
+            .padding(.horizontal)
+
+            if !searchResults.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(searchResults.prefix(6)) { result in
+                        Button {
+                            networkFocus = result
+                            searchText = ""
+                            searchResults = []
+                        } label: {
+                            HStack {
+                                Text(result.canonicalName).font(.body)
+                                Spacer()
+                                Text(result.mentionCount, format: .number)
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                            .padding(.vertical, 5)
+                            .padding(.horizontal)
+                        }
+                        .buttonStyle(.plain)
+                        Divider()
+                    }
+                }
+                .background(.quaternary.opacity(0.3))
+            }
+        }
+        .padding(.vertical, 8)
     }
 
     private var searchToAddField: some View {
@@ -621,7 +897,20 @@ struct PersonAnalyticsView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty)
+            Picker(
+                String(localized: "personAnalytics.mode.picker", defaultValue: "Mode"),
+                selection: $mode
+            ) {
+                ForEach(PersonAnalyticsMode.allCases, id: \.self) { m in
+                    Text(m.pickerLabel).tag(m)
+                }
+            }
+            .pickerStyle(.segmented)
+            .help(String(localized: "personAnalytics.mode.help",
+                         defaultValue: "Switch between the trends dashboard (rankings, trajectories, relationship dynamics) and the co-mention network graph."))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty || mode == .network)
         }
         ToolbarItem(placement: .primaryAction) {
             Toggle(isOn: $byDecade) {
@@ -683,6 +972,7 @@ struct PersonAnalyticsView: View {
         guard !isSelected(row), selectedPeople.count < Self.maxComparisonPeople else { return }
         selectedPeople.append(row)
         Task { await loadTrajectories() }
+        Task { await loadRelationship() }
     }
 
     private func removeFromComparison(_ row: PersonMentionRanking) {
@@ -690,6 +980,7 @@ struct PersonAnalyticsView: View {
         rawTrajectories[row.rollupId] = nil
         mentioningDocs[row.rollupId] = nil
         // No trajectory re-fetch needed on removal — the remaining series stay cached.
+        Task { await loadRelationship() }
     }
 
     /// Person tap → open the person's mentions in Search (the established person
@@ -752,5 +1043,24 @@ struct PersonAnalyticsView: View {
         mentioningDocs = docsResult
         datedTotals = totalsResult
         isLoadingTrajectories = false
+    }
+
+    /// Loads the two-person co-mention timeline when EXACTLY two people are selected (CA-8).
+    /// Clears it otherwise, so the relationship section is only offered for a pair. A
+    /// latest-fetch token guards against a fast add/remove race writing stale data back.
+    private func loadRelationship() async {
+        guard let store = appState.personMentionStore, selectedPeople.count == 2 else {
+            relationshipTimeline = [:]
+            return
+        }
+        let a = selectedPeople[0].rollupId
+        let b = selectedPeople[1].rollupId
+        relationshipFetchToken += 1
+        let token = relationshipFetchToken
+        isLoadingRelationship = true
+        let timeline = (try? await store.coMentionTimeline(rollupA: a, rollupB: b)) ?? [:]
+        guard token == relationshipFetchToken else { return }
+        relationshipTimeline = timeline
+        isLoadingRelationship = false
     }
 }
