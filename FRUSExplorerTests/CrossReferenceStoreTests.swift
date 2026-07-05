@@ -334,4 +334,125 @@ struct CrossReferenceStoreTests {
         #expect(knownKeys.contains("vol1/d4") || knownKeys.contains("vol1/d5"),
                 "nodeMetadata should include at least one 2nd-degree node")
     }
+
+    // MARK: - CA-6 statistical queries
+
+    @Test("topDocumentsByInDegree ranks by resolved inbound count and excludes NULL targets")
+    func topDocumentsByInDegreeRanksResolvedOnly() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "vol1", documentId: "hub", header: "Hub Document")
+
+        // Three resolved inbound citations to vol1/hub.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s2",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "s3",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        // One resolved inbound to vol1/minor.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s4",
+                       targetVolumeId: "vol1", targetDocumentId: "minor")
+        // Two UNRESOLVED edges (NULL target volume) — must be excluded from ranking.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s5",
+                       targetVolumeId: nil, targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s6",
+                       targetVolumeId: nil, targetDocumentId: "hub")
+
+        let top = try await store.topDocumentsByInDegree(limit: 10)
+
+        #expect(top.count == 2, "Only two resolved target documents exist")
+        let first = try #require(top.first)
+        #expect(first.volumeId == "vol1")
+        #expect(first.documentId == "hub")
+        #expect(first.inDegree == 3, "NULL-target edges must not inflate the in-degree")
+        #expect(first.header == "Hub Document", "Header joined from document_cache")
+        #expect(top[1].documentId == "minor")
+        #expect(top[1].inDegree == 1)
+    }
+
+    @Test("resolvedInDegrees returns per-document counts for the distribution histogram")
+    func resolvedInDegreesPerDocument() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // hub: 2 inbound; minor: 1 inbound. Plus a NULL-target edge (excluded).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s2",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s3",
+                       targetVolumeId: "vol1", targetDocumentId: "minor")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s4",
+                       targetVolumeId: nil, targetDocumentId: "hub")
+
+        let degrees = try await store.resolvedInDegrees().sorted()
+        #expect(degrees == [1, 2], "One doc with in-degree 1, one with in-degree 2; NULL excluded")
+
+        // Sanity: the pure bucketer turns these into two single-document buckets.
+        let buckets = CrossReferenceStats.degreeDistribution(degrees)
+        #expect(buckets.map(\.degree) == [1, 2])
+        #expect(buckets.allSatisfy { $0.documentCount == 1 })
+    }
+
+    @Test("volumeLevelConnections counts cross-volume references and excludes same-volume")
+    func volumeConnectionCounts() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // vol1 → vol2 twice, vol2 → vol1 once, vol1 → vol1 once (same-volume, excluded),
+        // vol1 → NULL once (excluded).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a",
+                       targetVolumeId: "vol2", targetDocumentId: "x")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "b",
+                       targetVolumeId: "vol2", targetDocumentId: "y")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "c",
+                       targetVolumeId: "vol1", targetDocumentId: "z")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "d",
+                       targetVolumeId: "vol1", targetDocumentId: "w")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "e",
+                       targetVolumeId: nil, targetDocumentId: "v")
+
+        let edges = try await store.volumeLevelConnections()
+        let byPair = Dictionary(uniqueKeysWithValues:
+            edges.map { ("\($0.sourceVolumeId)->\($0.targetVolumeId)", $0.count) })
+        #expect(byPair["vol1->vol2"] == 2)
+        #expect(byPair["vol2->vol1"] == 1)
+        #expect(byPair["vol1->vol1"] == nil, "Same-volume edges excluded")
+
+        // Top-N selection over these edges: totals vol1 = 2+1 = 3, vol2 = 2+1 = 3 → both.
+        let top = CrossReferenceStats.topVolumesByTotalDegree(edges, limit: 5)
+        #expect(Set(top) == ["vol1", "vol2"])
+    }
+
+    @Test("resolvedCitationEdges returns resolved edges and excludes NULL targets and self-loops")
+    func resolvedCitationEdgesForPageRank() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a",
+                       targetVolumeId: "vol1", targetDocumentId: "b")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "b",
+                       targetVolumeId: "vol2", targetDocumentId: "c")
+        // NULL target — excluded.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a",
+                       targetVolumeId: nil, targetDocumentId: "d")
+        // Self-loop — excluded.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a",
+                       targetVolumeId: "vol1", targetDocumentId: "a")
+
+        let edges = try await store.resolvedCitationEdges()
+        #expect(edges.count == 2, "NULL-target and self-loop edges excluded")
+
+        // Feed PageRank — three nodes (a, b, c), mass conserved.
+        let scores = PageRank.compute(edges: edges)
+        #expect(scores.count == 3)
+        let total = scores.reduce(0.0) { $0 + $1.score }
+        #expect(abs(total - 1.0) < 1e-6)
+        // c is the only twice-removed sink; b is cited by a; a is never cited.
+        let byKey = Dictionary(uniqueKeysWithValues:
+            scores.map { ("\($0.key.volumeId)/\($0.key.documentId)", $0.score) })
+        #expect((byKey["vol2/c"] ?? 0) > (byKey["vol1/a"] ?? 0))
+    }
 }

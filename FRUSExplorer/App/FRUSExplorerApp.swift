@@ -55,6 +55,7 @@ import os
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
+/// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
@@ -693,6 +694,19 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 780, height: 620)
+
+        // MARK: - Cross-Reference Analytics Window (CA-6)
+        //
+        // Most-referenced documents (in-degree), the citation degree distribution, a bounded
+        // volume-to-volume heat matrix, and offline-PageRank landmark documents — over the
+        // local index. A sibling of frus.analytics / frus.personAnalytics; degrades to a
+        // placeholder while `appState.crossReferenceStore` is nil (index unavailable).
+        Window(String(localized: "crossRefAnalytics.window.title", defaultValue: "Cross-Reference Analytics"),
+               id: "frus.crossRefAnalytics") {
+            CrossReferenceAnalyticsView()
+                .environment(appState)
+        }
+        .defaultSize(width: 820, height: 660)
 
         // MARK: - Word Cloud Window
         Window(String(localized: "wordcloud.window.title", defaultValue: "Word Cloud"),
