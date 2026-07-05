@@ -140,6 +140,10 @@ enum AnalyticsChartAxis: String, CaseIterable {
 ///          date-based By-Year / By-Decade charts — plots each period's matches as a
 ///          share of all indexed documents in that period (scoped denominator, zero-
 ///          total guard), persisted per-user via `@AppStorage`; raw mode unchanged
+///   1.7 — CA-4 review fix: `valueAxisMarks` raw path emits a default `AxisValueLabel()`
+///          so raw-mode By-Year/By-Decade Y labels keep Swift Charts' framework-default
+///          thousands grouping ("4,187"), restoring byte-for-byte parity with the
+///          pre-CA-4 axis instead of the no-grouping integer format
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -821,8 +825,11 @@ struct AnalyticsView: View {
     }
 
     /// Y-axis marks for the date charts: percent-formatted value labels in normalized
-    /// mode (the plotted values are already 0–100), integers with no comma grouping
-    /// in raw mode (matching the original document-count axis).
+    /// mode (the plotted values are already 0–100). In raw mode the value labels use
+    /// Swift Charts' framework-default formatting (locale thousands grouping, e.g.
+    /// "4,187"), preserving the original document-count axis byte-for-byte — the raw
+    /// path only supplies grid line + tick + a default `AxisValueLabel()`, exactly as
+    /// before this axis was made explicit for the normalized mode.
     @AxisContentBuilder
     private var valueAxisMarks: some AxisContent {
         AxisMarks { value in
@@ -835,7 +842,7 @@ struct AnalyticsView: View {
                     }
                 }
             } else {
-                AxisValueLabel(format: integerNoGroupingFormat)
+                AxisValueLabel()
             }
         }
     }

@@ -247,6 +247,13 @@ struct AnalyticsParameters: Sendable, Equatable {
 ///          — the per-period count of ALL indexed documents (the normalization
 ///          denominator CA-4 consumes), derived from the cached `resolvedDocumentDates()`
 ///          and cached in `documentTotalsByYearCache` (cleared on `invalidateCache()`).
+///   1.6 — CA-4 review fix: `documentTotalsByYear` now counts the SAME document
+///          population as the numerator (`termFrequencyByYear`) — every indexed document
+///          via `IndexingPipeline.allDocumentKeysWithDates()`, dated docs by `date_iso`
+///          year and undated docs by volume start year — instead of only the dated
+///          subset. Fixes normalized shares exceeding 100% when a volume's start year
+///          received undated matched documents the dated-only denominator lacked.
+///          New `allDocumentKeysWithDatesCache` cleared in `invalidateCache()`.
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -266,6 +273,12 @@ actor CorpusAnalyticsService {
     /// Lazily populated on the first `termFrequencyByYear` call; maps
     /// `"volumeId/documentId"` → `date_iso` string (e.g. `"1969-02-15"`).
     private var documentDateCache: [String: String]? = nil
+    /// Lazily populated on the first `documentTotalsByYear` call: **every** indexed
+    /// document (including undated ones), each with its optional `date_iso`. This is
+    /// the population the normalization denominator counts — the same population the
+    /// term-frequency numerator draws from (dated docs by `date_iso`, undated docs by
+    /// volume start year), so a normalized share never exceeds 100%.
+    private var allDocumentKeysWithDatesCache: [(volumeId: String, documentId: String, dateISO: String?)]? = nil
     /// Cache for `documentTotalsByYear` keyed by the volume-ID scope
     /// (`scopedCacheKey(term:volumeIds:)` with an empty term is the whole-corpus key).
     /// Reused by `documentTotalsByDecade`, which buckets from the per-year totals.
@@ -295,6 +308,7 @@ actor CorpusAnalyticsService {
         dayFrequencyCache.removeAll()
         documentTotalsByYearCache.removeAll()
         documentDateCache = nil
+        allDocumentKeysWithDatesCache = nil
     }
 
     // MARK: - Private Helpers
@@ -309,6 +323,22 @@ actor CorpusAnalyticsService {
         let dates = try await pipeline.allDocumentDates()
         documentDateCache = dates
         return dates
+    }
+
+    /// Returns the cached "every indexed document with its optional date" list,
+    /// fetching it from the pipeline on first call.
+    ///
+    /// Each entry is `(volumeId, documentId, dateISO?)` for one indexed document —
+    /// undated documents carry a `nil` `dateISO`. This is the population the
+    /// normalization denominator counts. Populated once per cache lifetime; cleared
+    /// by `invalidateCache()`.
+    private func allDocumentKeysWithDates() async throws
+        -> [(volumeId: String, documentId: String, dateISO: String?)]
+    {
+        if let cached = allDocumentKeysWithDatesCache { return cached }
+        let keys = try await pipeline.allDocumentKeysWithDates()
+        allDocumentKeysWithDatesCache = keys
+        return keys
     }
 
     /// Builds the FTS5 query for an analytics term using the **same** inline-syntax
@@ -655,36 +685,43 @@ actor CorpusAnalyticsService {
     /// Returns the count of **all** indexed documents per year — the denominator for
     /// the "% of documents" normalization mode (CA-4), independent of any search term.
     ///
-    /// Each document's year is taken from the first four characters of its stored
-    /// `date_iso` (e.g. `"1969-02-15"` → 1969), derived from the cached
-    /// `resolvedDocumentDates()` dictionary (keyed `"volumeId/documentId"`). Documents
-    /// with no stored date are absent from that dictionary and therefore excluded —
-    /// so a normalized share is `matches with a date / dated documents in the period`,
-    /// keeping numerator and denominator on the same date-derived footing. Years that
-    /// fail to parse are silently skipped.
+    /// This counts exactly the same document population, and derives each document's
+    /// year with exactly the same logic, as the term-frequency numerator
+    /// (`termFrequencyByYear`): a document's year comes from the first four characters
+    /// of its stored `date_iso` (e.g. `"1969-02-15"` → 1969) when present, else it
+    /// falls back to the start year parsed from its volume ID. **Undated** documents
+    /// are therefore counted here (via the volume-start-year fallback), not dropped —
+    /// which is what keeps the normalized share `matches / total ≤ 100%`. Enumerating
+    /// only the dated subset (as an earlier version did) undercounted the denominator
+    /// while the numerator still counted undated matches, so a share could exceed 100%.
+    /// Documents whose year cannot be resolved from either source are omitted from both.
     ///
     /// - Parameter volumeIds: Optional volume-ID scope. When non-empty, only documents
-    ///   whose `volumeId` (the key prefix before the last `/`) is in the set are
-    ///   counted, so the denominator matches a scoped numerator's coverage.
+    ///   whose `volumeId` is in the set are counted, so the denominator matches a
+    ///   scoped numerator's coverage.
     /// - Returns: A `[year: totalDocuments]` dictionary. Empty when the index is empty.
     func documentTotalsByYear(volumeIds: Set<String>? = nil) async throws -> [Int: Int] {
         let cacheKey = scopedCacheKey(term: "", volumeIds: volumeIds)
         if let cached = documentTotalsByYearCache[cacheKey] { return cached }
 
-        let dates = try await resolvedDocumentDates()
+        let all = try await allDocumentKeysWithDates()
         let scope = (volumeIds?.isEmpty == false) ? volumeIds : nil
 
         var totals: [Int: Int] = [:]
-        for (compositeKey, iso) in dates {
-            if let scope {
-                // The volume ID is the key prefix up to the LAST "/", mirroring how
-                // `matchedDocsAndDates` composes `"\(volumeId)/\(documentId)"`.
-                guard let slash = compositeKey.lastIndex(of: "/") else { continue }
-                let volumeId = String(compositeKey[..<slash])
-                guard scope.contains(volumeId) else { continue }
+        for entry in all {
+            if let scope, !scope.contains(entry.volumeId) { continue }
+            let year: Int?
+            if let iso = entry.dateISO {
+                // date_iso is "yyyy-MM-dd" or occasionally just "yyyy"; the first four
+                // characters encode the year — identical to `termFrequencyByYear`.
+                year = Int(iso.prefix(4))
+            } else {
+                // Fall back to the volume start year for undated documents — the same
+                // fallback the numerator uses — so both sides count the same population.
+                year = Self.startYear(fromVolumeId: entry.volumeId)
             }
-            guard let year = Int(iso.prefix(4)) else { continue }
-            totals[year, default: 0] += 1
+            guard let y = year else { continue }
+            totals[y, default: 0] += 1
         }
 
         insertIntoCache(&documentTotalsByYearCache, key: cacheKey, value: totals)

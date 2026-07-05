@@ -257,6 +257,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `classLeafPatterns` / `libraryMatchClause` / `rgSeriesClause`). The
 ///          Phase-4 alias fallback is deliberately excluded from counts (a zero
 ///          badge stays tappable and the sheet may exceed it — documented there).
+///  4.12 — CA-4 review fix (Session 2026-07-04): no parse-output change, so no
+///          index-version bump. `allDocumentKeysWithDates()` enumerates every indexed
+///          document (`document_cache`) LEFT JOINed to its optional `date_iso`, so
+///          `CorpusAnalyticsService`'s normalization denominator can count undated
+///          documents via the volume-start-year fallback — the same population the
+///          term-frequency numerator counts — instead of only the dated subset.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2485,6 +2491,41 @@ public actor IndexingPipeline {
         while sqlite3_step(stmt) == SQLITE_ROW {
             if let k = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
                 result[k] = d
+            }
+        }
+        return result
+    }
+
+    /// Returns **every** indexed document — including undated ones — as a
+    /// `(volumeId, documentId, dateISO?)` triple.
+    ///
+    /// Unlike `allDocumentDates()`, which omits documents whose `date_iso` is
+    /// `NULL` (or absent from `document_dates`), this enumerates the canonical set of
+    /// indexed documents (`document_cache`) and LEFT JOINs their stored `date_iso`.
+    /// Undated documents appear with a `nil` `dateISO`, letting analytics apply the
+    /// same volume-start-year fallback the term-frequency numerator uses so the
+    /// normalization denominator counts exactly the same document population as the
+    /// numerator.
+    ///
+    /// The result is intended for the same analytics workloads as
+    /// `allDocumentDates()` (~83,000 rows maximum), and callers should cache it and
+    /// invalidate on index change.
+    ///
+    /// - Returns: One `(volumeId, documentId, dateISO)` triple per indexed document,
+    ///   with `dateISO == nil` for undated documents.
+    public func allDocumentKeysWithDates() throws -> [(volumeId: String, documentId: String, dateISO: String?)] {
+        let sql = """
+            SELECT dc.volume_id, dc.document_id, dd.date_iso
+            FROM document_cache dc
+            LEFT JOIN document_dates dd
+              ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [(volumeId: String, documentId: String, dateISO: String?)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let v = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
+                result.append((volumeId: v, documentId: d, dateISO: auxColumnString(stmt, 2)))
             }
         }
         return result

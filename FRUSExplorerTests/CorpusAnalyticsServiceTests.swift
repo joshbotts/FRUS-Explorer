@@ -376,4 +376,69 @@ struct CorpusAnalyticsServiceTests {
             #expect(totals[1850] == nil, "A period with no documents has no denominator entry")
         }
     }
+
+    /// Regression for the CA-4 adversarial-review HIGH finding: **undated** matched
+    /// documents fall back to the volume start year in the numerator, so the
+    /// denominator MUST count them there too (via the same start-year fallback),
+    /// otherwise the "% of documents" share can exceed 100%.
+    ///
+    /// Reproduces the shape of `frus1919Parisv13` (a handful of dated documents plus
+    /// many undated ones that all bucket into the volume's start year, 1919): before
+    /// the fix the denominator counted only the dated documents, so a term matching the
+    /// undated documents produced `matches / dated-total` far above 100%.
+    @Test("undated matches count in both numerator and denominator — share stays ≤ 100%")
+    func undatedDocumentsKeepShareWithinBounds() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // Two DATED documents (1919) and several UNDATED documents (no dateline) —
+            // the undated ones all mention "commission" and fall back to the volume's
+            // start year (1919) in both numerator and denominator.
+            var docs: [(id: String, xml: String)] = [
+                ("d1", "<head>1. Memo</head><dateline><date when=\"1919-03-01\">March 1, 1919</date></dateline><p>Peace terms discussed.</p>"),
+                ("d2", "<head>2. Memo</head><dateline><date when=\"1919-06-01\">June 1, 1919</date></dateline><p>Treaty drafting continued.</p>"),
+            ]
+            for i in 1...6 {
+                docs.append(("u\(i)", "<head>Undated \(i)</head><p>The commission reviewed the reparations schedule.</p>"))
+            }
+
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1919Parisv13.xml"),
+                volumeId: "frus1919Parisv13",
+                documents: docs
+            )
+            try await pipeline.indexVolume("frus1919Parisv13")
+
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+            let scope: Set<String> = ["frus1919Parisv13"]
+
+            // Numerator: "commission" matches the 6 undated docs, bucketed at 1919 (the
+            // volume start year, since they have no date_iso).
+            let matches = try await service.termFrequencyByYear(term: "commission", volumeIds: scope)
+            let match1919 = matches.first { $0.year == 1919 }?.count ?? 0
+            #expect(match1919 == 6, "All six undated 'commission' documents bucket into the start year 1919")
+
+            // Denominator: MUST include those undated documents (start-year fallback),
+            // so the 1919 total is 8 (2 dated + 6 undated), not 2 (dated only).
+            let totals = try await service.documentTotalsByYear(volumeIds: scope)
+            let total1919 = totals[1919] ?? 0
+            #expect(total1919 == 8, "The denominator counts undated docs at the start year too (2 dated + 6 undated)")
+
+            // The share is therefore 6/8 = 75% — never above 100%. Before the fix the
+            // denominator was 2, giving 300%.
+            let share = Double(match1919) / Double(total1919) * 100.0
+            #expect(share <= 100.0, "Normalized share must not exceed 100%")
+            #expect(share == 75.0, "6 of 8 documents in 1919 → 75%")
+
+            // By-Decade inherits the same fix (numerator reuses termFrequencyByYear,
+            // denominator reuses documentTotalsByYear).
+            let decadeMatches = try await service.termFrequencyByDecade(term: "commission", volumeIds: scope)
+            let decadeTotals = try await service.documentTotalsByDecade(volumeIds: scope)
+            let m1910s = decadeMatches.first { $0.decadeStart == 1910 }?.count ?? 0
+            let t1910s = decadeTotals[1910] ?? 0
+            #expect(m1910s == 6 && t1910s == 8, "The 1910s decade bucket mirrors the 1919 year bucket")
+            #expect(Double(m1910s) / Double(t1910s) * 100.0 <= 100.0, "By-Decade share also stays ≤ 100%")
+        }
+    }
 }
