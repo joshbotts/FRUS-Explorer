@@ -1404,17 +1404,30 @@ private struct MacEntryRow: View {
 // MARK: - CollectionRibbonView
 
 /// The Collections manager control ribbon (Collections Manager M1, D2 lean A) —
-/// a faithful clone of `ResearchStripView`'s chrome hosted as the second row of
+/// a compact labeled `.bar` strip hosted as the second row of
 /// `CollectionDetailPane.editorColumn`.
 ///
 /// It gathers every list-level authoring verb — previously scattered across the
-/// Contents-header "+" glyph (F1) and the titlebar toolbar (F2) — into one labeled
-/// `.bar` strip of `ResearchStripButton`s (the same component the research strip
-/// uses), grouped CONTENT / ARRANGE / VIEW with Export pinned trailing outside the
-/// horizontal scroll region (mirroring the strip's Read/Research picker). No
-/// collapse: the strip's own collapse was removed in v1.1, so "no collapse" is the
-/// honest house pattern, and the horizontal `ScrollView` degrades narrow windows
-/// without truncating labels.
+/// Contents-header "+" glyph (F1) and the titlebar toolbar (F2) — into **four**
+/// always-labeled top-level controls, separated by thin vertical `Divider`s:
+///
+///   1. `Add ▾` — a labeled `Menu` bundling Add Documents… / Add Section Heading /
+///      Add Note Block / Add Passages… and (below a divider) the Apparatus ▸
+///      submenu of the five `CollectionGeneratedBlockType`s.
+///   2. `Sort by Date` — a standalone `ResearchStripButton` (gated on `hasEntries`).
+///   3. `View ▾` — a labeled `Menu` of three **independent** checkmark toggles
+///      (Composition / Front Matter / Preview), each bound to its own binding.
+///   4. `Export…` — a standalone `ResearchStripButton`, pinned trailing (gated on
+///      `canExport`).
+///
+/// Consolidating ten labeled controls under three uppercase group headers into
+/// four labeled controls removes the crowding that dropped labels and clipped
+/// actions as the window narrowed: four controls always fit fully labeled, so the
+/// horizontal scroll region and the group headers are both gone. Every action keeps
+/// its exact prior behavior, disabled condition, and help text; the keyboard
+/// shortcuts (⌘⇧A Add Documents, ⌥⌘P Preview, ⌘E Export) live on the
+/// `CollectionDetailCommandActions` command-menu items, not the ribbon, so this
+/// presentation change leaves them untouched.
 ///
 /// All state is owned by `CollectionDetailPane` and passed in as bindings/closures;
 /// the pane is per-collection (`.id(c.id)`), so the ribbon needs no focused-value
@@ -1425,6 +1438,11 @@ private struct MacEntryRow: View {
 ///          pinned Export), reusing `ResearchStripButton`
 ///   1.1 — Collections Manager M1 review: the Apparatus `Menu` label wears the
 ///          `ResearchStripButton` capsule chrome so the cluster reads uniformly
+///   2.0 — De-crowd: consolidate the ten labeled controls / three group headers
+///          into four always-labeled controls (Add ▾ · Sort by Date · View ▾ ·
+///          Export…) separated by dividers; drop the horizontal scroll region and
+///          the CONTENT / ARRANGE / VIEW headers. Presentation only — same
+///          closures, bindings, disabled conditions, and help text
 struct CollectionRibbonView: View {
 
     /// Whether the collection has any entries — gates Sort by Date.
@@ -1458,17 +1476,31 @@ struct CollectionRibbonView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            // The action buttons scroll horizontally when the window is narrower
-            // than their ideal width, exactly as the research strip does — labels
-            // never truncate, and Export stays pinned trailing.
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ribbonButtons
-                }
-            }
+            // 1. Add ▾ — every content-authoring verb, bundled into one labeled Menu.
+            addMenu
+                .padding(.leading, 16)
 
-            // Export — pinned trailing outside the scroll region, mirroring the
-            // research strip's Read/Research picker.
+            clusterDivider
+
+            // 2. Sort by Date — standalone labeled button (unchanged behavior/gate).
+            ResearchStripButton(
+                title: String(localized: "collection.sort.date",
+                              defaultValue: "Sort by Date"),
+                systemImage: "arrow.up.arrow.down",
+                isDisabled: !hasEntries,
+                action: sortByDate
+            )
+            .help(String(localized: "collection.sort.date.help",
+                         defaultValue: "Re-order documents chronologically by volume date"))
+
+            clusterDivider
+
+            // 3. View ▾ — three independent checkmark toggles in one labeled Menu.
+            viewMenu
+
+            Spacer(minLength: 6)
+
+            // 4. Export — standalone labeled button, pinned trailing.
             ResearchStripButton(
                 title: String(localized: "collection.ribbon.export",
                               defaultValue: "Export…"),
@@ -1485,148 +1517,134 @@ struct CollectionRibbonView: View {
         .overlay(alignment: .bottom) { Divider() }
     }
 
-    /// The ribbon's leading CONTENT / ARRANGE / VIEW clusters, hosted inside the
-    /// horizontal scroll region of `body`.
-    @ViewBuilder
-    private var ribbonButtons: some View {
-        // CONTENT
-        groupLabel(String(localized: "collection.ribbon.group.content",
-                          defaultValue: "Content"))
-            .padding(.leading, 16)
-
-        ResearchStripButton(
-            title: String(localized: "collection.ribbon.addDocuments",
-                          defaultValue: "Add Documents…"),
-            systemImage: "plus.rectangle.on.folder",
-            isDisabled: false,
-            action: addDocuments
-        )
-        .help(String(localized: "collection.toolbar.addDocuments.help",
-                     defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
-
-        ResearchStripButton(
-            title: String(localized: "collection.add.heading",
-                          defaultValue: "Add Section Heading"),
-            systemImage: "number",
-            isDisabled: false,
-            action: addHeading
-        )
-        .help(String(localized: "collection.add.heading.help",
-                     defaultValue: "Insert a section heading into the outline"))
-
-        ResearchStripButton(
-            title: String(localized: "collection.add.prose",
-                          defaultValue: "Add Note Block"),
-            systemImage: "text.alignleft",
-            isDisabled: false,
-            action: addProse
-        )
-        .help(String(localized: "collection.add.prose.help",
-                     defaultValue: "Insert an editorial note block into the outline"))
-
-        ResearchStripButton(
-            title: String(localized: "collection.ribbon.addPassages",
-                          defaultValue: "Add Passages…"),
-            systemImage: "text.quote",
-            isDisabled: !hasDocuments,
-            action: addHighlights
-        )
-        .help(String(localized: "collection.add.highlights.help",
-                     defaultValue: "Add highlighted passages from this collection's documents as quoted excerpts"))
-
+    /// The consolidated **Add ▾** menu — every content-authoring verb the ribbon
+    /// used to spread across five CONTENT-group controls, in the same order, with
+    /// the Apparatus five-type submenu preserved verbatim below a divider. Each
+    /// item keeps its exact closure, disabled condition, and help text.
+    private var addMenu: some View {
         Menu {
-            ForEach(CollectionGeneratedBlockType.allCases) { blockType in
-                Button {
-                    addApparatus(blockType)
-                } label: {
-                    Label(blockType.displayName, systemImage: blockType.systemImage)
-                }
+            Button(action: addDocuments) {
+                Label(String(localized: "collection.ribbon.addDocuments",
+                             defaultValue: "Add Documents…"),
+                      systemImage: "plus.rectangle.on.folder")
             }
+            .help(String(localized: "collection.toolbar.addDocuments.help",
+                         defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
+
+            Button(action: addHeading) {
+                Label(String(localized: "collection.add.heading",
+                             defaultValue: "Add Section Heading"),
+                      systemImage: "number")
+            }
+            .help(String(localized: "collection.add.heading.help",
+                         defaultValue: "Insert a section heading into the outline"))
+
+            Button(action: addProse) {
+                Label(String(localized: "collection.add.prose",
+                             defaultValue: "Add Note Block"),
+                      systemImage: "text.alignleft")
+            }
+            .help(String(localized: "collection.add.prose.help",
+                         defaultValue: "Insert an editorial note block into the outline"))
+
+            Button(action: addHighlights) {
+                Label(String(localized: "collection.ribbon.addPassages",
+                             defaultValue: "Add Passages…"),
+                      systemImage: "text.quote")
+            }
+            .disabled(!hasDocuments)
+            .help(String(localized: "collection.add.highlights.help",
+                         defaultValue: "Add highlighted passages from this collection's documents as quoted excerpts"))
+
+            Divider()
+
+            // Apparatus ▸ — the five generated block types, exactly the prior menu.
+            Menu {
+                ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                    Button {
+                        addApparatus(blockType)
+                    } label: {
+                        Label(blockType.displayName, systemImage: blockType.systemImage)
+                    }
+                }
+            } label: {
+                Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
+                      systemImage: "list.bullet.rectangle")
+            }
+            .help(String(localized: "collection.add.apparatus.help",
+                         defaultValue: "Insert a generated apparatus block — bibliography, chronology, sources, persons, or thematic index"))
         } label: {
-            // Match the `ResearchStripButton` capsule chrome (finding 3, adversarial
-            // review): the Apparatus control is a `Menu`, not a `Button`, so it cannot
-            // literally reuse `ResearchStripButton`; instead it wears the same
-            // font/padding/tint so it reads as one control family in the strip.
-            Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
-                  systemImage: "list.bullet.rectangle")
-                .font(.system(size: 11))
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Color.secondary.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 0.5)
-                )
+            menuLabel(String(localized: "collection.ribbon.add", defaultValue: "Add"),
+                      systemImage: "plus")
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help(String(localized: "collection.add.apparatus.help",
-                     defaultValue: "Insert a generated apparatus block — bibliography, chronology, sources, persons, or thematic index"))
-
-        clusterDivider
-
-        // ARRANGE
-        groupLabel(String(localized: "collection.ribbon.group.arrange",
-                          defaultValue: "Arrange"))
-
-        ResearchStripButton(
-            title: String(localized: "collection.sort.date",
-                          defaultValue: "Sort by Date"),
-            systemImage: "arrow.up.arrow.down",
-            isDisabled: !hasEntries,
-            action: sortByDate
-        )
-        .help(String(localized: "collection.sort.date.help",
-                     defaultValue: "Re-order documents chronologically by volume date"))
-
-        clusterDivider
-
-        // VIEW
-        groupLabel(String(localized: "collection.ribbon.group.view",
-                          defaultValue: "View"))
-
-        ResearchStripButton(
-            title: String(localized: "composition.header", defaultValue: "Composition"),
-            systemImage: "slider.horizontal.3",
-            isDisabled: false,
-            action: { showComposition.toggle() }
-        )
-        .help(String(localized: "collection.ribbon.composition.help",
-                     defaultValue: "Show the Composition panel — choose what an export contains"))
-
-        ResearchStripButton(
-            title: String(localized: "collection.frontmatter.disclosure",
-                          defaultValue: "Front Matter"),
-            systemImage: "text.book.closed",
-            isDisabled: false,
-            action: { showFrontMatter.toggle() }
-        )
-        .help(String(localized: "collection.ribbon.frontMatter.help",
-                     defaultValue: "Show the Front Matter panel — introduction and colophon"))
-
-        ResearchStripButton(
-            title: String(localized: "collection.toolbar.preview", defaultValue: "Preview"),
-            systemImage: showPreview ? "eye.fill" : "eye",
-            isDisabled: false,
-            action: { showPreview.toggle() }
-        )
-        .help(String(localized: "collection.toolbar.preview.help",
-                     defaultValue: "Show a live preview of this collection as it will export — updates as you edit"))
+        .accessibilityLabel(String(localized: "collection.ribbon.add.accessibility",
+                                    defaultValue: "Add to collection"))
+        .help(String(localized: "collection.ribbon.add.help",
+                     defaultValue: "Add documents, a section heading, a note block, passages, or a generated apparatus block"))
     }
 
-    /// An uppercased tertiary cluster label, the research strip's "RESEARCH" pattern.
-    private func groupLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(.tertiary)
-            .textCase(.uppercase)
-            .kerning(0.8)
+    /// The consolidated **View ▾** menu — three **independent** show/hide toggles
+    /// (Composition / Front Matter / Preview). Each is a checkmark item (`Toggle`)
+    /// bound to its own binding, not a segmented single-select `Picker`, because the
+    /// three panels reveal independently.
+    private var viewMenu: some View {
+        Menu {
+            Toggle(isOn: $showComposition) {
+                Label(String(localized: "composition.header", defaultValue: "Composition"),
+                      systemImage: "slider.horizontal.3")
+            }
+            .help(String(localized: "collection.ribbon.composition.help",
+                         defaultValue: "Show the Composition panel — choose what an export contains"))
+
+            Toggle(isOn: $showFrontMatter) {
+                Label(String(localized: "collection.frontmatter.disclosure",
+                             defaultValue: "Front Matter"),
+                      systemImage: "text.book.closed")
+            }
+            .help(String(localized: "collection.ribbon.frontMatter.help",
+                         defaultValue: "Show the Front Matter panel — introduction and colophon"))
+
+            Toggle(isOn: $showPreview) {
+                Label(String(localized: "collection.toolbar.preview", defaultValue: "Preview"),
+                      systemImage: showPreview ? "eye.fill" : "eye")
+            }
+            .help(String(localized: "collection.toolbar.preview.help",
+                         defaultValue: "Show a live preview of this collection as it will export — updates as you edit"))
+        } label: {
+            menuLabel(String(localized: "collection.ribbon.view", defaultValue: "View"),
+                      systemImage: "sidebar.right")
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel(String(localized: "collection.ribbon.view.accessibility",
+                                    defaultValue: "Toggle collection panels"))
+        .help(String(localized: "collection.ribbon.view.help",
+                     defaultValue: "Show or hide the Composition, Front Matter, and Preview panels"))
     }
 
-    /// A thin vertical rule between clusters, as the main window toolbar uses.
+    /// The `ResearchStripButton` capsule chrome applied to a `Menu`'s label, so the
+    /// two pulldowns read as the same control family as the Sort/Export buttons.
+    /// A `Menu` is not a `Button`, so it cannot literally reuse `ResearchStripButton`;
+    /// this mirrors its font/padding/tint instead.
+    private func menuLabel(_ title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.system(size: 11))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 0.5)
+            )
+    }
+
+    /// A thin vertical rule between the four top-level controls.
     private var clusterDivider: some View {
         Divider().frame(height: 20)
     }
