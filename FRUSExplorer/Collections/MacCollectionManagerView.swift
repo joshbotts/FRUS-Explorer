@@ -406,6 +406,10 @@ private struct CollectionDetailPane: View {
 
     @State private var name: String
     @State private var note: String
+    /// Reveals the collection-note editor. The note collapses to a compact
+    /// "Add a note" button until it holds text or the user taps to add one, so
+    /// the optional note no longer occupies a tall editor by default.
+    @State private var isAddingNote = false
     @State private var sortedEntries: [CollectionEntry]
     /// Front matter (Authoring Phase 4): title-page subtitle, live-autosaved like name.
     @State private var subtitle: String
@@ -711,7 +715,23 @@ private struct CollectionDetailPane: View {
 
     // MARK: - Note
 
-    private var noteSection: some View {
+    @ViewBuilder private var noteSection: some View {
+        if isAddingNote || !note.isEmpty {
+            noteEditorSection
+        } else {
+            Button {
+                isAddingNote = true
+            } label: {
+                Label(String(localized: "collection.editor.note.add",
+                             defaultValue: "Add a note"),
+                      systemImage: "note.text")
+            }
+            .accessibilityLabel(String(localized: "collection.editor.note.add.accessibility",
+                                       defaultValue: "Add a collection note"))
+        }
+    }
+
+    private var noteEditorSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Collection Note")
                 .font(.caption)

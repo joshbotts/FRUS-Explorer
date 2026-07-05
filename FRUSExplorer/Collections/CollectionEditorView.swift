@@ -148,6 +148,10 @@ struct CollectionEditorView: View {
 
     @State private var collectionName: String
     @State private var collectionNote: String
+    /// Reveals the collection-note editor. The note collapses to a compact
+    /// "Add a note" button until it holds text or the user taps to add one, so
+    /// the optional note no longer occupies several lines of space by default.
+    @State private var isAddingNote = false
     @State private var sortedEntries: [CollectionEntry]
     @State private var linkedSavedSearchId: UUID?
     /// Front matter (Authoring Phase 4): title-page subtitle, live-autosaved like name/note.
@@ -942,16 +946,32 @@ struct CollectionEditorView: View {
     // MARK: - Note Section
 
     /// The bare note field, usable inside any container (see `nameField`).
-    private var noteField: some View {
-        TextField(
-            String(localized: "collection.editor.note.placeholder",
-                   defaultValue: "Optional note about this collection…"),
-            text: $collectionNote,
-            axis: .vertical
-        )
-        .lineLimit(3...6)
-        .accessibilityLabel(String(localized: "collection.editor.note.accessibility",
-                                   defaultValue: "Collection note"))
+    ///
+    /// Collapses to a compact "Add a note" button until the collection has a
+    /// note (or the user taps to add one), so the optional note does not consume
+    /// several lines of vertical space by default.
+    @ViewBuilder private var noteField: some View {
+        if isAddingNote || !collectionNote.isEmpty {
+            TextField(
+                String(localized: "collection.editor.note.placeholder",
+                       defaultValue: "Optional note about this collection…"),
+                text: $collectionNote,
+                axis: .vertical
+            )
+            .lineLimit(3...6)
+            .accessibilityLabel(String(localized: "collection.editor.note.accessibility",
+                                       defaultValue: "Collection note"))
+        } else {
+            Button {
+                isAddingNote = true
+            } label: {
+                Label(String(localized: "collection.editor.note.add",
+                             defaultValue: "Add a note"),
+                      systemImage: "note.text")
+            }
+            .accessibilityLabel(String(localized: "collection.editor.note.add.accessibility",
+                                       defaultValue: "Add a collection note"))
+        }
     }
 
     private var noteSection: some View {
