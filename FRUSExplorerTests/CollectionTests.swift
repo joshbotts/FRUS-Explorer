@@ -542,6 +542,142 @@ struct CollectionTests {
         #expect(entries[2].sortOrder == 2)
     }
 
+    // MARK: - Sort modes (whole-collection vs within-sections)
+
+    /// Builds a detached document entry with a known key, for the sort-scope fixtures.
+    private func makeDoc(_ documentId: String, _ volumeId: String, _ order: Int) -> CollectionEntry {
+        let e = CollectionEntry(collectionId: UUID(), documentId: documentId,
+                                volumeId: volumeId, sortOrder: order)
+        e.entryKind = .document
+        return e
+    }
+
+    /// Builds a detached heading entry, for the sort-scope fixtures.
+    private func makeHeading(_ text: String, _ order: Int) -> CollectionEntry {
+        let e = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: order)
+        e.entryKind = .heading
+        e.text = text
+        return e
+    }
+
+    @Test("SortScope: withinSections keeps documents inside their heading-delimited section")
+    func sortWithinSectionsKeepsDocsUnderHeading() {
+        // Fixture: [Heading A, DocB(1962), DocA(1961), Heading B, DocD(1964), DocC(1963)]
+        let hA = makeHeading("A", 0)
+        let docB = makeDoc("dB", "vol", 1)
+        let docA = makeDoc("dA", "vol", 2)
+        let hB = makeHeading("B", 3)
+        let docD = makeDoc("dD", "vol", 4)
+        let docC = makeDoc("dC", "vol", 5)
+        let entries = [hA, docB, docA, hB, docD, docC]
+        let dates: [String: String] = [
+            "vol/dA": "1961-01-01", "vol/dB": "1962-01-01",
+            "vol/dC": "1963-01-01", "vol/dD": "1964-01-01",
+        ]
+
+        let sectioned = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: true)
+        // Within-sections: [Heading A, DocA, DocB, Heading B, DocC, DocD] — no doc crosses B.
+        #expect(sectioned.map(\.documentId) == ["", "dA", "dB", "", "dC", "dD"])
+
+        let global = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: false)
+        // Global threads all four docs into one chronology through the fixed headings:
+        // slots are [heading, doc, doc, heading, doc, doc] → dA,dB,dC,dD in order.
+        #expect(global.map(\.documentId) == ["", "dA", "dB", "", "dC", "dD"])
+    }
+
+    @Test("SortScope: global threads docs across a heading; within-sections does not")
+    func sortGlobalCrossesHeadingSectionedDoesNot() {
+        // Section A holds a LATE doc; section B holds an EARLY doc. Globally the early doc
+        // must move into the first doc-slot (section A), crossing heading B; sectioned it
+        // stays under B.
+        let hA = makeHeading("A", 0)
+        let docLate = makeDoc("dLate", "vol", 1)   // 1970
+        let hB = makeHeading("B", 2)
+        let docEarly = makeDoc("dEarly", "vol", 3) // 1950
+        let entries = [hA, docLate, hB, docEarly]
+        let dates = ["vol/dLate": "1970-01-01", "vol/dEarly": "1950-01-01"]
+
+        let global = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: false)
+        // Doc-slots are positions 1 and 3; sorted docs [dEarly, dLate] fill them in order,
+        // so the early doc lands in section A — it crossed heading B.
+        #expect(global.map(\.documentId) == ["", "dEarly", "", "dLate"])
+
+        let sectioned = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: true)
+        // Each section has one doc, so nothing moves — the early doc stays under B.
+        #expect(sectioned.map(\.documentId) == ["", "dLate", "", "dEarly"])
+    }
+
+    @Test("SortScope: with no headings, within-sections is identical to global")
+    func sortNoHeadingsDegeneracy() {
+        let docB = makeDoc("dB", "vol", 0)
+        let docA = makeDoc("dA", "vol", 1)
+        let docC = makeDoc("dC", "vol", 2)
+        let entries = [docB, docA, docC]
+        let dates = ["vol/dA": "1961", "vol/dB": "1962", "vol/dC": "1963"]
+
+        let global = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: false)
+        let sectioned = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: true)
+        #expect(global.map(\.documentId) == sectioned.map(\.documentId))
+        #expect(sectioned.map(\.documentId) == ["dA", "dB", "dC"])
+    }
+
+    @Test("SortScope: a non-document anchor inside a section stays put within that section")
+    func sortWithinSectionsProseAnchorStaysPut() {
+        // Section: [Heading, Doc(1963), Prose, Doc(1961)] — sorting the two docs must not
+        // move the prose block; it anchors in place while the docs sort into their slots.
+        let h = makeHeading("H", 0)
+        let docLate = makeDoc("dLate", "vol", 1)   // 1963
+        let prose = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 2)
+        prose.entryKind = .prose
+        let docEarly = makeDoc("dEarly", "vol", 3) // 1961
+        let entries = [h, docLate, prose, docEarly]
+        let dates = ["vol/dLate": "1963", "vol/dEarly": "1961"]
+
+        let sectioned = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: true)
+        // Kinds unchanged in position; docs sorted into the two doc-slots (early first).
+        #expect(sectioned.map(\.entryKind) == [.heading, .document, .prose, .document])
+        #expect(sectioned.map(\.documentId) == ["", "dEarly", "", "dLate"])
+    }
+
+    @Test("SortScope: the leading run before the first heading sorts among itself")
+    func sortWithinSectionsLeadingRunSorts() {
+        // [DocB(1962), DocA(1961), Heading, DocD(1964), DocC(1963)] — the pre-heading run
+        // sorts internally; the post-heading section sorts internally; neither crosses.
+        let docB = makeDoc("dB", "vol", 0)
+        let docA = makeDoc("dA", "vol", 1)
+        let h = makeHeading("H", 2)
+        let docD = makeDoc("dD", "vol", 3)
+        let docC = makeDoc("dC", "vol", 4)
+        let entries = [docB, docA, h, docD, docC]
+        let dates = ["vol/dA": "1961", "vol/dB": "1962", "vol/dC": "1963", "vol/dD": "1964"]
+
+        let sectioned = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: true)
+        #expect(sectioned.map(\.documentId) == ["dA", "dB", "", "dC", "dD"])
+    }
+
+    @Test("SortScope: undated documents still sort last within their own run")
+    func sortWithinSectionsUndatedLastPerRun() {
+        // Section: [Heading, DocUndated, DocDated(1961)] — the dated doc must sort before
+        // the undated one WITHIN the section (undated → "9999" sentinel, last).
+        let h = makeHeading("H", 0)
+        let docUndated = makeDoc("dUndated", "vol", 1)
+        let docDated = makeDoc("dDated", "vol", 2)
+        let entries = [h, docUndated, docDated]
+        let dates = ["vol/dDated": "1961-01-01"] // dUndated absent → sentinel
+
+        let sectioned = CollectionEntryData.sortedByDate(
+            entries, documentDates: dates, manifest: [], withinSections: true)
+        #expect(sectioned.map(\.documentId) == ["", "dDated", "dUndated"])
+    }
+
     // MARK: - PDFExportTest
 
     @Test("PDFExportTest: PDFCollectionExporter writes a non-empty file starting with %PDF")
