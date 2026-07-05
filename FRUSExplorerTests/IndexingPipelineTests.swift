@@ -702,21 +702,21 @@ struct PageBasedCrossReferenceResolutionTests {
         return String(cString: cStr)
     }
 
-    @Test("p-prefix page target (#p42) resolved to document-id after indexing")
-    func pPrefixPageTargetResolvedToDocumentId() async throws {
+    @Test("Arabic page target (#pg_42) resolved to the span-containing document after indexing")
+    func arabicPageTargetResolvedToDocumentId() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
             let dbURL = dir.appendingPathComponent("test.sqlite")
             let volDir = dir.appendingPathComponent("volumes")
 
-            // d1 references page 42 via "#p42"; d2 contains the matching <pb n="42"/>.
+            // d1 references page 42 via the real "#pg_42" form; d2 opens at <pb n="42"/>.
             try writeTEIVolume(
                 to: volDir.appendingPathComponent("frus1969-76v01.xml"),
                 volumeId: "frus1969-76v01",
                 documents: [
                     ("d1", """
-                    <head>Report</head>
-                    <p>See <ref target=\"#p42\">page 42</ref> for details.</p>
+                    <head>Report</head><pb n=\"41\"/>
+                    <p>See <ref target=\"#pg_42\">page 42</ref> for details.</p>
                     """),
                     ("d2", "<head>Annex</head><pb n=\"42\"/><p>Annex text.</p>"),
                 ]
@@ -727,54 +727,90 @@ struct PageBasedCrossReferenceResolutionTests {
                 dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d1"
             )
             #expect(resolved == "d2",
-                    "Page target '#p42' must resolve to document 'd2'; got: \(resolved ?? "nil")")
+                    "Page target '#pg_42' must resolve to document 'd2'; got: \(resolved ?? "nil")")
         }
     }
 
-    @Test("pg-prefix page target (#pg42) resolved to document-id after indexing")
-    func pgPrefixPageTargetResolvedToDocumentId() async throws {
+    @Test("Page inside a span (not a document's first page) resolves to that document")
+    func pageInsideSpanResolvesToContainingDocument() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
             let dbURL = dir.appendingPathComponent("test.sqlite")
             let volDir = dir.appendingPathComponent("volumes")
 
-            // d1 references page 42 via "#pg42"; d2 contains the matching <pb n="42"/>.
+            // d1 opens at p.10 (pb 10, 11, 12), d2 opens at p.13. A ref to #pg_11 must
+            // resolve to d1 via the span algorithm even though no document *starts* at 11 —
+            // this is exactly the case the old exact-match `page_number_int = N` got wrong.
             try writeTEIVolume(
                 to: volDir.appendingPathComponent("frus1969-76v01.xml"),
                 volumeId: "frus1969-76v01",
                 documents: [
                     ("d1", """
-                    <head>Report</head>
-                    <p>See <ref target=\"#pg42\">page 42</ref> for details.</p>
+                    <head>First</head><pb n=\"10\"/><p>a</p><pb n=\"11\"/><p>b</p><pb n=\"12\"/><p>c</p>
+                    """),
+                    ("d2", "<head>Second</head><pb n=\"13\"/><p>d</p>"),
+                    ("d3", """
+                    <head>Referrer</head><pb n=\"20\"/>
+                    <p>See <ref target=\"#pg_11\">page 11</ref>.</p>
+                    """),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let resolved = queryTargetDocumentId(
+                dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d3"
+            )
+            #expect(resolved == "d1",
+                    "Page 11 falls inside d1's span [10,12]; got: \(resolved ?? "nil")")
+        }
+    }
+
+    @Test("Roman front-matter page target (#pg_III) is left unresolved")
+    func romanPageTargetLeftUnresolved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // A roman front-matter anchor has no <div type="document"> to resolve to.
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", """
+                    <head>Report</head><pb n=\"1\"/>
+                    <p>See the <ref target=\"#pg_III\">preface</ref>.</p>
                     """),
                     ("d2", "<head>Annex</head><pb n=\"42\"/><p>Annex text.</p>"),
                 ]
             )
             try await pipeline.indexVolume("frus1969-76v01")
 
+            // GLOB 'pg_[0-9]*' does not match "pg_III"; it stays as the raw fragment.
             let resolved = queryTargetDocumentId(
                 dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d1"
             )
-            #expect(resolved == "d2",
-                    "Page target '#pg42' must resolve to document 'd2'; got: \(resolved ?? "nil")")
+            #expect(resolved == "pg_III",
+                    "Roman anchor 'pg_III' should remain unresolved; got: \(resolved ?? "nil")")
         }
     }
 
-    @Test("Unresolvable page target left unchanged when no matching page_range exists")
+    @Test("Unresolvable arabic page target left unchanged when no span contains it")
     func unresolvablePageTargetLeftAsIs() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
             let dbURL = dir.appendingPathComponent("test.sqlite")
             let volDir = dir.appendingPathComponent("volumes")
 
-            // d1 references page 999 but no document contains <pb n="999"/>.
+            // d1 references page 5 but the only paginated document opens at page 42,
+            // so page 5 sits below the first document's span and cannot be resolved.
             try writeTEIVolume(
                 to: volDir.appendingPathComponent("frus1969-76v01.xml"),
                 volumeId: "frus1969-76v01",
                 documents: [
                     ("d1", """
                     <head>Report</head>
-                    <p>See <ref target=\"#p999\">page 999</ref>.</p>
+                    <p>See <ref target=\"#pg_5\">page 5</ref>.</p>
                     """),
                     ("d2", "<head>Annex</head><pb n=\"42\"/><p>Annex text.</p>"),
                 ]
@@ -785,8 +821,8 @@ struct PageBasedCrossReferenceResolutionTests {
             let resolved = queryTargetDocumentId(
                 dbURL: dbURL, sourceVolumeId: "frus1969-76v01", sourceDocumentId: "d1"
             )
-            #expect(resolved == "p999",
-                    "Unresolvable page target 'p999' should remain unchanged; got: \(resolved ?? "nil")")
+            #expect(resolved == "pg_5",
+                    "Unresolvable page target 'pg_5' should remain unchanged; got: \(resolved ?? "nil")")
         }
     }
 }

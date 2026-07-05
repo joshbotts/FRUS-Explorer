@@ -32,6 +32,11 @@ import SQLite3
 ///   1.0 — Session 30: initial implementation (table built in Session 09)
 ///   1.1 — Session 32: database opened with `SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX`
 ///          directly in `init` (previously delegated to a private `openDatabase()` helper)
+///   1.2 — Session 2026-07-05: the private `span(containing:in:)` now delegates to the
+///          shared `PageSpanResolver.documentContaining(page:in:)` (extracted verbatim,
+///          Session-162 max-page behaviour preserved) so the reader and the indexing-time
+///          page-reference resolver (`IndexingPipeline.resolvePageBasedCrossReferences`)
+///          share one algorithm and can never diverge. No behavioural change to this path.
 public actor PageRangeStore {
 
     // MARK: - State
@@ -140,7 +145,12 @@ public actor PageRangeStore {
 
     /// Returns the documentId whose span contains `target`, or `nil` if none.
     ///
-    /// `rows` must be sorted by page number ascending (as provided by the SQL query).
+    /// Delegates to the shared ``PageSpanResolver/documentContaining(page:in:)`` so the
+    /// reader (this store) and the indexing-time page-reference resolver
+    /// (`IndexingPipeline.resolvePageBasedCrossReferences`) apply identical span logic.
+    /// The shared resolver sorts internally, so passing rows already ordered by
+    /// `page_number_int, rowid` (as the SQL query does) yields the same result.
+    ///
     /// The span for document D is [D.firstPage, nextDoc.firstPage − 1]; the final
     /// document's span is **closed** at the section's highest recorded page
     /// (every printed page carries a `<pb>` marker, so the maximum row is the
@@ -152,26 +162,7 @@ public actor PageRangeStore {
     /// in dictionary order, page lookups could return a document from the wrong
     /// section entirely (p. 313 of frus1955-57v17 resolved to a page-9 document).
     private func span(containing target: Int, in rows: [(documentId: String, pageInt: Int)]) -> String? {
-        guard let maxPage = rows.map(\.pageInt).max() else { return nil }
-
-        // Deduplicate: keep only first occurrence of each document (its first <pb>)
-        var seen = Set<String>()
-        var boundaries: [(documentId: String, firstPage: Int)] = []
-        for row in rows {
-            if seen.insert(row.documentId).inserted {
-                boundaries.append((row.documentId, row.pageInt))
-            }
-        }
-        guard !boundaries.isEmpty else { return nil }
-
-        for i in 0..<boundaries.count {
-            let start = boundaries[i].firstPage
-            let end   = i + 1 < boundaries.count ? boundaries[i + 1].firstPage - 1 : maxPage
-            if target >= start && target <= end {
-                return boundaries[i].documentId
-            }
-        }
-        return nil
+        PageSpanResolver.documentContaining(page: target, in: rows)
     }
 
     private func openDatabase() throws {

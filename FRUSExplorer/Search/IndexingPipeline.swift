@@ -263,6 +263,20 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          `CorpusAnalyticsService`'s normalization denominator can count undated
 ///          documents via the volume-start-year fallback — the same population the
 ///          term-frequency numerator counts — instead of only the dated subset.
+///  4.13 — Page-reference resolution fix (Session 2026-07-05): `currentDateIndexVersion`
+///          → 21 (parse-output change forces a one-time re-index). FRUS TEI marks each
+///          printed page `<pb n="427" xml:id="pg_427"/>` and references it with
+///          `<ref target="#pg_427">` — the raw fragment stored is `pg_427` (underscore).
+///          `resolvePageBasedCrossReferences` previously matched only the no-underscore
+///          `p{N}`/`pg{N}` GLOB and stripped with `dropFirst(2)`, so it resolved zero
+///          of the ~2M `pg_{N}` page references — they persisted as phantom `pg_N`
+///          targets in every `cross_references`-based feature (CA-6 analytics, the
+///          cross-reference graph, the volume connection matrix). Now matches the real
+///          `pg_[0-9]*` form, strips `pg_` (`dropFirst(3)`), and resolves via the shared
+///          `PageSpanResolver.documentContaining(page:in:)` — the same span-containing
+///          algorithm the reader (`PageRangeStore`) uses — so the graph agrees with the
+///          footnote links. Roman/front-matter anchors (`pg_III`) and cross-volume page
+///          refs stay unresolved (no containing document).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -534,7 +548,7 @@ public actor IndexingPipeline {
     ///   plural `Lots …` leads (83 front-matter rows) and the spaced letter suffix
     ///   `Lot 61 D 282 A` (norm parity with the legacy doc-side captures).
     ///   Parse output changes on both tables; a reindex repopulates them.
-    public static let currentDateIndexVersion: Int = 20
+    public static let currentDateIndexVersion: Int = 21
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -4384,40 +4398,55 @@ public actor IndexingPipeline {
         try auxStep(stmt)
     }
 
-    /// Resolves cross-references whose `target_document_id` looks like a page identifier
-    /// (`p{N}` or `pg{N}` where N is a positive integer) to the document that contains
-    /// that page number according to the `page_ranges` table.
+    /// Resolves cross-references whose `target_document_id` is a printed-page anchor
+    /// (`pg_{N}` where N is an arabic page number) to the document whose page **span**
+    /// contains that page, according to the `page_ranges` table.
     ///
-    /// FRUS TEI uses `<ref target="#p42">` or `<ref target="#pg42">` to point to a
-    /// specific printed page. The `page_ranges` table records which document in a volume
-    /// starts at (or contains) each arabic page number, so we can resolve the reference
-    /// to a real document ID after indexing.
+    /// FRUS TEI marks each printed page with `<pb n="427" xml:id="pg_427"/>` and points a
+    /// reference at a page with `<ref target="#pg_427">`. The `#` is stripped at parse
+    /// time (`collectDocumentRefs`), so the raw fragment `pg_427` is stored as
+    /// `target_document_id`. This resolver rewrites those fragments to the containing
+    /// document ID after indexing.
+    ///
+    /// ## Target format
+    /// The real corpus uses the underscored, arabic form `pg_{digits}` (≈2M references).
+    /// Roman / front-matter anchors (`pg_III`, `pg_XIX`, `pg_iii`, `pg_fm12`) point at
+    /// front matter that has no `<div type="document">`, so they cannot be resolved and
+    /// are deliberately left as unresolved `pg_*` fragments. Historic no-underscore forms
+    /// (`p42` / `pg42`) appear essentially nowhere in the corpus and are no longer matched.
+    ///
+    /// ## Algorithm
+    /// Uses the shared ``PageSpanResolver/documentContaining(page:in:)`` — the *same*
+    /// span-containing algorithm the reader (`PageRangeStore.document(forPage:inVolume:)`)
+    /// uses — rather than a naive exact `page_number_int = N` match, so a page that falls
+    /// between two documents' opening `<pb>` elements resolves to its true container and
+    /// the graph agrees with the footnote links.
     ///
     /// Called in `storeIndexData` after both `auxInsertCrossReferences` and
     /// `auxInsertPageRanges` are complete for the volume, so all page data is available.
     /// Same-volume resolution only — cross-volume page refs require the target volume
     /// to be indexed first and are left unresolved.
     private func resolvePageBasedCrossReferences(volumeId: String) throws {
-        // Find cross-reference rows for this volume whose target looks like a page ID.
-        // GLOB 'p[0-9]*'  matches "p" followed by a digit and then anything (e.g. "p42").
-        // GLOB 'pg[0-9]*' matches "pg" followed by a digit (e.g. "pg42").
+        // Find cross-reference rows for this volume whose target is an arabic page anchor.
+        // GLOB 'pg_[0-9]*' matches "pg_" followed by a digit (e.g. "pg_427"); roman
+        // fragments like "pg_III" do not match and stay unresolved.
         let findSQL = """
             SELECT rowid, target_document_id
             FROM cross_references
             WHERE source_volume_id = ?
-              AND (target_document_id GLOB 'p[0-9]*'
-                   OR target_document_id GLOB 'pg[0-9]*')
+              AND target_document_id GLOB 'pg_[0-9]*'
             """
         let findStmt = try auxPrepare(findSQL)
         defer { sqlite3_finalize(findStmt) }
         sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
 
-        var toResolve: [(rowid: Int64, pageId: String)] = []
+        var toResolve: [(rowid: Int64, pageNum: Int)] = []
         while sqlite3_step(findStmt) == SQLITE_ROW {
-            let rowid  = sqlite3_column_int64(findStmt, 0)
-            if let pageId = auxColumnString(findStmt, 1), !pageId.isEmpty {
-                toResolve.append((rowid: rowid, pageId: pageId))
-            }
+            let rowid = sqlite3_column_int64(findStmt, 0)
+            guard let pageId = auxColumnString(findStmt, 1) else { continue }
+            // Strip the "pg_" prefix to extract the arabic page number.
+            guard let pageNum = Int(pageId.dropFirst(3)), pageNum > 0 else { continue }
+            toResolve.append((rowid: rowid, pageNum: pageNum))
         }
         guard !toResolve.isEmpty else { return }
 
@@ -4425,36 +4454,43 @@ public actor IndexingPipeline {
         print("[IndexingPipeline] resolvePageBasedCrossReferences: found \(toResolve.count) candidates in \(volumeId)")
         #endif
 
-        // Lookup: find the document_id for a given page number within this volume.
-        let lookupSQL = """
-            SELECT document_id FROM page_ranges
-            WHERE volume_id = ?
-              AND page_number_int = ?
-              AND page_number_type = 'arabic'
-            ORDER BY rowid LIMIT 1
+        // Fetch every arabic (documentId, page) row for this volume, grouped by section
+        // (section_id is the containing document's xml:id, as inserted). Mirrors the
+        // reader's query so both paths feed the shared resolver identical inputs.
+        var sections: [String: [(documentId: String, pageInt: Int)]] = [:]
+        let rowsSQL = """
+            SELECT document_id, section_id, page_number_int
+            FROM page_ranges
+            WHERE volume_id = ? AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
+            ORDER BY section_id, page_number_int, rowid
             """
+        let rowsStmt = try auxPrepare(rowsSQL)
+        defer { sqlite3_finalize(rowsStmt) }
+        sqlite3_bind_text(rowsStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        while sqlite3_step(rowsStmt) == SQLITE_ROW {
+            guard let docId = auxColumnString(rowsStmt, 0),
+                  let section = auxColumnString(rowsStmt, 1) else { continue }
+            let page = Int(sqlite3_column_int64(rowsStmt, 2))
+            sections[section, default: []].append((documentId: docId, pageInt: page))
+        }
+        guard !sections.isEmpty else { return }
+
         let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
-        let lookupStmt = try auxPrepare(lookupSQL)
-        defer { sqlite3_finalize(lookupStmt) }
         let updateStmt = try auxPrepare(updateSQL)
         defer { sqlite3_finalize(updateStmt) }
 
         var resolvedCount = 0
-        for (rowid, pageId) in toResolve {
-            // Strip the "p" or "pg" prefix to extract the numeric page number.
-            let numStr: String
-            if pageId.hasPrefix("pg") {
-                numStr = String(pageId.dropFirst(2))
-            } else {
-                numStr = String(pageId.dropFirst())   // strip single "p"
+        for (rowid, pageNum) in toResolve {
+            // Probe each section's span; the first containing span wins (matches the
+            // reader's `document(forPage:inVolume:)` section iteration).
+            var docId: String?
+            for rows in sections.values {
+                if let hit = PageSpanResolver.documentContaining(page: pageNum, in: rows) {
+                    docId = hit
+                    break
+                }
             }
-            guard let pageNum = Int(numStr), pageNum > 0 else { continue }
-
-            sqlite3_reset(lookupStmt)
-            sqlite3_bind_text(lookupStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_int64(lookupStmt, 2, Int64(pageNum))
-            guard sqlite3_step(lookupStmt) == SQLITE_ROW,
-                  let docId = auxColumnString(lookupStmt, 0) else { continue }
+            guard let docId else { continue }
 
             sqlite3_reset(updateStmt)
             sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
