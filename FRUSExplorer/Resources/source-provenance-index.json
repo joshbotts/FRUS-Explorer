@@ -1,0 +1,201 @@
+{
+  "byDecade" : [
+    {
+      "counts" : {
+        "unrecognized" : 87
+      },
+      "decade" : 1740,
+      "totalNotes" : 87,
+      "volumeCount" : 1
+    },
+    {
+      "counts" : {
+        "unrecognized" : 6
+      },
+      "decade" : 1830,
+      "totalNotes" : 6,
+      "volumeCount" : 3
+    },
+    {
+      "counts" : {
+        "unrecognized" : 1
+      },
+      "decade" : 1840,
+      "totalNotes" : 1,
+      "volumeCount" : 1
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 1,
+        "unrecognized" : 1890
+      },
+      "decade" : 1860,
+      "totalNotes" : 1891,
+      "volumeCount" : 22
+    },
+    {
+      "counts" : {
+        "unrecognized" : 33
+      },
+      "decade" : 1870,
+      "totalNotes" : 33,
+      "volumeCount" : 7
+    },
+    {
+      "counts" : {
+        "unrecognized" : 11
+      },
+      "decade" : 1880,
+      "totalNotes" : 11,
+      "volumeCount" : 6
+    },
+    {
+      "counts" : {
+        "unrecognized" : 4
+      },
+      "decade" : 1890,
+      "totalNotes" : 4,
+      "volumeCount" : 4
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 6167,
+        "previouslyPublished" : 3,
+        "unrecognized" : 26
+      },
+      "decade" : 1900,
+      "totalNotes" : 6196,
+      "volumeCount" : 8
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 30730,
+        "namedFileSeries" : 636,
+        "naraCollection" : 34,
+        "presidentialLibrary" : 4,
+        "previouslyPublished" : 118,
+        "unrecognized" : 521
+      },
+      "decade" : 1910,
+      "totalNotes" : 32043,
+      "volumeCount" : 43
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 13122,
+        "namedFileSeries" : 19,
+        "previouslyPublished" : 154,
+        "unrecognized" : 117
+      },
+      "decade" : 1920,
+      "totalNotes" : 13412,
+      "volumeCount" : 17
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 40370,
+        "previouslyPublished" : 59,
+        "unrecognized" : 361
+      },
+      "decade" : 1930,
+      "totalNotes" : 40790,
+      "volumeCount" : 49
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 63853,
+        "intelligence" : 198,
+        "lotFile" : 2630,
+        "namedFileSeries" : 3604,
+        "naraCollection" : 161,
+        "presidentialLibrary" : 170,
+        "previouslyPublished" : 3,
+        "unrecognized" : 1160
+      },
+      "decade" : 1940,
+      "totalNotes" : 71779,
+      "volumeCount" : 88
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 31995,
+        "foreignArchive" : 21,
+        "intelligence" : 575,
+        "lotFile" : 7297,
+        "namedFileSeries" : 1112,
+        "naraCollection" : 466,
+        "presidentialLibrary" : 3467,
+        "previouslyPublished" : 6,
+        "unrecognized" : 2033
+      },
+      "decade" : 1950,
+      "totalNotes" : 46972,
+      "volumeCount" : 100
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 7120,
+        "foreignArchive" : 11,
+        "intelligence" : 1236,
+        "lotFile" : 2509,
+        "namedFileSeries" : 30,
+        "naraCollection" : 4507,
+        "presidentialLibrary" : 8432,
+        "previouslyPublished" : 30,
+        "unrecognized" : 581
+      },
+      "decade" : 1960,
+      "totalNotes" : 24456,
+      "volumeCount" : 69
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 160,
+        "centralForeignPolicyFile" : 2458,
+        "foreignArchive" : 20,
+        "intelligence" : 684,
+        "lotFile" : 1102,
+        "namedFileSeries" : 27,
+        "naraCollection" : 4760,
+        "presidentialLibrary" : 14199,
+        "previouslyPublished" : 95,
+        "unrecognized" : 3164
+      },
+      "decade" : 1970,
+      "totalNotes" : 26669,
+      "volumeCount" : 91
+    },
+    {
+      "counts" : {
+        "centralDecimalFile" : 30,
+        "centralForeignPolicyFile" : 673,
+        "foreignArchive" : 20,
+        "intelligence" : 82,
+        "lotFile" : 1105,
+        "naraCollection" : 135,
+        "presidentialLibrary" : 2007,
+        "previouslyPublished" : 57,
+        "unrecognized" : 298
+      },
+      "decade" : 1980,
+      "totalNotes" : 4407,
+      "volumeCount" : 13
+    }
+  ],
+  "categories" : [
+    "centralDecimalFile",
+    "centralForeignPolicyFile",
+    "lotFile",
+    "presidentialLibrary",
+    "naraCollection",
+    "intelligence",
+    "namedFileSeries",
+    "foreignArchive",
+    "previouslyPublished",
+    "unrecognized"
+  ],
+  "generated" : "2026-07-04",
+  "schemaVersion" : 1,
+  "totalSourceNotes" : 268757,
+  "volumesCovered" : 522
+}
