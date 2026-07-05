@@ -192,6 +192,8 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   1.1 — Analytics SA (x-axis bounds): `shareByDecade(in:)` / `notesByDecade(in:)`
+///          year-range filters for the editable dashboard year range
 struct SourceProvenanceData: Sendable {
 
     /// The decade at which the over-time trend begins; earlier decades are the
@@ -351,5 +353,25 @@ struct SourceProvenanceData: Sendable {
         } else {
             decadeRangeShown = nil
         }
+    }
+
+    // MARK: Year-range filtering
+
+    /// `shareByDecade` restricted to rows whose *decade* falls within `domain` —
+    /// the range filter for the (coverage-valued) provenance-mix stacked area.
+    ///
+    /// - Parameter domain: The inclusive coverage-year range to keep decades within.
+    /// - Returns: The in-range decade shares, order preserved.
+    func shareByDecade(in domain: ClosedRange<Int>) -> [CategoryDecadeShare] {
+        shareByDecade.filter { domain.contains($0.decade) }
+    }
+
+    /// `notesByDecade` restricted to points whose *decade* falls within `domain` —
+    /// the range filter for the (coverage-valued) documentary-density bars.
+    ///
+    /// - Parameter domain: The inclusive coverage-year range to keep decades within.
+    /// - Returns: The in-range density points, order preserved.
+    func notesByDecade(in domain: ClosedRange<Int>) -> [DecadeDensity] {
+        notesByDecade.filter { domain.contains($0.decade) }
     }
 }

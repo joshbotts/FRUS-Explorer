@@ -132,6 +132,9 @@ enum LagBucket: Int, CaseIterable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-1b: initial implementation
+///   1.1 — Analytics SA (x-axis bounds): year-range filter helpers
+///          (`lagPoints(in:)`, `coverageSpans(in:)`, `volumesPerPrintYearByEra(in:)`,
+///          `cumulativeByPrintYear(in:)`) for the editable dashboard year range
 struct SeriesProductionData: Sendable {
 
     // MARK: Point types
@@ -328,6 +331,46 @@ struct SeriesProductionData: Sendable {
         lagMin = lagValues.first
         lagMax = lagValues.last
         lagMedian = Self.median(of: lagValues)
+    }
+
+    // MARK: Year-range filtering
+
+    /// `lagPoints` restricted to those whose *coverage-end* year falls within
+    /// `domain` — the range filter for the (coverage-valued) lag scatter.
+    ///
+    /// - Parameter domain: The inclusive coverage-year range to keep.
+    /// - Returns: The in-range lag points, order preserved.
+    func lagPoints(in domain: ClosedRange<Int>) -> [LagPoint] {
+        lagPoints.filter { domain.contains($0.coverageEndYear) }
+    }
+
+    /// `coverageSpans` restricted to those that *overlap* `domain` — a span is
+    /// kept when any part of its `startYear...endYear` intersects the range, so a
+    /// volume straddling the boundary still appears. The range filter for the
+    /// (coverage-valued) Gantt chart.
+    ///
+    /// - Parameter domain: The inclusive coverage-year range to keep.
+    /// - Returns: The overlapping coverage spans, order preserved.
+    func coverageSpans(in domain: ClosedRange<Int>) -> [CoverageSpan] {
+        coverageSpans.filter { $0.startYear <= domain.upperBound && $0.endYear >= domain.lowerBound }
+    }
+
+    /// `volumesPerPrintYearByEra` restricted to buckets whose *print* year falls
+    /// within `domain` — the range filter for the (production-valued) per-year bars.
+    ///
+    /// - Parameter domain: The inclusive print-year range to keep.
+    /// - Returns: The in-range buckets, order preserved.
+    func volumesPerPrintYearByEra(in domain: ClosedRange<Int>) -> [PrintYearCount] {
+        volumesPerPrintYearByEra.filter { domain.contains($0.printYear) }
+    }
+
+    /// `cumulativeByPrintYear` restricted to points whose *print* year falls
+    /// within `domain` — the range filter for the (production-valued) growth curve.
+    ///
+    /// - Parameter domain: The inclusive print-year range to keep.
+    /// - Returns: The in-range cumulative points, order preserved.
+    func cumulativeByPrintYear(in domain: ClosedRange<Int>) -> [CumulativePoint] {
+        cumulativeByPrintYear.filter { domain.contains($0.printYear) }
     }
 
     /// The median of a *pre-sorted* ascending integer array, or `nil` when

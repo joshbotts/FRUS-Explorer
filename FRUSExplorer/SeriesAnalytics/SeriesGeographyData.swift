@@ -115,6 +115,8 @@ enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2: initial implementation
+///   1.1 — Analytics SA (x-axis bounds): `regionShareByDecade(in:)` year-range
+///          filter for the editable dashboard year range
 struct SeriesGeographyData: Sendable {
 
     // MARK: Point types
@@ -290,6 +292,19 @@ struct SeriesGeographyData: Sendable {
         let decades = regionBearingVolumesByDecade.keys.sorted()
         earliestDecade = decades.first
         latestDecade = decades.last
+    }
+
+    /// `regionShareByDecade` restricted to rows whose *decade* falls within
+    /// `domain` — the range filter for the (coverage-valued) stacked-area trend.
+    ///
+    /// A decade is kept when the decade value itself lies in the inclusive range,
+    /// so a `1861...1993` domain drops any stray pre-1861 retrospective decade
+    /// (e.g. the 1740s bucket) while keeping every real decade.
+    ///
+    /// - Parameter domain: The inclusive coverage-year range to keep decades within.
+    /// - Returns: The in-range decade shares, order preserved.
+    func regionShareByDecade(in domain: ClosedRange<Int>) -> [RegionDecadeShare] {
+        regionShareByDecade.filter { domain.contains($0.decade) }
     }
 
     /// The coverage-midpoint decade for one volume, or `nil` when neither

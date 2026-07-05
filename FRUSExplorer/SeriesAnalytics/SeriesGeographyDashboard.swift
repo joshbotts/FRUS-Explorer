@@ -30,6 +30,9 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2: initial implementation
+///   1.1 — Analytics SA (x-axis bounds): bounded coverage x-domain (1861–1993)
+///          on the regional-emphasis trend plus an editable year-range bar; the
+///          1861 floor also drops the pre-1861 retrospective outlier decades
 struct SeriesGeographyDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead
@@ -37,6 +40,19 @@ struct SeriesGeographyDashboard: View {
     /// standalone Research Guide) inject `AppState` at the scene root, so this
     /// normally resolves; the optionality is purely defensive.
     @Environment(AppState.self) private var appState: AppState?
+
+    /// Compact-width detection for the year-range bar (drops its label on iPhone).
+    /// Resolves to `.regular` on macOS, so `isCompactWidth` is `false` there.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// This dashboard's default upper year — its only time-series chart is
+    /// coverage-valued, so the range ends at the coverage ceiling.
+    private static let defaultEnd = SeriesChartKind.coverageCeilingYear
+
+    /// The editable range's start year (floors at the series' start).
+    @State private var yearStart = SeriesChartKind.floorYear
+    /// The editable range's end year (defaults to the coverage ceiling).
+    @State private var yearEnd = defaultEnd
 
     /// The manifest entries to summarise: the diff's known set when a live
     /// refresh has happened, else the always-available bundled set, else empty
@@ -69,12 +85,21 @@ struct SeriesGeographyDashboard: View {
         appState?.volumeLevelTagStore.resolve(slug: slug)?.displayName ?? slug
     }
 
+    /// `true` on compact-width (iPhone); always `false` on macOS / regular-width.
+    private var isCompactWidth: Bool { horizontalSizeClass == .compact }
+
+    /// `true` when the range has been narrowed away from its `1861…1993` default.
+    private var isCustomRange: Bool {
+        yearStart != SeriesChartKind.floorYear || yearEnd != Self.defaultEnd
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
             if entries.isEmpty || placeRegions.isEmpty {
                 emptyState
             } else {
                 intro
+                yearRangeBar
                 regionTrendChart
                 regionTotalsChart
                 topCountriesChart
@@ -95,12 +120,32 @@ struct SeriesGeographyDashboard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
+    // MARK: - Year-range bar
+
+    /// The editable start/end year filter above the charts, reusing the shared
+    /// `AnalyticsYearRangeBar`. Only the coverage-valued trend chart honours it;
+    /// the two categorical bar charts are unaffected.
+    private var yearRangeBar: some View {
+        AnalyticsYearRangeBar(
+            start: $yearStart,
+            end: $yearEnd,
+            corpusMaxYear: Self.defaultEnd,
+            isCompactWidth: isCompactWidth,
+            isCustom: isCustomRange,
+            onReset: {
+                yearStart = SeriesChartKind.floorYear
+                yearEnd = Self.defaultEnd
+            }
+        )
+    }
+
     // MARK: - Chart 1: Regional emphasis over time (stacked area)
 
     /// Stacked area of each region's fractional share of the volumes covering a
     /// decade, over coverage decades. The anchor chart.
     private var regionTrendChart: some View {
-        let data = data
+        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
+        let shares = data.regionShareByDecade(in: domain)
         return chartCard(
             title: String(localized: "series.geography.trend.title",
                           defaultValue: "Regional emphasis over time"),
@@ -108,7 +153,7 @@ struct SeriesGeographyDashboard: View {
                             defaultValue: "Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint.")
         ) {
             Chart {
-                ForEach(data.regionShareByDecade) { point in
+                ForEach(shares) { point in
                     AreaMark(
                         x: .value(
                             String(localized: "series.geography.trend.x", defaultValue: "Coverage decade"),
@@ -131,6 +176,7 @@ struct SeriesGeographyDashboard: View {
                 }
             }
             .chartForegroundStyleScale(domain: GeographicRegion.ordered.map(\.displayName))
+            .chartXScale(domain: domain.lowerBound...domain.upperBound)
             .chartYScale(domain: 0...1)
             .chartYAxis {
                 AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
