@@ -1,0 +1,7672 @@
+{
+  "administrations" : [
+    {
+      "coverageEarliest" : 1861,
+      "coverageLatest" : 1865,
+      "end" : "1865-04-15",
+      "id" : "lincoln",
+      "number" : 16,
+      "party" : "Republican",
+      "pointDocCount" : 5248,
+      "president" : "Abraham Lincoln",
+      "rangeDocCount" : 130,
+      "start" : "1861-03-04",
+      "volumeCount" : 21,
+      "volumeCountPointOnly" : 19,
+      "volumes" : [
+        {
+          "pointDocs" : 714,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1862"
+        },
+        {
+          "pointDocs" : 694,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1863p1"
+        },
+        {
+          "pointDocs" : 640,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1863p2"
+        },
+        {
+          "pointDocs" : 594,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1864p2"
+        },
+        {
+          "pointDocs" : 529,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1864p3"
+        },
+        {
+          "pointDocs" : 484,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1864p4"
+        },
+        {
+          "pointDocs" : 397,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1864p1"
+        },
+        {
+          "pointDocs" : 357,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1865p2"
+        },
+        {
+          "pointDocs" : 308,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1861"
+        },
+        {
+          "pointDocs" : 291,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1865p3"
+        },
+        {
+          "pointDocs" : 175,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1865p1"
+        },
+        {
+          "pointDocs" : 46,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1872p2v2"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1866p2"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1873p1v2"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1867p1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 105,
+          "volumeId" : "frus1865p4"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1872p2v5"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1872p2v1"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1873p2v3"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1865,
+      "coverageLatest" : 1869,
+      "end" : "1869-03-04",
+      "id" : "a-johnson",
+      "number" : 17,
+      "party" : "National Union",
+      "pointDocCount" : 5614,
+      "president" : "Andrew Johnson",
+      "rangeDocCount" : 148,
+      "start" : "1865-04-15",
+      "volumeCount" : 20,
+      "volumeCountPointOnly" : 18,
+      "volumes" : [
+        {
+          "pointDocs" : 1023,
+          "rangeDocs" : 122,
+          "volumeId" : "frus1865p4"
+        },
+        {
+          "pointDocs" : 666,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1868p2"
+        },
+        {
+          "pointDocs" : 636,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1867p1"
+        },
+        {
+          "pointDocs" : 547,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1866p2"
+        },
+        {
+          "pointDocs" : 514,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1867p2"
+        },
+        {
+          "pointDocs" : 514,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1866p1"
+        },
+        {
+          "pointDocs" : 471,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1865p3"
+        },
+        {
+          "pointDocs" : 394,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1868p1"
+        },
+        {
+          "pointDocs" : 316,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1865p2"
+        },
+        {
+          "pointDocs" : 223,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1866p3"
+        },
+        {
+          "pointDocs" : 215,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1865p1"
+        },
+        {
+          "pointDocs" : 42,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1873p1v2"
+        },
+        {
+          "pointDocs" : 30,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1872p2v1"
+        },
+        {
+          "pointDocs" : 12,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1872p2v2"
+        },
+        {
+          "pointDocs" : 7,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1882"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1873p2v3"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1872p2v5"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1869,
+      "coverageLatest" : 1877,
+      "end" : "1877-03-04",
+      "id" : "grant",
+      "number" : 18,
+      "party" : "Republican",
+      "pointDocCount" : 4358,
+      "president" : "Ulysses S. Grant",
+      "rangeDocCount" : 130,
+      "start" : "1869-03-04",
+      "volumeCount" : 20,
+      "volumeCountPointOnly" : 20,
+      "volumes" : [
+        {
+          "pointDocs" : 809,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1874"
+        },
+        {
+          "pointDocs" : 502,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1872p1"
+        },
+        {
+          "pointDocs" : 433,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1871"
+        },
+        {
+          "pointDocs" : 397,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1875v02"
+        },
+        {
+          "pointDocs" : 349,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1876"
+        },
+        {
+          "pointDocs" : 309,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1873p1v1"
+        },
+        {
+          "pointDocs" : 308,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1875v01"
+        },
+        {
+          "pointDocs" : 300,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1870"
+        },
+        {
+          "pointDocs" : 222,
+          "rangeDocs" : 42,
+          "volumeId" : "frus1873p1v2"
+        },
+        {
+          "pointDocs" : 220,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1872p2v1"
+        },
+        {
+          "pointDocs" : 164,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1872p2v2"
+        },
+        {
+          "pointDocs" : 133,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1877"
+        },
+        {
+          "pointDocs" : 75,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1873p2v3"
+        },
+        {
+          "pointDocs" : 54,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1872p2v5"
+        },
+        {
+          "pointDocs" : 39,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1872p2v4"
+        },
+        {
+          "pointDocs" : 28,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1872p2v3"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1882"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1877,
+      "coverageLatest" : 1881,
+      "end" : "1881-03-04",
+      "id" : "hayes",
+      "number" : 19,
+      "party" : "Republican",
+      "pointDocCount" : 2259,
+      "president" : "Rutherford B. Hayes",
+      "rangeDocCount" : 7,
+      "start" : "1877-03-04",
+      "volumeCount" : 11,
+      "volumeCountPointOnly" : 10,
+      "volumes" : [
+        {
+          "pointDocs" : 666,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1880"
+        },
+        {
+          "pointDocs" : 550,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1878"
+        },
+        {
+          "pointDocs" : 534,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1879"
+        },
+        {
+          "pointDocs" : 226,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1881"
+        },
+        {
+          "pointDocs" : 221,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1877"
+        },
+        {
+          "pointDocs" : 44,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1877app"
+        },
+        {
+          "pointDocs" : 10,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1895p2"
+        },
+        {
+          "pointDocs" : 5,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1887"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app1"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1881,
+      "coverageLatest" : 1881,
+      "end" : "1881-09-19",
+      "id" : "garfield",
+      "number" : 20,
+      "party" : "Republican",
+      "pointDocCount" : 430,
+      "president" : "James A. Garfield",
+      "rangeDocCount" : 4,
+      "start" : "1881-03-04",
+      "volumeCount" : 7,
+      "volumeCountPointOnly" : 5,
+      "volumes" : [
+        {
+          "pointDocs" : 412,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1881"
+        },
+        {
+          "pointDocs" : 14,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1882"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1884"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1887"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1881,
+      "coverageLatest" : 1885,
+      "end" : "1885-03-04",
+      "id" : "arthur",
+      "number" : 21,
+      "party" : "Republican",
+      "pointDocCount" : 1775,
+      "president" : "Chester A. Arthur",
+      "rangeDocCount" : 5,
+      "start" : "1881-09-19",
+      "volumeCount" : 12,
+      "volumeCountPointOnly" : 12,
+      "volumes" : [
+        {
+          "pointDocs" : 600,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1883"
+        },
+        {
+          "pointDocs" : 473,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1884"
+        },
+        {
+          "pointDocs" : 388,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1882"
+        },
+        {
+          "pointDocs" : 160,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1885"
+        },
+        {
+          "pointDocs" : 117,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1881"
+        },
+        {
+          "pointDocs" : 14,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1886"
+        },
+        {
+          "pointDocs" : 11,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 8,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1888p1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1889"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1893"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1885,
+      "coverageLatest" : 1889,
+      "end" : "1889-03-04",
+      "id" : "cleveland-1",
+      "number" : 22,
+      "party" : "Democratic",
+      "pointDocCount" : 3251,
+      "president" : "Grover Cleveland",
+      "rangeDocCount" : 14,
+      "start" : "1885-03-04",
+      "volumeCount" : 15,
+      "volumeCountPointOnly" : 15,
+      "volumes" : [
+        {
+          "pointDocs" : 709,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1888p1"
+        },
+        {
+          "pointDocs" : 696,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1887"
+        },
+        {
+          "pointDocs" : 642,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1888p2"
+        },
+        {
+          "pointDocs" : 554,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1885"
+        },
+        {
+          "pointDocs" : 436,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1886"
+        },
+        {
+          "pointDocs" : 162,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1889"
+        },
+        {
+          "pointDocs" : 18,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app1"
+        },
+        {
+          "pointDocs" : 17,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1892"
+        },
+        {
+          "pointDocs" : 8,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1895p2"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1891"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1893"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1901"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1889,
+      "coverageLatest" : 1893,
+      "end" : "1893-03-04",
+      "id" : "b-harrison",
+      "number" : 23,
+      "party" : "Republican",
+      "pointDocCount" : 2581,
+      "president" : "Benjamin Harrison",
+      "rangeDocCount" : 21,
+      "start" : "1889-03-04",
+      "volumeCount" : 14,
+      "volumeCountPointOnly" : 13,
+      "volumes" : [
+        {
+          "pointDocs" : 685,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1891"
+        },
+        {
+          "pointDocs" : 519,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1892"
+        },
+        {
+          "pointDocs" : 501,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1890"
+        },
+        {
+          "pointDocs" : 215,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1894app1"
+        },
+        {
+          "pointDocs" : 198,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 187,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1889"
+        },
+        {
+          "pointDocs" : 154,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1893"
+        },
+        {
+          "pointDocs" : 67,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 25,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1895p2"
+        },
+        {
+          "pointDocs" : 18,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1896"
+        },
+        {
+          "pointDocs" : 7,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1902"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1888p1"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1893,
+      "coverageLatest" : 1897,
+      "end" : "1897-03-04",
+      "id" : "cleveland-2",
+      "number" : 24,
+      "party" : "Democratic",
+      "pointDocCount" : 4809,
+      "president" : "Grover Cleveland",
+      "rangeDocCount" : 26,
+      "start" : "1893-03-04",
+      "volumeCount" : 14,
+      "volumeCountPointOnly" : 14,
+      "volumes" : [
+        {
+          "pointDocs" : 876,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1896"
+        },
+        {
+          "pointDocs" : 815,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1894"
+        },
+        {
+          "pointDocs" : 729,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1895p2"
+        },
+        {
+          "pointDocs" : 686,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1895p1"
+        },
+        {
+          "pointDocs" : 578,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1894app1"
+        },
+        {
+          "pointDocs" : 542,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1893"
+        },
+        {
+          "pointDocs" : 234,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1894app2"
+        },
+        {
+          "pointDocs" : 140,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1897"
+        },
+        {
+          "pointDocs" : 137,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1894Nicaragua"
+        },
+        {
+          "pointDocs" : 30,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1898"
+        },
+        {
+          "pointDocs" : 29,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 6,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 6,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1899"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1901"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1897,
+      "coverageLatest" : 1901,
+      "end" : "1901-09-14",
+      "id" : "mckinley",
+      "number" : 25,
+      "party" : "Republican",
+      "pointDocCount" : 4325,
+      "president" : "William McKinley",
+      "rangeDocCount" : 8,
+      "start" : "1897-03-04",
+      "volumeCount" : 14,
+      "volumeCountPointOnly" : 14,
+      "volumes" : [
+        {
+          "pointDocs" : 1161,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1898"
+        },
+        {
+          "pointDocs" : 1074,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1900"
+        },
+        {
+          "pointDocs" : 803,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1899"
+        },
+        {
+          "pointDocs" : 480,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1897"
+        },
+        {
+          "pointDocs" : 365,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1901"
+        },
+        {
+          "pointDocs" : 307,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1901China"
+        },
+        {
+          "pointDocs" : 53,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 45,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1902"
+        },
+        {
+          "pointDocs" : 24,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1917"
+        },
+        {
+          "pointDocs" : 8,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1906p2"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1906p1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1908"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1929v01"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1901,
+      "coverageLatest" : 1909,
+      "end" : "1909-03-04",
+      "id" : "t-roosevelt",
+      "number" : 26,
+      "party" : "Republican",
+      "pointDocCount" : 7532,
+      "president" : "Theodore Roosevelt",
+      "rangeDocCount" : 35,
+      "start" : "1901-09-14",
+      "volumeCount" : 22,
+      "volumeCountPointOnly" : 22,
+      "volumes" : [
+        {
+          "pointDocs" : 1129,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1905"
+        },
+        {
+          "pointDocs" : 977,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902"
+        },
+        {
+          "pointDocs" : 949,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1904"
+        },
+        {
+          "pointDocs" : 835,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1903"
+        },
+        {
+          "pointDocs" : 753,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1908"
+        },
+        {
+          "pointDocs" : 727,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1906p1"
+        },
+        {
+          "pointDocs" : 601,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1906p2"
+        },
+        {
+          "pointDocs" : 521,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1907p2"
+        },
+        {
+          "pointDocs" : 469,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1907p1"
+        },
+        {
+          "pointDocs" : 176,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1901"
+        },
+        {
+          "pointDocs" : 160,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1909"
+        },
+        {
+          "pointDocs" : 77,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1917"
+        },
+        {
+          "pointDocs" : 57,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1902app2"
+        },
+        {
+          "pointDocs" : 53,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1910"
+        },
+        {
+          "pointDocs" : 18,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1902app1"
+        },
+        {
+          "pointDocs" : 15,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1911"
+        },
+        {
+          "pointDocs" : 5,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1901China"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1914"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1929v01"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1912"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1920v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1925v02"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1909,
+      "coverageLatest" : 1913,
+      "end" : "1913-03-04",
+      "id" : "taft",
+      "number" : 27,
+      "party" : "Republican",
+      "pointDocCount" : 4994,
+      "president" : "William H. Taft",
+      "rangeDocCount" : 33,
+      "start" : "1909-03-04",
+      "volumeCount" : 11,
+      "volumeCountPointOnly" : 11,
+      "volumes" : [
+        {
+          "pointDocs" : 1843,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1912"
+        },
+        {
+          "pointDocs" : 1055,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1911"
+        },
+        {
+          "pointDocs" : 901,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1910"
+        },
+        {
+          "pointDocs" : 709,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1913"
+        },
+        {
+          "pointDocs" : 456,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1909"
+        },
+        {
+          "pointDocs" : 14,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1917"
+        },
+        {
+          "pointDocs" : 11,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1914"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1914Supp"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1915"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1908"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1916"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1913,
+      "coverageLatest" : 1921,
+      "end" : "1921-03-04",
+      "id" : "wilson",
+      "number" : 28,
+      "party" : "Democratic",
+      "pointDocCount" : 28451,
+      "president" : "Woodrow Wilson",
+      "rangeDocCount" : 374,
+      "start" : "1913-03-04",
+      "volumeCount" : 50,
+      "volumeCountPointOnly" : 50,
+      "volumes" : [
+        {
+          "pointDocs" : 1899,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1915"
+        },
+        {
+          "pointDocs" : 1837,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1914"
+        },
+        {
+          "pointDocs" : 1511,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1915Supp"
+        },
+        {
+          "pointDocs" : 1352,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1917"
+        },
+        {
+          "pointDocs" : 1322,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1916"
+        },
+        {
+          "pointDocs" : 1311,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1916Supp"
+        },
+        {
+          "pointDocs" : 1298,
+          "rangeDocs" : 46,
+          "volumeId" : "frus1914Supp"
+        },
+        {
+          "pointDocs" : 1014,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1918Russiav02"
+        },
+        {
+          "pointDocs" : 991,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1913"
+        },
+        {
+          "pointDocs" : 952,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1917Supp01v01"
+        },
+        {
+          "pointDocs" : 944,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1920v03"
+        },
+        {
+          "pointDocs" : 940,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1918Supp02"
+        },
+        {
+          "pointDocs" : 915,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1918Supp01v01"
+        },
+        {
+          "pointDocs" : 913,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1919v01"
+        },
+        {
+          "pointDocs" : 907,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1918Supp01v02"
+        },
+        {
+          "pointDocs" : 877,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1920v01"
+        },
+        {
+          "pointDocs" : 836,
+          "rangeDocs" : 82,
+          "volumeId" : "frus1919Russia"
+        },
+        {
+          "pointDocs" : 828,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1919v02"
+        },
+        {
+          "pointDocs" : 796,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1920v02"
+        },
+        {
+          "pointDocs" : 730,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1918"
+        },
+        {
+          "pointDocs" : 712,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1917Supp02v01"
+        },
+        {
+          "pointDocs" : 702,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1914-20v01"
+        },
+        {
+          "pointDocs" : 697,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1919Parisv02"
+        },
+        {
+          "pointDocs" : 695,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1918Russiav01"
+        },
+        {
+          "pointDocs" : 471,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1918Russiav03"
+        },
+        {
+          "pointDocs" : 456,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1917Supp02v02"
+        },
+        {
+          "pointDocs" : 412,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1919Parisv01"
+        },
+        {
+          "pointDocs" : 409,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1914-20v02"
+        },
+        {
+          "pointDocs" : 404,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1919Parisv11"
+        },
+        {
+          "pointDocs" : 378,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1919Parisv12"
+        },
+        {
+          "pointDocs" : 216,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1921v01"
+        },
+        {
+          "pointDocs" : 188,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1921v02"
+        },
+        {
+          "pointDocs" : 94,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv06"
+        },
+        {
+          "pointDocs" : 89,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv05"
+        },
+        {
+          "pointDocs" : 69,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv03"
+        },
+        {
+          "pointDocs" : 58,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv04"
+        },
+        {
+          "pointDocs" : 53,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv09"
+        },
+        {
+          "pointDocs" : 46,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv07"
+        },
+        {
+          "pointDocs" : 43,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv08"
+        },
+        {
+          "pointDocs" : 33,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1917-72PubDip"
+        },
+        {
+          "pointDocs" : 26,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1919Parisv10"
+        },
+        {
+          "pointDocs" : 12,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1922v02"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1922v01"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1923v01"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1919Parisv13"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1923v02"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1928v01"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1926v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1927v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1928v03"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1921,
+      "coverageLatest" : 1923,
+      "end" : "1923-08-02",
+      "id" : "harding",
+      "number" : 29,
+      "party" : "Republican",
+      "pointDocCount" : 4333,
+      "president" : "Warren G. Harding",
+      "rangeDocCount" : 14,
+      "start" : "1921-03-04",
+      "volumeCount" : 19,
+      "volumeCountPointOnly" : 18,
+      "volumes" : [
+        {
+          "pointDocs" : 893,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1922v02"
+        },
+        {
+          "pointDocs" : 870,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1922v01"
+        },
+        {
+          "pointDocs" : 718,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1921v02"
+        },
+        {
+          "pointDocs" : 660,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1921v01"
+        },
+        {
+          "pointDocs" : 646,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1923v02"
+        },
+        {
+          "pointDocs" : 478,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1923v01"
+        },
+        {
+          "pointDocs" : 26,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1924v01"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1927v03"
+        },
+        {
+          "pointDocs" : 8,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1926v02"
+        },
+        {
+          "pointDocs" : 6,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1924v02"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1925v01"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1920v01"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1920v02"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1925v02"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1927v02"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1928v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1914-20v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1920v03"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1915"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1923,
+      "coverageLatest" : 1929,
+      "end" : "1929-03-04",
+      "id" : "coolidge",
+      "number" : 30,
+      "party" : "Republican",
+      "pointDocCount" : 9920,
+      "president" : "Calvin Coolidge",
+      "rangeDocCount" : 36,
+      "start" : "1923-08-02",
+      "volumeCount" : 25,
+      "volumeCountPointOnly" : 24,
+      "volumes" : [
+        {
+          "pointDocs" : 951,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1928v02"
+        },
+        {
+          "pointDocs" : 856,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1926v01"
+        },
+        {
+          "pointDocs" : 835,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1928v01"
+        },
+        {
+          "pointDocs" : 817,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1928v03"
+        },
+        {
+          "pointDocs" : 770,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1925v01"
+        },
+        {
+          "pointDocs" : 770,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1927v03"
+        },
+        {
+          "pointDocs" : 760,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1927v02"
+        },
+        {
+          "pointDocs" : 661,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1924v01"
+        },
+        {
+          "pointDocs" : 661,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1926v02"
+        },
+        {
+          "pointDocs" : 646,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1924v02"
+        },
+        {
+          "pointDocs" : 602,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1925v02"
+        },
+        {
+          "pointDocs" : 415,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1927v01"
+        },
+        {
+          "pointDocs" : 372,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1923v02"
+        },
+        {
+          "pointDocs" : 320,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1923v01"
+        },
+        {
+          "pointDocs" : 172,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1929v02"
+        },
+        {
+          "pointDocs" : 149,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1929v03"
+        },
+        {
+          "pointDocs" : 125,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1929v01"
+        },
+        {
+          "pointDocs" : 16,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1931v02"
+        },
+        {
+          "pointDocs" : 14,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1930v03"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1931v01"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1932v02"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1934v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1917Supp02v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1930v01"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1915"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1929,
+      "coverageLatest" : 1933,
+      "end" : "1933-03-04",
+      "id" : "hoover",
+      "number" : 31,
+      "party" : "Republican",
+      "pointDocCount" : 12467,
+      "president" : "Herbert Hoover",
+      "rangeDocCount" : 24,
+      "start" : "1929-03-04",
+      "volumeCount" : 29,
+      "volumeCountPointOnly" : 29,
+      "volumes" : [
+        {
+          "pointDocs" : 1087,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1931v02"
+        },
+        {
+          "pointDocs" : 1008,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1931v03"
+        },
+        {
+          "pointDocs" : 939,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1932v05"
+        },
+        {
+          "pointDocs" : 922,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1929v02"
+        },
+        {
+          "pointDocs" : 884,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1930v02"
+        },
+        {
+          "pointDocs" : 832,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1931v01"
+        },
+        {
+          "pointDocs" : 799,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1932v03"
+        },
+        {
+          "pointDocs" : 794,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1932v04"
+        },
+        {
+          "pointDocs" : 787,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1930v03"
+        },
+        {
+          "pointDocs" : 785,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1929v03"
+        },
+        {
+          "pointDocs" : 727,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1929v01"
+        },
+        {
+          "pointDocs" : 677,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1932v01"
+        },
+        {
+          "pointDocs" : 608,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1932v02"
+        },
+        {
+          "pointDocs" : 571,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1930v01"
+        },
+        {
+          "pointDocs" : 280,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933v04"
+        },
+        {
+          "pointDocs" : 253,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933v03"
+        },
+        {
+          "pointDocs" : 154,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933v02"
+        },
+        {
+          "pointDocs" : 134,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1931-41v01"
+        },
+        {
+          "pointDocs" : 115,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933v05"
+        },
+        {
+          "pointDocs" : 76,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1933v01"
+        },
+        {
+          "pointDocs" : 14,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1934v03"
+        },
+        {
+          "pointDocs" : 5,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1934v02"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1928v01"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1928v03"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933-39"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1935v02"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1928v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1926v02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1934v01"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1933,
+      "coverageLatest" : 1945,
+      "end" : "1945-04-12",
+      "id" : "f-roosevelt",
+      "number" : 32,
+      "party" : "Democratic",
+      "pointDocCount" : 65358,
+      "president" : "Franklin D. Roosevelt",
+      "rangeDocCount" : 617,
+      "start" : "1933-03-04",
+      "volumeCount" : 88,
+      "volumeCountPointOnly" : 87,
+      "volumes" : [
+        {
+          "pointDocs" : 1552,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1944v07"
+        },
+        {
+          "pointDocs" : 1337,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1944v04"
+        },
+        {
+          "pointDocs" : 1317,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1944v03"
+        },
+        {
+          "pointDocs" : 1266,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1940v05"
+        },
+        {
+          "pointDocs" : 1253,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1944v05"
+        },
+        {
+          "pointDocs" : 1229,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1943v04"
+        },
+        {
+          "pointDocs" : 1153,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1939v01"
+        },
+        {
+          "pointDocs" : 1112,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1937v03"
+        },
+        {
+          "pointDocs" : 1106,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1940v04"
+        },
+        {
+          "pointDocs" : 1072,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1935v03"
+        },
+        {
+          "pointDocs" : 1041,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1941v03"
+        },
+        {
+          "pointDocs" : 1025,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1944v01"
+        },
+        {
+          "pointDocs" : 1019,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1937v04"
+        },
+        {
+          "pointDocs" : 1009,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1940v02"
+        },
+        {
+          "pointDocs" : 1008,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1941v05"
+        },
+        {
+          "pointDocs" : 984,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1943v03"
+        },
+        {
+          "pointDocs" : 983,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1937v01"
+        },
+        {
+          "pointDocs" : 981,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1941v02"
+        },
+        {
+          "pointDocs" : 980,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1941v01"
+        },
+        {
+          "pointDocs" : 954,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1938v01"
+        },
+        {
+          "pointDocs" : 952,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1942v04"
+        },
+        {
+          "pointDocs" : 950,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1939v04"
+        },
+        {
+          "pointDocs" : 949,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1943v01"
+        },
+        {
+          "pointDocs" : 939,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1936v04"
+        },
+        {
+          "pointDocs" : 934,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1935v04"
+        },
+        {
+          "pointDocs" : 927,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1940v03"
+        },
+        {
+          "pointDocs" : 912,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1944v02"
+        },
+        {
+          "pointDocs" : 912,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1943v02"
+        },
+        {
+          "pointDocs" : 910,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1935v01"
+        },
+        {
+          "pointDocs" : 905,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1938v02"
+        },
+        {
+          "pointDocs" : 894,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1940v01"
+        },
+        {
+          "pointDocs" : 891,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1938v05"
+        },
+        {
+          "pointDocs" : 885,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1944v06"
+        },
+        {
+          "pointDocs" : 883,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1936v02"
+        },
+        {
+          "pointDocs" : 874,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1943v05"
+        },
+        {
+          "pointDocs" : 872,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1939v03"
+        },
+        {
+          "pointDocs" : 871,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1939v02"
+        },
+        {
+          "pointDocs" : 854,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1936v05"
+        },
+        {
+          "pointDocs" : 850,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1941v04"
+        },
+        {
+          "pointDocs" : 831,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1933-39"
+        },
+        {
+          "pointDocs" : 827,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1942v01"
+        },
+        {
+          "pointDocs" : 823,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1942v02"
+        },
+        {
+          "pointDocs" : 822,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1938v04"
+        },
+        {
+          "pointDocs" : 814,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1934v02"
+        },
+        {
+          "pointDocs" : 812,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1938v03"
+        },
+        {
+          "pointDocs" : 809,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1943China"
+        },
+        {
+          "pointDocs" : 791,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1942v05"
+        },
+        {
+          "pointDocs" : 774,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1937v05"
+        },
+        {
+          "pointDocs" : 761,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1934v01"
+        },
+        {
+          "pointDocs" : 749,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1937v02"
+        },
+        {
+          "pointDocs" : 743,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1939v05"
+        },
+        {
+          "pointDocs" : 735,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1933v01"
+        },
+        {
+          "pointDocs" : 735,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1934v03"
+        },
+        {
+          "pointDocs" : 726,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1942v03"
+        },
+        {
+          "pointDocs" : 716,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1943v06"
+        },
+        {
+          "pointDocs" : 709,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1942v06"
+        },
+        {
+          "pointDocs" : 701,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1934v04"
+        },
+        {
+          "pointDocs" : 691,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1936v01"
+        },
+        {
+          "pointDocs" : 653,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1935v02"
+        },
+        {
+          "pointDocs" : 652,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1933v05"
+        },
+        {
+          "pointDocs" : 651,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1942China"
+        },
+        {
+          "pointDocs" : 639,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1934v05"
+        },
+        {
+          "pointDocs" : 619,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1941v06"
+        },
+        {
+          "pointDocs" : 609,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933v02"
+        },
+        {
+          "pointDocs" : 584,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1936v03"
+        },
+        {
+          "pointDocs" : 584,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1933v03"
+        },
+        {
+          "pointDocs" : 552,
+          "rangeDocs" : 99,
+          "volumeId" : "frus1943"
+        },
+        {
+          "pointDocs" : 542,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1931-41v01"
+        },
+        {
+          "pointDocs" : 519,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1941v07"
+        },
+        {
+          "pointDocs" : 515,
+          "rangeDocs" : 56,
+          "volumeId" : "frus1943CairoTehran"
+        },
+        {
+          "pointDocs" : 507,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1933v04"
+        },
+        {
+          "pointDocs" : 463,
+          "rangeDocs" : 46,
+          "volumeId" : "frus1945Malta"
+        },
+        {
+          "pointDocs" : 423,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1931-41v02"
+        },
+        {
+          "pointDocs" : 419,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v05"
+        },
+        {
+          "pointDocs" : 392,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1945v09"
+        },
+        {
+          "pointDocs" : 355,
+          "rangeDocs" : 97,
+          "volumeId" : "frus1941-43"
+        },
+        {
+          "pointDocs" : 253,
+          "rangeDocs" : 51,
+          "volumeId" : "frus1944Quebec"
+        },
+        {
+          "pointDocs" : 236,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v07"
+        },
+        {
+          "pointDocs" : 228,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v04"
+        },
+        {
+          "pointDocs" : 211,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v03"
+        },
+        {
+          "pointDocs" : 192,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1945v08"
+        },
+        {
+          "pointDocs" : 154,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v02"
+        },
+        {
+          "pointDocs" : 148,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v01"
+        },
+        {
+          "pointDocs" : 140,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1945v06"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1930v01"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 96,
+          "volumeId" : "frus1945Berlinv02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1930v03"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1947v08"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1945,
+      "coverageLatest" : 1953,
+      "end" : "1953-01-20",
+      "id" : "truman",
+      "number" : 33,
+      "party" : "Democratic",
+      "pointDocCount" : 52995,
+      "president" : "Harry S. Truman",
+      "rangeDocCount" : 3568,
+      "start" : "1945-04-12",
+      "volumeCount" : 103,
+      "volumeCountPointOnly" : 103,
+      "volumes" : [
+        {
+          "pointDocs" : 1694,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1949v08"
+        },
+        {
+          "pointDocs" : 1453,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1949v09"
+        },
+        {
+          "pointDocs" : 1158,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1947v07"
+        },
+        {
+          "pointDocs" : 1135,
+          "rangeDocs" : 107,
+          "volumeId" : "frus1949v06"
+        },
+        {
+          "pointDocs" : 1131,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1946v11"
+        },
+        {
+          "pointDocs" : 1107,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1946v10"
+        },
+        {
+          "pointDocs" : 1094,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1945v08"
+        },
+        {
+          "pointDocs" : 1014,
+          "rangeDocs" : 89,
+          "volumeId" : "frus1950v07"
+        },
+        {
+          "pointDocs" : 994,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1945v03"
+        },
+        {
+          "pointDocs" : 986,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1945v04"
+        },
+        {
+          "pointDocs" : 926,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1948v06"
+        },
+        {
+          "pointDocs" : 918,
+          "rangeDocs" : 70,
+          "volumeId" : "frus1950v05"
+        },
+        {
+          "pointDocs" : 917,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1945v07"
+        },
+        {
+          "pointDocs" : 913,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1947v08"
+        },
+        {
+          "pointDocs" : 898,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1947v06"
+        },
+        {
+          "pointDocs" : 897,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1945v06"
+        },
+        {
+          "pointDocs" : 889,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1948v08"
+        },
+        {
+          "pointDocs" : 880,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1951v07p1"
+        },
+        {
+          "pointDocs" : 858,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1946v08"
+        },
+        {
+          "pointDocs" : 840,
+          "rangeDocs" : 96,
+          "volumeId" : "frus1947v05"
+        },
+        {
+          "pointDocs" : 818,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1945v09"
+        },
+        {
+          "pointDocs" : 817,
+          "rangeDocs" : 81,
+          "volumeId" : "frus1951v02"
+        },
+        {
+          "pointDocs" : 802,
+          "rangeDocs" : 136,
+          "volumeId" : "frus1945Berlinv02"
+        },
+        {
+          "pointDocs" : 800,
+          "rangeDocs" : 59,
+          "volumeId" : "frus1950v06"
+        },
+        {
+          "pointDocs" : 800,
+          "rangeDocs" : 57,
+          "volumeId" : "frus1948v02"
+        },
+        {
+          "pointDocs" : 792,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1948v07"
+        },
+        {
+          "pointDocs" : 789,
+          "rangeDocs" : 72,
+          "volumeId" : "frus1948v05p2"
+        },
+        {
+          "pointDocs" : 767,
+          "rangeDocs" : 106,
+          "volumeId" : "frus1950v04"
+        },
+        {
+          "pointDocs" : 751,
+          "rangeDocs" : 45,
+          "volumeId" : "frus1946v01"
+        },
+        {
+          "pointDocs" : 746,
+          "rangeDocs" : 64,
+          "volumeId" : "frus1951v06p1"
+        },
+        {
+          "pointDocs" : 746,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1946v09"
+        },
+        {
+          "pointDocs" : 742,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1946v05"
+        },
+        {
+          "pointDocs" : 740,
+          "rangeDocs" : 62,
+          "volumeId" : "frus1951v05"
+        },
+        {
+          "pointDocs" : 725,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1946v07"
+        },
+        {
+          "pointDocs" : 724,
+          "rangeDocs" : 48,
+          "volumeId" : "frus1951v01"
+        },
+        {
+          "pointDocs" : 713,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1950v03"
+        },
+        {
+          "pointDocs" : 711,
+          "rangeDocs" : 34,
+          "volumeId" : "frus1947v03"
+        },
+        {
+          "pointDocs" : 698,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1945Berlinv01"
+        },
+        {
+          "pointDocs" : 691,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1946v06"
+        },
+        {
+          "pointDocs" : 682,
+          "rangeDocs" : 51,
+          "volumeId" : "frus1948v04"
+        },
+        {
+          "pointDocs" : 667,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1945v05"
+        },
+        {
+          "pointDocs" : 653,
+          "rangeDocs" : 35,
+          "volumeId" : "frus1948v03"
+        },
+        {
+          "pointDocs" : 642,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1945v02"
+        },
+        {
+          "pointDocs" : 620,
+          "rangeDocs" : 44,
+          "volumeId" : "frus1951v03p1"
+        },
+        {
+          "pointDocs" : 601,
+          "rangeDocs" : 60,
+          "volumeId" : "frus1949v03"
+        },
+        {
+          "pointDocs" : 551,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1947v04"
+        },
+        {
+          "pointDocs" : 547,
+          "rangeDocs" : 55,
+          "volumeId" : "frus1949v05"
+        },
+        {
+          "pointDocs" : 539,
+          "rangeDocs" : 31,
+          "volumeId" : "frus1947v02"
+        },
+        {
+          "pointDocs" : 528,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1948v09"
+        },
+        {
+          "pointDocs" : 512,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1947v01"
+        },
+        {
+          "pointDocs" : 486,
+          "rangeDocs" : 45,
+          "volumeId" : "frus1950v02"
+        },
+        {
+          "pointDocs" : 485,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1951v06p2"
+        },
+        {
+          "pointDocs" : 459,
+          "rangeDocs" : 31,
+          "volumeId" : "frus1949v02"
+        },
+        {
+          "pointDocs" : 430,
+          "rangeDocs" : 48,
+          "volumeId" : "frus1951v04p2"
+        },
+        {
+          "pointDocs" : 427,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1945-50Intel"
+        },
+        {
+          "pointDocs" : 422,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1949v07p1"
+        },
+        {
+          "pointDocs" : 417,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1946v02"
+        },
+        {
+          "pointDocs" : 416,
+          "rangeDocs" : 44,
+          "volumeId" : "frus1949v04"
+        },
+        {
+          "pointDocs" : 411,
+          "rangeDocs" : 54,
+          "volumeId" : "frus1951v04p1"
+        },
+        {
+          "pointDocs" : 394,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1948v05p1"
+        },
+        {
+          "pointDocs" : 377,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1949v07p2"
+        },
+        {
+          "pointDocs" : 354,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1952-54v15p1"
+        },
+        {
+          "pointDocs" : 333,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1946v03"
+        },
+        {
+          "pointDocs" : 327,
+          "rangeDocs" : 27,
+          "volumeId" : "frus1951v03p2"
+        },
+        {
+          "pointDocs" : 316,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1951v07p2"
+        },
+        {
+          "pointDocs" : 296,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1949v01"
+        },
+        {
+          "pointDocs" : 295,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1950v01"
+        },
+        {
+          "pointDocs" : 271,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1952-54v10"
+        },
+        {
+          "pointDocs" : 263,
+          "rangeDocs" : 50,
+          "volumeId" : "frus1952-54v11p1"
+        },
+        {
+          "pointDocs" : 257,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1948v01p1"
+        },
+        {
+          "pointDocs" : 254,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1952-54v09p1"
+        },
+        {
+          "pointDocs" : 244,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1945v01"
+        },
+        {
+          "pointDocs" : 241,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1948v01p2"
+        },
+        {
+          "pointDocs" : 237,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1952-54v03"
+        },
+        {
+          "pointDocs" : 232,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1952-54v11p2"
+        },
+        {
+          "pointDocs" : 224,
+          "rangeDocs" : 56,
+          "volumeId" : "frus1952-54v06p1"
+        },
+        {
+          "pointDocs" : 209,
+          "rangeDocs" : 92,
+          "volumeId" : "frus1952-54v05p1"
+        },
+        {
+          "pointDocs" : 194,
+          "rangeDocs" : 44,
+          "volumeId" : "frus1952-54v09p2"
+        },
+        {
+          "pointDocs" : 172,
+          "rangeDocs" : 76,
+          "volumeId" : "frus1952-54v04"
+        },
+        {
+          "pointDocs" : 160,
+          "rangeDocs" : 76,
+          "volumeId" : "frus1952-54v06p2"
+        },
+        {
+          "pointDocs" : 159,
+          "rangeDocs" : 43,
+          "volumeId" : "frus1952-54v13p1"
+        },
+        {
+          "pointDocs" : 157,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1952-54v14p2"
+        },
+        {
+          "pointDocs" : 152,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1952-54v07p1"
+        },
+        {
+          "pointDocs" : 146,
+          "rangeDocs" : 62,
+          "volumeId" : "frus1952-54v08"
+        },
+        {
+          "pointDocs" : 139,
+          "rangeDocs" : 24,
+          "volumeId" : "frus1951-54IranEd2"
+        },
+        {
+          "pointDocs" : 138,
+          "rangeDocs" : 27,
+          "volumeId" : "frus1950-55Intel"
+        },
+        {
+          "pointDocs" : 138,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1951-54Iran"
+        },
+        {
+          "pointDocs" : 117,
+          "rangeDocs" : 49,
+          "volumeId" : "frus1952-54v07p2"
+        },
+        {
+          "pointDocs" : 114,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1952-54v12p2"
+        },
+        {
+          "pointDocs" : 101,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1952-54v01p2"
+        },
+        {
+          "pointDocs" : 80,
+          "rangeDocs" : 267,
+          "volumeId" : "frus1946v04"
+        },
+        {
+          "pointDocs" : 77,
+          "rangeDocs" : 35,
+          "volumeId" : "frus1952-54v12p1"
+        },
+        {
+          "pointDocs" : 66,
+          "rangeDocs" : 47,
+          "volumeId" : "frus1952-54v02p2"
+        },
+        {
+          "pointDocs" : 58,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1952-54v01p1"
+        },
+        {
+          "pointDocs" : 57,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1952-54v14p1"
+        },
+        {
+          "pointDocs" : 35,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1952-54v02p1"
+        },
+        {
+          "pointDocs" : 29,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1952-54Guat"
+        },
+        {
+          "pointDocs" : 5,
+          "rangeDocs" : 43,
+          "volumeId" : "frus1943CairoTehran"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1945Malta"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 46,
+          "volumeId" : "frus1952-54v05p2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 45,
+          "volumeId" : "frus1955-57v12"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1941v04"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1943v04"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1953,
+      "coverageLatest" : 1961,
+      "end" : "1961-01-20",
+      "id" : "eisenhower",
+      "number" : 34,
+      "party" : "Republican",
+      "pointDocCount" : 29449,
+      "president" : "Dwight D. Eisenhower",
+      "rangeDocCount" : 4322,
+      "start" : "1953-01-20",
+      "volumeCount" : 108,
+      "volumeCountPointOnly" : 107,
+      "volumes" : [
+        {
+          "pointDocs" : 1015,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1952-54v16"
+        },
+        {
+          "pointDocs" : 860,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1955-57v03mSupp"
+        },
+        {
+          "pointDocs" : 722,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1952-54v03"
+        },
+        {
+          "pointDocs" : 601,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1958-60v03mSupp"
+        },
+        {
+          "pointDocs" : 600,
+          "rangeDocs" : 45,
+          "volumeId" : "frus1952-54v09p1"
+        },
+        {
+          "pointDocs" : 599,
+          "rangeDocs" : 72,
+          "volumeId" : "frus1955-57v16"
+        },
+        {
+          "pointDocs" : 597,
+          "rangeDocs" : 44,
+          "volumeId" : "frus1952-54v13p1"
+        },
+        {
+          "pointDocs" : 589,
+          "rangeDocs" : 31,
+          "volumeId" : "frus1952-54v13p2"
+        },
+        {
+          "pointDocs" : 542,
+          "rangeDocs" : 87,
+          "volumeId" : "frus1958-60v06"
+        },
+        {
+          "pointDocs" : 538,
+          "rangeDocs" : 90,
+          "volumeId" : "frus1958-60v05mSupp"
+        },
+        {
+          "pointDocs" : 519,
+          "rangeDocs" : 77,
+          "volumeId" : "frus1955-57v07"
+        },
+        {
+          "pointDocs" : 512,
+          "rangeDocs" : 61,
+          "volumeId" : "frus1952-54v08"
+        },
+        {
+          "pointDocs" : 509,
+          "rangeDocs" : 68,
+          "volumeId" : "frus1958-60v15"
+        },
+        {
+          "pointDocs" : 507,
+          "rangeDocs" : 76,
+          "volumeId" : "frus1952-54v04"
+        },
+        {
+          "pointDocs" : 496,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1955-57v15"
+        },
+        {
+          "pointDocs" : 494,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1955-57v22"
+        },
+        {
+          "pointDocs" : 487,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1955-57v21"
+        },
+        {
+          "pointDocs" : 472,
+          "rangeDocs" : 35,
+          "volumeId" : "frus1958-60v08"
+        },
+        {
+          "pointDocs" : 453,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1955-57v14"
+        },
+        {
+          "pointDocs" : 428,
+          "rangeDocs" : 51,
+          "volumeId" : "frus1958-60v02"
+        },
+        {
+          "pointDocs" : 427,
+          "rangeDocs" : 71,
+          "volumeId" : "frus1958-60v16"
+        },
+        {
+          "pointDocs" : 416,
+          "rangeDocs" : 47,
+          "volumeId" : "frus1955-57v12"
+        },
+        {
+          "pointDocs" : 392,
+          "rangeDocs" : 19,
+          "volumeId" : "frus1955-57v01"
+        },
+        {
+          "pointDocs" : 390,
+          "rangeDocs" : 37,
+          "volumeId" : "frus1958-60v13"
+        },
+        {
+          "pointDocs" : 389,
+          "rangeDocs" : 43,
+          "volumeId" : "frus1952-54v09p2"
+        },
+        {
+          "pointDocs" : 386,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1955-57v17"
+        },
+        {
+          "pointDocs" : 378,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1952-54v14p1"
+        },
+        {
+          "pointDocs" : 378,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1952-54v15p2"
+        },
+        {
+          "pointDocs" : 376,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1958-60v11"
+        },
+        {
+          "pointDocs" : 371,
+          "rangeDocs" : 64,
+          "volumeId" : "frus1955-57v13"
+        },
+        {
+          "pointDocs" : 343,
+          "rangeDocs" : 61,
+          "volumeId" : "frus1958-60v19"
+        },
+        {
+          "pointDocs" : 340,
+          "rangeDocs" : 52,
+          "volumeId" : "frus1958-60v07p2"
+        },
+        {
+          "pointDocs" : 338,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1952-54v07p1"
+        },
+        {
+          "pointDocs" : 338,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1955-57v11"
+        },
+        {
+          "pointDocs" : 336,
+          "rangeDocs" : 49,
+          "volumeId" : "frus1955-57v05"
+        },
+        {
+          "pointDocs" : 321,
+          "rangeDocs" : 53,
+          "volumeId" : "frus1955-57v24"
+        },
+        {
+          "pointDocs" : 319,
+          "rangeDocs" : 60,
+          "volumeId" : "frus1955-57v27"
+        },
+        {
+          "pointDocs" : 319,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1958-60v18"
+        },
+        {
+          "pointDocs" : 317,
+          "rangeDocs" : 48,
+          "volumeId" : "frus1952-54v05p2"
+        },
+        {
+          "pointDocs" : 315,
+          "rangeDocs" : 40,
+          "volumeId" : "frus1952-54v12p1"
+        },
+        {
+          "pointDocs" : 313,
+          "rangeDocs" : 68,
+          "volumeId" : "frus1958-60v10p2"
+        },
+        {
+          "pointDocs" : 310,
+          "rangeDocs" : 50,
+          "volumeId" : "frus1955-57v06"
+        },
+        {
+          "pointDocs" : 310,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1952-54v12p2"
+        },
+        {
+          "pointDocs" : 309,
+          "rangeDocs" : 54,
+          "volumeId" : "frus1958-60v10p1"
+        },
+        {
+          "pointDocs" : 306,
+          "rangeDocs" : 68,
+          "volumeId" : "frus1958-60v12"
+        },
+        {
+          "pointDocs" : 306,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1958-60v09"
+        },
+        {
+          "pointDocs" : 301,
+          "rangeDocs" : 87,
+          "volumeId" : "frus1952-54v05p1"
+        },
+        {
+          "pointDocs" : 301,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1955-57v18"
+        },
+        {
+          "pointDocs" : 299,
+          "rangeDocs" : 54,
+          "volumeId" : "frus1952-54v11p1"
+        },
+        {
+          "pointDocs" : 299,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1955-57v02"
+        },
+        {
+          "pointDocs" : 295,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1955-57v26"
+        },
+        {
+          "pointDocs" : 293,
+          "rangeDocs" : 58,
+          "volumeId" : "frus1958-60v05"
+        },
+        {
+          "pointDocs" : 289,
+          "rangeDocs" : 34,
+          "volumeId" : "frus1958-60v07p1"
+        },
+        {
+          "pointDocs" : 288,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1952-54v11p2"
+        },
+        {
+          "pointDocs" : 287,
+          "rangeDocs" : 68,
+          "volumeId" : "frus1958-60v14"
+        },
+        {
+          "pointDocs" : 287,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1955-57v03"
+        },
+        {
+          "pointDocs" : 278,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1955-57v20"
+        },
+        {
+          "pointDocs" : 272,
+          "rangeDocs" : 78,
+          "volumeId" : "frus1952-54v06p2"
+        },
+        {
+          "pointDocs" : 260,
+          "rangeDocs" : 46,
+          "volumeId" : "frus1952-54v02p2"
+        },
+        {
+          "pointDocs" : 260,
+          "rangeDocs" : 36,
+          "volumeId" : "frus1958-60v17"
+        },
+        {
+          "pointDocs" : 260,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1958-60v01"
+        },
+        {
+          "pointDocs" : 259,
+          "rangeDocs" : 91,
+          "volumeId" : "frus1958-60v04"
+        },
+        {
+          "pointDocs" : 254,
+          "rangeDocs" : 48,
+          "volumeId" : "frus1952-54v07p2"
+        },
+        {
+          "pointDocs" : 250,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1955-57v23p2"
+        },
+        {
+          "pointDocs" : 249,
+          "rangeDocs" : 33,
+          "volumeId" : "frus1955-57v10"
+        },
+        {
+          "pointDocs" : 243,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1952-54Guat"
+        },
+        {
+          "pointDocs" : 240,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1955-57v23p1"
+        },
+        {
+          "pointDocs" : 237,
+          "rangeDocs" : 44,
+          "volumeId" : "frus1955-57v25"
+        },
+        {
+          "pointDocs" : 226,
+          "rangeDocs" : 42,
+          "volumeId" : "frus1952-54v01p2"
+        },
+        {
+          "pointDocs" : 222,
+          "rangeDocs" : 31,
+          "volumeId" : "frus1955-57v04"
+        },
+        {
+          "pointDocs" : 213,
+          "rangeDocs" : 52,
+          "volumeId" : "frus1958-60v03"
+        },
+        {
+          "pointDocs" : 210,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1952-54v10"
+        },
+        {
+          "pointDocs" : 209,
+          "rangeDocs" : 58,
+          "volumeId" : "frus1952-54v06p1"
+        },
+        {
+          "pointDocs" : 203,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1951-54Iran"
+        },
+        {
+          "pointDocs" : 201,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1955-57v08"
+        },
+        {
+          "pointDocs" : 199,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1952-54v14p2"
+        },
+        {
+          "pointDocs" : 199,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1952-54v15p1"
+        },
+        {
+          "pointDocs" : 198,
+          "rangeDocs" : 31,
+          "volumeId" : "frus1951-54IranEd2"
+        },
+        {
+          "pointDocs" : 192,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1955-57v09"
+        },
+        {
+          "pointDocs" : 146,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1952-54v01p1"
+        },
+        {
+          "pointDocs" : 133,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1955-57v19"
+        },
+        {
+          "pointDocs" : 92,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1950-55Intel"
+        },
+        {
+          "pointDocs" : 85,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1952-54v02p1"
+        },
+        {
+          "pointDocs" : 42,
+          "rangeDocs" : 53,
+          "volumeId" : "frus1964-68v23"
+        },
+        {
+          "pointDocs" : 17,
+          "rangeDocs" : 44,
+          "volumeId" : "frus1961-63v10"
+        },
+        {
+          "pointDocs" : 12,
+          "rangeDocs" : 51,
+          "volumeId" : "frus1961-63v25"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1961-63v24"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1961-63v07-09mSupp"
+        },
+        {
+          "pointDocs" : 6,
+          "rangeDocs" : 130,
+          "volumeId" : "frus1961-63v05"
+        },
+        {
+          "pointDocs" : 6,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1961-63v10-12mSupp"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1961-63v22"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1961-63v20"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1917-72PubDipv06"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 50,
+          "volumeId" : "frus1961-63v09"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1961-63v12"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1961-63v17"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 96,
+          "volumeId" : "frus1945Berlinv02"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1961-63v14"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1961-63v23"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1961-63v06"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 59,
+          "volumeId" : "frus1961-63v07"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 47,
+          "volumeId" : "frus1951v06p1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1961-63v01"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1961-63v08"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1949v01"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1961-63v21"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1961-63v16"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 58,
+          "volumeId" : "frus1951v05"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1961,
+      "coverageLatest" : 1963,
+      "end" : "1963-11-22",
+      "id" : "kennedy",
+      "number" : 35,
+      "party" : "Democratic",
+      "pointDocCount" : 9426,
+      "president" : "John F. Kennedy",
+      "rangeDocCount" : 948,
+      "start" : "1961-01-20",
+      "volumeCount" : 31,
+      "volumeCountPointOnly" : 29,
+      "volumes" : [
+        {
+          "pointDocs" : 704,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1961-63v10-12mSupp"
+        },
+        {
+          "pointDocs" : 456,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1961-63v07-09mSupp"
+        },
+        {
+          "pointDocs" : 455,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1961-63v24"
+        },
+        {
+          "pointDocs" : 418,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1961-63v13"
+        },
+        {
+          "pointDocs" : 417,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1961-63v23"
+        },
+        {
+          "pointDocs" : 407,
+          "rangeDocs" : 59,
+          "volumeId" : "frus1961-63v25"
+        },
+        {
+          "pointDocs" : 396,
+          "rangeDocs" : 34,
+          "volumeId" : "frus1961-63v20"
+        },
+        {
+          "pointDocs" : 395,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1961-63v21"
+        },
+        {
+          "pointDocs" : 386,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1961-63v12"
+        },
+        {
+          "pointDocs" : 381,
+          "rangeDocs" : 45,
+          "volumeId" : "frus1961-63v10"
+        },
+        {
+          "pointDocs" : 359,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1961-63v18"
+        },
+        {
+          "pointDocs" : 355,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1961-63v16"
+        },
+        {
+          "pointDocs" : 352,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1961-63v11"
+        },
+        {
+          "pointDocs" : 335,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1961-63v22"
+        },
+        {
+          "pointDocs" : 328,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1961-63v19"
+        },
+        {
+          "pointDocs" : 308,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1961-63v04"
+        },
+        {
+          "pointDocs" : 305,
+          "rangeDocs" : 66,
+          "volumeId" : "frus1961-63v07"
+        },
+        {
+          "pointDocs" : 305,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1961-63v02"
+        },
+        {
+          "pointDocs" : 302,
+          "rangeDocs" : 51,
+          "volumeId" : "frus1961-63v09"
+        },
+        {
+          "pointDocs" : 302,
+          "rangeDocs" : 40,
+          "volumeId" : "frus1961-63v01"
+        },
+        {
+          "pointDocs" : 289,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1961-63v17"
+        },
+        {
+          "pointDocs" : 289,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1961-63v03"
+        },
+        {
+          "pointDocs" : 287,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1961-63v14"
+        },
+        {
+          "pointDocs" : 237,
+          "rangeDocs" : 135,
+          "volumeId" : "frus1961-63v05"
+        },
+        {
+          "pointDocs" : 225,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1961-63v15"
+        },
+        {
+          "pointDocs" : 141,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1917-72PubDipv06"
+        },
+        {
+          "pointDocs" : 117,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1961-63v08"
+        },
+        {
+          "pointDocs" : 110,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1961-63v06"
+        },
+        {
+          "pointDocs" : 65,
+          "rangeDocs" : 57,
+          "volumeId" : "frus1964-68v23"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1955-57v15"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1952-54Guat"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1963,
+      "coverageLatest" : 1969,
+      "end" : "1969-01-20",
+      "id" : "l-johnson",
+      "number" : 36,
+      "party" : "Democratic",
+      "pointDocCount" : 13070,
+      "president" : "Lyndon B. Johnson",
+      "rangeDocCount" : 1904,
+      "start" : "1963-11-22",
+      "volumeCount" : 77,
+      "volumeCountPointOnly" : 74,
+      "volumes" : [
+        {
+          "pointDocs" : 644,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1964-68v24"
+        },
+        {
+          "pointDocs" : 531,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1964-68v25"
+        },
+        {
+          "pointDocs" : 524,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1964-68v19"
+        },
+        {
+          "pointDocs" : 502,
+          "rangeDocs" : 46,
+          "volumeId" : "frus1964-68v31"
+        },
+        {
+          "pointDocs" : 470,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1964-68v21"
+        },
+        {
+          "pointDocs" : 449,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1964-68v01"
+        },
+        {
+          "pointDocs" : 411,
+          "rangeDocs" : 56,
+          "volumeId" : "frus1964-68v23"
+        },
+        {
+          "pointDocs" : 409,
+          "rangeDocs" : 43,
+          "volumeId" : "frus1964-68v05"
+        },
+        {
+          "pointDocs" : 409,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1964-68v32"
+        },
+        {
+          "pointDocs" : 408,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1964-68v18"
+        },
+        {
+          "pointDocs" : 405,
+          "rangeDocs" : 75,
+          "volumeId" : "frus1964-68v33"
+        },
+        {
+          "pointDocs" : 394,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1964-68v27"
+        },
+        {
+          "pointDocs" : 383,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1964-68v28"
+        },
+        {
+          "pointDocs" : 372,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1964-68v20"
+        },
+        {
+          "pointDocs" : 369,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1964-68v16"
+        },
+        {
+          "pointDocs" : 360,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1964-68v26"
+        },
+        {
+          "pointDocs" : 347,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1964-68v08"
+        },
+        {
+          "pointDocs" : 343,
+          "rangeDocs" : 36,
+          "volumeId" : "frus1964-68v09"
+        },
+        {
+          "pointDocs" : 336,
+          "rangeDocs" : 33,
+          "volumeId" : "frus1964-68v29p1"
+        },
+        {
+          "pointDocs" : 332,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1964-68v30"
+        },
+        {
+          "pointDocs" : 331,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1964-68v12"
+        },
+        {
+          "pointDocs" : 330,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1964-68v13"
+        },
+        {
+          "pointDocs" : 322,
+          "rangeDocs" : 34,
+          "volumeId" : "frus1964-68v04"
+        },
+        {
+          "pointDocs" : 322,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1964-68v22"
+        },
+        {
+          "pointDocs" : 317,
+          "rangeDocs" : 34,
+          "volumeId" : "frus1964-68v02"
+        },
+        {
+          "pointDocs" : 309,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1964-68v14"
+        },
+        {
+          "pointDocs" : 307,
+          "rangeDocs" : 37,
+          "volumeId" : "frus1964-68v06"
+        },
+        {
+          "pointDocs" : 298,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1964-68v15"
+        },
+        {
+          "pointDocs" : 287,
+          "rangeDocs" : 48,
+          "volumeId" : "frus1964-68v34"
+        },
+        {
+          "pointDocs" : 267,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1964-68v07"
+        },
+        {
+          "pointDocs" : 264,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1964-68v11"
+        },
+        {
+          "pointDocs" : 263,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1964-68v03"
+        },
+        {
+          "pointDocs" : 207,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1964-68v17"
+        },
+        {
+          "pointDocs" : 204,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1964-68v10"
+        },
+        {
+          "pointDocs" : 172,
+          "rangeDocs" : 19,
+          "volumeId" : "frus1917-72PubDipv07"
+        },
+        {
+          "pointDocs" : 121,
+          "rangeDocs" : 19,
+          "volumeId" : "frus1964-68v29p2"
+        },
+        {
+          "pointDocs" : 58,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1961-63v04"
+        },
+        {
+          "pointDocs" : 35,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1961-63v23"
+        },
+        {
+          "pointDocs" : 27,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1961-63v16"
+        },
+        {
+          "pointDocs" : 25,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1961-63v18"
+        },
+        {
+          "pointDocs" : 24,
+          "rangeDocs" : 50,
+          "volumeId" : "frus1961-63v25"
+        },
+        {
+          "pointDocs" : 17,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1961-63v13"
+        },
+        {
+          "pointDocs" : 16,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1961-63v10-12mSupp"
+        },
+        {
+          "pointDocs" : 15,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1961-63v15"
+        },
+        {
+          "pointDocs" : 12,
+          "rangeDocs" : 130,
+          "volumeId" : "frus1961-63v05"
+        },
+        {
+          "pointDocs" : 12,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1961-63v19"
+        },
+        {
+          "pointDocs" : 12,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1961-63v07-09mSupp"
+        },
+        {
+          "pointDocs" : 11,
+          "rangeDocs" : 53,
+          "volumeId" : "frus1969-76v02"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 50,
+          "volumeId" : "frus1961-63v09"
+        },
+        {
+          "pointDocs" : 9,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1961-63v21"
+        },
+        {
+          "pointDocs" : 8,
+          "rangeDocs" : 29,
+          "volumeId" : "frus1961-63v11"
+        },
+        {
+          "pointDocs" : 7,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1961-63v22"
+        },
+        {
+          "pointDocs" : 7,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1961-63v12"
+        },
+        {
+          "pointDocs" : 7,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1961-63v08"
+        },
+        {
+          "pointDocs" : 5,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1969-76ve05p1"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1969-76ve01"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 65,
+          "volumeId" : "frus1969-76v40"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 59,
+          "volumeId" : "frus1961-63v07"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1969-76v41"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 33,
+          "volumeId" : "frus1969-76v29"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1969-76v06"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 32,
+          "volumeId" : "frus1969-76v23"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1969-76v12"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1969-76v20"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1917-72PubDipv08"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1961-63v06"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 52,
+          "volumeId" : "frus1969-76v03"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 48,
+          "volumeId" : "frus1969-76v01"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1961-63v24"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1955-57v15"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1969-76v05"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1969-76v19p2"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1969-76ve02"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1969-76ve04"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1961-63v20"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1969-76ve10"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1952-54Guat"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1969,
+      "coverageLatest" : 1974,
+      "end" : "1974-08-09",
+      "id" : "nixon",
+      "number" : 37,
+      "party" : "Republican",
+      "pointDocCount" : 13611,
+      "president" : "Richard M. Nixon",
+      "rangeDocCount" : 1386,
+      "start" : "1969-01-20",
+      "volumeCount" : 68,
+      "volumeCountPointOnly" : 67,
+      "volumes" : [
+        {
+          "pointDocs" : 664,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1969-76ve10"
+        },
+        {
+          "pointDocs" : 434,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1969-76v05"
+        },
+        {
+          "pointDocs" : 433,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76ve01"
+        },
+        {
+          "pointDocs" : 430,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76ve07"
+        },
+        {
+          "pointDocs" : 411,
+          "rangeDocs" : 45,
+          "volumeId" : "frus1969-76v29"
+        },
+        {
+          "pointDocs" : 407,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1969-76v25"
+        },
+        {
+          "pointDocs" : 357,
+          "rangeDocs" : 89,
+          "volumeId" : "frus1969-76v04"
+        },
+        {
+          "pointDocs" : 352,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1969-76v21"
+        },
+        {
+          "pointDocs" : 342,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1969-76ve02"
+        },
+        {
+          "pointDocs" : 332,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1969-76v36"
+        },
+        {
+          "pointDocs" : 331,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1969-76v09"
+        },
+        {
+          "pointDocs" : 327,
+          "rangeDocs" : 28,
+          "volumeId" : "frus1969-76v41"
+        },
+        {
+          "pointDocs" : 323,
+          "rangeDocs" : 59,
+          "volumeId" : "frus1969-76v02"
+        },
+        {
+          "pointDocs" : 320,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76ve04"
+        },
+        {
+          "pointDocs" : 319,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76ve05p1"
+        },
+        {
+          "pointDocs" : 317,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1969-76v24"
+        },
+        {
+          "pointDocs" : 314,
+          "rangeDocs" : 71,
+          "volumeId" : "frus1969-76v40"
+        },
+        {
+          "pointDocs" : 314,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1969-76v13"
+        },
+        {
+          "pointDocs" : 313,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1969-76v20"
+        },
+        {
+          "pointDocs" : 306,
+          "rangeDocs" : 40,
+          "volumeId" : "frus1969-76v06"
+        },
+        {
+          "pointDocs" : 305,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1969-76v32"
+        },
+        {
+          "pointDocs" : 304,
+          "rangeDocs" : 31,
+          "volumeId" : "frus1969-76v11"
+        },
+        {
+          "pointDocs" : 287,
+          "rangeDocs" : 35,
+          "volumeId" : "frus1969-76v23"
+        },
+        {
+          "pointDocs" : 273,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1969-76v07"
+        },
+        {
+          "pointDocs" : 257,
+          "rangeDocs" : 27,
+          "volumeId" : "frus1969-76v08"
+        },
+        {
+          "pointDocs" : 256,
+          "rangeDocs" : 24,
+          "volumeId" : "frus1969-76v17"
+        },
+        {
+          "pointDocs" : 239,
+          "rangeDocs" : 63,
+          "volumeId" : "frus1969-76v14"
+        },
+        {
+          "pointDocs" : 207,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1969-76v12"
+        },
+        {
+          "pointDocs" : 196,
+          "rangeDocs" : 33,
+          "volumeId" : "frus1969-76v34"
+        },
+        {
+          "pointDocs" : 192,
+          "rangeDocs" : 82,
+          "volumeId" : "frus1969-76v39"
+        },
+        {
+          "pointDocs" : 185,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1969-76v15"
+        },
+        {
+          "pointDocs" : 183,
+          "rangeDocs" : 60,
+          "volumeId" : "frus1969-76v03"
+        },
+        {
+          "pointDocs" : 175,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1917-72PubDipv08"
+        },
+        {
+          "pointDocs" : 165,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76v19p1"
+        },
+        {
+          "pointDocs" : 163,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1969-76ve13"
+        },
+        {
+          "pointDocs" : 163,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1969-76ve05p2"
+        },
+        {
+          "pointDocs" : 160,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1969-76ve11p1"
+        },
+        {
+          "pointDocs" : 150,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1969-76ve12"
+        },
+        {
+          "pointDocs" : 147,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1969-76ve16"
+        },
+        {
+          "pointDocs" : 142,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1969-76ve15p2Ed2"
+        },
+        {
+          "pointDocs" : 139,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76ve15p2"
+        },
+        {
+          "pointDocs" : 138,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1969-76ve11p2"
+        },
+        {
+          "pointDocs" : 131,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1969-76v10"
+        },
+        {
+          "pointDocs" : 129,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76v19p2"
+        },
+        {
+          "pointDocs" : 123,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1969-76ve08"
+        },
+        {
+          "pointDocs" : 122,
+          "rangeDocs" : 39,
+          "volumeId" : "frus1969-76v31"
+        },
+        {
+          "pointDocs" : 117,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1969-76v27"
+        },
+        {
+          "pointDocs" : 98,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1969-76ve06"
+        },
+        {
+          "pointDocs" : 93,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1969-76ve09p2"
+        },
+        {
+          "pointDocs" : 91,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1969-76v26"
+        },
+        {
+          "pointDocs" : 83,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1969-76v28"
+        },
+        {
+          "pointDocs" : 81,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76v18"
+        },
+        {
+          "pointDocs" : 79,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76v30"
+        },
+        {
+          "pointDocs" : 77,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1969-76ve03"
+        },
+        {
+          "pointDocs" : 72,
+          "rangeDocs" : 49,
+          "volumeId" : "frus1969-76v01"
+        },
+        {
+          "pointDocs" : 67,
+          "rangeDocs" : 15,
+          "volumeId" : "frus1969-76v33"
+        },
+        {
+          "pointDocs" : 66,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1969-76v38p2"
+        },
+        {
+          "pointDocs" : 65,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1969-76v42"
+        },
+        {
+          "pointDocs" : 63,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1969-76ve14p2"
+        },
+        {
+          "pointDocs" : 62,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1969-76ve14p1"
+        },
+        {
+          "pointDocs" : 56,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76v35"
+        },
+        {
+          "pointDocs" : 49,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1969-76v22"
+        },
+        {
+          "pointDocs" : 42,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1969-76ve09p1"
+        },
+        {
+          "pointDocs" : 41,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1969-76ve15p1"
+        },
+        {
+          "pointDocs" : 30,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1969-76v38p1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 37,
+          "volumeId" : "frus1964-68v06"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1969-76v16"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1952-54Guat"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1974,
+      "coverageLatest" : 1977,
+      "end" : "1977-01-20",
+      "id" : "ford",
+      "number" : 38,
+      "party" : "Republican",
+      "pointDocCount" : 4333,
+      "president" : "Gerald R. Ford",
+      "rangeDocCount" : 532,
+      "start" : "1974-08-09",
+      "volumeCount" : 46,
+      "volumeCountPointOnly" : 42,
+      "volumes" : [
+        {
+          "pointDocs" : 308,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1969-76ve11p1"
+        },
+        {
+          "pointDocs" : 292,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1969-76v16"
+        },
+        {
+          "pointDocs" : 263,
+          "rangeDocs" : 4,
+          "volumeId" : "frus1969-76ve11p2"
+        },
+        {
+          "pointDocs" : 255,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1969-76ve12"
+        },
+        {
+          "pointDocs" : 211,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1969-76ve15p2Ed2"
+        },
+        {
+          "pointDocs" : 199,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76ve06"
+        },
+        {
+          "pointDocs" : 190,
+          "rangeDocs" : 18,
+          "volumeId" : "frus1969-76v27"
+        },
+        {
+          "pointDocs" : 190,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1969-76v26"
+        },
+        {
+          "pointDocs" : 187,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1969-76ve15p2"
+        },
+        {
+          "pointDocs" : 170,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76ve03"
+        },
+        {
+          "pointDocs" : 164,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1969-76v10"
+        },
+        {
+          "pointDocs" : 158,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1969-76v30"
+        },
+        {
+          "pointDocs" : 149,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1969-76v28"
+        },
+        {
+          "pointDocs" : 141,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1969-76v31"
+        },
+        {
+          "pointDocs" : 139,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1969-76ve08"
+        },
+        {
+          "pointDocs" : 137,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1969-76ve09p2"
+        },
+        {
+          "pointDocs" : 136,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1969-76v38p2"
+        },
+        {
+          "pointDocs" : 135,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1969-76ve14p2"
+        },
+        {
+          "pointDocs" : 132,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1969-76v35"
+        },
+        {
+          "pointDocs" : 117,
+          "rangeDocs" : 9,
+          "volumeId" : "frus1969-76ve14p1"
+        },
+        {
+          "pointDocs" : 108,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1969-76v37"
+        },
+        {
+          "pointDocs" : 95,
+          "rangeDocs" : 77,
+          "volumeId" : "frus1969-76v39"
+        },
+        {
+          "pointDocs" : 94,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1969-76v22"
+        },
+        {
+          "pointDocs" : 86,
+          "rangeDocs" : 0,
+          "volumeId" : "frus1969-76ve09p1"
+        },
+        {
+          "pointDocs" : 69,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1969-76v33"
+        },
+        {
+          "pointDocs" : 67,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1969-76v18"
+        },
+        {
+          "pointDocs" : 61,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1969-76ve15p1"
+        },
+        {
+          "pointDocs" : 41,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1969-76v38p1"
+        },
+        {
+          "pointDocs" : 8,
+          "rangeDocs" : 33,
+          "volumeId" : "frus1977-80v01"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1977-80v02"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1977-80v28"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1977-80v21"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1977-80v03"
+        },
+        {
+          "pointDocs" : 3,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1977-80v19"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1977-80v13"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1977-80v18"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1977-80v30"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1977-80v17p3"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1977-80v23"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1952-54Guat"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1969-76v25"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1977-80v04"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1977-80v09Ed2"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1969-76v21"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1977-80v12"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1981-88v01"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1977,
+      "coverageLatest" : 1981,
+      "end" : "1981-01-20",
+      "id" : "carter",
+      "number" : 39,
+      "party" : "Democratic",
+      "pointDocCount" : 8047,
+      "president" : "Jimmy Carter",
+      "rangeDocCount" : 575,
+      "start" : "1977-01-20",
+      "volumeCount" : 37,
+      "volumeCountPointOnly" : 36,
+      "volumes" : [
+        {
+          "pointDocs" : 474,
+          "rangeDocs" : 27,
+          "volumeId" : "frus1977-80v26"
+        },
+        {
+          "pointDocs" : 470,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1977-80v19"
+        },
+        {
+          "pointDocs" : 468,
+          "rangeDocs" : 27,
+          "volumeId" : "frus1977-80v15"
+        },
+        {
+          "pointDocs" : 372,
+          "rangeDocs" : 41,
+          "volumeId" : "frus1977-80v09Ed2"
+        },
+        {
+          "pointDocs" : 369,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1977-80v16"
+        },
+        {
+          "pointDocs" : 365,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1977-80v23"
+        },
+        {
+          "pointDocs" : 350,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1977-80v24"
+        },
+        {
+          "pointDocs" : 334,
+          "rangeDocs" : 19,
+          "volumeId" : "frus1977-80v03"
+        },
+        {
+          "pointDocs" : 324,
+          "rangeDocs" : 21,
+          "volumeId" : "frus1977-80v02"
+        },
+        {
+          "pointDocs" : 322,
+          "rangeDocs" : 37,
+          "volumeId" : "frus1977-80v11p1"
+        },
+        {
+          "pointDocs" : 319,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1977-80v22"
+        },
+        {
+          "pointDocs" : 308,
+          "rangeDocs" : 37,
+          "volumeId" : "frus1977-80v12"
+        },
+        {
+          "pointDocs" : 304,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1977-80v13"
+        },
+        {
+          "pointDocs" : 298,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1977-80v06"
+        },
+        {
+          "pointDocs" : 286,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1977-80v18"
+        },
+        {
+          "pointDocs" : 279,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1977-80v08"
+        },
+        {
+          "pointDocs" : 271,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1977-80v29"
+        },
+        {
+          "pointDocs" : 264,
+          "rangeDocs" : 36,
+          "volumeId" : "frus1977-80v20"
+        },
+        {
+          "pointDocs" : 254,
+          "rangeDocs" : 2,
+          "volumeId" : "frus1977-80v17p3"
+        },
+        {
+          "pointDocs" : 227,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1977-80v28"
+        },
+        {
+          "pointDocs" : 210,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1977-80v04"
+        },
+        {
+          "pointDocs" : 207,
+          "rangeDocs" : 6,
+          "volumeId" : "frus1977-80v30"
+        },
+        {
+          "pointDocs" : 200,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1977-80v21"
+        },
+        {
+          "pointDocs" : 171,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1977-80v17p2"
+        },
+        {
+          "pointDocs" : 170,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1969-76v37"
+        },
+        {
+          "pointDocs" : 117,
+          "rangeDocs" : 38,
+          "volumeId" : "frus1977-80v01"
+        },
+        {
+          "pointDocs" : 105,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1977-80v17p1"
+        },
+        {
+          "pointDocs" : 97,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1977-80v27"
+        },
+        {
+          "pointDocs" : 93,
+          "rangeDocs" : 20,
+          "volumeId" : "frus1969-76v33"
+        },
+        {
+          "pointDocs" : 11,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1981-88v01"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1981-88v13"
+        },
+        {
+          "pointDocs" : 2,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1981-88v41"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1981-88v03"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1969-76v38p1"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 7,
+          "volumeId" : "frus1969-76v35"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1981-88v24"
+        },
+        {
+          "pointDocs" : 0,
+          "rangeDocs" : 1,
+          "volumeId" : "frus1969-76ve03"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1981,
+      "coverageLatest" : 1989,
+      "end" : "1989-01-20",
+      "id" : "reagan",
+      "number" : 40,
+      "party" : "Republican",
+      "pointDocCount" : 3980,
+      "president" : "Ronald Reagan",
+      "rangeDocCount" : 296,
+      "start" : "1981-01-20",
+      "volumeCount" : 16,
+      "volumeCountPointOnly" : 16,
+      "volumes" : [
+        {
+          "pointDocs" : 447,
+          "rangeDocs" : 11,
+          "volumeId" : "frus1981-88v24"
+        },
+        {
+          "pointDocs" : 436,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1981-88v13"
+        },
+        {
+          "pointDocs" : 417,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1981-88v10"
+        },
+        {
+          "pointDocs" : 384,
+          "rangeDocs" : 16,
+          "volumeId" : "frus1981-88v38"
+        },
+        {
+          "pointDocs" : 362,
+          "rangeDocs" : 26,
+          "volumeId" : "frus1981-88v04"
+        },
+        {
+          "pointDocs" : 360,
+          "rangeDocs" : 14,
+          "volumeId" : "frus1981-88v41"
+        },
+        {
+          "pointDocs" : 303,
+          "rangeDocs" : 34,
+          "volumeId" : "frus1981-88v11"
+        },
+        {
+          "pointDocs" : 300,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1981-88v05"
+        },
+        {
+          "pointDocs" : 289,
+          "rangeDocs" : 30,
+          "volumeId" : "frus1981-88v01"
+        },
+        {
+          "pointDocs" : 268,
+          "rangeDocs" : 27,
+          "volumeId" : "frus1981-88v44p1"
+        },
+        {
+          "pointDocs" : 234,
+          "rangeDocs" : 25,
+          "volumeId" : "frus1981-88v03"
+        },
+        {
+          "pointDocs" : 173,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1981-88v06"
+        },
+        {
+          "pointDocs" : 4,
+          "rangeDocs" : 8,
+          "volumeId" : "frus1989-92v31"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 23,
+          "volumeId" : "frus1977-80v15"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 22,
+          "volumeId" : "frus1977-80v20"
+        },
+        {
+          "pointDocs" : 1,
+          "rangeDocs" : 12,
+          "volumeId" : "frus1977-80v12"
+        }
+      ]
+    },
+    {
+      "coverageEarliest" : 1989,
+      "coverageLatest" : 1991,
+      "end" : "1993-01-20",
+      "id" : "ghw-bush",
+      "number" : 41,
+      "party" : "Republican",
+      "pointDocCount" : 226,
+      "president" : "George H. W. Bush",
+      "rangeDocCount" : 17,
+      "start" : "1989-01-20",
+      "volumeCount" : 1,
+      "volumeCountPointOnly" : 1,
+      "volumes" : [
+        {
+          "pointDocs" : 226,
+          "rangeDocs" : 17,
+          "volumeId" : "frus1989-92v31"
+        }
+      ]
+    },
+    {
+      "end" : "2001-01-20",
+      "id" : "clinton",
+      "number" : 42,
+      "party" : "Democratic",
+      "pointDocCount" : 0,
+      "president" : "William J. Clinton",
+      "rangeDocCount" : 0,
+      "start" : "1993-01-20",
+      "volumeCount" : 0,
+      "volumeCountPointOnly" : 0,
+      "volumes" : [
+
+      ]
+    },
+    {
+      "end" : "2009-01-20",
+      "id" : "gw-bush",
+      "number" : 43,
+      "party" : "Republican",
+      "pointDocCount" : 0,
+      "president" : "George W. Bush",
+      "rangeDocCount" : 0,
+      "start" : "2001-01-20",
+      "volumeCount" : 0,
+      "volumeCountPointOnly" : 0,
+      "volumes" : [
+
+      ]
+    },
+    {
+      "end" : "2017-01-20",
+      "id" : "obama",
+      "number" : 44,
+      "party" : "Democratic",
+      "pointDocCount" : 0,
+      "president" : "Barack Obama",
+      "rangeDocCount" : 0,
+      "start" : "2009-01-20",
+      "volumeCount" : 0,
+      "volumeCountPointOnly" : 0,
+      "volumes" : [
+
+      ]
+    },
+    {
+      "end" : "2021-01-20",
+      "id" : "trump-1",
+      "number" : 45,
+      "party" : "Republican",
+      "pointDocCount" : 0,
+      "president" : "Donald J. Trump",
+      "rangeDocCount" : 0,
+      "start" : "2017-01-20",
+      "volumeCount" : 0,
+      "volumeCountPointOnly" : 0,
+      "volumes" : [
+
+      ]
+    },
+    {
+      "end" : "2025-01-20",
+      "id" : "biden",
+      "number" : 46,
+      "party" : "Democratic",
+      "pointDocCount" : 0,
+      "president" : "Joseph R. Biden Jr.",
+      "rangeDocCount" : 0,
+      "start" : "2021-01-20",
+      "volumeCount" : 0,
+      "volumeCountPointOnly" : 0,
+      "volumes" : [
+
+      ]
+    },
+    {
+      "id" : "trump-2",
+      "number" : 47,
+      "party" : "Republican",
+      "pointDocCount" : 0,
+      "president" : "Donald J. Trump",
+      "rangeDocCount" : 0,
+      "start" : "2025-01-20",
+      "volumeCount" : 0,
+      "volumeCountPointOnly" : 0,
+      "volumes" : [
+
+      ]
+    }
+  ],
+  "generated" : "2026-07-05",
+  "schemaVersion" : 1,
+  "totalDocumentsPointDated" : 303276,
+  "totalDocumentsRangeDated" : 11207,
+  "totalDocumentsUndated" : 0,
+  "volumeTotals" : {
+    "frus1861" : {
+      "pointDocs" : 310,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1862" : {
+      "pointDocs" : 716,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1863p1" : {
+      "pointDocs" : 694,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1863p2" : {
+      "pointDocs" : 640,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1864p1" : {
+      "pointDocs" : 398,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1864p2" : {
+      "pointDocs" : 594,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1864p3" : {
+      "pointDocs" : 529,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1864p4" : {
+      "pointDocs" : 484,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1865p1" : {
+      "pointDocs" : 391,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1865p2" : {
+      "pointDocs" : 673,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1865p3" : {
+      "pointDocs" : 763,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1865p4" : {
+      "pointDocs" : 1024,
+      "rangeDocs" : 122,
+      "undatedDocs" : 0
+    },
+    "frus1866p1" : {
+      "pointDocs" : 516,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1866p2" : {
+      "pointDocs" : 557,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1866p3" : {
+      "pointDocs" : 223,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1867p1" : {
+      "pointDocs" : 639,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1867p2" : {
+      "pointDocs" : 514,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1868p1" : {
+      "pointDocs" : 394,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1868p2" : {
+      "pointDocs" : 666,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1870" : {
+      "pointDocs" : 300,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1871" : {
+      "pointDocs" : 433,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1872p1" : {
+      "pointDocs" : 502,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1872p2v1" : {
+      "pointDocs" : 493,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1872p2v2" : {
+      "pointDocs" : 241,
+      "rangeDocs" : 31,
+      "undatedDocs" : 0
+    },
+    "frus1872p2v3" : {
+      "pointDocs" : 28,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1872p2v4" : {
+      "pointDocs" : 39,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1872p2v5" : {
+      "pointDocs" : 142,
+      "rangeDocs" : 21,
+      "undatedDocs" : 0
+    },
+    "frus1873p1v1" : {
+      "pointDocs" : 309,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1873p1v2" : {
+      "pointDocs" : 277,
+      "rangeDocs" : 47,
+      "undatedDocs" : 0
+    },
+    "frus1873p2v3" : {
+      "pointDocs" : 79,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1874" : {
+      "pointDocs" : 809,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1875v01" : {
+      "pointDocs" : 308,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1875v02" : {
+      "pointDocs" : 397,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1876" : {
+      "pointDocs" : 349,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1877" : {
+      "pointDocs" : 354,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1877app" : {
+      "pointDocs" : 44,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1878" : {
+      "pointDocs" : 550,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1879" : {
+      "pointDocs" : 535,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1880" : {
+      "pointDocs" : 666,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1881" : {
+      "pointDocs" : 755,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1882" : {
+      "pointDocs" : 405,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1883" : {
+      "pointDocs" : 600,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1884" : {
+      "pointDocs" : 474,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1885" : {
+      "pointDocs" : 714,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1886" : {
+      "pointDocs" : 450,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1887" : {
+      "pointDocs" : 699,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1888p1" : {
+      "pointDocs" : 711,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1888p2" : {
+      "pointDocs" : 642,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1889" : {
+      "pointDocs" : 350,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1890" : {
+      "pointDocs" : 501,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1891" : {
+      "pointDocs" : 686,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1892" : {
+      "pointDocs" : 536,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1893" : {
+      "pointDocs" : 698,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1894" : {
+      "pointDocs" : 822,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1894Nicaragua" : {
+      "pointDocs" : 137,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1894app1" : {
+      "pointDocs" : 811,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1894app2" : {
+      "pointDocs" : 509,
+      "rangeDocs" : 13,
+      "undatedDocs" : 0
+    },
+    "frus1895p1" : {
+      "pointDocs" : 686,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1895p2" : {
+      "pointDocs" : 767,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1896" : {
+      "pointDocs" : 894,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1897" : {
+      "pointDocs" : 620,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1898" : {
+      "pointDocs" : 1191,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1899" : {
+      "pointDocs" : 809,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1900" : {
+      "pointDocs" : 1074,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1901" : {
+      "pointDocs" : 543,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1901China" : {
+      "pointDocs" : 312,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1902" : {
+      "pointDocs" : 1026,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1902app1" : {
+      "pointDocs" : 181,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1902app2" : {
+      "pointDocs" : 98,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1903" : {
+      "pointDocs" : 835,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1904" : {
+      "pointDocs" : 949,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1905" : {
+      "pointDocs" : 1129,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1906p1" : {
+      "pointDocs" : 729,
+      "rangeDocs" : 9,
+      "undatedDocs" : 0
+    },
+    "frus1906p2" : {
+      "pointDocs" : 609,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1907p1" : {
+      "pointDocs" : 469,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1907p2" : {
+      "pointDocs" : 521,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1908" : {
+      "pointDocs" : 755,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1909" : {
+      "pointDocs" : 616,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1910" : {
+      "pointDocs" : 954,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1911" : {
+      "pointDocs" : 1070,
+      "rangeDocs" : 8,
+      "undatedDocs" : 0
+    },
+    "frus1912" : {
+      "pointDocs" : 1844,
+      "rangeDocs" : 16,
+      "undatedDocs" : 0
+    },
+    "frus1913" : {
+      "pointDocs" : 1700,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1914" : {
+      "pointDocs" : 1852,
+      "rangeDocs" : 13,
+      "undatedDocs" : 0
+    },
+    "frus1914-20v01" : {
+      "pointDocs" : 702,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1914-20v02" : {
+      "pointDocs" : 410,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1914Supp" : {
+      "pointDocs" : 1300,
+      "rangeDocs" : 46,
+      "undatedDocs" : 0
+    },
+    "frus1915" : {
+      "pointDocs" : 1900,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1915Supp" : {
+      "pointDocs" : 1511,
+      "rangeDocs" : 16,
+      "undatedDocs" : 0
+    },
+    "frus1916" : {
+      "pointDocs" : 1323,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1916Supp" : {
+      "pointDocs" : 1311,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1917" : {
+      "pointDocs" : 1467,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1917-72PubDip" : {
+      "pointDocs" : 33,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1917-72PubDipv06" : {
+      "pointDocs" : 145,
+      "rangeDocs" : 8,
+      "undatedDocs" : 0
+    },
+    "frus1917-72PubDipv07" : {
+      "pointDocs" : 172,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1917-72PubDipv08" : {
+      "pointDocs" : 177,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1917Supp01v01" : {
+      "pointDocs" : 952,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1917Supp02v01" : {
+      "pointDocs" : 712,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1917Supp02v02" : {
+      "pointDocs" : 457,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1918" : {
+      "pointDocs" : 730,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1918Russiav01" : {
+      "pointDocs" : 695,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1918Russiav02" : {
+      "pointDocs" : 1014,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1918Russiav03" : {
+      "pointDocs" : 471,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1918Supp01v01" : {
+      "pointDocs" : 915,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1918Supp01v02" : {
+      "pointDocs" : 907,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1918Supp02" : {
+      "pointDocs" : 940,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv01" : {
+      "pointDocs" : 412,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv02" : {
+      "pointDocs" : 697,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv03" : {
+      "pointDocs" : 69,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv04" : {
+      "pointDocs" : 58,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv05" : {
+      "pointDocs" : 89,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv06" : {
+      "pointDocs" : 94,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv07" : {
+      "pointDocs" : 46,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv08" : {
+      "pointDocs" : 43,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv09" : {
+      "pointDocs" : 53,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv10" : {
+      "pointDocs" : 26,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv11" : {
+      "pointDocs" : 404,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv12" : {
+      "pointDocs" : 378,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1919Parisv13" : {
+      "pointDocs" : 2,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1919Russia" : {
+      "pointDocs" : 836,
+      "rangeDocs" : 82,
+      "undatedDocs" : 0
+    },
+    "frus1919v01" : {
+      "pointDocs" : 913,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1919v02" : {
+      "pointDocs" : 828,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1920v01" : {
+      "pointDocs" : 880,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1920v02" : {
+      "pointDocs" : 800,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1920v03" : {
+      "pointDocs" : 945,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1921v01" : {
+      "pointDocs" : 876,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1921v02" : {
+      "pointDocs" : 906,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1922v01" : {
+      "pointDocs" : 873,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1922v02" : {
+      "pointDocs" : 905,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1923v01" : {
+      "pointDocs" : 801,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1923v02" : {
+      "pointDocs" : 1020,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1924v01" : {
+      "pointDocs" : 687,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1924v02" : {
+      "pointDocs" : 652,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1925v01" : {
+      "pointDocs" : 774,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1925v02" : {
+      "pointDocs" : 606,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1926v01" : {
+      "pointDocs" : 856,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1926v02" : {
+      "pointDocs" : 671,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1927v01" : {
+      "pointDocs" : 415,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1927v02" : {
+      "pointDocs" : 763,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1927v03" : {
+      "pointDocs" : 779,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1928v01" : {
+      "pointDocs" : 840,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1928v02" : {
+      "pointDocs" : 955,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1928v03" : {
+      "pointDocs" : 821,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1929v01" : {
+      "pointDocs" : 856,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1929v02" : {
+      "pointDocs" : 1094,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1929v03" : {
+      "pointDocs" : 934,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1930v01" : {
+      "pointDocs" : 574,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1930v02" : {
+      "pointDocs" : 884,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1930v03" : {
+      "pointDocs" : 802,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1931-41v01" : {
+      "pointDocs" : 676,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1931-41v02" : {
+      "pointDocs" : 423,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1931v01" : {
+      "pointDocs" : 834,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1931v02" : {
+      "pointDocs" : 1103,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1931v03" : {
+      "pointDocs" : 1008,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1932v01" : {
+      "pointDocs" : 677,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1932v02" : {
+      "pointDocs" : 610,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1932v03" : {
+      "pointDocs" : 799,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1932v04" : {
+      "pointDocs" : 794,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1932v05" : {
+      "pointDocs" : 939,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1933-39" : {
+      "pointDocs" : 834,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1933v01" : {
+      "pointDocs" : 811,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1933v02" : {
+      "pointDocs" : 763,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1933v03" : {
+      "pointDocs" : 837,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1933v04" : {
+      "pointDocs" : 787,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1933v05" : {
+      "pointDocs" : 767,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1934v01" : {
+      "pointDocs" : 762,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1934v02" : {
+      "pointDocs" : 821,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1934v03" : {
+      "pointDocs" : 749,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1934v04" : {
+      "pointDocs" : 701,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1934v05" : {
+      "pointDocs" : 639,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1935v01" : {
+      "pointDocs" : 910,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1935v02" : {
+      "pointDocs" : 656,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1935v03" : {
+      "pointDocs" : 1072,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1935v04" : {
+      "pointDocs" : 934,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1936v01" : {
+      "pointDocs" : 691,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1936v02" : {
+      "pointDocs" : 883,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1936v03" : {
+      "pointDocs" : 584,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1936v04" : {
+      "pointDocs" : 939,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1936v05" : {
+      "pointDocs" : 854,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1937v01" : {
+      "pointDocs" : 983,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1937v02" : {
+      "pointDocs" : 749,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1937v03" : {
+      "pointDocs" : 1112,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1937v04" : {
+      "pointDocs" : 1019,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1937v05" : {
+      "pointDocs" : 774,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1938v01" : {
+      "pointDocs" : 954,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1938v02" : {
+      "pointDocs" : 905,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1938v03" : {
+      "pointDocs" : 812,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1938v04" : {
+      "pointDocs" : 822,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1938v05" : {
+      "pointDocs" : 891,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1939v01" : {
+      "pointDocs" : 1153,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1939v02" : {
+      "pointDocs" : 871,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1939v03" : {
+      "pointDocs" : 872,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1939v04" : {
+      "pointDocs" : 950,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1939v05" : {
+      "pointDocs" : 743,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1940v01" : {
+      "pointDocs" : 894,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1940v02" : {
+      "pointDocs" : 1009,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1940v03" : {
+      "pointDocs" : 927,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1940v04" : {
+      "pointDocs" : 1106,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1940v05" : {
+      "pointDocs" : 1266,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1941-43" : {
+      "pointDocs" : 355,
+      "rangeDocs" : 97,
+      "undatedDocs" : 0
+    },
+    "frus1941v01" : {
+      "pointDocs" : 980,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1941v02" : {
+      "pointDocs" : 981,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1941v03" : {
+      "pointDocs" : 1041,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1941v04" : {
+      "pointDocs" : 851,
+      "rangeDocs" : 8,
+      "undatedDocs" : 0
+    },
+    "frus1941v05" : {
+      "pointDocs" : 1008,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1941v06" : {
+      "pointDocs" : 619,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1941v07" : {
+      "pointDocs" : 519,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1942China" : {
+      "pointDocs" : 651,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1942v01" : {
+      "pointDocs" : 827,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1942v02" : {
+      "pointDocs" : 823,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1942v03" : {
+      "pointDocs" : 726,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1942v04" : {
+      "pointDocs" : 952,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1942v05" : {
+      "pointDocs" : 791,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1942v06" : {
+      "pointDocs" : 709,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1943" : {
+      "pointDocs" : 552,
+      "rangeDocs" : 99,
+      "undatedDocs" : 0
+    },
+    "frus1943CairoTehran" : {
+      "pointDocs" : 520,
+      "rangeDocs" : 56,
+      "undatedDocs" : 0
+    },
+    "frus1943China" : {
+      "pointDocs" : 809,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1943v01" : {
+      "pointDocs" : 949,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1943v02" : {
+      "pointDocs" : 912,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1943v03" : {
+      "pointDocs" : 984,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1943v04" : {
+      "pointDocs" : 1230,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1943v05" : {
+      "pointDocs" : 874,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1943v06" : {
+      "pointDocs" : 716,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1944Quebec" : {
+      "pointDocs" : 253,
+      "rangeDocs" : 51,
+      "undatedDocs" : 0
+    },
+    "frus1944v01" : {
+      "pointDocs" : 1025,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1944v02" : {
+      "pointDocs" : 912,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1944v03" : {
+      "pointDocs" : 1317,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1944v04" : {
+      "pointDocs" : 1337,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1944v05" : {
+      "pointDocs" : 1253,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1944v06" : {
+      "pointDocs" : 885,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1944v07" : {
+      "pointDocs" : 1552,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1945-50Intel" : {
+      "pointDocs" : 427,
+      "rangeDocs" : 8,
+      "undatedDocs" : 0
+    },
+    "frus1945Berlinv01" : {
+      "pointDocs" : 698,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1945Berlinv02" : {
+      "pointDocs" : 805,
+      "rangeDocs" : 136,
+      "undatedDocs" : 0
+    },
+    "frus1945Malta" : {
+      "pointDocs" : 466,
+      "rangeDocs" : 46,
+      "undatedDocs" : 0
+    },
+    "frus1945v01" : {
+      "pointDocs" : 392,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1945v02" : {
+      "pointDocs" : 796,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1945v03" : {
+      "pointDocs" : 1205,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1945v04" : {
+      "pointDocs" : 1214,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1945v05" : {
+      "pointDocs" : 1086,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1945v06" : {
+      "pointDocs" : 1037,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1945v07" : {
+      "pointDocs" : 1153,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1945v08" : {
+      "pointDocs" : 1286,
+      "rangeDocs" : 8,
+      "undatedDocs" : 0
+    },
+    "frus1945v09" : {
+      "pointDocs" : 1210,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1946v01" : {
+      "pointDocs" : 751,
+      "rangeDocs" : 45,
+      "undatedDocs" : 0
+    },
+    "frus1946v02" : {
+      "pointDocs" : 417,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1946v03" : {
+      "pointDocs" : 333,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1946v04" : {
+      "pointDocs" : 80,
+      "rangeDocs" : 267,
+      "undatedDocs" : 0
+    },
+    "frus1946v05" : {
+      "pointDocs" : 742,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1946v06" : {
+      "pointDocs" : 691,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1946v07" : {
+      "pointDocs" : 725,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1946v08" : {
+      "pointDocs" : 858,
+      "rangeDocs" : 22,
+      "undatedDocs" : 0
+    },
+    "frus1946v09" : {
+      "pointDocs" : 746,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1946v10" : {
+      "pointDocs" : 1107,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1946v11" : {
+      "pointDocs" : 1131,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1947v01" : {
+      "pointDocs" : 512,
+      "rangeDocs" : 28,
+      "undatedDocs" : 0
+    },
+    "frus1947v02" : {
+      "pointDocs" : 539,
+      "rangeDocs" : 31,
+      "undatedDocs" : 0
+    },
+    "frus1947v03" : {
+      "pointDocs" : 711,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1947v04" : {
+      "pointDocs" : 551,
+      "rangeDocs" : 32,
+      "undatedDocs" : 0
+    },
+    "frus1947v05" : {
+      "pointDocs" : 840,
+      "rangeDocs" : 96,
+      "undatedDocs" : 0
+    },
+    "frus1947v06" : {
+      "pointDocs" : 898,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1947v07" : {
+      "pointDocs" : 1158,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1947v08" : {
+      "pointDocs" : 913,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1948v01p1" : {
+      "pointDocs" : 257,
+      "rangeDocs" : 16,
+      "undatedDocs" : 0
+    },
+    "frus1948v01p2" : {
+      "pointDocs" : 241,
+      "rangeDocs" : 22,
+      "undatedDocs" : 0
+    },
+    "frus1948v02" : {
+      "pointDocs" : 800,
+      "rangeDocs" : 57,
+      "undatedDocs" : 0
+    },
+    "frus1948v03" : {
+      "pointDocs" : 653,
+      "rangeDocs" : 35,
+      "undatedDocs" : 0
+    },
+    "frus1948v04" : {
+      "pointDocs" : 682,
+      "rangeDocs" : 51,
+      "undatedDocs" : 0
+    },
+    "frus1948v05p1" : {
+      "pointDocs" : 394,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1948v05p2" : {
+      "pointDocs" : 789,
+      "rangeDocs" : 72,
+      "undatedDocs" : 0
+    },
+    "frus1948v06" : {
+      "pointDocs" : 926,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1948v07" : {
+      "pointDocs" : 792,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1948v08" : {
+      "pointDocs" : 889,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1948v09" : {
+      "pointDocs" : 528,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1949v01" : {
+      "pointDocs" : 297,
+      "rangeDocs" : 25,
+      "undatedDocs" : 0
+    },
+    "frus1949v02" : {
+      "pointDocs" : 459,
+      "rangeDocs" : 31,
+      "undatedDocs" : 0
+    },
+    "frus1949v03" : {
+      "pointDocs" : 601,
+      "rangeDocs" : 60,
+      "undatedDocs" : 0
+    },
+    "frus1949v04" : {
+      "pointDocs" : 416,
+      "rangeDocs" : 44,
+      "undatedDocs" : 0
+    },
+    "frus1949v05" : {
+      "pointDocs" : 547,
+      "rangeDocs" : 55,
+      "undatedDocs" : 0
+    },
+    "frus1949v06" : {
+      "pointDocs" : 1135,
+      "rangeDocs" : 107,
+      "undatedDocs" : 0
+    },
+    "frus1949v07p1" : {
+      "pointDocs" : 422,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1949v07p2" : {
+      "pointDocs" : 377,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1949v08" : {
+      "pointDocs" : 1694,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1949v09" : {
+      "pointDocs" : 1453,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1950-55Intel" : {
+      "pointDocs" : 230,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1950v01" : {
+      "pointDocs" : 295,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1950v02" : {
+      "pointDocs" : 486,
+      "rangeDocs" : 45,
+      "undatedDocs" : 0
+    },
+    "frus1950v03" : {
+      "pointDocs" : 713,
+      "rangeDocs" : 32,
+      "undatedDocs" : 0
+    },
+    "frus1950v04" : {
+      "pointDocs" : 767,
+      "rangeDocs" : 106,
+      "undatedDocs" : 0
+    },
+    "frus1950v05" : {
+      "pointDocs" : 918,
+      "rangeDocs" : 70,
+      "undatedDocs" : 0
+    },
+    "frus1950v06" : {
+      "pointDocs" : 800,
+      "rangeDocs" : 59,
+      "undatedDocs" : 0
+    },
+    "frus1950v07" : {
+      "pointDocs" : 1014,
+      "rangeDocs" : 89,
+      "undatedDocs" : 0
+    },
+    "frus1951-54Iran" : {
+      "pointDocs" : 341,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1951-54IranEd2" : {
+      "pointDocs" : 337,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1951v01" : {
+      "pointDocs" : 724,
+      "rangeDocs" : 48,
+      "undatedDocs" : 0
+    },
+    "frus1951v02" : {
+      "pointDocs" : 817,
+      "rangeDocs" : 81,
+      "undatedDocs" : 0
+    },
+    "frus1951v03p1" : {
+      "pointDocs" : 620,
+      "rangeDocs" : 44,
+      "undatedDocs" : 0
+    },
+    "frus1951v03p2" : {
+      "pointDocs" : 327,
+      "rangeDocs" : 27,
+      "undatedDocs" : 0
+    },
+    "frus1951v04p1" : {
+      "pointDocs" : 411,
+      "rangeDocs" : 54,
+      "undatedDocs" : 0
+    },
+    "frus1951v04p2" : {
+      "pointDocs" : 430,
+      "rangeDocs" : 48,
+      "undatedDocs" : 0
+    },
+    "frus1951v05" : {
+      "pointDocs" : 740,
+      "rangeDocs" : 62,
+      "undatedDocs" : 0
+    },
+    "frus1951v06p1" : {
+      "pointDocs" : 747,
+      "rangeDocs" : 64,
+      "undatedDocs" : 0
+    },
+    "frus1951v06p2" : {
+      "pointDocs" : 485,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1951v07p1" : {
+      "pointDocs" : 880,
+      "rangeDocs" : 39,
+      "undatedDocs" : 0
+    },
+    "frus1951v07p2" : {
+      "pointDocs" : 316,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1952-54Guat" : {
+      "pointDocs" : 273,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v01p1" : {
+      "pointDocs" : 204,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v01p2" : {
+      "pointDocs" : 327,
+      "rangeDocs" : 43,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v02p1" : {
+      "pointDocs" : 120,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v02p2" : {
+      "pointDocs" : 326,
+      "rangeDocs" : 48,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v03" : {
+      "pointDocs" : 959,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v04" : {
+      "pointDocs" : 679,
+      "rangeDocs" : 76,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v05p1" : {
+      "pointDocs" : 510,
+      "rangeDocs" : 94,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v05p2" : {
+      "pointDocs" : 319,
+      "rangeDocs" : 48,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v06p1" : {
+      "pointDocs" : 433,
+      "rangeDocs" : 58,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v06p2" : {
+      "pointDocs" : 432,
+      "rangeDocs" : 78,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v07p1" : {
+      "pointDocs" : 490,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v07p2" : {
+      "pointDocs" : 371,
+      "rangeDocs" : 49,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v08" : {
+      "pointDocs" : 658,
+      "rangeDocs" : 62,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v09p1" : {
+      "pointDocs" : 854,
+      "rangeDocs" : 45,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v09p2" : {
+      "pointDocs" : 583,
+      "rangeDocs" : 44,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v10" : {
+      "pointDocs" : 481,
+      "rangeDocs" : 27,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v11p1" : {
+      "pointDocs" : 562,
+      "rangeDocs" : 54,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v11p2" : {
+      "pointDocs" : 520,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v12p1" : {
+      "pointDocs" : 392,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v12p2" : {
+      "pointDocs" : 424,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v13p1" : {
+      "pointDocs" : 756,
+      "rangeDocs" : 45,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v13p2" : {
+      "pointDocs" : 589,
+      "rangeDocs" : 31,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v14p1" : {
+      "pointDocs" : 435,
+      "rangeDocs" : 26,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v14p2" : {
+      "pointDocs" : 356,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v15p1" : {
+      "pointDocs" : 553,
+      "rangeDocs" : 28,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v15p2" : {
+      "pointDocs" : 378,
+      "rangeDocs" : 21,
+      "undatedDocs" : 0
+    },
+    "frus1952-54v16" : {
+      "pointDocs" : 1015,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v01" : {
+      "pointDocs" : 392,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v02" : {
+      "pointDocs" : 299,
+      "rangeDocs" : 25,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v03" : {
+      "pointDocs" : 287,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v03mSupp" : {
+      "pointDocs" : 860,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v04" : {
+      "pointDocs" : 222,
+      "rangeDocs" : 31,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v05" : {
+      "pointDocs" : 336,
+      "rangeDocs" : 49,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v06" : {
+      "pointDocs" : 310,
+      "rangeDocs" : 50,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v07" : {
+      "pointDocs" : 519,
+      "rangeDocs" : 77,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v08" : {
+      "pointDocs" : 201,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v09" : {
+      "pointDocs" : 192,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v10" : {
+      "pointDocs" : 249,
+      "rangeDocs" : 33,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v11" : {
+      "pointDocs" : 338,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v12" : {
+      "pointDocs" : 417,
+      "rangeDocs" : 47,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v13" : {
+      "pointDocs" : 371,
+      "rangeDocs" : 64,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v14" : {
+      "pointDocs" : 453,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v15" : {
+      "pointDocs" : 497,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v16" : {
+      "pointDocs" : 599,
+      "rangeDocs" : 72,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v17" : {
+      "pointDocs" : 386,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v18" : {
+      "pointDocs" : 301,
+      "rangeDocs" : 21,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v19" : {
+      "pointDocs" : 133,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v20" : {
+      "pointDocs" : 278,
+      "rangeDocs" : 39,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v21" : {
+      "pointDocs" : 487,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v22" : {
+      "pointDocs" : 494,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v23p1" : {
+      "pointDocs" : 240,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v23p2" : {
+      "pointDocs" : 250,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v24" : {
+      "pointDocs" : 321,
+      "rangeDocs" : 53,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v25" : {
+      "pointDocs" : 237,
+      "rangeDocs" : 44,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v26" : {
+      "pointDocs" : 295,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1955-57v27" : {
+      "pointDocs" : 319,
+      "rangeDocs" : 60,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v01" : {
+      "pointDocs" : 260,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v02" : {
+      "pointDocs" : 428,
+      "rangeDocs" : 51,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v03" : {
+      "pointDocs" : 213,
+      "rangeDocs" : 52,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v03mSupp" : {
+      "pointDocs" : 601,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v04" : {
+      "pointDocs" : 259,
+      "rangeDocs" : 91,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v05" : {
+      "pointDocs" : 293,
+      "rangeDocs" : 58,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v05mSupp" : {
+      "pointDocs" : 538,
+      "rangeDocs" : 90,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v06" : {
+      "pointDocs" : 542,
+      "rangeDocs" : 87,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v07p1" : {
+      "pointDocs" : 289,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v07p2" : {
+      "pointDocs" : 340,
+      "rangeDocs" : 52,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v08" : {
+      "pointDocs" : 472,
+      "rangeDocs" : 35,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v09" : {
+      "pointDocs" : 306,
+      "rangeDocs" : 26,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v10p1" : {
+      "pointDocs" : 309,
+      "rangeDocs" : 54,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v10p2" : {
+      "pointDocs" : 313,
+      "rangeDocs" : 68,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v11" : {
+      "pointDocs" : 376,
+      "rangeDocs" : 39,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v12" : {
+      "pointDocs" : 306,
+      "rangeDocs" : 68,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v13" : {
+      "pointDocs" : 390,
+      "rangeDocs" : 37,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v14" : {
+      "pointDocs" : 287,
+      "rangeDocs" : 68,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v15" : {
+      "pointDocs" : 509,
+      "rangeDocs" : 68,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v16" : {
+      "pointDocs" : 427,
+      "rangeDocs" : 71,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v17" : {
+      "pointDocs" : 260,
+      "rangeDocs" : 36,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v18" : {
+      "pointDocs" : 319,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1958-60v19" : {
+      "pointDocs" : 343,
+      "rangeDocs" : 61,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v01" : {
+      "pointDocs" : 303,
+      "rangeDocs" : 40,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v02" : {
+      "pointDocs" : 305,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v03" : {
+      "pointDocs" : 289,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v04" : {
+      "pointDocs" : 366,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v05" : {
+      "pointDocs" : 255,
+      "rangeDocs" : 135,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v06" : {
+      "pointDocs" : 114,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v07" : {
+      "pointDocs" : 309,
+      "rangeDocs" : 66,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v07-09mSupp" : {
+      "pointDocs" : 477,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v08" : {
+      "pointDocs" : 125,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v09" : {
+      "pointDocs" : 314,
+      "rangeDocs" : 51,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v10" : {
+      "pointDocs" : 398,
+      "rangeDocs" : 45,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v10-12mSupp" : {
+      "pointDocs" : 726,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v11" : {
+      "pointDocs" : 360,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v12" : {
+      "pointDocs" : 396,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v13" : {
+      "pointDocs" : 435,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v14" : {
+      "pointDocs" : 289,
+      "rangeDocs" : 28,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v15" : {
+      "pointDocs" : 240,
+      "rangeDocs" : 16,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v16" : {
+      "pointDocs" : 383,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v17" : {
+      "pointDocs" : 292,
+      "rangeDocs" : 22,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v18" : {
+      "pointDocs" : 384,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v19" : {
+      "pointDocs" : 340,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v20" : {
+      "pointDocs" : 400,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v21" : {
+      "pointDocs" : 405,
+      "rangeDocs" : 21,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v22" : {
+      "pointDocs" : 346,
+      "rangeDocs" : 39,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v23" : {
+      "pointDocs" : 454,
+      "rangeDocs" : 28,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v24" : {
+      "pointDocs" : 465,
+      "rangeDocs" : 26,
+      "undatedDocs" : 0
+    },
+    "frus1961-63v25" : {
+      "pointDocs" : 443,
+      "rangeDocs" : 60,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v01" : {
+      "pointDocs" : 449,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v02" : {
+      "pointDocs" : 317,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v03" : {
+      "pointDocs" : 263,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v04" : {
+      "pointDocs" : 322,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v05" : {
+      "pointDocs" : 409,
+      "rangeDocs" : 43,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v06" : {
+      "pointDocs" : 308,
+      "rangeDocs" : 37,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v07" : {
+      "pointDocs" : 267,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v08" : {
+      "pointDocs" : 347,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v09" : {
+      "pointDocs" : 343,
+      "rangeDocs" : 36,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v10" : {
+      "pointDocs" : 204,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v11" : {
+      "pointDocs" : 264,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v12" : {
+      "pointDocs" : 331,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v13" : {
+      "pointDocs" : 330,
+      "rangeDocs" : 9,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v14" : {
+      "pointDocs" : 309,
+      "rangeDocs" : 26,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v15" : {
+      "pointDocs" : 298,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v16" : {
+      "pointDocs" : 369,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v17" : {
+      "pointDocs" : 207,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v18" : {
+      "pointDocs" : 408,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v19" : {
+      "pointDocs" : 524,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v20" : {
+      "pointDocs" : 372,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v21" : {
+      "pointDocs" : 470,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v22" : {
+      "pointDocs" : 322,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v23" : {
+      "pointDocs" : 518,
+      "rangeDocs" : 64,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v24" : {
+      "pointDocs" : 644,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v25" : {
+      "pointDocs" : 531,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v26" : {
+      "pointDocs" : 360,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v27" : {
+      "pointDocs" : 394,
+      "rangeDocs" : 13,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v28" : {
+      "pointDocs" : 383,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v29p1" : {
+      "pointDocs" : 336,
+      "rangeDocs" : 33,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v29p2" : {
+      "pointDocs" : 121,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v30" : {
+      "pointDocs" : 332,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v31" : {
+      "pointDocs" : 502,
+      "rangeDocs" : 46,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v32" : {
+      "pointDocs" : 409,
+      "rangeDocs" : 32,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v33" : {
+      "pointDocs" : 405,
+      "rangeDocs" : 75,
+      "undatedDocs" : 0
+    },
+    "frus1964-68v34" : {
+      "pointDocs" : 287,
+      "rangeDocs" : 48,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v01" : {
+      "pointDocs" : 73,
+      "rangeDocs" : 50,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v02" : {
+      "pointDocs" : 334,
+      "rangeDocs" : 60,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v03" : {
+      "pointDocs" : 184,
+      "rangeDocs" : 60,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v04" : {
+      "pointDocs" : 357,
+      "rangeDocs" : 89,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v05" : {
+      "pointDocs" : 435,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v06" : {
+      "pointDocs" : 308,
+      "rangeDocs" : 40,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v07" : {
+      "pointDocs" : 273,
+      "rangeDocs" : 22,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v08" : {
+      "pointDocs" : 257,
+      "rangeDocs" : 27,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v09" : {
+      "pointDocs" : 331,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v10" : {
+      "pointDocs" : 295,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v11" : {
+      "pointDocs" : 304,
+      "rangeDocs" : 31,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v12" : {
+      "pointDocs" : 209,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v13" : {
+      "pointDocs" : 314,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v14" : {
+      "pointDocs" : 239,
+      "rangeDocs" : 63,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v15" : {
+      "pointDocs" : 185,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v16" : {
+      "pointDocs" : 293,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v17" : {
+      "pointDocs" : 256,
+      "rangeDocs" : 24,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v18" : {
+      "pointDocs" : 148,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v19p1" : {
+      "pointDocs" : 165,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v19p2" : {
+      "pointDocs" : 130,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v20" : {
+      "pointDocs" : 315,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v21" : {
+      "pointDocs" : 352,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v22" : {
+      "pointDocs" : 143,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v23" : {
+      "pointDocs" : 289,
+      "rangeDocs" : 35,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v24" : {
+      "pointDocs" : 317,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v25" : {
+      "pointDocs" : 408,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v26" : {
+      "pointDocs" : 281,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v27" : {
+      "pointDocs" : 307,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v28" : {
+      "pointDocs" : 232,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v29" : {
+      "pointDocs" : 413,
+      "rangeDocs" : 45,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v30" : {
+      "pointDocs" : 237,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v31" : {
+      "pointDocs" : 263,
+      "rangeDocs" : 47,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v32" : {
+      "pointDocs" : 305,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v33" : {
+      "pointDocs" : 229,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v34" : {
+      "pointDocs" : 196,
+      "rangeDocs" : 33,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v35" : {
+      "pointDocs" : 189,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v36" : {
+      "pointDocs" : 332,
+      "rangeDocs" : 30,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v37" : {
+      "pointDocs" : 278,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v38p1" : {
+      "pointDocs" : 72,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v38p2" : {
+      "pointDocs" : 202,
+      "rangeDocs" : 23,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v39" : {
+      "pointDocs" : 287,
+      "rangeDocs" : 84,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v40" : {
+      "pointDocs" : 317,
+      "rangeDocs" : 71,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v41" : {
+      "pointDocs" : 330,
+      "rangeDocs" : 28,
+      "undatedDocs" : 0
+    },
+    "frus1969-76v42" : {
+      "pointDocs" : 65,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve01" : {
+      "pointDocs" : 437,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve02" : {
+      "pointDocs" : 343,
+      "rangeDocs" : 15,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve03" : {
+      "pointDocs" : 247,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve04" : {
+      "pointDocs" : 321,
+      "rangeDocs" : 9,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve05p1" : {
+      "pointDocs" : 324,
+      "rangeDocs" : 9,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve05p2" : {
+      "pointDocs" : 163,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve06" : {
+      "pointDocs" : 297,
+      "rangeDocs" : 9,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve07" : {
+      "pointDocs" : 430,
+      "rangeDocs" : 7,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve08" : {
+      "pointDocs" : 262,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve09p1" : {
+      "pointDocs" : 128,
+      "rangeDocs" : 0,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve09p2" : {
+      "pointDocs" : 230,
+      "rangeDocs" : 1,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve10" : {
+      "pointDocs" : 664,
+      "rangeDocs" : 26,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve11p1" : {
+      "pointDocs" : 468,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve11p2" : {
+      "pointDocs" : 401,
+      "rangeDocs" : 4,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve12" : {
+      "pointDocs" : 405,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve13" : {
+      "pointDocs" : 163,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve14p1" : {
+      "pointDocs" : 179,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve14p2" : {
+      "pointDocs" : 198,
+      "rangeDocs" : 20,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve15p1" : {
+      "pointDocs" : 102,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve15p2" : {
+      "pointDocs" : 326,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve15p2Ed2" : {
+      "pointDocs" : 353,
+      "rangeDocs" : 29,
+      "undatedDocs" : 0
+    },
+    "frus1969-76ve16" : {
+      "pointDocs" : 147,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v01" : {
+      "pointDocs" : 125,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v02" : {
+      "pointDocs" : 328,
+      "rangeDocs" : 21,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v03" : {
+      "pointDocs" : 337,
+      "rangeDocs" : 19,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v04" : {
+      "pointDocs" : 211,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v06" : {
+      "pointDocs" : 298,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v08" : {
+      "pointDocs" : 279,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v09Ed2" : {
+      "pointDocs" : 372,
+      "rangeDocs" : 41,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v11p1" : {
+      "pointDocs" : 322,
+      "rangeDocs" : 37,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v12" : {
+      "pointDocs" : 309,
+      "rangeDocs" : 37,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v13" : {
+      "pointDocs" : 306,
+      "rangeDocs" : 22,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v15" : {
+      "pointDocs" : 469,
+      "rangeDocs" : 27,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v16" : {
+      "pointDocs" : 369,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v17p1" : {
+      "pointDocs" : 105,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v17p2" : {
+      "pointDocs" : 171,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v17p3" : {
+      "pointDocs" : 256,
+      "rangeDocs" : 2,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v18" : {
+      "pointDocs" : 288,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v19" : {
+      "pointDocs" : 473,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v20" : {
+      "pointDocs" : 265,
+      "rangeDocs" : 36,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v21" : {
+      "pointDocs" : 204,
+      "rangeDocs" : 8,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v22" : {
+      "pointDocs" : 319,
+      "rangeDocs" : 16,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v23" : {
+      "pointDocs" : 367,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v24" : {
+      "pointDocs" : 350,
+      "rangeDocs" : 22,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v26" : {
+      "pointDocs" : 474,
+      "rangeDocs" : 27,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v27" : {
+      "pointDocs" : 97,
+      "rangeDocs" : 3,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v28" : {
+      "pointDocs" : 231,
+      "rangeDocs" : 18,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v29" : {
+      "pointDocs" : 271,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1977-80v30" : {
+      "pointDocs" : 209,
+      "rangeDocs" : 6,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v01" : {
+      "pointDocs" : 300,
+      "rangeDocs" : 38,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v03" : {
+      "pointDocs" : 235,
+      "rangeDocs" : 25,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v04" : {
+      "pointDocs" : 362,
+      "rangeDocs" : 26,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v05" : {
+      "pointDocs" : 300,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v06" : {
+      "pointDocs" : 173,
+      "rangeDocs" : 10,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v10" : {
+      "pointDocs" : 417,
+      "rangeDocs" : 12,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v11" : {
+      "pointDocs" : 303,
+      "rangeDocs" : 34,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v13" : {
+      "pointDocs" : 438,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v24" : {
+      "pointDocs" : 448,
+      "rangeDocs" : 11,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v38" : {
+      "pointDocs" : 384,
+      "rangeDocs" : 16,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v41" : {
+      "pointDocs" : 362,
+      "rangeDocs" : 14,
+      "undatedDocs" : 0
+    },
+    "frus1981-88v44p1" : {
+      "pointDocs" : 268,
+      "rangeDocs" : 27,
+      "undatedDocs" : 0
+    },
+    "frus1989-92v31" : {
+      "pointDocs" : 230,
+      "rangeDocs" : 17,
+      "undatedDocs" : 0
+    }
+  },
+  "volumesCovered" : 552
+}

@@ -269,6 +269,40 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - AdministrationProfilesIndexGenerator
+
+        /// Builds the bundled `administration-profiles-index.json` (SA-2a): reads the
+        /// authoritative `frus:doc-dateTime-min`/`-max` bounds on each FRUS document `<div>`
+        /// (the same editorial dates `IndexingPipeline.extractDateRange` prefers), classifies
+        /// each document as point-dated (single day) / range-dated (multi-day editorial notes)
+        /// / undated, and attributes it to the presidential administration(s) in office when it
+        /// was written — half-open `[start, end)` for point dates, any-overlap for ranges. The
+        /// per-administration and per-volume document/volume counts feed the SA-2 "Administration
+        /// Production Profiles" dashboard. Entirely offline.
+        .target(
+            name: "AdministrationProfilesIndexGeneratorCore",
+            path: "AdministrationProfilesIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls AdministrationProfilesIndexRunner.run() and exits.
+        .executableTarget(
+            name: "AdministrationProfilesIndexGenerator",
+            dependencies: [.target(name: "AdministrationProfilesIndexGeneratorCore")],
+            path: "AdministrationProfilesIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for AdministrationProfilesIndexGeneratorCore (half-open point
+        /// attribution, any-overlap range attribution, aggregation, undated handling,
+        /// determinism).
+        .testTarget(
+            name: "AdministrationProfilesIndexGeneratorTests",
+            dependencies: [.target(name: "AdministrationProfilesIndexGeneratorCore")],
+            path: "AdministrationProfilesIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - SourceNoteKit
 
         /// The FRUS source-note parser (`SourceNoteParser`, `ParsedSourceNote`,
