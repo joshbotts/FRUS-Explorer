@@ -34,6 +34,9 @@ import Charts
 ///   1.2 — Analytics SA (series chart refinements): no-comma year axes; removed
 ///          the coverage-span Gantt chart; replaced the flat 30-year lag rule with
 ///          the evolving `PublicationLagTarget` step line (15→20→30)
+///   1.3 — Analytics SA (series chart refinements): the lag chart's x-axis is the
+///          volume's publication year (production domain), so the timeliness-target
+///          step is exact — the directive in force when a volume was published
 struct SeriesProductionDashboard: View {
 
     /// Format style for integer year/decade axis labels that suppresses comma
@@ -129,11 +132,11 @@ struct SeriesProductionDashboard: View {
 
     // MARK: - Chart 1: Publication lag over time
 
-    /// Scatter of publication lag against coverage-end year, coloured by era,
-    /// overlaid with the evolving publication-timeliness target as a dashed step
-    /// line (15→20→30 years). The anchor chart.
+    /// Scatter of publication lag against publication year, coloured by coverage
+    /// era, overlaid with the evolving publication-timeliness target as a dashed
+    /// step line (15→20→30 years). The anchor chart.
     private var lagChart: some View {
-        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
+        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .production)
         let points = data.lagPoints(in: domain)
         let targetSteps = PublicationLagTarget.stepPoints(in: domain)
         let targetLabel = String(localized: "series.chart.lag.target.series",
@@ -142,14 +145,14 @@ struct SeriesProductionDashboard: View {
             title: String(localized: "series.chart.lag.title",
                           defaultValue: "Publication lag over time"),
             caption: String(localized: "series.chart.lag.caption",
-                            defaultValue: "Each point is a volume: the year of its latest document (horizontal) against how many years later it reached print (vertical). The dashed step line is the evolving publication-timeliness target — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute).")
+                            defaultValue: "Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute).")
         ) {
             Chart {
                 ForEach(points) { point in
                     PointMark(
                         x: .value(
-                            String(localized: "series.chart.lag.x", defaultValue: "Coverage end year"),
-                            point.coverageEndYear
+                            String(localized: "series.chart.lag.x", defaultValue: "Publication year"),
+                            point.printYear
                         ),
                         y: .value(
                             String(localized: "series.chart.lag.y", defaultValue: "Years to publication"),
@@ -173,8 +176,8 @@ struct SeriesProductionDashboard: View {
                 ForEach(targetSteps) { step in
                     LineMark(
                         x: .value(
-                            String(localized: "series.chart.lag.x", defaultValue: "Coverage end year"),
-                            step.coverageYear
+                            String(localized: "series.chart.lag.x", defaultValue: "Publication year"),
+                            step.year
                         ),
                         y: .value(
                             String(localized: "series.chart.lag.y", defaultValue: "Years to publication"),
@@ -191,7 +194,7 @@ struct SeriesProductionDashboard: View {
                     .accessibilityLabel(Text(targetLabel))
                     .accessibilityValue(Text(String(
                         localized: "series.chart.lag.target.a11y",
-                        defaultValue: "From \(step.coverageYear), target \(step.targetYears) years"
+                        defaultValue: "From \(step.year), target \(step.targetYears) years"
                     )))
                 }
             }
@@ -204,7 +207,7 @@ struct SeriesProductionDashboard: View {
                     AxisValueLabel(format: Self.yearAxisFormat)
                 }
             }
-            .chartXAxisLabel(String(localized: "series.chart.lag.x", defaultValue: "Coverage end year"))
+            .chartXAxisLabel(String(localized: "series.chart.lag.x", defaultValue: "Publication year"))
             .chartYAxisLabel(String(localized: "series.chart.lag.y", defaultValue: "Years to publication"))
             .frame(height: 260)
         }
@@ -321,7 +324,7 @@ struct SeriesProductionDashboard: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(String(localized: "series.caveats.body",
-                        defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's coverage-end year, a simplification, since a volume was actually judged by the directive in force when it was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
+                        defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's publication year, so it shows exactly the target in force when the volume was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

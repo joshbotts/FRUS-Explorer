@@ -85,6 +85,8 @@ enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
 ///   1.2 — Analytics SA (series chart refinements): removed the coverage-span
 ///          Gantt chart and its supporting `CoverageSpan` / `coverageSpans` /
 ///          `coverageSpans(in:)` / `LagBucket` code
+///   1.3 — Analytics SA (series chart refinements): `lagPoints(in:)` now filters
+///          by publication (print) year, matching the lag chart's new x-axis
 struct SeriesProductionData: Sendable {
 
     // MARK: Point types
@@ -246,13 +248,13 @@ struct SeriesProductionData: Sendable {
 
     // MARK: Year-range filtering
 
-    /// `lagPoints` restricted to those whose *coverage-end* year falls within
-    /// `domain` — the range filter for the (coverage-valued) lag scatter.
+    /// `lagPoints` restricted to those whose *publication* (print) year falls
+    /// within `domain` — the range filter for the (publication-valued) lag scatter.
     ///
-    /// - Parameter domain: The inclusive coverage-year range to keep.
+    /// - Parameter domain: The inclusive publication-year range to keep.
     /// - Returns: The in-range lag points, order preserved.
     func lagPoints(in domain: ClosedRange<Int>) -> [LagPoint] {
-        lagPoints.filter { domain.contains($0.coverageEndYear) }
+        lagPoints.filter { domain.contains($0.printYear) }
     }
 
     /// `volumesPerPrintYearByEra` restricted to buckets whose *print* year falls

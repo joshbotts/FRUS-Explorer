@@ -93,15 +93,21 @@ struct SeriesAxisRangeTests {
         )
     }
 
-    @Test("SeriesProductionData.lagPoints(in:) keeps only coverage-end years in range")
+    @Test("SeriesProductionData.lagPoints(in:) keeps only publication (print) years in range")
     func lagPointsFilter() {
         let data = productionData()
-        // Full coverage default drops the 1850 point (below 1861).
-        let full = data.lagPoints(in: 1861...1993)
-        #expect(Set(full.map(\.volumeId)) == ["b", "c", "d"])
-        // Narrowed: only the 1900 coverage-end point.
-        let narrow = data.lagPoints(in: 1861...1950)
-        #expect(narrow.map(\.volumeId) == ["b"])
+        // The lag chart now uses the production domain and filters by print year.
+        // Print years are a→1900, b→1930, c→1995, d→2020.
+        // 1861…1993 keeps only the volumes printed in-range (a, b); c (1995) and
+        // d (2020) print past the ceiling.
+        let clipped = data.lagPoints(in: 1861...1993)
+        #expect(Set(clipped.map(\.volumeId)) == ["a", "b"])
+        // The full production default keeps every print year (1900…2020).
+        let full = data.lagPoints(in: 1861...2026)
+        #expect(Set(full.map(\.volumeId)) == ["a", "b", "c", "d"])
+        // Narrowed to 1861…1920: only the 1900 print-year point (a).
+        let narrow = data.lagPoints(in: 1861...1920)
+        #expect(narrow.map(\.volumeId) == ["a"])
     }
 
     @Test("SeriesProductionData print-year filters key off the print year, not coverage")

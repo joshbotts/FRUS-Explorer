@@ -11,7 +11,7 @@ import Foundation
 // MARK: - PublicationLagTarget
 
 /// The evolving historical target for FRUS publication timeliness, expressed as
-/// a step function over the coverage-end year (the lag chart's x-axis).
+/// a step function over the publication year (the lag chart's x-axis).
 ///
 /// FRUS had no formal timeliness target for most of its history. A sequence of
 /// presidential directives progressively tightened the expectation before the
@@ -23,34 +23,33 @@ import Foundation
 ///   - **year ≥ 1985** — 30 years (1985 presidential directive, later codified
 ///     by the 1991 FRUS statute).
 ///
-/// - Important: MODELING NOTE — the breakpoints here are indexed by **coverage
-///   year** (the lag chart's x-axis: a volume's latest document year), which is a
-///   deliberate *simplification*. The directives are calendar events dated by the
-///   year they were issued; strictly, a volume covering year *X* was judged by
-///   whatever directive was in force at the time it was *published*, not by the
-///   directive whose issue year matches *X*. Indexing the step by coverage year is
-///   the literal reading of "a 1961 directive called for a 15-year line" and keeps
-///   the target line on the same axis as the plotted lag points. If publication-year
-///   indexing is preferred, this helper is the single place to change.
+/// The step is indexed by **publication year** — the directive in force when a
+/// volume was actually published. Because the directives are calendar events, a
+/// volume is judged by whatever target was in force on its print date, so
+/// indexing the step by publication year (which is the lag chart's x-axis) is
+/// exact, not a simplification.
 ///
 /// The type is pure and deterministic (no SwiftUI, no I/O), so it is fully
 /// unit-testable.
 ///
 /// Version history:
 ///   1.0 — Analytics SA (series chart refinements): initial implementation
+///   1.1 — Analytics SA (series chart refinements): step indexed by publication
+///          year (exact) rather than coverage year; `StepPoint.coverageYear`
+///          renamed to `year`
 enum PublicationLagTarget {
 
     // MARK: Breakpoints
 
-    /// The coverage year at/after which the first (15-year) target applies —
+    /// The publication year at/after which the first (15-year) target applies —
     /// the 1961 presidential directive. No target line is drawn before this.
     static let firstTargetYear = 1961
 
-    /// The coverage year at/after which the target rises to 20 years — the
+    /// The publication year at/after which the target rises to 20 years — the
     /// 1972 presidential directive.
     static let secondTargetYear = 1972
 
-    /// The coverage year at/after which the target rises to 30 years — the
+    /// The publication year at/after which the target rises to 30 years — the
     /// 1985 presidential directive, later codified by the 1991 statute.
     static let thirdTargetYear = 1985
 
@@ -63,13 +62,13 @@ enum PublicationLagTarget {
 
     // MARK: Step evaluation
 
-    /// The publication-timeliness target in force for a given coverage year, or
-    /// `nil` before the first (1961) directive, when no formal target existed.
+    /// The publication-timeliness target in force for a given publication year,
+    /// or `nil` before the first (1961) directive, when no formal target existed.
     ///
-    /// - Parameter coverageYear: A volume's coverage-end (latest-document) year.
-    /// - Returns: The target lag in years, or `nil` if `coverageYear < 1961`.
-    static func targetYears(forCoverageYear coverageYear: Int) -> Int? {
-        switch coverageYear {
+    /// - Parameter year: A volume's publication (print) year.
+    /// - Returns: The target lag in years, or `nil` if `year < 1961`.
+    static func targetYears(forYear year: Int) -> Int? {
+        switch year {
         case ..<firstTargetYear:                    return nil
         case firstTargetYear..<secondTargetYear:    return firstTargetYears
         case secondTargetYear..<thirdTargetYear:    return secondTargetYears
@@ -79,20 +78,20 @@ enum PublicationLagTarget {
 
     // MARK: Step-line points
 
-    /// One point on the step target line: a coverage year and the target lag in
-    /// force from that year onward.
+    /// One point on the step target line: a publication year and the target lag
+    /// in force from that year onward.
     struct StepPoint: Identifiable, Sendable, Hashable {
-        /// The coverage-end year at which this target segment begins.
-        let coverageYear: Int
-        /// The target lag (in years) in force from `coverageYear` onward.
+        /// The publication year at which this target segment begins.
+        let year: Int
+        /// The target lag (in years) in force from `year` onward.
         let targetYears: Int
 
-        /// Stable identity (also the x-value): the coverage year.
-        var id: Int { coverageYear }
+        /// Stable identity (also the x-value): the publication year.
+        var id: Int { year }
     }
 
-    /// The step-line points to plot over a given coverage-year domain, drawn with
-    /// `.interpolationMethod(.stepEnd)` so each value holds until the next
+    /// The step-line points to plot over a given publication-year domain, drawn
+    /// with `.interpolationMethod(.stepEnd)` so each value holds until the next
     /// breakpoint.
     ///
     /// The line only exists from 1961 onward: if the domain ends before 1961 the
@@ -101,10 +100,10 @@ enum PublicationLagTarget {
     /// points (clamped to the ≥1961 target-bearing sub-range) so the step spans
     /// the full visible, target-bearing width and respects the editable year range.
     ///
-    /// For the full default coverage domain (`1861…1993`) this yields
-    /// `[(1961,15), (1972,20), (1985,30), (1993,30)]`.
+    /// For the full default production domain (`1861…2026`) this yields
+    /// `[(1961,15), (1972,20), (1985,30), (2026,30)]`.
     ///
-    /// - Parameter domain: The chart's effective coverage-year domain.
+    /// - Parameter domain: The chart's effective publication-year domain.
     /// - Returns: Ascending, de-duplicated step points; empty when the domain lies
     ///   wholly before 1961.
     static func stepPoints(in domain: ClosedRange<Int>) -> [StepPoint] {
@@ -122,8 +121,8 @@ enum PublicationLagTarget {
             years.insert(breakpoint)
         }
         return years.sorted().compactMap { year in
-            targetYears(forCoverageYear: year).map {
-                StepPoint(coverageYear: year, targetYears: $0)
+            targetYears(forYear: year).map {
+                StepPoint(year: year, targetYears: $0)
             }
         }
     }
