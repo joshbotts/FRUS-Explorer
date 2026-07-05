@@ -426,14 +426,25 @@ final class RichTextEditorController: NSObject, ObservableObject {
 
     /// Recomputes the published formatting state from the current selection — from the
     /// first selected character when a range is selected, else the typing attributes.
+    ///
+    /// Every `@Published` assignment is change-guarded (`if x != new { x = new }`) so a
+    /// no-op refresh publishes NOTHING (v1.3). This matters because a make-time delegate
+    /// callback (initial content load) can reach the nil-`textView` else-branch while the
+    /// SwiftUI view update is in flight; guarding turns that already-at-defaults case into
+    /// zero publishes, silencing "Publishing changes from within view updates" — and it
+    /// cuts redundant `ObservableObject` churn on every caret move generally.
     func refreshSelectionState() {
         guard let tv = textView else {
-            isBold = false; isItalic = false; isUnderline = false
-            hasSelection = false; selectionLink = ""
+            if isBold { isBold = false }
+            if isItalic { isItalic = false }
+            if isUnderline { isUnderline = false }
+            if hasSelection { hasSelection = false }
+            if !selectionLink.isEmpty { selectionLink = "" }
             return
         }
         let range = tv.selectedRange()
-        hasSelection = range.length > 0
+        let newHasSelection = range.length > 0
+        if hasSelection != newHasSelection { hasSelection = newHasSelection }
         let attrs: [NSAttributedString.Key: Any]
         if let storage = tv.textStorage, range.length > 0, range.location < storage.length {
             attrs = storage.attributes(at: range.location, effectiveRange: nil)
@@ -441,14 +452,19 @@ final class RichTextEditorController: NSObject, ObservableObject {
             attrs = tv.typingAttributes
         }
         let traits = (attrs[.font] as? NSFont).map { NSFontManager.shared.traits(of: $0) } ?? []
-        isBold = traits.contains(.boldFontMask)
-        isItalic = traits.contains(.italicFontMask)
-        isUnderline = (attrs[.underlineStyle] as? Int ?? 0) != 0
+        let newIsBold = traits.contains(.boldFontMask)
+        if isBold != newIsBold { isBold = newIsBold }
+        let newIsItalic = traits.contains(.italicFontMask)
+        if isItalic != newIsItalic { isItalic = newIsItalic }
+        let newIsUnderline = (attrs[.underlineStyle] as? Int ?? 0) != 0
+        if isUnderline != newIsUnderline { isUnderline = newIsUnderline }
+        let newSelectionLink: String
         if let link = attrs[.link] {
-            selectionLink = (link as? URL)?.absoluteString ?? (link as? String ?? "")
+            newSelectionLink = (link as? URL)?.absoluteString ?? (link as? String ?? "")
         } else {
-            selectionLink = ""
+            newSelectionLink = ""
         }
+        if selectionLink != newSelectionLink { selectionLink = newSelectionLink }
     }
 
     /// Applies the colour-panel colour to the selection (undo-aware) or, at a bare
@@ -595,14 +611,20 @@ extension RichTextPlatformEditor: NSViewRepresentable {
         let textView = NSTextView()
         textView.isRichText = true
         textView.allowsUndo = true
-        textView.delegate = context.coordinator
         textView.font = .systemFont(ofSize: NSFont.systemFontSize)
         textView.textContainerInset = NSSize(width: 4, height: 6)
         textView.drawsBackground = false
         textView.textStorage?.setAttributedString(initialAttributed())
 
-        // Hand the toolbar its text view; defer the state publish out of the view update.
+        // Hand the toolbar its text view, THEN wire the delegate last (v1.3): loading the
+        // initial content above must not fire a delegate callback (textDidChange /
+        // textViewDidChangeSelection → refreshSelectionState) while `controller.textView`
+        // is still nil, which published @Published state during the SwiftUI view update
+        // ("Publishing changes from within view updates"). Once the delegate is installed
+        // here, user-driven selection changes still refresh the toolbar live.
         controller.textView = textView
+        textView.delegate = context.coordinator
+        // Defer the initial state publish out of the current view update.
         let controller = self.controller
         Task { @MainActor in controller.refreshSelectionState() }
 
