@@ -12,9 +12,13 @@ import SwiftUI
 
 /// Multipage educational view shown while the index builds.
 ///
-/// Five pages introduce FRUS and the app, then transition to
-/// `IndexingSetupWizardView` so researchers can configure their context
-/// before the first documents finish indexing.
+/// Eleven pages make up the guide: seven prose pages introduce FRUS and the
+/// app, followed by four live "About the Series" dashboard pages
+/// (`seriesProduction`, `seriesGeography`, `seriesSourcing`,
+/// `seriesAdministrations`) that render `EducationDashboardView` in place of
+/// prose. In the onboarding context the final page's call-to-action simply
+/// dismisses the sheet so researchers can start exploring while the first
+/// documents finish indexing.
 ///
 /// ## Platform layouts
 /// - **macOS**: Two-column document-browser layout. Left sidebar shows numbered
@@ -25,7 +29,7 @@ import SwiftUI
 ///
 /// ## Content status
 /// All page text reflects the editorially-reviewed copy approved 2026-06-06
-/// (see `Docs/2026-06-06 EditableContent.md`). The view can also be opened
+/// (mirrored in `Docs/EditableContent.md`, the reviewed source copy). The view can also be opened
 /// independently of indexing — as a standalone "Research Guide" — via the
 /// `presentationContext` parameter; see the Settings entry point (iOS) and
 /// the dedicated window scene reachable from the Help menu (macOS).
@@ -70,6 +74,10 @@ import SwiftUI
 ///          page (`.aboutTheSeries`), replacing the DEBUG-only Prep-A placeholder
 ///   1.11 — Analytics SA-2: added the "Geographic Emphasis" dashboard page,
 ///          second under "About the Series" (administration profiles deferred)
+///   1.12 — Docs pass: page 6 gains Person Analytics + Cross-Reference Analytics
+///          sections and a "% of documents" normalization note; page 7 Collections
+///          notes the two Sort-by-Date modes; struct doc corrected to eleven pages
+///          and the `Docs/EditableContent.md` mirror path
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -873,7 +881,18 @@ private extension EducationPage {
                     "Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.",
                     "A caution: FRUS volumes are selective, uneven proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. Analytics runs entirely on your local index; no network connection is required.",
                     "The By-Year and By-Decade charts colour-code each period by its top source volumes; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into \u{201C}Other.\u{201D}",
+                    "On those same two charts, a \u{201C}% of documents\u{201D} toggle reads a term as a share of the corpus rather than a raw count \u{2014} the percentage of that period\u{2019}s documents that contain it \u{2014} so a term doesn\u{2019}t look like it is surging simply because the series published more in later decades.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "person-analytics",
+                heading: "Person Analytics",
+                systemImage: "person.2",
+                paragraphs: [
+                    "Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period\u{2019}s dated documents), and \u{2014} when exactly two people are selected \u{2014} draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.",
+                    "Mentions come only from documents the app can place on a date, and FRUS itself is a selective record \u{2014} read these as who the published documents foreground, not a full census of who mattered.",
+                    "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Person Analytics window (Mac)."
                 ]
             ),
             EducationSection(
@@ -894,6 +913,16 @@ private extension EducationPage {
                 paragraphs: [
                     "Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.",
                     "Find it from a document's toolbar (iOS) or the Graph window (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "cross-reference-analytics",
+                heading: "Cross-Reference Analytics",
+                systemImage: "point.3.connected.trianglepath.dotted",
+                paragraphs: [
+                    "Where the graph traces one document\u{2019}s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network\u{2019}s shape \u{2014} a few heavily-cited landmarks and a long tail \u{2014} a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of \u{201C}landmark\u{201D} documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.",
+                    "These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes.",
+                    "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac)."
                 ]
             ),
             EducationSection(
@@ -956,7 +985,7 @@ private extension EducationPage {
                 heading: "Collections & Export",
                 systemImage: "tray.2",
                 paragraphs: [
-                    "Collections are curated sets you assemble for a purpose — a teaching reader, a briefing packet, a source dossier. The manager is where you shape the content: add documents from any volume, interleave your own section headings and rich-text prose (bold, italic, underline, colour), attach notes to a document, and inspect a document's notes, highlights, tags, summary, and archival source in place. Add Documents gathers documents without leaving the editor — search the index, browse a volume, paste citations or history.state.gov links (each line resolves to its document), or pull in everything carrying one of your tags. The composition lives on the collection itself — default body depth (full text, an AI summary, or a compact index), footnotes, table-of-contents style, and whether to include highlights, notes, or a word cloud — and any single document or whole section can override the body depth. Sections nest up to three levels — indent or outdent a heading from its context menu, drag a heading to move its whole section as a block, and give the collection a subtitle, author line, rich-text introduction, and colophon for a true title page. Excerpt quotations freeze a highlighted or selected passage into the collection as a styled block quote with its citation, and each document's inspector is a per-document control surface — a headnote abstract above the body, per-document overrides for highlights, notes, source note, footnotes, and summary prompt, and a \u{201C}See also\u{201D} line citing cross-referenced documents inside the collection. Generated apparatus blocks — a bibliography, a chronology, a sources-and-archives list, a persons index, and a thematic index — are computed from the collection\u{2019}s documents at every export and in the preview, placeable anywhere like any other row. A live preview shows the collection exactly as its HTML export while you compose — side-by-side on iPad and Mac, a Preview toggle on iPhone.",
+                    "Collections are curated sets you assemble for a purpose — a teaching reader, a briefing packet, a source dossier. The manager is where you shape the content: add documents from any volume, interleave your own section headings and rich-text prose (bold, italic, underline, colour), attach notes to a document, and inspect a document's notes, highlights, tags, summary, and archival source in place. Add Documents gathers documents without leaving the editor — search the index, browse a volume, paste citations or history.state.gov links (each line resolves to its document), or pull in everything carrying one of your tags. The composition lives on the collection itself — default body depth (full text, an AI summary, or a compact index), footnotes, table-of-contents style, and whether to include highlights, notes, or a word cloud — and any single document or whole section can override the body depth. Sections nest up to three levels — indent or outdent a heading from its context menu, drag a heading to move its whole section as a block, and give the collection a subtitle, author line, rich-text introduction, and colophon for a true title page. Excerpt quotations freeze a highlighted or selected passage into the collection as a styled block quote with its citation, and each document's inspector is a per-document control surface — a headnote abstract above the body, per-document overrides for highlights, notes, source note, footnotes, and summary prompt, and a \u{201C}See also\u{201D} line citing cross-referenced documents inside the collection. Generated apparatus blocks — a bibliography, a chronology, a sources-and-archives list, a persons index, and a thematic index — are computed from the collection\u{2019}s documents at every export and in the preview, placeable anywhere like any other row. Sort by Date puts the documents in chronological order either across the whole collection in one sweep, or within each section only \u{2014} so documents stay under their own heading rather than crossing into a neighboring section. A live preview shows the collection exactly as its HTML export while you compose — side-by-side on iPad and Mac, a Preview toggle on iPhone.",
                     "Export is simply how you share it. Render the collection — section headings and prose included — as a PDF, HTML file, or Word document; produce a BibTeX or RIS file for a reference manager; or save a native \u{201C}.fruscollection\u{201D} file: an editable copy a colleague opens right back into their own FRUS Explorer, where the documents travel as references they can download. Import one with Import Collection or by opening the file. A smart collection driven by a saved search can be frozen into an editable copy with Create Static Snapshot.",
                     "Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac)."
                 ]
