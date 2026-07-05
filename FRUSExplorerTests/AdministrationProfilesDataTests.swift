@@ -1,0 +1,400 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Testing
+import Foundation
+import SwiftUI
+@testable import FRUSExplorer
+
+// MARK: - AdministrationProfilesDataTests
+
+/// Pure derivation tests for the "Administration Profiles" dashboard (Series
+/// Analytics SA-2b): the `AdministrationProfilesIndex` decode contract, the
+/// `AdministrationProfilesData` derivations from a constructed fixture (the
+/// editorial-note toggle on document counts and proportions, volumes-per-year,
+/// zero-doc hiding, party-color mapping, empty/nil safety), and one integration
+/// guard that the *actual* bundled `administration-profiles-index.json` decodes
+/// with the expected headline figures.
+///
+/// These assert the model only — no SwiftUI view is instantiated.
+///
+/// Version history:
+///   1.0 — Analytics SA-2b: initial implementation
+struct AdministrationProfilesDataTests {
+
+    // MARK: Fixtures
+
+    /// A small constructed index: two populated administrations (a two-year term
+    /// and a four-year term) plus one all-zero later administration that must be
+    /// hidden. Volume totals are set so proportions are exact.
+    private func fixture() -> AdministrationProfilesIndex {
+        AdministrationProfilesIndex(
+            schemaVersion: 1,
+            generated: "2026-07-05",
+            totalDocumentsPointDated: 100 + 40,
+            totalDocumentsRangeDated: 10 + 4,
+            totalDocumentsUndated: 0,
+            volumesCovered: 3,
+            administrations: [
+                // Two-year term, 100 point + 10 range docs, 2 volumes.
+                AdministrationProfile(
+                    id: "alpha", number: 40, president: "Alice Alpha", party: "Republican",
+                    start: "1970-01-01", end: "1972-01-01",
+                    pointDocCount: 100, rangeDocCount: 10,
+                    volumeCount: 2, volumeCountPointOnly: 2,
+                    coverageEarliest: 1970, coverageLatest: 1972,
+                    volumes: [
+                        // volA total: 100 point / 20 range → alpha share 50/100 point.
+                        AdministrationVolume(volumeId: "volA", pointDocs: 50, rangeDocs: 5),
+                        AdministrationVolume(volumeId: "volB", pointDocs: 50, rangeDocs: 5),
+                    ]
+                ),
+                // Four-year term, 40 point + 4 range docs, 6 volumes.
+                AdministrationProfile(
+                    id: "beta", number: 41, president: "Bob M. Beta", party: "Democratic",
+                    start: "1972-01-01", end: "1976-01-01",
+                    pointDocCount: 40, rangeDocCount: 4,
+                    volumeCount: 6, volumeCountPointOnly: 6,
+                    coverageEarliest: 1972, coverageLatest: 1976,
+                    volumes: [
+                        AdministrationVolume(volumeId: "volA", pointDocs: 40, rangeDocs: 10),
+                    ]
+                ),
+                // All-zero later administration — must be hidden.
+                AdministrationProfile(
+                    id: "gamma", number: 42, president: "Carol Gamma", party: "Republican",
+                    start: "1976-01-01", end: "1980-01-01",
+                    pointDocCount: 0, rangeDocCount: 0,
+                    volumeCount: 0, volumeCountPointOnly: 0,
+                    coverageEarliest: nil, coverageLatest: nil,
+                    volumes: []
+                ),
+            ],
+            volumeTotals: [
+                "volA": VolumeTotals(pointDocs: 100, rangeDocs: 20, undatedDocs: 0),
+                "volB": VolumeTotals(pointDocs: 200, rangeDocs: 0, undatedDocs: 0),
+            ]
+        )
+    }
+
+    // MARK: Party mapping
+
+    @Test("PoliticalParty: raw strings map to stable cases and colors")
+    func partyMapping() {
+        #expect(PoliticalParty.from(raw: "Republican") == .republican)
+        #expect(PoliticalParty.from(raw: "democratic") == .democratic)
+        #expect(PoliticalParty.from(raw: "National Union") == .nationalUnion)
+        #expect(PoliticalParty.from(raw: "Whig") == .other)
+        // Colors are stable and distinct across the three real parties.
+        #expect(PoliticalParty.republican.color == Color.red)
+        #expect(PoliticalParty.democratic.color == Color.blue)
+        #expect(PoliticalParty.nationalUnion.color == Color.orange)
+        #expect(PoliticalParty.ordered.count == 4)
+    }
+
+    // MARK: Zero-doc hiding + ordering
+
+    @Test("AdministrationProfilesData: zero-document administrations are hidden, order is chronological")
+    func zeroDocHiddenChronological() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        #expect(data.profiles.map(\.id) == ["alpha", "beta"])
+        #expect(!data.profiles.contains { $0.id == "gamma" })
+    }
+
+    // MARK: documentCount toggle
+
+    @Test("AdministrationProfilesData: documentCount honors the editorial-note toggle")
+    func documentCountToggle() {
+        let off = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        let on = AdministrationProfilesData(index: fixture(), includeEditorialNotes: true)
+
+        let alphaOff = off.profiles.first { $0.id == "alpha" }
+        #expect(alphaOff?.documentCount == 100)   // point only
+        let alphaOn = on.profiles.first { $0.id == "alpha" }
+        #expect(alphaOn?.documentCount == 110)    // point + range
+
+        // Point/range fields are stable regardless of the toggle.
+        #expect(alphaOn?.pointDocCount == 100)
+        #expect(alphaOn?.rangeDocCount == 10)
+        #expect(off.includesEditorialNotes == false)
+        #expect(on.includesEditorialNotes == true)
+    }
+
+    // MARK: volumesPerAdministrationYear
+
+    @Test("AdministrationProfilesData: volumesPerAdministrationYear = volumeCount / termYears")
+    func volumesPerYearSpotValue() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        let alpha = data.profiles.first { $0.id == "alpha" }!
+        // 2-year term, 2 volumes → 1.0/year.
+        #expect(abs(alpha.termYears - 2.0) < 0.01)
+        #expect(abs(alpha.volumesPerAdministrationYear - 1.0) < 0.01)
+
+        let beta = data.profiles.first { $0.id == "beta" }!
+        // 4-year term, 6 volumes → 1.5/year.
+        #expect(abs(beta.termYears - 4.0) < 0.01)
+        #expect(abs(beta.volumesPerAdministrationYear - 1.5) < 0.01)
+    }
+
+    @Test("AdministrationProfilesData: a nil end date yields zero term-years and zero density")
+    func nullEndGuarded() {
+        let index = AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-07-05",
+            totalDocumentsPointDated: 5, totalDocumentsRangeDated: 0, totalDocumentsUndated: 0,
+            volumesCovered: 1,
+            administrations: [
+                AdministrationProfile(
+                    id: "sitting", number: 47, president: "Sitting President", party: "Republican",
+                    start: "2025-01-20", end: nil,
+                    pointDocCount: 5, rangeDocCount: 0, volumeCount: 3, volumeCountPointOnly: 3,
+                    coverageEarliest: 2025, coverageLatest: 2025, volumes: []
+                ),
+            ],
+            volumeTotals: [:]
+        )
+        let profile = AdministrationProfilesData(index: index, includeEditorialNotes: false).profiles.first
+        #expect(profile?.termYears == 0)
+        #expect(profile?.volumesPerAdministrationYear == 0)
+    }
+
+    // MARK: Per-volume proportion, both toggle states
+
+    @Test("AdministrationProfilesData: per-volume proportion = docs / volumeTotal (toggle off)")
+    func proportionToggleOff() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        let alphaVolumes = data.volumeShares(for: "alpha")
+        // Sorted by documentCount desc; volA and volB both 50, so both present.
+        let volA = alphaVolumes.first { $0.id == "volA" }!
+        // alpha point docs in volA = 50, volA total point = 100 → 0.5.
+        #expect(volA.documentCount == 50)
+        #expect(abs(volA.proportion - 0.5) < 1e-9)
+
+        let volB = alphaVolumes.first { $0.id == "volB" }!
+        // volB total point = 200, alpha = 50 → 0.25.
+        #expect(volB.documentCount == 50)
+        #expect(abs(volB.proportion - 0.25) < 1e-9)
+    }
+
+    @Test("AdministrationProfilesData: per-volume proportion honors the editorial-note toggle")
+    func proportionToggleOn() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: true)
+        let alphaVolumes = data.volumeShares(for: "alpha")
+        let volA = alphaVolumes.first { $0.id == "volA" }!
+        // alpha in volA = 50 point + 5 range = 55; volA total = 100 point + 20 range = 120 → 55/120.
+        #expect(volA.documentCount == 55)
+        #expect(abs(volA.proportion - 55.0 / 120.0) < 1e-9)
+    }
+
+    @Test("AdministrationProfilesData: any-overlap can push a volume's summed proportion over 100%")
+    func proportionCanExceedHundred() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        // volA appears in both alpha (50/100) and beta (40/100) → summed 0.9; still
+        // each per-row proportion is ≤ 1, but the sum is meaningful evidence that
+        // overlap accumulates. Assert both rows exist for volA.
+        let alphaVolA = data.volumeShares(for: "alpha").first { $0.id == "volA" }
+        let betaVolA = data.volumeShares(for: "beta").first { $0.id == "volA" }
+        #expect(alphaVolA != nil)
+        #expect(betaVolA != nil)
+        #expect(abs((betaVolA?.proportion ?? 0) - 0.4) < 1e-9)  // 40/100
+    }
+
+    @Test("AdministrationProfilesData: a missing volume total yields a zero proportion, no crash")
+    func missingVolumeTotalSafe() {
+        let index = AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-07-05",
+            totalDocumentsPointDated: 10, totalDocumentsRangeDated: 0, totalDocumentsUndated: 0,
+            volumesCovered: 1,
+            administrations: [
+                AdministrationProfile(
+                    id: "x", number: 40, president: "X", party: "Republican",
+                    start: "1970-01-01", end: "1974-01-01",
+                    pointDocCount: 10, rangeDocCount: 0, volumeCount: 1, volumeCountPointOnly: 1,
+                    coverageEarliest: 1970, coverageLatest: 1974,
+                    volumes: [AdministrationVolume(volumeId: "missing", pointDocs: 10, rangeDocs: 0)]
+                ),
+            ],
+            volumeTotals: [:]  // no total for "missing"
+        )
+        let share = AdministrationProfilesData(index: index, includeEditorialNotes: false)
+            .volumeShares(for: "x").first
+        #expect(share?.documentCount == 10)
+        #expect(share?.proportion == 0)  // denominator 0 → guarded to 0
+    }
+
+    // MARK: most-documented default
+
+    @Test("AdministrationProfilesData: mostDocumentedProfile picks the largest count")
+    func mostDocumented() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        #expect(data.mostDocumentedProfile?.id == "alpha")  // 100 > 40
+    }
+
+    // MARK: Empty safety
+
+    @Test("AdministrationProfilesData: a nil index yields empty collections, no crash")
+    func nilIndexSafe() {
+        let data = AdministrationProfilesData(index: nil, includeEditorialNotes: false)
+        #expect(data.profiles.isEmpty)
+        #expect(data.volumeShares.isEmpty)
+        #expect(data.totalDocumentsPointDated == 0)
+        #expect(data.totalDocumentsRangeDated == 0)
+        #expect(data.volumesCovered == 0)
+        #expect(data.mostDocumentedProfile == nil)
+        #expect(data.volumeShares(for: "anything").isEmpty)
+    }
+
+    @Test("AdministrationProfilesData: an all-zero index shows no profiles but stays safe")
+    func allZeroSafe() {
+        let index = AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-07-05",
+            totalDocumentsPointDated: 0, totalDocumentsRangeDated: 0, totalDocumentsUndated: 0,
+            volumesCovered: 0,
+            administrations: [
+                AdministrationProfile(
+                    id: "z", number: 48, president: "Z", party: "Democratic",
+                    start: "2029-01-20", end: "2033-01-20",
+                    pointDocCount: 0, rangeDocCount: 0, volumeCount: 0, volumeCountPointOnly: 0,
+                    coverageEarliest: nil, coverageLatest: nil, volumes: []
+                ),
+            ],
+            volumeTotals: [:]
+        )
+        let data = AdministrationProfilesData(index: index, includeEditorialNotes: true)
+        #expect(data.profiles.isEmpty)
+    }
+
+    // MARK: Decode tolerance
+
+    @Test("AdministrationProfilesIndex: a JSON payload missing keys decodes without crashing")
+    func tolerantDecode() throws {
+        // Missing volumeTotals + missing several admin scalar keys.
+        let json = """
+        {
+          "schemaVersion": 1,
+          "generated": "2026-07-05",
+          "totalDocumentsPointDated": 5,
+          "volumesCovered": 1,
+          "administrations": [
+            { "id": "solo", "number": 40, "president": "Solo", "party": "Republican",
+              "start": "1970-01-01", "end": "1974-01-01", "pointDocCount": 5,
+              "volumes": [ { "volumeId": "v", "pointDocs": 5 } ] }
+          ]
+        }
+        """
+        let index = try JSONDecoder().decode(
+            AdministrationProfilesIndex.self, from: Data(json.utf8)
+        )
+        #expect(index.schemaVersion == 1)
+        #expect(index.totalDocumentsRangeDated == 0)  // missing → 0
+        #expect(index.volumeTotals.isEmpty)           // missing → empty
+        let admin = index.administrations.first
+        #expect(admin?.rangeDocCount == 0)            // missing → 0
+        #expect(admin?.volumeCount == 0)              // missing → 0
+        #expect(admin?.coverageEarliest == nil)       // missing → nil
+        #expect(admin?.volumes.first?.rangeDocs == 0) // missing → 0
+    }
+
+    // MARK: Integration — the bundled artifact
+
+    /// Guards that the real `administration-profiles-index.json` is bundled and
+    /// matches the schema, with the SA-2a headline figures. This proves the
+    /// resource is in the built product and that Nixon and Ford are attributed as
+    /// distinct administrations.
+    @Test("Bundled administration-profiles-index.json decodes with the expected headline figures")
+    func bundledArtifactDecodes() throws {
+        let url = try #require(
+            Bundle.main.url(forResource: "administration-profiles-index", withExtension: "json"),
+            "administration-profiles-index.json must be bundled as an app resource"
+        )
+        let data = try Data(contentsOf: url)
+        let index = try JSONDecoder().decode(AdministrationProfilesIndex.self, from: data)
+        #expect(index.schemaVersion == 1)
+        #expect(index.volumesCovered == 552)
+
+        // ~26 administrations are populated (Lincoln … G.H.W. Bush).
+        let populated = index.administrations.filter { $0.pointDocCount > 0 || $0.rangeDocCount > 0 }
+        #expect(populated.count == 26, "expected ~26 populated administrations; got \(populated.count)")
+
+        // Nixon and Ford are DISTINCT administrations with distinct point counts.
+        let nixon = index.administrations.first { $0.id == "nixon" }
+        let ford = index.administrations.first { $0.id == "ford" }
+        #expect(nixon?.pointDocCount == 13611)
+        #expect(ford?.pointDocCount == 4333)
+        #expect(nixon?.president == "Richard M. Nixon")
+        #expect(ford?.president == "Gerald R. Ford")
+
+        // The derivation over the real data hides zero-doc administrations and
+        // stays sound.
+        let derived = AdministrationProfilesData(index: index, includeEditorialNotes: false)
+        #expect(derived.profiles.count == 26)
+        #expect(derived.profiles.allSatisfy { $0.documentCount > 0 })
+        #expect(derived.mostDocumentedProfile != nil)
+
+        // Grover Cleveland's two non-consecutive terms decode as DISTINCT
+        // administrations (the chart keys x-position on the id, so they never
+        // merge into one bar).
+        let clevelands = index.administrations.filter { $0.president == "Grover Cleveland" }
+        #expect(clevelands.count == 2, "Cleveland's two terms must be distinct administrations")
+        #expect(Set(clevelands.map(\.id)).count == 2)
+    }
+
+    // MARK: Axis-label disambiguation
+
+    /// The two overview charts key the x-position on the distinct administration
+    /// id, so same-name administrations render as separate bars; their axis labels
+    /// are disambiguated by appending the term start year. This guards the fix for
+    /// the SA-2b review finding where both charts collapsed Grover Cleveland's two
+    /// terms into one stacked bar.
+    @Test
+    func axisLabelsDisambiguateSameLastName() {
+        let profiles = AdministrationProfilesData(index: fixtureWithClevelandLikeTerms(),
+                                                  includeEditorialNotes: false).profiles
+        let labels = AdministrationProfilesDashboard.axisLabels(for: profiles)
+
+        // Each administration gets its own label keyed on its distinct id.
+        #expect(labels.count == profiles.count)
+        #expect(Set(labels.keys).count == profiles.count)
+
+        // The two "Cleveland" administrations get distinct, year-disambiguated
+        // labels; the lone "Alpha" stays a bare last name.
+        #expect(labels["cleveland-1"] == "Cleveland 1885")
+        #expect(labels["cleveland-2"] == "Cleveland 1893")
+        #expect(labels["alpha"] == "Alpha")
+    }
+
+    /// Two administrations sharing the last name "Cleveland" (distinct ids/terms)
+    /// plus one uniquely named administration.
+    private func fixtureWithClevelandLikeTerms() -> AdministrationProfilesIndex {
+        AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-07-05",
+            totalDocumentsPointDated: 300, totalDocumentsRangeDated: 0, totalDocumentsUndated: 0,
+            volumesCovered: 3,
+            administrations: [
+                AdministrationProfile(
+                    id: "cleveland-1", number: 22, president: "Grover Cleveland", party: "Democratic",
+                    start: "1885-03-04", end: "1889-03-04",
+                    pointDocCount: 100, rangeDocCount: 0, volumeCount: 4, volumeCountPointOnly: 4,
+                    coverageEarliest: 1885, coverageLatest: 1889, volumes: []
+                ),
+                AdministrationProfile(
+                    id: "cleveland-2", number: 24, president: "Grover Cleveland", party: "Democratic",
+                    start: "1893-03-04", end: "1897-03-04",
+                    pointDocCount: 120, rangeDocCount: 0, volumeCount: 4, volumeCountPointOnly: 4,
+                    coverageEarliest: 1893, coverageLatest: 1897, volumes: []
+                ),
+                AdministrationProfile(
+                    id: "alpha", number: 23, president: "Alice Alpha", party: "Republican",
+                    start: "1889-03-04", end: "1893-03-04",
+                    pointDocCount: 80, rangeDocCount: 0, volumeCount: 2, volumeCountPointOnly: 2,
+                    coverageEarliest: 1889, coverageLatest: 1893, volumes: []
+                ),
+            ],
+            volumeTotals: [:]
+        )
+    }
+}

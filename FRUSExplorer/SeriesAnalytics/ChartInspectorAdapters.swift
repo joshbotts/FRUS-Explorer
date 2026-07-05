@@ -23,6 +23,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA (chart table inspector): initial implementation
+///   1.1 — Analytics SA-2b: adds the Administration Profiles overview tables
+///          (documents per administration, volumes per administration-year)
 enum ChartInspectorAdapters {
 
     // MARK: Formatting
@@ -179,6 +181,68 @@ enum ChartInspectorAdapters {
             ],
             rowCells: countries.map { country in
                 [displayName(country.slug), plain(country.volumeCount)]
+            }
+        )
+    }
+
+    /// A `0.0...` proportion formatted as a whole-number percent (e.g. `1.234` →
+    /// `"123%"`) — the per-volume administration proportion, which can exceed
+    /// 100% across administrations under any-overlap.
+    ///
+    /// - Parameter proportion: The fractional proportion.
+    /// - Returns: The localised percent string.
+    static func wholePercent(_ proportion: Double) -> String {
+        proportion.formatted(
+            FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))
+        )
+    }
+
+    /// A one-decimal plain number (e.g. `2.35` → `"2.3"`) for volumes-per-year.
+    ///
+    /// - Parameter value: The value to format.
+    /// - Returns: The localised one-decimal string.
+    static func oneDecimal(_ value: Double) -> String {
+        value.formatted(FloatingPointFormatStyle<Double>().precision(.fractionLength(1)))
+    }
+
+    // MARK: - SA-2b: Administration Profiles
+
+    /// The documents-per-administration bars' table: one row per populated
+    /// administration.
+    ///
+    /// - Parameter profiles: The derived profiles (`data.profiles`).
+    /// - Returns: A `[President, Party, Documents]` table.
+    static func administrationDocumentsTable(_ profiles: [AdministrationProfilesData.Profile]) -> ChartInspectorData {
+        ChartInspectorData(
+            id: "sa2b.adminDocuments",
+            title: String(localized: "series.admin.docs.title", defaultValue: "Documents per administration"),
+            columns: [
+                String(localized: "series.admin.col.president", defaultValue: "President"),
+                String(localized: "series.admin.col.party", defaultValue: "Party"),
+                String(localized: "series.admin.docs.y", defaultValue: "Documents"),
+            ],
+            rowCells: profiles.map { profile in
+                [profile.president, profile.party.displayName, plain(profile.documentCount)]
+            }
+        )
+    }
+
+    /// The volumes-per-administration-year bars' table: one row per populated
+    /// administration.
+    ///
+    /// - Parameter profiles: The derived profiles (`data.profiles`).
+    /// - Returns: A `[President, Party, Volumes/term-year]` table.
+    static func administrationVolumesPerYearTable(_ profiles: [AdministrationProfilesData.Profile]) -> ChartInspectorData {
+        ChartInspectorData(
+            id: "sa2b.adminVolumesPerYear",
+            title: String(localized: "series.admin.perYear.title", defaultValue: "Volumes per administration-year"),
+            columns: [
+                String(localized: "series.admin.col.president", defaultValue: "President"),
+                String(localized: "series.admin.col.party", defaultValue: "Party"),
+                String(localized: "series.admin.perYear.y", defaultValue: "Volumes per year"),
+            ],
+            rowCells: profiles.map { profile in
+                [profile.president, profile.party.displayName, oneDecimal(profile.volumesPerAdministrationYear)]
             }
         )
     }

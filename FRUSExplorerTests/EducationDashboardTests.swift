@@ -13,8 +13,9 @@ import Testing
 
 /// Pure model tests for the "About the Series" content-model dashboards: the
 /// optional `EducationPage.dashboard` variant, the `.aboutTheSeries` category,
-/// and the real dashboard pages — `.seriesProduction` (Analytics SA-1b) and
-/// `.seriesGeography` (Analytics SA-2).
+/// and the real dashboard pages — `.seriesProduction` (Analytics SA-1b),
+/// `.seriesGeography` (Analytics SA-2), `.seriesSourcing` (Analytics SA-3b), and
+/// `.administrationProfiles` (Analytics SA-2b).
 ///
 /// These assert the content model only — no SwiftUI view is instantiated — so
 /// they run without an `AppState` environment. They guard against: a missing or
@@ -31,14 +32,17 @@ import Testing
 ///   1.3 — Analytics SA-3b: now covers ALL THREE dashboard pages
 ///          (`series-production`, `series-geography`, `series-sourcing`); the
 ///          guard is kept general
+///   1.4 — Analytics SA-2b: now covers ALL FOUR dashboard pages, adding
+///          `series-administrations`; the guard is kept general
 @MainActor
 struct EducationDashboardTests {
 
-    /// The three dashboard page ids paired with their expected dashboard case.
+    /// The four dashboard page ids paired with their expected dashboard case.
     private static let dashboardPages: [(id: String, dashboard: EducationDashboard)] = [
         ("series-production", .seriesProduction),
         ("series-geography", .seriesGeography),
         ("series-sourcing", .seriesSourcing),
+        ("series-administrations", .administrationProfiles),
     ]
 
     /// The category carries a non-empty localised title.
@@ -67,15 +71,16 @@ struct EducationDashboardTests {
         }
     }
 
-    /// All three dashboard pages exist and are distinct.
+    /// All four dashboard pages exist and are distinct.
     @Test("EducationDashboard: all dashboard pages are present and distinct")
     func allDashboardPagesPresent() {
         let dashboards = EducationPage.all.compactMap(\.dashboard)
         #expect(dashboards.contains(.seriesProduction))
         #expect(dashboards.contains(.seriesGeography))
         #expect(dashboards.contains(.seriesSourcing))
-        // Exactly three pages carry a dashboard.
-        #expect(EducationPage.all.filter { $0.dashboard != nil }.count == 3)
+        #expect(dashboards.contains(.administrationProfiles))
+        // Exactly four pages carry a dashboard.
+        #expect(EducationPage.all.filter { $0.dashboard != nil }.count == 4)
     }
 
     /// The deep-link contract resolves each dashboard page by id.

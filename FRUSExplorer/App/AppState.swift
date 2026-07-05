@@ -376,6 +376,11 @@ final class AppState {
     /// dashboard (SA-3b). Decoded from the bundle at init; `nil` if unavailable.
     let sourceProvenanceStore: SourceProvenanceStore = SourceProvenanceStore()
 
+    /// Holds the bundled `administration-profiles-index.json` aggregate (Series
+    /// Analytics SA-2a), the offline data source for the "Administration Profiles"
+    /// dashboard (SA-2b). Decoded from the bundle at init; `nil` if unavailable.
+    let administrationProfilesStore: AdministrationProfilesStore = AdministrationProfilesStore()
+
     /// Shared in-memory LRU cache of parsed document ASTs. Warmed by
     /// `DocumentViewModel.load` parse windows so adjacent-document page-turns and
     /// re-opens skip the XML parse entirely. Cleared per-volume on deletion and

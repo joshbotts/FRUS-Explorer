@@ -501,6 +501,8 @@ enum EducationCategory: String {
 ///          dashboard page, second under "About the Series"
 ///   1.4 — Analytics SA-3b: `all` now also includes the `seriesSourcing`
 ///          dashboard page, third under "About the Series"
+///   1.5 — Analytics SA-2b: `all` now also includes the `administrationProfiles`
+///          dashboard page, fourth under "About the Series"
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -539,7 +541,7 @@ struct EducationPage: Identifiable {
     /// release builds.
     static let all: [EducationPage] = [
         page1, page2, page3, page4, page5, page6, page7,
-        seriesProduction, seriesGeography, seriesSourcing,
+        seriesProduction, seriesGeography, seriesSourcing, seriesAdministrations,
     ]
 }
 
@@ -1048,5 +1050,26 @@ private extension EducationPage {
         category: .aboutTheSeries,
         sections: [],
         dashboard: .seriesSourcing
+    )
+}
+
+// MARK: - Series Administrations dashboard page (Analytics SA-2b)
+
+private extension EducationPage {
+    /// The live "About the Series" page that renders the Administration Profiles
+    /// dashboard (`EducationDashboard.administrationProfiles`) in place of prose.
+    /// Its `sections` are empty by design — the renderers show the dashboard, not
+    /// sections — so it contributes no prose paragraph or Markdown link to scan.
+    /// Placed fourth under "About the Series", after `seriesSourcing`.
+    /// Unconditional (shipped in debug and release).
+    static let seriesAdministrations = EducationPage(
+        id: "series-administrations",
+        title: String(localized: "education.series.administrations.page.title",
+                      defaultValue: "Administration Profiles"),
+        subtitle: String(localized: "education.series.administrations.page.subtitle",
+                         defaultValue: "How the series' coverage is distributed across presidencies"),
+        category: .aboutTheSeries,
+        sections: [],
+        dashboard: .administrationProfiles
     )
 }
