@@ -9,6 +9,12 @@ Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has
   the full 552-volume corpus, via `xcrun simctl io <device> screenshot` (clean device-screen PNGs).
   Set an Apple-style status bar first:
   `xcrun simctl status_bar <device> override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi`
+  - **Series Analytics (offline) exception** — the four Series Analytics dashboards (Production &
+    Timeliness, Geographic Emphasis, Archival Sourcing, Administration Profiles) render from bundled
+    offline aggregates, with **no downloaded volumes and no index**. Capture them on a device with an
+    empty corpus (or mid-onboarding), so the shots show the offline empty-index state these dashboards
+    are designed for. Reachable via the FRUS Research Guide → **About the Series** category
+    (`IndexingEducationView`).
 - **macOS** — capture each window with the macOS screenshot tools (`⇧⌘4` then space). Most committed
   shots were taken with the main window in full-screen so its backdrop hid every other app, then
   `screencapture -R` cropped each floating window. The People sheets (`people-list`, `people-detail`)
@@ -28,8 +34,8 @@ sidebar), `document` (landscape reading view), `search-results`.
 **macOS (`macos/`)** — `browser` (Corpus Browser with the People button), `people-list` (the People
 sheet's alphabetical list) and `people-detail` (the "Kissinger, Henry A." reconciled-identity detail
 sheet) — both wired into §4.4 — `search`, `document` (full-window reading view), `analytics`,
-`chronology`, `collections`, and `research` (the Research window; not yet wired into the manual — no
-placeholder). Also `toolbar` (§3.1), `research-strip` (§3.2, the annotation strip with a document
+`chronology`, `collections` (**STALE — slated for re-capture**; see Remaining), and `research` (the
+Research window; not yet wired into the manual — no placeholder). Also `toolbar` (§3.1), `research-strip` (§3.2, the annotation strip with a document
 open), `saved-searches` (§5.5, the Search window's saved-search list), `source-explorer` (§12, an
 RG-59 source resolved to a NARA Catalog entry), and `analytics-table` (§13.2, Corpus Analytics in
 Table mode).
@@ -51,7 +57,10 @@ Table mode).
 ## Remaining
 
 These placeholders still need images. They were out of scope for the first "core feature screens"
-pass — most need a state that the running, already-indexed app can't show without extra setup.
+pass — most need a state that the running, already-indexed app can't show without extra setup. (The
+four Series Analytics dashboards are the exception: they render **offline with no index**, so the
+simplest capture is a fresh/empty install navigated to the Research Guide → About the Series
+category — see the *Series Analytics* entry below and *New since build 26*.)
 
 **macOS Chronology hover magnifier** (§14 placeholder) is still open. The magnifier is a transient
 SwiftUI `onContinuousHover` overlay (year bucket → month-by-month breakdown) driven by live pointer
@@ -64,6 +73,11 @@ chart, set a date range longer than 8 years that stays under the 5,000-document 
 
 **iOS / iPadOS states needing special setup:**
 
+- **Series Analytics (About the Series) dashboards** — the four offline dashboards (Production &
+  Timeliness, Geographic Emphasis, Archival Sourcing, Administration Profiles). Unlike everything
+  else here, these render **with no index**, so the simplest capture is a fresh/empty install (or
+  mid-onboarding) navigated to the Research Guide → About the Series category. Each dashboard carries
+  an editable start/end year range and a per-chart "View as table" pop-up (see *New since build 26*).
 - **Onboarding** — welcome / scope picker / "Ready" screens (needs a fresh install, no
   `-hasCompletedOnboarding` launch arg).
 - **Indexing banners & Live Activity** — single- and multi-volume indexing banners, the
@@ -73,4 +87,78 @@ chart, set a date range longer than 8 years that stays under the 5,000-document 
 - **App Store listing** — the product page.
 - **Feature flows not in the core pass** — embedded browser sheet, Research tab, Collections editor
   with documents, Citation Lookup, AI summary panel (Apple Intelligence, device-only),
-  cross-reference graph, Source Explorer.
+  cross-reference graph, Source Explorer, **Person Analytics** (Trends + Network modes; iOS Browse →
+  Analysis Tools → Person Analytics; macOS `frus.personAnalytics` window), **Cross-Reference
+  Analytics** (iOS Analysis Tools → Cross-Reference Analytics; macOS `frus.crossRefAnalytics`
+  window), the **consolidated macOS Collections ribbon** (Add ▾ · Sort by Date ▾ · View ▾ ·
+  Export…), and the two-mode **Sort-by-Date menu** (Across the Whole Collection / Within Each
+  Section) on both the macOS ribbon and the iOS/iPad Collections toolbar.
+
+## New since build 26
+
+The build-27 feature set (testers' last build was 26) adds the analytics surfaces and Collections
+polish below. None of these shots are captured yet — they all belong in Remaining. Legend: 🆕 new
+shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture to surface a new state.
+
+**iPhone (`ios/`)**
+
+- 🆕 `series-production` — Series Analytics: **Production & Timeliness** (publication-lag scatter with
+  the evolving timeliness-target step line, volumes-per-print-year bars, cumulative-growth curve).
+  Capture on an empty/offline install via Research Guide → About the Series.
+- 🆕 `series-geography` — Series Analytics: **Geographic Emphasis** (regional-share-over-time stacked
+  chart by the 6 State Dept regional bureaus, region totals, top countries). Offline.
+- 🆕 `series-archival` — Series Analytics: **Archival Sourcing** (provenance-mix-over-decades chart,
+  overall composition, note density by decade). Offline.
+- 🆕 `series-administrations` — Series Analytics: **Administration Profiles** (docs-per-administration
+  coloured by party, per-administration volume list with document proportions, editorial-notes
+  toggle). Offline.
+- 🆕 `person-analytics-trends` — **Person Analytics**, Trends mode (most-mentioned people by era +
+  multi-person mention-trajectory comparison). Browse → Analysis Tools → Person Analytics.
+- 🆕 `person-analytics-network` — **Person Analytics**, Network mode (co-mention ego-network graph:
+  focus person + top co-mentioned partners).
+- 🆕 `crossref-analytics` — **Cross-Reference Analytics** (most-referenced documents / in-degree,
+  degree-distribution histogram, volume-to-volume heat matrix, PageRank influence landmarks).
+  Analysis Tools → Cross-Reference Analytics.
+- 🆕 `analytics-table-popup` — the per-chart **"View as table"** pop-up in iPhone **list** mode with
+  the Copy-CSV control (shown from any analytics chart).
+- ⚙️ `analytics` (re-capture optional) — existing By-Year term-frequency chart showing the new
+  **"% of documents"** normalization toggle enabled.
+
+**iPad (`ipad/`)**
+
+- 🆕 `series-production` — Series Analytics Production & Timeliness on iPad (shows the editable
+  start/end year-range control and the wider dashboard layout). Offline. Represents the four Series
+  dashboards on iPad; ideally also capture `series-geography`, `series-archival`,
+  `series-administrations`.
+- 🆕 `person-analytics-trends` — Person Analytics Trends mode on iPad.
+- 🆕 `person-analytics-network` — Person Analytics Network ego-graph on iPad.
+- 🆕 `crossref-analytics` — Cross-Reference Analytics on iPad (heat matrix + PageRank landmarks).
+- 🆕 `analytics-table-popup` — the per-chart "View as table" pop-up rendered as a native **Table** on
+  iPad, with Copy-CSV.
+- 🆕 `collection-sort-menu` — the Sort-by-Date two-mode menu ("Across the Whole Collection" vs "Within
+  Each Section") in the iPad Collections toolbar.
+- 🆕 `collection-note-collapsed` — the collapsed "Add a note" affordance in the iPad collection editor
+  (before a note is added).
+
+**macOS (`macos/`)**
+
+- 🆕 `series-production` — Series Analytics Production & Timeliness dashboard (offline; Research Guide
+  → About the Series). Also capture `series-geography`, `series-archival`, `series-administrations`
+  for the other three.
+- 🆕 `person-analytics-trends` — Person Analytics window (`frus.personAnalytics`), Trends mode.
+- 🆕 `person-analytics-network` — Person Analytics window, Network co-mention ego-graph.
+- 🆕 `crossref-analytics` — Cross-Reference Analytics window (`frus.crossRefAnalytics`): volume-to-
+  volume citation heat matrix + PageRank influence landmarks (and/or degree-distribution histogram).
+- 🆕 `analytics-table-popup` — the per-chart "View as table" pop-up as a native macOS **Table** with
+  Copy-CSV.
+- 🆕 `collections-ribbon` — the consolidated Collections manager ribbon: Add ▾ (Documents / Section
+  Heading / Note Block / Passages / Apparatus) · Sort by Date ▾ · View ▾ (Composition / Front Matter
+  / Preview) · Export….
+- 🆕 `collection-sort-menu` — the Sort-by-Date ▾ menu opened, showing "Across the Whole Collection" vs
+  "Within Each Section".
+- 🔄 `collections` — **RE-CAPTURE**: the existing shot is stale (its subject — the always-visible
+  collection note + old 10-button toolbar — has been replaced). The new shot must show the
+  consolidated four-control ribbon and the collapsed "Add a note" affordance (collection note not yet
+  added).
+- ⚙️ `analytics` (re-capture optional) — existing term-frequency chart showing the new "% of
+  documents" normalization toggle enabled.
