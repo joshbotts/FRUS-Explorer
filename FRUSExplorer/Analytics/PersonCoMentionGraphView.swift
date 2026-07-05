@@ -239,21 +239,25 @@ final class PersonCoMentionGraphViewModel {
     // MARK: - Navigation
 
     /// Re-centres the graph on `rollupId`, pushing the current focus onto the history stack.
-    func recenterOn(rollupId: Int, from store: PersonMentionStore) async {
+    ///
+    /// Mutating `focusRollupId` re-fires the view's `.task(id:)`, which is the sole loader —
+    /// this method must NOT call `load` itself, or the ego would load twice per navigation.
+    func recenterOn(rollupId: Int) {
         guard rollupId != focusRollupId else { return }
         let newName = name(for: rollupId)
         history.append((id: focusRollupId, name: focusName))
         focusRollupId = rollupId
         focusName = newName
-        await load(from: store)
     }
 
     /// Pops the history stack and re-centres on the previous focus person.
-    func navigateBack(from store: PersonMentionStore) async {
+    ///
+    /// Mutating `focusRollupId` re-fires the view's `.task(id:)`, which is the sole loader —
+    /// this method must NOT call `load` itself, or the ego would load twice per navigation.
+    func navigateBack() {
         guard let prev = history.popLast() else { return }
         focusRollupId = prev.id
         focusName = prev.name
-        await load(from: store)
     }
 
     // MARK: - Canvas size / layout
@@ -620,7 +624,7 @@ struct PersonCoMentionGraphView: View {
 
             if vm.canNavigateBack {
                 Button {
-                    Task { await vm.navigateBack(from: store) }
+                    vm.navigateBack()
                 } label: {
                     Label(String(localized: "personCoMention.back", defaultValue: "Back"),
                           systemImage: "chevron.left")
@@ -657,7 +661,7 @@ struct PersonCoMentionGraphView: View {
                 HStack(spacing: 8) {
                     Button(String(localized: "personCoMention.info.explore",
                                   defaultValue: "Explore connections")) {
-                        Task { await vm.recenterOn(rollupId: partnerId, from: store) }
+                        vm.recenterOn(rollupId: partnerId)
                     }
                     .buttonStyle(.bordered)
                     Button(String(localized: "personCoMention.info.openSearch",
