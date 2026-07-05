@@ -37,6 +37,9 @@ import Charts
 ///   1.3 — Analytics SA (series chart refinements): the lag chart's x-axis is the
 ///          volume's publication year (production domain), so the timeliness-target
 ///          step is exact — the directive in force when a volume was published
+///   1.4 — Analytics SA (chart table inspector): each chart card gains a "View as
+///          table" button opening a `ChartDataInspectorView` pop-up over the
+///          range-filtered data
 struct SeriesProductionDashboard: View {
 
     /// Format style for integer year/decade axis labels that suppresses comma
@@ -61,6 +64,10 @@ struct SeriesProductionDashboard: View {
     @State private var yearStart = SeriesChartKind.floorYear
     /// The editable range's end year (defaults to the production ceiling).
     @State private var yearEnd = defaultEnd
+
+    /// The chart whose underlying data is currently shown in the table-inspector
+    /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
+    @State private var inspectorData: ChartInspectorData?
 
     /// The manifest entries to summarise: the diff's known set when a live
     /// refresh has happened, else the always-available bundled set, else empty
@@ -97,6 +104,7 @@ struct SeriesProductionDashboard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
     }
 
     // MARK: - Intro
@@ -145,7 +153,8 @@ struct SeriesProductionDashboard: View {
             title: String(localized: "series.chart.lag.title",
                           defaultValue: "Publication lag over time"),
             caption: String(localized: "series.chart.lag.caption",
-                            defaultValue: "Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute).")
+                            defaultValue: "Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute)."),
+            inspector: ChartInspectorAdapters.lagTable(points)
         ) {
             Chart {
                 ForEach(points) { point in
@@ -223,7 +232,8 @@ struct SeriesProductionDashboard: View {
             title: String(localized: "series.chart.peryear.title",
                           defaultValue: "Volumes published per year"),
             caption: String(localized: "series.chart.peryear.caption",
-                            defaultValue: "How many volumes reached print in each year, coloured by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication.")
+                            defaultValue: "How many volumes reached print in each year, coloured by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication."),
+            inspector: ChartInspectorAdapters.perYearTable(buckets)
         ) {
             Chart {
                 ForEach(buckets) { bucket in
@@ -271,7 +281,8 @@ struct SeriesProductionDashboard: View {
             title: String(localized: "series.chart.cumulative.title",
                           defaultValue: "Cumulative volumes published"),
             caption: String(localized: "series.chart.cumulative.caption",
-                            defaultValue: "The digitized corpus has grown to the 552 volumes this app catalogs — steeply in some decades, slowly in others.")
+                            defaultValue: "The digitized corpus has grown to the 552 volumes this app catalogs — steeply in some decades, slowly in others."),
+            inspector: ChartInspectorAdapters.cumulativeTable(points)
         ) {
             Chart {
                 ForEach(points) { point in
@@ -352,15 +363,36 @@ struct SeriesProductionDashboard: View {
     // MARK: - Chart card
 
     /// A titled, captioned container for a single chart, keeping the four
-    /// sections visually consistent.
+    /// sections visually consistent. When `inspector` is non-nil, the header
+    /// gains a trailing "View as table" button that opens the data pop-up.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
+        inspector: ChartInspectorData?,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.headline)
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                if let inspector {
+                    Button {
+                        inspectorData = inspector
+                    } label: {
+                        Label(
+                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
+                            systemImage: "tablecells"
+                        )
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text(String(
+                        localized: "series.inspector.viewTable.a11y",
+                        defaultValue: "View \(title) as a table"
+                    )))
+                }
+            }
             Text(caption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
