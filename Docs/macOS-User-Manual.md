@@ -122,7 +122,7 @@ When a document is open, a compact `volumeId/documentId` title (e.g., `frus1969-
 | **Cross-Reference Analytics** | — | Cross-Reference Analytics window — most-referenced documents, degree distribution, and influence (Section 13.6) |
 | **Chronology** | — | Date-range document browser (Section 14) |
 
-![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the right-side buttons: Search, Graph, Info, Research, Collections, Corpus, Analytics, Person Analytics, Cross-Reference Analytics, and Chronology.](screenshots/macos/toolbar.png)
+![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the right-side buttons: Search, Graph, Info, Research, Collections, Corpus, Analytics, and Chronology.](screenshots/macos/toolbar.png) *(This shot predates build 27 and does not yet show the new Person Analytics and Cross-Reference Analytics buttons — slated for re-capture; see `screenshots/README.md`.)*
 
 ### 3.2 Research Strip
 

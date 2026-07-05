@@ -35,7 +35,9 @@ sidebar), `document` (landscape reading view), `search-results`.
 sheet's alphabetical list) and `people-detail` (the "Kissinger, Henry A." reconciled-identity detail
 sheet) — both wired into §4.4 — `search`, `document` (full-window reading view), `analytics`,
 `chronology`, `collections` (**STALE — slated for re-capture**; see Remaining), and `research` (the
-Research window; not yet wired into the manual — no placeholder). Also `toolbar` (§3.1), `research-strip` (§3.2, the annotation strip with a document
+Research window; not yet wired into the manual — no placeholder). Also `toolbar` (§3.1, **STALE —
+slated for re-capture**; predates build 27, missing the Person Analytics + Cross-Reference Analytics
+buttons; see Remaining), `research-strip` (§3.2, the annotation strip with a document
 open), `saved-searches` (§5.5, the Search window's saved-search list), `source-explorer` (§12, an
 RG-59 source resolved to a NARA Catalog entry), and `analytics-table` (§13.2, Corpus Analytics in
 Table mode).
@@ -160,5 +162,9 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
   collection note + old 10-button toolbar — has been replaced). The new shot must show the
   consolidated four-control ribbon and the collapsed "Add a note" affordance (collection note not yet
   added).
+- 🔄 `toolbar` (§3.1) — **RE-CAPTURE**: the existing shot predates build 27 and does not show the two
+  new right-side buttons (**Person Analytics** and **Cross-Reference Analytics**). The new shot must
+  include them alongside the existing Search, Graph, Info, Research, Collections, Corpus, Analytics,
+  and Chronology buttons.
 - ⚙️ `analytics` (re-capture optional) — existing term-frequency chart showing the new "% of
   documents" normalization toggle enabled.
