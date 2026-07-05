@@ -37,7 +37,13 @@ import Charts
 ///   1.0 — Analytics SA-3b: initial implementation
 ///   1.1 — Analytics SA (x-axis bounds): bounded coverage x-domain (1861–1993) on
 ///          the provenance-mix and density charts plus an editable year-range bar
+///   1.2 — Analytics SA (series chart refinements): no-comma decade x-axes on the
+///          provenance-mix and density charts
 struct SourceProvenanceDashboard: View {
+
+    /// Format style for integer decade axis labels that suppresses comma
+    /// grouping — decades should display as `1950`, not `1,950`.
+    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 
     /// Optional so a missing environment yields a neutral empty state instead of
     /// a trap. Both live presentation paths (the onboarding sheet and the
@@ -158,6 +164,13 @@ struct SourceProvenanceDashboard: View {
             .chartForegroundStyleScale(domain: SourceProvenanceCategory.ordered.map(\.displayName))
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
             .chartYScale(domain: 0...1)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: Self.yearAxisFormat)
+                }
+            }
             .chartYAxis {
                 AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
             }
@@ -247,6 +260,13 @@ struct SourceProvenanceDashboard: View {
                 }
             }
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: Self.yearAxisFormat)
+                }
+            }
             .chartXAxisLabel(String(localized: "series.provenance.density.x", defaultValue: "Coverage decade"))
             .chartYAxisLabel(String(localized: "series.provenance.density.y", defaultValue: "Source notes"))
             .frame(height: 240)

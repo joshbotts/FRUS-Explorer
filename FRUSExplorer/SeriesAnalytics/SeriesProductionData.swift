@@ -61,59 +61,6 @@ enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
     static var ordered: [CoverageEra] { allCases.sorted { $0.rawValue < $1.rawValue } }
 }
 
-// MARK: - LagBucket
-
-/// A coarse publication-lag band used to colour the coverage-span Gantt chart.
-///
-/// Lag is `printYear − coverageEndYear` — how long after the events a volume
-/// documents it reached print. The bands surface the story of the series: a
-/// near-contemporaneous early record, the mid-century slippage, and the modern
-/// ~30-year backlog.
-///
-/// Version history:
-///   1.0 — Analytics SA-1b: initial implementation
-enum LagBucket: Int, CaseIterable, Sendable, Hashable {
-    /// Under ten years — near-contemporaneous.
-    case under10 = 0
-    /// Ten to under twenty years.
-    case tenToTwenty = 1
-    /// Twenty to under thirty years.
-    case twentyToThirty = 2
-    /// Thirty years or more — at or beyond the statutory target.
-    case thirtyPlus = 3
-
-    /// The band a lag (in years) falls into. Negative lags — a volume printed
-    /// at or before its own latest document date — bucket as `under10`.
-    ///
-    /// - Parameter lag: `printYear − coverageEndYear`.
-    /// - Returns: The matching lag band.
-    static func bucket(lag: Int) -> LagBucket {
-        switch lag {
-        case ..<10:      return .under10
-        case 10..<20:    return .tenToTwenty
-        case 20..<30:    return .twentyToThirty
-        default:         return .thirtyPlus
-        }
-    }
-
-    /// Localised label for charts and legends.
-    var label: String {
-        switch self {
-        case .under10:
-            return String(localized: "series.lag.under10", defaultValue: "Under 10 years")
-        case .tenToTwenty:
-            return String(localized: "series.lag.tenToTwenty", defaultValue: "10–20 years")
-        case .twentyToThirty:
-            return String(localized: "series.lag.twentyToThirty", defaultValue: "20–30 years")
-        case .thirtyPlus:
-            return String(localized: "series.lag.thirtyPlus", defaultValue: "30+ years")
-        }
-    }
-
-    /// The bands in stable display order (matches the raw-value ordering).
-    static var ordered: [LagBucket] { allCases.sorted { $0.rawValue < $1.rawValue } }
-}
-
 // MARK: - SeriesProductionData
 
 /// Pure, deterministic derivation of FRUS production-and-timeliness figures
@@ -135,6 +82,9 @@ enum LagBucket: Int, CaseIterable, Sendable, Hashable {
 ///   1.1 — Analytics SA (x-axis bounds): year-range filter helpers
 ///          (`lagPoints(in:)`, `coverageSpans(in:)`, `volumesPerPrintYearByEra(in:)`,
 ///          `cumulativeByPrintYear(in:)`) for the editable dashboard year range
+///   1.2 — Analytics SA (series chart refinements): removed the coverage-span
+///          Gantt chart and its supporting `CoverageSpan` / `coverageSpans` /
+///          `coverageSpans(in:)` / `LagBucket` code
 struct SeriesProductionData: Sendable {
 
     // MARK: Point types
@@ -155,24 +105,6 @@ struct SeriesProductionData: Sendable {
         let lagYears: Int
         /// Era bucket of `coverageEndYear`, used to colour the scatter.
         let coverageEra: CoverageEra
-
-        var id: String { volumeId }
-    }
-
-    /// One volume's coverage span, present only when both an earliest and a
-    /// latest document year could be parsed. Drives the Gantt chart.
-    struct CoverageSpan: Identifiable, Sendable, Hashable {
-        /// The volume's stable id (also the `Identifiable` id).
-        let volumeId: String
-        /// The volume's subseries identifier.
-        let subseries: String
-        /// Year of the earliest document (`dateRange.earliest`).
-        let startYear: Int
-        /// Year of the latest document (`dateRange.latest`).
-        let endYear: Int
-        /// Lag band, when a print year was also available; `nil` when the
-        /// volume has a coverage span but no parseable print year.
-        let lagBucket: LagBucket?
 
         var id: String { volumeId }
     }
@@ -213,9 +145,6 @@ struct SeriesProductionData: Sendable {
     /// the breakdown for an era-coloured bar chart.
     let volumesPerPrintYearByEra: [PrintYearCount]
 
-    /// Per-volume coverage spans, sorted by `startYear` (then `endYear`).
-    let coverageSpans: [CoverageSpan]
-
     /// Cumulative published-volume totals by print year, ascending.
     let cumulativeByPrintYear: [CumulativePoint]
 
@@ -247,9 +176,8 @@ struct SeriesProductionData: Sendable {
     init(entries: [VolumeManifestEntry]) {
         total = entries.count
 
-        // ── Lag points + coverage spans in one pass ────────────────────────
+        // ── Lag points + coverage counts in one pass ───────────────────────
         var lag: [LagPoint] = []
-        var spans: [CoverageSpan] = []
         var withPrintYear = 0
         var withCoverage = 0
 
@@ -275,26 +203,9 @@ struct SeriesProductionData: Sendable {
                     )
                 )
             }
-
-            // Coverage span needs an earliest AND a latest year.
-            if let startYear, let endYear {
-                let bucket = printYear.map { LagBucket.bucket(lag: $0 - endYear) }
-                spans.append(
-                    CoverageSpan(
-                        volumeId: entry.volumeId,
-                        subseries: entry.subseries,
-                        startYear: startYear,
-                        endYear: endYear,
-                        lagBucket: bucket
-                    )
-                )
-            }
         }
 
         lagPoints = lag
-        coverageSpans = spans.sorted {
-            $0.startYear != $1.startYear ? $0.startYear < $1.startYear : $0.endYear < $1.endYear
-        }
         countWithPrintYear = withPrintYear
         countWithCoverage = withCoverage
         countLagComputable = lag.count
@@ -342,17 +253,6 @@ struct SeriesProductionData: Sendable {
     /// - Returns: The in-range lag points, order preserved.
     func lagPoints(in domain: ClosedRange<Int>) -> [LagPoint] {
         lagPoints.filter { domain.contains($0.coverageEndYear) }
-    }
-
-    /// `coverageSpans` restricted to those that *overlap* `domain` — a span is
-    /// kept when any part of its `startYear...endYear` intersects the range, so a
-    /// volume straddling the boundary still appears. The range filter for the
-    /// (coverage-valued) Gantt chart.
-    ///
-    /// - Parameter domain: The inclusive coverage-year range to keep.
-    /// - Returns: The overlapping coverage spans, order preserved.
-    func coverageSpans(in domain: ClosedRange<Int>) -> [CoverageSpan] {
-        coverageSpans.filter { $0.startYear <= domain.upperBound && $0.endYear >= domain.lowerBound }
     }
 
     /// `volumesPerPrintYearByEra` restricted to buckets whose *print* year falls

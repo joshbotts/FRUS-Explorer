@@ -104,17 +104,6 @@ struct SeriesAxisRangeTests {
         #expect(narrow.map(\.volumeId) == ["b"])
     }
 
-    @Test("SeriesProductionData.coverageSpans(in:) keeps overlapping spans; drops out-of-range")
-    func coverageSpansFilter() {
-        let data = productionData()
-        // 1861…1993 drops the 1840–1850 span (wholly below the floor).
-        let full = data.coverageSpans(in: 1861...1993)
-        #expect(Set(full.map(\.volumeId)) == ["b", "c", "d"])
-        // A window over the 1960s–70s keeps only the overlapping spans.
-        let narrow = data.coverageSpans(in: 1955...1985)
-        #expect(Set(narrow.map(\.volumeId)) == ["c", "d"])
-    }
-
     @Test("SeriesProductionData print-year filters key off the print year, not coverage")
     func printYearFilters() {
         let data = productionData()
