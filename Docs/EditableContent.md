@@ -1,7 +1,7 @@
 # FRUS Explorer — Editable Static Content
 
 This file contains all user-facing prose currently displayed in the About screen,
-onboarding welcome, and indexing education pages. Edit the text directly. When you
+onboarding welcome, and in-app FRUS Research Guide pages. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
 **How annotations work:** Each editable block is preceded by an HTML comment that
@@ -20,13 +20,17 @@ lists, and changing headings.
 
 ### 1.1 FRUS Series Description
 
-<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: frusDescription | lines: 178–207 | key: about.frus.description -->
+*This is Markdown source — it renders with an inline link on "1991 federal statute". Keep the `[text](url)` link syntax intact.*
 
-Foreign Relations of the United States (FRUS) is the official documentary record of U.S. foreign policy, published by the Department of State continuously since 1861. Prepared by the Office of the Historian under a federal statute, the series is required to be a thorough, accurate, and reliable record of major U.S. foreign policy decisions. Historians draw on records from the White House, National Security Council, Departments of State and Defense, the CIA, and other agencies, as well as the private papers of individual policymakers, to document how decisions were made and what they aimed to achieve.
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: frusDescriptionRaw | lines: 210–243 | key: about.frus.description -->
 
-The statute requires that editing be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision may be omitted, and nothing may be omitted to conceal a defect in policy. Volumes must be published within 30 years of the events they document.
+The **Foreign Relations of the United States** (FRUS) series is the official documentary record of U.S. foreign policy. The Department of State has published FRUS continuously since 1861. The series now comprises more than 550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
 
-FRUS covers U.S. bilateral and regional relations across the globe, as well as global issues — terrorism, narcotics, health, the environment — and topics including national security policy, foreign economic policy, and foreign policy organization. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States' role in the world.
+Today, the Office of the Historian at the Department of State produces the series under a [1991 federal statute](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351) that requires the series to provide a "thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity." To fulfill this mandate, the historians who produce FRUS consult records from the White House, National Security Council, Departments of State and Defense, the CIA, other U.S. Government agencies, and sometimes even the private papers of key policymakers to identify the most critical documentation for editorial annotation, declassification, and publication.
+
+The statute requires that this work be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision should be omitted, and information should not be withheld to conceal a defect in policy. Volumes should be published within 30 years of the events they document.
+
+While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
 
 <!-- END SOURCE: about.frus.description -->
 
@@ -36,7 +40,7 @@ FRUS covers U.S. bilateral and regional relations across the globe, as well as g
 
 *The three text fragments below are assembled into a single sentence in code.*
 
-<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: attributionText | lines: 271–285 | keys: about.attribution.prefix, about.attribution.claude, about.attribution.suffix -->
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: attributionText | lines: 338–353 | keys: about.attribution.prefix, about.attribution.claude, about.attribution.suffix -->
 
 **Prefix:** The code for FRUS Explorer was generated by
 
@@ -50,7 +54,7 @@ FRUS covers U.S. bilateral and regional relations across the globe, as well as g
 
 ### 1.3 Open Source — TEI Publisher Notice
 
-<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: openSourceSection | lines: 329–333 | key: about.openSource.teiPublisher.body -->
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: openSourceSection | lines: 397–398 | key: about.openSource.teiPublisher.body -->
 
 TEI rendering approaches informed by the TEI Publisher project (teipublisher.com). Licensed under the Apache License, Version 2.0.
 
@@ -60,7 +64,7 @@ TEI rendering approaches informed by the TEI Publisher project (teipublisher.com
 
 ### 1.4 NARA Disclaimer
 
-<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: naraDisclaimerSection | lines: 353–358 | key: about.nara.disclaimer -->
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: naraDisclaimerSection | lines: 420–426 | key: about.nara.disclaimer -->
 
 FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration (NARA). NARA Catalog data accessed through this app is provided by the National Archives and is subject to their terms of use.
 
@@ -76,11 +80,11 @@ FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National 
 
 ### 2.1 Title and Subtitle
 
-<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingIntroView.swift | lines: 43–50 | keys: onboarding.intro.title, onboarding.intro.subtitle -->
+<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingIntroView.swift | lines: 59–66 | keys: onboarding.intro.title, onboarding.intro.subtitle -->
 
 **Title:** Welcome to FRUS Explorer
 
-**Subtitle:** The complete Foreign Relations of the United States series, searchable on your device.
+**Subtitle:** The Foreign Relations of the United States series, searchable on your device.
 
 <!-- END SOURCE: onboarding.intro.title / subtitle -->
 
@@ -88,71 +92,39 @@ FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National 
 
 ### 2.2 Intro Body Text
 
-*This is the scrollable body text below the title. It is a single block of prose stored in `OnboardingViewModel.bundledIntroText`.*
+*This is the scrollable body text below the title. It is a single Markdown block stored in `OnboardingViewModel.bundledIntroText`; keep the `[text](url)` link syntax intact.*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingViewModel.swift | property: bundledIntroText | lines: 237–243 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingViewModel.swift | property: bundledIntroText | lines: 237–247 -->
 
-Foreign Relations of the United States (FRUS) is the official documentary record of U.S. foreign policy. Published by the Office of the Historian, U.S. Department of State, the series documents the major foreign policy decisions and diplomatic activity of the U.S. Government.
+The Foreign Relations of the United States (FRUS) series is the official documentary record of U.S. foreign policy. The Department of State has published FRUS continuously since 1861. The series now comprises more than 550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
 
-The FRUS series began in 1861 and now comprises more than 450 volumes covering U.S. foreign policy from 1776 through the 1980s. Each volume contains declassified State Department cables, presidential directives, memoranda of conversations, and other primary source materials selected to illuminate the historical record.
+Today, the Office of the Historian at the Department of State produces the series under a [1991 federal statute](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351) that requires the series to provide a "thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity." To fulfill this mandate, the historians who produce FRUS consult records from the White House, National Security Council, Departments of State and Defense, the CIA, other U.S. Government agencies, and sometimes even the private papers of key policymakers to identify the most critical documentation for editorial annotation, declassification, and publication.
 
-FRUS Explorer provides full-text search, document browsing, AI-assisted summarization, and citation tools for the complete digital corpus, which is freely available at history.state.gov and in the HistoryAtState GitHub repository.
+The statute requires that this work be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision should be omitted, and information should not be withheld to conceal a defect in policy. Volumes should be published within 30 years of the events they document.
+
+While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
+
+FRUS Explorer provides full-text search, document browsing, AI-assisted summarization, NARA Catalog integration, and a variety of other research and citation tools to researchers using all or part of the FRUS series corpus, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
 
 <!-- END SOURCE: bundledIntroText -->
 
 ---
 
-## 3. Setup Wizard (shown while indexing runs)
+## 3. FRUS Research Guide (in-app education pages)
 
-*`IndexingSetupWizardView` — a three-step wizard (Project → Collection → Done) presented after the education pages. Only the explanatory prose is listed here; form labels and button text are not shown.*
+*`IndexingEducationView` — the in-app FRUS Research Guide. It has **eleven pages**: **seven prose pages** (pages 1–7) whose text is editable below, followed by **four live "About the Series" dashboard pages** that render interactive charts instead of prose. The guide is shown while the first index builds and is also reachable any time from the app (iOS Settings → FRUS Research Guide; macOS `frus.researchGuide` window).*
 
----
+*The content model is a series of `EducationPage` and `EducationSection` structs. Structure per prose page: **Title**, optional **Subtitle**, then one or more **Sections**. Each section has an optional **Heading**, one or more **Paragraphs**, and an optional **Bullet list**.*
 
-### 3.1 Project Step — Explanation
+*The `id` values in the annotations (`page-id` / `section-id`) are the Swift `id` strings on the structs — they are used as update keys and must not be changed. Prose here uses raw Swift string literals in code (not localized), so edits map back verbatim.*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingSetupWizardView.swift | key: setup.project.explanation | lines: 150–153 (iOS Form), 222–225 (macOS VStack) -->
-
-Projects are activity lenses — all notes, summaries, and reading history you create while a project is active are tagged with it. You can switch projects instantly, or work in the global context with no project selected.
-
-<!-- END SOURCE: setup.project.explanation -->
+*The four dashboard pages (§3.8–§3.11) have **no editable page prose** (`sections: []`). Their on-screen copy — intro paragraph, per-chart captions, and caveats — lives in the dashboard view files as localized strings; those blocks list where to edit it. Do not add prose here for those pages.*
 
 ---
 
-### 3.2 Collection Step — Explanation
+### 3.1 Page 1 — The Official Record of American Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingSetupWizardView.swift | key: setup.collection.explanation | lines: 172–175 (iOS Form), 250–253 (macOS VStack) -->
-
-A collection is a curated set of FRUS documents you assemble for a purpose — a teaching unit, a policy brief, a research chapter. You can add documents once indexing finishes. Use the note to capture your thinking now, while the purpose is clear.
-
-<!-- END SOURCE: setup.collection.explanation -->
-
-*Note: two slightly different versions of this text appear — one for iOS Form layout and one for macOS VStack. Both will be updated to match your revision.*
-
----
-
-### 3.3 Done Step — Body
-
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingSetupWizardView.swift | key: setup.done.body | lines: 188–191 (iOS), 265–268 (macOS) -->
-
-Indexing is still running in the background. When it finishes, your full collection will be searchable. Come back to add documents to your collection anytime.
-
-<!-- END SOURCE: setup.done.body -->
-
----
-
-## 4. Education Pages (shown while first index builds)
-
-*`IndexingEducationView` — five pages displayed while the first index runs. All five pages appear in `IndexingEducationView.swift`. The content model is a series of `EducationPage` and `EducationSection` structs.*
-
-*Structure per page: **Title**, optional **Subtitle**, then one or more **Sections**. Each section has an optional **Heading**, one or more **Paragraphs**, and an optional **Bullet list**.*
-
-*The `id` values in the annotations (`page-id` / `section-id`) are the Swift `id` strings on the structs — they are used as update keys and must not be changed.*
-
----
-
-### Page 1 — The Official Record of American Foreign Policy
-
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 400–447 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 582–629 -->
 
 **Title:** The Official Record of American Foreign Policy
 
@@ -160,43 +132,46 @@ Indexing is still running in the background. When it finishes, your full collect
 
 <!-- section-id: intro -->
 
-Foreign Relations of the United States — FRUS — is the official documentary historical record of major U.S. foreign policy decisions and significant diplomatic activity, published continuously by the Department of State since 1861. It is one of the longest-running publication programs of the U.S. government and the primary published source for the history of American diplomacy.
-
-<!-- section-id: ooh -->
-
-**Prepared by the Office of the Historian**
-
-FRUS volumes are compiled and edited by professional historians in the Office of the Historian, Bureau of Public Affairs, Department of State. Editors identify the most important documents, provide context through editorial notes and introductions, and coordinate the declassification review required before publication.
+Foreign Relations of the United States — FRUS — is the official documentary history of major U.S. foreign policy decisions and significant diplomatic activity, published continuously by the Department of State since 1861. It is one of the longest-running publication programs of the U.S. government and an indispensable source for the history of American diplomacy.
 
 <!-- section-id: mandate -->
 
-**A Statutory Mandate, Not a Courtesy**
+**Congressionally-Mandated Historical Transparency**
 
-Since 1991, FRUS is required by federal statute (Public Law 102-138, codified at 22 U.S.C. § 4351 et seq., amended 2021). The law establishes three binding commitments:
+Since 1991, FRUS is required by federal statute (Public Law 102-138, codified at [22 U.S.C. § 4351 et seq.](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351), amended 2021). The law establishes four binding commitments:
 
+- The series must constitute "a thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity. Volumes of this publication shall include all records needed to provide a comprehensive documentation of the major foreign policy decisions and actions of the United States Government, including the facts which contributed to the formulation of policies and records providing supporting and alternative views to the policy position ultimately adopted"
 - Volumes must be published within 30 years of the events they document
 - Government departments must grant historians full access to pertinent records at 20 years
-- The series must constitute a "thorough, accurate, and reliable" record — "nothing should be omitted for the purposes of concealing a defect in policy"
+- An Advisory Committee on Historical Diplomatic Documentation comprised of representatives of major scholarly organizations and experts chosen by the Department of State must oversee the production and declassification process to validate the historical objectivity of the series
+
+<!-- section-id: ooh -->
+
+**Prepared by the Department of State's Office of the Historian**
+
+FRUS volumes are compiled and edited by professional historians in the Office of the Historian at the Department of State. Historians in the compilation and review team identify the most important documents, provide context through editorial notes and introductions, and review draft volume manuscripts to ensure they provide "thorough, accurate, and reliable" coverage of the assigned topic(s). Historians in the declassification, publishing, and digital initiatives team coordinate the complex and thorough interagency declassification review required before release and then the detailed preparation of the manuscript required for publication. An Advisory Committee on Historical Diplomatic Documentation comprised of representatives of major scholarly organizations and experts chosen by the Department of State oversee this production process to validate the historical objectivity of the series.
 
 <!-- section-id: sources -->
 
 **Breadth of Sources**
 
-FRUS draws on records from the White House, National Security Council, Departments of State and Defense, the CIA, and other agencies — as well as the private papers of individual policymakers. Deletions required for national security must be acknowledged in the published text; major facts leading to policy decisions cannot be omitted.
+FRUS historians draw on records from the White House and National Security Council at Presidential Libraries as well as records from the Departments of State and Defense, the CIA, and other agencies, both at the National Archives and directly at those agencies. When needed, they also seek access to the private papers of key policymakers.
+
+Deletions required for national security must be acknowledged in the published text; major facts leading to policy decisions cannot be omitted.
 
 <!-- section-id: scope -->
 
 **Scope**
 
-FRUS covers U.S. bilateral and regional relations across the globe, as well as global issues — terrorism, narcotics, arms control, international economics — and topics including national security policy and foreign policy organization. The series currently spans from 1861 through the early 1990s, with volumes covering the Clinton administration still in production.
+FRUS volumes produced today cover U.S. bilateral and regional relations across the globe, including U.S. policymakers' responses to unfolding crises; their engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. The series currently spans from 1861 through the early 1990s, with volumes covering the Clinton administration still in production.
 
 <!-- END SOURCE: page what-frus-is -->
 
 ---
 
-### Page 2 — 163 Years in Progress
+### 3.2 Page 2 — 163 Years in Progress
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 451–495 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 635–690 -->
 
 **Title:** 163 Years in Progress
 
@@ -206,41 +181,51 @@ FRUS covers U.S. bilateral and regional relations across the globe, as well as g
 
 **Origins: Diplomatic Correspondence (1861–1920s)**
 
-The series began during the Civil War as a compilation of official diplomatic correspondence — dispatches, instructions to ministers, treaty negotiations. The emphasis was on formal State Department channels. Coverage was often contemporaneous: volumes sometimes appeared within a year of events, prioritizing currency over comprehensiveness. Editing standards were inconsistent, and the perspective was almost entirely that of the State Department.
+The series began during the Civil War as a compilation of official diplomatic correspondence — despatches from diplomatic posts, instructions to U.S. ministers overseas, and notes to and from foreign governments. The volumes documented the operations of the State Department. Coverage was often contemporaneous: volumes sometimes appeared within a year of events, prioritizing currency over comprehensiveness. Because the volumes were produced by the same clerks who administered the Department's day-to-day business, principles of selection and editing standards were inconsistent and reflected operational rather than historical purposes.
+
+<!-- section-id: professionalization -->
+
+**Professionalization in the Interwar Era (1924-1945)**
+
+In the 1920s, the Department of State began recruiting professionally-trained historians to undertake the increasingly complex editorial work of producing FRUS. Because budget constraints and operational considerations involved in waging World War I had imposed delays in publication during the previous two decades, those historians had an opportunity to select and edit the historical record of U.S. foreign policy with greater perspective and depth than their predecessors. They established formal editorial principles for FRUS that endured.
 
 <!-- section-id: national-security -->
 
 **The National Security Turn (1945–1970s)**
 
-The Cold War transformed what FRUS needed to be. Diplomacy had moved decisively out of the State Department and into the NSC, the CIA, and the White House. But the series continued to rely primarily on State Department records, leaving critical decision-making poorly documented. Classification pressure intensified as the stakes of disclosure grew. Volumes in this period often reflect what could be declassified rather than what historians judged most important.
+The Cold War transformed FRUS. As more and more decision-makers outside the Department of State left their imprint on foreign policy and diplomacy, FRUS historians increasingly needed to complement State Department records with documents drawn from other agencies' files. As the United States became more engaged in more places around the world, the perceived stakes of disclosure grew. Volumes in this period often reflect what could be declassified rather than what historians judged most important. In the 1957, the Department established a Historical Advisory Committee of outside academic experts to provide editorial advice about how to balance timeliness and comprehensiveness and to vouch for the integrity of published volumes.
 
 <!-- section-id: crisis -->
 
 **Crisis and Reform (1978–1991)**
 
-By the 1980s, the gap between what FRUS claimed to be and what it actually contained had become a serious professional problem. Historians inside the Office of the Historian fought — sometimes bitterly — for genuine access to CIA, NSC, and White House records. The controversy over the Iran volumes (which omitted the 1953 coup) became a breaking point.
+By the 1980s, the gap between what FRUS had always claimed to be and what it could actually deliver grew painfully apparent. Historians inside the Office of the Historian fought — sometimes bitterly — for genuine access to CIA, NSC, and White House records. Academic historians appointed to the Department-chartered Historical Advisory Committee struggled against increasingly restrictive security restrictions to understand whether declassification decisions across the government withheld information essential to the integrity of the historical record from publishable volumes. In 1989 and 1990, criticism of omissions of any hint of a major historical covert action from a volume documenting U.S. policy toward Iran in the early 1950s coupled with the fallout from the Department's deteriorating relationship with the Historical Advisory Committee to create a crisis for the series.
 
-In 1991, Congress intervened with the Foreign Relations Authorization Act, which established the statutory mandate still in force today, created the Historical Advisory Committee (HAC) to provide independent oversight, and required genuinely multi-agency sourcing.
+In 1991, Congress intervened by establishing statutory mandates for the mission of the series, the obligations of U.S. Government agencies to provide access to their historical records to the historians producing FRUS, and an advisory committee of academic historians to provide oversight to validate the historical integrity of the series.
 
 <!-- section-id: contemporary -->
 
 **The Contemporary Series (1991–Present)**
 
-Post-1991 volumes reflect a substantially different editorial philosophy: broader sourcing, fuller coverage of intelligence and NSC deliberations, and frank acknowledgment of omissions. The 30-year rule creates a rolling horizon; volumes covering the Reagan administration are now publishing, with the Bush 41 and Clinton eras in active production. Some volumes remain delayed by declassification disputes, particularly those involving the CIA.
+Post-1991 volumes reflect a substantially different editorial philosophy: broader sourcing, fuller coverage of intelligence activities, and more detailed acknowledgment of omissions. Even as some volumes are delayed by interagency declassification disagreements, the 30-year rule creates a rolling horizon; volumes covering the Reagan administration are now publishing, with the Bush 41 and Clinton eras in active production.
 
 <!-- section-id: digital -->
 
 **The Digital Transition**
 
-The shift to XML-encoded TEI files and digital publication has transformed how FRUS can be read and searched. All 552 volumes are now available as structured digital texts — the foundation for everything this app does. The encoding preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed.
+The shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All 552 volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed.
+
+<!-- section-id: frus-history -->
+
+To dive deeper into the history of the series, see the Office of the Historian's [official history](https://history.state.gov/historicaldocuments/frus-history) of FRUS.
 
 <!-- END SOURCE: page corpus-evolution -->
 
 ---
 
-### Page 3 — Understanding What You're Reading
+### 3.3 Page 3 — Understanding What You're Reading
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 499–551 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 696–745 -->
 
 **Title:** Understanding What You're Reading
 
@@ -248,53 +233,57 @@ The shift to XML-encoded TEI files and digital publication has transformed how F
 
 <!-- section-id: two-registers -->
 
-Every FRUS document exists in two registers: the published text you read here, and the original record in an archive somewhere. Understanding the relationship between them is essential for using FRUS effectively.
+Every FRUS document is an edited representation of the original record in an archive somewhere. Understanding editorial annotation will help you make full use of FRUS.
 
 <!-- section-id: types -->
 
-**Primary Documents and Editorial Notes**
+**Primary Documents, Editorial Notes, and Front Matter**
 
-Most of what you'll read in FRUS falls into one of two categories.
+FRUS is a documentary history, which means it primarily tells the story of U.S. foreign policy directly through actual historical documents. However, the historians who compiled the volumes also provided editorial annotation to convey more information from the archives.
 
-Primary documents are the actual historical records — cables, memoranda, meeting notes, intelligence assessments, letters. These are reproduced (sometimes with excisions) from government files. The source note at the bottom of each document identifies where the original lives.
+Primary documents are the actual historical records — cables, memoranda, meeting notes, intelligence assessments, letters. These are reproduced (sometimes with excisions) from government files. Each document has a source note that identifies where the original was found. Many documents also contain footnotes providing information about the surrounding historical context or even specific archival citations to other referenced documents, meetings, or events.
 
-Editorial notes are written by Office of the Historian historians. They appear as numbered entries in the document sequence and serve several purposes: summarizing developments the editors judged too voluminous or sensitive to reproduce in full, explaining gaps in the record, providing context for surrounding documents, and noting where fuller documentation exists. An editorial note that says "On [date], the NSC met to discuss…" is telling you something happened that isn't fully reproduced here.
+Many volumes also contain editorial notes written by Office of the Historian historians. They appear as numbered entries in the document sequence and serve several purposes: summarizing developments the editors judged too voluminous or sensitive to reproduce in full, explaining gaps in the record, providing context for surrounding documents, and noting where fuller documentation exists. An editorial note that says "On [date], the NSC met to discuss…" is telling you something happened that isn't fully reproduced here. Editorial notes provide additional archival citations to unpublished documents.
+
+Volume front matter has evolved over time. Recent volumes include valuable information about the editor's research methodology and a listing the archival sources they consulted as they selected documents for inclusion. They also contain annotated lists of people who generated, received, or were mentioned in the documents and terms and abbreviations used in the documents.
 
 <!-- section-id: source-note -->
 
 **Reading a Source Note**
 
-The source note identifies the archival provenance of a primary document. A typical note might read:
+Document source notes identify the archival provenance of the records published in FRUS. A source note for a document in the Reagan subseries might read:
 
-"Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Secret; Exdis."
+"Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Secret; Nodis."
 
-This tells you: the original is at the National Archives; it's in Record Group 59 (State Department records); it's part of the Central Foreign Policy File series from 1973–1979; the reel identifier is P840114–1808; and it was classified Secret with Exclusive Distribution handling.
+This tells you: the original record was collected from the National Archives; it's in Record Group 59 (State Department records); it's part of the Central Foreign Policy File series; the reel identifier is P840114–1808; and it was classified Secret with a special handling caption.
 
-The Source Explorer in this app reads these notes and connects them to NARA's finding aids — so you can navigate from a FRUS document directly to the archive where the original record lives.
+One way this app helps researchers is by connecting archival citations detected in source notes directly to NARA's finding aids — so you can navigate from a FRUS document directly to the archive where the original record lives. Source notes are extracted for every era of the series, including the modern volumes whose notes are embedded in the document heading. This makes it easier than ever to follow the archival roadmap FRUS offers for deeper research.
 
-<!-- section-id: omissions -->
+When a source note records classification markings — "Secret; Nodis", or explicitly "No classification marking" — the app separates them from the archival citation and shows them as a small chip beside the source note in the reading view, in Source Explorer, and on search results. The markings describe how the original record was handled at the time; the published text has been declassified.
 
-**What FRUS Omits**
-
-FRUS is comprehensive by intention but not by content. Three categories of material are routinely absent:
-
-- Excised passages: text removed during declassification review, indicated by brackets — [text not declassified]. The brackets at least signal the gap.
-- Omitted documents: entire records judged too sensitive for inclusion. Editorial notes often signal where records were not included.
-- Agency gaps: despite post-1991 reform, some agencies — particularly the CIA — remain less fully represented than the statute envisions. HAC reports note this periodically.
+The app also ships a corpus-wide authority of the archival collections FRUS cites: from Source Explorer you can open any matched collection to see its variant citation forms, its National Archives catalog record, every volume across the series that cites it, and how many documents in your own indexed volumes came from it.
 
 <!-- section-id: classifications -->
 
-**Classification Markings**
+**Excisions**
 
-Source notes often include the document's original classification (Secret, Top Secret, Confidential) and handling caveats (Exdis, Nodis, Eyes Only). These markings are historical — the documents have been declassified — but they tell you how sensitive the material was considered at the time and often why it took decades to publish.
+Most FRUS documents are published in full, but there are many that were published with excisions. Some of these excisions were editorial - the historians who compiled the volume judged that the excised material wasn't significant enough to warrant inclusion. Other excisions were made for policy considerations - government officials judged that information could not be released without unacceptable risks to U.S. interests or security.
+
+Before the 1920s, FRUS editors did not annotate excisions. Beginning in the 1920s, FRUS historians added ellipses (...) to indicate that material was omitted, but did not describe how much information was withheld or explain whether an excision was editorial in nature or an unfavorable declassification decision. The 1991 statutory mandate required more detailed editorial accounting for excised material, giving researchers a greater sense of how what is published compares to what had to be withheld.
+
+<!-- section-id: omissions -->
+
+**What FRUS Leaves Out**
+
+FRUS publishes thousands of documents for every administration's foreign policy, but it is just the tip of the iceberg for the entire historical record. Early volumes documented the implementation of foreign policy in the diplomacy conducted by the Department of State, but not the deliberative processes that set the course for U.S. foreign policy in Washington. Later volumes focused more and more on filling this gap by editorial prioritization of the decision-making process and inclusion of more and more records from beyond the State Department. This reversal of editorial focus means that the vast majority of diplomatic records that illustrate how foreign policy was implemented at U.S. embassies throughout the world are underrepresented in recent volumes compared to earlier ones.
 
 <!-- END SOURCE: page understanding-documents -->
 
 ---
 
-### Page 4 — Using FRUS for Research
+### 3.4 Page 4 — Using FRUS for Research
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 555–611 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 751–805 -->
 
 **Title:** Using FRUS for Research
 
@@ -302,106 +291,321 @@ Source notes often include the document's original classification (Secret, Top S
 
 <!-- section-id: intro -->
 
-FRUS rewards researchers who read across documents, not just within them. Here are strategies that experienced historians use.
+FRUS rewards researchers who read across documents, not just within them, and who squeeze valuable information about both historical and archival context from the editorial annotation added to documents. Here are strategies that experienced historians use.
 
 <!-- section-id: introduction -->
 
-**Read the Volume Introduction First**
+**Read the Front Matter**
 
-Every FRUS volume opens with a substantial editorial introduction that explains the volume's scope, the sources available (and unavailable), major gaps in the record, and key themes. Reading it takes fifteen minutes and saves hours of confusion. The introduction also names the editors — useful when you want to assess interpretive choices.
+Every FRUS volume opens with a substantial editorial introduction that explains the volume's scope, the sources available (and unavailable), major gaps in the record, and key themes. Reading this Front Matter takes minutes but saves hours of confusion.
 
 <!-- section-id: person -->
 
 **Follow the Person, Not Just the Topic**
 
-Some of the richest insights come from tracking individual policymakers across documents. Secretary Kissinger's position in one cable often illuminates a memo written three weeks earlier. The person index in this app aggregates mentions across a volume; use it to build a picture of who was driving decisions, not just what decisions were made.
+Some of the richest insights come from tracking individual policymakers across documents. Secretary Kissinger's position in one cable often illuminates a memo written three weeks earlier. The person index in this app aggregates mentions across a volume; use it to trace who was driving decisions, not just what decisions were made.
 
 <!-- section-id: dates -->
 
-**Use Date Ranges Aggressively**
+**Use Date Ranges Pragmatically**
 
-Foreign policy crises have phases. Filtering to a narrow window — the two weeks around a particular event — often surfaces the most revealing material: the intelligence assessments that preceded a decision, the cable traffic immediately after, the after-action reviews. Broad topic searches miss this texture.
+If your research topic is topical or thematic, you may find that queries across the entire FRUS corpus yield an unmanageably large number of search results. It can seem impossible to wade through page after page of hits. Date filtering lets you focus on reasonable slices of time. You can zero in on a particularly relevant time period or define more manageable chunks for a comprehensive review of results.
 
 <!-- section-id: editorial -->
 
 **Editorial Notes as a Finding Aid**
 
-When an editorial note summarizes a meeting or document rather than reproducing it, that's a research signal, not a dead end. The note usually identifies the record group or collection where the omitted material lives. You can request the original from NARA or use Source Explorer to navigate directly to the relevant finding aids.
+When an editorial note summarizes a meeting or document rather than reproducing it, that's a research signal, not a dead end. The note includes archival citations to the underlying documentation. You can use the document-level Source Explorer or the free-text NARA Lookup tool to find the relevant finding aids and track down the relevant original records at NARA.
 
 <!-- section-id: cross-volume -->
 
-**Cross the Volume Boundaries**
+**Cross Volume Boundaries**
 
-FRUS volumes are defined by the editors' judgment about how to slice a complex record. The decision on one page of a Latin America volume was shaped by conversations happening simultaneously in an Arms Control volume. Building collections across subseries — linking related documents from different volumes — reveals policy coherence (or contradiction) that single-volume reading misses.
+The focus and scope of individual FRUS volumes embody decisions about how to slice a complex record. A decision made in a document on one page of a Latin America volume might have been shaped by simultaneous conversations documented in a Foreign Economic Policy volume. Searching, following cross-references, and building collections across subseries and time periods often reveals policy coherence (or contradiction) that single-volume reading misses.
 
 <!-- section-id: omissions -->
 
-**Understand What You're Not Reading**
+**Don't Forget What You're Not Reading**
 
-FRUS documents the American side of foreign policy. The counterpart cable from a foreign ministry, the intelligence report the American delegation didn't know about, the domestic political pressures driving a foreign leader — these are absent. FRUS is indispensable but never sufficient. Treat it as your entry point to a policy question, not its answer.
+FRUS tells the U.S. side of the history of foreign relations. The counterpart cable from a foreign ministry, the intelligence report shaping the other side's expectations and strategies, the domestic political pressures driving a foreign leader — these are absent. FRUS is indispensable for illuminating the thinking and actions of U.S. policymakers. As valuable as that often is, international history is an interactive story that requires understanding events from multiple perspectives to truly master. For many types of questions, researchers should treat FRUS as an entry point to a historical or policy question, not its answer.
 
 <!-- END SOURCE: page research-practices -->
 
 ---
 
-### Page 5 — What This App Can Do
+### 3.5 Page 5 — Finding What You Need
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: app-features | lines: 614–679 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 813–866 -->
 
-**Title:** What This App Can Do
+**Title:** Finding What You Need
 
-**Subtitle:** Key features and how to use them
+**Subtitle:** Ways to locate documents across the corpus
 
 <!-- section-id: search -->
 
 **Full-Text Search**
 
-Search the full text of all downloaded and indexed volumes simultaneously. Results are ranked by relevance using the BM25 algorithm with English stemming — searching "negotiation" will also return documents containing "negotiate," "negotiated," and "negotiations." Narrow results further by date range, person name, or document type. The search filters to documents from indexed volumes only; downloading and indexing more volumes expands your search corpus.
+Search the full text of every downloaded and indexed volume at once. Results are ranked by relevance with English stemming, so searching "negotiation" also returns "negotiate," "negotiated," and "negotiations." The search box understands Google-style syntax: wrap words in quotes for an exact phrase ("missile crisis"), use OR for either term, a leading minus to exclude a word (-Cuba), and a trailing asterisk for prefix matching (negoti*).
 
-<!-- section-id: document -->
+Open the advanced filters to narrow by date range, document type, a person mentioned, and the search scope (document text, summaries, notes). You can also limit a search to specific volumes or whole subseries. Search only covers indexed volumes — download and index more to widen the corpus.
 
-**Document View**
+Find it on the Search tab (iOS) or the search window, ⌘F (Mac).
 
-Each document is rendered from its original TEI-encoded XML, preserving structure: headings, datelines, footnote markers, tables, and emphasis as they appear in the published volume. Footnote markers open inline popups; person names are highlighted and link to the volume's biographical glossary. You can create color-coded text highlights that persist across sessions and attach research notes to specific passages.
+<!-- section-id: browser -->
 
-<!-- section-id: source-explorer -->
+**Corpus Browser**
 
-**Source Explorer**
+Browse the series the way it is published: corpus → subseries → volume → compilation → document, with a breadcrumb trail so you always know where you are. From here you also download and queue volumes for indexing.
 
-The Source Explorer, accessible from any document, reads the archival source note and connects it to NARA's finding aids — routing you to the correct period-specific research page, filing manual PDFs, and related collections. When the index is complete, it also surfaces other documents in your indexed volumes that came from the same archival collection.
+Find it on the Browse tab (iOS) or the Corpus Browser window, ⇧⌘B (Mac).
 
-<!-- section-id: nara-lookup -->
+<!-- section-id: chronology -->
 
-**NARA Catalog Lookup**
+**Chronology**
 
-Select any text in a document — a lot file number, a decimal file identifier, a collection name — and use the NARA Catalog Lookup tool (in the toolbar's More menu, or the research strip on Mac) to query the NARA Catalog directly. Choose from several strategies: lot file search, keyword search within a specific record group, or central-files period routing. No API key is required for period routing; other strategies require a free NARA Catalog API key, available from Settings.
+Pick a date range and browse every indexed document from that period, grouped by date — ideal for reconstructing how a crisis or summit unfolded day by day. A distribution chart shows where documents cluster across the range and which volumes they come from, and dense dates collapse so a busy day stays readable. Tap a chart bar to jump to that date; tap a volume in the legend to filter. Documents that span a wide range of dates (chiefly editorial notes) are listed separately rather than pinned to a single day. A Word Cloud for this range button turns whatever span you are viewing into a word cloud.
 
-<!-- section-id: collections -->
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Chronology window (Mac).
 
-**Collections**
+<!-- section-id: person-index -->
 
-Collections are curated document sets you assemble for a purpose. Add documents from any volume, attach research notes to individual entries, and export the finished collection as a PDF, HTML file, or Word document. Export options include body depth (full text, AI summary only, or index only), footnote inclusion, highlight annotation, and whether to include research notes. Collections are the right way to build a teaching reader, policy brief, or research chapter from FRUS materials.
+**Person Index**
 
-<!-- section-id: research-tools -->
+An alphabetical directory of everyone named across your indexed volumes. Select a person to see every document that mentions them — a fast way to follow an individual policymaker, diplomat, or foreign leader through the record.
 
-**Research Notes, Tags, and Projects**
+Find it in the Corpus Browser's People section.
 
-Annotate documents with free-text research notes that are stored in iCloud and synced across your devices. Apply user tags to group documents by theme, actor, or analytical category. Organize everything under named research projects — a project is an activity lens that tags your notes, collections, and reading history so you can keep multiple research threads separate. All annotation data is yours and travels with your account.
+<!-- section-id: citation-lookup -->
 
-<!-- section-id: ai -->
+**Find by Citation**
 
-**AI Summaries**
+Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app resolves it straight to the document — no manual hunting through volumes and document numbers.
 
-When Apple Intelligence is available on your device, you can generate AI summaries of individual documents using customizable prompt templates. Summaries are stored locally and can be exported alongside documents in collections. The app provides standard prompt templates for different research purposes (analytical, chronological, actors-focused) and lets you create your own. Summaries are tools for orientation — always read the primary document for your actual research.
+Find it in the Search screen's overflow (More) menu.
+
+<!-- END SOURCE: page finding-documents -->
+
+---
+
+### 3.6 Page 6 — Seeing the Bigger Picture
+
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 870–948 -->
+
+**Title:** Seeing the Bigger Picture
+
+**Subtitle:** Tools for analysis across documents and volumes
 
 <!-- section-id: analytics -->
 
 **Corpus Analytics**
 
-The Analytics window charts how often a term or phrase appears across the indexed corpus over time, broken down by decade, year, or month. Use it to identify when a topic first appears in the diplomatic record, how coverage of a country or issue changed across administrations, or which volumes are most relevant to a specific keyword. Analytics operates entirely on the local index — no network connection required.
+Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.
 
-<!-- END SOURCE: page app-features -->
+A caution: FRUS volumes are selective, uneven proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. Analytics runs entirely on your local index; no network connection is required.
+
+The By-Year and By-Decade charts colour-code each period by its top source volumes; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into "Other."
+
+On those same two charts, a "% of documents" toggle reads a term as a share of the corpus rather than a raw count — the percentage of that period's documents that contain it — so a term doesn't look like it is surging simply because the series published more in later decades.
+
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Corpus Analytics window (Mac).
+
+<!-- section-id: person-analytics -->
+
+**Person Analytics**
+
+Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period's dated documents), and — when exactly two people are selected — draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.
+
+Mentions come only from documents the app can place on a date, and FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
+
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Person Analytics window (Mac).
+
+<!-- section-id: word-cloud -->
+
+**Word Cloud**
+
+See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.
+
+Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don't want to see, or compare two scopes side by side; export the cloud as a PNG, PDF, or CSV. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud's typeface and density in Settings.
+
+Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.
+
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, and saved searches.
+
+<!-- section-id: cross-reference-graph -->
+
+**Cross-Reference Graph**
+
+Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.
+
+Find it from a document's toolbar (iOS) or the Graph window (Mac).
+
+<!-- section-id: cross-reference-analytics -->
+
+**Cross-Reference Analytics**
+
+Where the graph traces one document's neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network's shape — a few heavily-cited landmarks and a long tail — a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of "landmark" documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.
+
+These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes.
+
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
+
+<!-- section-id: source-explorer -->
+
+**Source Explorer & NARA Catalog**
+
+Open the Source Explorer from any document to read its source note broken into structured archival fields, and to follow detected citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.
+
+You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies use a free NARA Catalog API key you add in Settings.
+
+From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document's row in a volume's sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.
+
+A volume's front matter names the archival collections its editors drew on. In the volume's Sources section, each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app's cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series.
+
+<!-- section-id: timeline -->
+
+**Document Timeline**
+
+Turn any set of results into a timeline. From a search result list or a collection, the timeline view charts those documents by year (and lists them chronologically) so you can see their distribution over time at a glance and spot gaps or concentrations.
+
+<!-- END SOURCE: page corpus-analysis -->
 
 ---
 
-*End of editable content. Total source locations: 4 files across 15 blocks.*
+### 3.7 Page 7 — Working With Documents
+
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 952–1020 -->
+
+**Title:** Working With Documents
+
+**Subtitle:** Reading, annotating, organising, and exporting
+
+<!-- section-id: document -->
+
+**The Document Reader**
+
+Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Reader mode keeps the focus on the published text, while research mode brings your notes, tags, and AI summaries alongside it.
+
+<!-- section-id: annotations -->
+
+**Highlights, Notes & Tags**
+
+Create color-coded text highlights that persist across sessions, attach free-text research notes to a passage or a whole document, and apply your own tags to group documents by theme, actor, or analytical category. All of it is yours and travels with your account.
+
+<!-- section-id: projects -->
+
+**Research Projects**
+
+A project is an activity lens on your work. Every note, highlight, summary, and collection you create is tagged with the active project, so you can keep separate research threads distinct and switch between them instantly — or work in the global context with no project selected. Switch or create projects from the project picker.
+
+A default project is created for you; you never have to set one up before exploring.
+
+<!-- section-id: collections -->
+
+**Collections & Export**
+
+Collections are curated sets you assemble for a purpose — a teaching reader, a briefing packet, a source dossier. The manager is where you shape the content: add documents from any volume, interleave your own section headings and rich-text prose (bold, italic, underline, colour), attach notes to a document, and inspect a document's notes, highlights, tags, summary, and archival source in place. Add Documents gathers documents without leaving the editor — search the index, browse a volume, paste citations or history.state.gov links (each line resolves to its document), or pull in everything carrying one of your tags. The composition lives on the collection itself — default body depth (full text, an AI summary, or a compact index), footnotes, table-of-contents style, and whether to include highlights, notes, or a word cloud — and any single document or whole section can override the body depth. Sections nest up to three levels — indent or outdent a heading from its context menu, drag a heading to move its whole section as a block, and give the collection a subtitle, author line, rich-text introduction, and colophon for a true title page. Excerpt quotations freeze a highlighted or selected passage into the collection as a styled block quote with its citation, and each document's inspector is a per-document control surface — a headnote abstract above the body, per-document overrides for highlights, notes, source note, footnotes, and summary prompt, and a "See also" line citing cross-referenced documents inside the collection. Generated apparatus blocks — a bibliography, a chronology, a sources-and-archives list, a persons index, and a thematic index — are computed from the collection's documents at every export and in the preview, placeable anywhere like any other row. Sort by Date puts the documents in chronological order either across the whole collection in one sweep, or within each section only — so documents stay under their own heading rather than crossing into a neighboring section. A live preview shows the collection exactly as its HTML export while you compose — side-by-side on iPad and Mac, a Preview toggle on iPhone.
+
+Export is simply how you share it. Render the collection — section headings and prose included — as a PDF, HTML file, or Word document; produce a BibTeX or RIS file for a reference manager; or save a native ".fruscollection" file: an editable copy a colleague opens right back into their own FRUS Explorer, where the documents travel as references they can download. Import one with Import Collection or by opening the file. A smart collection driven by a saved search can be frozen into an editable copy with Create Static Snapshot.
+
+Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac).
+
+<!-- section-id: citations -->
+
+**Citations & Bibliographic Export**
+
+Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File → Import).
+
+Sending to Zotero is one action: connect a Zotero account (Settings → Zotero) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import.
+
+<!-- section-id: ai -->
+
+**AI Summaries**
+
+Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections; every summary in an exported collection is labeled as AI-generated content attributed to Apple Intelligence. Treat them as orientation only: always read the primary document yourself for your actual research.
+
+To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, or date range unattended, reporting progress as it goes — so a stack of summaries is ready when you return.
+
+<!-- section-id: sync -->
+
+**Syncing Across Devices**
+
+Your notes, highlights, tags, collections, and projects sync automatically through iCloud, so your research follows you between iPhone, iPad, and Mac. Downloaded volumes and the search index are stored per-device and are not synced.
+
+<!-- END SOURCE: page working-with-documents -->
+
+---
+
+### 3.8 Page 8 — Production & Timeliness *(live dashboard — no editable page prose)*
+
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1031–1040 | note: dashboard page, sections: [] -->
+
+This page renders the live **Production & Timeliness** dashboard (`EducationDashboard.seriesProduction`) instead of prose, so it has no editable page-level sections. Its page **title** ("Production & Timeliness") and **subtitle** ("How long the official record takes to reach print") are localized in code at the lines above (`education.series.production.page.title` / `.subtitle`).
+
+The dashboard's own on-screen copy — the intro paragraph, per-chart captions, and the "About these figures" caveats — lives in **`FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift`** as localized strings. To edit it, change these keys there:
+
+- Intro: `series.production.intro`
+- Chart titles/captions: `series.chart.lag.title` / `.caption`, `series.chart.lag.target.series`, `series.chart.peryear.title` / `.caption`, `series.chart.cumulative.title` / `.caption`; axis labels `series.chart.*.x` / `.y`; era legend `series.chart.era.legend`
+- Caveats block: `series.caveats.title` / `series.caveats.body`
+- Shared "View as table" control: `series.inspector.viewTable`
+- Empty state: `series.empty.title` / `series.empty.message`
+
+<!-- END SOURCE: page series-production -->
+
+---
+
+### 3.9 Page 9 — Geographic Emphasis *(live dashboard — no editable page prose)*
+
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1052–1061 | note: dashboard page, sections: [] -->
+
+This page renders the live **Geographic Emphasis** dashboard (`EducationDashboard.seriesGeography`) instead of prose, so it has no editable page-level sections. Its page **title** ("Geographic Emphasis") and **subtitle** ("Which regions and countries the series covers most") are localized in code at the lines above (`education.series.geography.page.title` / `.subtitle`).
+
+The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift`** as localized strings. To edit it, change these keys there:
+
+- Intro: `series.geography.intro`
+- Chart titles/captions: `series.geography.trend.title` / `.caption`, `series.geography.totals.title` / `.caption`, `series.geography.countries.title` / `.caption`; axis labels `series.geography.*.x` / `.y`; region legend `series.geography.region.legend`
+- Caveats block: `series.geography.caveats.title` / `series.geography.caveats.body`
+- Shared "View as table" control: `series.inspector.viewTable`
+- Empty state: `series.geography.empty.title` / `series.geography.empty.message`
+
+<!-- END SOURCE: page series-geography -->
+
+---
+
+### 3.10 Page 10 — Archival Sourcing *(live dashboard — no editable page prose)*
+
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1073–1082 | note: dashboard page, sections: [] -->
+
+This page renders the live **Archival Sourcing** dashboard (`EducationDashboard.seriesSourcing`) instead of prose, so it has no editable page-level sections. Its page **title** ("Archival Sourcing") and **subtitle** ("Where the series drew its documents from, over time") are localized in code at the lines above (`education.series.sourcing.page.title` / `.subtitle`).
+
+The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift`** as localized strings. To edit it, change these keys there:
+
+- Intro: `series.provenance.intro`
+- Chart titles/captions: `series.provenance.composition.title` / `.caption`, `series.provenance.trend.title` / `.caption`, `series.provenance.density.title` / `.caption`; axis labels `series.provenance.*.x` / `.y`; category legend `series.provenance.category.legend`
+- Caveats block: `series.provenance.caveats.title` / `series.provenance.caveats.body`
+- Shared "View as table" control: `series.inspector.viewTable`
+- Empty state: `series.provenance.empty.title` / `series.provenance.empty.message`
+
+<!-- END SOURCE: page series-sourcing -->
+
+---
+
+### 3.11 Page 11 — Administration Profiles *(live dashboard — no editable page prose)*
+
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1094–1103 | note: dashboard page, sections: [] -->
+
+This page renders the live **Administration Profiles** dashboard (`EducationDashboard.administrationProfiles`) instead of prose, so it has no editable page-level sections. Its page **title** ("Administration Profiles") and **subtitle** ("How the series' coverage is distributed across presidencies") are localized in code at the lines above (`education.series.administrations.page.title` / `.subtitle`).
+
+The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift`** as localized strings. To edit it, change these keys there:
+
+- Intro: `series.admin.intro`
+- Chart titles/captions: `series.admin.docs.title` / `.caption`, `series.admin.perYear.title` / `.caption`, `series.admin.volumes.header` / `series.admin.volumes.caption`; axis labels `series.admin.*.x` / `.y`; party legend `series.admin.party.legend`; per-administration detail `series.admin.detail.title` / `series.admin.detail.picker`
+- Editorial-note (range-document) toggle: `series.admin.toggle.title` / `series.admin.toggle.subtitle`
+- Caveats block: `series.admin.caveats.title` / `series.admin.caveats.body`
+- Shared "View as table" control: `series.inspector.viewTable`
+- Empty state: `series.admin.empty.title` / `series.admin.empty.message`
+
+<!-- END SOURCE: page series-administrations -->
+
+---
+
+*End of editable content. Total source locations: 4 source files (AboutView.swift, OnboardingIntroView.swift, OnboardingViewModel.swift, IndexingEducationView.swift) across 17 blocks: 4 About blocks (§1), 2 Onboarding blocks (§2), and 11 FRUS Research Guide page blocks (§3 — 7 editable prose pages + 4 live-dashboard pointer blocks). The four dashboard pages carry no editable page prose; their on-screen copy lives in the four `FRUSExplorer/SeriesAnalytics/*Dashboard.swift` files at the localization keys listed in each block.*
