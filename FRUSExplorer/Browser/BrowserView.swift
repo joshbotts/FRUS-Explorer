@@ -75,6 +75,7 @@ struct BrowserView: View {
     @State private var showAnalytics = false
     @State private var analyticsParameters: AnalyticsParameters?
     @State private var showPersonAnalytics = false
+    @State private var showCrossRefAnalytics = false
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
     // showCitationLookup lives in AppState (promoted in Session 43) so that macOS
@@ -129,6 +130,10 @@ struct BrowserView: View {
         }
         .sheet(isPresented: $showPersonAnalytics) {
             PersonAnalyticsView()
+                .environment(appState)
+        }
+        .sheet(isPresented: $showCrossRefAnalytics) {
+            CrossReferenceAnalyticsView()
                 .environment(appState)
         }
         .sheet(isPresented: $showChronology) {
@@ -191,6 +196,12 @@ struct BrowserView: View {
                           systemImage: "person.2")
                 }
                 Button {
+                    showCrossRefAnalytics = true
+                } label: {
+                    Label(String(localized: "browse.crossRefAnalytics.a11y", defaultValue: "Cross-Reference Analytics"),
+                          systemImage: "point.3.connected.trianglepath.dotted")
+                }
+                Button {
                     appState.pendingWordCloud = .corpus
                 } label: {
                     Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
@@ -202,7 +213,7 @@ struct BrowserView: View {
             .controlHelp(
                 String(localized: "browse.analysisTools.a11y", defaultValue: "Analysis Tools"),
                 detail: String(localized: "browse.analysisTools.help",
-                               defaultValue: "Chronology, Corpus Analytics, Person Analytics, and the corpus Word Cloud"),
+                               defaultValue: "Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, and the corpus Word Cloud"),
                 systemImage: "chart.bar.xaxis"
             )
         }

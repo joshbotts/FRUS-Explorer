@@ -300,6 +300,20 @@ struct MainWindowView: View {
                 defaultValue: "Open Person Analytics — most-mentioned people by era and multi-person mention trajectories"
             ))
 
+            // Cross-Reference Analytics window (CA-6)
+            Button {
+                openWindow(id: "frus.crossRefAnalytics")
+                bringMacWindowToFront(id: "frus.crossRefAnalytics")
+            } label: {
+                Label(String(localized: "mainwindow.tools.crossRefAnalytics",
+                             defaultValue: "Cross-Reference Analytics"),
+                      systemImage: "point.3.connected.trianglepath.dotted")
+            }
+            .help(String(
+                localized: "mainwindow.tools.crossRefAnalytics.help",
+                defaultValue: "Open Cross-Reference Analytics — most-referenced documents, degree distribution, a volume citation heat matrix, and PageRank landmark documents"
+            ))
+
             // Word Cloud window (corpus scope)
             Button {
                 appState.pendingWordCloud = .corpus

@@ -29,6 +29,10 @@ import SQLite3
 ///   1.3 — Session 130: `documentHeaders(for:)` public method for batch header lookup
 ///   1.4 — Session 130: `documentsWithUserTags()` — returns all (vol, doc, tagIds) rows
 ///          from document_cache for use by ResearchView's direct-tag data source
+///   1.5 — CA-6 (analytics CA-track): statistical queries for CrossReferenceAnalyticsView —
+///          `topDocumentsByInDegree(limit:)`, `resolvedInDegrees()`, `resolvedOutDegrees()`,
+///          and `resolvedCitationEdges()` (all resolved-target-only, for in-degree ranking,
+///          the degree-distribution histogram, and the offline PageRank input)
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -585,6 +589,131 @@ public actor CrossReferenceStore {
         sqlite3_bind_text(stmt, 4, volumeId,   -1, SQLITE_TRANSIENT_CR)
         guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    // MARK: - CA-6 statistical queries
+
+    /// The top-N documents by inbound citation count (in-degree), joined to their header.
+    ///
+    /// **Resolved targets only.** Cross-references whose `target_volume_id` is NULL are
+    /// ambiguous across volumes — a NULL target means "some document with this id" and
+    /// cannot be attributed to a specific `(volume, document)` node without conflating
+    /// same-numbered documents in different volumes. Those rows are excluded from the
+    /// ranking; the caller discloses this as "resolved cross-references." Ranking is over
+    /// the resolved node `(target_volume_id, target_document_id)`.
+    ///
+    /// - Parameter limit: Maximum rows to return, ordered by in-degree descending.
+    /// - Returns: `(volumeId, documentId, inDegree, header)` — `header` from `document_cache`,
+    ///   `nil` when the target volume is not yet indexed.
+    public func topDocumentsByInDegree(
+        limit: Int
+    ) throws -> [(volumeId: String, documentId: String, inDegree: Int, header: String?)] {
+        let sql = """
+            SELECT cr.target_volume_id, cr.target_document_id, COUNT(*) AS in_degree, dc.header
+            FROM cross_references cr
+            LEFT JOIN document_cache dc
+                   ON dc.volume_id = cr.target_volume_id
+                  AND dc.document_id = cr.target_document_id
+            WHERE cr.target_volume_id IS NOT NULL
+            GROUP BY cr.target_volume_id, cr.target_document_id
+            ORDER BY in_degree DESC, cr.target_volume_id, cr.target_document_id
+            LIMIT ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int(stmt, 1, Int32(max(0, limit)))
+        var result: [(volumeId: String, documentId: String, inDegree: Int, header: String?)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            result.append((
+                volumeId:   columnString(stmt, 0) ?? "",
+                documentId: columnString(stmt, 1) ?? "",
+                inDegree:   Int(sqlite3_column_int64(stmt, 2)),
+                header:     columnString(stmt, 3)
+            ))
+        }
+        return result
+    }
+
+    /// The in-degree of every resolved-target document — one row per distinct
+    /// `(target_volume_id, target_document_id)` with a non-NULL target volume, giving its
+    /// inbound citation count. NULL-target (unresolved) edges are excluded, matching
+    /// `topDocumentsByInDegree`.
+    ///
+    /// The view buckets these per-document counts into a histogram with
+    /// `CrossReferenceStats.degreeDistribution(_:)` (a pure, testable function) rather than
+    /// bucketing in SQL, so the bucketing rule is unit-testable without a database.
+    ///
+    /// - Returns: The in-degree value for each resolved target document (unordered).
+    public func resolvedInDegrees() throws -> [Int] {
+        let sql = """
+            SELECT COUNT(*) AS in_degree
+            FROM cross_references
+            WHERE target_volume_id IS NOT NULL
+            GROUP BY target_volume_id, target_document_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [Int] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            result.append(Int(sqlite3_column_int64(stmt, 0)))
+        }
+        return result
+    }
+
+    /// The out-degree of every source document that emits at least one resolved cross-
+    /// reference — one row per distinct `(source_volume_id, source_document_id)` counting
+    /// its outbound edges to resolved targets. NULL-target edges are excluded so the in-
+    /// and out-degree distributions are drawn from the same resolved-edge population.
+    ///
+    /// - Returns: The out-degree value for each such source document (unordered).
+    public func resolvedOutDegrees() throws -> [Int] {
+        let sql = """
+            SELECT COUNT(*) AS out_degree
+            FROM cross_references
+            WHERE target_volume_id IS NOT NULL
+            GROUP BY source_volume_id, source_document_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [Int] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            result.append(Int(sqlite3_column_int64(stmt, 0)))
+        }
+        return result
+    }
+
+    /// Every resolved document-to-document citation edge, as `(source, target)` node keys.
+    ///
+    /// **Resolved targets only** (`target_volume_id IS NOT NULL`) — the same node-identity
+    /// discipline as `topDocumentsByInDegree`: an edge to a NULL target volume cannot be
+    /// attributed to a specific node, so it is excluded. Feeds the offline `PageRank`
+    /// power iteration, whose node set is the union of the sources and resolved targets.
+    ///
+    /// Self-loops (`source == target`) are excluded — a document citing itself carries no
+    /// influence signal and would distort PageRank's dangling/mass handling.
+    ///
+    /// - Returns: One `(source, target)` pair per stored resolved edge (with multiplicity —
+    ///   repeated citations between the same pair appear repeatedly, so PageRank weights a
+    ///   heavily-cited pair more, matching the heat matrix's `ref_count`).
+    public func resolvedCitationEdges() throws -> [(source: DocumentNodeKey, target: DocumentNodeKey)] {
+        let sql = """
+            SELECT source_volume_id, source_document_id, target_volume_id, target_document_id
+            FROM cross_references
+            WHERE target_volume_id IS NOT NULL
+              AND NOT (source_volume_id = target_volume_id
+                       AND source_document_id = target_document_id)
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [(source: DocumentNodeKey, target: DocumentNodeKey)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let src = DocumentNodeKey(volumeId: columnString(stmt, 0) ?? "",
+                                      documentId: columnString(stmt, 1) ?? "")
+            let tgt = DocumentNodeKey(volumeId: columnString(stmt, 2) ?? "",
+                                      documentId: columnString(stmt, 3) ?? "")
+            result.append((source: src, target: tgt))
+        }
+        return result
     }
 
     // MARK: - Private helpers
