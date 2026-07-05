@@ -318,4 +318,62 @@ struct CorpusAnalyticsServiceTests {
             #expect(emptyScope[1971] == 3, "An empty scope means the whole corpus")
         }
     }
+
+    /// The `% of documents` normalization (CA-4) is `matches / total * 100` per period.
+    /// This proves the arithmetic the By-Year chart plots: numerator from
+    /// `termFrequencyByYear`, denominator from `documentTotalsByYear`, both scoped
+    /// identically — plus the scoped-denominator and zero-total (absent period) guards.
+    @Test("normalization share is matches/total per year, honoring scope and the zero guard")
+    func normalizationShareMatchesMatchesOverTotal() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // 1971: four documents total, two mention "treaty" → 50% share.
+            //   v01 has 3 docs (2 treaty, 1 not); v02 has 1 doc (not treaty).
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>The treaty was signed.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1971-06-01\">June 1, 1971</date></dateline><p>A second treaty draft.</p>"),
+                    ("d3", "<head>3. Memo</head><dateline><date when=\"1971-09-01\">Sept 1, 1971</date></dateline><p>Economic policy only.</p>"),
+                ]
+            )
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+                volumeId: "frus1969-76v02",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-12-01\">Dec 1, 1971</date></dateline><p>Trade talks resumed.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v02")
+
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            // Corpus-wide: 2 treaty matches / 4 documents in 1971 → 50%.
+            let matches = try await service.termFrequencyByYear(term: "treaty")
+            let totals = try await service.documentTotalsByYear()
+            let match1971 = matches.first { $0.year == 1971 }?.count ?? 0
+            let total1971 = totals[1971] ?? 0
+            #expect(match1971 == 2 && total1971 == 4)
+            #expect(Double(match1971) / Double(total1971) * 100.0 == 50.0,
+                    "Corpus-wide 1971 share is 2/4 = 50%")
+
+            // Scoped to v01: 2 matches / 3 documents → 66.6…%. Numerator and denominator
+            // must both be scoped so the within-scope share is correct.
+            let scope: Set<String> = ["frus1969-76v01"]
+            let scopedMatches = try await service.termFrequencyByYear(term: "treaty", volumeIds: scope)
+            let scopedTotals = try await service.documentTotalsByYear(volumeIds: scope)
+            let sMatch = scopedMatches.first { $0.year == 1971 }?.count ?? 0
+            let sTotal = scopedTotals[1971] ?? 0
+            #expect(sMatch == 2 && sTotal == 3, "Scoped numerator and denominator both restrict to v01")
+
+            // Zero guard: a year with no indexed documents has no total entry, so the
+            // view's normalizedValue returns nil (period omitted) rather than dividing
+            // by zero.
+            #expect(totals[1850] == nil, "A period with no documents has no denominator entry")
+        }
+    }
 }
