@@ -286,6 +286,20 @@ struct MainWindowView: View {
                 defaultValue: "Open Corpus Analytics — chart term frequency over time"
             ))
 
+            // Person Analytics window (CA-5)
+            Button {
+                openWindow(id: "frus.personAnalytics")
+                bringMacWindowToFront(id: "frus.personAnalytics")
+            } label: {
+                Label(String(localized: "mainwindow.tools.personAnalytics",
+                             defaultValue: "Person Analytics"),
+                      systemImage: "person.2")
+            }
+            .help(String(
+                localized: "mainwindow.tools.personAnalytics.help",
+                defaultValue: "Open Person Analytics — most-mentioned people by era and multi-person mention trajectories"
+            ))
+
             // Word Cloud window (corpus scope)
             Button {
                 appState.pendingWordCloud = .corpus
