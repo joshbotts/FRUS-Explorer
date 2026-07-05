@@ -221,8 +221,6 @@ struct AnalyticsParameters: Sendable, Equatable {
 /// - `termFrequencyByYear(term:)` — matching docs per year (actual document date)
 /// - `termFrequencyBySubseries(term:)` — matching docs per subseries (volume ID)
 /// - `termFrequencyByVolume(term:)` — matching docs per individual volume (volume ID)
-/// - `topTermsByYear(year:limit:)` — stub; returns empty array (FTS5 vocabulary
-///   tables are implementation-specific and not available in the current schema)
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
@@ -254,6 +252,10 @@ struct AnalyticsParameters: Sendable, Equatable {
 ///          subset. Fixes normalized shares exceeding 100% when a volume's start year
 ///          received undated matched documents the dated-only denominator lacked.
 ///          New `allDocumentKeysWithDatesCache` cleared in `invalidateCache()`.
+///   1.7 — CA-5 (analytics CA-track): removed the dead `topTermsByYear(year:limit:)`
+///          stub (it returned `[]` and was wired to no UI). Per-era person analytics
+///          in `PersonAnalyticsView` are the honest replacement, computed over
+///          `person_mentions × document_dates` in `PersonMentionStore` (CA-5).
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -746,20 +748,6 @@ actor CorpusAnalyticsService {
             totals[decade, default: 0] += count
         }
         return totals
-    }
-
-    /// Returns the most frequent terms in documents published in `year`.
-    ///
-    /// - Note: This is currently a stub that always returns an empty array.
-    ///   Computing per-year term frequencies requires access to FTS5 vocabulary
-    ///   shadow tables, which are not available in the current schema.
-    ///
-    /// - Parameters:
-    ///   - year: Four-digit year (e.g. 1969).
-    ///   - limit: Maximum number of terms to return.
-    /// - Returns: Always `[]` in the current implementation.
-    func topTermsByYear(year: Int, limit: Int = 20) async -> [TermCount] {
-        return []
     }
 
     // MARK: - Cache Helpers

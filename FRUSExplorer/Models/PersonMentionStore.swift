@@ -100,6 +100,35 @@ public struct PersonRollupMention: Sendable {
     }
 }
 
+// MARK: - PersonMentionRanking
+
+/// One most-mentioned-person row for the Person Analytics "by era" ranking (CA-5).
+///
+/// `mentionCount` is the number of `(person-ref × document)` mentions of any member
+/// of this rollup that fall inside the selected coverage year range **and** in a dated
+/// document (a `document_dates` row) — mentions in undated documents cannot be placed
+/// on the year axis and are excluded (and disclosed) rather than silently dropped.
+///
+/// Version history:
+///   1.0 — CA-5 (analytics CA-track): initial implementation
+public struct PersonMentionRanking: Sendable, Identifiable {
+    /// The rollup identity (pairs with the People browser's `rollup_id`).
+    public let rollupId: Int
+    /// The rollup's canonical display name.
+    public let canonicalName: String
+    /// Mentions in dated documents within the selected year range.
+    public let mentionCount: Int
+
+    public var id: Int { rollupId }
+
+    /// Creates a most-mentioned-person ranking row.
+    public init(rollupId: Int, canonicalName: String, mentionCount: Int) {
+        self.rollupId = rollupId
+        self.canonicalName = canonicalName
+        self.mentionCount = mentionCount
+    }
+}
+
 // MARK: - PersonMentionStore
 
 /// Queries the `person_mentions` table to support person-filtered search
@@ -122,6 +151,12 @@ public struct PersonRollupMention: Sendable {
 ///          IN predicate instead of the concatenated-key form, which forced a full
 ///          person_mentions scan per Persons-block resolve (on every debounced preview
 ///          refresh)
+///   1.5 — CA-5 (analytics CA-track): person analytics read path —
+///          `mentionTrajectories(rollupIds:)` (rollup → year → mention count over the
+///          dated core join), `topPeopleByMentions(inYearRange:limit:)` (most-mentioned
+///          rollups in a coverage window), `rollupsMatchingName(_:limit:)` (the picker
+///          search), and `datedDocumentTotalsByYear()` (the dated-only `% of documents`
+///          denominator). All read-only over the existing tables — no schema change.
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -413,6 +448,203 @@ public actor PersonMentionStore {
         sqlite3_bind_int64(stmt, 1, Int64(rollupId))
         guard step(stmt) else { return nil }
         return (columnString(stmt, 0) ?? "", columnString(stmt, 1) ?? "")
+    }
+
+    // MARK: - Person Analytics Queries (CA-5)
+
+    /// Mention counts per rollup per year, for the multi-person trajectory chart (CA-5).
+    ///
+    /// For each requested rollup, returns a `year → mention count` map. The count is the
+    /// number of `person_mentions` rows (one per `(person-ref × document)`) that resolve
+    /// to that rollup and land in a **dated** document — the year is the first four
+    /// characters of `document_dates.date_iso`. Mentions in undated documents (no
+    /// `document_dates` row) cannot be placed on the year axis and are excluded (the
+    /// inner join drops them); the view discloses this as "mentions in dated documents".
+    ///
+    /// Core join: `person_mentions pm → person_rollup_member m (m.volume_id = pm.volume_id
+    /// AND m.ref = pm.person_ref) → document_dates dd (dd.volume_id = pm.volume_id AND
+    /// dd.document_id = pm.document_id)`, grouped by `rollup_id, year`.
+    ///
+    /// - Parameter rollupIds: The rollups to chart. Empty → empty result.
+    /// - Returns: `rollupId → (year → mentionCount)`. Rollups with no dated mentions are absent.
+    public func mentionTrajectories(rollupIds: [Int]) throws -> [Int: [Int: Int]] {
+        guard !rollupIds.isEmpty else { return [:] }
+        // Deduplicate and bound the IN-list; parameterise every id (never interpolate).
+        let ids = Array(Set(rollupIds))
+        let placeholders = ids.map { _ in "?" }.joined(separator: ", ")
+        let sql = """
+            SELECT m.rollup_id,
+                   CAST(substr(dd.date_iso, 1, 4) AS INTEGER) AS yr,
+                   COUNT(*)
+            FROM person_mentions pm
+            JOIN person_rollup_member m
+              ON m.volume_id = pm.volume_id AND m.ref = pm.person_ref
+            JOIN document_dates dd
+              ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            WHERE m.rollup_id IN (\(placeholders))
+              AND dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+            GROUP BY m.rollup_id, yr
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, rid) in ids.enumerated() {
+            sqlite3_bind_int64(stmt, Int32(i + 1), Int64(rid))
+        }
+        var result: [Int: [Int: Int]] = [:]
+        while step(stmt) {
+            let rid = Int(sqlite3_column_int64(stmt, 0))
+            let year = Int(sqlite3_column_int64(stmt, 1))
+            let count = Int(sqlite3_column_int64(stmt, 2))
+            guard year > 0 else { continue }
+            result[rid, default: [:]][year] = count
+        }
+        return result
+    }
+
+    /// The most-mentioned rollups within a coverage year range (CA-5 "by era").
+    ///
+    /// Counts `person_mentions` rows resolving to each rollup whose mentioning document
+    /// is **dated** (a `document_dates` row) with a `date_iso` year inside `range`, joins
+    /// `person_rollup` for the canonical name, and ranks descending. Uses the same dated
+    /// core join as `mentionTrajectories` — undated mentions are excluded consistently.
+    ///
+    /// - Parameters:
+    ///   - range: Inclusive coverage-year window (from the year-range bar).
+    ///   - limit: Maximum rows (top-N).
+    /// - Returns: Ranked `PersonMentionRanking` rows, most-mentioned first.
+    public func topPeopleByMentions(inYearRange range: ClosedRange<Int>,
+                                    limit: Int) throws -> [PersonMentionRanking] {
+        let sql = """
+            SELECT m.rollup_id, r.canonical_name, COUNT(*) AS cnt
+            FROM person_mentions pm
+            JOIN person_rollup_member m
+              ON m.volume_id = pm.volume_id AND m.ref = pm.person_ref
+            JOIN document_dates dd
+              ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            JOIN person_rollup r ON r.rollup_id = m.rollup_id
+            WHERE dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+              AND CAST(substr(dd.date_iso, 1, 4) AS INTEGER) BETWEEN ? AND ?
+            GROUP BY m.rollup_id
+            ORDER BY cnt DESC, r.canonical_name ASC
+            LIMIT ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(range.lowerBound))
+        sqlite3_bind_int64(stmt, 2, Int64(range.upperBound))
+        sqlite3_bind_int64(stmt, 3, Int64(limit))
+        var results: [PersonMentionRanking] = []
+        while step(stmt) {
+            results.append(PersonMentionRanking(
+                rollupId: Int(sqlite3_column_int64(stmt, 0)),
+                canonicalName: columnString(stmt, 1) ?? "",
+                mentionCount: Int(sqlite3_column_int64(stmt, 2))))
+        }
+        return results
+    }
+
+    /// Rollups whose canonical name contains `query` (case-insensitive), for the
+    /// comparison picker's search-to-add field (CA-5). Ordered by mention count so the
+    /// most-mentioned matches surface first.
+    ///
+    /// - Parameters:
+    ///   - query: Free-text fragment; blank → empty result.
+    ///   - limit: Maximum rows (default 20).
+    /// - Returns: Matching rollups as `PersonMentionRanking` rows (`mentionCount` is the
+    ///   materialised cross-corpus count, not year-scoped).
+    public func rollupsMatchingName(_ query: String, limit: Int = 20) throws -> [PersonMentionRanking] {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        let sql = """
+            SELECT rollup_id, canonical_name, mention_count
+            FROM person_rollup
+            WHERE canonical_name LIKE ?
+            ORDER BY mention_count DESC, canonical_name ASC
+            LIMIT ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, "%\(query)%")
+        sqlite3_bind_int64(stmt, 2, Int64(limit))
+        var results: [PersonMentionRanking] = []
+        while step(stmt) {
+            results.append(PersonMentionRanking(
+                rollupId: Int(sqlite3_column_int64(stmt, 0)),
+                canonicalName: columnString(stmt, 1) ?? "",
+                mentionCount: Int(sqlite3_column_int64(stmt, 2))))
+        }
+        return results
+    }
+
+    /// Count of **dated** documents per year — the `% of documents` denominator (CA-5).
+    ///
+    /// Counts `document_dates` rows (one per `(volume, document)`) whose `date_iso` has a
+    /// four-digit year. CRITICAL (the CA-4 population lesson): this denominator and the
+    /// normalized numerator (documents mentioning a person in year Y, drawn from the SAME
+    /// dated core join) are BOTH dated-only, so a within-year share can never exceed 100%.
+    /// Do **not** substitute `CorpusAnalyticsService.documentTotalsByYear`, which applies a
+    /// volume-start-year fallback for undated documents — that inflated denominator would
+    /// mismatch this dated-only numerator.
+    ///
+    /// - Returns: `year → dated-document count`.
+    public func datedDocumentTotalsByYear() throws -> [Int: Int] {
+        let sql = """
+            SELECT CAST(substr(date_iso, 1, 4) AS INTEGER) AS yr, COUNT(*)
+            FROM document_dates
+            WHERE date_iso IS NOT NULL AND length(date_iso) >= 4
+            GROUP BY yr
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var totals: [Int: Int] = [:]
+        while step(stmt) {
+            let year = Int(sqlite3_column_int64(stmt, 0))
+            guard year > 0 else { continue }
+            totals[year] = Int(sqlite3_column_int64(stmt, 1))
+        }
+        return totals
+    }
+
+    /// Count of **dated** documents that mention any member of each rollup, per year — the
+    /// `% of documents` numerator for the trajectory chart (CA-5).
+    ///
+    /// A person may be mentioned by several refs in one document; this counts each
+    /// `(rollup × dated document × year)` at most once (`COUNT(DISTINCT document)`), so the
+    /// numerator is a *document* share directly comparable to `datedDocumentTotalsByYear`.
+    /// Same dated core join as `mentionTrajectories` — both dated-only, share ≤ 100%.
+    ///
+    /// - Parameter rollupIds: The rollups to chart. Empty → empty result.
+    /// - Returns: `rollupId → (year → distinct-dated-document count)`.
+    public func mentioningDocumentTrajectories(rollupIds: [Int]) throws -> [Int: [Int: Int]] {
+        guard !rollupIds.isEmpty else { return [:] }
+        let ids = Array(Set(rollupIds))
+        let placeholders = ids.map { _ in "?" }.joined(separator: ", ")
+        let sql = """
+            SELECT m.rollup_id,
+                   CAST(substr(dd.date_iso, 1, 4) AS INTEGER) AS yr,
+                   COUNT(DISTINCT pm.volume_id || '/' || pm.document_id)
+            FROM person_mentions pm
+            JOIN person_rollup_member m
+              ON m.volume_id = pm.volume_id AND m.ref = pm.person_ref
+            JOIN document_dates dd
+              ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            WHERE m.rollup_id IN (\(placeholders))
+              AND dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+            GROUP BY m.rollup_id, yr
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, rid) in ids.enumerated() {
+            sqlite3_bind_int64(stmt, Int32(i + 1), Int64(rid))
+        }
+        var result: [Int: [Int: Int]] = [:]
+        while step(stmt) {
+            let rid = Int(sqlite3_column_int64(stmt, 0))
+            let year = Int(sqlite3_column_int64(stmt, 1))
+            let count = Int(sqlite3_column_int64(stmt, 2))
+            guard year > 0 else { continue }
+            result[rid, default: [:]][year] = count
+        }
+        return result
     }
 
     // MARK: - Persons Table Queries (Session 41)

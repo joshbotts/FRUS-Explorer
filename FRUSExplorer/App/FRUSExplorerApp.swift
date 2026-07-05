@@ -54,6 +54,7 @@ import os
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
+/// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
@@ -680,6 +681,18 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
         }
         .defaultSize(width: 760, height: 560)
+
+        // MARK: - Person Analytics Window (CA-5)
+        //
+        // Most-mentioned-people-by-era + multi-person mention-trajectory comparison over
+        // the local index. A sibling of frus.analytics; degrades to a placeholder while
+        // `appState.personMentionStore` is nil (index unavailable).
+        Window(String(localized: "personAnalytics.window.title", defaultValue: "Person Analytics"),
+               id: "frus.personAnalytics") {
+            PersonAnalyticsView()
+                .environment(appState)
+        }
+        .defaultSize(width: 780, height: 620)
 
         // MARK: - Word Cloud Window
         Window(String(localized: "wordcloud.window.title", defaultValue: "Word Cloud"),

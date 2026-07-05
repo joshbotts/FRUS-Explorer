@@ -74,6 +74,7 @@ struct BrowserView: View {
     // dropped and the features became unreachable on iPhone and iPad.
     @State private var showAnalytics = false
     @State private var analyticsParameters: AnalyticsParameters?
+    @State private var showPersonAnalytics = false
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
     // showCitationLookup lives in AppState (promoted in Session 43) so that macOS
@@ -124,6 +125,10 @@ struct BrowserView: View {
         }
         .sheet(isPresented: $showAnalytics) {
             AnalyticsView(initialParameters: analyticsParameters)
+                .environment(appState)
+        }
+        .sheet(isPresented: $showPersonAnalytics) {
+            PersonAnalyticsView()
                 .environment(appState)
         }
         .sheet(isPresented: $showChronology) {
@@ -180,6 +185,12 @@ struct BrowserView: View {
                           systemImage: "chart.bar.xaxis")
                 }
                 Button {
+                    showPersonAnalytics = true
+                } label: {
+                    Label(String(localized: "browse.personAnalytics.a11y", defaultValue: "Person Analytics"),
+                          systemImage: "person.2")
+                }
+                Button {
                     appState.pendingWordCloud = .corpus
                 } label: {
                     Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
@@ -191,7 +202,7 @@ struct BrowserView: View {
             .controlHelp(
                 String(localized: "browse.analysisTools.a11y", defaultValue: "Analysis Tools"),
                 detail: String(localized: "browse.analysisTools.help",
-                               defaultValue: "Chronology, Corpus Analytics, and the corpus Word Cloud"),
+                               defaultValue: "Chronology, Corpus Analytics, Person Analytics, and the corpus Word Cloud"),
                 systemImage: "chart.bar.xaxis"
             )
         }
