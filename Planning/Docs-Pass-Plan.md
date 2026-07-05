@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-05
 **Status:** Plan for review (recon complete; no doc edits made yet)
-**Scope:** Bring every documentation surface current with everything shipped since **build 26** (PRs #169–#187), then bump the build. Testers are still on build 26, so this is the release that carries the entire analytics program + the Collections polish + the page-reference fix.
+**Scope:** Bring every documentation surface current with everything shipped since **build 26** (PRs #169–#187). The build is **already bumped to 27** in `project.yml` (no separate build-bump PR needed), so this docs pass ships as part of build 27 — the release that carries the entire analytics program + the Collections polish + the page-reference fix. Testers' last build was 26.
 
 Built from a 7-surface reconnaissance sweep (iOS manual, macOS manual, README, both TestFlight files, the in-app Research Guide, and the screenshot checklist). ~70 itemized actions + ~24 new/regenerated screenshots. Line numbers are from the recon and must be re-verified at edit time.
 
@@ -86,14 +86,15 @@ The doc edits insert `[SCREENSHOT: …]` placeholders; **you capture per #106** 
 3. **Screenshots** → I add the `[SCREENSHOT: …]` placeholders + append the #106 rows; **you capture** on-device. (Default; say so if you want me to attempt simulator captures for any.)
 4. **In-app guide prose depth** → a tight intro paragraph per dashboard (not a wall of text). (Default.)
 
-## Recommended execution order (two PRs)
+## Execution — a single PR (build 27)
 
-Collapsed to two PRs so the docs can land without cutting a build (testers stay on 26), and the build bump stays a deliberate, user-timed release trigger.
+The build is already bumped to 27, so there is **one PR** (branch `claude/consolidated-docs-pass`), sequential commits:
 
-- **PR 1 — Consolidated docs pass** (branch `claude/consolidated-docs-pass`). No release impact; build stays 26. Sequential commits:
-  1. this plan doc (`Planning/Docs-Pass-Plan.md`).
-  2. **in-app guide** — page-6/7 prose additions + doc-comment/version-history fixes in `IndexingEducationView.swift` (localized) **+ full `Docs/EditableContent.md` re-sync**; builds + `CodingStandardsAuditTests`. (No dashboard-page prose — they self-document.)
-  3. **written docs** — iOS manual, macOS manual, README, both TestFlight files, `screenshots/README.md` — with `[SCREENSHOT]` placeholders.
-- **Issue #106 edit** (GitHub, not a commit) — append the new/regen rows; **fix the `iOS-Supplement.md` reference** to point at the main manuals.
-- **You capture screenshots** per #106 (asynchronous; fills the placeholders over time).
-- **PR 2 — build-number bump + release notes** (the non-xcodegen procedure). The ship trigger; merge when you're ready to cut the TestFlight build (after screenshots are in, if you like). Covers the whole feature set + the re-index note.
+1. ✅ **plan doc** (`Planning/Docs-Pass-Plan.md`) — committed `adbe98e` (this file; updated for build 27).
+2. ✅ **in-app guide** — page-6/7 prose (Person Analytics + Cross-Reference Analytics + %-toggle + sort-modes) + doc-comment/version-history fixes in `IndexingEducationView.swift` **+ full `Docs/EditableContent.md` re-sync** (17 blocks; removed the dead Setup-Wizard blocks; dashboards documented, not fabricated). Commits `35a5d7b` + `292c385`; both platforms build, `CodingStandardsAuditTests` 15/15, adversarial review CLEAN. (No dashboard-page prose — they self-document.)
+3. ⏳ **written docs** — iOS manual, macOS manual, README, both TestFlight files (framed as build 27), `screenshots/README.md` — with `[SCREENSHOT]` placeholders. (workflow queued)
+
+Out-of-band (not commits on this branch):
+- ✅ **Issue #106** — prioritized "New in build 27" harvest section (P0/P1/P2, 27 rows) prepended; **`iOS-Supplement.md` reference fixed** (legend, recommendation, footer). Done 2026-07-05.
+- ⏳ **You capture screenshots** per #106 (asynchronous; fills the placeholders over time). The 🟢 offline Series dashboards are the fastest wins.
+- Optional: a short "What to Test in build 27" blurb for App Store Connect (offered).
