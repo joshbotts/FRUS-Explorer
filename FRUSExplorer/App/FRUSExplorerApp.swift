@@ -683,11 +683,12 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 760, height: 560)
 
-        // MARK: - Person Analytics Window (CA-5)
+        // MARK: - Person Analytics Window (CA-5, CA-8)
         //
-        // Most-mentioned-people-by-era + multi-person mention-trajectory comparison over
-        // the local index. A sibling of frus.analytics; degrades to a placeholder while
-        // `appState.personMentionStore` is nil (index unavailable).
+        // Trends mode: most-mentioned-people-by-era + multi-person mention-trajectory
+        // comparison + two-person relationship dynamics. Network mode (CA-8): the
+        // full-frame person co-mention ego graph. Over the local index; degrades to a
+        // placeholder while `appState.personMentionStore` is nil (index unavailable).
         Window(String(localized: "personAnalytics.window.title", defaultValue: "Person Analytics"),
                id: "frus.personAnalytics") {
             PersonAnalyticsView()

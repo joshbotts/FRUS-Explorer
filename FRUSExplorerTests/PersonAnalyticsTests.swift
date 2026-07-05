@@ -244,6 +244,181 @@ struct PersonAnalyticsQueryTests {
         #expect(try await store.mentionTrajectories(rollupIds: []).isEmpty)
         #expect(try await store.mentioningDocumentTrajectories(rollupIds: []).isEmpty)
     }
+
+    // MARK: - Co-Mention Queries (CA-8)
+
+    /// Co-mention fixture: three people (Kissinger 1, Nixon 2, Rogers 3) sharing documents
+    /// in various combinations, plus one undated shared document.
+    /// - d1 (1969): Kissinger + Nixon + Rogers  → all three pairwise co-mention
+    /// - d2 (1969): Kissinger + Nixon           → K-N again (2nd shared doc)
+    /// - d3 (1970): Kissinger + Nixon           → K-N again (3rd shared doc)
+    /// - d4 (1971): Kissinger + Rogers          → K-R again
+    /// - dU (undated): Kissinger + Nixon        → excluded from the timeline, counted for ego
+    private func seedCoMention(_ dbURL: URL) {
+        insertRollup(dbURL, rollupId: 1, canonicalName: "Kissinger, Henry A.", mentionCount: 9,
+                     members: [("v1", "p_KHA")])
+        insertRollup(dbURL, rollupId: 2, canonicalName: "Nixon, Richard M.", mentionCount: 6,
+                     members: [("v1", "p_RN")])
+        insertRollup(dbURL, rollupId: 3, canonicalName: "Rogers, William P.", mentionCount: 4,
+                     members: [("v1", "p_WPR")])
+
+        insertDate(dbURL, volumeId: "v1", documentId: "d1", dateISO: "1969-01-01")
+        insertDate(dbURL, volumeId: "v1", documentId: "d2", dateISO: "1969-06-01")
+        insertDate(dbURL, volumeId: "v1", documentId: "d3", dateISO: "1970-02-01")
+        insertDate(dbURL, volumeId: "v1", documentId: "d4", dateISO: "1971-03-01")
+        insertDate(dbURL, volumeId: "v1", documentId: "dU", dateISO: nil)
+
+        // d1: all three.
+        insertMention(dbURL, volumeId: "v1", documentId: "d1", ref: "p_KHA")
+        insertMention(dbURL, volumeId: "v1", documentId: "d1", ref: "p_RN")
+        insertMention(dbURL, volumeId: "v1", documentId: "d1", ref: "p_WPR")
+        // d2, d3: Kissinger + Nixon.
+        insertMention(dbURL, volumeId: "v1", documentId: "d2", ref: "p_KHA")
+        insertMention(dbURL, volumeId: "v1", documentId: "d2", ref: "p_RN")
+        insertMention(dbURL, volumeId: "v1", documentId: "d3", ref: "p_KHA")
+        insertMention(dbURL, volumeId: "v1", documentId: "d3", ref: "p_RN")
+        // d4: Kissinger + Rogers.
+        insertMention(dbURL, volumeId: "v1", documentId: "d4", ref: "p_KHA")
+        insertMention(dbURL, volumeId: "v1", documentId: "d4", ref: "p_WPR")
+        // dU (undated): Kissinger + Nixon.
+        insertMention(dbURL, volumeId: "v1", documentId: "dU", ref: "p_KHA")
+        insertMention(dbURL, volumeId: "v1", documentId: "dU", ref: "p_RN")
+    }
+
+    @Test("topCoMentionedPeople counts DISTINCT shared documents, excludes the focus itself, orders and caps")
+    func topCoMentionedOrderingAndCap() async throws {
+        let (dir, dbURL, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        seedCoMention(dbURL)
+
+        // Focus = Kissinger (1). Nixon shares d1,d2,d3,dU = 4 docs; Rogers shares d1,d4 = 2.
+        let partners = try await store.topCoMentionedPeople(forRollupId: 1, limit: 10)
+        #expect(partners.map(\.rollupId) == [2, 3])            // Nixon (4) before Rogers (2)
+        #expect(partners.first?.sharedDocuments == 4)          // distinct docs, incl. undated dU
+        #expect(partners.last?.sharedDocuments == 2)
+        // The focus person is never listed as their own partner.
+        #expect(!partners.contains { $0.rollupId == 1 })
+
+        // Cap: limit 1 returns only the top partner (no silent extra rows).
+        let capped = try await store.topCoMentionedPeople(forRollupId: 1, limit: 1)
+        #expect(capped.count == 1)
+        #expect(capped.first?.rollupId == 2)
+    }
+
+    @Test("coMentionEdges returns unordered pairs a<b with distinct-document weights, bounded to the id set")
+    func coMentionEdgesDedupAndBound() async throws {
+        let (dir, dbURL, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        seedCoMention(dbURL)
+
+        let edges = try await store.coMentionEdges(amongRollupIds: [1, 2, 3])
+        // Every emitted pair has a < b (each unordered pair once).
+        for e in edges { #expect(e.a < e.b) }
+        let byPair = Dictionary(uniqueKeysWithValues: edges.map { ("\($0.a)-\($0.b)", $0.sharedDocuments) })
+        #expect(byPair["1-2"] == 4)   // K-N: d1,d2,d3,dU
+        #expect(byPair["1-3"] == 2)   // K-R: d1,d4
+        #expect(byPair["2-3"] == 1)   // N-R: only d1
+        #expect(edges.count == 3)
+
+        // Bounding: restricting to {1,3} must NOT surface the 1-2 or 2-3 pairs.
+        let subset = try await store.coMentionEdges(amongRollupIds: [1, 3])
+        #expect(subset.map { "\($0.a)-\($0.b)" } == ["1-3"])
+
+        // Fewer than two ids → empty (no cartesian).
+        #expect(try await store.coMentionEdges(amongRollupIds: [1]).isEmpty)
+        #expect(try await store.coMentionEdges(amongRollupIds: []).isEmpty)
+    }
+
+    @Test("coMentionTimeline buckets shared documents by dated year, excluding undated docs and self-pairs")
+    func coMentionTimelineBucketing() async throws {
+        let (dir, dbURL, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        seedCoMention(dbURL)
+
+        // Kissinger (1) × Nixon (2): 1969 → d1,d2 = 2; 1970 → d3 = 1. dU (undated) excluded.
+        let kn = try await store.coMentionTimeline(rollupA: 1, rollupB: 2)
+        #expect(kn == [1969: 2, 1970: 1])
+        // The undated shared document must not appear under any year.
+        #expect(kn.values.reduce(0, +) == 3)   // not 4 — dU excluded
+
+        // Kissinger (1) × Rogers (3): 1969 → d1 = 1; 1971 → d4 = 1.
+        let kr = try await store.coMentionTimeline(rollupA: 1, rollupB: 3)
+        #expect(kr == [1969: 1, 1971: 1])
+
+        // A person is not in a relationship with themselves.
+        #expect(try await store.coMentionTimeline(rollupA: 1, rollupB: 1).isEmpty)
+    }
+}
+
+// MARK: - PersonRelationshipMathTests (CA-8)
+
+/// Tests for the pure `PersonRelationshipMath` transforms (year-range filter + decade sum).
+///
+/// Version history:
+///   1.0 — CA-8 (analytics CA-track): initial implementation
+struct PersonRelationshipMathTests {
+
+    @Test("points filters to the year range and sorts by year")
+    func pointsFilterAndSort() {
+        let timeline = [1971: 1, 1969: 3, 1980: 9]
+        let points = PersonRelationshipMath.points(timeline: timeline, range: 1969...1975)
+        #expect(points.map(\.year) == [1969, 1971])   // sorted, 1980 filtered out
+        #expect(points.first?.coMentions == 3)
+    }
+
+    @Test("bucketByDecade sums co-mention counts within a decade")
+    func decadeSum() {
+        let points = [
+            PersonRelationshipPoint(year: 1969, coMentions: 2),
+            PersonRelationshipPoint(year: 1961, coMentions: 3),
+            PersonRelationshipPoint(year: 1972, coMentions: 4),
+        ]
+        let bucketed = PersonRelationshipMath.bucketByDecade(points)
+        let byDecade = Dictionary(uniqueKeysWithValues: bucketed.map { ($0.year, $0.coMentions) })
+        #expect(byDecade[1960] == 5)   // 2 + 3
+        #expect(byDecade[1970] == 4)
+        #expect(bucketed.map(\.year) == [1960, 1970])   // sorted
+    }
+}
+
+// MARK: - PersonCoMentionPhysicsTests (CA-8)
+
+/// Determinism + termination checks for the co-mention ego-graph physics.
+///
+/// Version history:
+///   1.0 — CA-8 (analytics CA-track): initial implementation
+@MainActor
+struct PersonCoMentionPhysicsTests {
+
+    @Test("runPhysics pins the focus at centre and is deterministic for fixed inputs")
+    func physicsPinsAndDeterministic() {
+        let size = CGSize(width: 400, height: 400)
+        let ids = [1, 2, 3]
+        let edges = [
+            PersonCoMentionEdge(a: 1, b: 2, sharedDocuments: 3),
+            PersonCoMentionEdge(a: 1, b: 3, sharedDocuments: 1),
+        ]
+        let initial: [Int: CGPoint] = [
+            1: CGPoint(x: 200, y: 200),
+            2: CGPoint(x: 300, y: 200),
+            3: CGPoint(x: 100, y: 200),
+        ]
+        let out1 = PersonCoMentionGraphViewModel.runPhysics(
+            ids: ids, centralId: 1, edges: edges, positions: initial, size: size, iterations: 100)
+        let out2 = PersonCoMentionGraphViewModel.runPhysics(
+            ids: ids, centralId: 1, edges: edges, positions: initial, size: size, iterations: 100)
+
+        // Focus pinned exactly at centre.
+        #expect(out1[1] == CGPoint(x: 200, y: 200))
+        // Deterministic: same inputs → identical positions.
+        #expect(out1 == out2)
+        // Partners stay inside the padded canvas bounds (48pt pad).
+        for id in [2, 3] {
+            let p = try! #require(out1[id])
+            #expect(p.x >= 48 && p.x <= size.width - 48)
+            #expect(p.y >= 48 && p.y <= size.height - 48)
+        }
+    }
 }
 
 // MARK: - PersonAnalyticsMathTests

@@ -157,6 +157,14 @@ public struct PersonMentionRanking: Sendable, Identifiable {
 ///          rollups in a coverage window), `rollupsMatchingName(_:limit:)` (the picker
 ///          search), and `datedDocumentTotalsByYear()` (the dated-only `% of documents`
 ///          denominator). All read-only over the existing tables — no schema change.
+///   1.6 — CA-8 (analytics CA-track): person co-mention read path —
+///          `topCoMentionedPeople(forRollupId:limit:)` (the ego partners, bounded to the
+///          focus person's document set + a disclosed top-N cap),
+///          `coMentionEdges(amongRollupIds:)` (partner-partner edges within the bounded
+///          ego, self-join constrained to the given ids, unordered pairs a<b), and
+///          `coMentionTimeline(rollupA:rollupB:)` (two-person shared-document counts per
+///          dated year, for relationship dynamics). All read-only, distinct-document
+///          counted — no schema change.
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -643,6 +651,165 @@ public actor PersonMentionStore {
             let count = Int(sqlite3_column_int64(stmt, 2))
             guard year > 0 else { continue }
             result[rid, default: [:]][year] = count
+        }
+        return result
+    }
+
+    // MARK: - Person Co-Mention Queries (CA-8)
+
+    /// The focus person's top co-mentioned partners (CA-8 ego network).
+    ///
+    /// Two DIFFERENT rollups co-occur when a member ref of each is mentioned in the SAME
+    /// `(volume_id, document_id)`. This first restricts to the documents that mention the
+    /// focus rollup (via `documentKeys(forRollupId:)`'s join), then counts, for every OTHER
+    /// rollup, the number of DISTINCT shared documents. The focus rollup itself is excluded
+    /// (`m2.rollup_id <> ?`), so a person is never their own partner.
+    ///
+    /// The self-join is bounded to the focus person's own document set (the inner
+    /// `focus_docs` CTE), so it never fans out over the whole corpus — the query cost scales
+    /// with the focus person's mention count, not the corpus size. Results are ordered by
+    /// shared-document count descending (ties broken by canonical name) and capped at
+    /// `limit` — the DISCLOSED top-N bound (decision CA-8-1); there is no silent truncation,
+    /// the caller shows the cap.
+    ///
+    /// - Parameters:
+    ///   - rollupId: The focus person's rollup id.
+    ///   - limit: Top-N partner cap (the disclosed bound).
+    /// - Returns: `(rollupId, canonicalName, sharedDocuments)` partners, most-shared first.
+    public func topCoMentionedPeople(forRollupId rollupId: Int,
+                                     limit: Int) throws -> [(rollupId: Int, canonicalName: String, sharedDocuments: Int)] {
+        // focus_docs: the DISTINCT documents mentioning any member of the focus rollup.
+        // Then join every OTHER rollup mentioned in those same documents and count DISTINCT
+        // shared documents. COUNT(DISTINCT …) collapses the case where a partner is mentioned
+        // by several refs in one document.
+        let sql = """
+            WITH focus_docs AS (
+                SELECT DISTINCT pm.volume_id, pm.document_id
+                FROM person_rollup_member m
+                JOIN person_mentions pm
+                  ON pm.volume_id = m.volume_id AND pm.person_ref = m.ref
+                WHERE m.rollup_id = ?
+            )
+            SELECT m2.rollup_id, r2.canonical_name,
+                   COUNT(DISTINCT pm2.volume_id || '/' || pm2.document_id) AS shared
+            FROM focus_docs fd
+            JOIN person_mentions pm2
+              ON pm2.volume_id = fd.volume_id AND pm2.document_id = fd.document_id
+            JOIN person_rollup_member m2
+              ON m2.volume_id = pm2.volume_id AND m2.ref = pm2.person_ref
+            JOIN person_rollup r2 ON r2.rollup_id = m2.rollup_id
+            WHERE m2.rollup_id <> ?
+            GROUP BY m2.rollup_id
+            ORDER BY shared DESC, r2.canonical_name ASC
+            LIMIT ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        sqlite3_bind_int64(stmt, 2, Int64(rollupId))
+        sqlite3_bind_int64(stmt, 3, Int64(limit))
+        var results: [(rollupId: Int, canonicalName: String, sharedDocuments: Int)] = []
+        while step(stmt) {
+            results.append((rollupId: Int(sqlite3_column_int64(stmt, 0)),
+                            canonicalName: columnString(stmt, 1) ?? "",
+                            sharedDocuments: Int(sqlite3_column_int64(stmt, 2))))
+        }
+        return results
+    }
+
+    /// Pairwise co-mention counts WITHIN a bounded rollup set (CA-8 partner-partner edges).
+    ///
+    /// For every unordered pair `(a, b)` with `a < b` drawn from `rollupIds`, counts the
+    /// DISTINCT documents that mention BOTH — the partner-partner edges of the ego network.
+    /// The self-join is constrained to the given ids on BOTH sides (`m1.rollup_id IN (…)
+    /// AND m2.rollup_id IN (…) AND m1.rollup_id < m2.rollup_id`), so it never produces a
+    /// full-corpus cartesian product; with the ego bounded to `focus + top-N` (≈ 30 rollups)
+    /// this stays small and fast.
+    ///
+    /// The `m1.rollup_id < m2.rollup_id` predicate emits each unordered pair exactly once
+    /// (a < b), so callers never de-duplicate. Pairs sharing no document are absent (no
+    /// zero-weight edges).
+    ///
+    /// - Parameter rollupIds: The bounded rollup set (the ego: focus + partners). Fewer
+    ///   than two ids → empty result.
+    /// - Returns: `(a, b, sharedDocuments)` with `a < b`, one row per co-occurring pair.
+    public func coMentionEdges(amongRollupIds rollupIds: [Int]) throws -> [(a: Int, b: Int, sharedDocuments: Int)] {
+        let ids = Array(Set(rollupIds))
+        guard ids.count >= 2 else { return [] }
+        let placeholders = ids.map { _ in "?" }.joined(separator: ", ")
+        // Both members joined to person_mentions in the SAME document; the id-set filter on
+        // both sides bounds the join to the ego, and rollup_id < rollup_id dedupes to a<b.
+        let sql = """
+            SELECT m1.rollup_id AS a, m2.rollup_id AS b,
+                   COUNT(DISTINCT pm1.volume_id || '/' || pm1.document_id) AS shared
+            FROM person_mentions pm1
+            JOIN person_mentions pm2
+              ON pm2.volume_id = pm1.volume_id AND pm2.document_id = pm1.document_id
+            JOIN person_rollup_member m1
+              ON m1.volume_id = pm1.volume_id AND m1.ref = pm1.person_ref
+            JOIN person_rollup_member m2
+              ON m2.volume_id = pm2.volume_id AND m2.ref = pm2.person_ref
+            WHERE m1.rollup_id IN (\(placeholders))
+              AND m2.rollup_id IN (\(placeholders))
+              AND m1.rollup_id < m2.rollup_id
+            GROUP BY m1.rollup_id, m2.rollup_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var col: Int32 = 1
+        for rid in ids { sqlite3_bind_int64(stmt, col, Int64(rid)); col += 1 }
+        for rid in ids { sqlite3_bind_int64(stmt, col, Int64(rid)); col += 1 }
+        var results: [(a: Int, b: Int, sharedDocuments: Int)] = []
+        while step(stmt) {
+            results.append((a: Int(sqlite3_column_int64(stmt, 0)),
+                            b: Int(sqlite3_column_int64(stmt, 1)),
+                            sharedDocuments: Int(sqlite3_column_int64(stmt, 2))))
+        }
+        return results
+    }
+
+    /// The two-person co-mention timeline (CA-8 relationship dynamics): the number of
+    /// DISTINCT DATED documents mentioning BOTH rollups, bucketed by document year.
+    ///
+    /// Joins each rollup's members to `person_mentions` in the SAME `(volume, document)`,
+    /// then to `document_dates` for the year (first four chars of `date_iso`). Undated
+    /// documents (no `document_dates` row, or a short/NULL `date_iso`) cannot be placed on
+    /// the year axis and are excluded (disclosed as "co-occurrences in dated documents").
+    /// `COUNT(DISTINCT document)` collapses multiple refs of either person in one document,
+    /// so each shared document counts once per year.
+    ///
+    /// - Parameters:
+    ///   - rollupA: First rollup id.
+    ///   - rollupB: Second rollup id. Equal to `rollupA` → empty (a person is not their own
+    ///     relationship).
+    /// - Returns: `year → shared-dated-document count`.
+    public func coMentionTimeline(rollupA: Int, rollupB: Int) throws -> [Int: Int] {
+        guard rollupA != rollupB else { return [:] }
+        let sql = """
+            SELECT CAST(substr(dd.date_iso, 1, 4) AS INTEGER) AS yr,
+                   COUNT(DISTINCT pm1.volume_id || '/' || pm1.document_id) AS shared
+            FROM person_mentions pm1
+            JOIN person_mentions pm2
+              ON pm2.volume_id = pm1.volume_id AND pm2.document_id = pm1.document_id
+            JOIN person_rollup_member m1
+              ON m1.volume_id = pm1.volume_id AND m1.ref = pm1.person_ref
+            JOIN person_rollup_member m2
+              ON m2.volume_id = pm2.volume_id AND m2.ref = pm2.person_ref
+            JOIN document_dates dd
+              ON dd.volume_id = pm1.volume_id AND dd.document_id = pm1.document_id
+            WHERE m1.rollup_id = ? AND m2.rollup_id = ?
+              AND dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+            GROUP BY yr
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupA))
+        sqlite3_bind_int64(stmt, 2, Int64(rollupB))
+        var result: [Int: Int] = [:]
+        while step(stmt) {
+            let year = Int(sqlite3_column_int64(stmt, 0))
+            guard year > 0 else { continue }
+            result[year] = Int(sqlite3_column_int64(stmt, 1))
         }
         return result
     }
