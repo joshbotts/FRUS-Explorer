@@ -85,6 +85,7 @@
 		270DFE1155FC0D6851A37826 /* CentralFilesClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A2B94D97D7EDE34FFBFFFA /* CentralFilesClassifier.swift */; };
 		271661E1C7878F8717D6EA37 /* SummarizationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BAA83CD70417BEC8E4736E /* SummarizationProvider.swift */; };
 		2750EFD858438D223004C453 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F3D4EC68B2923931D983 /* Project.swift */; };
+		28786B9066AC58AD643271D4 /* AnalyticsChartChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */; };
 		28C44F555EF414E11C9A9926 /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81475CA28849923822135AD /* BrowserViewModel.swift */; };
 		29129797FD269E3872F54E03 /* WordCloudTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67608E9F0B2A5F6947CC3987 /* WordCloudTokenizer.swift */; };
 		29C2F5E79462A40132FD6829 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */; };
@@ -294,6 +295,7 @@
 		89BDCB81C27A6A281357E259 /* person-authority-index.json in Resources */ = {isa = PBXBuildFile; fileRef = D5F8698F22479B30B2FFFB1F /* person-authority-index.json */; };
 		8ADE6F2938400C4AF779D6DF /* SeriesProductionDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B8F0DF7B2B2ABDF8953008 /* SeriesProductionDataTests.swift */; };
 		8AF497E762EE4ED25681C3CC /* WordCloudTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA30F56D426612E1A60D22F /* WordCloudTests.swift */; };
+		8B11B2DE0CA496427B6E7D5C /* AnalyticsChartChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */; };
 		8C7485682362B982A3D9BC51 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */; };
 		8C77F49346B1F25379457AAD /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
 		8D568E2B137438B543F5B4B2 /* CollectionAuthority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B014C2967533C3DAEC54D /* CollectionAuthority.swift */; };
@@ -926,6 +928,7 @@
 		F3F7846242E591D480DD177A /* SupportingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportingViews.swift; sourceTree = "<group>"; };
 		F4EE3C7C01FFEA08B1D1483F /* ResearchNoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorView.swift; sourceTree = "<group>"; };
 		F6BB80A12385D9D95BD525D1 /* ZoteroAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroAPIClient.swift; sourceTree = "<group>"; };
+		F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsChartChrome.swift; sourceTree = "<group>"; };
 		F79CFD3B1F85F9CF39FD5D72 /* WordCloudSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudSettingsView.swift; sourceTree = "<group>"; };
 		F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionListView.swift; sourceTree = "<group>"; };
 		F89AC5BB14EEE61586D263D1 /* DocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentView.swift; sourceTree = "<group>"; };
@@ -1500,6 +1503,7 @@
 			isa = PBXGroup;
 			children = (
 				97F1689C4A210F0722DA88FA /* WordCloud */,
+				F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */,
 				640382B0D20BAA1974542856 /* AnalyticsView.swift */,
 				0BFBF974B967EE2E018062D3 /* CorpusAnalyticsService.swift */,
 			);
@@ -1779,6 +1783,7 @@
 			files = (
 				6031DF2938466493210A2697 /* ASTToRenderNodeConverter.swift in Sources */,
 				DB15E9AC88A5BDAF6318E446 /* AboutView.swift in Sources */,
+				28786B9066AC58AD643271D4 /* AnalyticsChartChrome.swift in Sources */,
 				7A4DA8F373E105A7D7B1AD67 /* AnalyticsView.swift in Sources */,
 				8F3D9F3C141FC7964A2CFA28 /* AppActivityTypes.swift in Sources */,
 				AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */,
@@ -2008,6 +2013,7 @@
 			files = (
 				8C77F49346B1F25379457AAD /* ASTToRenderNodeConverter.swift in Sources */,
 				04B061065FAB3C644473F7F1 /* AboutView.swift in Sources */,
+				8B11B2DE0CA496427B6E7D5C /* AnalyticsChartChrome.swift in Sources */,
 				10FAB1ECDC714881F88C8095 /* AnalyticsView.swift in Sources */,
 				65B60DD5E9810F0D554339A1 /* AppActivityTypes.swift in Sources */,
 				3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */,

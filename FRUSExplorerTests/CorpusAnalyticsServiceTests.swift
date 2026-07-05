@@ -228,4 +228,94 @@ struct CorpusAnalyticsServiceTests {
             #expect(looseCount == 2, "Unquoted query is a loose AND, matching both documents")
         }
     }
+
+    // MARK: - Corpus Document Totals (Prep-B / CA-4 denominator)
+
+    /// `documentTotalsByYear` counts every indexed document per year (by its stored
+    /// `date_iso`), independent of any search term — the normalization denominator.
+    /// `documentTotalsByDecade` buckets those totals into ten-year windows.
+    @Test("documentTotalsByYear/Decade count all indexed documents per period")
+    func documentTotalsBucketByPeriod() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            // Two documents dated 1971, one dated 1975, one dated 1978 — regardless
+            // of content, all four count toward the corpus totals.
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>Alpha.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1971-06-01\">June 1, 1971</date></dateline><p>Beta.</p>"),
+                    ("d3", "<head>3. Memo</head><dateline><date when=\"1975-01-01\">Jan 1, 1975</date></dateline><p>Gamma.</p>"),
+                ]
+            )
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1977-80v01.xml"),
+                volumeId: "frus1977-80v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1978-02-01\">Feb 1, 1978</date></dateline><p>Delta.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1977-80v01")
+
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            let byYear = try await service.documentTotalsByYear()
+            #expect(byYear[1971] == 2, "Two documents are dated 1971")
+            #expect(byYear[1975] == 1, "One document is dated 1975")
+            #expect(byYear[1978] == 1, "One document is dated 1978")
+            #expect(byYear[1972] == nil, "A year with no documents is absent, not zero")
+
+            let byDecade = try await service.documentTotalsByDecade()
+            #expect(byDecade[1970] == 4, "All four documents fall in the 1970s bucket")
+        }
+    }
+
+    /// A `volumeIds` scope restricts the totals denominator to documents in those
+    /// volumes, so a scoped share divides by the within-scope document count.
+    @Test("documentTotalsByYear/Decade honor the volume scope")
+    func documentTotalsHonorScope() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>Alpha.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1971-06-01\">June 1, 1971</date></dateline><p>Beta.</p>"),
+                ]
+            )
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1977-80v01.xml"),
+                volumeId: "frus1977-80v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-09-01\">Sept 1, 1971</date></dateline><p>Gamma.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1977-80v01")
+
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            // Corpus-wide: three documents in 1971.
+            let corpusWide = try await service.documentTotalsByYear()
+            #expect(corpusWide[1971] == 3, "Three documents are dated 1971 corpus-wide")
+
+            // Scoped to v01: only its two 1971 documents count.
+            let scoped = try await service.documentTotalsByYear(volumeIds: ["frus1969-76v01"])
+            #expect(scoped[1971] == 2, "Scope restricts the denominator to v01's two documents")
+
+            let scopedDecade = try await service.documentTotalsByDecade(volumeIds: ["frus1969-76v01"])
+            #expect(scopedDecade[1970] == 2, "Scoped decade total matches the scoped year total")
+
+            // An empty scope is treated as whole-corpus (unscoped).
+            let emptyScope = try await service.documentTotalsByYear(volumeIds: [])
+            #expect(emptyScope[1971] == 3, "An empty scope means the whole corpus")
+        }
+    }
 }

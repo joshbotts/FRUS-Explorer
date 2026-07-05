@@ -101,6 +101,9 @@ enum AnalyticsChartAxis: String, CaseIterable {
 ///          categorical By-Subseries / By-Volume charts and table rows tappable —
 ///          each opens Search scoped to that subseries/volume via
 ///          `openScopedDocumentsInSearch(volumeIds:)`
+///   1.5 — Prep-B (analytics CA-track): year-range bar and chart/table mode picker
+///          extracted into reusable `AnalyticsYearRangeBar` / `AnalyticsViewModePicker`
+///          chrome components (behavior-preserving; no user-facing change)
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -471,94 +474,21 @@ struct AnalyticsView: View {
     // MARK: - Year Range Bar
 
     /// Compact year-range filter shown below the search field when the "By Year"
-    /// axis is active. Steppers adjust `yearRangeStart` and `yearRangeEnd`;
-    /// a "Reset" link appears when the range has been customised.
+    /// axis is active. Delegates to the reusable `AnalyticsYearRangeBar` chrome
+    /// component (Prep-B), supplying the range bindings and bounds context; the
+    /// reset action restores the `1861...corpusMaxYear` default span.
     private var yearRangeBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "calendar")
-                .foregroundStyle(.secondary)
-                .font(.caption)
-
-            // The "Year range:" label is dropped on compact width (iPhone): the
-            // calendar icon carries the meaning and the space goes to the fields.
-            if !isCompactWidth {
-                Text(String(localized: "analytics.yearRange.label",
-                            defaultValue: "Year range:"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        AnalyticsYearRangeBar(
+            start: $yearRangeStart,
+            end: $yearRangeEnd,
+            corpusMaxYear: corpusMaxYear,
+            isCompactWidth: isCompactWidth,
+            isCustom: yearRangeIsCustom,
+            onReset: {
+                yearRangeStart = 1861
+                yearRangeEnd = corpusMaxYear
             }
-
-            yearEntryField(
-                value: $yearRangeStart,
-                bounds: 1776...yearRangeEnd,
-                accessibilityLabel: String(localized: "analytics.yearRange.start.a11y",
-                                           defaultValue: "Start year")
-            )
-
-            Text(verbatim: "–")
-                .foregroundStyle(.tertiary)
-                .font(.caption)
-
-            yearEntryField(
-                value: $yearRangeEnd,
-                bounds: yearRangeStart...corpusMaxYear,
-                accessibilityLabel: String(localized: "analytics.yearRange.end.a11y",
-                                           defaultValue: "End year")
-            )
-
-            if yearRangeIsCustom {
-                Button {
-                    yearRangeStart = 1861
-                    yearRangeEnd = corpusMaxYear
-                } label: {
-                    Text(String(localized: "analytics.yearRange.reset",
-                                defaultValue: "Reset"))
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
-                .foregroundStyle(Color.accentColor)
-                .help(String(
-                    localized: "analytics.yearRange.reset.help",
-                    defaultValue: "Reset the year range to 1861 – current year (the full FRUS corpus span)"
-                ))
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
-    }
-
-    /// A year value rendered as an editable, clamped text field paired with an
-    /// up/down stepper. Typing commits a value (clamped into `bounds`), letting
-    /// the user jump directly to a year instead of stepping one at a time; the
-    /// stepper remains for fine adjustment.
-    private func yearEntryField(
-        value: Binding<Int>,
-        bounds: ClosedRange<Int>,
-        accessibilityLabel: String
-    ) -> some View {
-        // Clamp on write so a typed (or stepped) value can never escape `bounds`.
-        let clamped = Binding<Int>(
-            get: { value.wrappedValue },
-            set: { value.wrappedValue = min(max($0, bounds.lowerBound), bounds.upperBound) }
         )
-        return Stepper(value: clamped, in: bounds) {
-            TextField(
-                String(localized: "analytics.yearRange.field.placeholder", defaultValue: "Year"),
-                value: clamped,
-                format: .number.grouping(.never)
-            )
-            .labelsHidden()
-            .multilineTextAlignment(.trailing)
-            .font(.caption.monospacedDigit())
-            .frame(width: 44)
-            .textFieldStyle(.roundedBorder)
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
-        }
-        .accessibilityLabel(accessibilityLabel)
     }
 
     // MARK: - Search Handoff Bar
@@ -1457,29 +1387,9 @@ struct AnalyticsView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        // View mode: chart vs table
+        // View mode: chart vs table (reusable chrome component, Prep-B).
         ToolbarItem(placement: .primaryAction) {
-            Picker(
-                String(localized: "analytics.viewMode.picker", defaultValue: "Display"),
-                selection: $viewMode
-            ) {
-                Image(systemName: "chart.bar")
-                    .tag(AnalyticsViewMode.chart)
-                    .accessibilityLabel(
-                        String(localized: "analytics.viewMode.chart.a11y", defaultValue: "Chart")
-                    )
-                Image(systemName: "list.bullet")
-                    .tag(AnalyticsViewMode.table)
-                    .accessibilityLabel(
-                        String(localized: "analytics.viewMode.table.a11y", defaultValue: "Table")
-                    )
-            }
-            .pickerStyle(.segmented)
-            .disabled(committedTerm.isEmpty)
-            .help(String(
-                localized: "analytics.viewMode.picker.help",
-                defaultValue: "Switch between chart visualisation and a tabular list of the same data"
-            ))
+            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty)
         }
 
         // Axis: granularity picker (decade / year / month / day / subseries)
