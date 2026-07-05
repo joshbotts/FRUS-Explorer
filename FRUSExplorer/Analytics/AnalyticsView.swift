@@ -19,6 +19,38 @@ enum AnalyticsViewMode: String, CaseIterable {
     case chart, table
 }
 
+// MARK: - AnalyticsNormalizationMode
+
+/// How the date-based Corpus analytics charts express their y-values (CA-4).
+///
+/// - `raw`: absolute matching-document counts (the original, byte-for-byte behavior).
+/// - `percentOfDocuments`: each period's matches as a share of **all** indexed
+///   documents in that same period — reading the term as a proportion of the corpus,
+///   so "the term got more common" is not conflated with "the corpus got bigger."
+///
+/// Only meaningful for the date-based By-Year / By-Decade axes (a per-period corpus
+/// denominator); the categorical and sub-year axes ignore it.
+///
+/// Version history:
+///   1.0 — CA-4 (analytics CA-track): initial implementation
+enum AnalyticsNormalizationMode: String, CaseIterable {
+    case raw
+    case percentOfDocuments
+
+    /// `UserDefaults`/`@AppStorage` key for the persisted per-user choice.
+    static let storageKey = "frus.analytics.normalizationMode"
+
+    /// Short label for the segmented picker.
+    var pickerLabel: String {
+        switch self {
+        case .raw:
+            return String(localized: "analytics.normalize.raw", defaultValue: "Raw count")
+        case .percentOfDocuments:
+            return String(localized: "analytics.normalize.percent", defaultValue: "% of documents")
+        }
+    }
+}
+
 // MARK: - AnalyticsChartAxis
 
 /// Which dimension to plot in `AnalyticsView`.
@@ -101,6 +133,17 @@ enum AnalyticsChartAxis: String, CaseIterable {
 ///          categorical By-Subseries / By-Volume charts and table rows tappable —
 ///          each opens Search scoped to that subseries/volume via
 ///          `openScopedDocumentsInSearch(volumeIds:)`
+///   1.5 — Prep-B (analytics CA-track): year-range bar and chart/table mode picker
+///          extracted into reusable `AnalyticsYearRangeBar` / `AnalyticsViewModePicker`
+///          chrome components (behavior-preserving; no user-facing change)
+///   1.6 — CA-4 (analytics CA-track): "% of documents" normalization toggle for the
+///          date-based By-Year / By-Decade charts — plots each period's matches as a
+///          share of all indexed documents in that period (scoped denominator, zero-
+///          total guard), persisted per-user via `@AppStorage`; raw mode unchanged
+///   1.7 — CA-4 review fix: `valueAxisMarks` raw path emits a default `AxisValueLabel()`
+///          so raw-mode By-Year/By-Decade Y labels keep Swift Charts' framework-default
+///          thousands grouping ("4,187"), restoring byte-for-byte parity with the
+///          pre-CA-4 axis instead of the no-grouping integer format
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -155,6 +198,20 @@ struct AnalyticsView: View {
 
     /// Drives the info popover next to the toolbar pickers.
     @State private var showInfoPopover: Bool = false
+
+    /// User preference (CA-4): whether the date-based charts plot raw matching-document
+    /// counts or each period's matches as a **share of all indexed documents** in that
+    /// period. Persisted per-user; defaults to `raw` (byte-for-byte the original
+    /// behavior). Only consulted for the date-based By-Year / By-Decade axes.
+    @AppStorage(AnalyticsNormalizationMode.storageKey) private var normalizationMode: AnalyticsNormalizationMode = .raw
+
+    /// Corpus document totals per year — the `% of documents` denominator (CA-4),
+    /// fetched (scoped to `scopeVolumeIds`) alongside the term data in `runSearch()`.
+    @State private var documentTotalsByYear: [Int: Int] = [:]
+
+    /// Corpus document totals per decade bucket — the By-Decade `% of documents`
+    /// denominator (CA-4). Fetched alongside `documentTotalsByYear`.
+    @State private var documentTotalsByDecade: [Int: Int] = [:]
 
     /// Global default colored-series count, mirrored from Display settings.
     @AppStorage(ChartSeriesPalette.storageKey) private var defaultSeriesCount = ChartSeriesPalette.defaultCount
@@ -237,6 +294,21 @@ struct AnalyticsView: View {
     /// `true` when the user has narrowed the range away from its default values.
     private var yearRangeIsCustom: Bool {
         yearRangeStart != 1861 || yearRangeEnd != corpusMaxYear
+    }
+
+    /// `true` when the normalization toggle applies to the active axis — the date-based
+    /// By-Year / By-Decade axes, which have a per-period corpus denominator. The
+    /// categorical and sub-year axes (month / day / subseries / volume) have no
+    /// meaningful per-period corpus total, so the toggle is hidden and ignored for them
+    /// (CA-4 is scoped to Year + Decade).
+    private var normalizationApplies: Bool {
+        chartAxis == .byYear || chartAxis == .byDecade
+    }
+
+    /// `true` when normalized (`% of documents`) plotting is active for the current
+    /// axis — the preference is on AND the axis supports it.
+    private var isNormalized: Bool {
+        normalizationApplies && normalizationMode == .percentOfDocuments
     }
 
     /// `true` on a compact-width layout (iPhone portrait, and most iPhones in
@@ -471,94 +543,21 @@ struct AnalyticsView: View {
     // MARK: - Year Range Bar
 
     /// Compact year-range filter shown below the search field when the "By Year"
-    /// axis is active. Steppers adjust `yearRangeStart` and `yearRangeEnd`;
-    /// a "Reset" link appears when the range has been customised.
+    /// axis is active. Delegates to the reusable `AnalyticsYearRangeBar` chrome
+    /// component (Prep-B), supplying the range bindings and bounds context; the
+    /// reset action restores the `1861...corpusMaxYear` default span.
     private var yearRangeBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "calendar")
-                .foregroundStyle(.secondary)
-                .font(.caption)
-
-            // The "Year range:" label is dropped on compact width (iPhone): the
-            // calendar icon carries the meaning and the space goes to the fields.
-            if !isCompactWidth {
-                Text(String(localized: "analytics.yearRange.label",
-                            defaultValue: "Year range:"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        AnalyticsYearRangeBar(
+            start: $yearRangeStart,
+            end: $yearRangeEnd,
+            corpusMaxYear: corpusMaxYear,
+            isCompactWidth: isCompactWidth,
+            isCustom: yearRangeIsCustom,
+            onReset: {
+                yearRangeStart = 1861
+                yearRangeEnd = corpusMaxYear
             }
-
-            yearEntryField(
-                value: $yearRangeStart,
-                bounds: 1776...yearRangeEnd,
-                accessibilityLabel: String(localized: "analytics.yearRange.start.a11y",
-                                           defaultValue: "Start year")
-            )
-
-            Text(verbatim: "–")
-                .foregroundStyle(.tertiary)
-                .font(.caption)
-
-            yearEntryField(
-                value: $yearRangeEnd,
-                bounds: yearRangeStart...corpusMaxYear,
-                accessibilityLabel: String(localized: "analytics.yearRange.end.a11y",
-                                           defaultValue: "End year")
-            )
-
-            if yearRangeIsCustom {
-                Button {
-                    yearRangeStart = 1861
-                    yearRangeEnd = corpusMaxYear
-                } label: {
-                    Text(String(localized: "analytics.yearRange.reset",
-                                defaultValue: "Reset"))
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
-                .foregroundStyle(Color.accentColor)
-                .help(String(
-                    localized: "analytics.yearRange.reset.help",
-                    defaultValue: "Reset the year range to 1861 – current year (the full FRUS corpus span)"
-                ))
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
-    }
-
-    /// A year value rendered as an editable, clamped text field paired with an
-    /// up/down stepper. Typing commits a value (clamped into `bounds`), letting
-    /// the user jump directly to a year instead of stepping one at a time; the
-    /// stepper remains for fine adjustment.
-    private func yearEntryField(
-        value: Binding<Int>,
-        bounds: ClosedRange<Int>,
-        accessibilityLabel: String
-    ) -> some View {
-        // Clamp on write so a typed (or stepped) value can never escape `bounds`.
-        let clamped = Binding<Int>(
-            get: { value.wrappedValue },
-            set: { value.wrappedValue = min(max($0, bounds.lowerBound), bounds.upperBound) }
         )
-        return Stepper(value: clamped, in: bounds) {
-            TextField(
-                String(localized: "analytics.yearRange.field.placeholder", defaultValue: "Year"),
-                value: clamped,
-                format: .number.grouping(.never)
-            )
-            .labelsHidden()
-            .multilineTextAlignment(.trailing)
-            .font(.caption.monospacedDigit())
-            .frame(width: 44)
-            .textFieldStyle(.roundedBorder)
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
-        }
-        .accessibilityLabel(accessibilityLabel)
     }
 
     // MARK: - Search Handoff Bar
@@ -800,6 +799,83 @@ struct AnalyticsView: View {
         .padding(.horizontal)
     }
 
+    // MARK: - Normalization Math (CA-4)
+
+    /// The plotted y-value for a raw `count` in `period`, honoring the active
+    /// normalization mode. In raw mode this is the count itself (as a `Double`). In
+    /// `% of documents` mode it is `count / totals[period] * 100`; a period whose corpus
+    /// total is missing or zero yields `nil` (divide-by-zero guard) so the caller can
+    /// omit that mark rather than plot a bogus value.
+    ///
+    /// `totals` is `documentTotalsByYear` for the By-Year axis and
+    /// `documentTotalsByDecade` for the By-Decade axis — the scoped corpus denominator
+    /// fetched in `runSearch()`, keyed the same way the chart buckets its periods.
+    private func normalizedValue(count: Int, period: Int, totals: [Int: Int]) -> Double? {
+        guard isNormalized else { return Double(count) }
+        guard let total = totals[period], total > 0 else { return nil }
+        return Double(count) / Double(total) * 100.0
+    }
+
+    /// Y-axis title for the date charts — "Documents" in raw mode, "% of documents"
+    /// when the normalization toggle is active for the axis.
+    private var valueAxisLabel: String {
+        isNormalized
+            ? String(localized: "analytics.axis.percentOfDocuments", defaultValue: "% of documents")
+            : String(localized: "analytics.axis.documents", defaultValue: "Documents")
+    }
+
+    /// Y-axis marks for the date charts: percent-formatted value labels in normalized
+    /// mode (the plotted values are already 0–100). In raw mode the value labels use
+    /// Swift Charts' framework-default formatting (locale thousands grouping, e.g.
+    /// "4,187"), preserving the original document-count axis byte-for-byte — the raw
+    /// path only supplies grid line + tick + a default `AxisValueLabel()`, exactly as
+    /// before this axis was made explicit for the normalized mode.
+    @AxisContentBuilder
+    private var valueAxisMarks: some AxisContent {
+        AxisMarks { value in
+            AxisGridLine()
+            AxisTick()
+            if isNormalized {
+                AxisValueLabel {
+                    if let percent = value.as(Double.self) {
+                        Text(verbatim: "\(percent.formatted(.number.precision(.fractionLength(0...1))))%")
+                    }
+                }
+            } else {
+                AxisValueLabel()
+            }
+        }
+    }
+
+    /// VoiceOver value string for a source segment, reflecting the active mode: the raw
+    /// document count, or the plotted share as a percentage.
+    private func sourceValueA11y(count: Int, plotted: Double) -> String {
+        if isNormalized {
+            return String(
+                format: String(localized: "analytics.chart.source.share.a11y %@",
+                               defaultValue: "%@ percent of documents"),
+                plotted.formatted(.number.precision(.fractionLength(0...1))))
+        }
+        return String(
+            format: String(localized: "analytics.chart.source.count.a11y %lld",
+                           defaultValue: "%lld documents"),
+            Int64(count))
+    }
+
+    /// Caption disclosing the active normalization mode beneath the By-Year / By-Decade
+    /// charts. Only shown when `% of documents` is active; names the denominator and
+    /// repeats the standing selective-corpus caveat (only indexed volumes are counted).
+    @ViewBuilder
+    private var normalizationCaption: some View {
+        if isNormalized {
+            Text(String(localized: "analytics.normalize.caption",
+                        defaultValue: "Share of indexed documents per period. Only downloaded, indexed volumes are counted, so this is a share of your local corpus, not the entire FRUS series."))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     // MARK: - Year Chart
 
     private var yearChartSection: some View {
@@ -826,40 +902,38 @@ struct AnalyticsView: View {
 
             Chart {
                 ForEach(coloring.segments) { seg in
-                    BarMark(
-                        x: .value(
-                            String(localized: "analytics.axis.year", defaultValue: "Year"),
-                            seg.period
-                        ),
-                        y: .value(
-                            String(localized: "analytics.axis.documents", defaultValue: "Documents"),
-                            seg.count
+                    // In `% of documents` mode the segment height is its share of the
+                    // year's corpus total; a year with a missing/zero total is omitted
+                    // (divide-by-zero guard). Raw mode plots the count unchanged.
+                    if let y = normalizedValue(count: seg.count, period: seg.period, totals: documentTotalsByYear) {
+                        BarMark(
+                            x: .value(
+                                String(localized: "analytics.axis.year", defaultValue: "Year"),
+                                seg.period
+                            ),
+                            y: .value(valueAxisLabel, y)
                         )
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
-                        seg.seriesKey
-                    ))
-                    .accessibilityLabel(Text(verbatim: "\(seg.period), \(sourceTitle(seg.seriesKey))"))
-                    .accessibilityValue(Text(String(
-                        format: String(localized: "analytics.chart.source.count.a11y %lld",
-                                       defaultValue: "%lld documents"),
-                        Int64(seg.count))))
+                        .foregroundStyle(by: .value(
+                            String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
+                            seg.seriesKey
+                        ))
+                        .accessibilityLabel(Text(verbatim: "\(seg.period), \(sourceTitle(seg.seriesKey))"))
+                        .accessibilityValue(Text(sourceValueA11y(count: seg.count, plotted: y)))
+                    }
                 }
                 if showFitLine {
                     ForEach(data) { point in
-                        LineMark(
-                            x: .value(
-                                String(localized: "analytics.axis.year", defaultValue: "Year"),
-                                point.year
-                            ),
-                            y: .value(
-                                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
-                                point.count
+                        if let y = normalizedValue(count: point.count, period: point.year, totals: documentTotalsByYear) {
+                            LineMark(
+                                x: .value(
+                                    String(localized: "analytics.axis.year", defaultValue: "Year"),
+                                    point.year
+                                ),
+                                y: .value(valueAxisLabel, y)
                             )
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(Color.primary.opacity(0.5))
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(Color.primary.opacity(0.5))
+                        }
                     }
                 }
             }
@@ -873,15 +947,17 @@ struct AnalyticsView: View {
                     AxisValueLabel(format: integerNoGroupingFormat)
                 }
             }
+            .chartYAxis { valueAxisMarks }
             .chartXAxisLabel(
                 String(localized: "analytics.axis.year", defaultValue: "Year"),
                 alignment: .center
             )
-            .chartYAxisLabel(
-                String(localized: "analytics.axis.documents", defaultValue: "Documents")
-            )
+            .chartYAxisLabel(valueAxisLabel)
             .frame(height: 280)
             .padding(.horizontal)
+
+            normalizationCaption
+                .padding(.horizontal)
 
             totalsFootnote(filtered: totalFiltered, total: totalAllYears)
                 .padding(.horizontal)
@@ -918,47 +994,45 @@ struct AnalyticsView: View {
 
             Chart {
                 ForEach(coloring.segments) { seg in
-                    BarMark(
-                        x: .value(
-                            String(localized: "analytics.axis.decade", defaultValue: "Decade"),
-                            seg.period
-                        ),
-                        y: .value(
-                            String(localized: "analytics.axis.documents", defaultValue: "Documents"),
-                            seg.count
-                        ),
-                        width: .ratio(0.8)
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
-                        seg.seriesKey
-                    ))
-                    .accessibilityLabel(Text(verbatim: "\(seg.period)s, \(sourceTitle(seg.seriesKey))"))
-                    .accessibilityValue(Text(String(
-                        format: String(localized: "analytics.chart.source.count.a11y %lld",
-                                       defaultValue: "%lld documents"),
-                        Int64(seg.count))))
+                    // Normalized: the segment's share of the decade's corpus total (a
+                    // decade with a missing/zero total is omitted). Raw: the count.
+                    if let y = normalizedValue(count: seg.count, period: seg.period, totals: documentTotalsByDecade) {
+                        BarMark(
+                            x: .value(
+                                String(localized: "analytics.axis.decade", defaultValue: "Decade"),
+                                seg.period
+                            ),
+                            y: .value(valueAxisLabel, y),
+                            width: .ratio(0.8)
+                        )
+                        .foregroundStyle(by: .value(
+                            String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
+                            seg.seriesKey
+                        ))
+                        .accessibilityLabel(Text(verbatim: "\(seg.period)s, \(sourceTitle(seg.seriesKey))"))
+                        .accessibilityValue(Text(sourceValueA11y(count: seg.count, plotted: y)))
+                    }
                 }
                 if showFitLine {
                     ForEach(data) { point in
-                        LineMark(
-                            x: .value(
-                                String(localized: "analytics.axis.decade", defaultValue: "Decade"),
-                                point.decadeStart
-                            ),
-                            y: .value(
-                                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
-                                point.count
+                        if let y = normalizedValue(count: point.count, period: point.decadeStart, totals: documentTotalsByDecade) {
+                            LineMark(
+                                x: .value(
+                                    String(localized: "analytics.axis.decade", defaultValue: "Decade"),
+                                    point.decadeStart
+                                ),
+                                y: .value(valueAxisLabel, y)
                             )
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(Color.primary.opacity(0.5))
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(Color.primary.opacity(0.5))
+                        }
                     }
                 }
             }
             .chartForegroundStyleScale(domain: scale.domain, range: scale.range)
             .chartLegend(.hidden)
             .chartXScale(domain: yearRangeStart...yearRangeEnd)
+            .chartYAxis { valueAxisMarks }
             .chartXAxis {
                 AxisMarks(values: .stride(by: 10)) { value in
                     AxisGridLine()
@@ -970,11 +1044,12 @@ struct AnalyticsView: View {
                 String(localized: "analytics.axis.decade", defaultValue: "Decade"),
                 alignment: .center
             )
-            .chartYAxisLabel(
-                String(localized: "analytics.axis.documents", defaultValue: "Documents")
-            )
+            .chartYAxisLabel(valueAxisLabel)
             .frame(height: 280)
             .padding(.horizontal)
+
+            normalizationCaption
+                .padding(.horizontal)
 
             totalsFootnote(filtered: totalFiltered, total: totalAll)
                 .padding(.horizontal)
@@ -1457,29 +1532,30 @@ struct AnalyticsView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        // View mode: chart vs table
+        // View mode: chart vs table (reusable chrome component, Prep-B).
         ToolbarItem(placement: .primaryAction) {
-            Picker(
-                String(localized: "analytics.viewMode.picker", defaultValue: "Display"),
-                selection: $viewMode
-            ) {
-                Image(systemName: "chart.bar")
-                    .tag(AnalyticsViewMode.chart)
-                    .accessibilityLabel(
-                        String(localized: "analytics.viewMode.chart.a11y", defaultValue: "Chart")
-                    )
-                Image(systemName: "list.bullet")
-                    .tag(AnalyticsViewMode.table)
-                    .accessibilityLabel(
-                        String(localized: "analytics.viewMode.table.a11y", defaultValue: "Table")
-                    )
+            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty)
+        }
+
+        // Normalization: raw count vs % of documents (CA-4). Only meaningful for the
+        // date-based By-Year / By-Decade axes, so it is hidden for the others.
+        if normalizationApplies {
+            ToolbarItem(placement: .primaryAction) {
+                Picker(
+                    String(localized: "analytics.normalize.picker", defaultValue: "Values"),
+                    selection: $normalizationMode
+                ) {
+                    ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
+                        Text(mode.pickerLabel).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(committedTerm.isEmpty || viewMode != .chart)
+                .help(String(
+                    localized: "analytics.normalize.help",
+                    defaultValue: "Plot raw matching-document counts, or each period's matches as a share of all indexed documents in that period — so a rising corpus size doesn't masquerade as a rising term."
+                ))
             }
-            .pickerStyle(.segmented)
-            .disabled(committedTerm.isEmpty)
-            .help(String(
-                localized: "analytics.viewMode.picker.help",
-                defaultValue: "Switch between chart visualisation and a tabular list of the same data"
-            ))
         }
 
         // Axis: granularity picker (decade / year / month / day / subseries)
@@ -1647,6 +1723,8 @@ struct AnalyticsView: View {
         dayData = []
         subseriesData = []
         volumeData = []
+        documentTotalsByYear = [:]
+        documentTotalsByDecade = [:]
         // Restrict every axis to the active volume-ID scope (Word Cloud → Analytics
         // handoff); `nil`/empty means the whole corpus, the default presentation.
         let scope: Set<String>? = scopeVolumeIds.map(Set.init)
@@ -1662,6 +1740,11 @@ struct AnalyticsView: View {
                 async let days        = service.termFrequencyByDay(term: term, volumeIds: scope)
                 async let subseries   = service.termFrequencyBySubseries(term: term, volumeIds: scope)
                 async let volumes     = service.termFrequencyByVolume(term: term, volumeIds: scope)
+                // Corpus document totals (the % of documents denominator, CA-4) —
+                // fetched with the same scope as the numerator so a scoped share is a
+                // correct within-scope proportion.
+                async let totalsYear   = service.documentTotalsByYear(volumeIds: scope)
+                async let totalsDecade = service.documentTotalsByDecade(volumeIds: scope)
                 yearData      = try await years
                 yearVolumeData = try await yearVolumes
                 decadeData    = try await decades
@@ -1669,6 +1752,8 @@ struct AnalyticsView: View {
                 dayData       = try await days
                 subseriesData = try await subseries
                 volumeData    = try await volumes
+                documentTotalsByYear   = try await totalsYear
+                documentTotalsByDecade = try await totalsDecade
             } catch {
                 errorMessage = error.localizedDescription
             }
