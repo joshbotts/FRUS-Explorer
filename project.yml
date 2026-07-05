@@ -146,6 +146,15 @@ targets:
             LSHandlerRank: Owner
             LSItemContentTypes:
               - bottsywattsy.FRUS-Explorer.fruscollection
+        # App Store validation ("Missing Document Configuration") requires any app that
+        # declares CFBundleDocumentTypes to also set UISupportsDocumentBrowser or
+        # LSSupportsOpeningDocumentsInPlace. The app opens .fruscollection files via
+        # onOpenURL (no UIDocumentBrowserViewController), so YES = open the file in place
+        # (Apple-recommended): importOpenedCollection() already brackets the read in
+        # start/stopAccessingSecurityScopedResource and only reads (never writes back), so
+        # in-place read-only is correct — and it avoids the Documents/Inbox copies a NO
+        # value would leave behind uncleaned. macOS doesn't use this key (NSDocument model).
+        LSSupportsOpeningDocumentsInPlace: YES
     dependencies:
       # Embed the widget extension so it is installed alongside the app.
       - target: FRUSExplorerWidgets
