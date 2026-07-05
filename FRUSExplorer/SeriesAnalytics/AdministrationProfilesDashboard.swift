@@ -37,6 +37,11 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
+///   1.1 — Analytics SA-2b review: key the overview charts' x-position and
+///         `chartXScale(domain:)` on the distinct administration id (not the
+///         president name), so Grover Cleveland's two non-consecutive terms no
+///         longer collapse into one stacked bar; axis labels map the id back to a
+///         year-disambiguated last name.
 struct AdministrationProfilesDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -149,6 +154,7 @@ struct AdministrationProfilesDashboard: View {
     /// and party-colored.
     private var documentsChart: some View {
         let profiles = data.profiles
+        let labels = Self.axisLabels(for: profiles)
         return chartCard(
             title: String(localized: "series.admin.docs.title",
                           defaultValue: "Documents per administration"),
@@ -161,7 +167,7 @@ struct AdministrationProfilesDashboard: View {
                     BarMark(
                         x: .value(
                             String(localized: "series.admin.docs.x", defaultValue: "Administration"),
-                            profile.president
+                            profile.id
                         ),
                         y: .value(
                             String(localized: "series.admin.docs.y", defaultValue: "Documents"),
@@ -177,12 +183,12 @@ struct AdministrationProfilesDashboard: View {
                 }
             }
             .chartForegroundStyleScale(domain: partyDomain, range: partyRange)
-            .chartXScale(domain: profiles.map(\.president))
+            .chartXScale(domain: profiles.map(\.id))
             .chartXAxis {
                 AxisMarks { value in
                     AxisValueLabel(orientation: .vertical) {
-                        if let name = value.as(String.self) {
-                            Text(Self.lastName(name))
+                        if let id = value.as(String.self), let label = labels[id] {
+                            Text(label)
                         }
                     }
                     AxisTick()
@@ -200,6 +206,7 @@ struct AdministrationProfilesDashboard: View {
     /// chronological and party-colored. Presented raw — no baseline reference line.
     private var volumesPerYearChart: some View {
         let profiles = data.profiles.filter { $0.termYears > 0 }
+        let labels = Self.axisLabels(for: profiles)
         return chartCard(
             title: String(localized: "series.admin.perYear.title",
                           defaultValue: "Volumes per administration-year"),
@@ -212,7 +219,7 @@ struct AdministrationProfilesDashboard: View {
                     BarMark(
                         x: .value(
                             String(localized: "series.admin.perYear.x", defaultValue: "Administration"),
-                            profile.president
+                            profile.id
                         ),
                         y: .value(
                             String(localized: "series.admin.perYear.y", defaultValue: "Volumes per year"),
@@ -228,12 +235,12 @@ struct AdministrationProfilesDashboard: View {
                 }
             }
             .chartForegroundStyleScale(domain: partyDomain, range: partyRange)
-            .chartXScale(domain: profiles.map(\.president))
+            .chartXScale(domain: profiles.map(\.id))
             .chartXAxis {
                 AxisMarks { value in
                     AxisValueLabel(orientation: .vertical) {
-                        if let name = value.as(String.self) {
-                            Text(Self.lastName(name))
+                        if let id = value.as(String.self), let label = labels[id] {
+                            Text(label)
                         }
                     }
                     AxisTick()
@@ -262,7 +269,7 @@ struct AdministrationProfilesDashboard: View {
                 )
             ) {
                 ForEach(data.profiles) { profile in
-                    Text(profile.president).tag(profile.id)
+                    Text(pickerLabel(for: profile)).tag(profile.id)
                 }
             }
             .pickerStyle(.menu)
@@ -486,6 +493,19 @@ struct AdministrationProfilesDashboard: View {
         appState?.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
     }
 
+    /// The picker menu label for one administration — the president's name, with
+    /// the term span appended when another administration shares the identical name
+    /// (Grover Cleveland's two non-consecutive terms) so the two rows are distinct.
+    ///
+    /// - Parameter profile: The administration.
+    /// - Returns: The disambiguated menu label.
+    private func pickerLabel(for profile: AdministrationProfilesData.Profile) -> String {
+        let sharesName = data.profiles.filter { $0.president == profile.president }.count > 1
+        guard sharesName else { return profile.president }
+        return String(localized: "series.admin.picker.disambiguated",
+                      defaultValue: "\(profile.president) (\(termText(profile)))")
+    }
+
     /// The term-dates line for the profile card.
     ///
     /// - Parameter profile: The administration.
@@ -538,5 +558,33 @@ struct AdministrationProfilesDashboard: View {
     /// - Returns: The final name token, or the whole string when it has none.
     static func lastName(_ fullName: String) -> String {
         fullName.split(separator: " ").last.map(String.init) ?? fullName
+    }
+
+    /// The per-administration axis labels, keyed by administration id.
+    ///
+    /// Each label is the president's last name; when two administrations share the
+    /// same last name (Grover Cleveland's two non-consecutive terms, the two
+    /// Johnsons, the two Roosevelts, and so on) the term's start year is appended
+    /// so the two categorical bars stay visually distinct — the axis is keyed on
+    /// the distinct administration id, so the bars never merge, but their labels
+    /// would otherwise collide.
+    ///
+    /// - Parameter profiles: The profiles rendered on the chart.
+    /// - Returns: A map from administration id to its axis label.
+    static func axisLabels(for profiles: [AdministrationProfilesData.Profile]) -> [String: String] {
+        var counts: [String: Int] = [:]
+        for profile in profiles {
+            counts[lastName(profile.president), default: 0] += 1
+        }
+        var labels: [String: String] = [:]
+        for profile in profiles {
+            let name = lastName(profile.president)
+            if counts[name, default: 0] > 1 {
+                labels[profile.id] = "\(name) \(year(from: profile.start))"
+            } else {
+                labels[profile.id] = name
+            }
+        }
+        return labels
     }
 }

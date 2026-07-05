@@ -334,5 +334,67 @@ struct AdministrationProfilesDataTests {
         #expect(derived.profiles.count == 26)
         #expect(derived.profiles.allSatisfy { $0.documentCount > 0 })
         #expect(derived.mostDocumentedProfile != nil)
+
+        // Grover Cleveland's two non-consecutive terms decode as DISTINCT
+        // administrations (the chart keys x-position on the id, so they never
+        // merge into one bar).
+        let clevelands = index.administrations.filter { $0.president == "Grover Cleveland" }
+        #expect(clevelands.count == 2, "Cleveland's two terms must be distinct administrations")
+        #expect(Set(clevelands.map(\.id)).count == 2)
+    }
+
+    // MARK: Axis-label disambiguation
+
+    /// The two overview charts key the x-position on the distinct administration
+    /// id, so same-name administrations render as separate bars; their axis labels
+    /// are disambiguated by appending the term start year. This guards the fix for
+    /// the SA-2b review finding where both charts collapsed Grover Cleveland's two
+    /// terms into one stacked bar.
+    @Test
+    func axisLabelsDisambiguateSameLastName() {
+        let profiles = AdministrationProfilesData(index: fixtureWithClevelandLikeTerms(),
+                                                  includeEditorialNotes: false).profiles
+        let labels = AdministrationProfilesDashboard.axisLabels(for: profiles)
+
+        // Each administration gets its own label keyed on its distinct id.
+        #expect(labels.count == profiles.count)
+        #expect(Set(labels.keys).count == profiles.count)
+
+        // The two "Cleveland" administrations get distinct, year-disambiguated
+        // labels; the lone "Alpha" stays a bare last name.
+        #expect(labels["cleveland-1"] == "Cleveland 1885")
+        #expect(labels["cleveland-2"] == "Cleveland 1893")
+        #expect(labels["alpha"] == "Alpha")
+    }
+
+    /// Two administrations sharing the last name "Cleveland" (distinct ids/terms)
+    /// plus one uniquely named administration.
+    private func fixtureWithClevelandLikeTerms() -> AdministrationProfilesIndex {
+        AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-07-05",
+            totalDocumentsPointDated: 300, totalDocumentsRangeDated: 0, totalDocumentsUndated: 0,
+            volumesCovered: 3,
+            administrations: [
+                AdministrationProfile(
+                    id: "cleveland-1", number: 22, president: "Grover Cleveland", party: "Democratic",
+                    start: "1885-03-04", end: "1889-03-04",
+                    pointDocCount: 100, rangeDocCount: 0, volumeCount: 4, volumeCountPointOnly: 4,
+                    coverageEarliest: 1885, coverageLatest: 1889, volumes: []
+                ),
+                AdministrationProfile(
+                    id: "cleveland-2", number: 24, president: "Grover Cleveland", party: "Democratic",
+                    start: "1893-03-04", end: "1897-03-04",
+                    pointDocCount: 120, rangeDocCount: 0, volumeCount: 4, volumeCountPointOnly: 4,
+                    coverageEarliest: 1893, coverageLatest: 1897, volumes: []
+                ),
+                AdministrationProfile(
+                    id: "alpha", number: 23, president: "Alice Alpha", party: "Republican",
+                    start: "1889-03-04", end: "1893-03-04",
+                    pointDocCount: 80, rangeDocCount: 0, volumeCount: 2, volumeCountPointOnly: 2,
+                    coverageEarliest: 1889, coverageLatest: 1893, volumes: []
+                ),
+            ],
+            volumeTotals: [:]
+        )
     }
 }
