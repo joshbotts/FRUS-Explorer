@@ -35,6 +35,8 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   1.1 — Analytics SA (x-axis bounds): bounded coverage x-domain (1861–1993) on
+///          the provenance-mix and density charts plus an editable year-range bar
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -43,10 +45,31 @@ struct SourceProvenanceDashboard: View {
     /// normally resolves; the optionality is purely defensive.
     @Environment(AppState.self) private var appState: AppState?
 
+    /// Compact-width detection for the year-range bar (drops its label on iPhone).
+    /// Resolves to `.regular` on macOS, so `isCompactWidth` is `false` there.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// This dashboard's default upper year — its time-series charts are
+    /// coverage-valued, so the range ends at the coverage ceiling.
+    private static let defaultEnd = SeriesChartKind.coverageCeilingYear
+
+    /// The editable range's start year (floors at the series' start).
+    @State private var yearStart = SeriesChartKind.floorYear
+    /// The editable range's end year (defaults to the coverage ceiling).
+    @State private var yearEnd = defaultEnd
+
     /// The pure derivation driving every chart, built from the bundled aggregate
     /// (empty/zeroed when `AppState` or the resource is absent).
     private var data: SourceProvenanceData {
         SourceProvenanceData(index: appState?.sourceProvenanceStore.index)
+    }
+
+    /// `true` on compact-width (iPhone); always `false` on macOS / regular-width.
+    private var isCompactWidth: Bool { horizontalSizeClass == .compact }
+
+    /// `true` when the range has been narrowed away from its `1861…1993` default.
+    private var isCustomRange: Bool {
+        yearStart != SeriesChartKind.floorYear || yearEnd != Self.defaultEnd
     }
 
     var body: some View {
@@ -55,6 +78,7 @@ struct SourceProvenanceDashboard: View {
                 emptyState
             } else {
                 intro
+                yearRangeBar
                 mixOverTimeChart
                 compositionChart
                 densityChart
@@ -75,12 +99,33 @@ struct SourceProvenanceDashboard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
+    // MARK: - Year-range bar
+
+    /// The editable start/end year filter above the charts, reusing the shared
+    /// `AnalyticsYearRangeBar`. Both coverage-valued charts (mix + density) honour
+    /// it; the categorical composition bars are unaffected. Provenance data floors
+    /// at 1900, so the 1861–1900 span of the axis is honestly empty.
+    private var yearRangeBar: some View {
+        AnalyticsYearRangeBar(
+            start: $yearStart,
+            end: $yearEnd,
+            corpusMaxYear: Self.defaultEnd,
+            isCompactWidth: isCompactWidth,
+            isCustom: isCustomRange,
+            onReset: {
+                yearStart = SeriesChartKind.floorYear
+                yearEnd = Self.defaultEnd
+            }
+        )
+    }
+
     // MARK: - Chart 1: Provenance mix over time (stacked area, the anchor)
 
     /// Stacked area of each provenance category's share of a decade's source
     /// notes, over coverage decades from 1900. The anchor chart.
     private var mixOverTimeChart: some View {
-        let data = data
+        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
+        let shares = data.shareByDecade(in: domain)
         return chartCard(
             title: String(localized: "series.provenance.trend.title",
                           defaultValue: "Archival provenance over time"),
@@ -88,7 +133,7 @@ struct SourceProvenanceDashboard: View {
                             defaultValue: "Each decade's source notes divided among the archival collections they cite, so every decade sums to 100%. Decades are set by each volume's coverage midpoint; the trend begins in 1900 because earlier volumes carry no archival source notes.")
         ) {
             Chart {
-                ForEach(data.shareByDecade) { point in
+                ForEach(shares) { point in
                     AreaMark(
                         x: .value(
                             String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
@@ -111,6 +156,7 @@ struct SourceProvenanceDashboard: View {
                 }
             }
             .chartForegroundStyleScale(domain: SourceProvenanceCategory.ordered.map(\.displayName))
+            .chartXScale(domain: domain.lowerBound...domain.upperBound)
             .chartYScale(domain: 0...1)
             .chartYAxis {
                 AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
@@ -172,7 +218,8 @@ struct SourceProvenanceDashboard: View {
     /// Bars of the total source-note count per shown decade — the density context
     /// behind the shares (a 1970s share sits on far fewer notes than a 1940s one).
     private var densityChart: some View {
-        let data = data
+        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
+        let density = data.notesByDecade(in: domain)
         return chartCard(
             title: String(localized: "series.provenance.density.title",
                           defaultValue: "The documentary base by decade"),
@@ -180,7 +227,7 @@ struct SourceProvenanceDashboard: View {
                             defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base; a share in a thin decade rests on far fewer documents.")
         ) {
             Chart {
-                ForEach(data.notesByDecade) { item in
+                ForEach(density) { item in
                     BarMark(
                         x: .value(
                             String(localized: "series.provenance.density.x", defaultValue: "Coverage decade"),
@@ -199,6 +246,7 @@ struct SourceProvenanceDashboard: View {
                     .accessibilityValue(Text(item.totalNotes, format: .number))
                 }
             }
+            .chartXScale(domain: domain.lowerBound...domain.upperBound)
             .chartXAxisLabel(String(localized: "series.provenance.density.x", defaultValue: "Coverage decade"))
             .chartYAxisLabel(String(localized: "series.provenance.density.y", defaultValue: "Source notes"))
             .frame(height: 240)
