@@ -176,6 +176,8 @@ enum PersonAnalyticsMath {
 ///
 /// Version history:
 ///   1.0 — CA-5 (analytics CA-track): initial implementation
+///   1.1 — CA-5 review fixes: explicit color-scale domain (chip/line color parity) and a
+///         latest-fetch token guarding the trajectory refetch race
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -213,6 +215,11 @@ struct PersonAnalyticsView: View {
     /// Dated-document totals per year — the normalized denominator.
     @State private var datedTotals: [Int: Int] = [:]
     @State private var isLoadingTrajectories = false
+
+    /// Monotonic token identifying the most recently issued trajectory fetch. A fetch only
+    /// writes its results back if it is still the latest, so a fast double-add can't let an
+    /// earlier task's (smaller) selection clobber a later task's fuller one (finding CA-5-2).
+    @State private var trajectoryFetchToken = 0
 
     /// Decade toggle for the trajectory chart. Off → per-year.
     @State private var byDecade = false
@@ -559,13 +566,21 @@ struct PersonAnalyticsView: View {
                           : String(localized: "personAnalytics.axis.mentions", defaultValue: "Mentions"),
                           point.value)
             )
-            .foregroundStyle(color(forRollupId: point.rollupId))
             .foregroundStyle(by: .value(
                 String(localized: "personAnalytics.axis.person", defaultValue: "Person"), point.name))
             .symbol(by: .value(
                 String(localized: "personAnalytics.axis.person", defaultValue: "Person"), point.name))
         }
-        .chartForegroundStyleScale(range: selectedPeople.map { color(forRollupId: $0.rollupId) })
+        // Key the color scale explicitly by person name (the `.foregroundStyle(by:)`
+        // series value) so each rendered line matches its chip color regardless of the
+        // order people were added. Supplying only `range:` would map the palette
+        // positionally onto Swift Charts' inferred (rollupId-sorted) domain, which
+        // disagrees with the selection-order chip colors — mirror ChronologyView's
+        // domain+range pairing instead.
+        .chartForegroundStyleScale(
+            domain: selectedPeople.map(\.canonicalName),
+            range: selectedPeople.map { color(forRollupId: $0.rollupId) }
+        )
         .chartXScale(domain: yearRange.lowerBound...yearRange.upperBound)
         .chartXAxis {
             AxisMarks { value in
@@ -720,13 +735,22 @@ struct PersonAnalyticsView: View {
     private func loadTrajectories() async {
         guard let store = appState.personMentionStore, !selectedPeople.isEmpty else { return }
         let ids = selectedPeople.map(\.rollupId)
+        trajectoryFetchToken += 1
+        let token = trajectoryFetchToken
         isLoadingTrajectories = true
         async let raw = store.mentionTrajectories(rollupIds: ids)
         async let docs = store.mentioningDocumentTrajectories(rollupIds: ids)
         async let totals = store.datedDocumentTotalsByYear()
-        rawTrajectories = (try? await raw) ?? [:]
-        mentioningDocs = (try? await docs) ?? [:]
-        datedTotals = (try? await totals) ?? [:]
+        let rawResult = (try? await raw) ?? [:]
+        let docsResult = (try? await docs) ?? [:]
+        let totalsResult = (try? await totals) ?? [:]
+        // Only the latest-issued fetch may write back: a fast double-add enqueues two
+        // tasks with different captured selections, and without this guard whichever
+        // resumes last (not guaranteed to be the fuller one) would win (finding CA-5-2).
+        guard token == trajectoryFetchToken else { return }
+        rawTrajectories = rawResult
+        mentioningDocs = docsResult
+        datedTotals = totalsResult
         isLoadingTrajectories = false
     }
 }
