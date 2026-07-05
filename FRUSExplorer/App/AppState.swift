@@ -371,6 +371,11 @@ final class AppState {
     /// Loads and merges the volume manifest. Loaded from bundle at init; live data fetched at boot.
     var manifestStore: ManifestStore = ManifestStore()
 
+    /// Holds the bundled `source-provenance-index.json` aggregate (Series Analytics
+    /// SA-3a), the offline data source for the "Archival Sourcing Over Time"
+    /// dashboard (SA-3b). Decoded from the bundle at init; `nil` if unavailable.
+    let sourceProvenanceStore: SourceProvenanceStore = SourceProvenanceStore()
+
     /// Shared in-memory LRU cache of parsed document ASTs. Warmed by
     /// `DocumentViewModel.load` parse windows so adjacent-document page-turns and
     /// re-opens skip the XML parse entirely. Cleared per-volume on deletion and

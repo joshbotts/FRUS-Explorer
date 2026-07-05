@@ -499,6 +499,8 @@ enum EducationCategory: String {
 ///          `seriesProduction` dashboard page (Prep-A's DEBUG placeholder removed)
 ///   1.3 — Analytics SA-2: `all` now also includes the `seriesGeography`
 ///          dashboard page, second under "About the Series"
+///   1.4 — Analytics SA-3b: `all` now also includes the `seriesSourcing`
+///          dashboard page, third under "About the Series"
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -537,7 +539,7 @@ struct EducationPage: Identifiable {
     /// release builds.
     static let all: [EducationPage] = [
         page1, page2, page3, page4, page5, page6, page7,
-        seriesProduction, seriesGeography,
+        seriesProduction, seriesGeography, seriesSourcing,
     ]
 }
 
@@ -1025,5 +1027,26 @@ private extension EducationPage {
         category: .aboutTheSeries,
         sections: [],
         dashboard: .seriesGeography
+    )
+}
+
+// MARK: - Series Sourcing dashboard page (Analytics SA-3b)
+
+private extension EducationPage {
+    /// The live "About the Series" page that renders the Archival Sourcing Over
+    /// Time dashboard (`EducationDashboard.seriesSourcing`) in place of prose. Its
+    /// `sections` are empty by design — the renderers show the dashboard, not
+    /// sections — so it contributes no prose paragraph or Markdown link to scan.
+    /// Placed third under "About the Series", after `seriesGeography`.
+    /// Unconditional (shipped in debug and release).
+    static let seriesSourcing = EducationPage(
+        id: "series-sourcing",
+        title: String(localized: "education.series.sourcing.page.title",
+                      defaultValue: "Archival Sourcing"),
+        subtitle: String(localized: "education.series.sourcing.page.subtitle",
+                         defaultValue: "Where the series drew its documents from, over time"),
+        category: .aboutTheSeries,
+        sections: [],
+        dashboard: .seriesSourcing
     )
 }

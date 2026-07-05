@@ -30,6 +30,7 @@ import SwiftUI
 ///          `.seriesProduction` case
 ///   1.2 — Analytics SA-2: added `.seriesGeography` (administration profiles
 ///          deferred)
+///   1.3 — Analytics SA-3b: added `.seriesSourcing`
 enum EducationDashboard: String, Hashable {
     /// The live "Production & Timeliness" dashboard (SA-1b): four Swift Charts
     /// derived from the bundled `manifest.json` — publication lag, volumes per
@@ -42,6 +43,12 @@ enum EducationDashboard: String, Hashable {
     /// most-covered countries — that render offline, with zero index,
     /// mid-onboarding. See `SeriesGeographyDashboard`.
     case seriesGeography
+    /// The live "Archival Sourcing Over Time" dashboard (SA-3b): three Swift
+    /// Charts derived from the bundled `source-provenance-index.json` — the
+    /// provenance mix over time, the overall provenance composition, and the
+    /// documentary base by decade — that render offline, with zero index,
+    /// mid-onboarding. See `SourceProvenanceDashboard`.
+    case seriesSourcing
 }
 
 // MARK: - EducationDashboardView
@@ -61,6 +68,7 @@ enum EducationDashboard: String, Hashable {
 ///   1.0 — Analytics Prep-A: initial implementation; renders `.placeholder`
 ///   1.1 — Analytics SA-1b: renders `.seriesProduction`
 ///   1.2 — Analytics SA-2: renders `.seriesGeography`
+///   1.3 — Analytics SA-3b: renders `.seriesSourcing`
 struct EducationDashboardView: View {
 
     /// Which dashboard to render.
@@ -72,6 +80,8 @@ struct EducationDashboardView: View {
             SeriesProductionDashboard()
         case .seriesGeography:
             SeriesGeographyDashboard()
+        case .seriesSourcing:
+            SourceProvenanceDashboard()
         }
     }
 }
