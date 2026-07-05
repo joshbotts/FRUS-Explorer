@@ -28,13 +28,17 @@ import Testing
 ///          unconditional `series-production` page
 ///   1.2 — Analytics SA-2: now covers BOTH dashboard pages
 ///          (`series-production`, `series-geography`); the guard is kept general
+///   1.3 — Analytics SA-3b: now covers ALL THREE dashboard pages
+///          (`series-production`, `series-geography`, `series-sourcing`); the
+///          guard is kept general
 @MainActor
 struct EducationDashboardTests {
 
-    /// The two dashboard page ids paired with their expected dashboard case.
+    /// The three dashboard page ids paired with their expected dashboard case.
     private static let dashboardPages: [(id: String, dashboard: EducationDashboard)] = [
         ("series-production", .seriesProduction),
         ("series-geography", .seriesGeography),
+        ("series-sourcing", .seriesSourcing),
     ]
 
     /// The category carries a non-empty localised title.
@@ -63,14 +67,15 @@ struct EducationDashboardTests {
         }
     }
 
-    /// Both dashboard pages exist and are distinct.
-    @Test("EducationDashboard: both dashboard pages are present and distinct")
-    func bothDashboardPagesPresent() {
+    /// All three dashboard pages exist and are distinct.
+    @Test("EducationDashboard: all dashboard pages are present and distinct")
+    func allDashboardPagesPresent() {
         let dashboards = EducationPage.all.compactMap(\.dashboard)
         #expect(dashboards.contains(.seriesProduction))
         #expect(dashboards.contains(.seriesGeography))
-        // Exactly two pages carry a dashboard.
-        #expect(EducationPage.all.filter { $0.dashboard != nil }.count == 2)
+        #expect(dashboards.contains(.seriesSourcing))
+        // Exactly three pages carry a dashboard.
+        #expect(EducationPage.all.filter { $0.dashboard != nil }.count == 3)
     }
 
     /// The deep-link contract resolves each dashboard page by id.
