@@ -1,0 +1,542 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import SwiftUI
+import Charts
+
+// MARK: - AdministrationProfilesDashboard
+
+/// The live "Administration Profiles" dashboard rendered inside the Research Guide
+/// (Series Analytics SA-2b) — the fourth "About the Series" dashboard, after
+/// Production & Timeliness (SA-1b), Geographic Emphasis (SA-2), and Archival
+/// Sourcing (SA-3b).
+///
+/// It reads the bundled `administration-profiles-index.json` aggregate through
+/// `AppState.administrationProfilesStore`, joins volume ids to titles through
+/// `AppState.manifestStore`, derives a pure `AdministrationProfilesData`, and
+/// renders two overview charts plus a per-administration detail card. Everything is
+/// derived from the bundled aggregate, so it renders offline, with zero index,
+/// mid-onboarding.
+///
+/// The dashboard measures **coverage** — which administration's foreign policy the
+/// published documents concern — under an *any-overlap* attribution: a volume
+/// spanning two administrations counts in both. Administrations are per-president,
+/// so Nixon and Ford are distinct. An "Include editorial notes" toggle folds the
+/// range-dated (editorial-note) documents into every count and proportion; it is
+/// **off** by default so the headline figures rest on the firmer point-dated data,
+/// and this is disclosed in the caveats.
+///
+/// `AppState` is read as an *optional* environment value (the defensive pattern
+/// Prep-A established and SA-1b/SA-2/SA-3b followed): an absent environment
+/// degrades to a neutral empty state rather than trapping.
+///
+/// Version history:
+///   1.0 — Analytics SA-2b: initial implementation
+struct AdministrationProfilesDashboard: View {
+
+    /// Optional so a missing environment yields a neutral empty state instead of
+    /// a trap. Both live presentation paths (the onboarding sheet and the
+    /// standalone Research Guide) inject `AppState` at the scene root, so this
+    /// normally resolves; the optionality is purely defensive.
+    @Environment(AppState.self) private var appState: AppState?
+
+    /// When `true`, range-dated (editorial-note) documents are folded into every
+    /// count and proportion. Off by default (disclosed in the caveats).
+    @State private var includeEditorialNotes = false
+
+    /// The focus administration for the detail card, by slug. `nil` until the
+    /// data resolves, then defaulted to the most-documented administration.
+    @State private var selectedAdministrationID: String?
+
+    /// The chart whose underlying data is currently shown in the table-inspector
+    /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
+    @State private var inspectorData: ChartInspectorData?
+
+    /// The pure derivation driving every chart, rebuilt whenever the toggle flips.
+    private var data: AdministrationProfilesData {
+        AdministrationProfilesData(
+            index: appState?.administrationProfilesStore.index,
+            includeEditorialNotes: includeEditorialNotes
+        )
+    }
+
+    /// The party color scale's domain — every party label present in the data, in
+    /// stable order. Paired with `partyRange` so `chartForegroundStyleScale` gets
+    /// BOTH halves (the CA-5 gotcha: an unpaired domain lets Swift Charts pick its
+    /// own hues, which would mislead a party palette).
+    private var partyDomain: [String] {
+        PoliticalParty.ordered.map(\.displayName)
+    }
+
+    /// The party color scale's range — the color for each label in `partyDomain`.
+    private var partyRange: [Color] {
+        PoliticalParty.ordered.map(\.color)
+    }
+
+    /// The resolved focus profile: the selection if it still exists, else the
+    /// most-documented administration, else `nil`.
+    private var focusProfile: AdministrationProfilesData.Profile? {
+        if let id = selectedAdministrationID,
+           let match = data.profiles.first(where: { $0.id == id }) {
+            return match
+        }
+        return data.mostDocumentedProfile
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            if data.profiles.isEmpty {
+                emptyState
+            } else {
+                intro
+                editorialNotesToggle
+                documentsChart
+                volumesPerYearChart
+                administrationDetail
+                caveats
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
+        .onAppear {
+            if selectedAdministrationID == nil {
+                selectedAdministrationID = data.mostDocumentedProfile?.id
+            }
+        }
+    }
+
+    // MARK: - Intro
+
+    /// A short framing paragraph above the charts.
+    private var intro: some View {
+        Text(String(localized: "series.admin.intro",
+                    defaultValue: "Whose foreign policy does Foreign Relations of the United States document? Every dated document is attributed to the presidential administration in office when the events it records took place. These charts trace how the series' coverage is distributed across administrations — how many documents each one draws, and how densely the series covers each term — and let you drill into any single administration to see which volumes carry its record."))
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // MARK: - Editorial-note toggle
+
+    /// The "Include editorial notes (date ranges)" toggle. Flipping it recomputes
+    /// every count and proportion.
+    private var editorialNotesToggle: some View {
+        Toggle(isOn: $includeEditorialNotes) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "series.admin.toggle.title",
+                            defaultValue: "Include editorial notes (date ranges)"))
+                    .font(.subheadline.weight(.medium))
+                Text(String(localized: "series.admin.toggle.subtitle",
+                            defaultValue: "Editorial-note documents carry a span of dates rather than a single date; including them adds them to every count and proportion."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        #if os(iOS)
+        .toggleStyle(.switch)
+        #endif
+    }
+
+    // MARK: - Chart 1: Documents per administration
+
+    /// Bars of the document count for each populated administration, chronological
+    /// and party-colored.
+    private var documentsChart: some View {
+        let profiles = data.profiles
+        return chartCard(
+            title: String(localized: "series.admin.docs.title",
+                          defaultValue: "Documents per administration"),
+            caption: String(localized: "series.admin.docs.caption",
+                            defaultValue: "How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both."),
+            inspector: ChartInspectorAdapters.administrationDocumentsTable(profiles)
+        ) {
+            Chart {
+                ForEach(profiles) { profile in
+                    BarMark(
+                        x: .value(
+                            String(localized: "series.admin.docs.x", defaultValue: "Administration"),
+                            profile.president
+                        ),
+                        y: .value(
+                            String(localized: "series.admin.docs.y", defaultValue: "Documents"),
+                            profile.documentCount
+                        )
+                    )
+                    .foregroundStyle(by: .value(
+                        String(localized: "series.admin.party.legend", defaultValue: "Party"),
+                        profile.party.displayName
+                    ))
+                    .accessibilityLabel(Text(profile.president))
+                    .accessibilityValue(Text(profile.documentCount, format: .number))
+                }
+            }
+            .chartForegroundStyleScale(domain: partyDomain, range: partyRange)
+            .chartXScale(domain: profiles.map(\.president))
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisValueLabel(orientation: .vertical) {
+                        if let name = value.as(String.self) {
+                            Text(Self.lastName(name))
+                        }
+                    }
+                    AxisTick()
+                }
+            }
+            .chartXAxisLabel(String(localized: "series.admin.docs.x", defaultValue: "Administration"))
+            .chartYAxisLabel(String(localized: "series.admin.docs.y", defaultValue: "Documents"))
+            .frame(height: 320)
+        }
+    }
+
+    // MARK: - Chart 2: Volumes per administration-year
+
+    /// Bars of the volumes-per-term-year density for each populated administration,
+    /// chronological and party-colored. Presented raw — no baseline reference line.
+    private var volumesPerYearChart: some View {
+        let profiles = data.profiles.filter { $0.termYears > 0 }
+        return chartCard(
+            title: String(localized: "series.admin.perYear.title",
+                          defaultValue: "Volumes per administration-year"),
+            caption: String(localized: "series.admin.perYear.caption",
+                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted."),
+            inspector: ChartInspectorAdapters.administrationVolumesPerYearTable(profiles)
+        ) {
+            Chart {
+                ForEach(profiles) { profile in
+                    BarMark(
+                        x: .value(
+                            String(localized: "series.admin.perYear.x", defaultValue: "Administration"),
+                            profile.president
+                        ),
+                        y: .value(
+                            String(localized: "series.admin.perYear.y", defaultValue: "Volumes per year"),
+                            profile.volumesPerAdministrationYear
+                        )
+                    )
+                    .foregroundStyle(by: .value(
+                        String(localized: "series.admin.party.legend", defaultValue: "Party"),
+                        profile.party.displayName
+                    ))
+                    .accessibilityLabel(Text(profile.president))
+                    .accessibilityValue(Text(profile.volumesPerAdministrationYear, format: .number.precision(.fractionLength(1))))
+                }
+            }
+            .chartForegroundStyleScale(domain: partyDomain, range: partyRange)
+            .chartXScale(domain: profiles.map(\.president))
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisValueLabel(orientation: .vertical) {
+                        if let name = value.as(String.self) {
+                            Text(Self.lastName(name))
+                        }
+                    }
+                    AxisTick()
+                }
+            }
+            .chartXAxisLabel(String(localized: "series.admin.perYear.x", defaultValue: "Administration"))
+            .chartYAxisLabel(String(localized: "series.admin.perYear.y", defaultValue: "Volumes per year"))
+            .frame(height: 320)
+        }
+    }
+
+    // MARK: - Administration detail
+
+    /// The administration picker, profile card, and per-administration volume
+    /// list.
+    private var administrationDetail: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "series.admin.detail.title", defaultValue: "Administration detail"))
+                .font(.headline)
+
+            Picker(
+                String(localized: "series.admin.detail.picker", defaultValue: "Administration"),
+                selection: Binding(
+                    get: { focusProfile?.id ?? "" },
+                    set: { selectedAdministrationID = $0 }
+                )
+            ) {
+                ForEach(data.profiles) { profile in
+                    Text(profile.president).tag(profile.id)
+                }
+            }
+            .pickerStyle(.menu)
+
+            if let profile = focusProfile {
+                profileCard(profile)
+                volumeList(for: profile)
+            }
+        }
+    }
+
+    /// The profile summary card for one administration.
+    ///
+    /// - Parameter profile: The focus administration.
+    /// - Returns: A card of president, party, term, counts, density, coverage span.
+    private func profileCard(_ profile: AdministrationProfilesData.Profile) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(profile.president)
+                    .font(.title3.weight(.semibold))
+                Text(profile.party.displayName)
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(profile.party.color.opacity(0.18), in: Capsule())
+                    .foregroundStyle(profile.party.color)
+            }
+
+            statRow(
+                label: String(localized: "series.admin.stat.term", defaultValue: "Term"),
+                value: termText(profile)
+            )
+            statRow(
+                label: String(localized: "series.admin.stat.documents", defaultValue: "Documents"),
+                value: documentsText(profile)
+            )
+            statRow(
+                label: String(localized: "series.admin.stat.volumes", defaultValue: "Volumes"),
+                value: profile.volumeCount.formatted(.number)
+            )
+            if profile.termYears > 0 {
+                statRow(
+                    label: String(localized: "series.admin.stat.density", defaultValue: "Volumes per term-year"),
+                    value: profile.volumesPerAdministrationYear.formatted(.number.precision(.fractionLength(1)))
+                )
+            }
+            if let earliest = profile.coverageEarliest, let latest = profile.coverageLatest {
+                statRow(
+                    label: String(localized: "series.admin.stat.coverage", defaultValue: "Coverage span"),
+                    value: coverageText(earliest: earliest, latest: latest)
+                )
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// The per-administration volume list: each row = title + proportion + doc
+    /// count, sorted by document count descending, scrollable, count disclosed.
+    ///
+    /// - Parameter profile: The focus administration.
+    /// - Returns: A titled, scrollable list of volume-proportion rows.
+    private func volumeList(for profile: AdministrationProfilesData.Profile) -> some View {
+        let rows = data.volumeShares(for: profile.id)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "series.admin.volumes.header",
+                        defaultValue: "Volumes covering this administration (\(rows.count))"))
+                .font(.subheadline.weight(.semibold))
+            Text(String(localized: "series.admin.volumes.caption",
+                        defaultValue: "Each volume's share is the fraction of that volume's documents that fall in this administration — so shares can sum past 100% across administrations under any-overlap attribution."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if rows.isEmpty {
+                Text(String(localized: "series.admin.volumes.empty", defaultValue: "No volumes attributed."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(rows) { row in
+                            volumeRow(row)
+                            if row.id != rows.last?.id {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 320)
+            }
+        }
+    }
+
+    /// One volume-proportion row.
+    ///
+    /// - Parameter row: The volume share.
+    /// - Returns: A row of title, doc count, and proportion.
+    private func volumeRow(_ row: AdministrationProfilesData.VolumeShare) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(volumeTitle(for: row.id))
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(String(localized: "series.admin.volumes.docCount",
+                            defaultValue: "\(row.documentCount) documents"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Text(row.proportion, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
+                .font(.callout.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// One label/value line in the profile card.
+    ///
+    /// - Parameters:
+    ///   - label: The stat name.
+    ///   - value: The formatted value.
+    /// - Returns: A baseline-aligned label/value row.
+    private func statRow(label: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            Text(value)
+                .font(.subheadline.monospacedDigit())
+        }
+    }
+
+    // MARK: - Caveats
+
+    /// A footer stating the honest limits of the administration attribution.
+    private var caveats: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "series.admin.caveats.title", defaultValue: "About these figures"))
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(String(localized: "series.admin.caveats.body",
+                        defaultValue: "Documents are attributed to an administration by any overlap between the document's date and the president's term, so a volume spanning two administrations is counted in both — which is why the summed volume counts exceed the 552-volume corpus and a volume's proportions can sum to over 100% across administrations. These counts measure which administration's foreign policy the documents cover, not when the volumes were published. Editorial-note documents carry a range of dates rather than a single date; their inclusion is controlled by the toggle above (off by default). Pre-1861 retrospective compilations concern no single administration and are omitted. Administrations are counted per president — Nixon and Ford are separate, as are Grover Cleveland's two non-consecutive terms — and administrations for which the series is not yet published do not appear."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 4)
+    }
+
+    // MARK: - Empty state
+
+    /// Neutral state shown when no administration profiles are available (e.g.
+    /// `AppState` absent or the resource missing). Never a crash.
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(String(localized: "series.admin.empty.title", defaultValue: "No administration data"))
+                .font(.headline)
+            Text(String(localized: "series.admin.empty.message",
+                        defaultValue: "The bundled administration-profiles index is unavailable in this context."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Chart card
+
+    /// A titled, captioned container for a single chart, keeping the sections
+    /// visually consistent (mirrors the SA-1b/SA-2/SA-3b dashboard card). When
+    /// `inspector` is non-nil, the header gains a trailing "View as table" button
+    /// that opens the data pop-up.
+    private func chartCard<Content: View>(
+        title: String,
+        caption: String,
+        inspector: ChartInspectorData?,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                if let inspector {
+                    Button {
+                        inspectorData = inspector
+                    } label: {
+                        Label(
+                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
+                            systemImage: "tablecells"
+                        )
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text(String(
+                        localized: "series.inspector.viewTable.a11y",
+                        defaultValue: "View \(title) as a table"
+                    )))
+                }
+            }
+            Text(caption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            content()
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// The volume's manifest title, falling back to the raw `volumeId` when the
+    /// manifest has no entry.
+    ///
+    /// - Parameter volumeId: The volume identifier.
+    /// - Returns: The manifest title or, failing that, the id itself.
+    private func volumeTitle(for volumeId: String) -> String {
+        appState?.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+    }
+
+    /// The term-dates line for the profile card.
+    ///
+    /// - Parameter profile: The administration.
+    /// - Returns: A `"1969–1974"` style span (or `"1969–present"` for a null end).
+    private func termText(_ profile: AdministrationProfilesData.Profile) -> String {
+        let startYear = Self.year(from: profile.start)
+        if let end = profile.end {
+            let endYear = Self.year(from: end)
+            return "\(startYear)\u{2013}\(endYear)"
+        }
+        return String(localized: "series.admin.term.present", defaultValue: "\(startYear)–present")
+    }
+
+    /// The documents line for the profile card — point-only, or point + range when
+    /// editorial notes are included.
+    ///
+    /// - Parameter profile: The administration.
+    /// - Returns: The formatted documents description.
+    private func documentsText(_ profile: AdministrationProfilesData.Profile) -> String {
+        if includeEditorialNotes {
+            return String(localized: "series.admin.docs.pointPlusRange",
+                          defaultValue: "\(profile.documentCount) (\(profile.pointDocCount) dated + \(profile.rangeDocCount) editorial notes)")
+        }
+        return profile.pointDocCount.formatted(.number)
+    }
+
+    /// The coverage-span line for the profile card.
+    ///
+    /// - Parameters:
+    ///   - earliest: The earliest coverage year.
+    ///   - latest: The latest coverage year.
+    /// - Returns: A `"1969–1976"` style span.
+    private func coverageText(earliest: Int, latest: Int) -> String {
+        "\(String(earliest))\u{2013}\(String(latest))"
+    }
+
+    /// The year portion of a `yyyy-MM-dd` string (the leading four characters);
+    /// the whole string when it is shorter.
+    ///
+    /// - Parameter iso: The ISO date string.
+    /// - Returns: The four-digit year, or the input when too short.
+    private static func year(from iso: String) -> String {
+        iso.count >= 4 ? String(iso.prefix(4)) : iso
+    }
+
+    /// The last whitespace-delimited token of a president's name — the compact
+    /// axis label (e.g. `"Richard M. Nixon"` → `"Nixon"`).
+    ///
+    /// - Parameter fullName: The president's display name.
+    /// - Returns: The final name token, or the whole string when it has none.
+    static func lastName(_ fullName: String) -> String {
+        fullName.split(separator: " ").last.map(String.init) ?? fullName
+    }
+}
