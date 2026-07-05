@@ -125,6 +125,10 @@ import UIKit
 ///          `inspectedEntryId`; adds the `NoteCreateContext` struct + `noteCreateContext`
 ///          state so the inspector's "New Note…" opens a shared `InlineNoteCreateSheet`
 ///          targeting the entry
+///   3.0 — Sort modes: every Sort by Date control (iPad toolbar item, iPhone add-menu,
+///          compact Actions section) becomes a `Menu` offering the two
+///          `CollectionDateSortScope`s via the shared `sortByDateScopeItems`; `sortByDate`
+///          gains a `withinSections` parameter (default false = the original global sort)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -1156,8 +1160,8 @@ struct CollectionEditorView: View {
         if sizeClass == .regular {
             // iPad: each verb as its own labeled toolbar item.
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    sortByDate()
+                Menu {
+                    sortByDateScopeItems
                 } label: {
                     Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
                           systemImage: "arrow.up.arrow.down")
@@ -1267,8 +1271,8 @@ struct CollectionEditorView: View {
                       systemImage: "list.bullet.rectangle")
             }
             Divider()
-            Button {
-                sortByDate()
+            Menu {
+                sortByDateScopeItems
             } label: {
                 Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
                       systemImage: "arrow.up.arrow.down")
@@ -1555,8 +1559,8 @@ struct CollectionEditorView: View {
             // (its documents are resolved from the saved search at export time),
             // so only offer it when there are static entries to sort.
             if !sortedEntries.isEmpty {
-                Button {
-                    sortByDate()
+                Menu {
+                    sortByDateScopeItems
                 } label: {
                     Label(
                         String(localized: "collection.editor.actions.sortByDate",
@@ -1714,14 +1718,33 @@ struct CollectionEditorView: View {
             sortedEntries: &sortedEntries, modelContext: modelContext)
     }
 
-    private func sortByDate() {
+    /// The two `CollectionDateSortScope` menu items shared by every Sort by Date surface
+    /// (iPad toolbar menu, iPhone add-menu, and the compact Actions section) — mirrors the
+    /// macOS ribbon's Sort ▾ menu so both platforms offer the identical two-way choice.
+    @ViewBuilder
+    private var sortByDateScopeItems: some View {
+        ForEach(CollectionDateSortScope.allCases, id: \.self) { scope in
+            Button {
+                sortByDate(withinSections: scope == .withinSections)
+            } label: {
+                Label(scope.displayLabel, systemImage: scope.systemImage)
+            }
+        }
+    }
+
+    /// Re-orders the entries chronologically. Defaults to the whole-collection scope so
+    /// the internal auto-sort-on-add call sites keep the original global behavior; only the
+    /// user-facing Sort by Date control passes a scope.
+    private func sortByDate(withinSections: Bool = false) {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
         // Shared canonical sort (Authoring Phase 1): per-document `date_iso` first, then
         // volume earliest date, then the "9999" sentinel — previously iOS sorted by volume
-        // dates only, so documents within one volume kept insertion order.
+        // dates only, so documents within one volume kept insertion order. `withinSections`
+        // (Sort modes) keeps documents inside their heading-delimited section.
         sortedEntries = CollectionEntryData.sortedByDate(
-            sortedEntries, documentDates: documentDates, manifest: manifest)
+            sortedEntries, documentDates: documentDates, manifest: manifest,
+            withinSections: withinSections)
         reindexEntries()
     }
 

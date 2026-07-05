@@ -668,7 +668,7 @@ private struct CollectionDetailPane: View {
             addProse: { addStructuralEntry(kind: .prose) },
             addHighlights: { showAddHighlights = true },
             addApparatus: { addGeneratedEntry(type: $0) },
-            sortByDate: { sortByDate() },
+            sortByDate: { scope in sortByDate(scope) },
             export: { showExport = true }
         )
     }
@@ -1241,11 +1241,12 @@ private struct CollectionDetailPane: View {
     ///    or genuinely lacks a date, so all documents from a later volume still sort after
     ///    those from an earlier volume.
     /// 3. `"9999"` sentinel — documents with no date information sort to the end.
-    private func sortByDate() {
+    private func sortByDate(_ scope: CollectionDateSortScope = .wholeCollection) {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
         sortedEntries = CollectionEntryData.sortedByDate(
-            sortedEntries, documentDates: documentDates, manifest: manifest)
+            sortedEntries, documentDates: documentDates, manifest: manifest,
+            withinSections: scope == .withinSections)
         reindexEntries()
     }
 
@@ -1443,6 +1444,11 @@ private struct MacEntryRow: View {
 ///          Export…) separated by dividers; drop the horizontal scroll region and
 ///          the CONTENT / ARRANGE / VIEW headers. Presentation only — same
 ///          closures, bindings, disabled conditions, and help text
+///   2.1 — Sort modes: the standalone "Sort by Date" button becomes a labeled
+///          "Sort by Date ▾" `Menu` offering the two `CollectionDateSortScope`s
+///          (Across the Whole Collection / Within Each Section); the `sortByDate`
+///          closure becomes `(CollectionDateSortScope) -> Void`. Same `hasEntries`
+///          gate and capsule chrome as the Add ▾ / View ▾ menus
 struct CollectionRibbonView: View {
 
     /// Whether the collection has any entries — gates Sort by Date.
@@ -1469,8 +1475,9 @@ struct CollectionRibbonView: View {
     let addHighlights: () -> Void
     /// Inserts a generated apparatus block of the given type.
     let addApparatus: (CollectionGeneratedBlockType) -> Void
-    /// Re-orders the collection's entries chronologically.
-    let sortByDate: () -> Void
+    /// Re-orders the collection's entries chronologically at the given scope — globally
+    /// (documents may cross headings) or within each heading-delimited section.
+    let sortByDate: (CollectionDateSortScope) -> Void
     /// Opens the Export sheet.
     let export: () -> Void
 
@@ -1482,16 +1489,8 @@ struct CollectionRibbonView: View {
 
             clusterDivider
 
-            // 2. Sort by Date — standalone labeled button (unchanged behavior/gate).
-            ResearchStripButton(
-                title: String(localized: "collection.sort.date",
-                              defaultValue: "Sort by Date"),
-                systemImage: "arrow.up.arrow.down",
-                isDisabled: !hasEntries,
-                action: sortByDate
-            )
-            .help(String(localized: "collection.sort.date.help",
-                         defaultValue: "Re-order documents chronologically by volume date"))
+            // 2. Sort by Date ▾ — labeled Menu offering the two scopes (gated on entries).
+            sortMenu
 
             clusterDivider
 
@@ -1515,6 +1514,36 @@ struct CollectionRibbonView: View {
         .frame(minHeight: 32)
         .background(.bar)
         .overlay(alignment: .bottom) { Divider() }
+    }
+
+    /// The **Sort by Date ▾** menu — two chronological-sort scopes sharing the
+    /// `CollectionDateSortScope` enum with the iPad/iOS toolbar. "Across the Whole
+    /// Collection" is today's behavior (documents thread into one chronology, possibly
+    /// crossing headings); "Within Each Section" keeps documents under their heading.
+    /// Gated on `hasEntries`, and wears the same capsule chrome as Add ▾ / View ▾.
+    private var sortMenu: some View {
+        Menu {
+            ForEach(CollectionDateSortScope.allCases, id: \.self) { scope in
+                Button {
+                    sortByDate(scope)
+                } label: {
+                    Label(scope.displayLabel, systemImage: scope.systemImage)
+                }
+                .help(scope.helpText)
+            }
+        } label: {
+            menuLabel(String(localized: "collection.sort.date",
+                             defaultValue: "Sort by Date"),
+                      systemImage: "arrow.up.arrow.down")
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(!hasEntries)
+        .accessibilityLabel(String(localized: "collection.sort.date.accessibility",
+                                    defaultValue: "Sort by date"))
+        .help(String(localized: "collection.sort.date.help",
+                     defaultValue: "Re-order documents chronologically — across the whole collection, or within each section"))
     }
 
     /// The consolidated **Add ▾** menu — every content-authoring verb the ribbon
