@@ -118,9 +118,11 @@ When a document is open, a compact `volumeId/documentId` title (e.g., `frus1969-
 | **Collections** | ⇧⌘K | Collections management window |
 | **Corpus** | ⇧⌘B | Corpus browser (volume hierarchy) |
 | **Analytics** | — | Term-frequency analytics window |
+| **Person Analytics** | — | Person Analytics window — most-mentioned people by era and mention trajectories (Section 13.5) |
+| **Cross-Reference Analytics** | — | Cross-Reference Analytics window — most-referenced documents, degree distribution, and influence (Section 13.6) |
 | **Chronology** | — | Date-range document browser (Section 14) |
 
-![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the right-side buttons: Search, Graph, Info, Research, Collections, Corpus, Analytics, and Chronology.](screenshots/macos/toolbar.png)
+![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the right-side buttons: Search, Graph, Info, Research, Collections, Corpus, Analytics, and Chronology.](screenshots/macos/toolbar.png) *(This shot predates build 27 and does not yet show the new Person Analytics and Cross-Reference Analytics buttons — slated for re-capture; see `screenshots/README.md`.)*
 
 ### 3.2 Research Strip
 
@@ -153,6 +155,8 @@ The status bar at the bottom of the main window provides at-a-glance information
   - **Not Signed In** (orange) — iCloud account is unavailable; data will not sync until you sign in via System Settings → Apple ID.
 - **iCloud Keychain** — Availability of NARA API key sync across devices.
 
+> **One-time re-index after this update.** This build advances the search-index format (to index version 21) so that page-number cross-references resolve correctly (Section 8). The first launch after updating automatically re-indexes the volumes you have already downloaded — you'll see indexing progress in the status bar for a while, and no re-download is needed. Search and reading remain available while it runs.
+
 `[SCREENSHOT: Status bar detail showing indexing progress indicator]`
 
 ### 3.5 Separate Window Scenes
@@ -169,6 +173,8 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 | Collections | ⇧⌘K |
 | Research | ⌘⌥R |
 | Analytics | (toolbar button) |
+| Person Analytics | (toolbar button, or `frus.personAnalytics`) |
+| Cross-Reference Analytics | (toolbar button, or `frus.crossRefAnalytics`) |
 | Chronology | (toolbar button) |
 | History | (History menu → "Complete History…") |
 | FRUS Research Guide | (Help menu) |
@@ -441,6 +447,8 @@ Use the **Degree** picker to control how many hops from the focus document are d
 
 Nodes in volumes that have not been downloaded are shown distinctly. Clicking such a node prompts you to download the volume; the graph updates when indexing completes. An **info** button (ⓘ) opens a popover explaining what the graph shows and how to read it.
 
+> **Page-number references now resolve.** Cross-references that cite a target by page rather than by document number (e.g. "see p. 427") now resolve to the correct target document, so they appear as real edges in the graph and are counted in Cross-Reference Analytics (Section 13.6). This improvement required a search-index change; the first launch after updating performs a one-time re-index of your downloaded volumes (see Section 3.4).
+
 ---
 
 ## 9. Citation Lookup
@@ -504,30 +512,47 @@ A **collection** is a curated, authored set of documents — a source packet, a 
 
 Open the Collections window with **⇧⌘K**.
 
-![Collections window on macOS — the collection list on the left and the selected collection on the right: its name, collection note, and the documents it contains (each with a source note, notes menu, and remove control), plus the export button in the toolbar.](screenshots/macos/collections.png)
+Above the selected collection's document list sits a compact **ribbon** of four labeled controls — **Add ▾**, **Sort by Date ▾**, **View ▾**, and **Export…** — the manager's whole toolbar (Section 10.2).
+
+![Collections window on macOS — the collection list on the left and the selected collection on the right: its name, an "Add a note" affordance, the four-control ribbon (Add ▾ · Sort by Date ▾ · View ▾ · Export…), and the documents it contains (each with a source note, inspector, and remove control).](screenshots/macos/collections.png)
 
 ### 10.1 Creating a Collection
 
 1. Click **+** in the Collections window.
-2. Enter a name and an optional collection note.
+2. Enter a name.
 3. Click **Create**.
 
-### 10.2 Composing: Documents, Section Headings, Prose, and Excerpts
+**The collection note is now optional and out of the way.** A collection can carry a free-text note about its purpose, but the note field is no longer always shown. Instead, an **"Add a note"** affordance sits under the collection's name; click it to expand an editor and write a collection-level note, and it stays collapsed until you use it. (The same collapsed "Add a note" affordance appears in the iOS/iPad collection editor.)
+
+### 10.2 The macOS ribbon
+
+Everything you do to compose a collection is reached from a compact **ribbon** above the document list — four always-labeled controls, replacing the older row of separate buttons and group headers:
+
+| Control | What it does |
+|---------|--------------|
+| **Add ▾** | Insert content: **Add Documents…** (the bulk picker, ⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlighted-passage excerpts), and — below a divider — an **Apparatus ▸** submenu of the five generated blocks (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index) |
+| **Sort by Date ▾** | Re-order documents chronologically in one of two modes (Section 10.2b) |
+| **View ▾** | Three independent show/hide toggles — **Composition**, **Front Matter**, and **Preview** — each revealing its panel (Sections 10.3, 10.2a, and 10.5) |
+| **Export…** | Open the export sheet (format + destination; Section 10.6) |
+
+`[SCREENSHOT: The macOS Collections ribbon — the four controls Add ▾ · Sort by Date ▾ · View ▾ · Export…, with the Add ▾ menu expanded showing Add Documents…, Add Section Heading, Add Note Block, Add Passages…, and the Apparatus submenu]`
+
+### 10.2a Composing: Documents, Section Headings, Prose, and Excerpts
 
 With a collection selected, add documents in two ways:
 
 - **Individually**: Open any document and click **Collections** in the research strip. Choose an existing collection or create a new one.
-- **In bulk**: Click **Add Documents…** in the toolbar (⇧⌘A) for a picker with four ways in — **Search** the full text of your indexed volumes; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge.
+- **In bulk**: Choose **Add ▾ → Add Documents…** (⇧⌘A) for a picker with four ways in — **Search** the full text of your indexed volumes; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge.
 
-A collection isn't limited to a flat document list. From the **add** menu you can insert three kinds of editorial entry and place them anywhere in the order:
+A collection isn't limited to a flat document list. From the **Add ▾** menu you can insert three kinds of editorial entry and place them anywhere in the order:
 
 - **Section headings** — titles that group the documents beneath them (e.g. "Opening Moves"). They appear as headings in the export and its table of contents; in DOCX they become Word headings that show up in Word's own table of contents.
 - **Prose blocks** — your own connecting commentary, written in a **rich-text editor** with **bold**, *italic*, underline, and colour, applied from the **visible formatting bar above each editor** (with a **Link** button for attaching a URL to selected text — links become real hyperlinks in HTML and Word exports, and print as visible URLs in PDF). Your formatting is preserved through PDF, HTML, and DOCX export.
 - **Excerpts** — frozen verbatim quotations from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). An excerpt keeps the exact passage you captured, so it renders even when the source volume isn't downloaded.
 
-**Three ways to create an excerpt.** (1) Choose **Add Highlighted Passages…** from the add menu to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and click **Excerpt** in the research strip, then choose the collection. (3) Open a document entry's **inspector** (below) and click **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
+**Three ways to create an excerpt.** (1) Choose **Add ▾ → Add Passages…** to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and click **Excerpt** in the research strip, then choose the collection. (3) Open a document entry's **inspector** (below) and click **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
 
-**Apparatus blocks.** The add menu's **Apparatus** submenu inserts five kinds of *generated* scholarly apparatus. Unlike prose or excerpts, you never write their content — each block is computed from the collection's documents at every export and in the live preview, so it always reflects the current membership (smart collections included):
+**Apparatus blocks.** The **Add ▾** menu's **Apparatus** submenu inserts five kinds of *generated* scholarly apparatus. Unlike prose or excerpts, you never write their content — each block is computed from the collection's documents at every export and in the live preview, so it always reflects the current membership (smart collections included):
 
 - **Bibliography** — one full citation per document, deduplicated and sorted in series order (volume, then document number).
 - **Chronology** — the documents in date order, each date shown at its true precision ("1969" for a year-only document, never a fabricated day), with undated documents in a trailing *Undated* group.
@@ -539,7 +564,7 @@ A chronology is inserted at the top (front matter), the rest at the end (back ma
 
 **Nested sections.** Sections can nest up to **three levels** — a part containing chapters containing sub-sections. Right-click a heading for its context menu: **Indent** and **Outdent** change its level (with **Rename**, **Delete Heading Only** — its contents stay and any sub-headings move up a level — and **Delete Section**, which removes the heading *and* everything in it, after confirming). Rows indent to show the structure, and each heading has a **chevron** that collapses or expands its section while you work (a display convenience only — never saved to the collection). Dragging a heading moves its **entire section as one block**; documents still move one row at a time. Exports mirror the nesting with stepped heading sizes and an indented, nested table of contents in every format.
 
-**Front matter.** Under the collection's name sit compact **subtitle** and **author line** fields for the exported title page (the author field suggests your active project's name as a placeholder — used only if you type it). The **Front Matter** group at the top of the document list holds an **introduction** — written in the same rich-text editor as prose blocks and rendered as the opening prose of the body, after the table of contents and before the first document — and an optional **colophon**, a closing line noting the collection was compiled with FRUS Explorer, with its document and volume counts. All are optional; left blank, exports look exactly as before.
+**Front matter.** Under the collection's name sit compact **subtitle** and **author line** fields for the exported title page (the author field suggests your active project's name as a placeholder — used only if you type it). Reveal the **Front Matter** panel with **View ▾ → Front Matter**: it holds an **introduction** — written in the same rich-text editor as prose blocks and rendered as the opening prose of the body, after the table of contents and before the first document — and an optional **colophon**, a closing line noting the collection was compiled with FRUS Explorer, with its document and volume counts. All are optional; left blank, exports look exactly as before.
 
 Reorder any entry by dragging rows within the collection list.
 
@@ -561,9 +586,20 @@ Each **document row** is a scannable **report**: its title, volume, date, and sm
 
 Research notes attached to a document still render as trailing **"Research Note"** blocks after the document body in every format — they are your voice, kept typographically separate from the document's own footnotes.
 
+### 10.2b Sorting by Date
+
+The **Sort by Date ▾** ribbon control re-orders the documents in the collection chronologically. It offers two modes:
+
+- **Across the Whole Collection** — sorts every document by its date into one continuous chronology, regardless of which section it sits in. Documents may move past your section headings.
+- **Within Each Section** — sorts documents by date *inside* each heading's section only, so no document ever crosses a heading. The sections stay in the order you arranged them; the documents within each are put in date order.
+
+Both modes leave your section headings, note blocks, and excerpts where they are. The same two modes are available on the iPad and iPhone from the collection editor's toolbar.
+
+`[SCREENSHOT: The macOS Sort by Date ▾ menu open, showing the two modes — Across the Whole Collection and Within Each Section]`
+
 ### 10.3 Composition Settings
 
-Expand the **Composition** group at the top of the collection's document list. These settings are **saved on the collection**, so it always exports the same way in any format:
+Reveal the **Composition** panel with **View ▾ → Composition** on the ribbon. These settings are **saved on the collection**, so it always exports the same way in any format:
 
 | Setting | Options |
 |---------|---------|
@@ -571,13 +607,13 @@ Expand the **Composition** group at the top of the collection's document list. T
 | **Include footnotes** / **Include source note** | Two independent toggles (formerly one three-way choice): keep or drop each document's footnotes, and separately append its archival "Source:" line — "all footnotes *and* the source note" is now expressible |
 | **Table-of-contents label style** | Formatted citation, or header and dateline |
 | **Include highlights** | Annotate your highlights inline — `<mark>` spans in HTML, background shading in PDF, highlighted runs in DOCX |
-| **Include research notes** | Show attached notes below each document. Research notes now export **by default** when notes are enabled; deselect individual notes in the entry inspector (10.2) to leave them out |
+| **Include research notes** | Show attached notes below each document. Research notes now export **by default** when notes are enabled; deselect individual notes in the entry inspector (10.2a) to leave them out |
 | **Include word cloud** | Prepend a frequency overview (PDF and HTML) |
 | **Summary prompt** | Which prompt to use when the body depth is *Summary only* |
 
 Every generated summary in an exported collection — a summary-only body or a headnote — is labelled as AI-generated content attributed to Apple Intelligence (in HTML, PDF, DOCX, and the live preview alike), so readers of the artifact always know which passages a model wrote.
 
-**Per-entry and per-section overrides.** The body depth above is a *default*. Any single document can override it, and any **section heading** can set a depth for the documents beneath it. The effective depth is the most specific that applies — the document's own override, else its section's, else the collection default — so one collection can mix full documents, summaries, and citation-only entries. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.2).
+**Per-entry and per-section overrides.** The body depth above is a *default*. Any single document can override it, and any **section heading** can set a depth for the documents beneath it. The effective depth is the most specific that applies — the document's own override, else its section's, else the collection default — so one collection can mix full documents, summaries, and citation-only entries. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.2a).
 
 ### 10.4 Smart Collections
 
@@ -589,7 +625,7 @@ Because a smart collection's membership is resolved dynamically, it can't be han
 
 ### 10.5 Live Preview
 
-Click the **eye** button in the Collections window's toolbar to open a **live preview** side-by-side with the collection detail pane — the collection rendered exactly as its HTML export, updating as you edit. The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
+Choose **View ▾ → Preview** on the ribbon (⌥⌘P) to open a **live preview** side-by-side with the collection detail pane — the collection rendered exactly as its HTML export, updating as you edit. The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
 
 ### 10.6 Export
 
@@ -766,6 +802,10 @@ Open it from the **Analytics** toolbar button in the main window, or by clicking
 
 On a **Subseries** or **By Volume** chart, clicking a bar drills straight into a Search scoped to that subseries or volume.
 
+**Raw count vs. share of the corpus.** On the **By Year** and **By Decade** charts, a **% of documents** normalization toggle changes what the bars measure. Off (the default), each bar is a **raw count** of matching documents in that period. On, each bar becomes the term's **share of the corpus** in that period — the fraction of all documents published in that year or decade that match your term. Because the corpus is far larger in some eras than others, a term can show a rising raw count while its *share* is actually falling; the normalized view separates "the series grew" from "this topic grew."
+
+`[SCREENSHOT: A By-Year Corpus Analytics chart with the "% of documents" normalization toggle engaged, reading the term as a share of the corpus per year]`
+
 An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it.
 
 ### 13.2 Chart vs. Table
@@ -797,6 +837,43 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 - **Info.** An **info** button (ⓘ) in the toolbar opens a popover explaining what the cloud shows and how to read it.
 
 Corpus- and subseries-wide clouds are cached on disk after the first computation, so reopening them is fast.
+
+### 13.5 Person Analytics
+
+Where Corpus Analytics charts a *term* and the Word Cloud shows a *scope's* most frequent words, **Person Analytics** turns the corpus's people into data — who was written about, when, and alongside whom. Open it from the **Person Analytics** toolbar button in the main window (Section 3.1), or the `frus.personAnalytics` window scene. It works over your local index; if no volumes are indexed yet, the window shows a short placeholder until an index is available.
+
+A segmented control at the top switches between two modes.
+
+**Trends.** The default mode looks at *how much* people are mentioned over time:
+
+- **Most-mentioned people by era** — a ranked view of the people written about most in a chosen span, so you can see who dominates the record in, say, the early Cold War versus détente.
+- **Mention-trajectory comparison** — search for and pick **up to five people** and chart their mention counts over time on the same axes, to compare how prominent each was across the years.
+- **Relationship dynamics** — pick **two people** for a co-mention-over-time chart showing how often the two are named *together* in the same documents across the series — a proxy for when their dealings intensified.
+
+`[SCREENSHOT: Person Analytics window on macOS, Trends mode — the most-mentioned-by-era ranking above a multi-person mention-trajectory comparison]`
+
+**Network.** The second mode draws a **co-mention ego-network graph**: choose a **focus person** and the graph places them at the center surrounded by the people they are most often mentioned alongside, so you can see a person's immediate "cast" at a glance.
+
+`[SCREENSHOT: Person Analytics window on macOS, Network mode — a co-mention ego-network graph around a focus person with the top co-mentioned partners]`
+
+An **info** button (ⓘ) explains what each view shows and how it is computed. The people here use the same reconciled cross-volume identities as the People browser (Section 4.4).
+
+### 13.6 Cross-Reference Analytics
+
+The Cross-Reference Graph (Section 8) shows the neighborhood of *one* document. **Cross-Reference Analytics** steps back to the whole citation network — which documents matter most, how references are distributed, and which volumes talk to each other. Open it from the **Cross-Reference Analytics** toolbar button in the main window (Section 3.1), or the `frus.crossRefAnalytics` window scene. It works over your local index and shows a placeholder until an index is available.
+
+The window presents:
+
+- **Most-referenced documents** — the documents with the highest **in-degree** (cited by the most other documents), a quick way to find the pieces the record itself treats as pivotal.
+- **Degree-distribution histogram** — how citation counts are spread across the corpus: most documents have few references, a handful have many.
+- **Volume-to-volume citation heat matrix** — a matrix of the **top connected volumes**, each cell shaded by how many cross-references run from one volume to another, revealing which compilations lean on which.
+- **Influence (PageRank) landmark documents** — an offline **PageRank** ranking that surfaces "landmark" documents whose influence comes not just from being cited often but from being cited *by other well-cited documents*.
+
+Because **page-number cross-references now resolve** to their target documents (Section 8), citations that a footnote expressed as "see p. 427" are counted here alongside document-number references, so the in-degree, histogram, matrix, and PageRank all reflect the fuller citation graph.
+
+`[SCREENSHOT: Cross-Reference Analytics window on macOS — most-referenced documents, the degree-distribution histogram, the volume-to-volume heat matrix, and the PageRank influence list]`
+
+An **info** button (ⓘ) explains what each measure means and how it is computed.
 
 ---
 
@@ -945,13 +1022,28 @@ From either list, you can reopen a document or re-run a search with a single cli
 
 ### 17.3 The FRUS Research Guide
 
-The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to frame a research question, how to cite material rigorously, and other practical guidance for working with declassified diplomatic records.
+The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to frame a research question, how to cite material rigorously, and other practical guidance for working with declassified diplomatic records. It also includes an **About the Series** category of offline dashboards that characterize the series itself (Section 17.3a).
 
 Open it from **Help → FRUS Research Guide** (or the `frus.researchGuide` window scene). It opens in its own window that you can keep open for reference alongside your main research window. Internal links open in FRUS Explorer's embedded in-app browser (Section 17.4) so you never lose your place.
 
 `[SCREENSHOT: FRUS Research Guide window showing a methodology section with embedded links]`
 
 You'll also find contextual links into the Research Guide from **Source Explorer** and **NARA Catalog Lookup** — for example, a link explaining how to interpret an archival record group while you're looking at one — so guidance appears exactly when it's useful, not just as a separate reference document.
+
+### 17.3a About the Series — Series Analytics Dashboards
+
+The Research Guide now includes an **About the Series** category: four interactive dashboards that characterize the FRUS series *as a publishing project* — how promptly it appears, what it covers, where its documents come from, and which administrations it documents. These dashboards are **fully offline** and draw on bundled aggregate data, so they render **without any downloaded volumes** — you can read them mid-onboarding, before your first index finishes.
+
+- **Production & Timeliness** — a publication-lag **scatter** plotting each volume by its publication year (x) against the years it took to publish (y), overlaid with an **evolving timeliness-target step line**: no formal target before 1961, then **15 years** from the 1961 directive, **20** from 1972, and **30** from the 1985 directive and 1991 statute. Companion charts show **volumes per print year** (bars) and a **cumulative-volumes** curve.
+- **Geographic Emphasis** — how the series' attention is distributed across the six State Department **regional bureaus**, shown as regional **share over time** (stacked), **region totals**, and the **top-covered countries**.
+- **Archival Sourcing** — the **provenance mix** of the documents over coverage decades — the shift from the central decimal file toward lot files, presidential libraries, and the Central Foreign Policy File — plus **overall composition** and **note density by decade**.
+- **Administration Profiles** — coverage by **president** (Nixon and Ford are treated as distinct; Cleveland's two terms are separate): **documents per administration** and **volumes per administration-year** colored by **party**, each administration's **coverage span**, and a per-administration **volume list** giving each volume's **document proportion**. An **include/exclude editorial-notes** toggle and an **any-overlap attribution** caveat make the counting method explicit (range-dated documents can be attributed to more than one administration).
+
+**Cross-cutting controls.** Every dashboard carries an **editable start/end year range** so you can zoom to a period of interest (defaults are roughly **1861–1993** for coverage-based views and **1861–2026** for production-based views). Every chart also offers a **View as table** pop-up — a native **Table** on macOS and iPad, a list on iPhone — with **Copy CSV**, so you can lift any dashboard's underlying numbers into a spreadsheet or paper.
+
+`[SCREENSHOT: The Research Guide "About the Series" category on macOS showing the Production & Timeliness dashboard — the publication-lag scatter with the evolving timeliness-target step line]`
+
+`[SCREENSHOT: A Series Analytics dashboard's "View as table" pop-up on macOS — a native Table of the chart's data with a Copy CSV button]`
 
 ### 17.4 The Embedded Browser
 

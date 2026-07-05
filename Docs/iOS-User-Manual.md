@@ -14,17 +14,20 @@
 6. [Reading Documents](#6-reading-documents)
 7. [Annotating and Tagging](#7-annotating-and-tagging)
 8. [Cross-Reference Graph](#8-cross-reference-graph)
+   - [8.1 Cross-Reference Analytics](#81-cross-reference-analytics)
 9. [Citation Lookup](#9-citation-lookup)
 10. [Collections and Export](#10-collections-and-export)
 11. [AI Summarization](#11-ai-summarization)
 12. [Source Explorer](#12-source-explorer)
 13. [Corpus Analytics](#13-corpus-analytics)
+    - [13.6 Person Analytics](#136-person-analytics)
 14. [Chronology](#14-chronology)
 15. [Research Projects](#15-research-projects)
 16. [Settings](#16-settings)
 17. [iPad-Specific Features](#17-ipad-specific-features)
 18. [Touch Gestures Reference](#18-touch-gestures-reference)
 19. [The FRUS Research Guide](#19-the-frus-research-guide)
+    - [19.1 About the Series — Series Analytics](#191-about-the-series--series-analytics)
 
 ---
 
@@ -40,9 +43,10 @@ FRUS Explorer lets you:
 - **Summarize** long documents on-device using Apple Intelligence.
 - **Export** curated collections of documents as formatted PDF, HTML, or Word (DOCX) documents, ready to share or print.
 - **Cite** correctly using the State Department's recommended citation style, and share citations directly from the document view.
-- **Visualize** how documents reference one another through an interactive, touch-friendly network graph.
-- **Analyze** term frequency across the corpus with interactive charts, and jump fluidly between a chart and a search.
+- **Visualize** how documents reference one another through an interactive, touch-friendly network graph, and study the citation network at the corpus scale with **Cross-Reference Analytics** — most-referenced documents, degree distributions, volume-to-volume heat matrices, and PageRank influence landmarks.
+- **Analyze** term frequency across the corpus with interactive charts (as raw counts or as a share of the corpus), study how individual people are mentioned over time and how they connect with **Person Analytics**, and jump fluidly between a chart and a search.
 - **Browse by date** with the Chronology view — read every document from any span of years, grouped and charted by date.
+- **Understand the series itself** through the offline **About the Series** dashboards in the Research Guide — publication timeliness, geographic emphasis, archival sourcing, and per-administration coverage, all readable before you download a single volume.
 
 All of your research data — notes, tags, collections, highlights, and projects — syncs automatically across every device signed into the same iCloud account, so you can start reading on your iPhone and pick up exactly where you left off on your iPad.
 
@@ -110,7 +114,7 @@ FRUS Explorer on iPhone and iPad is organized around a **tab bar** with five tab
 
 | Tab | Icon | Purpose |
 |-----|------|---------|
-| **Browse** | books.vertical | Navigate the corpus by subseries, volume, and document; switch your active research project; jump to Corpus Analytics |
+| **Browse** | books.vertical | Navigate the corpus by subseries, volume, and document; switch your active research project; open the **Analysis Tools** menu (Chronology, Corpus Analytics, Word Cloud, Person Analytics, Cross-Reference Analytics) |
 | **Search** | magnifyingglass | Full-text search across your downloaded volumes; look up a document directly by citation |
 | **Research** | note.text | Your personal research workspace — all notes, highlights, and tagged documents in one place, organized by collection, tag, or highlight color |
 | **Collections** | tray.2 | Build, edit, and export curated sets of documents |
@@ -123,6 +127,8 @@ When volumes are downloading or being indexed for search, a banner appears just 
 `[SCREENSHOT: Indexing banner above the tab bar showing progress for a volume]`
 
 When indexing finishes, the banner becomes a brief summary card offering to search the newly indexed volume. A small dot badge also appears on the **Browse** tab whenever downloaded volumes are still waiting to be indexed.
+
+> **After a big update:** occasionally an app update improves how documents are indexed and needs to rebuild the search index for volumes you already have. When that happens, indexing runs by itself right after you update — the banner explains what's happening and your reading isn't interrupted. (The current update does this to resolve page-number cross-references; see Section 8.)
 
 `[SCREENSHOT: Indexing summary card with "Search this volume" action]`
 
@@ -201,10 +207,12 @@ An **Analysis Tools** menu (a chart icon) in the Browse toolbar gathers the corp
 - **Chronology** — opens the **Chronology** browser (see Section 14) to read every document within a date range.
 - **Corpus Analytics** — opens **Corpus Analytics** (see Section 13) to explore term-frequency trends.
 - The corpus **Word Cloud** — opens a frequency word cloud for the whole corpus (see Section 13.4).
+- **Person Analytics** — opens the **Person Analytics** surface (see Section 13.6) to study how individual people are mentioned over time and how they connect.
+- **Cross-Reference Analytics** — opens the **Cross-Reference Analytics** surface (see Section 8.1) for a corpus-wide view of the citation network.
 
-Grouping these three destinations under one always-reachable menu replaces the separate toolbar buttons used previously (which on iPad could collapse into an unreliable "•••" overflow).
+Grouping these destinations under one always-reachable menu replaces the separate toolbar buttons used previously (which on iPad could collapse into an unreliable "•••" overflow). (The four offline **About the Series** dashboards — publication timeliness, geographic emphasis, archival sourcing, and administration profiles — live in the FRUS Research Guide instead; see Section 19.1.)
 
-`[SCREENSHOT: Browse toolbar showing the Analysis Tools menu (SF Symbol: chart.bar.xaxis) open with Chronology, Corpus Analytics, and Word Cloud entries]`
+`[SCREENSHOT: Browse toolbar showing the Analysis Tools menu (SF Symbol: chart.bar.xaxis) open with Chronology, Corpus Analytics, Word Cloud, Person Analytics, and Cross-Reference Analytics entries]`
 
 ### 4.5 The People Browser
 
@@ -231,6 +239,8 @@ Tap a person to open their **detail sheet**:
 - Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
 
 > The consolidation is deliberately cautious: when in doubt it keeps identities **separate** (so you may occasionally see two entries for one person) rather than merging two different people. Your merge/separate corrections always take precedence.
+
+To study *how* these reconciled people are mentioned over time — most-mentioned by era, mention trajectories, and co-mention networks — open **Person Analytics** from the Browse tab's Analysis Tools menu (Section 13.6).
 
 ---
 
@@ -373,6 +383,8 @@ Selecting any sidebar item shows the matching documents; tapping one opens it di
 
 Many FRUS documents reference one another — a memo might respond to a cable, or a meeting record might cite an earlier policy paper. FRUS Explorer indexes these relationships and visualizes them as an interactive **network graph**, arranged chronologically so you can see the order in which references were written.
 
+Page-number cross-references — the kind that print as "see p. 427" and point at a printed page rather than a document number — now resolve to the correct target document, so they appear as ordinary links in the graph (and feed the corpus-wide analytics in Section 8.1) rather than dead-ending. This improvement required a bump to the search index format, so **updating to this version triggers a one-time re-index of the volumes you've already downloaded** — indexing runs by itself after the update, after which every page reference resolves. (See the indexing banner in Section 3.1 and Index Health in Section 16.)
+
 Open the graph from a document's **Cross-References** toolbar action. It opens full-screen (a sheet on iPad). Each node is a document, positioned left-to-right by date; arrows point from the citing document to the cited one, and larger nodes are more connected. A **legend** and an **info** button (ⓘ) explain the color, size, and direction encodings so meaning never depends on color alone.
 
 `[SCREENSHOT: Cross-reference graph on iPhone showing nodes arranged along a date axis with direction arrows and a legend — the Cross-References toolbar action (SF Symbol: point.3.connected.trianglepath.dotted) labeled]`
@@ -391,6 +403,19 @@ Open the graph from a document's **Cross-References** toolbar action. It opens f
 | Two-finger drag | Pan |
 
 Nodes in volumes you haven't downloaded are shown distinctly; selecting one offers to download the volume, and the graph updates once indexing finishes.
+
+### 8.1 Cross-Reference Analytics
+
+Where the graph above shows the neighborhood around *one* document, **Cross-Reference Analytics** stands back to show the whole citation network of your indexed corpus at once. Open it from the **Analysis Tools** menu in the Browse tab toolbar (Section 4.4); it appears as a scrolling dashboard with four views, computed entirely on-device from your local index:
+
+- **Most-referenced documents** — the documents other documents cite most often, ranked by their inbound-citation count (*in-degree*), as a bar chart you can switch to a table. Tap any document to open it — a fast way to surface the memos, decisions, and policy papers a whole era kept coming back to.
+- **Degree distribution** — a histogram of how many documents have each inbound-citation count: a handful of heavily-cited landmarks and a long tail of documents cited once or not at all. An optional overlay adds the *out-degree* distribution, so you can compare how many references documents *make* against how many they *receive*.
+- **Volume-to-volume heat matrix** — the most-connected volumes laid out as a grid, each cell shaded by how many cross-references run from one volume to another. It reveals which volumes lean on which — a Berlin volume citing an earlier Germany volume, say.
+- **Landmark documents (PageRank)** — the corpus's most *influential* documents by an offline PageRank score, which weights a citation more heavily when it comes from a document that is itself well-cited. This can promote a quietly pivotal document that a raw in-degree count would miss. Each landmark is tappable.
+
+Because these views are corpus-wide, they grow richer the more volumes you index; a caption notes how much of the network is currently resolved.
+
+`[SCREENSHOT: Cross-Reference Analytics on iPhone showing the most-referenced documents ranking, the degree-distribution histogram, the volume heat matrix, and the PageRank landmark list]`
 
 ---
 
@@ -437,14 +462,17 @@ Everything in Sections 10.1–10.5 happens in the manager; 10.6 covers export.
 
 Open the **Collections** tab and tap **New Collection**. The editor opens as its own screen (not a pop-up sheet), with the document list front and center. Every edit **saves as you go** — there is no Save button; just navigate back when you're done. (Backing out of a brand-new collection you never touched discards it.)
 
-- On **iPhone**, the collection's name, description, and smart-collection link live in a collapsible **Details** group above the document list (expanded automatically for a new collection), and **Composition** in a collapsible group below it.
-- On **iPad**, name, description, and composition live in a **details panel** you can show or hide from the toolbar, leaving the full width for the document list.
+- On **iPhone**, the collection's name, description, and smart-collection link live in a collapsible **Details** group above the document list (expanded automatically for a new collection), and **Composition** in a collapsible group below it. A collection-level **note** — a private working note for yourself, not part of any export — lives in the Details area as well, but stays collapsed to a compact **Add a note** button until you tap it or it already holds text, so it doesn't clutter the editor when unused.
+- On **iPad**, name, description, and composition live in a **details panel** you can show or hide from the toolbar, leaving the full width for the document list; the collection note collapses to the same **Add a note** affordance there.
 
 Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by choosing **Add to Collection** from any open document's toolbar, or — without leaving the editor — tap **Add Documents…** for a picker with four ways in: **Search** the full text of your indexed volumes; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge.
 
 `[SCREENSHOT: Collection manager showing a mix of documents, a section heading, and a prose block with reorder handles]`
 
-Drag to reorder entries; the order you choose is the order they appear in every export. **Sort by Date** orders documents by their individual dates from the index (falling back to the volume's date range for unindexed volumes), leaving your section headings and prose blocks where you placed them.
+Drag to reorder entries; the order you choose is the order they appear in every export. **Sort by Date** orders documents by their individual dates from the index (falling back to the volume's date range for unindexed volumes), leaving your section headings and prose blocks where you placed them. It offers two modes from the toolbar:
+
+- **Across the Whole Collection** — a global sort: every document is ordered by date regardless of which section it sits in.
+- **Within Each Section** — documents sort by date only *inside* each heading's section, never crossing a heading, so your sectioning survives the sort.
 
 ### 10.2 Section Headings, Prose, and Excerpts
 
@@ -605,7 +633,7 @@ Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4
 
 ### 13.1 Running an Analysis
 
-Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Choose a **dimension** — Decade, Year, Month, Day, **Subseries**, or **By Volume**: the time dimensions chart frequency over time, while Subseries and By Volume break the same query down by where in the corpus it appears (omitting any subseries or volume where the term never occurs). On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that subseries or volume. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-represented source volumes each get a colour, the rest fold into a grey "Other", and a legend below names each volume with its count — so you can see at a glance *which* part of the corpus is driving a term in any period (the same encoding the Chronology graph uses). The number of distinctly coloured volumes before the "Other" fold is **configurable** (6–12, default 8): a **Chart colors** menu in the Analytics toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → General → Display** (see Section 6.4). You can also set a **volume/subseries scope** — the same scope Search uses — so the chart and your searches cover the identical corpus subset. An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it.
+Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Choose a **dimension** — Decade, Year, Month, Day, **Subseries**, or **By Volume**: the time dimensions chart frequency over time, while Subseries and By Volume break the same query down by where in the corpus it appears (omitting any subseries or volume where the term never occurs). On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that subseries or volume. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-represented source volumes each get a colour, the rest fold into a grey "Other", and a legend below names each volume with its count — so you can see at a glance *which* part of the corpus is driving a term in any period (the same encoding the Chronology graph uses). These two charts also offer a **normalization** toggle — **Raw count** or **% of documents** — that reads a term as a *share of the corpus* in each period rather than a raw tally: dividing each period's matches by the number of documents FRUS actually published in that year or decade, so a spike is corrected for periods that simply contain more documents. (The toggle is offered only on By Year and By Decade, the axes that have a meaningful per-period corpus total.) The number of distinctly coloured volumes before the "Other" fold is **configurable** (6–12, default 8): a **Chart colors** menu in the Analytics toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → General → Display** (see Section 6.4). You can also set a **volume/subseries scope** — the same scope Search uses — so the chart and your searches cover the identical corpus subset. An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it.
 
 ### 13.2 From a Chart to a Search
 
@@ -632,6 +660,24 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 - **Appearance.** An **Appearance** section in Settings → Research → **Word Cloud** controls how the cloud is drawn. A **font** picker chooses the typeface — **Rounded** (the default, original look), **Default**, **Serif**, or **Monospaced** — and a **density** picker — **Compact**, **Balanced** (default), or **Airy** — sets how tightly words pack (Compact fits more terms; Airy spaces them out for legibility). These are **device-local** preferences (they are not synced via iCloud) and apply everywhere a cloud is drawn: the interactive cloud, the side-by-side comparison columns, and PNG / PDF / collection-image exports.
 
 Corpus- and subseries-wide clouds can take a moment the first time; on iPhone they're precomputed in the background and cached, so reopening them is instant.
+
+### 13.6 Person Analytics
+
+Where Corpus Analytics tracks *terms*, **Person Analytics** tracks *people* — how often the reconciled identities in the People browser (Section 4.5) are mentioned across the corpus, how that changed over time, and how they connect to one another. Open it from the **Analysis Tools** menu in the Browse tab toolbar (Section 4.4). A top-level **Trends / Network** picker splits the surface into two:
+
+**Trends** is a scrolling dashboard:
+
+- **Most-mentioned people by era** — a ranking of the people named in the most documents within the year range you've set, so you can see who dominated the record in a given period.
+- **Mention-trajectory comparison** — search for people and add up to **five**, each as a chip, to plot their mention counts side by side over time and compare how their prominence rose and fell. A decade toggle switches between per-year and per-decade buckets, and you can read the trajectories as raw counts or as a share of documents.
+- **Relationship dynamics** — when you've selected exactly *two* people, an additional chart appears showing their **co-mention** count over time: how many documents name *both* of them in each period — a quick read on when two figures were entangled in the same events.
+
+**Network** takes the full screen for a **co-mention ego-network graph**: a focus person at the centre, surrounded by the people most often mentioned in the same documents, with the strength of each connection reflected in the graph. It defaults to the top-ranked person and lets you re-centre on anyone, turning the raw mention data into a map of who moved in whose orbit.
+
+All of these views read your local index directly, and honour the year range you set, so they sharpen as you index more of the corpus.
+
+`[SCREENSHOT: Person Analytics on iPhone in Trends mode showing the most-mentioned-by-era ranking and a multi-person mention-trajectory comparison]`
+
+`[SCREENSHOT: Person Analytics on iPhone in Network mode showing a co-mention ego-network graph around a focus person]`
 
 ---
 
@@ -698,7 +744,7 @@ The **Settings** tab gathers every app-wide preference, organized into clearly l
 |---------|----------|
 | **iCloud Sync** | Sync status for your research data (notes, tags, collections, highlights, projects), plus a **Sync Settings Across Devices** toggle that mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices that have it enabled. Off by default — turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate. (Device-specific preferences like download limits stay local.) |
 | **General** | **Display** preferences (font size, line spacing, related reading options, and the **Chart Colors** default — 6–12, default 8 — for the Chronology and Corpus Analytics distribution charts; see Section 6.4) and **Search Defaults** (default filters and sort order for new searches) |
-| **Volumes** | **Downloads** (queue and manage which volumes are on your device), **Storage** (see how much space the corpus occupies and free it up), **Index Health** (the merged search-index version, status, and an on-demand integrity check), and **Sideload** (import volume files manually, e.g., from a file you've obtained separately) |
+| **Volumes** | **Downloads** (queue and manage which volumes are on your device), **Storage** (see how much space the corpus occupies and free it up), **Index Health** (the merged search-index version, status, and an on-demand integrity check — an app update that raises the index version, such as this one's page-reference fix in Section 8, rebuilds the index for your downloaded volumes automatically), and **Sideload** (import volume files manually, e.g., from a file you've obtained separately) |
 | **Research** | **Tags** (create, rename, recolor, and delete your custom tags), **Summarization** (manage AI summarization prompts and turn on background summarization), **Word Cloud** (filtering criteria and custom hidden-word lists; see Section 13.4), and **Log Sessions** (diagnostic logging for troubleshooting) |
 | **Integrations** | **NARA API Key** (your National Archives catalog key for Source Explorer) and **Zotero** (connect your Zotero account with a Web API key so **Send to Zotero Library** can push documents and collections straight into your library) |
 | **Data** | Export your research data, and **Reset** options to clear cached or local app state |
@@ -752,13 +798,39 @@ When using Apple Pencil to select text for a highlight (Section 7.2), selection 
 
 ## 19. The FRUS Research Guide
 
-The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to build a research question, how to use citations rigorously, and other practical guidance for working with declassified diplomatic records.
+The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to build a research question, how to use citations rigorously, and other practical guidance for working with declassified diplomatic records. It also carries an **About the Series** category of four interactive, offline dashboards about the series itself (Section 19.1).
 
 Open it from **Settings → FRUS Research Guide**. It opens as a sheet you can read at your own pace, with internal links that open in the embedded browser (Section 2) so you never lose your place.
 
 `[SCREENSHOT: FRUS Research Guide opened as a sheet, showing a methodology section with embedded links]`
 
 You'll also find contextual links into the Research Guide from **Source Explorer** and **NARA Catalog Lookup** — for example, a link explaining how to interpret an archival record group while you're looking at one — so guidance appears exactly when it's useful, not just as a separate reference document.
+
+### 19.1 About the Series — Series Analytics
+
+Alongside the methodology chapters, the Research Guide carries an **About the Series** category: four interactive dashboards that step back from the individual document to portray the *series itself* — how it's produced, what it covers, and where its documents come from. These dashboards are **entirely offline** and draw only on metadata the app already ships with, so they render even before you've downloaded a single volume — you can read them mid-onboarding, with an empty index.
+
+- **Production & Timeliness** — how promptly FRUS reaches print. A **publication-lag scatter** plots each volume by its publication year (x) against how many years it took to publish after the events it covers (y), overlaid with an **evolving timeliness-target step line**: no formal target before 1961, then 15 years (the 1961 presidential directive), 20 years (1972), and 30 years (the 1985 directive, later codified by the 1991 statute) — the step reflects whatever target was in force when each volume actually went to print. Companion charts show **volumes published per print year** as bars and the **cumulative growth** of the series as a running curve.
+- **Geographic Emphasis** — where in the world the series looks. Every volume's editorial place tags resolve to the State Department's **six regional bureaus**, charted as a **stacked share over time** so you can watch emphasis shift from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa. Alongside are the **overall regional totals** and the **countries the series covers most**.
+- **Archival Sourcing** — where the documents themselves come from. A **provenance mix over coverage decades** traces how sourcing evolved (from the State Department's central decimal file toward lot files, presidential libraries, and the Central Foreign Policy File), with the corpus's **overall composition** and the **note density by decade** shown beside it.
+- **Administration Profiles** — whose foreign policy the series documents. Each dated document is attributed to the presidential administration in office when its events took place — with **Nixon and Ford distinct**, and Grover Cleveland's two non-consecutive terms counted separately. The dashboard shows **documents per administration** and **volumes per administration-year**, each **coloured by party**, a per-administration **coverage span**, and a per-administration **volume list** in which each volume carries its **document proportion** (its share of that administration's record). An **Include editorial notes** toggle folds the range-dated editorial-note documents into every count and proportion (off by default); because those documents span dates, they're attributed by *any overlap* — a volume straddling two terms counts in both — a caveat the dashboard states.
+
+**Controls shared by all four dashboards:**
+
+- An **editable year range** — set the start and end year to focus any dashboard on a period. The defaults differ by what the charts measure: coverage-based charts default to roughly **1861–1993** (the span of document dates), production-based charts to **1861–2026** (print years run to the present as new volumes ship).
+- A per-chart **View as table** — every chart offers a pop-up of its underlying numbers, rendered as a native **Table** on iPad and as a **list** on iPhone, with a **Copy** action that puts the whole table on your clipboard as **CSV** for a spreadsheet or paper.
+
+Each dashboard also carries an **About these figures** note explaining exactly what it measures and its limits (for instance, that production figures reflect only the published, digitized volumes the app currently catalogs).
+
+`[SCREENSHOT: Series Analytics — Production & Timeliness dashboard on iPhone, the publication-lag scatter with the evolving target step line]`
+
+`[SCREENSHOT: Series Analytics — Geographic Emphasis dashboard on iPhone, regional share stacked over time]`
+
+`[SCREENSHOT: Series Analytics — Archival Sourcing dashboard on iPhone, provenance mix over coverage decades]`
+
+`[SCREENSHOT: Series Analytics — Administration Profiles dashboard on iPhone, documents per administration with party colouring and a per-administration volume list]`
+
+`[SCREENSHOT: A Series dashboard chart's "View as table" pop-up on iPhone (the list variant) with the Copy-CSV action]`
 
 ---
 
