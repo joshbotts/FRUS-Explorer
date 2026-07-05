@@ -39,6 +39,8 @@ import Charts
 ///          the provenance-mix and density charts plus an editable year-range bar
 ///   1.2 — Analytics SA (series chart refinements): no-comma decade x-axes on the
 ///          provenance-mix and density charts
+///   1.3 — Analytics SA (chart table inspector): each chart card gains a "View as
+///          table" button opening a `ChartDataInspectorView` pop-up
 struct SourceProvenanceDashboard: View {
 
     /// Format style for integer decade axis labels that suppresses comma
@@ -63,6 +65,10 @@ struct SourceProvenanceDashboard: View {
     @State private var yearStart = SeriesChartKind.floorYear
     /// The editable range's end year (defaults to the coverage ceiling).
     @State private var yearEnd = defaultEnd
+
+    /// The chart whose underlying data is currently shown in the table-inspector
+    /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
+    @State private var inspectorData: ChartInspectorData?
 
     /// The pure derivation driving every chart, built from the bundled aggregate
     /// (empty/zeroed when `AppState` or the resource is absent).
@@ -92,6 +98,7 @@ struct SourceProvenanceDashboard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
     }
 
     // MARK: - Intro
@@ -136,7 +143,8 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.trend.title",
                           defaultValue: "Archival provenance over time"),
             caption: String(localized: "series.provenance.trend.caption",
-                            defaultValue: "Each decade's source notes divided among the archival collections they cite, so every decade sums to 100%. Decades are set by each volume's coverage midpoint; the trend begins in 1900 because earlier volumes carry no archival source notes.")
+                            defaultValue: "Each decade's source notes divided among the archival collections they cite, so every decade sums to 100%. Decades are set by each volume's coverage midpoint; the trend begins in 1900 because earlier volumes carry no archival source notes."),
+            inspector: ChartInspectorAdapters.provenanceMixTable(shares)
         ) {
             Chart {
                 ForEach(shares) { point in
@@ -190,7 +198,8 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.composition.title",
                           defaultValue: "Overall provenance composition"),
             caption: String(localized: "series.provenance.composition.caption",
-                            defaultValue: "How many source notes across the whole series (from 1900) cite each kind of archival collection. The Central Decimal File dwarfs the rest — most published FRUS documents came from the State Department's own central filing.")
+                            defaultValue: "How many source notes across the whole series (from 1900) cite each kind of archival collection. The Central Decimal File dwarfs the rest — most published FRUS documents came from the State Department's own central filing."),
+            inspector: ChartInspectorAdapters.compositionTable(data.overallComposition)
         ) {
             Chart {
                 ForEach(data.overallComposition) { item in
@@ -237,7 +246,8 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.density.title",
                           defaultValue: "The documentary base by decade"),
             caption: String(localized: "series.provenance.density.caption",
-                            defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base; a share in a thin decade rests on far fewer documents.")
+                            defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base; a share in a thin decade rests on far fewer documents."),
+            inspector: ChartInspectorAdapters.densityTable(density)
         ) {
             Chart {
                 ForEach(density) { item in
@@ -310,15 +320,37 @@ struct SourceProvenanceDashboard: View {
     // MARK: - Chart card
 
     /// A titled, captioned container for a single chart, keeping the three
-    /// sections visually consistent (mirrors the SA-1b/SA-2 dashboard card).
+    /// sections visually consistent (mirrors the SA-1b/SA-2 dashboard card). When
+    /// `inspector` is non-nil, the header gains a trailing "View as table" button
+    /// that opens the data pop-up.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
+        inspector: ChartInspectorData?,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.headline)
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                if let inspector {
+                    Button {
+                        inspectorData = inspector
+                    } label: {
+                        Label(
+                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
+                            systemImage: "tablecells"
+                        )
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text(String(
+                        localized: "series.inspector.viewTable.a11y",
+                        defaultValue: "View \(title) as a table"
+                    )))
+                }
+            }
             Text(caption)
                 .font(.caption)
                 .foregroundStyle(.secondary)

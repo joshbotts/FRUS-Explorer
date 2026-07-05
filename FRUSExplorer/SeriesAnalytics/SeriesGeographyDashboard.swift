@@ -35,6 +35,8 @@ import Charts
 ///          1861 floor also drops the pre-1861 retrospective outlier decades
 ///   1.2 — Analytics SA (series chart refinements): no-comma decade x-axis on the
 ///          regional-emphasis trend
+///   1.3 — Analytics SA (chart table inspector): each chart card gains a "View as
+///          table" button opening a `ChartDataInspectorView` pop-up
 struct SeriesGeographyDashboard: View {
 
     /// Format style for integer decade axis labels that suppresses comma
@@ -59,6 +61,10 @@ struct SeriesGeographyDashboard: View {
     @State private var yearStart = SeriesChartKind.floorYear
     /// The editable range's end year (defaults to the coverage ceiling).
     @State private var yearEnd = defaultEnd
+
+    /// The chart whose underlying data is currently shown in the table-inspector
+    /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
+    @State private var inspectorData: ChartInspectorData?
 
     /// The manifest entries to summarise: the diff's known set when a live
     /// refresh has happened, else the always-available bundled set, else empty
@@ -113,6 +119,7 @@ struct SeriesGeographyDashboard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(item: $inspectorData) { ChartDataInspectorView(data: $0) }
     }
 
     // MARK: - Intro
@@ -156,7 +163,8 @@ struct SeriesGeographyDashboard: View {
             title: String(localized: "series.geography.trend.title",
                           defaultValue: "Regional emphasis over time"),
             caption: String(localized: "series.geography.trend.caption",
-                            defaultValue: "Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint.")
+                            defaultValue: "Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint."),
+            inspector: ChartInspectorAdapters.regionTrendTable(shares)
         ) {
             Chart {
                 ForEach(shares) { point in
@@ -209,7 +217,8 @@ struct SeriesGeographyDashboard: View {
             title: String(localized: "series.geography.totals.title",
                           defaultValue: "Overall regional emphasis"),
             caption: String(localized: "series.geography.totals.caption",
-                            defaultValue: "How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap.")
+                            defaultValue: "How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap."),
+            inspector: ChartInspectorAdapters.regionTotalsTable(data.regionTotals)
         ) {
             Chart {
                 ForEach(data.regionTotals) { total in
@@ -253,7 +262,11 @@ struct SeriesGeographyDashboard: View {
             title: String(localized: "series.geography.countries.title",
                           defaultValue: "Most-covered countries"),
             caption: String(localized: "series.geography.countries.caption",
-                            defaultValue: "The individual place tags carried by the most volumes — the concrete detail behind the regional picture.")
+                            defaultValue: "The individual place tags carried by the most volumes — the concrete detail behind the regional picture."),
+            inspector: ChartInspectorAdapters.topCountriesTable(
+                data.topCountries,
+                displayName: { displayName(forSlug: $0) }
+            )
         ) {
             Chart {
                 ForEach(data.topCountries) { country in
@@ -319,15 +332,37 @@ struct SeriesGeographyDashboard: View {
     // MARK: - Chart card
 
     /// A titled, captioned container for a single chart, keeping the three
-    /// sections visually consistent (mirrors the SA-1b dashboard card).
+    /// sections visually consistent (mirrors the SA-1b dashboard card). When
+    /// `inspector` is non-nil, the header gains a trailing "View as table" button
+    /// that opens the data pop-up.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
+        inspector: ChartInspectorData?,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.headline)
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                if let inspector {
+                    Button {
+                        inspectorData = inspector
+                    } label: {
+                        Label(
+                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
+                            systemImage: "tablecells"
+                        )
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text(String(
+                        localized: "series.inspector.viewTable.a11y",
+                        defaultValue: "View \(title) as a table"
+                    )))
+                }
+            }
             Text(caption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
