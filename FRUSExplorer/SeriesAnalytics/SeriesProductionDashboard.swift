@@ -15,12 +15,12 @@ import Charts
 /// Guide (Series Analytics SA-1b), replacing the Prep-A development placeholder.
 ///
 /// It reads the bundled/known volume manifest through `AppState.manifestStore`,
-/// builds a pure `SeriesProductionData`, and renders four Swift Charts telling
+/// builds a pure `SeriesProductionData`, and renders three Swift Charts telling
 /// the production story of the FRUS series: how long volumes take to reach
-/// print (the ~30-year statutory horizon), how publication output has ebbed and
-/// flowed, the coverage span of every volume, and the cumulative growth of the
-/// published corpus. Everything is derived from `manifest.json`, so it renders
-/// offline, with zero index, mid-onboarding.
+/// print (against the evolving publication-timeliness target), how publication
+/// output has ebbed and flowed, and the cumulative growth of the published
+/// corpus. Everything is derived from `manifest.json`, so it renders offline,
+/// with zero index, mid-onboarding.
 ///
 /// `AppState` is read as an *optional* environment value (the defensive pattern
 /// Prep-A established): an absent environment degrades to a neutral empty state
@@ -31,7 +31,17 @@ import Charts
 ///   1.1 — Analytics SA (x-axis bounds): fixed default x-domains (coverage
 ///          1861–1993, production 1861–2026) plus an editable year-range bar that
 ///          scales and filters every time-series chart
+///   1.2 — Analytics SA (series chart refinements): no-comma year axes; removed
+///          the coverage-span Gantt chart; replaced the flat 30-year lag rule with
+///          the evolving `PublicationLagTarget` step line (15→20→30)
+///   1.3 — Analytics SA (series chart refinements): the lag chart's x-axis is the
+///          volume's publication year (production domain), so the timeliness-target
+///          step is exact — the directive in force when a volume was published
 struct SeriesProductionDashboard: View {
+
+    /// Format style for integer year/decade axis labels that suppresses comma
+    /// grouping — years should display as `1950`, not `1,950`.
+    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 
     /// Optional so a missing environment yields a neutral empty state instead
     /// of a trap. Both live presentation paths (the onboarding sheet and the
@@ -82,7 +92,6 @@ struct SeriesProductionDashboard: View {
                 yearRangeBar
                 lagChart
                 perYearChart
-                coverageGanttChart
                 cumulativeChart
                 caveats
             }
@@ -95,7 +104,7 @@ struct SeriesProductionDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.production.intro",
-                    defaultValue: "How long does the official record take to reach print? These charts trace the timeliness of Foreign Relations of the United States across its whole span — the lag between the events a volume documents and its publication, the pace of publication over time, the coverage of every volume, and the steady growth of the digitized corpus."))
+                    defaultValue: "How long does the official record take to reach print? These charts trace the timeliness of Foreign Relations of the United States across its whole span — the lag between the events a volume documents and its publication (against the evolving publication-timeliness target), the pace of publication over time, and the steady growth of the digitized corpus."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -123,36 +132,27 @@ struct SeriesProductionDashboard: View {
 
     // MARK: - Chart 1: Publication lag over time
 
-    /// Scatter of publication lag against coverage-end year, coloured by era,
-    /// with a reference line at the statutory 30-year target. The anchor chart.
+    /// Scatter of publication lag against publication year, coloured by coverage
+    /// era, overlaid with the evolving publication-timeliness target as a dashed
+    /// step line (15→20→30 years). The anchor chart.
     private var lagChart: some View {
-        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
+        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .production)
         let points = data.lagPoints(in: domain)
+        let targetSteps = PublicationLagTarget.stepPoints(in: domain)
+        let targetLabel = String(localized: "series.chart.lag.target.series",
+                                 defaultValue: "Publication-timeliness target")
         return chartCard(
             title: String(localized: "series.chart.lag.title",
                           defaultValue: "Publication lag over time"),
             caption: String(localized: "series.chart.lag.caption",
-                            defaultValue: "Each point is a volume: the year of its latest document (horizontal) against how many years later it reached print (vertical). The line marks the statutory 30-year target.")
+                            defaultValue: "Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute).")
         ) {
             Chart {
-                RuleMark(y: .value(
-                    String(localized: "series.chart.lag.target.axis", defaultValue: "Target"),
-                    30
-                ))
-                .foregroundStyle(.secondary)
-                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                .annotation(position: .top, alignment: .leading) {
-                    Text(String(localized: "series.chart.lag.target.label",
-                                defaultValue: "30-year statutory target"))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
                 ForEach(points) { point in
                     PointMark(
                         x: .value(
-                            String(localized: "series.chart.lag.x", defaultValue: "Coverage end year"),
-                            point.coverageEndYear
+                            String(localized: "series.chart.lag.x", defaultValue: "Publication year"),
+                            point.printYear
                         ),
                         y: .value(
                             String(localized: "series.chart.lag.y", defaultValue: "Years to publication"),
@@ -170,10 +170,44 @@ struct SeriesProductionDashboard: View {
                         defaultValue: "Covers through \(point.coverageEndYear), published \(point.printYear), lag \(point.lagYears) years"
                     )))
                 }
+
+                // Evolving publication-timeliness target: a dashed step line that
+                // only appears from 1961 onward and respects the editable range.
+                ForEach(targetSteps) { step in
+                    LineMark(
+                        x: .value(
+                            String(localized: "series.chart.lag.x", defaultValue: "Publication year"),
+                            step.year
+                        ),
+                        y: .value(
+                            String(localized: "series.chart.lag.y", defaultValue: "Years to publication"),
+                            step.targetYears
+                        ),
+                        series: .value(
+                            String(localized: "series.chart.lag.target.axis", defaultValue: "Target"),
+                            targetLabel
+                        )
+                    )
+                    .foregroundStyle(.secondary)
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                    .interpolationMethod(.stepEnd)
+                    .accessibilityLabel(Text(targetLabel))
+                    .accessibilityValue(Text(String(
+                        localized: "series.chart.lag.target.a11y",
+                        defaultValue: "From \(step.year), target \(step.targetYears) years"
+                    )))
+                }
             }
             .chartForegroundStyleScale(domain: CoverageEra.ordered.map(\.label))
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
-            .chartXAxisLabel(String(localized: "series.chart.lag.x", defaultValue: "Coverage end year"))
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: Self.yearAxisFormat)
+                }
+            }
+            .chartXAxisLabel(String(localized: "series.chart.lag.x", defaultValue: "Publication year"))
             .chartYAxisLabel(String(localized: "series.chart.lag.y", defaultValue: "Years to publication"))
             .frame(height: 260)
         }
@@ -213,64 +247,20 @@ struct SeriesProductionDashboard: View {
             }
             .chartForegroundStyleScale(domain: CoverageEra.ordered.map(\.label))
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: Self.yearAxisFormat)
+                }
+            }
             .chartXAxisLabel(String(localized: "series.chart.peryear.x", defaultValue: "Print year"))
             .chartYAxisLabel(String(localized: "series.chart.peryear.y", defaultValue: "Volumes"))
             .frame(height: 240)
         }
     }
 
-    // MARK: - Chart 3: Coverage span vs era (Gantt)
-
-    /// One horizontal bar per volume — its document coverage span — sorted by
-    /// start year and coloured by lag band. Vertically scrollable so all
-    /// volumes are reachable without a giant page; nothing is truncated.
-    private var coverageGanttChart: some View {
-        let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
-        let spans = data.coverageSpans(in: domain)
-        return chartCard(
-            title: String(localized: "series.chart.gantt.title",
-                          defaultValue: "Coverage span of every volume"),
-            caption: String(localized: "series.chart.gantt.caption",
-                            defaultValue: "Each bar is one volume's span of document dates, sorted earliest first and coloured by how long it took to publish. Scroll to see all volumes.")
-        ) {
-            Chart {
-                ForEach(spans) { span in
-                    BarMark(
-                        xStart: .value(
-                            String(localized: "series.chart.gantt.start", defaultValue: "Start year"),
-                            span.startYear
-                        ),
-                        xEnd: .value(
-                            String(localized: "series.chart.gantt.end", defaultValue: "End year"),
-                            span.endYear
-                        ),
-                        y: .value(
-                            String(localized: "series.chart.gantt.volume", defaultValue: "Volume"),
-                            span.volumeId
-                        )
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "series.chart.lag.legend", defaultValue: "Publication lag"),
-                        (span.lagBucket ?? .under10).label
-                    ))
-                    .accessibilityLabel(Text(span.volumeId))
-                    .accessibilityValue(Text(String(
-                        localized: "series.chart.gantt.a11y",
-                        defaultValue: "\(span.startYear) to \(span.endYear)"
-                    )))
-                }
-            }
-            .chartForegroundStyleScale(domain: LagBucket.ordered.map(\.label))
-            .chartXScale(domain: domain.lowerBound...domain.upperBound)
-            .chartYAxis(.hidden)
-            .chartXAxisLabel(String(localized: "series.chart.gantt.x", defaultValue: "Document date range"))
-            .chartScrollableAxes(.vertical)
-            .chartYVisibleDomain(length: 40)
-            .frame(height: 360)
-        }
-    }
-
-    // MARK: - Chart 4: Cumulative volumes published
+    // MARK: - Chart 3: Cumulative volumes published
 
     /// The series growth curve: a running total of published volumes by print
     /// year. Replaces the impossible pipeline-by-status chart.
@@ -312,6 +302,13 @@ struct SeriesProductionDashboard: View {
                 }
             }
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: Self.yearAxisFormat)
+                }
+            }
             .chartXAxisLabel(String(localized: "series.chart.cumulative.x", defaultValue: "Print year"))
             .chartYAxisLabel(String(localized: "series.chart.cumulative.y", defaultValue: "Volumes to date"))
             .frame(height: 240)
@@ -327,7 +324,7 @@ struct SeriesProductionDashboard: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text(String(localized: "series.caveats.body",
-                        defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
+                        defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's publication year, so it shows exactly the target in force when the volume was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

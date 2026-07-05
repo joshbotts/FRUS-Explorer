@@ -14,11 +14,12 @@ import Foundation
 
 /// Pure derivation tests for `SeriesProductionData` (Analytics SA-1b): lag math
 /// across the three date forms in the corpus, per-year and cumulative counts,
-/// coverage spans, era/lag bucket boundaries, and empty-input safety. No SwiftUI
-/// is instantiated.
+/// era boundaries, and empty-input safety. No SwiftUI is instantiated.
 ///
 /// Version history:
 ///   1.0 — Analytics SA-1b: initial implementation
+///   1.1 — Analytics SA (series chart refinements): removed coverage-span and
+///          lag-bucket tests with the Gantt chart
 struct SeriesProductionDataTests {
 
     // MARK: - Fixtures
@@ -108,32 +109,6 @@ struct SeriesProductionDataTests {
         #expect(byEraTotal == 3)
     }
 
-    // MARK: - Coverage spans
-
-    @Test("coverageSpans require earliest+latest and are sorted by start year")
-    func coverageSpansSorted() {
-        let entries = [
-            entry(id: "late", earliest: "1990", latest: "1992", publicationDate: "2015"),
-            entry(id: "early", earliest: "1861", latest: "1865", publicationDate: "1900"),
-            entry(id: "mid", earliest: "1945", latest: "1950", publicationDate: "1980"),
-            entry(id: "nospan", earliest: nil, latest: "1970", publicationDate: "2000"),
-        ]
-        let data = SeriesProductionData(entries: entries)
-        #expect(data.coverageSpans.map(\.volumeId) == ["early", "mid", "late"])
-        #expect(data.coverageSpans.first?.startYear == 1861)
-        #expect(data.coverageSpans.first?.endYear == 1865)
-        // Lag bucket is populated when a print year exists.
-        #expect(data.coverageSpans.first?.lagBucket == LagBucket.bucket(lag: 1900 - 1865))
-    }
-
-    @Test("A coverage span without a print year has a nil lag bucket")
-    func coverageSpanNilLagBucket() {
-        let entries = [entry(id: "x", earliest: "1900", latest: "1905", publicationDate: nil)]
-        let data = SeriesProductionData(entries: entries)
-        #expect(data.coverageSpans.count == 1)
-        #expect(data.coverageSpans.first?.lagBucket == nil)
-    }
-
     // MARK: - Cumulative running total
 
     @Test("cumulativeByPrintYear is monotonic and ends at the print-year count")
@@ -172,20 +147,6 @@ struct SeriesProductionDataTests {
         #expect(CoverageEra.ordered.allSatisfy { !$0.label.isEmpty })
     }
 
-    @Test("LagBucket boundaries including negative lag")
-    func lagBucketBoundaries() {
-        #expect(LagBucket.bucket(lag: -4) == .under10)
-        #expect(LagBucket.bucket(lag: 9) == .under10)
-        #expect(LagBucket.bucket(lag: 10) == .tenToTwenty)
-        #expect(LagBucket.bucket(lag: 19) == .tenToTwenty)
-        #expect(LagBucket.bucket(lag: 20) == .twentyToThirty)
-        #expect(LagBucket.bucket(lag: 29) == .twentyToThirty)
-        #expect(LagBucket.bucket(lag: 30) == .thirtyPlus)
-        #expect(LagBucket.bucket(lag: 95) == .thirtyPlus)
-        #expect(LagBucket.ordered == [.under10, .tenToTwenty, .twentyToThirty, .thirtyPlus])
-        #expect(LagBucket.ordered.allSatisfy { !$0.label.isEmpty })
-    }
-
     // MARK: - Lag stats
 
     @Test("Lag min/max/median over an odd and an even count")
@@ -222,7 +183,6 @@ struct SeriesProductionDataTests {
         #expect(data.lagPoints.isEmpty)
         #expect(data.volumesPerPrintYear.isEmpty)
         #expect(data.volumesPerPrintYearByEra.isEmpty)
-        #expect(data.coverageSpans.isEmpty)
         #expect(data.cumulativeByPrintYear.isEmpty)
         #expect(data.countWithPrintYear == 0)
         #expect(data.countWithCoverage == 0)
@@ -240,7 +200,6 @@ struct SeriesProductionDataTests {
         let data = SeriesProductionData(entries: entries)
         #expect(data.total == 1)
         #expect(data.lagPoints.isEmpty)
-        #expect(data.coverageSpans.isEmpty)
         #expect(data.cumulativeByPrintYear.isEmpty)
         #expect(data.lagMedian == nil)
     }

@@ -33,7 +33,13 @@ import Charts
 ///   1.1 — Analytics SA (x-axis bounds): bounded coverage x-domain (1861–1993)
 ///          on the regional-emphasis trend plus an editable year-range bar; the
 ///          1861 floor also drops the pre-1861 retrospective outlier decades
+///   1.2 — Analytics SA (series chart refinements): no-comma decade x-axis on the
+///          regional-emphasis trend
 struct SeriesGeographyDashboard: View {
+
+    /// Format style for integer decade axis labels that suppresses comma
+    /// grouping — decades should display as `1950`, not `1,950`.
+    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 
     /// Optional so a missing environment yields a neutral empty state instead
     /// of a trap. Both live presentation paths (the onboarding sheet and the
@@ -178,6 +184,13 @@ struct SeriesGeographyDashboard: View {
             .chartForegroundStyleScale(domain: GeographicRegion.ordered.map(\.displayName))
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
             .chartYScale(domain: 0...1)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: Self.yearAxisFormat)
+                }
+            }
             .chartYAxis {
                 AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
             }
