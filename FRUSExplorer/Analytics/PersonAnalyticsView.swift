@@ -909,31 +909,78 @@ struct PersonAnalyticsView: View {
             .help(String(localized: "personAnalytics.mode.help",
                          defaultValue: "Switch between the trends dashboard (rankings, trajectories, relationship dynamics) and the co-mention network graph."))
         }
-        ToolbarItem(placement: .primaryAction) {
-            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty || mode == .network)
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Toggle(isOn: $byDecade) {
-                Text(String(localized: "personAnalytics.decade.toggle", defaultValue: "By decade"))
-            }
-            .toggleStyle(.button)
-            .help(String(localized: "personAnalytics.decade.help",
-                         defaultValue: "Bucket the trajectory chart by decade instead of by year"))
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Picker(
-                String(localized: "personAnalytics.normalize.picker", defaultValue: "Values"),
-                selection: $normalization
-            ) {
-                ForEach(PersonTrajectoryNormalization.allCases, id: \.self) { mode in
-                    Text(mode.pickerLabel).tag(mode)
+        if isCompactWidth {
+            // iPhone: keep the primary Trends/Network mode picker inline and fold the
+            // trends-only refinements (display, by-decade, values) into one "Options" menu
+            // so the nav bar doesn't cram them. They don't apply in Network mode, so the
+            // menu is omitted there entirely (#188-A).
+            if mode == .trends {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        compactTrendsOptionsMenu
+                    } label: {
+                        Label(String(localized: "personAnalytics.options.menu", defaultValue: "Options"),
+                              systemImage: "ellipsis.circle")
+                    }
                 }
             }
-            .pickerStyle(.segmented)
-            .disabled(selectedPeople.isEmpty)
-            .help(String(localized: "personAnalytics.normalize.help",
-                         defaultValue: "Plot raw mention counts, or each person's share of all dated documents in that period — so a growing corpus doesn't masquerade as a rising person."))
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty || mode == .network)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Toggle(isOn: $byDecade) {
+                    Text(String(localized: "personAnalytics.decade.toggle", defaultValue: "By decade"))
+                }
+                .toggleStyle(.button)
+                .help(String(localized: "personAnalytics.decade.help",
+                             defaultValue: "Bucket the trajectory chart by decade instead of by year"))
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Picker(
+                    String(localized: "personAnalytics.normalize.picker", defaultValue: "Values"),
+                    selection: $normalization
+                ) {
+                    ForEach(PersonTrajectoryNormalization.allCases, id: \.self) { mode in
+                        Text(mode.pickerLabel).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(selectedPeople.isEmpty)
+                .help(String(localized: "personAnalytics.normalize.help",
+                             defaultValue: "Plot raw mention counts, or each person's share of all dated documents in that period — so a growing corpus doesn't masquerade as a rising person."))
+            }
         }
+    }
+
+    /// The trends-mode refinements (display mode, by-decade bucketing, value normalization),
+    /// folded into the toolbar's "Options" menu on compact (iPhone) width. On regular width
+    /// these render as separate toolbar items instead (see `toolbarContent`) (#188-A).
+    @ViewBuilder
+    private var compactTrendsOptionsMenu: some View {
+        Picker(selection: $viewMode) {
+            Label(String(localized: "analytics.viewMode.chart.a11y", defaultValue: "Chart"),
+                  systemImage: "chart.bar").tag(AnalyticsViewMode.chart)
+            Label(String(localized: "analytics.viewMode.table.a11y", defaultValue: "Table"),
+                  systemImage: "list.bullet").tag(AnalyticsViewMode.table)
+        } label: {
+            Text(String(localized: "analytics.viewMode.picker", defaultValue: "Display"))
+        }
+        .disabled(ranking.isEmpty)
+
+        Divider()
+
+        Toggle(isOn: $byDecade) {
+            Text(String(localized: "personAnalytics.decade.toggle", defaultValue: "By decade"))
+        }
+        Picker(selection: $normalization) {
+            ForEach(PersonTrajectoryNormalization.allCases, id: \.self) { mode in
+                Text(mode.pickerLabel).tag(mode)
+            }
+        } label: {
+            Text(String(localized: "personAnalytics.normalize.picker", defaultValue: "Values"))
+        }
+        .disabled(selectedPeople.isEmpty)
     }
 
     // MARK: - Placeholder

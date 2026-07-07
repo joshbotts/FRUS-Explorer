@@ -1537,81 +1537,98 @@ struct AnalyticsView: View {
             AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty)
         }
 
-        // Normalization: raw count vs % of documents (CA-4). Only meaningful for the
-        // date-based By-Year / By-Decade axes, so it is hidden for the others.
-        if normalizationApplies {
+        if horizontalSizeClass == .compact {
+            // iPhone: fold the four secondary chart controls into a single "Options"
+            // menu so the nav bar doesn't cram or truncate them (mirrors WordCloudView).
+            // On regular width (iPad / macOS) they render inline below (#188-A).
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    compactChartOptionsMenu
+                } label: {
+                    Label(String(localized: "analytics.options.menu", defaultValue: "Options"),
+                          systemImage: "ellipsis.circle")
+                }
+                .disabled(committedTerm.isEmpty)
+                .help(String(localized: "analytics.options.help",
+                             defaultValue: "Grouping, values, fit line, and chart colors."))
+            }
+        } else {
+            // Normalization: raw count vs % of documents (CA-4). Only meaningful for the
+            // date-based By-Year / By-Decade axes, so it is hidden for the others.
+            if normalizationApplies {
+                ToolbarItem(placement: .primaryAction) {
+                    Picker(
+                        String(localized: "analytics.normalize.picker", defaultValue: "Values"),
+                        selection: $normalizationMode
+                    ) {
+                        ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
+                            Text(mode.pickerLabel).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(committedTerm.isEmpty || viewMode != .chart)
+                    .help(String(
+                        localized: "analytics.normalize.help",
+                        defaultValue: "Plot raw matching-document counts, or each period's matches as a share of all indexed documents in that period — so a rising corpus size doesn't masquerade as a rising term."
+                    ))
+                }
+            }
+
+            // Axis: granularity picker (decade / year / month / day / subseries)
             ToolbarItem(placement: .primaryAction) {
                 Picker(
-                    String(localized: "analytics.normalize.picker", defaultValue: "Values"),
-                    selection: $normalizationMode
+                    String(localized: "analytics.axis.picker", defaultValue: "Group by"),
+                    selection: $chartAxis
                 ) {
-                    ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
-                        Text(mode.pickerLabel).tag(mode)
+                    ForEach(AnalyticsChartAxis.allCases, id: \.self) { axis in
+                        Text(axis.pickerLabel).tag(axis)
                     }
                 }
-                .pickerStyle(.segmented)
-                .disabled(committedTerm.isEmpty || viewMode != .chart)
+                .disabled(committedTerm.isEmpty)
                 .help(String(
-                    localized: "analytics.normalize.help",
-                    defaultValue: "Plot raw matching-document counts, or each period's matches as a share of all indexed documents in that period — so a rising corpus size doesn't masquerade as a rising term."
+                    localized: "analytics.axis.picker.help",
+                    defaultValue: "Choose how to bucket results: by decade, year, month, day, or subseries"
                 ))
             }
-        }
 
-        // Axis: granularity picker (decade / year / month / day / subseries)
-        ToolbarItem(placement: .primaryAction) {
-            Picker(
-                String(localized: "analytics.axis.picker", defaultValue: "Group by"),
-                selection: $chartAxis
-            ) {
-                ForEach(AnalyticsChartAxis.allCases, id: \.self) { axis in
-                    Text(axis.pickerLabel).tag(axis)
+            // Fit-line toggle. Only meaningful on date-based charts.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showFitLine.toggle()
+                } label: {
+                    Label(
+                        showFitLine
+                            ? String(localized: "analytics.fitLine.hide", defaultValue: "Hide fit line")
+                            : String(localized: "analytics.fitLine.show", defaultValue: "Show fit line"),
+                        systemImage: showFitLine ? "chart.line.uptrend.xyaxis" : "chart.bar"
+                    )
                 }
-            }
-            .disabled(committedTerm.isEmpty)
-            .help(String(
-                localized: "analytics.axis.picker.help",
-                defaultValue: "Choose how to bucket results: by decade, year, month, day, or subseries"
-            ))
-        }
-
-        // Fit-line toggle. Only meaningful on date-based charts.
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                showFitLine.toggle()
-            } label: {
-                Label(
-                    showFitLine
-                        ? String(localized: "analytics.fitLine.hide", defaultValue: "Hide fit line")
-                        : String(localized: "analytics.fitLine.show", defaultValue: "Show fit line"),
-                    systemImage: showFitLine ? "chart.line.uptrend.xyaxis" : "chart.bar"
+                .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
+                .help(
+                    String(localized: "analytics.fitLine.help",
+                           defaultValue: "Toggle the smoothed trend line overlay on the chart.")
                 )
             }
-            .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
-            .help(
-                String(localized: "analytics.fitLine.help",
-                       defaultValue: "Toggle the smoothed trend line overlay on the chart.")
-            )
-        }
 
-        // Colored-volume count — how many source volumes get a distinct color on the
-        // By-Year / By-Decade charts before the rest fold into "Other".
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                Picker(selection: $seriesCount) {
-                    ForEach(Array(ChartSeriesPalette.range), id: \.self) { n in
-                        Text(verbatim: "\(n)").tag(n)
+            // Colored-volume count — how many source volumes get a distinct color on the
+            // By-Year / By-Decade charts before the rest fold into "Other".
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker(selection: $seriesCount) {
+                        ForEach(Array(ChartSeriesPalette.range), id: \.self) { n in
+                            Text(verbatim: "\(n)").tag(n)
+                        }
+                    } label: {
+                        Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
                     }
                 } label: {
-                    Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
+                    Label(String(localized: "analytics.colors.menu", defaultValue: "Chart colors"),
+                          systemImage: "paintpalette")
                 }
-            } label: {
-                Label(String(localized: "analytics.colors.menu", defaultValue: "Chart colors"),
-                      systemImage: "paintpalette")
+                .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
+                .help(String(localized: "analytics.colors.help",
+                             defaultValue: "How many source volumes appear as distinct colors before the rest fold into “Other”"))
             }
-            .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
-            .help(String(localized: "analytics.colors.help",
-                         defaultValue: "How many source volumes appear as distinct colors before the rest fold into “Other”"))
         }
 
         // Info button — explains metric semantics, query syntax, and stemming.
@@ -1641,6 +1658,48 @@ struct AnalyticsView: View {
             }
         }
         #endif
+    }
+
+    /// The secondary chart controls, folded into the toolbar's "Options" menu on compact
+    /// (iPhone) width where the nav bar cannot hold them inline. On regular width these
+    /// render as separate toolbar items instead (see `toolbarContent`). Controls that only
+    /// apply to date-based charts are shown conditionally rather than disabled, keeping the
+    /// menu concise (#188-A).
+    @ViewBuilder
+    private var compactChartOptionsMenu: some View {
+        Picker(selection: $chartAxis) {
+            ForEach(AnalyticsChartAxis.allCases, id: \.self) { axis in
+                Text(axis.pickerLabel).tag(axis)
+            }
+        } label: {
+            Text(String(localized: "analytics.axis.picker", defaultValue: "Group by"))
+        }
+
+        if normalizationApplies {
+            Picker(selection: $normalizationMode) {
+                ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
+                    Text(mode.pickerLabel).tag(mode)
+                }
+            } label: {
+                Text(String(localized: "analytics.normalize.picker", defaultValue: "Values"))
+            }
+            .disabled(viewMode != .chart)
+        }
+
+        if chartAxis.isDateBased && viewMode == .chart {
+            Divider()
+            Toggle(isOn: $showFitLine) {
+                Label(String(localized: "analytics.fitLine.toggle", defaultValue: "Fit line"),
+                      systemImage: "chart.line.uptrend.xyaxis")
+            }
+            Picker(selection: $seriesCount) {
+                ForEach(Array(ChartSeriesPalette.range), id: \.self) { n in
+                    Text(verbatim: "\(n)").tag(n)
+                }
+            } label: {
+                Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
+            }
+        }
     }
 
     // MARK: - Info Popover
