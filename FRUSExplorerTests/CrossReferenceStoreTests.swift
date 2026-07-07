@@ -107,6 +107,35 @@ private func insertDocumentCache(
     sqlite3_step(stmt)
 }
 
+/// Inserts a `document_dates` row so an edge's SOURCE (or target) document has a date for the
+/// year-range filter. Pass `dateISO: nil` to exercise the undated-drop path.
+private func insertDocumentDate(
+    dbURL: URL,
+    volumeId: String, documentId: String,
+    dateISO: String?
+) throws {
+    var db: OpaquePointer?
+    let rc = sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil)
+    guard rc == SQLITE_OK, let db else {
+        throw CrossReferenceError.databaseOpenFailed(message: "insertDocumentDate: cannot open")
+    }
+    defer { sqlite3_close_v2(db) }
+
+    let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    let sql = """
+        INSERT OR REPLACE INTO document_dates
+        (volume_id, document_id, date_iso, date_iso_max, date_precision, date_certainty)
+        VALUES (?, ?, ?, NULL, NULL, NULL)
+        """
+    var stmt: OpaquePointer?
+    sqlite3_prepare_v2(db, sql, -1, &stmt, nil)
+    defer { sqlite3_finalize(stmt) }
+    sqlite3_bind_text(stmt, 1, volumeId,   -1, TRANSIENT)
+    sqlite3_bind_text(stmt, 2, documentId, -1, TRANSIENT)
+    if let d = dateISO { sqlite3_bind_text(stmt, 3, d, -1, TRANSIENT) } else { sqlite3_bind_null(stmt, 3) }
+    sqlite3_step(stmt)
+}
+
 // MARK: - CrossReferenceStoreTests
 
 struct CrossReferenceStoreTests {
@@ -458,5 +487,189 @@ struct CrossReferenceStoreTests {
         let byKey = Dictionary(uniqueKeysWithValues:
             scores.map { ("\($0.key.volumeId)/\($0.key.documentId)", $0.score) })
         #expect((byKey["vol2/c"] ?? 0) > (byKey["vol1/a"] ?? 0))
+    }
+
+    // MARK: - CA-6 filter tests (#189-B)
+
+    @Test("CA-6 year-range filter is source-anchored: only edges whose source is dated in range count")
+    func yearRangeFilterIsSourceAnchored() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "vol1", documentId: "hub", header: "Hub")
+        // Two documents cite vol1/hub: sA (dated 1970, in range) and sB (dated 1985, out of range).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "sA",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "sB",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "sA", dateISO: "1970-05-01")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol3", documentId: "sB", dateISO: "1985-05-01")
+
+        // Whole corpus (nil): both citations count → hub in-degree 2.
+        let all = try await store.topDocumentsByInDegree(limit: 10)
+        #expect(all.first(where: { $0.documentId == "hub" })?.inDegree == 2)
+
+        // 1969–1976: only the sA (1970) citation counts → hub in-degree 1.
+        let ranged = try await store.topDocumentsByInDegree(limit: 10, yearRange: 1969...1976)
+        #expect(ranged.count == 1)
+        #expect(ranged.first?.documentId == "hub")
+        #expect(ranged.first?.inDegree == 1)
+
+        // Degree distributions + PageRank edges track the SAME source-anchored population.
+        #expect(try await store.resolvedInDegrees(yearRange: 1969...1976) == [1])
+        #expect(try await store.resolvedOutDegrees(yearRange: 1969...1976) == [1])   // only sA emits
+        #expect(try await store.resolvedCitationEdges(yearRange: 1969...1976).count == 1)
+        // Unfiltered: hub in-degree 2, two sources each out-degree 1, two edges.
+        #expect(try await store.resolvedInDegrees() == [2])
+        #expect(try await store.resolvedOutDegrees().sorted() == [1, 1])
+        #expect(try await store.resolvedCitationEdges().count == 2)
+    }
+
+    @Test("CA-6 year-range filter drops edges whose source document is undated")
+    func undatedSourceDroppedUnderYearRange() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // vol2/sU cites vol1/hub, but sU has NO document_dates row.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "sU",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+
+        // No year filter: the undated-source edge is present.
+        #expect(try await store.resolvedCitationEdges().count == 1)
+        #expect(try await store.resolvedInDegrees() == [1])
+
+        // With a year filter: the INNER JOIN to document_dates drops the undated source entirely.
+        #expect(try await store.resolvedCitationEdges(yearRange: 1900...2000).isEmpty)
+        #expect(try await store.resolvedInDegrees(yearRange: 1900...2000).isEmpty)
+    }
+
+    @Test("CA-6 volume scope is source-anchored: gates the citing (source) volume, not the target")
+    func volumeScopeIsSourceAnchored() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "vol1", documentId: "hub", header: "Hub")
+        // vol2/sA cites vol1/hub: source in vol2, target in vol1.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "sA",
+                       targetVolumeId: "vol1", targetDocumentId: "hub")
+
+        // Scope to the SOURCE volume (vol2): the edge is KEPT — hub surfaces as a foundational
+        // out-of-slice target (it lives in vol1, outside the scope).
+        let sourceScoped = try await store.topDocumentsByInDegree(limit: 10, volumeIds: ["vol2"])
+        #expect(sourceScoped.first?.documentId == "hub")
+        #expect(sourceScoped.first?.inDegree == 1)
+
+        // Scope to the TARGET volume (vol1): the edge is DROPPED — its source (vol2) is out of scope.
+        let targetScoped = try await store.topDocumentsByInDegree(limit: 10, volumeIds: ["vol1"])
+        #expect(targetScoped.isEmpty)
+    }
+
+    @Test("volumeLevelConnections honors the source-date filter and its both-endpoints scope")
+    func volumeLevelConnectionsHonorsDateAndScope() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // vol1→vol2 twice (sources a@1970, b@1985), vol2→vol1 once (source c@1970).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a", targetVolumeId: "vol2", targetDocumentId: "x")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "b", targetVolumeId: "vol2", targetDocumentId: "y")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "c", targetVolumeId: "vol1", targetDocumentId: "z")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol1", documentId: "a", dateISO: "1970-01-01")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol1", documentId: "b", dateISO: "1985-01-01")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "c", dateISO: "1970-01-01")
+
+        func pairs(_ edges: [VolumeConnectionEdge]) -> [String: Int] {
+            Dictionary(uniqueKeysWithValues: edges.map { ("\($0.sourceVolumeId)->\($0.targetVolumeId)", $0.count) })
+        }
+
+        // Unfiltered: vol1->vol2 = 2, vol2->vol1 = 1.
+        let all = pairs(try await store.volumeLevelConnections())
+        #expect(all["vol1->vol2"] == 2)
+        #expect(all["vol2->vol1"] == 1)
+
+        // Year 1969–1976 (source-dated): b@1985 drops → vol1->vol2 = 1, vol2->vol1 = 1.
+        let ranged = pairs(try await store.volumeLevelConnections(yearRange: 1969...1976))
+        #expect(ranged["vol1->vol2"] == 1)
+        #expect(ranged["vol2->vol1"] == 1)
+
+        // Both-endpoints scope to {vol1, vol2}: all three edges qualify (same as unfiltered).
+        let scoped = pairs(try await store.volumeLevelConnections(limitToVolumeIds: ["vol1", "vol2"]))
+        #expect(scoped["vol1->vol2"] == 2)
+        #expect(scoped["vol2->vol1"] == 1)
+
+        // Scope to a single volume {vol1}: both endpoints must be vol1, but these are cross-volume → empty.
+        #expect(try await store.volumeLevelConnections(limitToVolumeIds: ["vol1"]).isEmpty)
+
+        // Combined date + scope (exercises the year-then-double-bind offset): 1969–1976 within {vol1,vol2}.
+        let combined = pairs(try await store.volumeLevelConnections(limitToVolumeIds: ["vol1", "vol2"], yearRange: 1969...1976))
+        #expect(combined["vol1->vol2"] == 1)
+        #expect(combined["vol2->vol1"] == 1)
+    }
+
+    @Test("topDocumentsByInDegree LIMIT truncates correctly under combined year+volume filters")
+    func topDocumentsByInDegreeLimitUnderCombinedFilters() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // In-scope (vol2), in-range sources: hubA cited twice, hubB cited once.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1", targetVolumeId: "vol1", targetDocumentId: "hubA")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s2", targetVolumeId: "vol1", targetDocumentId: "hubA")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s3", targetVolumeId: "vol1", targetDocumentId: "hubB")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "s1", dateISO: "1970-01-01")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "s2", dateISO: "1971-01-01")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "s3", dateISO: "1972-01-01")
+
+        // LIMIT 1 over TWO qualifying targets, with both filters active (year cols 1-2, scope col 3,
+        // LIMIT last): must truncate to the top target hubA (in-degree 2) — proves the LIMIT bind
+        // lands at the final column, not colliding with the year/scope binds.
+        let top1 = try await store.topDocumentsByInDegree(limit: 1, yearRange: 1969...1976, volumeIds: ["vol2"])
+        #expect(top1.count == 1)
+        #expect(top1.first?.documentId == "hubA")
+        #expect(top1.first?.inDegree == 2)
+
+        // LIMIT 10 returns both, ordered by in-degree descending.
+        let top10 = try await store.topDocumentsByInDegree(limit: 10, yearRange: 1969...1976, volumeIds: ["vol2"])
+        #expect(top10.map(\.documentId) == ["hubA", "hubB"])
+    }
+
+    @Test("Document-level queries AND the year and volume predicates (an edge failing either is dropped)")
+    func combinedFilterDropsEdgeFailingEitherPredicate() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Edge A: in-range (1970) but OUT-of-scope source (vol3).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "a", targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol3", documentId: "a", dateISO: "1970-01-01")
+        // Edge B: in-scope source (vol2) but OUT-of-range (1985).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "b", targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "b", dateISO: "1985-01-01")
+
+        // scope=vol2 AND year 1969–76: A fails scope, B fails year → nothing survives.
+        #expect(try await store.topDocumentsByInDegree(limit: 10, yearRange: 1969...1976, volumeIds: ["vol2"]).isEmpty)
+        #expect(try await store.resolvedInDegrees(yearRange: 1969...1976, volumeIds: ["vol2"]).isEmpty)
+        #expect(try await store.resolvedCitationEdges(yearRange: 1969...1976, volumeIds: ["vol2"]).isEmpty)
+
+        // Edge C: in-scope AND in-range → the only survivor.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "c", targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "vol2", documentId: "c", dateISO: "1972-01-01")
+        let survivor = try await store.topDocumentsByInDegree(limit: 10, yearRange: 1969...1976, volumeIds: ["vol2"])
+        #expect(survivor.count == 1)
+        #expect(survivor.first?.inDegree == 1)
+    }
+
+    @Test("resolvedInDegrees and resolvedOutDegrees honor a volume scope with no year range")
+    func degreeQueriesHonorVolumeScopeAlone() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Two sources in different volumes cite the same target.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1", targetVolumeId: "vol1", targetDocumentId: "hub")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s2", targetVolumeId: "vol1", targetDocumentId: "hub")
+
+        // Volume scope ALONE (no year): the scope predicate binds at column 1. Only vol2's source counts.
+        #expect(try await store.resolvedOutDegrees(volumeIds: ["vol2"]) == [1])
+        #expect(try await store.resolvedInDegrees(volumeIds: ["vol2"]) == [1])
+        // Unfiltered: two sources each out-degree 1; hub in-degree 2.
+        #expect(try await store.resolvedOutDegrees().sorted() == [1, 1])
+        #expect(try await store.resolvedInDegrees() == [2])
     }
 }
