@@ -332,9 +332,9 @@ struct AnalyticsView: View {
                 } else {
                     VStack(spacing: 0) {
                         searchBar
-                        if let scopeLabel {
+                        if !committedTerm.isEmpty {
                             Divider()
-                            scopeChip(scopeLabel)
+                            scopeBar
                         }
                         if chartAxis.isDateBased && !committedTerm.isEmpty {
                             Divider()
@@ -482,46 +482,108 @@ struct AnalyticsView: View {
         appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
     }
 
-    // MARK: - Scope Chip
+    // MARK: - Scope Selector
 
-    /// Banner shown when Analytics was opened scoped to a volume or subseries from a
-    /// `WordCloud → Analytics` handoff. Names the scope and offers a "Whole corpus"
-    /// reset that clears the scope and re-runs the query corpus-wide.
+    /// Interactive scope selector shown under the search bar once a term is committed.
+    /// Names the active scope — the whole corpus, a subseries, or a single volume — and lets
+    /// the researcher change it from a menu, re-running the query so project-specific trends
+    /// (hidden by corpus-wide totals) become visible. Reuses the `scopeVolumeIds` plumbing
+    /// that every `CorpusAnalyticsService` query already honors, plus the same
+    /// `WordCloud → Analytics` handoff scope (#189-B).
     @ViewBuilder
-    private func scopeChip(_ label: String) -> some View {
+    private var scopeBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "scope")
                 .foregroundStyle(.secondary)
                 .font(.caption)
-            Text(String(format: String(localized: "analytics.scope.label %@",
-                                        defaultValue: "Scoped to %@"), label))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer()
-            Button {
-                clearScope()
+            Menu {
+                scopeMenuContent
             } label: {
-                Text(String(localized: "analytics.scope.clear", defaultValue: "Whole corpus"))
-                    .font(.caption)
+                HStack(spacing: 4) {
+                    Text(String(format: String(localized: "analytics.scope.label %@",
+                                                defaultValue: "Scope: %@"), currentScopeLabel))
+                        .font(.caption)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2)
+                }
             }
-            .buttonStyle(.borderless)
             .controlHelp(
-                String(localized: "analytics.scope.clear.a11y", defaultValue: "Analyze the whole corpus"),
-                detail: String(localized: "analytics.scope.clear.help",
-                               defaultValue: "Remove the volume scope and chart this term across the entire corpus"),
+                String(localized: "analytics.scope.menu.a11y", defaultValue: "Analysis scope"),
+                detail: String(localized: "analytics.scope.menu.help",
+                               defaultValue: "Restrict the analysis to a subseries or a single volume, or chart the whole corpus."),
                 systemImage: "scope"
             )
+            Spacer()
+            if scopeVolumeIds != nil {
+                Button {
+                    setScope(nil, label: nil)
+                } label: {
+                    Text(String(localized: "analytics.scope.clear", defaultValue: "Whole corpus"))
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
     }
 
-    /// Clears the active volume scope and re-runs the query across the whole corpus.
-    private func clearScope() {
-        scopeVolumeIds = nil
-        scopeLabel = nil
+    /// Human-readable name of the active scope, for the scope menu's label.
+    private var currentScopeLabel: String {
+        scopeVolumeIds == nil
+            ? String(localized: "analytics.scope.wholeCorpus", defaultValue: "Whole corpus")
+            : (scopeLabel ?? String(localized: "analytics.scope.custom", defaultValue: "Selected volumes"))
+    }
+
+    /// The distinct subseries spanned by the indexed corpus, sorted, for the scope menu.
+    private var indexedSubseries: [String] {
+        Set(appState.indexedVolumeIds.compactMap { CorpusAnalyticsService.subseries(fromVolumeId: $0) })
+            .sorted()
+    }
+
+    /// Menu items for the scope selector: whole corpus, then a subseries picker and a
+    /// volume picker (volumes nested under their subseries so the list stays navigable).
+    @ViewBuilder
+    private var scopeMenuContent: some View {
+        Button {
+            setScope(nil, label: nil)
+        } label: {
+            Label(String(localized: "analytics.scope.wholeCorpus", defaultValue: "Whole corpus"),
+                  systemImage: scopeVolumeIds == nil ? "checkmark" : "globe")
+        }
+
+        let subseries = indexedSubseries
+        if !subseries.isEmpty {
+            Divider()
+            Menu(String(localized: "analytics.scope.bySubseries", defaultValue: "By Subseries")) {
+                ForEach(subseries, id: \.self) { sub in
+                    Button(sub) {
+                        setScope(indexedVolumeIds(forSubseries: sub), label: sub)
+                    }
+                }
+            }
+            Menu(String(localized: "analytics.scope.byVolume", defaultValue: "By Volume")) {
+                ForEach(subseries, id: \.self) { sub in
+                    Menu(sub) {
+                        ForEach(indexedVolumeIds(forSubseries: sub), id: \.self) { volumeId in
+                            Button(volumeTitle(volumeId)) {
+                                setScope([volumeId], label: volumeTitle(volumeId))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Applies a new volume scope (or clears it when `volumeIds` is nil/empty) and re-runs
+    /// the query. `label` names the scope in the scope bar.
+    private func setScope(_ volumeIds: [String]?, label: String?) {
+        let cleaned = (volumeIds?.isEmpty == true) ? nil : volumeIds
+        scopeVolumeIds = cleaned
+        scopeLabel = cleaned == nil ? nil : label
         runSearch()
     }
 
