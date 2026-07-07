@@ -121,6 +121,17 @@ struct MacSearchWindowView: View {
     var body: some View {
         VStack(spacing: 0) {
 
+            // Checklist mode (#189-D): a zero-size, always-mounted observer keeps the reviewed
+            // set in sync with the reading history via a live `@Query`, so opening a result by
+            // any means (main window, new window, timeline) hides it. Re-created via `.id` when
+            // the anchor moves (mode re-enable or a new search).
+            if searchVM.checklistMode, let enabledAt = searchVM.checklistEnabledAt {
+                ChecklistReviewedObserver(enabledAt: enabledAt) { keys in
+                    searchVM.readSinceEnabledKeys = keys
+                }
+                .id(enabledAt)
+            }
+
             searchInputRow
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
@@ -146,7 +157,12 @@ struct MacSearchWindowView: View {
 
             overCapAdvisory
 
-            if showTimeline {
+            checklistHiddenBanner
+
+            if searchVM.checklistMode && searchVM.displayedResults.isEmpty && !searchVM.results.isEmpty {
+                // Checklist mode has hidden every result (#189-D).
+                allReviewedEmptyState
+            } else if showTimeline {
                 timelineView
             } else {
                 resultsList
@@ -574,6 +590,30 @@ struct MacSearchWindowView: View {
 
             Spacer()
 
+            // Checklist review mode (#189-D) — a plain toggle button matching the timeline
+            // toggle beside it (the macOS sort bar uses icon buttons, not a menu). Hides results
+            // as they're reviewed (opened by any means, or marked via the row context menu),
+            // turning a long result set into a shrinking to-do list. Disabled until there are
+            // results; stays enabled in the all-reviewed state (gated on raw `results`) so the
+            // user can always turn it back off.
+            Button {
+                searchVM.setChecklistMode(!searchVM.checklistMode)
+            } label: {
+                Image(systemName: "checklist")
+                    .font(.system(size: 12))
+                    .foregroundStyle(searchVM.checklistMode ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.results.isEmpty)
+            .help(searchVM.checklistMode
+                  ? String(localized: "search.checklist.off.help",
+                           defaultValue: "Turn off Checklist Mode and show every result")
+                  : String(localized: "search.checklist.on.help",
+                           defaultValue: "Checklist review mode — hide results as you review them"))
+            .accessibilityLabel(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"))
+
+            Divider().frame(height: 14)
+
             // Timeline toggle — swaps the results list/pagination for a
             // chronological Swift Charts visualization (DocumentTimelineView,
             // shared with the iOS Search tab and Collections editor). Mirrors
@@ -640,10 +680,13 @@ struct MacSearchWindowView: View {
 
     @ViewBuilder
     private var resultCountLabel: some View {
-        // `loaded` = how many results are materialised on the client (capped at
-        // `MacSearchViewModel.searchHardLimit`).
-        // `total`  = the true uncapped match count returned by FTS5 COUNT(*).
-        let loaded   = searchVM.results.count
+        // `loaded` = how many results are currently shown — the checklist-filtered count
+        // (#189-D) when checklist mode is on, else the materialised set (capped at
+        // `MacSearchViewModel.searchHardLimit`). The paging math below pages over the same
+        // `displayedResults`, so the start–end range and page count stay in sync.
+        // `total`  = the true uncapped match count returned by FTS5 COUNT(*) (unaffected by
+        // the client-side reviewed filter, so the over-cap advisory still reflects the raw fetch).
+        let loaded   = searchVM.displayedResults.count
         let total    = max(searchVM.totalMatchCount, loaded)
         let start    = searchVM.currentPage * searchVM.pageSize + 1
         let end      = min(start + searchVM.pageSize - 1, loaded)
@@ -725,6 +768,44 @@ struct MacSearchWindowView: View {
         }
     }
 
+    /// A subtle banner shown while checklist mode is on and at least one result is hidden, so the
+    /// shrunken list never reads as a bug (#189-D).
+    @ViewBuilder
+    private var checklistHiddenBanner: some View {
+        if searchVM.checklistMode {
+            let hidden = searchVM.results.count - searchVM.displayedResults.count
+            if hidden > 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    Text(String(format: String(localized: "search.checklist.hiddenBanner %lld",
+                                              defaultValue: "%lld reviewed hidden"), Int64(hidden)))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+                .overlay(alignment: .bottom) { Divider() }
+            }
+        }
+    }
+
+    /// Shown in place of the results list/timeline when checklist mode has hidden every result
+    /// (#189-D).
+    private var allReviewedEmptyState: some View {
+        ContentUnavailableView {
+            Label(String(localized: "search.checklist.allReviewed.title",
+                         defaultValue: "All Results Reviewed"),
+                  systemImage: "checkmark.circle")
+        } description: {
+            Text(String(localized: "search.checklist.allReviewed.detail",
+                        defaultValue: "You've reviewed every result. Turn off Checklist Mode to see them again."))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private var pageSizePicker: some View {
         HStack(spacing: 4) {
             Text("Show")
@@ -766,7 +847,9 @@ struct MacSearchWindowView: View {
     /// grouping, and undated-document handling all come for free.
     private var timelineView: some View {
         DocumentTimelineView(
-            items: searchVM.results.map {
+            // Page over the checklist-filtered set (#189-D) so reviewed documents drop out of
+            // the timeline just as they do from the list.
+            items: searchVM.displayedResults.map {
                 DocumentTimelineView.Item(
                     volumeId: $0.volumeId,
                     documentId: $0.documentId,
@@ -774,7 +857,7 @@ struct MacSearchWindowView: View {
                 )
             },
             onSelect: { item in
-                if let result = searchVM.results.first(where: {
+                if let result = searchVM.displayedResults.first(where: {
                     $0.volumeId == item.volumeId && $0.documentId == item.documentId
                 }) {
                     navigateToResult(result)
@@ -833,6 +916,22 @@ struct MacSearchWindowView: View {
                                    defaultValue: "Archival Neighbors…"),
                             systemImage: "archivebox"
                         )
+                    }
+
+                    // Checklist mode (#189-D): mark a result reviewed — hides it without
+                    // opening it. Offered only while checklist mode is on. (macOS uses the
+                    // context menu; the iOS row also offers a swipe action.)
+                    if searchVM.checklistMode {
+                        Divider()
+                        Button {
+                            searchVM.markReviewed(volumeId: result.volumeId, documentId: result.documentId)
+                        } label: {
+                            Label(
+                                String(localized: "search.checklist.markReviewed",
+                                       defaultValue: "Mark Reviewed"),
+                                systemImage: "checklist"
+                            )
+                        }
                     }
                 }
         }
@@ -1015,6 +1114,46 @@ struct MacSearchWindowView: View {
     }
 }
 
+// MARK: - ChecklistReviewedObserver
+
+/// A zero-size, always-mounted observer that keeps `MacSearchViewModel.readSinceEnabledKeys` in
+/// sync with the local reading history while checklist mode is on (#189-D). Backed by a live
+/// `@Query`, so a document opened by *any* means — the main window, a new tab/window, or from
+/// the timeline — updates the reviewed set the moment its `ReadingHistoryEntry` lands, with no
+/// fragile navigation triggers. Re-created (via `.id(enabledAt)`) whenever the anchor moves
+/// (mode re-enable or a new search). Mirrors the iOS observer in `SearchView.swift`.
+private struct ChecklistReviewedObserver: View {
+
+    /// Pushes the freshly-computed reviewed keys up to the view model.
+    private let onKeys: (Set<String>) -> Void
+
+    /// Documents opened at or after the checklist anchor. `accessedAt` is optional, so the
+    /// predicate uses `flatMap`; `nil`-dated rows are excluded (correct for a "since" query).
+    @Query private var entries: [ReadingHistoryEntry]
+
+    init(enabledAt: Date, onKeys: @escaping (Set<String>) -> Void) {
+        self.onKeys = onKeys
+        _entries = Query(filter: #Predicate<ReadingHistoryEntry> { entry in
+            (entry.accessedAt.flatMap { $0 >= enabledAt }) == true
+        })
+    }
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+            .onAppear { push() }
+            .onChange(of: reviewedKeys) { _, _ in push() }
+    }
+
+    /// The reviewed keys derived from the current query rows.
+    private var reviewedKeys: [String] {
+        entries.map { MacSearchViewModel.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId) }
+    }
+
+    private func push() { onKeys(Set(reviewedKeys)) }
+}
+
 // MARK: - SearchResultRow
 
 /// A single search-result row for the macOS Search window.
@@ -1026,6 +1165,13 @@ private struct SearchResultRow: View {
     /// All known user tags, supplied by the parent view's `@Query`. Used to
     /// resolve UUID strings in `result.userTagIds` to display names.
     let userTags: [UserTag]
+
+    /// Global default snippet length and this window's per-surface override (#189-C); observed so
+    /// the row re-renders live when either is changed in Settings or the search filter popover's
+    /// Result Preview control. The override writes the same key the filter popover binds to
+    /// (`snippetLineCountMainOverrideKey`), bringing the macOS Search window to iOS parity.
+    @AppStorage(SearchDefaults.snippetLineCountKey) private var globalSnippetLines = SearchDefaults.defaultSnippetLineCount
+    @AppStorage(SearchDefaults.snippetLineCountMainOverrideKey) private var snippetOverride = 0
 
     /// Returns the display name for a tag UUID string, falling back to the UUID if
     /// the tag has been deleted or is not yet loaded.
@@ -1080,14 +1226,15 @@ private struct SearchResultRow: View {
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(2)
 
-            // TEI-derived snippet (~400 chars of surrounding context). `lineLimit(4)`
-            // shows ≥2 full lines on the typical Search window width; readers see
-            // enough sentence context to judge relevance without opening the document.
+            // TEI-derived snippet (~1000 chars of surrounding context each side, from
+            // SearchService.search). Clamped to the user's chosen line count (#189-C) —
+            // the global default, or this window's Result Preview override — so readers can
+            // widen or tighten the preview just as on iOS.
             SnippetView(snippet: result.snippet)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)
-                .lineLimit(4)
+                .lineLimit(SearchDefaults.effectiveSnippetLineCount(global: globalSnippetLines, override: snippetOverride))
                 .fixedSize(horizontal: false, vertical: true)
 
             if !result.userTagIds.isEmpty {
