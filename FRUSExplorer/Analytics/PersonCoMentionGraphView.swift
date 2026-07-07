@@ -195,7 +195,7 @@ final class PersonCoMentionGraphViewModel {
     /// Loads the ego (focus + top-N partners + partner-partner edges) from the store, then
     /// runs the layout. Degrades to an empty graph on any query failure.
     /// - Parameter store: The person mention store.
-    func load(from store: PersonMentionStore) async {
+    func load(from store: PersonMentionStore, volumeIds: [String]? = nil) async {
         isLoading = true
         error = nil
         nodes = []
@@ -205,14 +205,15 @@ final class PersonCoMentionGraphViewModel {
         totalPartnerCount = 0
         resetViewport(animated: false)
         do {
-            // The disclosed top-N partners (bounded to the focus person's own documents).
+            // The disclosed top-N partners (bounded to the focus person's own documents),
+            // optionally restricted to the volume scope (#189-B).
             let partnerRows = try await store.topCoMentionedPeople(
-                forRollupId: focusRollupId, limit: Self.partnerLimit)
+                forRollupId: focusRollupId, limit: Self.partnerLimit, volumeIds: volumeIds)
             // A cheap over-limit probe: fetch one more than the cap to know whether the cap
             // actually elided anyone (so the disclosure is accurate), without an unbounded
             // count query.
             let probe = try await store.topCoMentionedPeople(
-                forRollupId: focusRollupId, limit: Self.partnerLimit + 1)
+                forRollupId: focusRollupId, limit: Self.partnerLimit + 1, volumeIds: volumeIds)
             totalPartnerCount = probe.count
 
             var built: [PersonCoMentionNode] = [
@@ -227,7 +228,7 @@ final class PersonCoMentionGraphViewModel {
 
             // Partner-partner edges + focus-partner edges, within the bounded ego set only.
             let ids = built.map(\.rollupId)
-            let edgeRows = try await store.coMentionEdges(amongRollupIds: ids)
+            let edgeRows = try await store.coMentionEdges(amongRollupIds: ids, volumeIds: volumeIds)
             edges = edgeRows.map { PersonCoMentionEdge(a: $0.a, b: $0.b, sharedDocuments: $0.sharedDocuments) }
         } catch {
             self.error = error.localizedDescription
@@ -432,6 +433,8 @@ struct PersonCoMentionGraphView: View {
 
     /// The store, injected by the host so no-index degradation happens above this view.
     let store: PersonMentionStore
+    /// Active volume scope (`nil` = whole corpus). Changing it reloads the ego graph (#189-B).
+    let volumeIds: [String]?
     /// Opens a person's mentions in Search (reuses the CA-5 person deep-link).
     let onOpenPerson: (_ rollupId: Int, _ name: String) -> Void
 
@@ -439,10 +442,12 @@ struct PersonCoMentionGraphView: View {
 
     /// Creates the graph centred on the given focus person.
     init(focusRollupId: Int, focusName: String, store: PersonMentionStore,
+         volumeIds: [String]? = nil,
          onOpenPerson: @escaping (_ rollupId: Int, _ name: String) -> Void) {
         _vm = State(initialValue: PersonCoMentionGraphViewModel(
             focusRollupId: focusRollupId, focusName: focusName))
         self.store = store
+        self.volumeIds = volumeIds
         self.onOpenPerson = onOpenPerson
     }
 
@@ -477,8 +482,8 @@ struct PersonCoMentionGraphView: View {
                 legendBar
             }
         }
-        .task(id: vm.focusRollupId) {
-            await vm.load(from: store)
+        .task(id: "\(vm.focusRollupId)#\(volumeIds?.sorted().joined(separator: ",") ?? "*")") {
+            await vm.load(from: store, volumeIds: volumeIds)
         }
     }
 

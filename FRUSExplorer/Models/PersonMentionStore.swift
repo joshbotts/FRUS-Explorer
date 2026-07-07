@@ -475,11 +475,12 @@ public actor PersonMentionStore {
     ///
     /// - Parameter rollupIds: The rollups to chart. Empty → empty result.
     /// - Returns: `rollupId → (year → mentionCount)`. Rollups with no dated mentions are absent.
-    public func mentionTrajectories(rollupIds: [Int]) throws -> [Int: [Int: Int]] {
+    public func mentionTrajectories(rollupIds: [Int], volumeIds: [String]? = nil) throws -> [Int: [Int: Int]] {
         guard !rollupIds.isEmpty else { return [:] }
         // Deduplicate and bound the IN-list; parameterise every id (never interpolate).
         let ids = Array(Set(rollupIds))
         let placeholders = ids.map { _ in "?" }.joined(separator: ", ")
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT m.rollup_id,
                    CAST(substr(dd.date_iso, 1, 4) AS INTEGER) AS yr,
@@ -491,13 +492,14 @@ public actor PersonMentionStore {
               ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
             WHERE m.rollup_id IN (\(placeholders))
               AND dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+              \(Self.volumeScopeClause(scope))
             GROUP BY m.rollup_id, yr
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, rid) in ids.enumerated() {
-            sqlite3_bind_int64(stmt, Int32(i + 1), Int64(rid))
-        }
+        var col: Int32 = 1
+        for rid in ids { sqlite3_bind_int64(stmt, col, Int64(rid)); col += 1 }
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int: [Int: Int]] = [:]
         while step(stmt) {
             let rid = Int(sqlite3_column_int64(stmt, 0))
@@ -509,19 +511,55 @@ public actor PersonMentionStore {
         return result
     }
 
+    // MARK: - Volume-scope helpers (Person Analytics slicing, #189-B)
+
+    /// Normalises an optional volume-scope list: `nil`/empty → `nil` (whole corpus), otherwise
+    /// the deduplicated ids. A `nil` scope emits no SQL filter, so the analytics queries keep
+    /// their original whole-corpus behaviour byte-for-byte.
+    static func normalizedScope(_ volumeIds: [String]?) -> [String]? {
+        guard let ids = volumeIds, !ids.isEmpty else { return nil }
+        return Array(Set(ids))
+    }
+
+    /// An `AND <alias>.volume_id IN (?, …)` fragment for a normalised volume scope, or `""`
+    /// when the scope is `nil`. Bind the same ids (in order) with `bindVolumeScope` at the
+    /// placeholder run that lands where this fragment sits in the statement.
+    static func volumeScopeClause(_ scope: [String]?, alias: String = "pm") -> String {
+        guard let scope, !scope.isEmpty else { return "" }
+        let ph = scope.map { _ in "?" }.joined(separator: ", ")
+        return "AND \(alias).volume_id IN (\(ph))"
+    }
+
+    /// Binds a normalised volume scope's ids as text starting at column `from`, returning the
+    /// next free column index. A `nil` scope binds nothing and returns `from` unchanged.
+    static func bindVolumeScope(_ scope: [String]?, to stmt: OpaquePointer?, from: Int32) -> Int32 {
+        guard let scope, !scope.isEmpty else { return from }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        var col = from
+        for vid in scope {
+            sqlite3_bind_text(stmt, col, vid, -1, transient)
+            col += 1
+        }
+        return col
+    }
+
     /// The most-mentioned rollups within a coverage year range (CA-5 "by era").
     ///
     /// Counts `person_mentions` rows resolving to each rollup whose mentioning document
     /// is **dated** (a `document_dates` row) with a `date_iso` year inside `range`, joins
     /// `person_rollup` for the canonical name, and ranks descending. Uses the same dated
     /// core join as `mentionTrajectories` — undated mentions are excluded consistently.
+    /// When `volumeIds` is non-empty, only mentions in those volumes are counted (the scope
+    /// picker); `nil` counts the whole corpus.
     ///
     /// - Parameters:
     ///   - range: Inclusive coverage-year window (from the year-range bar).
     ///   - limit: Maximum rows (top-N).
     /// - Returns: Ranked `PersonMentionRanking` rows, most-mentioned first.
     public func topPeopleByMentions(inYearRange range: ClosedRange<Int>,
-                                    limit: Int) throws -> [PersonMentionRanking] {
+                                    limit: Int,
+                                    volumeIds: [String]? = nil) throws -> [PersonMentionRanking] {
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT m.rollup_id, r.canonical_name, COUNT(*) AS cnt
             FROM person_mentions pm
@@ -532,15 +570,18 @@ public actor PersonMentionStore {
             JOIN person_rollup r ON r.rollup_id = m.rollup_id
             WHERE dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
               AND CAST(substr(dd.date_iso, 1, 4) AS INTEGER) BETWEEN ? AND ?
+              \(Self.volumeScopeClause(scope))
             GROUP BY m.rollup_id
             ORDER BY cnt DESC, r.canonical_name ASC
             LIMIT ?
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_int64(stmt, 1, Int64(range.lowerBound))
-        sqlite3_bind_int64(stmt, 2, Int64(range.upperBound))
-        sqlite3_bind_int64(stmt, 3, Int64(limit))
+        var col: Int32 = 1
+        sqlite3_bind_int64(stmt, col, Int64(range.lowerBound)); col += 1
+        sqlite3_bind_int64(stmt, col, Int64(range.upperBound)); col += 1
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
+        sqlite3_bind_int64(stmt, col, Int64(limit))
         var results: [PersonMentionRanking] = []
         while step(stmt) {
             results.append(PersonMentionRanking(
@@ -594,15 +635,18 @@ public actor PersonMentionStore {
     /// mismatch this dated-only numerator.
     ///
     /// - Returns: `year → dated-document count`.
-    public func datedDocumentTotalsByYear() throws -> [Int: Int] {
+    public func datedDocumentTotalsByYear(volumeIds: [String]? = nil) throws -> [Int: Int] {
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT CAST(substr(date_iso, 1, 4) AS INTEGER) AS yr, COUNT(*)
             FROM document_dates
             WHERE date_iso IS NOT NULL AND length(date_iso) >= 4
+              \(Self.volumeScopeClause(scope, alias: "document_dates"))
             GROUP BY yr
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+        _ = Self.bindVolumeScope(scope, to: stmt, from: 1)
         var totals: [Int: Int] = [:]
         while step(stmt) {
             let year = Int(sqlite3_column_int64(stmt, 0))
@@ -622,10 +666,11 @@ public actor PersonMentionStore {
     ///
     /// - Parameter rollupIds: The rollups to chart. Empty → empty result.
     /// - Returns: `rollupId → (year → distinct-dated-document count)`.
-    public func mentioningDocumentTrajectories(rollupIds: [Int]) throws -> [Int: [Int: Int]] {
+    public func mentioningDocumentTrajectories(rollupIds: [Int], volumeIds: [String]? = nil) throws -> [Int: [Int: Int]] {
         guard !rollupIds.isEmpty else { return [:] }
         let ids = Array(Set(rollupIds))
         let placeholders = ids.map { _ in "?" }.joined(separator: ", ")
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT m.rollup_id,
                    CAST(substr(dd.date_iso, 1, 4) AS INTEGER) AS yr,
@@ -637,13 +682,14 @@ public actor PersonMentionStore {
               ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
             WHERE m.rollup_id IN (\(placeholders))
               AND dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+              \(Self.volumeScopeClause(scope))
             GROUP BY m.rollup_id, yr
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, rid) in ids.enumerated() {
-            sqlite3_bind_int64(stmt, Int32(i + 1), Int64(rid))
-        }
+        var col: Int32 = 1
+        for rid in ids { sqlite3_bind_int64(stmt, col, Int64(rid)); col += 1 }
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int: [Int: Int]] = [:]
         while step(stmt) {
             let rid = Int(sqlite3_column_int64(stmt, 0))
@@ -677,11 +723,14 @@ public actor PersonMentionStore {
     ///   - limit: Top-N partner cap (the disclosed bound).
     /// - Returns: `(rollupId, canonicalName, sharedDocuments)` partners, most-shared first.
     public func topCoMentionedPeople(forRollupId rollupId: Int,
-                                     limit: Int) throws -> [(rollupId: Int, canonicalName: String, sharedDocuments: Int)] {
+                                     limit: Int,
+                                     volumeIds: [String]? = nil) throws -> [(rollupId: Int, canonicalName: String, sharedDocuments: Int)] {
         // focus_docs: the DISTINCT documents mentioning any member of the focus rollup.
         // Then join every OTHER rollup mentioned in those same documents and count DISTINCT
         // shared documents. COUNT(DISTINCT …) collapses the case where a partner is mentioned
-        // by several refs in one document.
+        // by several refs in one document. Scoping `focus_docs` to the volume selection is
+        // sufficient — partners are counted only within those same documents (#189-B).
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             WITH focus_docs AS (
                 SELECT DISTINCT pm.volume_id, pm.document_id
@@ -689,6 +738,7 @@ public actor PersonMentionStore {
                 JOIN person_mentions pm
                   ON pm.volume_id = m.volume_id AND pm.person_ref = m.ref
                 WHERE m.rollup_id = ?
+                  \(Self.volumeScopeClause(scope))
             )
             SELECT m2.rollup_id, r2.canonical_name,
                    COUNT(DISTINCT pm2.volume_id || '/' || pm2.document_id) AS shared
@@ -705,9 +755,11 @@ public actor PersonMentionStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
-        sqlite3_bind_int64(stmt, 2, Int64(rollupId))
-        sqlite3_bind_int64(stmt, 3, Int64(limit))
+        var col: Int32 = 1
+        sqlite3_bind_int64(stmt, col, Int64(rollupId)); col += 1
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
+        sqlite3_bind_int64(stmt, col, Int64(rollupId)); col += 1
+        sqlite3_bind_int64(stmt, col, Int64(limit))
         var results: [(rollupId: Int, canonicalName: String, sharedDocuments: Int)] = []
         while step(stmt) {
             results.append((rollupId: Int(sqlite3_column_int64(stmt, 0)),
@@ -733,12 +785,15 @@ public actor PersonMentionStore {
     /// - Parameter rollupIds: The bounded rollup set (the ego: focus + partners). Fewer
     ///   than two ids → empty result.
     /// - Returns: `(a, b, sharedDocuments)` with `a < b`, one row per co-occurring pair.
-    public func coMentionEdges(amongRollupIds rollupIds: [Int]) throws -> [(a: Int, b: Int, sharedDocuments: Int)] {
+    public func coMentionEdges(amongRollupIds rollupIds: [Int], volumeIds: [String]? = nil) throws -> [(a: Int, b: Int, sharedDocuments: Int)] {
         let ids = Array(Set(rollupIds))
         guard ids.count >= 2 else { return [] }
         let placeholders = ids.map { _ in "?" }.joined(separator: ", ")
+        let scope = Self.normalizedScope(volumeIds)
         // Both members joined to person_mentions in the SAME document; the id-set filter on
         // both sides bounds the join to the ego, and rollup_id < rollup_id dedupes to a<b.
+        // A shared document lives in one volume (pm2 joins pm1's volume), so filtering pm1 by
+        // the volume scope restricts the edges to that scope (#189-B).
         let sql = """
             SELECT m1.rollup_id AS a, m2.rollup_id AS b,
                    COUNT(DISTINCT pm1.volume_id || '/' || pm1.document_id) AS shared
@@ -752,6 +807,7 @@ public actor PersonMentionStore {
             WHERE m1.rollup_id IN (\(placeholders))
               AND m2.rollup_id IN (\(placeholders))
               AND m1.rollup_id < m2.rollup_id
+              \(Self.volumeScopeClause(scope, alias: "pm1"))
             GROUP BY m1.rollup_id, m2.rollup_id
             """
         let stmt = try prepare(sql)
@@ -759,6 +815,7 @@ public actor PersonMentionStore {
         var col: Int32 = 1
         for rid in ids { sqlite3_bind_int64(stmt, col, Int64(rid)); col += 1 }
         for rid in ids { sqlite3_bind_int64(stmt, col, Int64(rid)); col += 1 }
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
         var results: [(a: Int, b: Int, sharedDocuments: Int)] = []
         while step(stmt) {
             results.append((a: Int(sqlite3_column_int64(stmt, 0)),
@@ -783,8 +840,9 @@ public actor PersonMentionStore {
     ///   - rollupB: Second rollup id. Equal to `rollupA` → empty (a person is not their own
     ///     relationship).
     /// - Returns: `year → shared-dated-document count`.
-    public func coMentionTimeline(rollupA: Int, rollupB: Int) throws -> [Int: Int] {
+    public func coMentionTimeline(rollupA: Int, rollupB: Int, volumeIds: [String]? = nil) throws -> [Int: Int] {
         guard rollupA != rollupB else { return [:] }
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT CAST(substr(dd.date_iso, 1, 4) AS INTEGER) AS yr,
                    COUNT(DISTINCT pm1.volume_id || '/' || pm1.document_id) AS shared
@@ -799,12 +857,15 @@ public actor PersonMentionStore {
               ON dd.volume_id = pm1.volume_id AND dd.document_id = pm1.document_id
             WHERE m1.rollup_id = ? AND m2.rollup_id = ?
               AND dd.date_iso IS NOT NULL AND length(dd.date_iso) >= 4
+              \(Self.volumeScopeClause(scope, alias: "pm1"))
             GROUP BY yr
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_int64(stmt, 1, Int64(rollupA))
-        sqlite3_bind_int64(stmt, 2, Int64(rollupB))
+        var col: Int32 = 1
+        sqlite3_bind_int64(stmt, col, Int64(rollupA)); col += 1
+        sqlite3_bind_int64(stmt, col, Int64(rollupB)); col += 1
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int: Int] = [:]
         while step(stmt) {
             let year = Int(sqlite3_column_int64(stmt, 0))

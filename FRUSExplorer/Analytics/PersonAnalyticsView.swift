@@ -316,6 +316,12 @@ struct PersonAnalyticsView: View {
     @State private var trajectoryFetchToken = 0
 
     /// Decade toggle for the trajectory chart. Off → per-year.
+    /// Active volume scope for every Person Analytics query (`nil` = whole corpus). Set via the
+    /// scope bar; drives the ranking, trajectories, relationship timeline, and co-mention
+    /// network so project-specific person trends become visible (#189-B).
+    @State private var scopeVolumeIds: [String]? = nil
+    /// Human-readable label for `scopeVolumeIds`, shown in the scope bar.
+    @State private var scopeLabel: String? = nil
     @State private var byDecade = false
 
     /// Persisted normalization choice (default Raw).
@@ -393,9 +399,13 @@ struct PersonAnalyticsView: View {
                 if appState.personMentionStore == nil {
                     unavailablePlaceholder
                 } else {
-                    switch mode {
-                    case .trends:  content
-                    case .network: networkContent
+                    VStack(spacing: 0) {
+                        scopeBar
+                        Divider()
+                        switch mode {
+                        case .trends:  content
+                        case .network: networkContent
+                        }
                     }
                 }
             }
@@ -416,6 +426,30 @@ struct PersonAnalyticsView: View {
         }
         .onChange(of: yearRange) { _, _ in
             Task { await loadRanking() }
+        }
+    }
+
+    // MARK: - Scope
+
+    /// The shared analysis-scope selector, applied to every Person Analytics query in both the
+    /// Trends and Network modes (#189-B).
+    private var scopeBar: some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: appState.indexedVolumeIds,
+            volumeTitle: { appState.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
+            scopeVolumeIds: $scopeVolumeIds,
+            scopeLabel: $scopeLabel,
+            onChange: reloadForScopeChange
+        )
+    }
+
+    /// Re-runs the trends-mode queries after the scope changes. The Network graph reloads
+    /// itself — its `.task` is keyed on the scope — so it is not refetched here.
+    private func reloadForScopeChange() {
+        Task {
+            await loadRanking()
+            await loadTrajectories()
+            await loadRelationship()
         }
     }
 
@@ -673,6 +707,7 @@ struct PersonAnalyticsView: View {
                     focusRollupId: focus.rollupId,
                     focusName: focus.canonicalName,
                     store: store,
+                    volumeIds: scopeVolumeIds,
                     onOpenPerson: { rollupId, name in
                         openPersonMentions(PersonMentionRanking(
                             rollupId: rollupId, canonicalName: name, mentionCount: 0))
@@ -1059,7 +1094,7 @@ struct PersonAnalyticsView: View {
         guard let store = appState.personMentionStore else { return }
         isLoadingRanking = true
         let range = yearRange
-        ranking = (try? await store.topPeopleByMentions(inYearRange: range, limit: Self.rankingLimit)) ?? []
+        ranking = (try? await store.topPeopleByMentions(inYearRange: range, limit: Self.rankingLimit, volumeIds: scopeVolumeIds)) ?? []
         isLoadingRanking = false
     }
 
@@ -1076,9 +1111,9 @@ struct PersonAnalyticsView: View {
         trajectoryFetchToken += 1
         let token = trajectoryFetchToken
         isLoadingTrajectories = true
-        async let raw = store.mentionTrajectories(rollupIds: ids)
-        async let docs = store.mentioningDocumentTrajectories(rollupIds: ids)
-        async let totals = store.datedDocumentTotalsByYear()
+        async let raw = store.mentionTrajectories(rollupIds: ids, volumeIds: scopeVolumeIds)
+        async let docs = store.mentioningDocumentTrajectories(rollupIds: ids, volumeIds: scopeVolumeIds)
+        async let totals = store.datedDocumentTotalsByYear(volumeIds: scopeVolumeIds)
         let rawResult = (try? await raw) ?? [:]
         let docsResult = (try? await docs) ?? [:]
         let totalsResult = (try? await totals) ?? [:]
@@ -1105,7 +1140,7 @@ struct PersonAnalyticsView: View {
         relationshipFetchToken += 1
         let token = relationshipFetchToken
         isLoadingRelationship = true
-        let timeline = (try? await store.coMentionTimeline(rollupA: a, rollupB: b)) ?? [:]
+        let timeline = (try? await store.coMentionTimeline(rollupA: a, rollupB: b, volumeIds: scopeVolumeIds)) ?? [:]
         guard token == relationshipFetchToken else { return }
         relationshipTimeline = timeline
         isLoadingRelationship = false

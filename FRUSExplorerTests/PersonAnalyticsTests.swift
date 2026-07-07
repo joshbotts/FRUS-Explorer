@@ -173,6 +173,48 @@ struct PersonAnalyticsQueryTests {
         #expect(empty.isEmpty)
     }
 
+    @Test("topPeopleByMentions honors the volume scope")
+    func topPeopleHonorsVolumeScope() async throws {
+        let (dir, dbURL, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        seedStandard(dbURL)
+
+        // Whole corpus (nil): Kissinger 4 dated mentions, Nixon 2.
+        let all = try await store.topPeopleByMentions(inYearRange: 1969...1971, limit: 10, volumeIds: nil)
+        #expect(all.map(\.rollupId) == [1, 2])
+        #expect(all.first(where: { $0.rollupId == 1 })?.mentionCount == 4)
+
+        // Scoped to v1: Kissinger's v2/d4 (1971) mention drops → 3; Nixon is entirely in v1 → 2.
+        let v1 = try await store.topPeopleByMentions(inYearRange: 1969...1971, limit: 10, volumeIds: ["v1"])
+        #expect(v1.map(\.rollupId) == [1, 2])
+        #expect(v1.first(where: { $0.rollupId == 1 })?.mentionCount == 3)
+        #expect(v1.first(where: { $0.rollupId == 2 })?.mentionCount == 2)
+
+        // Scoped to v2: only Kissinger's v2/d4 (1971) remains → 1; Nixon has no v2 mention.
+        let v2 = try await store.topPeopleByMentions(inYearRange: 1969...1971, limit: 10, volumeIds: ["v2"])
+        #expect(v2.map(\.rollupId) == [1])
+        #expect(v2.first?.mentionCount == 1)
+
+        // An empty scope means "no filter" — same as nil (whole corpus).
+        let emptyScope = try await store.topPeopleByMentions(inYearRange: 1969...1971, limit: 10, volumeIds: [])
+        #expect(emptyScope.map(\.rollupId) == [1, 2])
+    }
+
+    @Test("mentionTrajectories honors the volume scope")
+    func mentionTrajectoriesHonorsVolumeScope() async throws {
+        let (dir, dbURL, store) = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        seedStandard(dbURL)
+
+        // Scoped to v1: Kissinger keeps 1969 (d1,d2) and 1970 (d3); 1971 (v2/d4) drops out.
+        let v1 = try await store.mentionTrajectories(rollupIds: [1], volumeIds: ["v1"])
+        #expect(v1[1] == [1969: 2, 1970: 1])
+
+        // Scoped to v2: only the 1971 mention (v2/d4) survives.
+        let v2 = try await store.mentionTrajectories(rollupIds: [1], volumeIds: ["v2"])
+        #expect(v2[1] == [1971: 1])
+    }
+
     @Test("topPeopleByMentions honors the limit")
     func topPeopleHonorsLimit() async throws {
         let (dir, dbURL, store) = try makeFixture()
