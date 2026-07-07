@@ -77,9 +77,13 @@ private struct HeatCell: Identifiable, Equatable {
 /// citations count. The **volume heat matrix** is inherently cross-volume — it plots connections
 /// *between* volumes — so it continues to exclude same-volume edges.
 ///
-/// ## Structural, not temporal
-/// These are structural statistics of the citation graph, so — unlike the term/person
-/// analytics — there is no year-range bar. The chart/table mode picker applies where useful.
+/// ## Scope & era slicing (#189-B)
+/// A year-range bar and a subseries/volume scope picker restrict the analysis so
+/// project-specific citation structure emerges from behind the corpus-wide totals. The four
+/// document-level figures are **source-anchored**: they count citations *made by* documents in
+/// the selected era/scope (a heavily-cited foundational document outside the slice still ranks).
+/// The volume heat matrix keeps its both-endpoints volume filter. The default full-corpus span +
+/// no scope analyzes the whole graph, exactly as before.
 ///
 /// ## No-index degradation
 /// When `appState.crossReferenceStore` is `nil` (index unavailable), a `ContentUnavailableView`
@@ -95,6 +99,7 @@ private struct HeatCell: Identifiable, Equatable {
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     // MARK: - Tunables
 
@@ -120,6 +125,17 @@ struct CrossReferenceAnalyticsView: View {
     @State private var isLoading = false
     @State private var didLoad = false
 
+    /// Year-range filter (#189-B). Seeded to the corpus span on first appear; when the user
+    /// narrows it, every CA-6 query is restricted to citations whose SOURCE document is dated in
+    /// range (source-anchored). A whole-corpus span emits no date SQL (unfiltered = unchanged).
+    @State private var yearRangeStart: Int = 1861
+    @State private var yearRangeEnd: Int = Calendar.current.component(.year, from: Date())
+    @State private var didSeedYearRange = false
+    /// Volume scope (#189-B). `nil` = whole corpus. Source-anchored for the four document-level
+    /// figures; both-endpoints for the volume heat matrix (its shipped contract).
+    @State private var scopeVolumeIds: [String]? = nil
+    @State private var scopeLabel: String? = nil
+
     // MARK: - Body
 
     var body: some View {
@@ -128,7 +144,13 @@ struct CrossReferenceAnalyticsView: View {
                 if appState.crossReferenceStore == nil {
                     unavailablePlaceholder
                 } else {
-                    content
+                    VStack(spacing: 0) {
+                        scopeBar
+                        Divider()
+                        yearRangeBar
+                        Divider()
+                        content
+                    }
                 }
             }
             .navigationTitle(
@@ -143,10 +165,78 @@ struct CrossReferenceAnalyticsView: View {
         .frame(minWidth: 720, minHeight: 600)
         #endif
         .task {
+            seedDefaultYearRange()
             guard !didLoad else { return }
             didLoad = true
             await loadAll()
         }
+        .onChange(of: yearRange) { _, _ in
+            Task { await loadAll() }
+        }
+    }
+
+    // MARK: - Filters (#189-B)
+
+    /// Most recent corpus year — the year-range upper bound and reset target (mirrors
+    /// `AnalyticsView`/`PersonAnalyticsView`).
+    private var corpusMaxYear: Int {
+        Calendar(identifier: .gregorian).component(.year, from: appState.manifestStore.corpusDateRange.upperBound)
+    }
+
+    /// The active year range, normalised so start ≤ end.
+    private var yearRange: ClosedRange<Int> {
+        let lo = min(yearRangeStart, yearRangeEnd)
+        let hi = max(yearRangeStart, yearRangeEnd)
+        return lo...hi
+    }
+
+    /// `true` once the user has narrowed the range away from the full-corpus default.
+    private var yearRangeIsCustom: Bool {
+        yearRangeStart != 1861 || yearRangeEnd != corpusMaxYear
+    }
+
+    /// The year range to pass to the store, or `nil` when the range is the full-corpus default
+    /// (so the store emits no date SQL and whole-corpus output is byte-for-byte unchanged).
+    private var effectiveYearRange: ClosedRange<Int>? {
+        yearRangeIsCustom ? yearRange : nil
+    }
+
+    private var isCompactWidth: Bool { horizontalSizeClass == .compact }
+
+    /// Seeds `yearRangeEnd` to the corpus span once, on first appearance.
+    private func seedDefaultYearRange() {
+        guard !didSeedYearRange else { return }
+        didSeedYearRange = true
+        yearRangeEnd = corpusMaxYear
+    }
+
+    /// Re-runs every CA-6 query after the scope changes.
+    private func reloadForFilterChange() {
+        Task { await loadAll() }
+    }
+
+    private var scopeBar: some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: appState.indexedVolumeIds,
+            volumeTitle: volumeTitle,
+            scopeVolumeIds: $scopeVolumeIds,
+            scopeLabel: $scopeLabel,
+            onChange: reloadForFilterChange
+        )
+    }
+
+    private var yearRangeBar: some View {
+        AnalyticsYearRangeBar(
+            start: $yearRangeStart,
+            end: $yearRangeEnd,
+            corpusMaxYear: corpusMaxYear,
+            isCompactWidth: isCompactWidth,
+            isCustom: yearRangeIsCustom,
+            onReset: {
+                yearRangeStart = 1861
+                yearRangeEnd = corpusMaxYear
+            }
+        )
     }
 
     // MARK: - Content
@@ -171,7 +261,7 @@ struct CrossReferenceAnalyticsView: View {
 
     private var resolvedCaption: some View {
         Text(String(localized: "crossRefAnalytics.resolvedCaption",
-                    defaultValue: "The most-referenced, degree, and PageRank figures count every citation, attributing same-volume references (including resolved page references) to their own volume. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
+                    defaultValue: "The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .padding(.horizontal)
@@ -592,21 +682,26 @@ struct CrossReferenceAnalyticsView: View {
         guard let store = appState.crossReferenceStore else { return }
         isLoading = true
 
+        // Snapshot the active filters (#189-B): source-anchored year + volume scope for the four
+        // document-level figures; the heat matrix reuses the scope as its both-endpoints filter.
+        let range = effectiveYearRange
+        let scope = scopeVolumeIds
+
         // In-degree ranking.
-        let topDocs = (try? await store.topDocumentsByInDegree(limit: Self.rankingLimit)) ?? []
+        let topDocs = (try? await store.topDocumentsByInDegree(limit: Self.rankingLimit, yearRange: range, volumeIds: scope)) ?? []
         ranking = topDocs.map {
             InDegreeRow(volumeId: $0.volumeId, documentId: $0.documentId,
                         inDegree: $0.inDegree, header: $0.header)
         }
 
         // Degree distributions.
-        let inDeg = (try? await store.resolvedInDegrees()) ?? []
-        let outDeg = (try? await store.resolvedOutDegrees()) ?? []
+        let inDeg = (try? await store.resolvedInDegrees(yearRange: range, volumeIds: scope)) ?? []
+        let outDeg = (try? await store.resolvedOutDegrees(yearRange: range, volumeIds: scope)) ?? []
         distribution = CrossReferenceStats.degreeDistribution(inDeg)
         outDistribution = CrossReferenceStats.degreeDistribution(outDeg)
 
-        // Volume heat matrix.
-        let edges = (try? await store.volumeLevelConnections()) ?? []
+        // Volume heat matrix (both-endpoints volume scope via limitToVolumeIds; source-anchored date).
+        let edges = (try? await store.volumeLevelConnections(limitToVolumeIds: scope, yearRange: range)) ?? []
         let topVolumes = CrossReferenceStats.topVolumesByTotalDegree(edges, limit: Self.matrixVolumeLimit)
         let volumeSet = Set(topVolumes)
         let cells = edges
@@ -617,7 +712,7 @@ struct CrossReferenceAnalyticsView: View {
         matrixMaxCount = cells.map(\.count).max() ?? 0
 
         // PageRank landmarks — compute off the main actor (bounded/offline).
-        let citationEdges = (try? await store.resolvedCitationEdges()) ?? []
+        let citationEdges = (try? await store.resolvedCitationEdges(yearRange: range, volumeIds: scope)) ?? []
         let scored = await Task.detached(priority: .userInitiated) {
             PageRank.compute(edges: citationEdges)
         }.value

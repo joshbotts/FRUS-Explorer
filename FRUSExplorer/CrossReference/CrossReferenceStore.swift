@@ -460,31 +460,42 @@ public actor CrossReferenceStore {
     ///   `nil` returns all cross-volume connections (corpus-wide).
     ///
     /// Used by `VolumeConnectionGraphView` in the Corpus Browser.
-    public func volumeLevelConnections(limitToVolumeIds: [String]? = nil) throws -> [VolumeConnectionEdge] {
+    public func volumeLevelConnections(limitToVolumeIds: [String]? = nil,
+                                       yearRange: ClosedRange<Int>? = nil) throws -> [VolumeConnectionEdge] {
+        // The heat matrix is a volume×volume adjacency, so `limitToVolumeIds` keeps its
+        // both-endpoints contract (source AND target volume in the set). The year filter is
+        // source-anchored like the other CA-6 queries (a single defensible edge date).
         var sql = """
-            SELECT source_volume_id, target_volume_id, COUNT(*) AS ref_count
-            FROM cross_references
-            WHERE target_volume_id IS NOT NULL
-              AND target_volume_id != source_volume_id
+            SELECT cr.source_volume_id, cr.target_volume_id, COUNT(*) AS ref_count
+            FROM cross_references cr
+            \(Self.sourceDateJoin(yearRange))
+            WHERE cr.target_volume_id IS NOT NULL
+              AND cr.target_volume_id != cr.source_volume_id
             """
+        let datePredicate = Self.sourceDatePredicate(yearRange)
+        if !datePredicate.isEmpty { sql += "\n  AND \(datePredicate)" }
         if let vids = limitToVolumeIds, !vids.isEmpty {
             let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
-            sql += "\n  AND source_volume_id IN (\(placeholders))"
-            sql += "\n  AND target_volume_id IN (\(placeholders))"
+            sql += "\n  AND cr.source_volume_id IN (\(placeholders))"
+            sql += "\n  AND cr.target_volume_id IN (\(placeholders))"
         }
-        sql += "\nGROUP BY source_volume_id, target_volume_id ORDER BY ref_count DESC"
+        sql += "\nGROUP BY cr.source_volume_id, cr.target_volume_id ORDER BY ref_count DESC"
 
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
 
+        // The year params (if any) bind first; the volume-id double-bind follows, so its columns
+        // shift right by 2 when a year range is active.
+        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         if let vids = limitToVolumeIds, !vids.isEmpty {
             // Bind the volume IDs twice — once for source_volume_id, once for target_volume_id.
-            for (i, vid) in vids.enumerated() {
-                sqlite3_bind_text(stmt, Int32(i + 1), vid, -1, SQLITE_TRANSIENT_CR)
+            for vid in vids {
+                sqlite3_bind_text(stmt, col, vid, -1, SQLITE_TRANSIENT_CR)
+                col += 1
             }
-            let offset = Int32(vids.count)
-            for (i, vid) in vids.enumerated() {
-                sqlite3_bind_text(stmt, offset + Int32(i + 1), vid, -1, SQLITE_TRANSIENT_CR)
+            for vid in vids {
+                sqlite3_bind_text(stmt, col, vid, -1, SQLITE_TRANSIENT_CR)
+                col += 1
             }
         }
 
@@ -593,6 +604,64 @@ public actor CrossReferenceStore {
 
     // MARK: - CA-6 statistical queries
 
+    // MARK: - CA-6 Filter Helpers (year-range + volume scope, #189-B)
+
+    /// Normalises an optional volume scope: `nil`/empty → `nil` (no filter), else deduplicated.
+    /// A `nil` scope emits no SQL, so whole-corpus output is byte-for-byte unchanged.
+    private static func normalizedScope(_ volumeIds: [String]?) -> [String]? {
+        guard let ids = volumeIds, !ids.isEmpty else { return nil }
+        return Array(Set(ids))
+    }
+
+    /// The `JOIN document_dates` clause binding each edge to its **source** document's date, or
+    /// `""` when no year range is active. CA-6 filters are **source-anchored** (#189-B): the year
+    /// and volume scope gate the *citing* document, so a heavily-cited target outside the slice
+    /// still surfaces (the foundational documents a project leans on). Undated sources are
+    /// dropped by this INNER JOIN.
+    private static func sourceDateJoin(_ yearRange: ClosedRange<Int>?) -> String {
+        yearRange == nil ? "" :
+            "JOIN document_dates dds ON dds.volume_id = cr.source_volume_id AND dds.document_id = cr.source_document_id"
+    }
+
+    /// The bare WHERE predicate restricting the source document's `date_iso` year to `yearRange`
+    /// (point-year on the start date, matching the Person/Corpus dashboards), or `""` when nil.
+    private static func sourceDatePredicate(_ yearRange: ClosedRange<Int>?) -> String {
+        yearRange == nil ? "" :
+            "dds.date_iso IS NOT NULL AND length(dds.date_iso) >= 4 AND CAST(substr(dds.date_iso, 1, 4) AS INTEGER) BETWEEN ? AND ?"
+    }
+
+    /// The bare `<columnExpr> IN (?, …)` predicate for a normalised volume scope, or `""` when nil.
+    private static func volumeScopePredicate(_ scope: [String]?, columnExpr: String) -> String {
+        guard let scope, !scope.isEmpty else { return "" }
+        let ph = scope.map { _ in "?" }.joined(separator: ", ")
+        return "\(columnExpr) IN (\(ph))"
+    }
+
+    /// Assembles a `WHERE` clause from bare predicates, dropping the empty ones; `""` when none.
+    private static func whereClause(_ predicates: [String]) -> String {
+        let kept = predicates.filter { !$0.isEmpty }
+        return kept.isEmpty ? "" : "WHERE " + kept.joined(separator: " AND ")
+    }
+
+    /// Binds the year range's `[lower, upper]` at `col` when active; returns the next free column.
+    private static func bindDateRange(_ yearRange: ClosedRange<Int>?, to stmt: OpaquePointer?, from col: Int32) -> Int32 {
+        guard let yearRange else { return col }
+        sqlite3_bind_int64(stmt, col, Int64(yearRange.lowerBound))
+        sqlite3_bind_int64(stmt, col + 1, Int64(yearRange.upperBound))
+        return col + 2
+    }
+
+    /// Binds a normalised volume scope's ids as text starting at `col`; returns the next column.
+    private static func bindVolumeScope(_ scope: [String]?, to stmt: OpaquePointer?, from col: Int32) -> Int32 {
+        guard let scope, !scope.isEmpty else { return col }
+        var c = col
+        for vid in scope {
+            sqlite3_bind_text(stmt, c, vid, -1, SQLITE_TRANSIENT_CR)
+            c += 1
+        }
+        return c
+    }
+
     /// The top-N documents by inbound citation count (in-degree), joined to their header.
     ///
     /// A NULL `target_volume_id` denotes a **same-volume** reference (the TEI `<ref>` used a
@@ -603,27 +672,40 @@ public actor CrossReferenceStore {
     /// use — so within-volume citations count toward a document's in-degree instead of being
     /// dropped. Ranking is over the resolved node `(resolved_target_volume, target_document_id)`.
     ///
-    /// - Parameter limit: Maximum rows to return, ordered by in-degree descending.
+    /// - Parameters:
+    ///   - limit: Maximum rows to return, ordered by in-degree descending.
+    ///   - yearRange: When non-nil, count only citations whose **source** document is dated in
+    ///     this year span (source-anchored, #189-B). `nil` counts every year.
+    ///   - volumeIds: When non-empty, count only citations whose **source** volume is in this set.
+    ///     `nil`/empty counts the whole corpus (byte-for-byte unchanged).
     /// - Returns: `(volumeId, documentId, inDegree, header)` — `header` from `document_cache`,
     ///   `nil` when the target is not in the cache (a not-yet-indexed cross-volume target, or a
     ///   non-document anchor such as an unresolved roman-numeral page reference).
     public func topDocumentsByInDegree(
-        limit: Int
+        limit: Int,
+        yearRange: ClosedRange<Int>? = nil,
+        volumeIds: [String]? = nil
     ) throws -> [(volumeId: String, documentId: String, inDegree: Int, header: String?)] {
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT COALESCE(cr.target_volume_id, cr.source_volume_id) AS resolved_target_volume,
                    cr.target_document_id, COUNT(*) AS in_degree, dc.header
             FROM cross_references cr
+            \(Self.sourceDateJoin(yearRange))
             LEFT JOIN document_cache dc
                    ON dc.volume_id = COALESCE(cr.target_volume_id, cr.source_volume_id)
                   AND dc.document_id = cr.target_document_id
+            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+                                Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY resolved_target_volume, cr.target_document_id
             ORDER BY in_degree DESC, resolved_target_volume, cr.target_document_id
             LIMIT ?
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_int(stmt, 1, Int32(max(0, limit)))
+        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        col = Self.bindVolumeScope(scope, to: stmt, from: col)
+        sqlite3_bind_int(stmt, col, Int32(max(0, limit)))
         var result: [(volumeId: String, documentId: String, inDegree: Int, header: String?)] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             result.append((
@@ -645,15 +727,25 @@ public actor CrossReferenceStore {
     /// `CrossReferenceStats.degreeDistribution(_:)` (a pure, testable function) rather than
     /// bucketing in SQL, so the bucketing rule is unit-testable without a database.
     ///
+    /// - Parameters:
+    ///   - yearRange: When non-nil, count only edges whose source document is dated in this span
+    ///     (source-anchored, matching `topDocumentsByInDegree` so the histograms stay lockstep).
+    ///   - volumeIds: When non-empty, count only edges whose source volume is in this set.
     /// - Returns: The in-degree value for each target document (unordered).
-    public func resolvedInDegrees() throws -> [Int] {
+    public func resolvedInDegrees(yearRange: ClosedRange<Int>? = nil, volumeIds: [String]? = nil) throws -> [Int] {
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT COUNT(*) AS in_degree
-            FROM cross_references
-            GROUP BY COALESCE(target_volume_id, source_volume_id), target_document_id
+            FROM cross_references cr
+            \(Self.sourceDateJoin(yearRange))
+            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+                                Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
+            GROUP BY COALESCE(cr.target_volume_id, cr.source_volume_id), cr.target_document_id
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             result.append(Int(sqlite3_column_int64(stmt, 0)))
@@ -667,15 +759,24 @@ public actor CrossReferenceStore {
     /// in-degree query), so the in- and out-degree distributions are drawn from the same
     /// edge population.
     ///
+    /// - Parameters:
+    ///   - yearRange: When non-nil, count only edges whose source document is dated in this span.
+    ///   - volumeIds: When non-empty, count only edges whose source volume is in this set.
     /// - Returns: The out-degree value for each such source document (unordered).
-    public func resolvedOutDegrees() throws -> [Int] {
+    public func resolvedOutDegrees(yearRange: ClosedRange<Int>? = nil, volumeIds: [String]? = nil) throws -> [Int] {
+        let scope = Self.normalizedScope(volumeIds)
         let sql = """
             SELECT COUNT(*) AS out_degree
-            FROM cross_references
-            GROUP BY source_volume_id, source_document_id
+            FROM cross_references cr
+            \(Self.sourceDateJoin(yearRange))
+            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+                                Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
+            GROUP BY cr.source_volume_id, cr.source_document_id
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             result.append(Int(sqlite3_column_int64(stmt, 0)))
@@ -694,20 +795,32 @@ public actor CrossReferenceStore {
     /// Self-loops (`source == resolved target`) are excluded — a document citing itself carries
     /// no influence signal and would distort PageRank's dangling/mass handling.
     ///
+    /// - Parameters:
+    ///   - yearRange: When non-nil, keep only edges whose source document is dated in this span
+    ///     (source-anchored). PageRank then runs over the sub-graph seen from the in-slice sources.
+    ///   - volumeIds: When non-empty, keep only edges whose source volume is in this set.
     /// - Returns: One `(source, target)` pair per stored edge (with multiplicity — repeated
     ///   citations between the same pair appear repeatedly, so PageRank weights a heavily-cited
     ///   pair more, matching the heat matrix's `ref_count`).
-    public func resolvedCitationEdges() throws -> [(source: DocumentNodeKey, target: DocumentNodeKey)] {
+    public func resolvedCitationEdges(yearRange: ClosedRange<Int>? = nil, volumeIds: [String]? = nil) throws -> [(source: DocumentNodeKey, target: DocumentNodeKey)] {
+        let scope = Self.normalizedScope(volumeIds)
+        // The self-loop exclusion is always present, so it leads the WHERE; the date/volume
+        // predicates are AND-appended after it.
+        let selfLoop = "NOT (COALESCE(cr.target_volume_id, cr.source_volume_id) = cr.source_volume_id AND cr.target_document_id = cr.source_document_id)"
         let sql = """
-            SELECT source_volume_id, source_document_id,
-                   COALESCE(target_volume_id, source_volume_id) AS resolved_target_volume,
-                   target_document_id
-            FROM cross_references
-            WHERE NOT (COALESCE(target_volume_id, source_volume_id) = source_volume_id
-                       AND target_document_id = source_document_id)
+            SELECT cr.source_volume_id, cr.source_document_id,
+                   COALESCE(cr.target_volume_id, cr.source_volume_id) AS resolved_target_volume,
+                   cr.target_document_id
+            FROM cross_references cr
+            \(Self.sourceDateJoin(yearRange))
+            \(Self.whereClause([selfLoop,
+                                Self.sourceDatePredicate(yearRange),
+                                Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [(source: DocumentNodeKey, target: DocumentNodeKey)] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             let src = DocumentNodeKey(volumeId: columnString(stmt, 0) ?? "",
