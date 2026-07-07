@@ -118,7 +118,10 @@ public actor SearchService {
                let contextSnippet = Self.makeContextSnippet(
                    body: row.bodyText,
                    stemmedTerms: stemmedQueryTerms,
-                   contextRadius: 200
+                   // Generate a generous window so the UI's adjustable `.lineLimit` (1–10 lines,
+                   // #189-C) always has enough text to fill the chosen line count; the rendered
+                   // length is clamped per surface at display time, not here.
+                   contextRadius: 1000
                ) {
                 snippet = contextSnippet
             } else {
@@ -331,8 +334,9 @@ public actor SearchService {
     ///   - body: The unstemmed, plain-text document body to search.
     ///   - stemmedTerms: Query terms already reduced to their Porter stems.
     ///   - contextRadius: Approximate number of characters of context to include on
-    ///     each side of the match. 200 chars ≈ two lines at the 12-point macOS list
-    ///     font with a typical column width.
+    ///     each side of the match. The caller passes a generous value (~1000) so the
+    ///     result string can fill up to the 10-line maximum the UI's adjustable
+    ///     `.lineLimit` may request (#189-C); the visible length is clamped at render time.
     nonisolated static func makeContextSnippet(
         body: String,
         stemmedTerms: [String],

@@ -506,4 +506,33 @@ public enum SearchDefaults {
         default:                   return .all
         }
     }
+
+    // MARK: - Result-preview snippet length (#189-C)
+
+    /// UserDefaults key for the global default result-preview snippet length (1–10 lines).
+    public static let snippetLineCountKey = "frus.search.snippetLineCount"
+    /// UserDefaults key for the main-search snippet-length override (`0` = follow the global default).
+    public static let snippetLineCountMainOverrideKey = "frus.search.snippetLineCount.mainOverride"
+    /// UserDefaults key for the add-document sheet snippet-length override (`0` = follow the global).
+    public static let snippetLineCountAddDocOverrideKey = "frus.search.snippetLineCount.addDocOverride"
+
+    /// The global default snippet length in rendered lines when unset. Used as the `@AppStorage`
+    /// default for the global picker; overrides default to `0` ("follow global").
+    public static let defaultSnippetLineCount = 2
+
+    /// Resolves the effective snippet length for a surface: a `0` override follows the global
+    /// default; any other value overrides it. Both inputs are clamped to 1…10 so a stray stored
+    /// value can never yield `.lineLimit(0)` (which would hide the snippet entirely).
+    public static func effectiveSnippetLineCount(global: Int, override: Int) -> Int {
+        let clampedGlobal = min(max(global, 1), 10)
+        return override == 0 ? clampedGlobal : min(max(override, 1), 10)
+    }
+
+    /// A localized "1 line" / "N lines" label for a snippet length, shared by the settings and
+    /// per-surface override pickers.
+    public static func snippetLinesLabel(_ n: Int) -> String {
+        n == 1
+            ? String(localized: "settings.search.snippet.oneLine", defaultValue: "1 line")
+            : String(format: String(localized: "settings.search.snippet.nLines %lld", defaultValue: "%lld lines"), Int64(n))
+    }
 }
