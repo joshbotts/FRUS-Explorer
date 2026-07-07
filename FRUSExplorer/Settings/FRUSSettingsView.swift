@@ -114,6 +114,7 @@ struct FRUSSettingsView: View {
             Group {
                 switch selection {
                 case .sync:           SettingsSyncPane()
+                case .syncDiagnostics: SettingsSyncDiagnosticsPane()
                 case .about:          SettingsAboutPane()
                 case .display:        SettingsDisplayPane()
                 case .search:         SettingsSearchPane()
@@ -139,7 +140,7 @@ struct FRUSSettingsView: View {
 // MARK: - SettingsPane
 
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
-    case sync, about, display, search
+    case sync, syncDiagnostics, about, display, search
     case projects, tags, notes, wordCloud
     case storage, downloads
     case naraAPI, zotero, summarization, data
@@ -149,8 +150,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
 
     var label: String {
         switch self {
-        case .sync:          return "iCloud Sync"
-        case .about:         return "About"
+        case .sync:            return "iCloud Sync"
+        case .syncDiagnostics: return "Sync Diagnostics"
+        case .about:          return "About"
         case .display:       return "Display"
         case .search:        return "Search"
         case .projects:      return "Projects"
@@ -169,8 +171,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
 
     var icon: String {
         switch self {
-        case .sync:          return "icloud"
-        case .about:         return "info.circle"
+        case .sync:            return "icloud"
+        case .syncDiagnostics: return "stethoscope"
+        case .about:          return "info.circle"
         case .display:       return "textformat.size"
         case .search:        return "magnifyingglass"
         case .projects:      return "folder"
@@ -187,7 +190,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         }
     }
 
-    static let general:  [SettingsPane] = [.sync, .display, .search]
+    static let general:  [SettingsPane] = [.sync, .syncDiagnostics, .display, .search]
     static let research: [SettingsPane] = [.projects, .tags, .notes, .wordCloud]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
     static let advanced: [SettingsPane] = [.naraAPI, .zotero, .summarization, .data]
@@ -376,6 +379,74 @@ private struct SettingsSyncPane: View {
                     .padding(.top, 10)
             }
             .padding(24)
+        }
+    }
+}
+
+/// The local, redacted CloudKit sync-telemetry log (#188-C.1) — read, copy, export, or clear it
+/// to help diagnose iCloud sync problems. Everything shown is on the redaction allow-list: event
+/// types, timing, and error codes only.
+private struct SettingsSyncDiagnosticsPane: View {
+    @State private var text = ""
+    @State private var hasEntries = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                PaneHeader(
+                    title: "Sync Diagnostics",
+                    subtitle: "A local, on-device record of iCloud sync events. It contains no personal information and nothing about your documents — only event types, timing, and error codes."
+                )
+
+                PaneSectionHeader(title: "Recent sync events")
+                ScrollView {
+                    Text(text)
+                        .font(.system(size: 11, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: 360)
+                .padding(.bottom, 12)
+
+                HStack(spacing: 12) {
+                    Button("Copy") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(text, forType: .string)
+                    }
+                    .disabled(!hasEntries)
+                    Button("Export…") { exportLog() }
+                        .disabled(!hasEntries)
+                    Spacer()
+                    Button("Clear Log") {
+                        Task { await SyncDiagnosticsLog.shared.clear(); await reload() }
+                    }
+                    .disabled(!hasEntries)
+                }
+            }
+            .padding(24)
+        }
+        .task { await reload() }
+    }
+
+    /// Reloads the log text and entry-presence flag from the actor.
+    private func reload() async {
+        hasEntries = await !SyncDiagnosticsLog.shared.entries().isEmpty
+        text = await SyncDiagnosticsLog.shared.formattedText()
+    }
+
+    /// Exports the JSON log via `NSSavePanel` (mirrors `SettingsDataPane.exportJSON`).
+    private func exportLog() {
+        Task {
+            guard let data = await SyncDiagnosticsLog.shared.exportData() else { return }
+            await MainActor.run {
+                let panel = NSSavePanel()
+                panel.allowedContentTypes = [.json]
+                panel.nameFieldStringValue = "frus-sync-diagnostics.json"
+                panel.begin { response in
+                    guard response == .OK, let url = panel.url else { return }
+                    try? data.write(to: url, options: .atomic)
+                }
+            }
         }
     }
 }

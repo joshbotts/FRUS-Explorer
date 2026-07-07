@@ -11,6 +11,7 @@ import Network
 import Observation
 import SwiftData
 import CloudKit
+import os              // shared `cloudKitLog` for redacted health-check telemetry (#188-C.1)
 #if os(iOS)
 // @preconcurrency suppresses region-based sending errors for Activity<T>, whose async
 // methods (update/end) are nonisolated and have not yet been annotated for Swift 6.
@@ -281,16 +282,24 @@ final class AppState {
             let container = CKContainer(identifier: Self.ckContainerIdentifier)
 
             // ── Account status ──────────────────────────────────────────────────
+            // Telemetry rows carry only the phase, domain/code, and status raw value — never a
+            // `localizedDescription` (which can embed identifiers) or account identity (#188-C.1).
             do {
                 let status = try await container.accountStatus()
                 cloudKitAccountStatus = status
                 if status != .available {
-                    let msg = Self.accountStatusDescription(status)
-                    cloudKitSyncState = .failed(msg)
-                    print("[CloudKit] ⚠️ Account status: \(msg)")
+                    cloudKitSyncState = .failed(Self.accountStatusDescription(status))
+                    cloudKitLog.notice("account status not available: \(status.rawValue, privacy: .public)")
+                    Task { await SyncDiagnosticsLog.shared.record(
+                        phase: "account", startDate: nil, endDate: Date.now, succeeded: false,
+                        errorCodeName: "accountStatus(\(status.rawValue))") }
                 }
             } catch {
-                print("[CloudKit] ⚠️ Account status check failed: \(error.localizedDescription)")
+                let ns = error as NSError
+                cloudKitLog.error("account status check failed: \(ns.domain, privacy: .public) code=\(ns.code, privacy: .public)")
+                Task { await SyncDiagnosticsLog.shared.record(
+                    phase: "account", startDate: nil, endDate: Date.now, succeeded: false,
+                    errorDomain: ns.domain, errorCode: ns.code) }
             }
 
             // ── Private zone verification ────────────────────────────────────────
@@ -298,16 +307,20 @@ final class AppState {
                 let zones = try await container.privateCloudDatabase.allRecordZones()
                 cloudKitZoneVerified = zones.contains { $0.zoneID.zoneName == Self.ckZoneName }
                 if cloudKitZoneVerified == false {
-                    print("[CloudKit] ⚠️ Private zone '\(Self.ckZoneName)' not found — "
-                          + "records will not sync until the zone is recreated.")
+                    cloudKitLog.notice("private zone not found — records will not sync until recreated")
+                    Task { await SyncDiagnosticsLog.shared.record(
+                        phase: "zone", startDate: nil, endDate: Date.now, succeeded: false) }
                 } else {
-                    #if DEBUG
-                    print("[CloudKit] ✓ Private zone verified (\(zones.count) zone(s) found)")
-                    #endif
+                    Task { await SyncDiagnosticsLog.shared.record(
+                        phase: "zone", startDate: nil, endDate: Date.now, succeeded: true) }
                 }
             } catch {
                 cloudKitZoneVerified = false
-                print("[CloudKit] ⚠️ Zone verification failed: \(error.localizedDescription)")
+                let ns = error as NSError
+                cloudKitLog.error("zone verification failed: \(ns.domain, privacy: .public) code=\(ns.code, privacy: .public)")
+                Task { await SyncDiagnosticsLog.shared.record(
+                    phase: "zone", startDate: nil, endDate: Date.now, succeeded: false,
+                    errorDomain: ns.domain, errorCode: ns.code) }
             }
         }
     }

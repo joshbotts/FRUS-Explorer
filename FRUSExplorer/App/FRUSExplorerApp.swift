@@ -19,10 +19,16 @@ import CloudKit       // CKError codes, CKPartialErrorsByItemIDKey for detailed 
 import CoreSpotlight
 import CryptoKit      // SHA-256 content digest for open-with collection de-duplication
 import TipKit
+import os              // Logger — CloudKit sync telemetry (both platforms, #188-C.1)
 #if os(iOS)
 import BackgroundTasks
-import os
 #endif
+
+/// os.Logger for CloudKit sync events (#188-C.1), shared by the app boot code and `AppState`'s
+/// health check. Fields are marked `.public` only when they are on the redaction allow-list
+/// (phase, domain/code/code-name, aggregate counts); anything user-identifying is simply never
+/// passed to it (default-deny — an unmarked value redacts).
+let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "CloudKit")
 
 /// Root entry point for FRUS Explorer.
 ///
@@ -1034,7 +1040,14 @@ struct FRUSExplorerApp: App {
         appState.cloudKitSyncEnabled = _containerSetup.cloudKitEnabled
         if !_containerSetup.cloudKitEnabled {
             if let initError = _containerSetup.initError {
-                appState.cloudKitInitError = Self.cloudKitDiagnostic(initError)
+                let diag = Self.cloudKitDiagnostic(initError)
+                appState.cloudKitInitError = diag.message
+                Task {
+                    await SyncDiagnosticsLog.shared.record(
+                        phase: "init", startDate: nil, endDate: Date.now, succeeded: false,
+                        errorDomain: diag.domain, errorCode: diag.code, errorCodeName: diag.codeName,
+                        partialItemCount: diag.partialCount, subErrorHistogram: diag.histogram)
+                }
             } else {
                 appState.cloudKitInitError = String(
                     localized: "cloudkit.initError.skipped",
@@ -1353,20 +1366,22 @@ struct FRUSExplorerApp: App {
                 // @MainActor hop, avoiding Sendable warnings on NSPersistentCloudKitContainer.Event.
                 guard let event = notification.userInfo?[eventUserInfoKey]
                         as? NSPersistentCloudKitContainer.Event else { return }
+                // Decompose the (non-Sendable) Event into allow-listed value locals BEFORE the
+                // actor/MainActor hop — the Event itself must not cross the boundary (#188-C.1).
                 let hasEnded  = event.endDate != nil
                 let succeeded = event.succeeded
+                let startDate = event.startDate
                 let endDate   = event.endDate ?? Date.now
-
-                // Build a detailed diagnostic from the error.
-                // For CKError.partialFailure (code 2), the per-item sub-errors inside
-                // CKPartialErrorsByItemIDKey are the real diagnosis; localizedDescription
-                // only returns the useless "Some items failed." string.
-                let errorMsg: String?
-                if let error = event.error as? NSError {
-                    errorMsg = Self.cloudKitDiagnostic(error)
-                } else {
-                    errorMsg = event.error?.localizedDescription
+                let phase: String
+                switch event.type {
+                case .setup:  phase = "setup"
+                case .import: phase = "import"
+                case .export: phase = "export"
+                @unknown default: phase = "unknown"
                 }
+                // Build a redacted diagnostic from the error. For CKError.partialFailure the
+                // per-item sub-errors are the real diagnosis, aggregated by code (never by id).
+                let diag = (event.error as? NSError).map { Self.cloudKitDiagnostic($0) }
 
                 Task { @MainActor in
                     if !hasEnded {
@@ -1377,10 +1392,27 @@ struct FRUSExplorerApp: App {
                         // pull them into UserDefaults if this device syncs settings.
                         appState.settingsSync?.syncNowIfEnabled()
                     } else {
-                        let msg = errorMsg ?? String(localized: "cloudkit.error.unknown",
-                                                     defaultValue: "Unknown sync error")
+                        let msg = diag?.message ?? String(localized: "cloudkit.error.unknown",
+                                                          defaultValue: "Unknown sync error")
                         appState.cloudKitSyncState = .failed(msg)
-                        print("[CloudKit] ⚠️ Sync event failed: \(msg)")
+                    }
+                }
+
+                // Record a redacted telemetry row for every *ended* event (success or failure),
+                // so a tester can confirm sync now works — or export the exact failure (#188-C.1).
+                if hasEnded {
+                    Task {
+                        await SyncDiagnosticsLog.shared.record(
+                            phase: phase,
+                            startDate: startDate,
+                            endDate: endDate,
+                            succeeded: succeeded,
+                            errorDomain: diag?.domain,
+                            errorCode: diag?.code,
+                            errorCodeName: diag?.codeName,
+                            partialItemCount: diag?.partialCount,
+                            subErrorHistogram: diag?.histogram
+                        )
                     }
                 }
             }
@@ -1611,7 +1643,25 @@ struct FRUSExplorerApp: App {
     ///   CloudKit Dashboard schema reset or an app update.
     /// - **unknownItem (11)**: Record being updated does not exist on the server. Usually
     ///   follows a zone/token reset; resolves after the container re-uploads.
-    static func cloudKitDiagnostic(_ error: NSError) -> String {
+    /// A **redacted** CloudKit diagnostic: a user-facing, identifier-free `message` plus the safe
+    /// aggregate used by the sync-telemetry log (#188-C.1). Carries no record ids, zone/owner
+    /// names, `localizedDescription`, or any `userInfo` value.
+    struct CloudKitDiagnosticResult {
+        /// A short id-free summary suitable for the sync-status UI.
+        let message: String
+        /// The top-level error domain (e.g. `CKErrorDomain`).
+        let domain: String?
+        /// The top-level error code.
+        let code: Int?
+        /// The top-level error's human code name.
+        let codeName: String?
+        /// For a `partialFailure`: how many items failed (a scalar count, not ids).
+        let partialCount: Int?
+        /// For a `partialFailure`: the sub-errors bucketed by code name.
+        let histogram: [SubErrorBucket]?
+    }
+
+    static func cloudKitDiagnostic(_ error: NSError) -> CloudKitDiagnosticResult {
         // Human-readable labels for the CloudKit error codes most likely to appear
         // in a SwiftData+CloudKit app during normal operation and schema migration.
         let codeNames: [Int: String] = [
@@ -1641,7 +1691,10 @@ struct FRUSExplorerApp: App {
             28: "userDeletedZone",
         ]
 
-        // For partialFailure, drill into the per-item errors.
+        // For partialFailure, aggregate the per-item sub-errors by code — the safe diagnosis.
+        // The record ids in `CKPartialErrorsByItemIDKey` are deliberately NEVER read/logged:
+        // a `CKRecord.ID` exposes only its `recordName` (a leaky token) and zone identity, and
+        // the record *type* is not recoverable from it — so we key purely on the sub-error code.
         if error.domain == CKErrorDomain, error.code == CKError.partialFailure.rawValue,
            let partialErrors = error.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
 
@@ -1649,28 +1702,28 @@ struct FRUSExplorerApp: App {
             for (_, subError) in partialErrors {
                 byCode[(subError as NSError).code, default: 0] += 1
             }
-
-            // Log the full breakdown (visible in Console.app).
-            let breakdown = byCode.sorted { $0.value > $1.value }
-                .map { code, count in "\(count)× \(codeNames[code] ?? "code \(code)")" }
-                .joined(separator: ", ")
-            print("[CloudKit] ⚠️ Partial failure: \(partialErrors.count) records — \(breakdown)")
-
-            // Log a sample of item IDs for cross-referencing in CloudKit Dashboard.
-            let sample = partialErrors.prefix(5)
-            for (itemID, subError) in sample {
-                let sub = subError as NSError
-                print("[CloudKit]   item \(itemID): \(sub.domain) \(codeNames[sub.code] ?? "code \(sub.code)") — \(sub.localizedDescription)")
-            }
-
-            // Return the user-visible summary.
-            return "Partial sync failure (\(partialErrors.count) record\(partialErrors.count == 1 ? "" : "s")): \(breakdown)"
+            let histogram = byCode.sorted { $0.value > $1.value }
+                .map { code, count in SubErrorBucket(key: codeNames[code] ?? "code \(code)",
+                                                     code: code, count: count) }
+            let breakdown = histogram.map { "\($0.count)× \($0.key)" }.joined(separator: ", ")
+            let count = partialErrors.count
+            cloudKitLog.error("partialFailure records=\(count, privacy: .public) breakdown=\(breakdown, privacy: .public)")
+            return CloudKitDiagnosticResult(
+                message: "Partial sync failure (\(count) record\(count == 1 ? "" : "s")): \(breakdown)",
+                domain: error.domain,
+                code: error.code,
+                codeName: codeNames[error.code] ?? "partialFailure",
+                partialCount: count,
+                histogram: histogram
+            )
         }
 
-        // Non-partial error: include the code name if known.
+        // Non-partial error: domain + code name only (no localizedDescription — it can embed ids).
         let name = codeNames[error.code] ?? "code \(error.code)"
-        print("[CloudKit] ⚠️ \(error.domain) \(name): \(error.localizedDescription)")
-        return "\(error.domain) \(name): \(error.localizedDescription)"
+        cloudKitLog.error("\(error.domain, privacy: .public) \(name, privacy: .public) code=\(error.code, privacy: .public)")
+        return CloudKitDiagnosticResult(message: "\(error.domain) \(name)",
+                                        domain: error.domain, code: error.code, codeName: name,
+                                        partialCount: nil, histogram: nil)
     }
 }
 

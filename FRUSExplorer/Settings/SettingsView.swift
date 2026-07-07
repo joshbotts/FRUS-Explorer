@@ -188,6 +188,10 @@ struct SettingsView: View {
                                          defaultValue: "Export Research Data…")) {
                         ResearchDataExportView()
                     }
+                    NavigationLink(String(localized: "settings.row.syncDiagnostics",
+                                         defaultValue: "Sync Diagnostics")) {
+                        SyncDiagnosticsView()
+                    }
                 }
 
                 #if os(iOS) && DEBUG
