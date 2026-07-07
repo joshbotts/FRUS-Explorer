@@ -85,6 +85,10 @@ struct SearchView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var promptGlyphSize: CGFloat = 48
 
     @State private var vm: SearchViewModel
+    /// Live list of the user's tags, kept current by SwiftData. Fed into
+    /// `vm.availableUserTags` so a tag created elsewhere (e.g. the research-note
+    /// editor) appears as a search filter chip without an app restart (#188-D).
+    @Query(sort: \UserTag.name) private var liveUserTags: [UserTag]
     @State private var showTimeline = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
@@ -200,7 +204,7 @@ struct SearchView: View {
         #endif
         .task {
             vm.appState = appState
-            vm.loadAvailableUserTags(context: modelContext)
+            vm.availableUserTags = liveUserTags
             // Load the volume/subseries picker options before applying any incoming
             // parameters so `applyParameters` can reconstruct the subseries selection
             // from a flat `volumeIds` scope (see `SearchViewModel.reconstructScope`).
@@ -223,6 +227,14 @@ struct SearchView: View {
             // appeared (e.g. the user opened Analytics, tapped "open matching
             // documents", and the Search tab is being created for the first time).
             consumePendingSearch()
+        }
+        // Keep the filter panel's tag chips current: when SwiftData reports a tag
+        // added/removed/renamed (on this device or via CloudKit), feed the fresh
+        // list into the view model so chips update live (#188-D). Keyed on the name
+        // list so a rename also propagates — an array of `@Model` objects compares by
+        // persistent identity, which a rename does not change.
+        .onChange(of: liveUserTags.map(\.name)) { _, _ in
+            vm.availableUserTags = liveUserTags
         }
         // Consume handoffs that arrive while the Search tab is already alive —
         // `AppState.pendingSearch` is set by Corpus Analytics, "Find all mentions",

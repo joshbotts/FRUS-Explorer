@@ -23,7 +23,8 @@ import Observation
 ///
 /// ## Lifecycle
 /// 1. Init with `searchService`.
-/// 2. Call `loadAvailableUserTags(context:)` to populate the user tag picker.
+/// 2. `SearchView` feeds `availableUserTags` from a live `@Query`, so a tag created
+///    elsewhere (e.g. the research-note editor) appears as a filter chip without a restart.
 /// 3. Optionally call `applyProjectDefaults(_:)` if a project is active.
 /// 4. Call `search()` when the user submits.
 ///
@@ -206,6 +207,9 @@ final class SearchViewModel {
 
     // MARK: - Available Filter Options
 
+    /// The user's tags, used to render the filter panel's tag chips and to resolve
+    /// tag UUIDs to names in result rows. Fed by `SearchView` from a live SwiftData
+    /// `@Query`, so newly-created tags appear without an app restart.
     var availableUserTags: [UserTag] = []
 
     // MARK: - UI State
@@ -259,12 +263,6 @@ final class SearchViewModel {
     }
 
     // MARK: - Setup
-
-    func loadAvailableUserTags(context: ModelContext) {
-        availableUserTags = (try? context.fetch(
-            FetchDescriptor<UserTag>(sortBy: [SortDescriptor(\.name)])
-        )) ?? []
-    }
 
     /// Populates `availableVolumes` with the indexed subset of `allEntries`, sorted by
     /// volume ID, for the volume/subseries pickers in `SearchFilterView`.
