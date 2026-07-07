@@ -205,6 +205,73 @@ final class SearchViewModel {
     var searchError: String? = nil
     var hasSearched: Bool = false
 
+    // MARK: - Checklist Mode (#189-D)
+
+    /// True when checklist mode is active. Session-scoped; not persisted (resets on relaunch).
+    /// While on, results the user has reviewed this session are hidden.
+    var checklistMode: Bool = false {
+        didSet { clampCurrentPage() }
+    }
+
+    /// The instant checklist mode was last enabled. Documents opened at or after this instant
+    /// (per `ReadingHistoryEntry.accessedAt`) are hidden. `nil` while mode is off.
+    var checklistEnabledAt: Date?
+
+    /// `(volumeId|documentId)` keys the user opened since `checklistEnabledAt`, fetched from
+    /// `ReadingHistoryEntry` by `SearchView` and pushed in (mirrors `availableUserTags`).
+    var readSinceEnabledKeys: Set<String> = [] {
+        didSet { clampCurrentPage() }
+    }
+
+    /// `(volumeId|documentId)` keys the user tapped "Mark reviewed" on this session — a
+    /// lightweight in-memory set, NOT a fabricated `ReadingHistoryEntry`.
+    var markedReviewedKeys: Set<String> = [] {
+        didSet { clampCurrentPage() }
+    }
+
+    /// A stable reviewed-set key for a `(volume, document)` pair.
+    nonisolated static func reviewedKey(volumeId: String, documentId: String) -> String {
+        "\(volumeId)|\(documentId)"
+    }
+
+    /// The reviewed set while checklist mode is on: docs opened since enable ∪ docs marked.
+    var hiddenReviewedKeys: Set<String> {
+        checklistMode ? readSinceEnabledKeys.union(markedReviewedKeys) : []
+    }
+
+    /// `results` minus reviewed docs when checklist mode is on. All display-time page math pages
+    /// over this array, so the slice, count, and page index stay in sync.
+    var displayedResults: [SearchResult] {
+        let hidden = hiddenReviewedKeys
+        guard !hidden.isEmpty else { return results }
+        return results.filter { !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)) }
+    }
+
+    /// Enables/disables checklist mode. Enabling stamps the anchor time and clears prior marks;
+    /// disabling clears all reviewed state so the full list returns.
+    func setChecklistMode(_ on: Bool) {
+        checklistMode = on
+        if on {
+            checklistEnabledAt = .now
+            markedReviewedKeys.removeAll()
+        } else {
+            checklistEnabledAt = nil
+            readSinceEnabledKeys.removeAll()
+            markedReviewedKeys.removeAll()
+        }
+        currentPage = 0
+    }
+
+    /// Marks a document reviewed for this checklist session (hides it without opening it).
+    func markReviewed(volumeId: String, documentId: String) {
+        markedReviewedKeys.insert(Self.reviewedKey(volumeId: volumeId, documentId: documentId))
+    }
+
+    /// Resets `currentPage` to 0 when a reviewed-set change shrank the list below the current page.
+    private func clampCurrentPage() {
+        if currentPage >= totalPages { currentPage = 0 }
+    }
+
     // MARK: - Available Filter Options
 
     /// The user's tags, used to render the filter panel's tag chips and to resolve
@@ -235,17 +302,21 @@ final class SearchViewModel {
     /// Zero-based index of the currently displayed results page.
     var currentPage: Int = 0
 
-    /// Total number of result pages for the current result set (always ≥ 1).
+    /// Total number of result pages for the currently-displayed (checklist-filtered) set (≥ 1).
     var totalPages: Int {
-        max(1, Int(ceil(Double(results.count) / Double(Self.pageSize))))
+        max(1, Int(ceil(Double(displayedResults.count) / Double(Self.pageSize))))
     }
 
-    /// The slice of `results` shown on the current page. Only these rows are rendered,
-    /// keeping the list bounded regardless of how many results were fetched.
+    /// The slice of `displayedResults` shown on the current page. Only these rows are rendered,
+    /// keeping the list bounded regardless of how many results were fetched. The page index is
+    /// clamped here (side-effect-free) so a reviewed-set change that shrinks the list can never
+    /// leave `pagedResults` returning a blank page for a now-out-of-range `currentPage`.
     var pagedResults: [SearchResult] {
-        let start = currentPage * Self.pageSize
-        guard start < results.count else { return [] }
-        return Array(results[start..<min(start + Self.pageSize, results.count)])
+        let base = displayedResults
+        let page = min(max(0, currentPage), totalPages - 1)
+        let start = page * Self.pageSize
+        guard start < base.count else { return [] }
+        return Array(base[start..<min(start + Self.pageSize, base.count)])
     }
 
     // MARK: - Dependencies
@@ -318,6 +389,15 @@ final class SearchViewModel {
             results = try await searchService.search(parameters: params,
                                                      limit: Self.searchHardLimit)
             currentPage = 0
+            // A new query is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
+            // clear prior marks, so results reviewed under a *previous* query aren't silently
+            // hidden in this one (the reviewed key is document identity, which recurs across
+            // searches). The read-since observer re-queries against the new anchor.
+            if checklistMode {
+                checklistEnabledAt = .now
+                readSinceEnabledKeys.removeAll()
+                markedReviewedKeys.removeAll()
+            }
             #if DEBUG
             print("[SearchView] Search returned \(results.count) results")
             #endif
@@ -420,10 +500,13 @@ final class SearchViewModel {
         )
     }
 
-    var resultCount: Int { results.count }
+    /// The number of results currently shown to the user — the checklist-filtered count, so the
+    /// results-count header matches the visible rows.
+    var resultCount: Int { displayedResults.count }
 
     /// `true` when the result set hit `searchHardLimit`, indicating the query matches
-    /// more documents than are shown. Users should narrow their search terms.
+    /// more documents than are shown. Users should narrow their search terms. Keyed on the raw
+    /// fetch count (not the checklist-filtered view), since the cap is about the FTS5 fetch.
     var isResultsCapped: Bool { results.count == Self.searchHardLimit }
 
     // Note: this still checks the legacy `phrase`/`prefixWildcard`/`excludedTermsText`/
