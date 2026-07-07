@@ -1,8 +1,9 @@
 # FRUS Explorer — Editable Static Content
 
-This file contains all user-facing prose currently displayed in the About screen,
-onboarding welcome, and in-app FRUS Research Guide pages. Edit the text directly. When you
-are done, hand the file back and the changes will be written to the source code.
+This file contains the user-facing editorial prose across FRUS Explorer: the About screen,
+the onboarding welcome, the in-app FRUS Research Guide, the Series-analytics dashboards, the
+analytics info popovers and captions, and the explanatory footers in Settings. Edit the text
+directly. When you are done, hand the file back and the changes will be written to the source code.
 
 **How annotations work:** Each editable block is preceded by an HTML comment that
 identifies the exact source location. Do not remove or alter the annotation comments —
@@ -608,4 +609,639 @@ The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Admi
 
 ---
 
-*End of editable content. Total source locations: 4 source files (AboutView.swift, OnboardingIntroView.swift, OnboardingViewModel.swift, IndexingEducationView.swift) across 17 blocks: 4 About blocks (§1), 2 Onboarding blocks (§2), and 11 FRUS Research Guide page blocks (§3 — 7 editable prose pages + 4 live-dashboard pointer blocks). The four dashboard pages carry no editable page prose; their on-screen copy lives in the four `FRUSExplorer/SeriesAnalytics/*Dashboard.swift` files at the localization keys listed in each block.*
+## 4. Series Analytics — Dashboard Prose
+
+*The four Series-analytics dashboards (reached from the Research Guide's live dashboard pages and from Corpus Analytics). Each has an intro paragraph, per-chart subtitles, and an "About these figures" methodology footnote. These are shared SwiftUI views — one edit point changes both iOS and macOS.*
+
+---
+
+### Source Provenance dashboard (Series Analytics SA-3b)
+
+#### Page intro
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 108–109 | key: series.provenance.intro -->
+
+Where did the editors of Foreign Relations of the United States find the documents they published? Every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's Central Decimal File in the early twentieth century, through the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes.
+
+<!-- END SOURCE: series.provenance.intro -->
+
+#### Chart 1 subtitle — Archival provenance over time
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | mixOverTimeChart caption | lines: 145–146 | key: series.provenance.trend.caption -->
+
+Each decade's source notes divided among the archival collections they cite, so every decade sums to 100%. Decades are set by each volume's coverage midpoint; the trend begins in 1900 because earlier volumes carry no archival source notes.
+
+<!-- END SOURCE: series.provenance.trend.caption -->
+
+#### Chart 2 subtitle — Overall provenance composition
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | compositionChart caption | lines: 200–201 | key: series.provenance.composition.caption -->
+
+How many source notes across the whole series (from 1900) cite each kind of archival collection. The Central Decimal File dwarfs the rest — most published FRUS documents came from the State Department's own central filing.
+
+<!-- END SOURCE: series.provenance.composition.caption -->
+
+#### Chart 3 subtitle — The documentary base by decade
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 248–249 | key: series.provenance.density.caption -->
+
+How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base; a share in a thin decade rests on far fewer documents.
+
+<!-- END SOURCE: series.provenance.density.caption -->
+
+#### "About these figures" methodology footnote
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 294–295 | key: series.provenance.caveats.body -->
+
+These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. "Other / Unclassified" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1960 central filing system, the Central Foreign Policy File its post-1960 successor, lot files are bureau and office working files, and presidential libraries hold the White House records that dominate the modern volumes. Above all, these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives.
+
+<!-- END SOURCE: series.provenance.caveats.body -->
+
+---
+
+The `AdministrationProfilesDashboard` is a single shared SwiftUI view (used via `EducationDashboardView`), so its `String(localized:)` keys are single edit points shared across iOS and macOS.
+
+### Administration Profiles Dashboard
+
+#### Dashboard intro
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.intro | lines: 122–123 | key: series.admin.intro | shared: iOS+macOS (single edit point) -->
+
+Whose foreign policy does Foreign Relations of the United States document? Every dated document is attributed to the presidential administration in office when the events it records took place. These charts trace how the series' coverage is distributed across administrations — how many documents each one draws, and how densely the series covers each term — and let you drill into any single administration to see which volumes carry its record.
+
+<!-- END SOURCE: series.admin.intro -->
+Note: `AdministrationProfilesDashboard` is one shared SwiftUI view rendered on both iOS and macOS; editing this key changes both platforms.
+
+#### Editorial-notes toggle explainer
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.editorialNotesToggle | lines: 139–140 | key: series.admin.toggle.subtitle | shared: iOS+macOS (single edit point) -->
+
+Editorial-note documents carry a span of dates rather than a single date; including them adds them to every count and proportion.
+
+<!-- END SOURCE: series.admin.toggle.subtitle -->
+
+#### Chart 1 subtitle — Documents per administration
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.documentsChart | lines: 161–162 | key: series.admin.docs.caption | shared: iOS+macOS (single edit point) -->
+
+How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both.
+
+<!-- END SOURCE: series.admin.docs.caption -->
+
+#### Chart 2 subtitle — Volumes per administration-year
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.volumesPerYearChart | lines: 213–214 | key: series.admin.perYear.caption | shared: iOS+macOS (single edit point) -->
+
+How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted.
+
+<!-- END SOURCE: series.admin.perYear.caption -->
+
+#### Volume-list subtitle — per-administration shares
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.volumeList | lines: 342–343 | key: series.admin.volumes.caption | shared: iOS+macOS (single edit point) -->
+
+Each volume's share is the fraction of that volume's documents that fall in this administration — so shares can sum past 100% across administrations under any-overlap attribution.
+
+<!-- END SOURCE: series.admin.volumes.caption -->
+
+#### Any-overlap attribution footnote — "About these figures"
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.caveats | lines: 417–418 | key: series.admin.caveats.body | shared: iOS+macOS (single edit point) -->
+
+Documents are attributed to an administration by any overlap between the document's date and the president's term, so a volume spanning two administrations is counted in both — which is why the summed volume counts exceed the 552-volume corpus and a volume's proportions can sum to over 100% across administrations. These counts measure which administration's foreign policy the documents cover, not when the volumes were published. Editorial-note documents carry a range of dates rather than a single date; their inclusion is controlled by the toggle above (off by default). Pre-1861 retrospective compilations concern no single administration and are omitted. Administrations are counted per president — Nixon and Ford are separate, as are Grover Cleveland's two non-consecutive terms — and administrations for which the series is not yet published do not appear.
+
+<!-- END SOURCE: series.admin.caveats.body -->
+
+---
+
+I have all the strings I need. The intro, three chart captions (subtitles), and the caveats footnote are all captured in lines 128–313.
+
+### Geographic Emphasis dashboard
+
+#### Intro paragraph
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.intro | lines: 128–134 | key: series.geography.intro -->
+
+Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most.
+
+<!-- END SOURCE: series.geography.intro -->
+
+#### Chart 1 caption — Regional emphasis over time
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTrendChart | lines: 165–166 | key: series.geography.trend.caption -->
+
+Each decade's volumes divided among the regions they cover — a volume spanning several regions splits evenly among them, so every decade sums to 100%. Decades are set by each volume's coverage midpoint.
+
+<!-- END SOURCE: series.geography.trend.caption -->
+
+#### Chart 2 caption — Overall regional emphasis
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTotalsChart | lines: 219–220 | key: series.geography.totals.caption -->
+
+How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap.
+
+<!-- END SOURCE: series.geography.totals.caption -->
+
+#### Chart 3 caption — Most-covered countries
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.topCountriesChart | lines: 264–265 | key: series.geography.countries.caption -->
+
+The individual place tags carried by the most volumes — the concrete detail behind the regional picture.
+
+<!-- END SOURCE: series.geography.countries.caption -->
+
+#### Regional-bureau mapping footnote
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 306–307 | key: series.geography.caveats.body -->
+
+Place tags are volume-level editorial tags: a volume "touches" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear.
+
+<!-- END SOURCE: series.geography.caveats.body -->
+
+---
+
+I have all the content needed. The file uses `String(localized:)` with `defaultValue:` and these are shared iOS+macOS via localization keys (the dashboard is a single shared SwiftUI view). Let me emit the markdown chunk with only the multi-sentence explanatory prose.
+
+### Production & Timeliness dashboard (`SeriesProductionDashboard.swift`)
+
+Shared iOS+macOS surface — a single SwiftUI view rendered in both the onboarding sheet and the Research Guide. Every string below is keyed via `String(localized:)`, so editing the `defaultValue` is a single edit point for both platforms.
+
+#### Intro paragraph
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var intro | lines: 114–115 | key: series.production.intro | shared: iOS+macOS (single edit point) -->
+
+How long does the official record take to reach print? These charts trace the timeliness of Foreign Relations of the United States across its whole span — the lag between the events a volume documents and its publication (against the evolving publication-timeliness target), the pace of publication over time, and the steady growth of the digitized corpus.
+
+<!-- END SOURCE: series.production.intro -->
+
+#### Chart 1 caption — Publication lag over time
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var lagChart (caption) | lines: 155–156 | key: series.chart.lag.caption | shared: iOS+macOS (single edit point) -->
+
+Each point is a volume: its publication year (horizontal) against how many years earlier its latest document was written — the lag (vertical). The dashed step line is the timeliness target in force at publication — 15 years from the 1961 directive, 20 from 1972, and 30 from 1985 (codified by the 1991 statute).
+
+<!-- END SOURCE: series.chart.lag.caption -->
+
+#### Chart 2 caption — Volumes published per year
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var perYearChart (caption) | lines: 234–235 | key: series.chart.peryear.caption | shared: iOS+macOS (single edit point) -->
+
+How many volumes reached print in each year, coloured by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication.
+
+<!-- END SOURCE: series.chart.peryear.caption -->
+
+#### Chart 3 caption — Cumulative volumes published
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var cumulativeChart (caption) | lines: 283–284 | key: series.chart.cumulative.caption | shared: iOS+macOS (single edit point) -->
+
+The digitized corpus has grown to the 552 volumes this app catalogs — steeply in some decades, slowly in others.
+
+<!-- END SOURCE: series.chart.cumulative.caption -->
+
+#### Publication-timeliness footnote ("About these figures")
+
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (body) | lines: 337–338 | key: series.caveats.body | shared: iOS+macOS (single edit point) -->
+
+Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's publication year, so it shows exactly the target in force when the volume was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear.
+
+<!-- END SOURCE: series.caveats.body -->
+
+---
+
+## 5. Analytics — Explanatory Captions & Info Popovers
+
+*The "About …" info popovers and figure captions across the analytics features. Multi-sentence explanatory copy that teaches how to read each visualization.*
+
+---
+
+### About the Graph popover
+
+#### What the graph shows
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1337–1338 | key: graph.info.what.body -->
+
+Each node is a FRUS document. Blue nodes cite the central document; orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus, and each arrow points at the document being cited.
+
+<!-- END SOURCE: graph.info.what.body -->
+
+#### Edge context
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1343–1344 | key: graph.info.edges.body -->
+
+Many edges carry the original footnote or editorial-note text where the reference appeared — hover over (or tap) the middle of a line to read it. Thicker lines mean the pair is linked by several separate references.
+
+<!-- END SOURCE: graph.info.edges.body -->
+
+#### Timeline and Network layouts
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1349–1350 | key: graph.info.timeline.body -->
+
+Timeline places each document at its date along a time axis — documents this one cites usually sit to the left (earlier), documents citing it to the right (later). Documents without a recorded date park in the Undated column. Network uses a spring layout based purely on connections.
+
+<!-- END SOURCE: graph.info.timeline.body -->
+
+#### Neighbourhood degree
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1355–1356 | key: graph.info.degree.body -->
+
+1° shows only direct neighbours of the central document. 2° adds neighbours of those neighbours. 3° extends one further hop. Resize the window to see denser graphs more clearly.
+
+<!-- END SOURCE: graph.info.degree.body -->
+
+#### Navigating the graph
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1361–1362 | key: graph.info.interact.body -->
+
+Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
+
+<!-- END SOURCE: graph.info.interact.body -->
+
+#### Undownloaded volumes
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1367–1368 | key: graph.info.undownloaded.body -->
+
+References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with a dashed border and a struck-through cloud icon; select one to download its volume directly from the info panel.
+
+References from volumes you haven't indexed yet are not shown at all, because those volumes have never been parsed. An orange banner at the top of the graph appears when your inbound connections may be incomplete for this reason. Download and index additional volumes to fill in the missing edges.
+
+<!-- END SOURCE: graph.info.undownloaded.body -->
+
+---
+
+#### Word Cloud info — What you're seeing
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 492–493 | key: wordcloud.info.shows.detail -->
+
+The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, or the whole corpus — each sized by how often it appears.
+
+<!-- END SOURCE: wordcloud.info.shows.detail -->
+
+#### Word Cloud info — Lenses
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 496–497 | key: wordcloud.info.lenses.detail -->
+
+The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
+
+<!-- END SOURCE: wordcloud.info.lenses.detail -->
+
+#### Word Cloud info — What's filtered out
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 500–501 | key: wordcloud.info.filters.detail -->
+
+Common stopwords are always removed. You can also hide diplomatic boilerplate and maintain your own hidden-word lists (globally or per lens) in Settings → Word Cloud.
+
+<!-- END SOURCE: wordcloud.info.filters.detail -->
+
+#### Word Cloud info — Tapping a word
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 504–505 | key: wordcloud.info.tap.detail -->
+
+Charts how often that term appears across the whole corpus in Corpus Analytics; the word's menu also offers a scoped chart and a direct Search.
+
+<!-- END SOURCE: wordcloud.info.tap.detail -->
+
+### Word Cloud Settings — section footers
+
+<!-- Shared surface note: WordCloudSettingsView is a single shared SwiftUI view used on both iOS and macOS (differs only by a #if os(macOS) .formStyle); each footer key below is a single edit point across both platforms. -->
+
+#### Filtering footer — classification markings
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | filteringSection footer | lines: 76–77 | key: settings.wordcloud.markings.footer | shared: iOS+macOS (single edit point) -->
+
+Classification markings include terms like “Top Secret”, “Confidential”, precedence words (“Priority”, “Immediate”), and month names — document chrome that otherwise leaks into clouds, especially named-entity lenses.
+
+<!-- END SOURCE: settings.wordcloud.markings.footer -->
+
+#### Thresholds footer
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | thresholdsSection footer | lines: 98–99 | key: settings.wordcloud.thresholds.footer | shared: iOS+macOS (single edit point) -->
+
+Drop terms shorter than the minimum length or appearing fewer than the minimum number of times. Raising either makes a sparser, higher-signal cloud.
+
+<!-- END SOURCE: settings.wordcloud.thresholds.footer -->
+
+#### Appearance footer
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | appearanceSection footer | lines: 124–125 | key: settings.wordcloud.appearance.footer | shared: iOS+macOS (single edit point) -->
+
+Choose the typeface the cloud is drawn in and how tightly its words pack together. Compact fits more terms; airy spaces them out for legibility. These settings apply on this device only.
+
+<!-- END SOURCE: settings.wordcloud.appearance.footer -->
+
+#### Global hidden-words footer
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | globalStopwordsSection footer | lines: 150–151 | key: settings.wordcloud.global.footer | shared: iOS+macOS (single edit point) -->
+
+Words listed here are removed from every word cloud, on top of the built-in stop lists.
+
+<!-- END SOURCE: settings.wordcloud.global.footer -->
+
+#### Per-lens hidden-words footer
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | lensStopwordsSection footer | lines: 182–183 | key: settings.wordcloud.lens.footer | shared: iOS+macOS (single edit point) -->
+
+Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recogniser keeps mistaking) without affecting other lenses.
+
+<!-- END SOURCE: settings.wordcloud.lens.footer -->
+
+---
+
+### Chronology
+<!-- Toolbar info popover; iOS+macOS use the same ChronologyView.swift toolbar (one file, shared across platforms). -->
+
+#### What you're seeing
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1063–1066 | key: chronology.info.shows.detail -->
+
+Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.
+
+<!-- END SOURCE: chronology.info.shows.detail -->
+
+#### How dates work
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1067–1070 | key: chronology.info.dates.detail -->
+
+Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
+
+<!-- END SOURCE: chronology.info.dates.detail -->
+
+#### The distribution chart
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1071–1074 | key: chronology.info.chart.detail -->
+
+The stacked chart colour-codes documents by source volume (the top volumes, then a grey “Other”). Use the chart-colours menu to choose how many volumes get a distinct colour.
+
+<!-- END SOURCE: chronology.info.chart.detail -->
+
+#### Wide ranges
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1075–1078 | key: chronology.info.cap.detail -->
+
+The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
+
+<!-- END SOURCE: chronology.info.cap.detail -->
+
+### Source Explorer
+<!-- Shared static FeatureInfoButton.sourceExplorer in FRUSTheme; consumed by both SourceExplorerView (iOS) and MacSourceExplorerView (macOS). Edit once in FRUSTheme.swift to change both. -->
+
+#### What you're seeing
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 136–139 | key: source.explorer.info.shows.detail | shared: iOS+macOS (single edit point) -->
+
+A structured breakdown of one document's source note — the State Department editors' record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.
+
+<!-- END SOURCE: source.explorer.info.shows.detail -->
+
+#### Why it matters
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 140–143 | key: source.explorer.info.why.detail | shared: iOS+macOS (single edit point) -->
+
+Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and judge its provenance at a glance.
+
+<!-- END SOURCE: source.explorer.info.why.detail -->
+
+#### Links to the National Archives
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 144–147 | key: source.explorer.info.catalog.detail | shared: iOS+macOS (single edit point) -->
+
+Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.
+
+<!-- END SOURCE: source.explorer.info.catalog.detail -->
+
+---
+
+The PageRank hedge is the `landmarkSection` subtitle at line 530 (key `crossRefAnalytics.landmarks.subtitle`), not the ranking subtitle. Corrected output below.
+
+### Corpus Analytics — Info Popover ("About these results")
+
+#### What the numbers mean
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1793–1794 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
+
+Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.
+
+<!-- END SOURCE: analytics.info.metric.body -->
+
+#### Multiple words
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1799–1800 | key: analytics.info.multiword.body | shared: iOS+macOS (single edit point) -->
+
+Words separated by spaces are combined with AND: national security matches documents containing both words. OR (either term) and NOT / leading - (exclude a term) work too, exactly as in the Search box.
+
+<!-- END SOURCE: analytics.info.multiword.body -->
+
+#### Phrases
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1805–1806 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
+
+Wrap words in quotes for an ordered phrase: "missile crisis" matches only documents where those words appear together, in that order. Analytics and Search interpret the same query identically, so the counts here match what Search returns.
+
+<!-- END SOURCE: analytics.info.phrase.body -->
+
+#### Stemming
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1811–1812 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
+
+English stemming is applied: searching for "negotiate" also matches "negotiating", "negotiated", and "negotiations".
+
+<!-- END SOURCE: analytics.info.stemming.body -->
+
+#### How dates are determined
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1817–1818 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
+
+Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. Documents lacking month or day precision are excluded from the By Month and By Day charts.
+
+<!-- END SOURCE: analytics.info.dating.body -->
+
+### Corpus Analytics — Normalization Caption
+
+#### Share-of-corpus caveat (% of documents mode)
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 939–940 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
+
+Share of indexed documents per period. Only downloaded, indexed volumes are counted, so this is a share of your local corpus, not the entire FRUS series.
+
+<!-- END SOURCE: analytics.normalize.caption -->
+
+### Cross-Reference Analytics — Captions
+
+#### Scope-of-figures caveat
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 263–264 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
+
+The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations.
+
+<!-- END SOURCE: crossRefAnalytics.resolvedCaption -->
+
+#### Landmark Documents (Influence) — PageRank hedge subtitle
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 529–530 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
+
+Ranked by an offline PageRank influence score over the resolved citation graph — documents a citation-following reader keeps returning to. This is a structural influence measure, not a claim of historical importance. Tap to open.
+
+<!-- END SOURCE: crossRefAnalytics.landmarks.subtitle -->
+
+---
+
+## 6. Settings, Tips & Collections
+
+*Explanatory footers in Settings (the sync/privacy/storage/reset subset — functional/error strings are intentionally excluded), the discovery tips, and the Collections native-export explanation. Strings shared across platforms via localization keys are marked.*
+
+---
+
+I have all the strings verified. The `BackgroundSummarizationSettingsView` and `CollectionExportSheet` are shared iOS+macOS (single files, no `#if os` around these strings). The Settings footers use localization keys shared across iOS+macOS builds (same file compiled for both). Here is the extracted markdown chunk.
+
+---
+
+### iCloud Sync, Settings Sync & Privacy
+
+#### Settings-sync toggle detail
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.body / iCloud section | lines: 97–98 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
+
+Word-cloud filters & stop lists, citation style, default document mode, and research logging.
+
+<!-- END SOURCE: settings.sync.toggle.detail -->
+
+#### Settings-sync unavailable notice
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.body / iCloud section | lines: 108–109 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
+
+Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.
+
+<!-- END SOURCE: settings.sync.unavailable -->
+
+#### iCloud Sync section footer
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.body / iCloud section footer | lines: 116–117 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
+
+When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate.
+
+<!-- END SOURCE: settings.sync.footer -->
+
+#### iCloud unavailable (Local Only) detail
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 274–275 | key: settings.icloud.localOnly.detail | shared: iOS+macOS (single edit point) -->
+
+iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.
+
+<!-- END SOURCE: settings.icloud.localOnly.detail -->
+
+#### iCloud zone-missing detail
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 347–348 | key: settings.icloud.zoneMissing.detail | shared: iOS+macOS (single edit point) -->
+
+The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or tap Reset iCloud Sync below.
+
+<!-- END SOURCE: settings.icloud.zoneMissing.detail -->
+
+---
+
+### Volume Updates
+
+#### Volume-updates section footer
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DownloadsSettingsView.body / Updates section footer | lines: 577–578 | key: settings.volumes.updates.footer | shared: iOS+macOS (single edit point) -->
+
+Checks downloaded volumes against the FRUS repository for upstream corrections. Updating re-downloads and re-indexes the volume; your notes, highlights, tags, and summaries are preserved.
+
+<!-- END SOURCE: settings.volumes.updates.footer -->
+
+---
+
+### Storage & Backup
+
+#### Corpus-size reference footer
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | StorageManagementView.body / Total Storage Used section footer | lines: 1186–1187 | key: settings.storage.aggregate.footer | shared: iOS+macOS (single edit point) -->
+
+For reference: the full FRUS corpus uses ~3.4 GB of XML and ~9 GB of search index — approximately 12–13 GB total on device.
+
+<!-- END SOURCE: settings.storage.aggregate.footer -->
+
+#### iCloud Backup exclusion note
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | StorageManagementView.body / backup note section | lines: 1229–1230 | key: settings.storage.backup.note | shared: iOS+macOS (single edit point) -->
+
+Downloaded volume XML files are excluded from iCloud Backup to avoid redundant uploads. Files are re-downloadable at any time.
+
+<!-- END SOURCE: settings.storage.backup.note -->
+
+---
+
+### Reset & Data Safety
+
+#### Reset iCloud Sync — warning
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / iCloud Sync section | lines: 3144–3145 | key: settings.reset.sync.warning | shared: iOS+macOS (single edit point) -->
+
+If iCloud sync is consistently reporting errors, clearing the local sync state forces a fresh download from iCloud. Your data in iCloud is not deleted.
+
+<!-- END SOURCE: settings.reset.sync.warning -->
+
+#### Reset iCloud Sync — confirmation message
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / sync confirmationDialog message | lines: 3223–3224 | key: settings.reset.sync.confirm.message | shared: iOS+macOS (single edit point) -->
+
+The local iCloud sync state will be cleared. Your data in iCloud is not deleted. The app will re-download your notes and collections on next launch.
+
+<!-- END SOURCE: settings.reset.sync.confirm.message -->
+
+#### Reset Local Data — warning
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / This Device section | lines: 3161–3162 | key: settings.reset.local.warning | shared: iOS+macOS (single edit point) -->
+
+Deletes all downloaded volume files and the search index from this device. Your notes, collections, tags, and projects remain in iCloud and will be restored the next time the app launches.
+
+<!-- END SOURCE: settings.reset.local.warning -->
+
+#### Reset Local Data — confirmation message
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / local confirmationDialog message | lines: 3239–3240 | key: settings.reset.local.confirm.message | shared: iOS+macOS (single edit point) -->
+
+Volume files and the search index will be deleted from this device. Your notes, collections, tags, and projects in iCloud are not affected and will re-sync.
+
+<!-- END SOURCE: settings.reset.local.confirm.message -->
+
+#### Reset App — full-reset warning
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / full-reset section | lines: 3178–3179 | key: settings.reset.warning | shared: iOS+macOS (single edit point) -->
+
+This will delete all downloaded volumes, your search index, all research notes, projects, user tags, collections, and AI-generated summaries. This action cannot be undone.
+
+<!-- END SOURCE: settings.reset.warning -->
+
+#### Reset App — first confirmation message
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / confirm1 confirmationDialog message | lines: 3255–3256 | key: settings.reset.confirm1.message | shared: iOS+macOS (single edit point) -->
+
+All user data will be permanently deleted. Are you sure?
+
+<!-- END SOURCE: settings.reset.confirm1.message -->
+
+#### Reset App — final confirmation message
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ResetView.body / confirm2 confirmationDialog message | lines: 3271–3272 | key: settings.reset.confirm2.message | shared: iOS+macOS (single edit point) -->
+
+All downloaded volumes, research notes, projects, and summaries will be deleted immediately.
+
+<!-- END SOURCE: settings.reset.confirm2.message -->
+
+---
+
+### Background Summarization
+
+#### Continue-in-background footer
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 88–89 | key: bg.summarizer.continue.hint | shared: iOS+macOS (single edit point) -->
+
+When on, summarization resumes opportunistically while the device is idle, a few documents at a time, even after you close the app. Uses the on-device model and some battery.
+
+<!-- END SOURCE: bg.summarizer.continue.hint -->
+
+---
+
+### Discovery Tips (TipKit)
+
+#### Tip — Explore Cross-References
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ExploreCrossReferencesTip.message | lines: 39–40 | key: tip.crossRef.message | shared: iOS+macOS (single edit point) -->
+
+See every document this one cites — and every document that cites it — arranged on a timeline.
+
+<!-- END SOURCE: tip.crossRef.message -->
+
+#### Tip — Browse References as a List
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | GraphReferenceListTip.message | lines: 68–69 | key: tip.graphList.message | shared: iOS+macOS (single edit point) -->
+
+Open a side panel listing every reference with its date, volume, and the footnote that linked it.
+
+<!-- END SOURCE: tip.graphList.message -->
+
+#### Tip — Timeline or Network
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | TimelineLayoutTip.message | lines: 97–98 | key: tip.timeline.message | shared: iOS+macOS (single edit point) -->
+
+Timeline places each document at its date — earlier sources left, later responses right. Network shows the citation web instead.
+
+<!-- END SOURCE: tip.timeline.message -->
+
+---
+
+### Collections Export
+
+#### Native-format export explanation
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 360–361 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
+
+Shares an editable copy of this collection — its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
+
+<!-- END SOURCE: export.native.hint -->
+
+Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim from source.
+
+---
+
+*End of editable content. Source locations span the About screen (§1), Onboarding (§2),
+the 11-page Research Guide (§3), the four Series-analytics dashboards (§4), the analytics
+captions & info popovers (§5), and the Settings / tips / Collections prose (§6). §1–§3 (17
+blocks across AboutView.swift, OnboardingIntroView.swift, OnboardingViewModel.swift, and
+IndexingEducationView.swift) were verified line-accurate to the code as of this revision;
+§4–§6 are newly added for a comprehensive editorial pass. Blocks marked `shared: iOS+macOS`
+are a single edit point (one localization key, or the shared FRUSTheme static) — there is no
+separate platform duplicate to hunt for.*
+
+*Reconciliation to do during revision: the Corpus Analytics search-syntax/dating popover (§5)
+and the Word Cloud popover (§5) overlap the Research Guide's search and word-cloud pages
+(§3.5–§3.6) — align wording, and add the Guide's "finding aid, not evidence" caveat to the
+Word Cloud popover so the two surfaces don't drift.*
