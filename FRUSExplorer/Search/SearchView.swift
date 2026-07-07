@@ -110,6 +110,18 @@ struct SearchView: View {
         @Bindable var vm = vm
         NavigationStack(path: $vm.navigationPath) {
             resultsSection
+                // Checklist mode (#189-D): a hidden, always-mounted observer keeps the reviewed
+                // set live as documents are opened, independent of which results branch (list or
+                // timeline) is showing or how the document was opened. Re-created when the anchor
+                // moves so it queries against the current cutoff.
+                .background {
+                    if vm.checklistMode, let enabledAt = vm.checklistEnabledAt {
+                        ChecklistReviewedObserver(enabledAt: enabledAt) { keys in
+                            vm.readSinceEnabledKeys = keys
+                        }
+                        .id(enabledAt)
+                    }
+                }
                 .navigationTitle(
                     String(localized: "search.title", defaultValue: "Search")
                 )
@@ -342,6 +354,17 @@ struct SearchView: View {
                 Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
                       systemImage: "text.magnifyingglass")
             }
+            Divider()
+            // Checklist mode (#189-D): hides results as you review them (open them, or tap
+            // "Mark reviewed"), so a long result set becomes a shrinking to-do list.
+            Toggle(isOn: Binding(
+                get: { vm.checklistMode },
+                set: { on in vm.setChecklistMode(on) }
+            )) {
+                Label(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"),
+                      systemImage: "checklist")
+            }
+            .disabled(vm.results.isEmpty)
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -352,6 +375,7 @@ struct SearchView: View {
             systemImage: "ellipsis.circle"
         )
     }
+
 
     #if os(iOS)
     /// Persistent search-action row pinned below the `.searchable` field on iOS. An active search
@@ -462,9 +486,22 @@ struct SearchView: View {
             )
         } else if !vm.results.isEmpty {
             resultCountHeader
-            if showTimeline {
+            checklistHiddenBanner
+            if vm.checklistMode && vm.displayedResults.isEmpty {
+                // Checklist mode has hidden every result (#189-D) — applies in both list and
+                // timeline modes (checked before the timeline branch).
+                ContentUnavailableView(
+                    String(localized: "search.checklist.allReviewed.title",
+                           defaultValue: "All Results Reviewed"),
+                    systemImage: "checkmark.circle",
+                    description: Text(String(localized: "search.checklist.allReviewed.detail",
+                                             defaultValue: "You've reviewed every result. Turn off Checklist Mode to see them again."))
+                )
+            } else if showTimeline {
+                // Plot the checklist-filtered set so the timeline hides reviewed documents the
+                // same way the list does (#189-D).
                 DocumentTimelineView(
-                    items: vm.results.map {
+                    items: vm.displayedResults.map {
                         DocumentTimelineView.Item(
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
@@ -472,7 +509,7 @@ struct SearchView: View {
                         )
                     },
                     onSelect: { item in
-                        if let r = vm.results.first(where: {
+                        if let r = vm.displayedResults.first(where: {
                             $0.volumeId == item.volumeId && $0.documentId == item.documentId
                         }) {
                             openResult(vm.makeEntry(from: r))
@@ -500,6 +537,26 @@ struct SearchView: View {
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    /// A subtle banner shown while checklist mode is on and at least one result is hidden, so the
+    /// shrunken result count is explained (#189-D).
+    @ViewBuilder
+    private var checklistHiddenBanner: some View {
+        if vm.checklistMode {
+            let hidden = vm.results.count - vm.displayedResults.count
+            if hidden > 0 {
+                Label(
+                    String(format: String(localized: "search.checklist.hiddenBanner %lld",
+                                          defaultValue: "%lld reviewed hidden"), Int64(hidden)),
+                    systemImage: "checklist"
+                )
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+                .padding(.bottom, 2)
+            }
         }
     }
 
@@ -716,10 +773,34 @@ struct SearchView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(result.header)
+                // Checklist mode (#189-D): swipe (and the context menu) to mark a result
+                // reviewed — hides it without opening it. Only offered while checklist mode is on.
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    if vm.checklistMode {
+                        Button {
+                            vm.markReviewed(volumeId: result.volumeId, documentId: result.documentId)
+                        } label: {
+                            Label(String(localized: "search.checklist.markReviewed.short",
+                                         defaultValue: "Reviewed"),
+                                  systemImage: "checkmark.circle")
+                        }
+                        .tint(.green)
+                    }
+                }
                 #if os(iOS)
                 // When multi-window is available the row opens a window by default;
                 // offer the in-place reader (push) as an explicit alternative.
                 .contextMenu {
+                    if vm.checklistMode {
+                        Button {
+                            vm.markReviewed(volumeId: result.volumeId, documentId: result.documentId)
+                        } label: {
+                            Label(String(localized: "search.checklist.markReviewed",
+                                         defaultValue: "Mark Reviewed"),
+                                  systemImage: "checkmark.circle")
+                        }
+                        Divider()
+                    }
                     if supportsMultipleWindows {
                         Button {
                             vm.navigationPath.append(vm.makeEntry(from: result))
@@ -757,6 +838,47 @@ struct SearchView: View {
         // instead of retaining the previous page's offset.
         .id(vm.currentPage)
     }
+}
+
+// MARK: - ChecklistReviewedObserver
+
+/// A zero-size, always-mounted observer that keeps the search view model's
+/// `readSinceEnabledKeys` in sync with the local reading history while checklist mode is on
+/// (#189-D). Backed by a live `@Query`, so a document opened by *any* means — pushed in place,
+/// opened in a Stage-Manager sibling window, reached from timeline mode, or even read from
+/// another screen — updates the reviewed set the moment its `ReadingHistoryEntry` lands, with no
+/// fragile navigation/scene-phase triggers. Re-created (via `.id(enabledAt)`) whenever the anchor
+/// moves (mode re-enable or a new search), so it always queries against the current cutoff.
+private struct ChecklistReviewedObserver: View {
+
+    /// Pushes the freshly-computed reviewed keys up to the view model.
+    private let onKeys: (Set<String>) -> Void
+
+    /// Documents opened at or after the checklist anchor. `accessedAt` is optional, so the
+    /// predicate uses `flatMap`; `nil`-dated rows are excluded (correct for a "since" query).
+    @Query private var entries: [ReadingHistoryEntry]
+
+    init(enabledAt: Date, onKeys: @escaping (Set<String>) -> Void) {
+        self.onKeys = onKeys
+        _entries = Query(filter: #Predicate<ReadingHistoryEntry> { entry in
+            (entry.accessedAt.flatMap { $0 >= enabledAt }) == true
+        })
+    }
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+            .onAppear { push() }
+            .onChange(of: reviewedKeys) { _, _ in push() }
+    }
+
+    /// The reviewed keys derived from the current query rows.
+    private var reviewedKeys: [String] {
+        entries.map { SearchViewModel.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId) }
+    }
+
+    private func push() { onKeys(Set(reviewedKeys)) }
 }
 
 // MARK: - SearchResultRow

@@ -457,6 +457,167 @@ struct PersonFilterTests {
     }
 }
 
+// MARK: - SearchChecklistModeTests
+
+/// Display-time checklist-mode filtering (#189-D) — pure `SearchViewModel` logic over
+/// directly-assigned `results` (no indexing).
+struct SearchChecklistModeTests {
+
+    /// Builds a minimal `SearchViewModel` backed by an empty store (no indexing) for exercising
+    /// the display-time checklist filter over directly-assigned `results`.
+    @MainActor
+    private func makeChecklistVM() throws -> (vm: SearchViewModel, dir: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSChecklist-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("c.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []), concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        return (SearchViewModel(searchService: service), dir)
+    }
+
+    /// `n` throwaway results in volume `v1`, documents `d1…dn`.
+    private func sampleResults(_ n: Int) -> [SearchResult] {
+        (1...n).map { SearchResult(documentId: "d\($0)", volumeId: "v1", header: "Doc \($0)", snippet: "", bm25Score: 0) }
+    }
+
+    @Test("Checklist mode hides reviewed results and pages over the filtered set")
+    @MainActor
+    func checklistHidesAndPagesOverFiltered() throws {
+        let (vm, dir) = try makeChecklistVM()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.results = sampleResults(30)
+
+        // Off: 30 results, 2 pages, page 0 shows the first 25.
+        #expect(vm.displayedResults.count == 30)
+        #expect(vm.totalPages == 2)
+        #expect(vm.pagedResults.count == 25)
+
+        // On + mark 6 reviewed: 24 shown, one page, all fit; the reviewed docs are gone.
+        vm.setChecklistMode(true)
+        for i in 1...6 { vm.markReviewed(volumeId: "v1", documentId: "d\(i)") }
+        #expect(vm.displayedResults.count == 24)
+        #expect(vm.resultCount == 24)
+        #expect(vm.totalPages == 1)
+        #expect(vm.pagedResults.count == 24)
+        #expect(!vm.pagedResults.contains { $0.documentId == "d1" })
+        #expect(!vm.pagedResults.contains { $0.documentId == "d6" })
+        // The raw fetch count (used by the cap indicator) is unchanged.
+        #expect(vm.results.count == 30)
+    }
+
+    @Test("Marking the last page's results reviewed re-clamps the current page")
+    @MainActor
+    func checklistPaginationClampsWhenPageEmpties() throws {
+        let (vm, dir) = try makeChecklistVM()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.results = sampleResults(30)
+        vm.currentPage = 1            // second page: d26…d30
+        #expect(vm.pagedResults.map(\.documentId) == ["d26", "d27", "d28", "d29", "d30"])
+
+        vm.setChecklistMode(true)     // resets currentPage to 0 on enable
+        #expect(vm.currentPage == 0)
+        vm.currentPage = 1            // back to page 2 under checklist (still 2 pages: 30 shown)
+        // Mark all of page 2 reviewed → 25 shown, 1 page → the stale page index clamps to 0.
+        for i in 26...30 { vm.markReviewed(volumeId: "v1", documentId: "d\(i)") }
+        #expect(vm.totalPages == 1)
+        #expect(vm.currentPage == 0)
+        #expect(vm.pagedResults.count == 25)
+        #expect(!vm.pagedResults.contains { $0.documentId == "d26" })
+    }
+
+    @Test("Disabling checklist mode restores the full unfiltered result set")
+    @MainActor
+    func checklistDisableRestoresAll() throws {
+        let (vm, dir) = try makeChecklistVM()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.results = sampleResults(10)
+        vm.setChecklistMode(true)
+        vm.markReviewed(volumeId: "v1", documentId: "d1")
+        vm.readSinceEnabledKeys = [SearchViewModel.reviewedKey(volumeId: "v1", documentId: "d2")]
+        #expect(vm.displayedResults.count == 8)
+
+        vm.setChecklistMode(false)
+        #expect(vm.displayedResults.count == 10)
+        #expect(vm.markedReviewedKeys.isEmpty)
+        #expect(vm.readSinceEnabledKeys.isEmpty)
+        #expect(vm.checklistEnabledAt == nil)
+    }
+
+    @Test("readSinceEnabledKeys and markedReviewedKeys union without double-hiding")
+    @MainActor
+    func checklistUnionOfReadAndMarked() throws {
+        let (vm, dir) = try makeChecklistVM()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.results = sampleResults(5)
+        vm.setChecklistMode(true)
+        // d1 is both opened AND marked; d2 only opened; d3 only marked.
+        vm.readSinceEnabledKeys = [
+            SearchViewModel.reviewedKey(volumeId: "v1", documentId: "d1"),
+            SearchViewModel.reviewedKey(volumeId: "v1", documentId: "d2"),
+        ]
+        vm.markReviewed(volumeId: "v1", documentId: "d1")
+        vm.markReviewed(volumeId: "v1", documentId: "d3")
+        #expect(vm.displayedResults.map(\.documentId) == ["d4", "d5"])
+        #expect(vm.results.count - vm.displayedResults.count == 3)   // d1, d2, d3 — no double count
+    }
+
+    @Test("A new search resets checklist reviewed state so a prior query's reviews don't leak")
+    @MainActor
+    func checklistResetsOnNewSearch() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSChecklistReset-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("r.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []), concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        // Two documents, both containing "alpha" and "beta" so they match either query.
+        try writeSearchFixture(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: [
+                (id: "d1", xml: "<head>One</head><p>alpha beta discussion of policy.</p>"),
+                (id: "d2", xml: "<head>Two</head><p>alpha and beta notes on strategy.</p>"),
+            ]
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        let vm = SearchViewModel(searchService: service)
+        vm.keywords = "alpha"
+        await vm.search()
+        #expect(vm.results.count == 2)
+
+        vm.setChecklistMode(true)
+        let anchorA = try #require(vm.checklistEnabledAt)
+        let first = vm.results[0]
+        vm.markReviewed(volumeId: first.volumeId, documentId: first.documentId)
+        #expect(vm.displayedResults.count == 1)   // one hidden under query A
+
+        // A different query whose results include the same documents.
+        vm.keywords = "beta"
+        await vm.search()
+        #expect(vm.results.count == 2)
+        #expect(vm.checklistMode)                                // mode persists across searches
+        #expect(vm.markedReviewedKeys.isEmpty)                   // marks cleared for the new query
+        #expect(vm.readSinceEnabledKeys.isEmpty)
+        #expect(vm.checklistEnabledAt != anchorA)                // re-anchored to the new search
+        #expect(vm.displayedResults.count == 2)                  // no cross-query hiding leaks in
+    }
+}
+
 #if os(macOS)
 
 // MARK: - MacSearchViewModelTests
