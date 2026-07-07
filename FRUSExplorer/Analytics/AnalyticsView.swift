@@ -580,11 +580,17 @@ struct AnalyticsView: View {
 
     /// Applies a new volume scope (or clears it when `volumeIds` is nil/empty) and re-runs
     /// the query. `label` names the scope in the scope bar.
+    ///
+    /// Re-runs against the **committed** term — the one whose results are on screen — rather
+    /// than the live text field. The scope bar is only shown while a term is committed, but the
+    /// field may have been cleared or edited since without pressing Search; keying the re-run on
+    /// `committedTerm` keeps the scope bar honest and never silently commits an unsubmitted edit.
     private func setScope(_ volumeIds: [String]?, label: String?) {
+        guard !committedTerm.isEmpty else { return }
         let cleaned = (volumeIds?.isEmpty == true) ? nil : volumeIds
         scopeVolumeIds = cleaned
         scopeLabel = cleaned == nil ? nil : label
-        runSearch()
+        runSearch(term: committedTerm)
     }
 
     /// Subtle one-line hint, shown only in iPhone portrait, that rotating the device
@@ -1831,8 +1837,12 @@ struct AnalyticsView: View {
 
     // MARK: - Search Action
 
-    private func runSearch() {
-        let term = termInput.trimmingCharacters(in: .whitespaces)
+    /// Runs the analytics query. Defaults to the live text field (`termInput`) for the
+    /// user-typed Search / Return path; callers re-running for a state change (e.g. a scope
+    /// change) pass the already-committed term explicitly so they never depend on the field's
+    /// current contents.
+    private func runSearch(term explicitTerm: String? = nil) {
+        let term = (explicitTerm ?? termInput).trimmingCharacters(in: .whitespaces)
         guard !term.isEmpty, let service = appState.analyticsService else { return }
         committedTerm = term
         isLoading = true
