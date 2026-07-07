@@ -671,6 +671,12 @@ struct EntryRow: View {
             }
         }
         .padding(.vertical, 4)
+        // Whole-row tap focuses the inspector on this document (#188-E) — previously only the
+        // ⓘ button did. `.contentShape` makes the padding/Spacer regions hit-testable; the
+        // borderless ⓘ Button still consumes its own tap first, so there is no double-fire, and
+        // a discrete tap does not swallow the List's horizontal swipe-to-delete / reorder.
+        .contentShape(Rectangle())
+        .onTapGesture { onInspect() }
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
     }
 }

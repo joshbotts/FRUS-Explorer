@@ -169,6 +169,42 @@ struct CollectionEntryInspector: View {
     /// Whether this presentation is the heading (section-defaults) variant.
     private var isHeading: Bool { entry.entryKind == .heading }
 
+    /// The inspector's navigation title: the owning collection's name (#188-E), so the
+    /// researcher always sees which collection they're editing. Falls back to the generic
+    /// "Document Details" / "Section Details" role when the collection has no name yet.
+    private var collectionDisplayTitle: String {
+        let name = entry.collection?.name ?? ""
+        guard !name.isEmpty else {
+            return isHeading
+                ? String(localized: "collection.inspector.section.title", defaultValue: "Section Details")
+                : String(localized: "collection.inspector.title", defaultValue: "Document Details")
+        }
+        return name
+    }
+
+    /// The pinned collection-level attributes section (#188-E). Sourced from the entry's owning
+    /// collection (the SwiftData inverse relationship), so no call-site threading is needed.
+    /// Shows the collection's identity attributes and its export-composition defaults, both
+    /// edited live via `@Bindable` — reusing `CollectionAttributesRows` / `CollectionCompositionRows`.
+    @ViewBuilder
+    private var collectionSection: some View {
+        if let collection = entry.collection {
+            Section {
+                CollectionAttributesRows(collection: collection)
+            } header: {
+                Text(String(localized: "collection.inspector.collection.header",
+                            defaultValue: "Collection"))
+            } footer: {
+                Text(String(localized: "collection.inspector.collection.footer",
+                            defaultValue: "These settings apply to the whole collection."))
+            }
+            Section(String(localized: "collection.inspector.collection.composition",
+                           defaultValue: "Export composition")) {
+                CollectionCompositionRows(collection: collection)
+            }
+        }
+    }
+
     var body: some View {
         if isInspectorColumn {
             // Inspector-column presentation (macOS Collections manager, B8): the
@@ -189,6 +225,9 @@ struct CollectionEntryInspector: View {
     private var inspectorBody: some View {
         NavigationStack {
             List {
+                // Collection-level attributes, pinned above the per-entry sections so they stay
+                // reachable after the researcher focuses a document (#188-E).
+                collectionSection
                 if isHeading {
                     headingIdentitySection
                     sectionDefaultsSection
@@ -212,11 +251,7 @@ struct CollectionEntryInspector: View {
                     }
                 }
             }
-            .navigationTitle(isHeading
-                ? String(localized: "collection.inspector.section.title",
-                         defaultValue: "Section Details")
-                : String(localized: "collection.inspector.title",
-                         defaultValue: "Document Details"))
+            .navigationTitle(collectionDisplayTitle)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

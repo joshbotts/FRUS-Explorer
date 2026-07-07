@@ -116,3 +116,45 @@ struct CollectionCompositionRows: View {
                isOn: $collection.includeWordCloud)
     }
 }
+
+// MARK: - CollectionAttributesRows
+
+/// The collection's identity / title-page attributes — its one-line note, subtitle, author
+/// line, and colophon toggle — as a drop-in group of form rows (mirroring
+/// `CollectionCompositionRows`). Surfaced at the top of the per-entry inspector (#188-E) so
+/// these collection-level values stay reachable after the researcher focuses a document.
+///
+/// Edits apply **live** to the model via `@Bindable`, matching `CollectionCompositionRows`.
+/// The introduction *prose* is deliberately excluded — it is authored in the main editor's
+/// front-matter area (a rich-text editor with nil-on-empty save semantics), not an attribute.
+///
+/// Version history:
+///   1.0 — Collections editor UX (#188-E): persistent collection-attributes inspector section
+struct CollectionAttributesRows: View {
+
+    /// The collection whose identity attributes are being edited.
+    @Bindable var collection: Collection
+
+    /// Binds an optional string field, persisting `nil` when the text is emptied so exporters
+    /// treat "cleared" the same as "never set".
+    private func optional(_ keyPath: ReferenceWritableKeyPath<Collection, String?>) -> Binding<String> {
+        Binding(get: { collection[keyPath: keyPath] ?? "" },
+                set: { collection[keyPath: keyPath] = $0.isEmpty ? nil : $0 })
+    }
+
+    var body: some View {
+        TextField(String(localized: "collection.attributes.note", defaultValue: "Description"),
+                  text: optional(\.note), axis: .vertical)
+            .lineLimit(1...3)
+
+        TextField(String(localized: "collection.attributes.subtitle", defaultValue: "Subtitle"),
+                  text: optional(\.subtitle))
+
+        TextField(String(localized: "collection.attributes.author", defaultValue: "Author line"),
+                  text: optional(\.authorLine))
+
+        Toggle(String(localized: "collection.attributes.colophon",
+                      defaultValue: "Append colophon page on export"),
+               isOn: $collection.includeColophon)
+    }
+}
