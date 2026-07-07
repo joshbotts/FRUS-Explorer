@@ -69,11 +69,13 @@ private struct HeatCell: Identifiable, Equatable {
 /// - **Landmark documents (PageRank)** — the top-N documents by an offline PageRank
 ///   *influence* score, each tappable.
 ///
-/// ## Resolved cross-references only
-/// The `cross_references` table stores a NULL `target_volume_id` for references whose target
-/// volume is ambiguous. Those edges cannot be attributed to a specific document node, so all
-/// four sections operate over **resolved** edges (non-NULL target volume) and disclose this —
-/// they are never silently conflated across volumes.
+/// ## Same-volume attribution
+/// The `cross_references` table stores a NULL `target_volume_id` for a **same-volume** reference
+/// (a bare `#…` TEI fragment, including the page references resolved at index time). The three
+/// document-level sections (most-referenced, degree distribution, PageRank) attribute those to
+/// the source's own volume via `COALESCE(target_volume_id, source_volume_id)`, so within-volume
+/// citations count. The **volume heat matrix** is inherently cross-volume — it plots connections
+/// *between* volumes — so it continues to exclude same-volume edges.
 ///
 /// ## Structural, not temporal
 /// These are structural statistics of the citation graph, so — unlike the term/person
@@ -169,7 +171,7 @@ struct CrossReferenceAnalyticsView: View {
 
     private var resolvedCaption: some View {
         Text(String(localized: "crossRefAnalytics.resolvedCaption",
-                    defaultValue: "All figures count resolved cross-references only — citations whose target volume is identified. References with an ambiguous (unresolved) target volume are excluded rather than conflated across volumes."))
+                    defaultValue: "The most-referenced, degree, and PageRank figures count every citation, attributing same-volume references (including resolved page references) to their own volume. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .padding(.horizontal)
