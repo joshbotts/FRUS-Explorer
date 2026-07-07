@@ -385,6 +385,7 @@ private struct SettingsSearchPane: View {
     @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes      = true
     @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries  = true
     @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
+    @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
 
     var body: some View {
         ScrollView {
@@ -425,6 +426,21 @@ private struct SettingsSearchPane: View {
                 }
                 .pickerStyle(.radioGroup)
                 .labelsHidden()
+
+                PaneSectionHeader(title: "Result preview")
+                Text("How many lines of matched context each search result shows. Individual search screens can override this default.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .padding(.bottom, 10)
+                Picker("Snippet length", selection: $snippetLineCount) {
+                    ForEach(1...10, id: \.self) { n in
+                        Text(SearchDefaults.snippetLinesLabel(n)).tag(n)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(maxWidth: 200, alignment: .leading)
             }
             .padding(24)
         }

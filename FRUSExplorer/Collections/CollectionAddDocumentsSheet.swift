@@ -33,6 +33,14 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
     /// ISO-8601 document date from the index, when available.
     var dateISO: String?
 
+    /// Context snippet (with `<b>…</b>` match markers) from the Search tab, when available —
+    /// shown as a preview so the researcher can judge a result without opening it (#189-C).
+    /// `nil` on the Browse / Citations / Tags tabs, which have no query-matched snippet.
+    var snippet: String?
+
+    /// Archival source note from the index, when available (#189-C preview).
+    var sourceNote: String?
+
     /// The canonical `"volumeId/documentId"` key shared with the entry-data loaders.
     var key: String { "\(volumeId)/\(documentId)" }
 
@@ -442,6 +450,8 @@ struct CollectionAddDocumentsSheet: View {
     // Search tab
     /// Current search field text (debounced into `runSearch`).
     @State private var searchText = ""
+    /// This surface's persisted snippet-length override (#189-C); `0` follows the global default.
+    @AppStorage(SearchDefaults.snippetLineCountAddDocOverrideKey) private var addDocSnippetOverride = 0
     /// Latest search results.
     @State private var searchResults: [SearchResult] = []
     /// `true` while a search query runs.
@@ -681,6 +691,17 @@ struct CollectionAddDocumentsSheet: View {
                 if isSearching {
                     ProgressView().controlSize(.small)
                 }
+                // Preview length for this sheet (#189-C) — "Follow global" defers to Settings.
+                Menu {
+                    SnippetLengthOverridePicker(override: $addDocSnippetOverride)
+                } label: {
+                    Image(systemName: "text.alignleft")
+                        .foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help(String(localized: "collection.addDocs.snippet.help",
+                             defaultValue: "How many lines of matched context each result preview shows."))
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -749,7 +770,9 @@ struct CollectionAddDocumentsSheet: View {
             volumeId: result.volumeId,
             header: result.header.isEmpty ? nil : result.header,
             volumeTitle: volumeTitle(for: result.volumeId),
-            dateISO: result.dateISO)
+            dateISO: result.dateISO,
+            snippet: result.snippet.isEmpty ? nil : result.snippet,
+            sourceNote: result.sourceNote)
     }
 
     /// Row badges for editorial-note / front-matter results.
@@ -1345,6 +1368,11 @@ private struct DiscoveryPickRow: View {
     /// Toggles the document's membership in the shared selection.
     let action: () -> Void
 
+    /// Global default snippet length and this surface's (add-doc) override (#189-C); observed so
+    /// the preview re-renders live when either is changed.
+    @AppStorage(SearchDefaults.snippetLineCountKey) private var globalSnippetLines = SearchDefaults.defaultSnippetLineCount
+    @AppStorage(SearchDefaults.snippetLineCountAddDocOverrideKey) private var addDocSnippetOverride = 0
+
     var body: some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: 10) {
@@ -1369,6 +1397,26 @@ private struct DiscoveryPickRow: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
+
+                    // Matched-context preview (#189-C, Search tab only) — enough information to
+                    // judge a result without opening it. Length is the user's chosen line count.
+                    if let snippet = pick.snippet, !snippet.isEmpty {
+                        SearchSnippetView(snippet: snippet)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(SearchDefaults.effectiveSnippetLineCount(global: globalSnippetLines, override: addDocSnippetOverride))
+                            .multilineTextAlignment(.leading)
+                            .padding(.top, 1)
+                    }
+
+                    // Archival source note (#189-C) — provenance at a glance.
+                    if let source = pick.sourceNote, !source.isEmpty {
+                        Text(source)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
 
                     if let sourceLine {
                         Text(sourceLine)

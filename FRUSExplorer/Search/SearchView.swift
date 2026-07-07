@@ -768,6 +768,11 @@ private struct SearchResultRow: View {
     let userTags: [UserTag]
     let onUserTagTap: (String) -> Void
 
+    /// Global default snippet length and this surface's override (#189-C); observed so the row
+    /// re-renders live when either is changed in Settings or the search filter panel.
+    @AppStorage(SearchDefaults.snippetLineCountKey) private var globalSnippetLines = SearchDefaults.defaultSnippetLineCount
+    @AppStorage(SearchDefaults.snippetLineCountMainOverrideKey) private var snippetOverride = 0
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Header + document number
@@ -800,12 +805,13 @@ private struct SearchResultRow: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
-            // Snippet — render <b>…</b> markers as highlighted text
+            // Snippet — render <b>…</b> markers as highlighted text, clamped to the user's
+            // chosen line count (#189-C).
             if !result.snippet.isEmpty {
                 SearchSnippetView(snippet: result.snippet)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(3)
+                    .lineLimit(SearchDefaults.effectiveSnippetLineCount(global: globalSnippetLines, override: snippetOverride))
                     .padding(.top, 1)
             }
 
@@ -862,7 +868,8 @@ private struct SearchResultRow: View {
 /// Matched terms are shown in the accent colour with medium weight; the surrounding
 /// context text uses the inherited foreground style. Mirrors `SnippetView` in
 /// `SearchSheet.swift` (used by the macOS search sheet and iOS search view).
-private struct SearchSnippetView: View {
+struct SearchSnippetView: View {
+    /// The raw snippet with `<b>…</b>` match markers.
     let snippet: String
 
     var body: some View {
@@ -897,6 +904,27 @@ private struct SearchSnippetView: View {
             }
         }
         return result
+    }
+}
+
+// MARK: - SnippetLengthOverridePicker
+
+/// A per-surface snippet-length override picker (#189-C): "Follow global" (`0`) plus 1…10 lines.
+/// Bound to a persisted `@AppStorage` override; `0` defers to the global default set in Settings.
+/// Reused by the main search filter panel and the add-document sheet.
+struct SnippetLengthOverridePicker: View {
+    /// The per-surface override binding (`0` = follow the global default).
+    @Binding var override: Int
+
+    var body: some View {
+        Picker(String(localized: "search.snippet.override.label", defaultValue: "Snippet length"),
+               selection: $override) {
+            Text(String(localized: "search.snippet.override.followGlobal",
+                        defaultValue: "Follow global")).tag(0)
+            ForEach(1...10, id: \.self) { n in
+                Text(SearchDefaults.snippetLinesLabel(n)).tag(n)
+            }
+        }
     }
 }
 

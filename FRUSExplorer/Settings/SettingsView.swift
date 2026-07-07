@@ -3469,6 +3469,7 @@ private struct SearchDefaultsView: View {
     @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes        = true
     @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries    = true
     @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
+    @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
 
     var body: some View {
         Form {
@@ -3517,6 +3518,21 @@ private struct SearchDefaultsView: View {
                     String(localized: "settings.search.typeFilter.a11y",
                            defaultValue: "Default document type filter")
                 )
+            }
+
+            Section {
+                Picker(String(localized: "settings.search.snippet.label",
+                              defaultValue: "Snippet length"),
+                       selection: $snippetLineCount) {
+                    ForEach(1...10, id: \.self) { n in
+                        Text(SearchDefaults.snippetLinesLabel(n)).tag(n)
+                    }
+                }
+            } header: {
+                Text(String(localized: "settings.search.snippet.header", defaultValue: "Result Preview"))
+            } footer: {
+                Text(String(localized: "settings.search.snippet.footer",
+                            defaultValue: "How many lines of matched context each search result shows. Individual search screens can override this default."))
             }
         }
         .navigationTitle(String(localized: "settings.search.title",

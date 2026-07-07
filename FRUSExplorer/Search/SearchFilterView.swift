@@ -65,6 +65,9 @@ struct SearchFilterView: View {
     /// Person entries matching `personSearchText`, shown as a suggestion list.
     @State private var personSuggestions: [PersonEntry] = []
 
+    /// This surface's persisted snippet-length override (#189-C); `0` follows the global default.
+    @AppStorage(SearchDefaults.snippetLineCountMainOverrideKey) private var mainSnippetOverride = 0
+
     var body: some View {
         #if os(macOS)
         macBody
@@ -107,6 +110,7 @@ struct SearchFilterView: View {
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
+                resultPreviewSection
             }
             .formStyle(.grouped)
 
@@ -137,6 +141,7 @@ struct SearchFilterView: View {
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
+                resultPreviewSection
                 if vm.hasActiveFilters              { clearSection }
             }
             .navigationTitle(
@@ -171,6 +176,21 @@ struct SearchFilterView: View {
         #if os(iOS)
         .presentationDetents([.medium, .large])
         #endif
+    }
+
+    // MARK: - Result Preview (#189-C)
+
+    /// Per-surface snippet-length override for the main search results — "Follow global" defers
+    /// to the Settings default.
+    private var resultPreviewSection: some View {
+        Section {
+            SnippetLengthOverridePicker(override: $mainSnippetOverride)
+        } header: {
+            Text(String(localized: "search.filter.resultPreview.header", defaultValue: "Result Preview"))
+        } footer: {
+            Text(String(localized: "search.filter.resultPreview.footer",
+                        defaultValue: "Lines of matched context shown per result on this screen."))
+        }
     }
 
     // MARK: - Date Range
