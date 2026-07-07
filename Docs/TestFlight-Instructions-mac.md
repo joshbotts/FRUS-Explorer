@@ -1,18 +1,17 @@
-# What's New in Build 28 (Mac)
+# What's New in Build 30 (Mac)
 
-Build 28 carries everything added since build 26. New to the app? Open the **Corpus Browser (⇧⌘B)**, pick a subseries (e.g. "1964–1968"), download 2–3 volumes, and let **Settings (⌘,) → Index Health** finish before judging results.
+Build 30 gathers the tester-feedback fixes and research tools added since build 28 (build 29 was internal only). **No re-index this time** — the update is ready to use immediately.
 
-## ⚠️ One-time re-index on first launch
-If you already have volumes downloaded, this update re-indexes them **once** (the search index moved to v21 so page-number references like "see p. 427" now resolve to the correct document). Expect Index Health to show re-indexing on first launch — let it finish, then open a document with a "see p. NNN" reference and confirm it navigates correctly.
+## Analytics (dedicated windows)
+- **Scope + year range** — Corpus, Person, and Cross-Reference Analytics gained a **Scope** control (Whole corpus / By Subseries / By Volume) and a year-range bar, so you can narrow any dashboard to a project-specific slice. Cross-Reference figures are **source-anchored** (counted from the citing document), so scoping to an era or volume never collapses the graph.
+- **Same-volume references counted** — Cross-Reference figures (Most-Referenced Documents, the degree-distribution histogram, and PageRank influence landmarks) now include within-volume citations that were previously dropped, so counts and rankings rise. The volume-to-volume heat matrix is unchanged by design (it plots connections *between* volumes).
 
-## New surfaces to exercise
-- **Person Analytics** (its own window, from the Tools toolbar). *Trends:* most-mentioned people by era, compare up to 5 people's mention trajectories, and a two-person co-mention chart. *Network:* a co-mention ego-graph around a focus person. Pick people; confirm the charts populate and update.
-- **Cross-Reference Analytics** (its own window): most-referenced documents (in-degree), a degree-distribution histogram, a volume-to-volume citation heat matrix, and offline PageRank "influence" landmarks. Sanity-check the rankings and heat matrix.
-- **About the Series** (FRUS Research Guide): four dashboards that render with **no index** — try them mid-onboarding. Production & Timeliness, Geographic Emphasis, Archival Sourcing, and Administration Profiles (per president). On each, try the editable **year range** and the per-chart **View as table** (Copy CSV). Report any figure that looks wrong.
-- **Corpus Analytics:** a new **"% of documents"** toggle on the By-Year/By-Decade charts reads a term as a share of the corpus rather than a raw count. Confirm the axis and values switch sensibly.
-- **Collections (⇧⌘K):** the manager ribbon is consolidated into **four controls** — **Add ▾** (Documents / Section Heading / Note Block / Passages / Apparatus) · **Sort by Date ▾** · **View ▾** (Composition / Front Matter / Preview) · **Export…**; confirm every action you used before is still reachable. **Sort by Date** now offers **Across the Whole Collection** vs **Within Each Section** (confirm within-section never moves a document across a heading). The collection **note** collapses to an **"Add a note"** affordance (confirm it expands and persists). Also re-test the reworked editor: add documents (search / browse / paste citations & links / by tag), rich-text prose + Link, the ⓘ inspector, the live preview (eye button), and PDF/HTML/DOCX + `.fruscollection` export plus double-click import.
+## Collections (⇧⌘K)
+- **Editor** — with the inspector open, a single click on any document row now moves the inspector to that row (double-click / Return / ⓘ still open it). The inspector is titled with the collection's own name and pins a **Collection** section at the top — description, subtitle, author line, colophon, and all export-composition defaults — so collection-wide settings stay reachable while a document is focused.
+- **Add Documents (⇧⌘A)** — the **Search** tab now shows a matched snippet + archival source note under each result, so you can judge relevance before adding. The preview length follows the global snippet-length setting, with a per-sheet override.
+
+## Settings (⌘,)
+- **Sync Diagnostics** (General → Sync Diagnostics) — a local, on-device, **redacted** log of iCloud sync events you can read and export (as JSON) to help diagnose sync problems. It records only event types, timing, and error codes — never identifiers, account identity, or anything about your documents. Try Copy, Export…, and Clear Log.
 
 ## Feedback
-Report crashes, freezes, or anything unexpected — especially misfiring links/source notes, graph and chart interactions, the word cloud, Collections export/round-trip, Send to Zotero, the People index, multi-window behavior, AI summaries, and searches returning too few/many. For the new analytics, flag wrong/missing people or documents and broken graphs/histograms/heat matrices; for the dashboards, wrong figures or misbehaving year-range/table controls; and confirm the one-time re-index completed cleanly.
-
-Include your macOS version, the volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!
+Report crashes, freezes, or anything unexpected — especially wrong/missing analytics after scoping, the Collections inspector re-targeting on the wrong row, add-document previews that look off, multi-window behavior, or sync errors (grab a Sync Diagnostics export if you hit one). Include your macOS version, the volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!
