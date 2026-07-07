@@ -541,8 +541,15 @@ Resolved 2026-07-06:
 1. **188-B ✅ implemented** All same-volume edges attributed to the source volume via the
    **query-layer** `COALESCE` (revised from write-time — no re-index). CA-6 landmark/degree/PageRank
    rankings shift (intended); heat matrix unchanged. Shipped on `claude/188b-page-ref-analytics`.
-2. **189-B ✅** Full slice picker: **subseries + volume + decade-as-filter**, extended to
-   **Corpus + Person + Series**. Largest feature; may split into 5a/5b.
+2. **189-B — reframed 2026-07-06.** 5a (Corpus subseries/volume scope) ✅ shipped. Grounded
+   review then found **decade-as-filter is redundant** with the existing `AnalyticsYearRangeBar`
+   (already on Corpus + Person + 3/4 Series dashboards; set it to 1960–1969 to scope the 1960s) —
+   its only unique delta is non-contiguous decade comparison, which we dropped. The real gap is
+   **volume/subseries scope**. 5b now = add the scope picker to **Person Analytics** (needs
+   `volumeIds` on ~6 `PersonMentionStore` queries) and give **Cross-Reference Analytics** both a
+   **year-range bar and the scope picker** (needs date+volume filters on the CA-6 queries). Series
+   dashboards left as-is (already year-range/administration scoped). Extract a reusable
+   `AnalyticsScopeBar` for Person + Cross-Reference.
 3. **189-D ✅** Anchor = **when checklist mode is enabled**; **add** the inline "Mark reviewed"
    affordance (lightweight marker, not a fabricated `ReadingHistoryEntry`).
 4. **189-C ✅** Persisted per-surface snippet-length overrides + global default (see 189-C
