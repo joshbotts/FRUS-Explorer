@@ -624,6 +624,14 @@ private struct CollectionDetailPane: View {
         inspectedEntryId = (inspectedEntryId == entryId) ? nil : entryId
     }
 
+    /// Refocuses the inspector on `entryId` — but only when it is already open (#188-E). A
+    /// single click while the inspector column is showing moves it to the clicked row; when the
+    /// inspector is closed, single-click stays pure list selection (double-click / ↩ / the ⓘ
+    /// button open it), so normal navigation is preserved.
+    private func refocusInspectorIfOpen(for entryId: UUID) {
+        if inspectedEntryId != nil { inspectedEntryId = entryId }
+    }
+
     /// The editing column (name, note, entries list) — the pre-Phase-2b pane body,
     /// hoisted so the live preview can sit beside it.
     private var editorColumn: some View {
@@ -921,6 +929,12 @@ private struct CollectionDetailPane: View {
             // double-click for word selection.
             .simultaneousGesture(TapGesture(count: 2).onEnded {
                 toggleInspector(for: entry.id)
+            })
+            // Single click refocuses the inspector on this row when it's already open (#188-E),
+            // matching the iPad whole-row tap; when the inspector is closed this is a no-op so
+            // the click stays pure list selection.
+            .simultaneousGesture(TapGesture().onEnded {
+                refocusInspectorIfOpen(for: entry.id)
             })
         case .heading:
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
