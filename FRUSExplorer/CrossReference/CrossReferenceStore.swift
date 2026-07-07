@@ -595,28 +595,30 @@ public actor CrossReferenceStore {
 
     /// The top-N documents by inbound citation count (in-degree), joined to their header.
     ///
-    /// **Resolved targets only.** Cross-references whose `target_volume_id` is NULL are
-    /// ambiguous across volumes — a NULL target means "some document with this id" and
-    /// cannot be attributed to a specific `(volume, document)` node without conflating
-    /// same-numbered documents in different volumes. Those rows are excluded from the
-    /// ranking; the caller discloses this as "resolved cross-references." Ranking is over
-    /// the resolved node `(target_volume_id, target_document_id)`.
+    /// A NULL `target_volume_id` denotes a **same-volume** reference (the TEI `<ref>` used a
+    /// bare `#…` fragment, so the target lives in the source's own volume — this includes the
+    /// page references resolved at index time). Such edges are attributed to the node
+    /// `(source_volume_id, target_document_id)` via `COALESCE(target_volume_id, source_volume_id)`
+    /// — the same normalisation the ego-graph queries (`inboundEdges`/`outboundEdges`) already
+    /// use — so within-volume citations count toward a document's in-degree instead of being
+    /// dropped. Ranking is over the resolved node `(resolved_target_volume, target_document_id)`.
     ///
     /// - Parameter limit: Maximum rows to return, ordered by in-degree descending.
     /// - Returns: `(volumeId, documentId, inDegree, header)` — `header` from `document_cache`,
-    ///   `nil` when the target volume is not yet indexed.
+    ///   `nil` when the target is not in the cache (a not-yet-indexed cross-volume target, or a
+    ///   non-document anchor such as an unresolved roman-numeral page reference).
     public func topDocumentsByInDegree(
         limit: Int
     ) throws -> [(volumeId: String, documentId: String, inDegree: Int, header: String?)] {
         let sql = """
-            SELECT cr.target_volume_id, cr.target_document_id, COUNT(*) AS in_degree, dc.header
+            SELECT COALESCE(cr.target_volume_id, cr.source_volume_id) AS resolved_target_volume,
+                   cr.target_document_id, COUNT(*) AS in_degree, dc.header
             FROM cross_references cr
             LEFT JOIN document_cache dc
-                   ON dc.volume_id = cr.target_volume_id
+                   ON dc.volume_id = COALESCE(cr.target_volume_id, cr.source_volume_id)
                   AND dc.document_id = cr.target_document_id
-            WHERE cr.target_volume_id IS NOT NULL
-            GROUP BY cr.target_volume_id, cr.target_document_id
-            ORDER BY in_degree DESC, cr.target_volume_id, cr.target_document_id
+            GROUP BY resolved_target_volume, cr.target_document_id
+            ORDER BY in_degree DESC, resolved_target_volume, cr.target_document_id
             LIMIT ?
             """
         let stmt = try prepare(sql)
@@ -634,22 +636,21 @@ public actor CrossReferenceStore {
         return result
     }
 
-    /// The in-degree of every resolved-target document — one row per distinct
-    /// `(target_volume_id, target_document_id)` with a non-NULL target volume, giving its
-    /// inbound citation count. NULL-target (unresolved) edges are excluded, matching
-    /// `topDocumentsByInDegree`.
+    /// The in-degree of every target document — one row per distinct resolved node
+    /// `(COALESCE(target_volume_id, source_volume_id), target_document_id)`, giving its inbound
+    /// citation count. Same-volume references (NULL target volume) are attributed to their
+    /// source volume, matching `topDocumentsByInDegree`.
     ///
     /// The view buckets these per-document counts into a histogram with
     /// `CrossReferenceStats.degreeDistribution(_:)` (a pure, testable function) rather than
     /// bucketing in SQL, so the bucketing rule is unit-testable without a database.
     ///
-    /// - Returns: The in-degree value for each resolved target document (unordered).
+    /// - Returns: The in-degree value for each target document (unordered).
     public func resolvedInDegrees() throws -> [Int] {
         let sql = """
             SELECT COUNT(*) AS in_degree
             FROM cross_references
-            WHERE target_volume_id IS NOT NULL
-            GROUP BY target_volume_id, target_document_id
+            GROUP BY COALESCE(target_volume_id, source_volume_id), target_document_id
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -660,17 +661,17 @@ public actor CrossReferenceStore {
         return result
     }
 
-    /// The out-degree of every source document that emits at least one resolved cross-
-    /// reference — one row per distinct `(source_volume_id, source_document_id)` counting
-    /// its outbound edges to resolved targets. NULL-target edges are excluded so the in-
-    /// and out-degree distributions are drawn from the same resolved-edge population.
+    /// The out-degree of every source document that emits at least one cross-reference —
+    /// one row per distinct `(source_volume_id, source_document_id)` counting its outbound
+    /// edges. Same-volume edges are included (they are attributed to the source volume in the
+    /// in-degree query), so the in- and out-degree distributions are drawn from the same
+    /// edge population.
     ///
     /// - Returns: The out-degree value for each such source document (unordered).
     public func resolvedOutDegrees() throws -> [Int] {
         let sql = """
             SELECT COUNT(*) AS out_degree
             FROM cross_references
-            WHERE target_volume_id IS NOT NULL
             GROUP BY source_volume_id, source_document_id
             """
         let stmt = try prepare(sql)
@@ -682,26 +683,28 @@ public actor CrossReferenceStore {
         return result
     }
 
-    /// Every resolved document-to-document citation edge, as `(source, target)` node keys.
+    /// Every document-to-document citation edge, as `(source, target)` node keys.
     ///
-    /// **Resolved targets only** (`target_volume_id IS NOT NULL`) — the same node-identity
-    /// discipline as `topDocumentsByInDegree`: an edge to a NULL target volume cannot be
-    /// attributed to a specific node, so it is excluded. Feeds the offline `PageRank`
-    /// power iteration, whose node set is the union of the sources and resolved targets.
+    /// Same-volume references (NULL target volume) are attributed to the node
+    /// `(source_volume_id, target_document_id)` via `COALESCE(target_volume_id, source_volume_id)`
+    /// — the same node identity as `topDocumentsByInDegree` — so within-volume citations feed
+    /// the offline `PageRank` power iteration rather than being dropped. The node set is the
+    /// union of the sources and the resolved targets.
     ///
-    /// Self-loops (`source == target`) are excluded — a document citing itself carries no
-    /// influence signal and would distort PageRank's dangling/mass handling.
+    /// Self-loops (`source == resolved target`) are excluded — a document citing itself carries
+    /// no influence signal and would distort PageRank's dangling/mass handling.
     ///
-    /// - Returns: One `(source, target)` pair per stored resolved edge (with multiplicity —
-    ///   repeated citations between the same pair appear repeatedly, so PageRank weights a
-    ///   heavily-cited pair more, matching the heat matrix's `ref_count`).
+    /// - Returns: One `(source, target)` pair per stored edge (with multiplicity — repeated
+    ///   citations between the same pair appear repeatedly, so PageRank weights a heavily-cited
+    ///   pair more, matching the heat matrix's `ref_count`).
     public func resolvedCitationEdges() throws -> [(source: DocumentNodeKey, target: DocumentNodeKey)] {
         let sql = """
-            SELECT source_volume_id, source_document_id, target_volume_id, target_document_id
+            SELECT source_volume_id, source_document_id,
+                   COALESCE(target_volume_id, source_volume_id) AS resolved_target_volume,
+                   target_document_id
             FROM cross_references
-            WHERE target_volume_id IS NOT NULL
-              AND NOT (source_volume_id = target_volume_id
-                       AND source_document_id = target_document_id)
+            WHERE NOT (COALESCE(target_volume_id, source_volume_id) = source_volume_id
+                       AND target_document_id = source_document_id)
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }

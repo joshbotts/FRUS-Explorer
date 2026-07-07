@@ -99,15 +99,19 @@ Two implementation options:
   data is self-describing. Requires bumping `currentDateIndexVersion` (21 → 22) per the
   index-version-bump rule, forcing a one-time re-index.
 
-**✅ DECISION (2026-07-06): all edges · write-time · re-index (Option 2).** Attribute **all**
-same-volume edges (page + document refs) to the source volume at **write time** in
-`extractCrossReferences` / `resolvePageBasedCrossReferences`, and **bump
-`currentDateIndexVersion` 21 → 22** (one-time re-index). This makes the data self-describing so
-both read paths can't diverge (the "one source of truth" lesson from PR #184). **Expected
-behavior change:** CA-8 landmark rankings and PageRank will shift — within-volume citations (the
-bulk of the graph, currently invisible) now count. That is intended and more correct; update the
-CA-6/CA-8 disclosure copy ("resolved cross-references" now includes same-volume) and reset test
-expectations accordingly.
+**✅ IMPLEMENTED (2026-07-06): query-layer via COALESCE (Option 1) — decision revised mid-session.**
+The write-time/re-index plan was dropped once implementation surfaced that
+`COALESCE(target_volume_id, source_volume_id)` is already the codebase's idiom for same-volume refs
+(used by `inboundEdges`/`outboundEdges`). The four CA-6 corpus queries (`topDocumentsByInDegree`,
+`resolvedInDegrees`, `resolvedOutDegrees`, `resolvedCitationEdges`) now attribute same-volume edges
+to the source volume via that same COALESCE — **no index bump, no re-index**, contained to
+`CrossReferenceStore`. The `volumeLevelConnections`/heat-matrix queries are unchanged (they mean
+cross-volume via `IS NOT NULL AND != source`). No `document_cache` filter was added: the existing
+design intentionally shows targets absent from the cache (LEFT JOIN, nil header) — e.g. cross-volume
+refs to un-downloaded volumes — so same-volume anchors follow the same tolerated behavior.
+**Behavior change:** landmark rankings, degree distributions, and PageRank shift — within-volume
+citations now count. Disclosure copy updated; the three CA-6 store tests were inverted to assert
+same-volume inclusion. Shipped on `claude/188b-page-ref-analytics`.
 
 **Testing anchors:** the tester's screenshot is the landmark docs list; use those documents plus
 the PR #184 spot-checks (page 5→d6, 8→d9, 11→d11 in frus1961-63v06) to confirm the resolved page
@@ -533,8 +537,9 @@ Docs/TestFlight/README/in-app-guide docs pass.
 
 Resolved 2026-07-06:
 
-1. **188-B ✅** All same-volume edges (page + document), attributed at **write time**, **index
-   v21 → v22**. Expect CA-8 landmark/PageRank rankings to shift (intended).
+1. **188-B ✅ implemented** All same-volume edges attributed to the source volume via the
+   **query-layer** `COALESCE` (revised from write-time — no re-index). CA-6 landmark/degree/PageRank
+   rankings shift (intended); heat matrix unchanged. Shipped on `claude/188b-page-ref-analytics`.
 2. **189-B ✅** Full slice picker: **subseries + volume + decade-as-filter**, extended to
    **Corpus + Person + Series**. Largest feature; may split into 5a/5b.
 3. **189-D ✅** Anchor = **when checklist mode is enabled**; **add** the inline "Mark reviewed"

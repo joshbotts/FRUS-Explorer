@@ -337,62 +337,62 @@ struct CrossReferenceStoreTests {
 
     // MARK: - CA-6 statistical queries
 
-    @Test("topDocumentsByInDegree ranks by resolved inbound count and excludes NULL targets")
-    func topDocumentsByInDegreeRanksResolvedOnly() async throws {
+    @Test("topDocumentsByInDegree counts same-volume references, attributed to the source volume")
+    func topDocumentsByInDegreeCountsSameVolume() async throws {
         let (dir, dbURL, store) = try makeTempStore()
         defer { try? FileManager.default.removeItem(at: dir) }
 
         try insertDocumentCache(dbURL: dbURL, volumeId: "vol1", documentId: "hub", header: "Hub Document")
 
-        // Three resolved inbound citations to vol1/hub.
+        // Two cross-volume inbound citations to vol1/hub.
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1",
                        targetVolumeId: "vol1", targetDocumentId: "hub")
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s2",
                        targetVolumeId: "vol1", targetDocumentId: "hub")
+        // One SAME-VOLUME inbound citation to hub (NULL target volume, source = vol1). This is
+        // how the parser stores a bare `#hub` fragment and a resolved page reference — it must
+        // now be attributed to (vol1, hub) and count toward hub's in-degree (#188-B).
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "s3",
-                       targetVolumeId: "vol1", targetDocumentId: "hub")
-        // One resolved inbound to vol1/minor.
+                       targetVolumeId: nil, targetDocumentId: "hub")
+        // One cross-volume inbound to vol1/minor.
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s4",
                        targetVolumeId: "vol1", targetDocumentId: "minor")
-        // Two UNRESOLVED edges (NULL target volume) — must be excluded from ranking.
-        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s5",
-                       targetVolumeId: nil, targetDocumentId: "hub")
-        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s6",
-                       targetVolumeId: nil, targetDocumentId: "hub")
 
         let top = try await store.topDocumentsByInDegree(limit: 10)
 
-        #expect(top.count == 2, "Only two resolved target documents exist")
+        #expect(top.count == 2, "Two distinct target documents: vol1/hub and vol1/minor")
         let first = try #require(top.first)
         #expect(first.volumeId == "vol1")
         #expect(first.documentId == "hub")
-        #expect(first.inDegree == 3, "NULL-target edges must not inflate the in-degree")
+        #expect(first.inDegree == 3, "2 cross-volume + 1 same-volume citation all count")
         #expect(first.header == "Hub Document", "Header joined from document_cache")
         #expect(top[1].documentId == "minor")
         #expect(top[1].inDegree == 1)
     }
 
-    @Test("resolvedInDegrees returns per-document counts for the distribution histogram")
+    @Test("resolvedInDegrees returns per-document counts, including same-volume references")
     func resolvedInDegreesPerDocument() async throws {
         let (dir, dbURL, store) = try makeTempStore()
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        // hub: 2 inbound; minor: 1 inbound. Plus a NULL-target edge (excluded).
+        // vol1/hub: 2 cross-volume inbound; vol1/minor: 1 cross-volume inbound.
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1",
                        targetVolumeId: "vol1", targetDocumentId: "hub")
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s2",
                        targetVolumeId: "vol1", targetDocumentId: "hub")
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s3",
                        targetVolumeId: "vol1", targetDocumentId: "minor")
-        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s4",
+        // A same-volume edge from vol1 → hub (NULL target) is attributed to (vol1, hub),
+        // raising hub's in-degree to 3 (#188-B).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "s4",
                        targetVolumeId: nil, targetDocumentId: "hub")
 
         let degrees = try await store.resolvedInDegrees().sorted()
-        #expect(degrees == [1, 2], "One doc with in-degree 1, one with in-degree 2; NULL excluded")
+        #expect(degrees == [1, 3], "minor: 1; hub: 2 cross-volume + 1 same-volume = 3")
 
         // Sanity: the pure bucketer turns these into two single-document buckets.
         let buckets = CrossReferenceStats.degreeDistribution(degrees)
-        #expect(buckets.map(\.degree) == [1, 2])
+        #expect(buckets.map(\.degree) == [1, 3])
         #expect(buckets.allSatisfy { $0.documentCount == 1 })
     }
 
@@ -426,7 +426,7 @@ struct CrossReferenceStoreTests {
         #expect(Set(top) == ["vol1", "vol2"])
     }
 
-    @Test("resolvedCitationEdges returns resolved edges and excludes NULL targets and self-loops")
+    @Test("resolvedCitationEdges includes same-volume edges (attributed to source) and excludes self-loops")
     func resolvedCitationEdgesForPageRank() async throws {
         let (dir, dbURL, store) = try makeTempStore()
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -435,22 +435,26 @@ struct CrossReferenceStoreTests {
                        targetVolumeId: "vol1", targetDocumentId: "b")
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "b",
                        targetVolumeId: "vol2", targetDocumentId: "c")
-        // NULL target — excluded.
+        // Same-volume edge (NULL target) — attributed to (vol1, d) and now INCLUDED (#188-B).
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a",
                        targetVolumeId: nil, targetDocumentId: "d")
-        // Self-loop — excluded.
+        // Self-loop — still excluded (COALESCE resolves target to the source volume + doc).
         try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a",
                        targetVolumeId: "vol1", targetDocumentId: "a")
 
         let edges = try await store.resolvedCitationEdges()
-        #expect(edges.count == 2, "NULL-target and self-loop edges excluded")
+        #expect(edges.count == 3, "a→b, b→c, and the same-volume a→d; self-loop excluded")
+        // The same-volume edge resolves its target volume to the source's own volume.
+        #expect(edges.contains { $0.source.volumeId == "vol1" && $0.source.documentId == "a"
+                                  && $0.target.volumeId == "vol1" && $0.target.documentId == "d" },
+                "same-volume a→d attributed to (vol1, d)")
 
-        // Feed PageRank — three nodes (a, b, c), mass conserved.
+        // Feed PageRank — four nodes (a, b, c, d), mass conserved.
         let scores = PageRank.compute(edges: edges)
-        #expect(scores.count == 3)
+        #expect(scores.count == 4)
         let total = scores.reduce(0.0) { $0 + $1.score }
         #expect(abs(total - 1.0) < 1e-6)
-        // c is the only twice-removed sink; b is cited by a; a is never cited.
+        // c and d are cited; a is never cited.
         let byKey = Dictionary(uniqueKeysWithValues:
             scores.map { ("\($0.key.volumeId)/\($0.key.documentId)", $0.score) })
         #expect((byKey["vol2/c"] ?? 0) > (byKey["vol1/a"] ?? 0))
