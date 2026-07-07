@@ -523,7 +523,8 @@ session; small ones can be combined.
 | 2 | **Page-ref analytics visibility** | 188-B | Backend + tests; needs the same-volume-attribution decision. Standalone. |
 | 3 | **CloudKit diagnosis → fix** | 188-C + 188-C.1 | Build the client-side sync-telemetry export (188-C.1) first to collect the real per-item error, then the schema/model fix. Diagnosis-led; includes a user Dashboard step. Start early (blocks production sync). |
 | 4 | **Analytics compact-width toolbar** | 188-A | Do before/with #5 so new filters land in the Menu. |
-| 5 | **Analytics era/corpus slicing** | 189-B | Full scope: subseries + volume + decade filters, across Corpus + Person + Series. Builds on #4; reuses `volumeIds` plumbing. Largest feature — consider splitting 5a (corpus) / 5b (Person + Series). |
+| 5a ✅ | **Corpus Analytics scope picker** | 189-B | Shipped: interactive subseries/volume scope selector in `AnalyticsView`, reusing the `scopeVolumeIds` query plumbing. `claude/189b-analytics-slicing`. |
+| 5b | **Analytics slicing — remainder** | 189-B | Remaining: decade-as-filter, and extend the scope picker to Person Analytics + the Series dashboards. |
 | 6 | **Collections editor UX** | 188-E + 189-C | Same file cluster (`Collections/`): row-tap inspect, heading, collection section, Mac review, add-doc snippet previews. |
 | 7 | **Search checklist mode** | 189-D | Uses existing `ReadingHistoryEntry`. Anchor = mode-enable; includes the inline "Mark reviewed" affordance (lightweight marker). |
 | 8 | **Editorial content pass** | 189-A | Content-led; blocked on the user's editorial revision. Ends with the standing docs pass. |
