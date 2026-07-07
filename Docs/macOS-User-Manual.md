@@ -262,6 +262,8 @@ FRUS Explorer searches across:
 - Generated summaries
 - User tag names
 
+Each result shows a highlighted snippet of the matching text. You can control how much context that snippet shows — anywhere from **1 to 10 lines** — from the **Result Preview** control in the Filters panel (Section 5.3). The length starts from a global default set in **Settings → Search** (Section 16); the main Search window and the Collections *Add Documents* sheet (Section 10.2a) each keep their own override of that default.
+
 ### 5.2 Query Syntax
 
 | Syntax | Example | Effect |
@@ -292,6 +294,7 @@ Click **Filters** in the Search window to expand additional filter controls.
 | **Research Notes** | *All documents* or *Documents with notes only* |
 | **Document Type** | Include or exclude editorial notes |
 | **Front matter** | Include or exclude volume front-matter sections (preface, introduction, persons lists, sources) from results |
+| **Result Preview** | How many lines of matched-text context each result snippet shows (1–10). Overrides the global default from Settings → Search for this Search window only |
 
 All active filters are shown as chips at the top of the results list; click any chip to remove that filter. The same volume/subseries scope is shared with **Corpus Analytics** (Section 13), so a query can be charted and read against the identical corpus subset.
 
@@ -316,6 +319,16 @@ Saved searches can also be linked to Collections to create *smart collections* t
 Any search that returns results offers a **Visualize in Corpus Analytics** banner. Clicking it opens the Analytics window (Section 13) pre-seeded with your search terms and any active date-range filter, so you can chart the term's distribution across the corpus and narrow the date range before returning to a more focused search. When a query returns more results than the Search window can display in full, the banner additionally shows the existing guidance about narrowing the range.
 
 `[SCREENSHOT: Search results banner offering "Visualize in Corpus Analytics" above a capped result list]`
+
+### 5.7 Checklist Review Mode
+
+When you're working systematically through a long result set — deciding which of a few hundred matches to read — **Checklist Mode** turns the list into a shrinking to-do list. Click the **checklist** button in the sort bar (next to the timeline toggle; it's enabled once a search has results) to turn it on.
+
+With it on, a result disappears from the list — and from the timeline — as soon as you **open it** by any route (in the main window or a new window), or when you explicitly mark it reviewed by **right-clicking the row** and choosing **Mark Reviewed**. A subtle **"N reviewed hidden"** banner shows how many you've cleared, and when nothing is left an **All Results Reviewed** message appears. Click the checklist button again to bring every result back.
+
+Checklist Mode is a per-session working aid: it isn't saved, it resets when you relaunch, and it re-anchors when you run a genuinely new query (clearing the previous query's reviewed marks). Changing a filter or scope on the *same* query keeps your reviewed marks intact, and the mode never alters your reading history — only what the list shows.
+
+`[SCREENSHOT: The macOS Search window in Checklist Mode — the "N reviewed hidden" banner above a partially-reviewed results list, with the checklist button highlighted in the sort bar]`
 
 ---
 
@@ -965,7 +978,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | **Sync Diagnostics** | A local, on-device, **redacted** log of your recent iCloud sync events that you can read and export (as JSON) to help diagnose sync problems. It records **only** event types, timing, and error codes — never record or account identifiers, and nothing about the content of your notes, tags, or collections — and the log itself stays on this Mac (it is not synced). Use **Copy**, **Export…**, or **Clear Log**. |
 | **About** | FRUS series overview, links to history.state.gov and the GitHub source repository, app version and attribution |
 | **Display** | Theme preferences (light, dark, or system), and a **Chart Colors** stepper setting the app-wide default number of colour-coded source volumes shown in the Chronology and Corpus Analytics distribution charts before the remainder fold into "Other" (6–12, default 8; each view can override this with its own Chart colors menu) |
-| **Search** | FTS5 configuration — stemming language, ranking parameters — and a **Result preview** setting for the default **snippet length** (how many lines of matched context a result preview shows). This default governs the Collections **Add Documents** search previews (Section 10.2a), which also keep their own per-sheet override. |
+| **Search** | FTS5 configuration — stemming language, ranking parameters — and a **Result preview** setting for the default **snippet length** (how many lines of matched context a result preview shows, 1–10). This default is honored by the main **Search window** results (Section 5.1) and the Collections **Add Documents** previews (Section 10.2a), each of which can override it locally. |
 
 `[SCREENSHOT: Settings → General → Sync Diagnostics showing the redacted on-device list of sync events (event type, timestamp, result/error code) with the Copy, Export…, and Clear Log actions]`
 

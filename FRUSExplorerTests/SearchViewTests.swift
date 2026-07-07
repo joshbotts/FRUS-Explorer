@@ -688,6 +688,152 @@ struct MacSearchViewModelTests {
         #expect(vm.submittedQuery == "détente",
                 "applyParameters must set submittedQuery so the programmatic search fires immediately")
     }
+
+    // MARK: - Checklist Mode parity (#189-D)
+
+    /// Builds `n` throwaway results (d1…dn, volume "v1") for exercising the checklist
+    /// filtering/pagination math without a live index.
+    private func sampleResults(_ n: Int) -> [SearchResult] {
+        (1...n).map { SearchResult(documentId: "d\($0)", volumeId: "v1", header: "Doc \($0)", snippet: "", bm25Score: 0) }
+    }
+
+    @Test("Checklist mode hides reviewed results from displayedResults without double-counting")
+    func checklistFiltersDisplayedResults() {
+        let vm = MacSearchViewModel()
+        vm.results = sampleResults(5)
+        vm.setChecklistMode(true)
+        // d1 is both opened AND marked; d2 only opened; d3 only marked.
+        vm.readSinceEnabledKeys = [
+            MacSearchViewModel.reviewedKey(volumeId: "v1", documentId: "d1"),
+            MacSearchViewModel.reviewedKey(volumeId: "v1", documentId: "d2"),
+        ]
+        vm.markReviewed(volumeId: "v1", documentId: "d1")
+        vm.markReviewed(volumeId: "v1", documentId: "d3")
+        #expect(vm.displayedResults.map(\.documentId) == ["d4", "d5"])
+        #expect(vm.results.count - vm.displayedResults.count == 3)   // d1,d2,d3 — union, no double count
+    }
+
+    @Test("Disabling checklist mode restores the full unfiltered result set")
+    func checklistDisableRestoresAll() {
+        let vm = MacSearchViewModel()
+        vm.results = sampleResults(10)
+        vm.setChecklistMode(true)
+        vm.markReviewed(volumeId: "v1", documentId: "d1")
+        vm.readSinceEnabledKeys = [MacSearchViewModel.reviewedKey(volumeId: "v1", documentId: "d2")]
+        #expect(vm.displayedResults.count == 8)
+
+        vm.setChecklistMode(false)
+        #expect(vm.displayedResults.count == 10)
+        #expect(vm.markedReviewedKeys.isEmpty)
+        #expect(vm.readSinceEnabledKeys.isEmpty)
+        #expect(vm.checklistEnabledAt == nil)
+    }
+
+    @Test("Marking the last page's results reviewed re-clamps the current page")
+    func checklistPaginationClampsWhenPageEmpties() {
+        let vm = MacSearchViewModel()
+        vm.results = sampleResults(30)          // pageSize 20 → 2 pages
+        vm.currentPage = 1                       // page 2: d21…d30
+        #expect(vm.pagedResults.map(\.documentId) == (21...30).map { "d\($0)" })
+
+        vm.setChecklistMode(true)                // resets currentPage to 0 on enable
+        #expect(vm.currentPage == 0)
+        vm.currentPage = 1                       // back to page 2 (still 2 pages: 30 shown)
+        // Mark all of page 2 reviewed → 20 shown, 1 page → the stale page index clamps to 0.
+        for i in 21...30 { vm.markReviewed(volumeId: "v1", documentId: "d\(i)") }
+        #expect(vm.totalPages == 1)
+        #expect(vm.currentPage == 0)
+        #expect(vm.pagedResults.count == 20)
+        #expect(!vm.pagedResults.contains { $0.documentId == "d21" })
+    }
+
+    /// Builds a `SearchService` over a one-volume index (d1/d2, both matching "alpha" and
+    /// "beta") for exercising the query-change vs filter-rerun re-anchor contract. Returns the
+    /// temp dir so the caller can remove it.
+    private func makeAlphaBetaService() async throws -> (service: SearchService, dir: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSMacChecklist-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("r.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            subjectTagStore: SubjectTagStore(entries: [], appearances: []), concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        try writeSearchFixture(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: [
+                (id: "d1", xml: "<head>One</head><p>alpha beta discussion of policy.</p>"),
+                (id: "d2", xml: "<head>Two</head><p>alpha and beta notes on strategy.</p>"),
+            ]
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+        return (service, dir)
+    }
+
+    @Test("A new *query* re-anchors checklist state so a prior query's reviews don't leak")
+    func checklistReAnchorsOnNewSearch() async throws {
+        let (service, dir) = try await makeAlphaBetaService()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let vm = MacSearchViewModel()
+        vm.queryText = "alpha"
+        vm.submitSearch()
+        await vm.performSearch(service: service)
+        #expect(vm.results.count == 2)
+
+        vm.setChecklistMode(true)
+        let anchorA = try #require(vm.checklistEnabledAt)
+        let first = vm.results[0]
+        vm.markReviewed(volumeId: first.volumeId, documentId: first.documentId)
+        #expect(vm.displayedResults.count == 1)   // one hidden under query A
+
+        // A genuinely new query re-runs performSearch past its guards, re-anchoring.
+        vm.queryText = "beta"
+        vm.submitSearch()
+        await vm.performSearch(service: service)
+        #expect(vm.results.count == 2)
+        #expect(vm.checklistMode)                                // mode persists across searches
+        #expect(vm.markedReviewedKeys.isEmpty)                   // marks cleared for the new query
+        #expect(vm.readSinceEnabledKeys.isEmpty)
+        #expect(vm.checklistEnabledAt != anchorA)                // re-anchored to the new search
+        #expect(vm.displayedResults.count == 2)                  // no cross-query hiding leaks in
+    }
+
+    @Test("A filter re-run of the SAME query preserves checklist reviewed marks")
+    func checklistSurvivesFilterRerun() async throws {
+        // Regression guard for the parity-review finding: macOS `performSearch` re-runs on every
+        // filter/scope change (parametersVersion → searchTrigger), so the re-anchor must be gated
+        // on the query actually changing — a filter re-run of the same query must NOT wipe marks.
+        let (service, dir) = try await makeAlphaBetaService()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let vm = MacSearchViewModel()
+        vm.queryText = "alpha"
+        vm.submitSearch()
+        await vm.performSearch(service: service)
+        #expect(vm.results.count == 2)
+
+        vm.setChecklistMode(true)
+        let anchor = try #require(vm.checklistEnabledAt)
+        let first = vm.results[0]
+        let key = MacSearchViewModel.reviewedKey(volumeId: first.volumeId, documentId: first.documentId)
+        vm.markReviewed(volumeId: first.volumeId, documentId: first.documentId)
+        #expect(vm.displayedResults.count == 1)
+
+        // A filter re-run: same submitted query, but parametersVersion bumps and performSearch
+        // re-fires. Reviewed marks and the anchor must survive.
+        vm.scopeSummaries = false
+        await vm.performSearch(service: service)
+        #expect(vm.checklistMode)
+        #expect(vm.checklistEnabledAt == anchor)                 // anchor NOT moved by a filter re-run
+        #expect(vm.markedReviewedKeys.contains(key))             // mark preserved
+        #expect(vm.displayedResults.count == 1)                  // still hidden
+    }
 }
 
 #endif // os(macOS)

@@ -193,7 +193,7 @@ final class MacSearchViewModel {
     var currentPage: Int = 0
 
     var totalPages: Int {
-        max(1, Int(ceil(Double(results.count) / Double(pageSize))))
+        max(1, Int(ceil(Double(displayedResults.count) / Double(pageSize))))
     }
 
     // MARK: - Results
@@ -262,10 +262,97 @@ final class MacSearchViewModel {
     }
 
     var pagedResults: [SearchResult] {
-        let all = allSortedResults
-        let start = currentPage * pageSize
+        let all = displayedResults
+        // Clamp the page index at read time (side-effect-free) so a reviewed-set change that
+        // shrinks the list can never leave `pagedResults` returning a blank page for a
+        // now-out-of-range `currentPage` (mirrors `SearchViewModel.pagedResults`).
+        let page = min(max(0, currentPage), totalPages - 1)
+        let start = page * pageSize
         guard start < all.count else { return [] }
         return Array(all[start..<min(start + pageSize, all.count)])
+    }
+
+    // MARK: - Checklist Mode (#189-D)
+
+    /// True when checklist review mode is active. Session-scoped; not persisted (resets on
+    /// relaunch). While on, results the user has reviewed this session are hidden from the list,
+    /// the timeline, and the page math. Mirrors `SearchViewModel`'s iOS implementation so the
+    /// macOS Search window behaves identically.
+    var checklistMode: Bool = false {
+        didSet { clampCurrentPage() }
+    }
+
+    /// The instant checklist mode was last enabled (or a new search re-anchored it). Documents
+    /// opened at or after this instant (per `ReadingHistoryEntry.accessedAt`) are hidden. `nil`
+    /// while mode is off.
+    var checklistEnabledAt: Date?
+
+    /// `(volumeId|documentId)` keys opened since `checklistEnabledAt`, fed by a live
+    /// `ReadingHistoryEntry` `@Query` in `MacSearchWindowView` (mirrors `readSinceEnabledKeys`
+    /// on iOS).
+    var readSinceEnabledKeys: Set<String> = [] {
+        didSet { clampCurrentPage() }
+    }
+
+    /// `(volumeId|documentId)` keys the user marked reviewed this session via the row context
+    /// menu — an in-memory set, never a fabricated `ReadingHistoryEntry`.
+    var markedReviewedKeys: Set<String> = [] {
+        didSet { clampCurrentPage() }
+    }
+
+    /// The trimmed submitted query the checklist is currently anchored to. `performSearch` re-runs
+    /// on every filter/scope change (not only on a new query, unlike iOS's `search()`), so the
+    /// re-anchor is gated on this changing — otherwise a filter edit mid-session would wipe the
+    /// user's reviewed marks. Mirrors `lastRecordedHistoryQuery`'s "one action per distinct query"
+    /// pattern.
+    private var lastChecklistAnchorQuery: String?
+
+    /// A stable reviewed-set key for a `(volume, document)` pair.
+    nonisolated static func reviewedKey(volumeId: String, documentId: String) -> String {
+        "\(volumeId)|\(documentId)"
+    }
+
+    /// The reviewed set while checklist mode is on: docs opened since enable ∪ docs marked.
+    var hiddenReviewedKeys: Set<String> {
+        checklistMode ? readSinceEnabledKeys.union(markedReviewedKeys) : []
+    }
+
+    /// `allSortedResults` minus reviewed docs when checklist mode is on. All display-time page
+    /// math (`totalPages`, `pagedResults`) and the timeline page over this, so the slice, count,
+    /// and page index stay in sync.
+    var displayedResults: [SearchResult] {
+        let hidden = hiddenReviewedKeys
+        guard !hidden.isEmpty else { return allSortedResults }
+        return allSortedResults.filter {
+            !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId))
+        }
+    }
+
+    /// Enables/disables checklist mode. Enabling stamps the anchor and clears prior marks;
+    /// disabling clears all reviewed state so the full list returns.
+    func setChecklistMode(_ on: Bool) {
+        checklistMode = on
+        if on {
+            checklistEnabledAt = .now
+            lastChecklistAnchorQuery = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+            markedReviewedKeys.removeAll()
+        } else {
+            checklistEnabledAt = nil
+            lastChecklistAnchorQuery = nil
+            readSinceEnabledKeys.removeAll()
+            markedReviewedKeys.removeAll()
+        }
+        currentPage = 0
+    }
+
+    /// Marks a document reviewed for this checklist session (hides it without opening it).
+    func markReviewed(volumeId: String, documentId: String) {
+        markedReviewedKeys.insert(Self.reviewedKey(volumeId: volumeId, documentId: documentId))
+    }
+
+    /// Resets `currentPage` to 0 when a reviewed-set change shrank the list below the current page.
+    private func clampCurrentPage() {
+        if currentPage >= totalPages { currentPage = 0 }
     }
 
     // MARK: - UI State
@@ -509,6 +596,22 @@ final class MacSearchViewModel {
         searchError = nil
         currentPage = 0
         defer { isSearching = false }
+
+        // Re-anchor the checklist ONLY when the submitted query actually changed (#189-D).
+        // Unlike iOS's `search()` — which fires only for deliberate new queries — macOS
+        // `performSearch` also re-runs on every filter/scope change (those bump
+        // `parametersVersion`, part of `searchTrigger`), so an unconditional re-anchor would
+        // silently wipe the user's reviewed marks whenever they touched a filter mid-session.
+        // Gating on the query (mirrors `lastRecordedHistoryQuery`) keeps marks across filter
+        // re-runs of the same query while still clearing them for a genuine new query. Reviewed
+        // identity is document identity, which recurs across searches, so a stale mark must not
+        // leak into an unrelated query.
+        if checklistMode, query != lastChecklistAnchorQuery {
+            lastChecklistAnchorQuery = query
+            checklistEnabledAt = .now
+            readSinceEnabledKeys.removeAll()
+            markedReviewedKeys.removeAll()
+        }
 
         // Capture an immutable copy so Swift 6 region-based isolation is happy
         // when the same parameters value is sent to two actor-isolated calls below.
