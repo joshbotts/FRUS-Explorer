@@ -416,10 +416,20 @@ struct MacDocumentView: View {
     // MARK: - Document Year Extraction
 
     /// Extracts a 4-digit year from a dateline string.
-    /// Duplicated from DocumentView; kept here so MacDocumentView has no cross-file dependency.
+    /// Duplicated from DocumentView (which is `#if os(iOS)`), kept here so MacDocumentView has no
+    /// cross-file dependency. It first tries the strict "Month D, YYYY" parse
+    /// (`CentralFilesClassifier.datelineDateISO`) so a stray 4-digit token in a footnote-bearing
+    /// dateline blob can't hijack the year via first-match, then falls back to a loose 18xx–20xx
+    /// (through 2029) scan. Widening to 18xx lets pre-1906 FRUS datelines reach pre-1906
+    /// country-series resolution (issue #215); keep identical to `DocumentView.extractYear` and
+    /// the inline extractor in `SupportingViews`.
     static func extractYear(from dateline: String?) -> Int? {
         guard let dl = dateline else { return nil }
-        let pattern = #"\b(19[0-9]{2}|20[0-2][0-9])\b"#
+        if let iso = CentralFilesClassifier.datelineDateISO(from: dl),
+           let year = Int(iso.prefix(4)) {
+            return year
+        }
+        let pattern = #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: dl, range: NSRange(dl.startIndex..., in: dl)),
               let range = Range(match.range(at: 1), in: dl)
