@@ -40,12 +40,14 @@ struct YearVolumeFrequency: Sendable, Identifiable {
 
 /// Document frequency broken down by FRUS subseries.
 ///
-/// The subseries is the volume ID with the "frus" prefix and trailing
-/// `v\d+[a-z0-9]*` volume suffix stripped (e.g. `frus1969-76v01` →
-/// `1969-76`). Documents whose volume IDs cannot be parsed are omitted.
+/// The subseries is the volume ID's leading year (or year range) — the same
+/// publication-era bucket the Corpus Browser groups on (e.g. `frus1969-76v01` →
+/// `1969-76`, `frus1945Berlinv01` → `1945`); see `subseries(fromVolumeId:)`.
+/// Documents whose volume IDs cannot be parsed are omitted.
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
+///   1.1 — #208: subseries derived by the leading-year algorithm (Corpus Browser parity)
 struct SubseriesFrequency: Sendable, Identifiable {
     let subseries: String
     let count: Int
@@ -212,10 +214,11 @@ struct AnalyticsParameters: Sendable, Equatable {
 /// document in a volume under the volume's start year.
 ///
 /// ## Volume ID Parsing
-/// FRUS volume IDs follow the pattern `frus{subseries}v{number}[suffix]`,
-/// for example `frus1969-76v01`. The start year is the first four digits
-/// after "frus". The subseries is everything between "frus" and the
-/// trailing volume suffix (`v\d+[a-z0-9]*`).
+/// FRUS volume IDs follow the pattern `frus{subseries}{area?}v{number}[suffix]`,
+/// for example `frus1969-76v01`. The start year is the first four digits after
+/// "frus". The subseries is the **leading year (or year range)** only — the same
+/// value `ManifestGeneratorCore.VolumeIDParser` bakes into `manifest.json` and the
+/// Corpus Browser groups on (`subseries(fromVolumeId:)`, #208).
 ///
 /// ## Analytics Coverage
 /// - `termFrequencyByYear(term:)` — matching docs per year (actual document date)
