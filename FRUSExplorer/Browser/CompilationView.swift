@@ -167,7 +167,11 @@ struct CompilationView: View {
         // Neighbors open/close loop). Same pattern as `archivalNeighborsTarget` above,
         // which never exhibited the loop.
         .sheet(item: $sourceNeighborsTarget) { target in
-            ArchivalNeighborsSheet(appState: appState) {
+            ArchivalNeighborsSheet(
+                appState: appState,
+                defaultScope: .volume(target.volumeId),
+                anchorVolumeId: target.volumeId
+            ) { scopeVolumeIds in
                 guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
                 return (try? await pipeline.archivalNeighbors(
                     forLotFile:   target.lotFile,
@@ -175,7 +179,8 @@ struct CompilationView: View {
                     series:       target.series,
                     repository:   target.repository,
                     decimalClass: target.decimalClass,
-                    aliasFallback: target.aliasFallback
+                    aliasFallback: target.aliasFallback,
+                    scopeVolumeIds: scopeVolumeIds
                 )) ?? ([], 0, nil)
             }
             .environment(appState)

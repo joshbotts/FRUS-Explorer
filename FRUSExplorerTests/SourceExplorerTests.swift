@@ -885,10 +885,12 @@ struct ArchivalNeighborsRequestTests {
             .document(volumeId: "frus1961-63v01", documentId: "d42", documentYear: nil),
             .volumeSource(lotFile: "64 D 199", recordGroup: "59", series: "PPS Files",
                           repository: nil, decimalClass: nil,
-                          aliasLotFileNorm: "64D199", aliasNames: ["PPS Files", "Policy Planning Staff Files"]),
+                          aliasLotFileNorm: "64D199", aliasNames: ["PPS Files", "Policy Planning Staff Files"],
+                          anchorVolumeId: "frus1961-63v01"),
             .volumeSource(lotFile: nil, recordGroup: nil, series: "National Security Files",
                           repository: "Kennedy Library", decimalClass: nil,
-                          aliasLotFileNorm: nil, aliasNames: []),
+                          aliasLotFileNorm: nil, aliasNames: [],
+                          anchorVolumeId: nil),
             .collection(lotFileNorm: "64D199", repository: nil, recordGroup: "59",
                         names: ["PPS Files", "Policy Planning Staff Files"]),
             .decimalClass("POL 27 ARAB-ISR")
@@ -909,7 +911,7 @@ struct ArchivalNeighborsRequestTests {
     func volumeSourceAliasFallbackRoundTrip() {
         var target = VolumeSourceNeighborsTarget(
             lotFile: "64 D 199", recordGroup: "59", series: "PPS Files",
-            repository: nil, decimalClass: nil)
+            repository: nil, decimalClass: nil, volumeId: "frus1961-63v01")
         target.aliasFallback = IndexingPipeline.CollectionAliasFallback(
             lotFileNorm: "64D199", names: ["PPS Files", "Policy Planning Staff Files"])
         let request = ArchivalNeighborsRequest(volumeSource: target)
@@ -918,7 +920,7 @@ struct ArchivalNeighborsRequestTests {
         // No fallback attached → none reconstructed (nil and empty are "no fallback").
         let bare = ArchivalNeighborsRequest(volumeSource: VolumeSourceNeighborsTarget(
             lotFile: nil, recordGroup: "84", series: "Saigon Embassy Files",
-            repository: nil, decimalClass: nil))
+            repository: nil, decimalClass: nil, volumeId: "frus1969-76v33"))
         #expect(bare.reconstructedAliasFallback == nil)
 
         // Non-volumeSource shapes never carry a fallback.

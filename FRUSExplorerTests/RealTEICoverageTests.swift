@@ -244,7 +244,7 @@ struct RealTEIVolumeSourcesTests {
                 for entry in try await pipeline.volumeSources(forVolumeId: v)
                 where entry.kind == .item {
                     items += 1
-                    guard let t = VolumeSourcesView.makeNeighborsTarget(for: entry) else { continue }
+                    guard let t = VolumeSourcesView.makeNeighborsTarget(for: entry, volumeId: v) else { continue }
                     let path: String
                     if t.lotFile != nil { path = "lot" }
                     else if t.decimalClass != nil { path = "class" }

@@ -269,7 +269,7 @@ struct VolumeSourcesView: View {
                     .accessibilityLabel(String(localized: "browser.sources.catalog",
                                                defaultValue: "View in National Archives Catalog"))
                 }
-                if let target = Self.makeNeighborsTarget(for: entry) {
+                if let target = Self.makeNeighborsTarget(for: entry, volumeId: volumeId) {
                     // Three-state affordance (Phase 5): nil count = batch still
                     // loading (plain button), 0 = subdued + honest hint (still
                     // tappable — the alias fallback may rescue the opened sheet),
@@ -429,7 +429,7 @@ struct VolumeSourcesView: View {
     /// Bibliography rows never produce a target (published works, not collections).
     /// Pure and `nonisolated static` so tests can exercise the gating without a
     /// rendered view or a main-actor hop.
-    nonisolated static func makeNeighborsTarget(for entry: VolumeSourceEntry) -> VolumeSourceNeighborsTarget? {
+    nonisolated static func makeNeighborsTarget(for entry: VolumeSourceEntry, volumeId: String) -> VolumeSourceNeighborsTarget? {
         guard entry.kind == .item else { return nil }
         func trimmed(_ s: String?) -> String? {
             guard let t = s?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return nil }
@@ -457,7 +457,8 @@ struct VolumeSourcesView: View {
             recordGroup:  rg,
             series:       series,
             repository:   libraryRepo,
-            decimalClass: cls
+            decimalClass: cls,
+            volumeId:     volumeId
         )
     }
 
@@ -499,7 +500,7 @@ struct VolumeSourcesView: View {
     private func loadNeighborCounts() async {
         guard let pipeline = appState.indexingPipeline else { return }
         let keys = sources.compactMap { entry -> IndexingPipeline.ArchivalNeighborCountKey? in
-            guard let target = Self.makeNeighborsTarget(for: entry) else { return nil }
+            guard let target = Self.makeNeighborsTarget(for: entry, volumeId: volumeId) else { return nil }
             return IndexingPipeline.neighborCountKey(
                 forLotFile: target.lotFile, recordGroup: target.recordGroup,
                 series: target.series, repository: target.repository,
@@ -529,6 +530,9 @@ struct VolumeSourceNeighborsTarget: Identifiable {
     let repository: String?
     /// The decimal / subject-numeric class-leaf key, when the entry is a class leaf.
     let decimalClass: String?
+    /// The volume this front-matter source entry belongs to — seeds the "This volume"
+    /// default scope of the Archival Neighbors picker (#217).
+    let volumeId: String
     /// The bundled authority record's keys and alias forms (Phase 4), consulted by the
     /// matcher only when every direct key path returns zero — see
     /// `IndexingPipeline.archivalNeighbors(forLotFile:…)` for the documented order.

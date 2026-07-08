@@ -961,6 +961,166 @@ struct ArchivalNeighborsTests {
     }
 }
 
+// MARK: - ArchivalNeighborsScopeTests (#217)
+
+/// Verifies the #217 neighbor-scope layer: the `scopeVolumeIds` filter (This volume /
+/// This subseries vs. All indexed), the exclude-self / alias-uniform reconciliation
+/// that makes the document and volume-source paths return the **same set of OTHER
+/// documents** at a given scope, and the presidential-library self-exclusion fix.
+@Suite("IndexingPipeline — archival neighbors scope (#217)")
+struct ArchivalNeighborsScopeTests {
+
+    private static let lotNote = "<note type=\"source\">SPA Files: Lot 61-D 146, Box 4581</note>"
+
+    /// Indexes two volumes whose documents share one lot file, so scope and cross-path
+    /// parity can be exercised across a volume boundary.
+    private func indexTwoVolumes(dir: URL) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeTEIVolume(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: [
+                ("d1", "<head>1. Memo</head>\(Self.lotNote)<p>A.</p>"),
+                ("d2", "<head>2. Memo</head>\(Self.lotNote)<p>B.</p>"),
+            ])
+        try writeTEIVolume(
+            to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+            volumeId: "frus1969-76v02",
+            documents: [
+                ("d1", "<head>1. Memo</head>\(Self.lotNote)<p>C.</p>"),
+            ])
+        try await pipeline.indexVolume("frus1969-76v01")
+        try await pipeline.indexVolume("frus1969-76v02")
+        return pipeline
+    }
+
+    @Test("volume scope restricts neighbors to the chosen volume; all-indexed spans volumes")
+    func volumeScopeRestrictsToVolume() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexTwoVolumes(dir: dir)
+
+            // All-indexed (scope nil): the lot file's neighbors span both volumes.
+            let all = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil)
+            #expect(Set(all.documents.map(\.compositeKey))
+                    == ["frus1969-76v01/d1", "frus1969-76v01/d2", "frus1969-76v02/d1"])
+            #expect(all.totalCount == 3)
+
+            // Scoped to v01: only v01's rows, and the total is recomputed from them.
+            let scoped = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil,
+                scopeVolumeIds: ["frus1969-76v01"])
+            #expect(Set(scoped.documents.map(\.compositeKey))
+                    == ["frus1969-76v01/d1", "frus1969-76v01/d2"])
+            #expect(scoped.totalCount == 2, "the total is recomputed from the in-scope rows")
+
+            // A scope naming no matching volume yields an honest empty (not the whole set).
+            let none = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil,
+                scopeVolumeIds: ["frus1930-39v99"])
+            #expect(none.documents.isEmpty && none.totalCount == 0)
+        }
+    }
+
+    @Test("document and volume-source paths return the same OTHER documents at a scope (#217 parity)")
+    func documentAndVolumeSourceParity() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexTwoVolumes(dir: dir)
+
+            // Volume-source path (a front-matter entry, no anchor) sees every doc in the
+            // lot across the index.
+            let viaEntry = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil)
+            let entrySet = Set(viaEntry.documents.map(\.compositeKey))
+
+            // Document path anchored at v01/d1 sees the SAME set minus the anchor itself.
+            let viaDoc = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            let docSet = Set(viaDoc.documents.map(\.compositeKey))
+
+            #expect(docSet == entrySet.subtracting(["frus1969-76v01/d1"]),
+                    "the document trigger returns the volume-source set minus the anchor")
+
+            // The same holds under an explicit volume scope: both paths restrict to v01
+            // and still differ only by the anchor.
+            let entryScoped = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil,
+                scopeVolumeIds: ["frus1969-76v01"])
+            let docScoped = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1",
+                scopeVolumeIds: ["frus1969-76v01"])
+            #expect(Set(docScoped.documents.map(\.compositeKey))
+                    == Set(entryScoped.documents.map(\.compositeKey))
+                        .subtracting(["frus1969-76v01/d1"]))
+        }
+    }
+
+    @Test("a presidential-library document is excluded from its own neighbors (#217 self-inclusion fix)")
+    func presidentialLibraryExcludesAnchor() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let libNote = "<note type=\"source\">Source: Johnson Library, National Security File, Country File, Vietnam, Box 3. Secret.</note>"
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head>\(libNote)<p>A.</p>"),
+                    ("d2", "<head>2. Memo</head>\(libNote)<p>B.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            let r = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            let ids = Set(r.documents.map(\.documentId))
+            #expect(ids.contains("d2"), "the sibling library document is a neighbor")
+            #expect(!ids.contains("d1"),
+                    "the anchor no longer lists itself among its presidential-library neighbors")
+        }
+    }
+
+    @Test("decimal-file neighbors honor volume scope (relatedByDecimal candidate cap #217)")
+    func decimalPathHonorsScope() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Both volumes cite the identical central decimal file, so all rows share a
+            // filing segment and the segment filter keeps them; scope must still split them.
+            let note = "<note type=\"source\">Source: Department of State, Central Files, 711.11/3–1545. Secret.</note>"
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1955-57v01.xml"),
+                volumeId: "frus1955-57v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head>\(note)<p>A.</p>"),
+                    ("d2", "<head>2. Memo</head>\(note)<p>B.</p>"),
+                ])
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1955-57v02.xml"),
+                volumeId: "frus1955-57v02",
+                documents: [
+                    ("d1", "<head>1. Memo</head>\(note)<p>C.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1955-57v01")
+            try await pipeline.indexVolume("frus1955-57v02")
+
+            // Unscoped: the decimal location's neighbors span both volumes (anchor excluded).
+            let all = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1955-57v01", documentId: "d1")
+            #expect(Set(all.documents.map(\.compositeKey))
+                    == ["frus1955-57v01/d2", "frus1955-57v02/d1"],
+                    "the decimal path is cross-volume when unscoped")
+
+            // Scoped to v01: only the same-volume sibling survives the filter.
+            let scoped = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1955-57v01", documentId: "d1",
+                scopeVolumeIds: ["frus1955-57v01"])
+            #expect(Set(scoped.documents.map(\.compositeKey)) == ["frus1955-57v01/d2"],
+                    "the decimal builder must feed the whole match set through the scope filter")
+        }
+    }
+}
+
 // MARK: - VolumeSourceMatcherTests (Source Explorer Phase 3 step 2)
 
 /// Verifies the normalized matcher and the new volume-level match paths: the single
@@ -1118,39 +1278,39 @@ struct VolumeSourceMatcherTests {
         // Bibliography rows never get a target, even if a key slipped in.
         let bib = VolumeSourceEntry(kind: .bibliography, lotFile: "64 D 199",
                                     rawText: "Acheson, Dean. Present at the Creation.")
-        #expect(VolumeSourcesView.makeNeighborsTarget(for: bib) == nil)
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: bib, volumeId: "frus1969-76v01") == nil)
 
         // A class leaf yields a decimal-class target.
         let leaf = VolumeSourceEntry(kind: .item, depth: 2, repository: "Department of State",
                                      recordGroup: "59", seriesName: "POL 27 ARAB–ISR",
                                      decimalClass: "POL 27 ARAB–ISR",
                                      rawText: "Central Files 1967–69: POL 27 ARAB–ISR")
-        let leafTarget = VolumeSourcesView.makeNeighborsTarget(for: leaf)
+        let leafTarget = VolumeSourcesView.makeNeighborsTarget(for: leaf, volumeId: "frus1969-76v01")
         #expect(leafTarget?.decimalClass == "POL 27 ARAB–ISR")
 
         // A library child without a gated series name uses its own text as the collection.
         let libChild = VolumeSourceEntry(kind: .item, depth: 1, repository: "Johnson Library",
                                          rawText: "National Security File")
-        let libTarget = VolumeSourcesView.makeNeighborsTarget(for: libChild)
+        let libTarget = VolumeSourcesView.makeNeighborsTarget(for: libChild, volumeId: "frus1969-76v01")
         #expect(libTarget?.repository == "Johnson Library")
         #expect(libTarget?.series == "National Security File")
 
         // The library heading row itself (own text naming the repository) gets no target.
         let heading = VolumeSourceEntry(kind: .item, isHeading: true, repository: "Johnson Library",
                                         rawText: "Lyndon B. Johnson Library, Austin, Texas")
-        #expect(VolumeSourcesView.makeNeighborsTarget(for: heading) == nil)
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: heading, volumeId: "frus1969-76v01") == nil)
 
         // A record-group series entry keeps the rg+series target, with no library routing.
         let rgSeries = VolumeSourceEntry(kind: .item, depth: 1, repository: "National Archives",
                                          recordGroup: "84", seriesName: "Moscow Embassy Files",
                                          rawText: "Lot-less RG 84 series, Moscow Embassy Files")
-        let rgTarget = VolumeSourcesView.makeNeighborsTarget(for: rgSeries)
+        let rgTarget = VolumeSourcesView.makeNeighborsTarget(for: rgSeries, volumeId: "frus1969-76v01")
         #expect(rgTarget?.recordGroup == "84" && rgTarget?.series == "Moscow Embassy Files")
         #expect(rgTarget?.repository == nil)
 
         // No key on any path → no affordance.
         let keyless = VolumeSourceEntry(kind: .item, rawText: "Miscellaneous records")
-        #expect(VolumeSourcesView.makeNeighborsTarget(for: keyless) == nil)
+        #expect(VolumeSourcesView.makeNeighborsTarget(for: keyless, volumeId: "frus1969-76v01") == nil)
     }
 }
 

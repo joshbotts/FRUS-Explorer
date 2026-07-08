@@ -857,13 +857,27 @@ struct MacSourceExplorerView: View {
         }
     }
 
+    /// Routes through the widened, anchor-excluding `archivalNeighbors(forVolumeId:
+    /// documentId:)` entry point (the #217 "same set regardless of trigger" guarantee —
+    /// see the iOS `SourceExplorerView` twin). Inline stays at the all-indexed default;
+    /// the scope picker lives on the dedicated neighbors window.
     private func loadRelatedDocuments(for note: ParsedSourceNote) async {
         guard let pipeline = indexingPipeline else { return }
         relatedLoading = true
         do {
-            let result = try await pipeline.relatedDocuments(
-                for: note, limit: 30, documentYear: documentYear,
-                excludingVolumeId: documentVolumeId, excludingDocumentId: documentId)
+            let result: (documents: [IndexingPipeline.RelatedDocument], totalCount: Int)
+            if let volId = documentVolumeId, let docId = documentId {
+                // Anchored to an indexed document → the widened, anchor-excluding entry
+                // point, identical to the dedicated neighbors surfaces (#217 parity).
+                let r = try await pipeline.archivalNeighbors(
+                    forVolumeId: volId, documentId: docId, documentYear: documentYear)
+                result = (r.documents, r.totalCount)
+            } else {
+                // A source note explored without an indexed-document anchor: the
+                // note-keyed query, nothing to exclude.
+                result = try await pipeline.relatedDocuments(
+                    for: note, limit: 30, documentYear: documentYear)
+            }
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
         } catch {
