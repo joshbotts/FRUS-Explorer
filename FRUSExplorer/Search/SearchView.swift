@@ -330,6 +330,34 @@ struct SearchView: View {
         .disabled(vm.results.isEmpty)
     }
 
+    /// Checklist-review toggle (#189-D), promoted to a first-class, self-labeling control in the
+    /// iOS `searchActionsBar` (#218) so it's discoverable without opening the overflow menu.
+    /// Tints when active. Disabled until a search returns results, but — like the macOS control —
+    /// stays enabled once results exist even in the all-reviewed state (gated on raw `results`,
+    /// not `displayedResults`), so the user can always turn it back off.
+    @ViewBuilder
+    private var checklistButton: some View {
+        Button {
+            vm.setChecklistMode(!vm.checklistMode)
+        } label: {
+            Image(systemName: "checklist")
+                .foregroundStyle(vm.checklistMode ? Color.accentColor : Color.primary)
+        }
+        .controlHelp(
+            String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"),
+            detail: vm.checklistMode
+                ? String(localized: "search.checklist.off.help",
+                         defaultValue: "Turn off Checklist Mode and show every result")
+                : String(localized: "search.checklist.on.help",
+                         defaultValue: "Checklist review mode — hide results as you review them"),
+            systemImage: "checklist"
+        )
+        .accessibilityValue(vm.checklistMode
+                            ? String(localized: "search.checklist.state.on", defaultValue: "On")
+                            : String(localized: "search.checklist.state.off", defaultValue: "Off"))
+        .disabled(vm.results.isEmpty)
+    }
+
     /// Save / Saved searches / Find by citation overflow menu.
     @ViewBuilder
     private var moreMenu: some View {
@@ -354,9 +382,13 @@ struct SearchView: View {
                 Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
                       systemImage: "text.magnifyingglass")
             }
-            Divider()
             // Checklist mode (#189-D): hides results as you review them (open them, or tap
             // "Mark reviewed"), so a long result set becomes a shrinking to-do list.
+            // On iOS this now lives as a promoted control in `searchActionsBar` (#218), so the
+            // overflow toggle is retained only for the macOS `SearchView` surface to avoid two
+            // controls for one state; the shipping macOS search window (SearchSheet) has its own.
+            #if os(macOS)
+            Divider()
             Toggle(isOn: Binding(
                 get: { vm.checklistMode },
                 set: { on in vm.setChecklistMode(on) }
@@ -365,6 +397,7 @@ struct SearchView: View {
                       systemImage: "checklist")
             }
             .disabled(vm.results.isEmpty)
+            #endif
         } label: {
             Image(systemName: "ellipsis.circle")
         }
@@ -385,6 +418,7 @@ struct SearchView: View {
         HStack(spacing: 20) {
             filterButton
             timelineButton
+            checklistButton
             Spacer()
             moreMenu
         }
