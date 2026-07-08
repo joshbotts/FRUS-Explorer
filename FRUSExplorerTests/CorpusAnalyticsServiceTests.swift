@@ -110,9 +110,10 @@ struct CorpusAnalyticsServiceTests {
         }
     }
 
-    @Test("distilledVolumeLabel stays unique when the leading-year subseries collapses conference/supplement ids (#208)")
+    @Test("distilledVolumeLabel stays unique and unmangled with the leading-year subseries (#208)")
     func distilledLabelUniqueForConferenceVolumes() {
-        // Same leading-year subseries + same volume number: the area token must keep them distinct.
+        // Conference / supplement volumes stay distinct from a plain annual of the same year —
+        // the descriptive topic prefix disambiguates even though the subseries is the leading year.
         let plain = ChronologyViewModel.distilledVolumeLabel(
             volumeId: "frus1945v01", subseries: "1945",
             title: "Foreign Relations of the United States, 1945, Volume I")
@@ -121,7 +122,6 @@ struct CorpusAnalyticsServiceTests {
             title: "Foreign Relations of the United States, The Conference of Berlin, 1945")
         #expect(plain != berlin)
         #expect(berlin.contains("Berlin"))
-        // A supplement vs the plain annual in the same year must also stay distinct.
         let annual = ChronologyViewModel.distilledVolumeLabel(
             volumeId: "frus1917v01", subseries: "1917",
             title: "Papers Relating to the Foreign Relations of the United States, 1917")
@@ -129,6 +129,30 @@ struct CorpusAnalyticsServiceTests {
             volumeId: "frus1917Supp01v01", subseries: "1917",
             title: "Papers Relating to the Foreign Relations of the United States, 1917, Supplement 1")
         #expect(annual != supp)
+
+        // Regression guard: boilerplate-titled appendix / edition ids must NOT be mangled into a
+        // stray area fragment. frus1894app1 renders the clean "1894 pt.1" (not "1894 ap pt.1"); the
+        // 1951-54 Iran edition stays distinct from the base volume via its full id suffix.
+        let appendix = ChronologyViewModel.distilledVolumeLabel(
+            volumeId: "frus1894app1", subseries: "1894",
+            title: "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I")
+        #expect(!appendix.contains(" ap "))
+        #expect(!appendix.contains("Sup "))
+    }
+
+    @Test("distilledVolumeLabel is unique across the whole bundled corpus (#208)")
+    @MainActor
+    func distilledLabelUniqueAcrossBundledCorpus() {
+        let entries = ManifestStore().bundledEntries
+        guard !entries.isEmpty else { return }  // empty test-bundle manifest during development
+        var seen: [String: String] = [:]
+        for entry in entries {
+            let label = ChronologyViewModel.distilledVolumeLabel(
+                volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title)
+            #expect(seen[label] == nil,
+                    "Chronology label collision: '\(label)' for both \(seen[label] ?? "") and \(entry.volumeId)")
+            seen[label] = entry.volumeId
+        }
     }
 
     /// A term that appears in two of three indexed volumes must yield exactly those

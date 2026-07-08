@@ -655,12 +655,6 @@ final class ChronologyViewModel {
     /// `"1969-76 v20"`, `"1952-54 v2 pt.1"`, `"1864 pt.1"`, `"1877 app"`, or `"1870"`.
     nonisolated private static func volumeTag(volumeId: String, subseries: String) -> String {
         var parts = [subseries]
-        // Area / conference / supplement token between the leading-year subseries and the volume
-        // marker (e.g. "Berlin", "Paris", "Supp01"). With the subseries now the leading year only
-        // (#208), derive it from the id so a tag stays globally unique even when two volumes share
-        // the same year and volume number (e.g. frus1945v01 vs frus1945Berlinv01).
-        let area = areaToken(volumeId: volumeId, subseries: subseries)
-        if !area.isEmpty { parts.append(area) }
         let vol = captureGroups(in: volumeId, pattern: "v(E-)?([0-9]+)")
         if let vol, vol.count > 2, let digits = vol[2], let n = Int(digits) {
             parts.append("v\(vol[1] ?? "")\(n)")
@@ -679,21 +673,6 @@ final class ChronologyViewModel {
             if !suffix.isEmpty { parts.append(suffix) }
         }
         return parts.joined(separator: " ")
-    }
-
-    /// The area / conference / supplement token embedded in a volume id between its leading-year
-    /// subseries and its volume/part marker — e.g. "Berlin" from `frus1945Berlinv01`, "Supp01" from
-    /// `frus1917Supp01v01`. Empty when there is none. Keeps `volumeTag` labels unique now that the
-    /// subseries string is the leading year only (#208).
-    nonisolated private static func areaToken(volumeId: String, subseries: String) -> String {
-        guard volumeId.hasPrefix("frus") else { return "" }
-        var s = String(volumeId.dropFirst(4))
-        if s.hasPrefix(subseries) { s = String(s.dropFirst(subseries.count)) }
-        // A Vietnam-extras marker at the very front is a volume marker, not an area token.
-        s = s.replacingOccurrences(of: #"^ve\d+"#, with: "", options: .regularExpression)
-        // Strip trailing volume / part / edition markers, leaving the area token.
-        s = s.replacingOccurrences(of: #"(v(E-)?\d+)?(p\d+)?(Ed\d+)?$"#, with: "", options: .regularExpression)
-        return s.trimmingCharacters(in: CharacterSet(charactersIn: "-_ "))
     }
 
     /// The descriptive topic distilled from a full FRUS volume title, or `""` when the title
