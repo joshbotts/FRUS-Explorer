@@ -3176,6 +3176,54 @@ private struct SubseriesVolumeListView: View {
     }
 }
 
+// MARK: - BoundedTitleHeader
+
+/// A full, selectable volume/section title that heads a corpus-browser detail view but is
+/// bounded in height so it can never crowd out the content below it.
+///
+/// FRUS titles for older volumes carry appended clauses hundreds of characters long
+/// (`frus1865p4` runs 618) and are stored with the TEI source's embedded newlines and
+/// indentation, so they render as tall multi-line blocks. The corpus-browser detail column
+/// (`CorpusVolumeDetailView` / `CorpusSectionDocumentView`) is a **non-scrolling** `VStack`
+/// with the title above a greedy `List`/phase view; an unbounded `fixedSize` title there
+/// overflowed the fixed-height column and pushed the volume's contents entirely out of view.
+///
+/// This header measures the title's natural wrapped height and takes exactly that — up to
+/// `maxHeight`, beyond which it scrolls internally. Short titles hug their content (no empty
+/// band); paragraph-length titles are capped and scrollable, leaving the content list room
+/// to render. The full value also remains available via the window's navigation title.
+///
+/// Version history:
+///   1.0 — Session 2026-07-08: fixes the long-title blank-detail regression from the
+///          "complete long titles wrap on every platform" change (57f6b33)
+private struct BoundedTitleHeader: View {
+    /// The complete title text to display.
+    let title: String
+    /// The tallest the header may grow before it starts scrolling internally.
+    var maxHeight: CGFloat = 120
+
+    /// The title's natural wrapped height at the current column width, measured live.
+    @State private var naturalHeight: CGFloat = 0
+
+    var body: some View {
+        ScrollView(.vertical) {
+            Text(title)
+                .font(.headline)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
+        }
+        // Hug short titles (height == natural), cap tall ones (height == maxHeight, scrolls).
+        // Starts at 0 before the first measurement — a briefly-collapsed header is harmless,
+        // whereas a nil/greedy height would reintroduce the very overflow this guards against.
+        .frame(height: min(naturalHeight, maxHeight))
+        .scrollDisabled(naturalHeight <= maxHeight)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+}
+
 // MARK: - CorpusVolumeDetailView
 
 /// A volume's structural overview (chapters, compilations), pushed into the corpus browser
@@ -3202,6 +3250,9 @@ private struct SubseriesVolumeListView: View {
 ///          now splits sections into "Front Matter" and "Contents" headers, matching `VolumeView`
 ///   1.4 — Session 2026-07-03: full-title header above the phase content — the window
 ///          title truncates the long appended clauses older volume titles carry
+///   1.5 — Session 2026-07-08: the full-title header is now `BoundedTitleHeader` (height
+///          capped, scrolls when longer) — an unbounded `fixedSize` title overflowed the
+///          non-scrolling column and blanked the volume's contents for long-titled volumes
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -3230,15 +3281,11 @@ private struct CorpusVolumeDetailView: View {
         // structure list, and any section drilled into, inherit the window's size.
         // The full volume title heads the content — the window/navigation title truncates
         // the long appended clauses older volumes carry, so the complete value must be
-        // readable (and selectable) in the content area.
+        // readable (and selectable) in the content area. `BoundedTitleHeader` caps that
+        // header's height so a paragraph-length title can't push the phase content
+        // (structure list / download prompt) out of the non-scrolling column.
         VStack(alignment: .leading, spacing: 0) {
-            Text(volume.title)
-                .font(.headline)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+            BoundedTitleHeader(title: volume.title)
             Divider()
             phaseContent
         }
@@ -3785,6 +3832,9 @@ private struct DiscoveredMetadataRow: View {
 ///          removed the same way — `VolumeSourcesView` opens the value-based
 ///          Cross-Volume Provenance window directly on macOS, so `crossVolumeTarget`
 ///          is never set here anymore either
+///   1.6 — Session 2026-07-08: the full-title header is now `BoundedTitleHeader` (height
+///          capped, scrolls when longer) — an unbounded `fixedSize` title overflowed the
+///          non-scrolling column and blanked the section's contents for long chapter titles
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
@@ -3832,14 +3882,11 @@ private struct CorpusSectionDocumentView: View {
         // title comes from `.navigationTitle` and the system back button handles dismissal.
         // The full section title heads the content — the window/navigation title truncates
         // long chapter/compilation titles, so the complete value must be readable here.
+        // `BoundedTitleHeader` caps that header's height so a paragraph-length title can't
+        // push the routed content (document list / persons / sources) out of the
+        // non-scrolling column.
         VStack(alignment: .leading, spacing: 0) {
-            Text(section.title)
-                .font(.headline)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+            BoundedTitleHeader(title: section.title)
             Divider()
             sectionContent
         }
