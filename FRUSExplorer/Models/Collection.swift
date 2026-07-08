@@ -704,3 +704,31 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
         #endif
     }
 }
+
+// MARK: - Collection Manager scope filter
+
+extension Collection {
+    /// The Collection Manager's default scope (issue #213): both the iOS `CollectionListView`
+    /// and the macOS `MacCollectionManagerView` open showing collections from *every* project.
+    /// Kept here (rather than inline in each view's `@State`) so a single test can pin the
+    /// default and catch a silent revert to project-scoped.
+    static let managerDefaultShowAllCollections = true
+
+    /// Applies the Collection Manager's project-scope filter shared by the iOS
+    /// `CollectionListView` and the macOS `MacCollectionManagerView`, so both surfaces
+    /// agree on which collections are visible for a given scope.
+    ///
+    /// - Parameters:
+    ///   - all: every collection (typically the `@Query` result, newest-first).
+    ///   - activeProjectId: the currently active project, or `nil` in Global Context.
+    ///   - showAll: the user's scope override. When `true` (the default in both managers as
+    ///     of issue #213) every collection is shown regardless of project association.
+    /// - Returns: `all` when `showAll` is set or there is no active project; otherwise only
+    ///   collections tagged to `activeProjectId`.
+    static func visibleCollections(_ all: [Collection],
+                                   activeProjectId: UUID?,
+                                   showAll: Bool) -> [Collection] {
+        guard let projectId = activeProjectId, !showAll else { return all }
+        return all.filter { $0.projectIds.contains(projectId) }
+    }
+}

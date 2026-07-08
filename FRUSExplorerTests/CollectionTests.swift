@@ -44,6 +44,39 @@ struct CollectionTests {
         #expect(results.first?.createdAt != nil)
     }
 
+    // MARK: - ScopeFilterTest (issue #213)
+
+    @Test("VisibleCollections: the shared scope filter honors showAll / active-project / global")
+    func visibleCollectionsScopeFilter() {
+        let projectA = UUID()
+        let projectB = UUID()
+        let inA = Collection(name: "In A", projectIds: [projectA])
+        let inB = Collection(name: "In B", projectIds: [projectB])
+        let inBoth = Collection(name: "In Both", projectIds: [projectA, projectB])
+        let unscoped = Collection(name: "Unscoped", projectIds: [])
+        let all = [inA, inB, inBoth, unscoped]
+
+        // (1) showAll == true with an active project → every collection, including ones
+        //     whose projectIds excludes the active project. This is the issue #213 default.
+        let showingAll = Collection.visibleCollections(all, activeProjectId: projectA, showAll: true)
+        #expect(showingAll.count == 4)
+
+        // (2) showAll == false → only collections tagged to the active project.
+        let scoped = Collection.visibleCollections(all, activeProjectId: projectA, showAll: false)
+        #expect(scoped.map(\.name).sorted() == ["In A", "In Both"])
+        #expect(!scoped.contains { $0.name == "In B" })
+        #expect(!scoped.contains { $0.name == "Unscoped" })
+
+        // (3) No active project (Global Context) → all, regardless of the showAll flag.
+        #expect(Collection.visibleCollections(all, activeProjectId: nil, showAll: false).count == 4)
+        #expect(Collection.visibleCollections(all, activeProjectId: nil, showAll: true).count == 4)
+
+        // (4) Pin the #213 default itself: both managers open at all-project scope. Guards
+        //     against a silent revert of the @State default that the pure-function checks
+        //     above would not catch.
+        #expect(Collection.managerDefaultShowAllCollections == true)
+    }
+
     // MARK: - CompositionDefaultsTest
 
     @Test("CompositionDefaults: a new collection's composition matches the prior export defaults")
