@@ -1354,3 +1354,47 @@ Reviews independently ran builds+tests each phase. All green (124/124 M3). Manag
 COMPLETE. **Remaining before testers: consolidated docs pass + build bump** (reindex v18;
 release notes cover authoring suite + Source Explorer + macOS windows + Dynamic Type +
 manager rework + the M2 notes-default change).
+
+### Session 2026-07-07/08 — Tester-feedback wave: issues 207–219 (build 31)
+Eleven GitHub issues from tester feedback on build 30, each on its own branch off v2,
+self-merged, and closed, with a multi-agent adversarial refute-pass (find → independently
+verify) per issue. Plan: Planning/Issues-207-219-Remediation-Plan.md.
+- **#213** Collection Manager defaults to all-project scope (banner + Scope-to-project /
+  Show All; macOS gains the override for the first time) — PR #220.
+- **#215** Source Explorer pre-1906 links: dateline year extractor widened 19xx→1[89]xx and
+  hardened to prefer a strict `Month D, YYYY` parse over a stray token; restores 18xx
+  reel/country-series resolution (both platforms) — PR #221.
+- **#218** Checklist Mode exposed as a self-labeling control (iOS search actions bar; macOS
+  icon+text Label), enabled on results, VoiceOver-announced — PR #222.
+- **#212** macOS live user-tag filter chips (188-D iOS parity): My Tags section, live refresh,
+  applied to results + Tagged chip — PR #223.
+- **#214** macOS corpus browser browses downloaded early volumes without indexing (structure
+  loads regardless of index; non-blocking Index/Re-index banner replaces the content wall) — PR #224.
+- **#216** Citation Lookup round-trips the app's own citations (title-fragment forwarded;
+  full-subset title override; volume-number-first ordering) — PR #225.
+- **#219** iOS analytics views drop the nav-title to free toolbar space; screen name kept for
+  VoiceOver via accessibilityElement(children:.contain)+label — PR #226.
+- **#207** Person Analytics collapsible chart sections with per-chart controls (Options fold
+  removed) — PR #227.
+- **#209** Cross-Reference Analytics collapsible sections + not-downloaded landmark labels +
+  a non-document target denylist (pg_/fn/in#/ch#/app*/URL anchors no longer rank as
+  landmarks) — PR #228.
+- **#208** Corpus Analytics subseries grouping switched to the Corpus Browser's leading-year
+  algorithm (the ~158 marker-less volumes bucket consistently; areaToken guard dropped per
+  review) — PR #229.
+- **#217** Archival Neighbors **scope selector** (This volume / This subseries / All indexed
+  volumes) with per-trigger defaults; the document and volume-source paths reconciled
+  (document path widened to the offline collection-authority alias fallback; anchor excluded
+  uniformly, also fixing a presidential-library self-inclusion bug); scope rides in the
+  Codable request for macOS window restore; the two inline Source-Explorer surfaces routed
+  onto the shared widened query for parity. Post-filter scope architecture (applyScope +
+  scopedFetchCeiling). Review caught relatedByDecimal's hardcoded `LIMIT 1000` starving
+  scoped decimal queries → candidate cap max(1000, limit) + regression test — PR #230.
+- **Wave 5 (this branch):** consolidated docs pass + **build 30 → 31** (project.yml +
+  project.pbxproj, no xcodegen; MARKETING_VERSION 0.2 unchanged). A doc-coverage audit
+  workflow confirmed all 11 issues' manual updates landed in their per-issue PRs; filled the
+  one gap (macOS §13 subseries-parity note), refreshed three stale README lines (Person
+  Options-fold, macOS live tag chips, Archival Neighbors scope), and rewrote both TestFlight
+  "What's New" files for build 31 (≤4000 chars each). No re-index (build 30 already shipped
+  index v21; none of the 11 changed parse output). In-app help unchanged (all fixes/
+  refinements, no new research concepts). Both schemes build clean; targeted test suites green.
