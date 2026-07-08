@@ -409,11 +409,16 @@ struct PersonAnalyticsView: View {
                     }
                 }
             }
+            // iOS omits the nav title so the full nav-bar width goes to the trailing controls
+            // (#219); the accessible screen name is preserved via .accessibilityLabel. macOS keeps
+            // the title for its window title bar.
+            #if os(macOS)
             .navigationTitle(
                 String(localized: "personAnalytics.title", defaultValue: "Person Analytics")
             )
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            #else
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(String(localized: "personAnalytics.title", defaultValue: "Person Analytics"))
             #endif
             .toolbar { toolbarContent }
         }

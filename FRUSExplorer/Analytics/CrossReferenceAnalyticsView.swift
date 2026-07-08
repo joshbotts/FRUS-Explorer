@@ -153,11 +153,17 @@ struct CrossReferenceAnalyticsView: View {
                     }
                 }
             }
+            // iOS omits the nav title so the full nav-bar width goes to the trailing controls —
+            // this is the worst-crowding view (longest title, no compact fold) (#219). The
+            // accessible screen name is preserved via .accessibilityLabel. macOS keeps the title
+            // for its window title bar.
+            #if os(macOS)
             .navigationTitle(
                 String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics")
             )
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            #else
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics"))
             #endif
             .toolbar { toolbarContent }
         }
