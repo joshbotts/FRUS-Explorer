@@ -880,12 +880,12 @@ An **info** button (ⓘ) explains what each view shows and how it is computed. T
 
 The Cross-Reference Graph (Section 8) shows the neighborhood of *one* document. **Cross-Reference Analytics** steps back to the whole citation network — which documents matter most, how references are distributed, and which volumes talk to each other. Open it from the **Cross-Reference Analytics** toolbar button in the main window (Section 3.1), or the `frus.crossRefAnalytics` window scene. It works over your local index and shows a placeholder until an index is available.
 
-The window presents:
+The window presents four **collapsible chart sections** — click a section's heading to expand or collapse it (remembered between visits) — and the two sections with their own controls host them in the section rather than a shared toolbar:
 
-- **Most-referenced documents** — the documents with the highest **in-degree** (cited by the most other documents), a quick way to find the pieces the record itself treats as pivotal.
-- **Degree-distribution histogram** — how citation counts are spread across the corpus: most documents have few references, a handful have many.
-- **Volume-to-volume citation heat matrix** — a matrix of the **top connected volumes**, each cell shaded by how many cross-references run from one volume to another, revealing which compilations lean on which.
-- **Influence (PageRank) landmark documents** — an offline **PageRank** ranking that surfaces "landmark" documents whose influence comes not just from being cited often but from being cited *by other well-cited documents*.
+- **Most-Referenced Documents** — the documents with the highest **in-degree** (cited by the most other documents). This section's **chart / table** toggle lives here.
+- **Citation Degree Distribution** — how citation counts are spread across the corpus: most documents have few references, a handful have many. This section's **Out-degree** toggle overlays the out-degree distribution (how many citations documents *make*).
+- **Volume Citation Heat Matrix** — a matrix of the **top connected volumes**, each cell shaded by how many cross-references run from one volume to another, revealing which compilations lean on which.
+- **Landmark Documents (Influence)** — an offline **PageRank** ranking that surfaces "landmark" documents whose influence comes from being cited *by other well-cited documents*. The most influential landmarks are frequently in volumes you **haven't downloaded**; the list shows those with a manifest-derived "Document N — *volume title*" and a "in a volume you haven't downloaded" hint (rather than an opaque key), and non-document citation targets (page/front-matter references, footnote anchors, and back-of-book index entries) are no longer ranked as landmarks.
 
 Because **page-number cross-references now resolve** to their target documents (Section 8), citations that a footnote expressed as "see p. 427" are counted here alongside document-number references, so the in-degree, histogram, matrix, and PageRank all reflect the fuller citation graph. The three document-level figures — most-referenced, the degree distribution, and PageRank — also count **same-volume citations** (a document citing another in the same volume), which were previously dropped; counts and rankings rise accordingly. The heat matrix still counts only citations *between* volumes, by definition.
 

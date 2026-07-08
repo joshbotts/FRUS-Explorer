@@ -399,6 +399,50 @@ struct CrossReferenceStoreTests {
         #expect(top[1].inDegree == 1)
     }
 
+    @Test("Non-document anchors (page, footnote, index, chapter) are excluded from every degree/edge query (#209)")
+    func nonDocumentAnchorsExcludedFromDegreeQueries() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Real document targets d1 (2 inbound) and d2 (1 inbound) in vol1.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1",
+                       targetVolumeId: "vol1", targetDocumentId: "d1")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s2",
+                       targetVolumeId: "vol1", targetDocumentId: "d1")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s3",
+                       targetVolumeId: "vol1", targetDocumentId: "d2")
+        // Non-document anchors that ALSO live in target_document_id and used to be crowned as
+        // "landmark documents": a roman-numeral page (pg_III), a front-matter fragment (pg_fm12),
+        // a footnote (d197fn2 — shares the d-prefix), a back-of-book index item (in5), and a
+        // chapter anchor (ch3). Each is the SOLE target of its source, so the source also drops out.
+        let anchors = ["pg_III", "pg_fm12", "d197fn2", "in5", "ch3"]
+        for (i, anchor) in anchors.enumerated() {
+            try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "sa\(i)",
+                           targetVolumeId: "vol1", targetDocumentId: anchor)
+        }
+
+        // (a) In-degree ranking includes only real documents — no page, footnote, index, or
+        // chapter anchors.
+        let top = try await store.topDocumentsByInDegree(limit: 10)
+        #expect(Set(top.map(\.documentId)) == ["d1", "d2"], "Only real documents ranked; no anchors")
+        #expect(!top.contains { anchors.contains($0.documentId) })
+
+        // (b) In-degree distribution feeder is filtered identically — so ranking and histogram stay
+        // lockstep.
+        #expect(try await store.resolvedInDegrees().sorted() == [1, 2])
+
+        // (c) Out-degree feeder drops edges TARGETING an anchor (same edge population as in-degree),
+        // so the anchor-only sources (sa0…sa4) disappear entirely; only s1,s2,s3 remain.
+        let outDeg = try await store.resolvedOutDegrees()
+        #expect(outDeg.count == 3, "Only s1,s2,s3 remain; the anchor-only sources drop out")
+        #expect(outDeg.allSatisfy { $0 == 1 })
+
+        // (d) PageRank edge set excludes all anchor targets.
+        let edges = try await store.resolvedCitationEdges()
+        #expect(edges.count == 3, "Only the 3 real document-target edges feed PageRank")
+        #expect(!edges.contains { anchors.contains($0.target.documentId) })
+    }
+
     @Test("resolvedInDegrees returns per-document counts, including same-volume references")
     func resolvedInDegreesPerDocument() async throws {
         let (dir, dbURL, store) = try makeTempStore()

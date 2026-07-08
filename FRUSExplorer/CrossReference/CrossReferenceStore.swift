@@ -630,6 +630,31 @@ public actor CrossReferenceStore {
             "dds.date_iso IS NOT NULL AND length(dds.date_iso) >= 4 AND CAST(substr(dds.date_iso, 1, 4) AS INTEGER) BETWEEN ? AND ?"
     }
 
+    /// Excludes the non-document citation-target forms that also live in `target_document_id` and
+    /// would otherwise be crowned as "documents" in the ranking / histogram / PageRank (#209). Real
+    /// documents and editorial notes are `d`/`en`-prefixed numbered ids; the anchor forms actually
+    /// present in the corpus are (verified against real indexes, e.g. frus1952-54v10, where a
+    /// footnote `d197fn2` had the top in-degree and index items outranked real documents):
+    ///   - page / front-matter anchors — `pg_*` (roman pages `pg_III`, front matter `pg_fm12`, and
+    ///     cross-volume `pg_*` fragments `resolvePageBasedCrossReferences` leaves unresolved),
+    ///   - footnote anchors — any id containing `fn` (e.g. `d197fn2`),
+    ///   - back-of-book index items (`in5`), chapter / appendix anchors (`ch3`, `app*`),
+    ///   - bare volume ids (`frus…`) and URLs (`*://*`).
+    ///
+    /// A denylist (rather than a `d[0-9]*` allow-list) because document ids in the wild aren't
+    /// strictly `d`+digits, and the store's own fixtures use bare stand-in ids. Applied to **every**
+    /// degree/edge query so the in-degree ranking, degree histogram, and PageRank landmark list stay
+    /// lockstep and never crown a non-document anchor as a "landmark document".
+    private static let documentTargetPredicate = """
+        cr.target_document_id NOT GLOB 'pg_*' \
+        AND cr.target_document_id NOT GLOB '*fn*' \
+        AND cr.target_document_id NOT GLOB 'in[0-9]*' \
+        AND cr.target_document_id NOT GLOB 'ch[0-9]*' \
+        AND cr.target_document_id NOT GLOB 'app*' \
+        AND cr.target_document_id NOT GLOB 'frus*' \
+        AND cr.target_document_id NOT GLOB '*://*'
+        """
+
     /// The bare `<columnExpr> IN (?, …)` predicate for a normalised volume scope, or `""` when nil.
     private static func volumeScopePredicate(_ scope: [String]?, columnExpr: String) -> String {
         guard let scope, !scope.isEmpty else { return "" }
@@ -695,7 +720,8 @@ public actor CrossReferenceStore {
             LEFT JOIN document_cache dc
                    ON dc.volume_id = COALESCE(cr.target_volume_id, cr.source_volume_id)
                   AND dc.document_id = cr.target_document_id
-            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+            \(Self.whereClause([Self.documentTargetPredicate,
+                                Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY resolved_target_volume, cr.target_document_id
             ORDER BY in_degree DESC, resolved_target_volume, cr.target_document_id
@@ -738,7 +764,8 @@ public actor CrossReferenceStore {
             SELECT COUNT(*) AS in_degree
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
-            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+            \(Self.whereClause([Self.documentTargetPredicate,
+                                Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY COALESCE(cr.target_volume_id, cr.source_volume_id), cr.target_document_id
             """
@@ -769,7 +796,8 @@ public actor CrossReferenceStore {
             SELECT COUNT(*) AS out_degree
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
-            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+            \(Self.whereClause([Self.documentTargetPredicate,
+                                Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY cr.source_volume_id, cr.source_document_id
             """
@@ -814,6 +842,7 @@ public actor CrossReferenceStore {
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
             \(Self.whereClause([selfLoop,
+                                Self.documentTargetPredicate,
                                 Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             """
