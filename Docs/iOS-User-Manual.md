@@ -310,7 +310,7 @@ Tap the citation-lookup button (a magnifying glass over quotation marks) in the 
 
 ### 5.8 Checklist Review Mode
 
-When you're working systematically through a long result set — deciding which of a few hundred matches to read — **Checklist Mode** turns the list into a shrinking to-do list. Open the **overflow (•••) menu** in the Search toolbar and turn on **Checklist Mode** (it becomes available once a search has results).
+When you're working systematically through a long result set — deciding which of a few hundred matches to read — **Checklist Mode** turns the list into a shrinking to-do list. Tap the **Checklist** button (the ☑︎ checklist icon) in the search actions bar, just right of the timeline button; it's enabled once a search has results, and highlights while the mode is on.
 
 With it on, a result disappears from the list as soon as you **open it** by any route, or when you explicitly mark it reviewed — **swipe the row** and tap **Reviewed**, or long-press it and choose **Mark Reviewed**. A subtle **"N reviewed hidden"** banner shows how many you've cleared, and when nothing is left an **All Results Reviewed** message appears. Turn the toggle off to bring every result back.
 

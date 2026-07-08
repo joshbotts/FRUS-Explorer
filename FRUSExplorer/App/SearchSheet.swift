@@ -590,18 +590,22 @@ struct MacSearchWindowView: View {
 
             Spacer()
 
-            // Checklist review mode (#189-D) — a plain toggle button matching the timeline
-            // toggle beside it (the macOS sort bar uses icon buttons, not a menu). Hides results
-            // as they're reviewed (opened by any means, or marked via the row context menu),
-            // turning a long result set into a shrinking to-do list. Disabled until there are
-            // results; stays enabled in the all-reviewed state (gated on raw `results`) so the
-            // user can always turn it back off.
+            // Checklist review mode (#189-D) — a self-labeling icon+text control (#218) so it
+            // reads as "Checklist" without hovering, instead of a bare icon discoverable only by
+            // tooltip. Hides results as they're reviewed (opened by any means, or marked via the
+            // row context menu), turning a long result set into a shrinking to-do list. Disabled
+            // until there are results; stays enabled in the all-reviewed state (gated on raw
+            // `results`) so the user can always turn it back off.
             Button {
                 searchVM.setChecklistMode(!searchVM.checklistMode)
             } label: {
-                Image(systemName: "checklist")
+                Label(String(localized: "search.checklist.short", defaultValue: "Checklist"),
+                      systemImage: "checklist")
                     .font(.system(size: 12))
                     .foregroundStyle(searchVM.checklistMode ? Color.accentColor : Color.secondary)
+                    .lineLimit(1)
+                    .fixedSize()  // keep the label intact; the flexible result-count text absorbs
+                                  // any compression in the dense sort bar at minimum window width
             }
             .buttonStyle(.plain)
             .disabled(searchVM.results.isEmpty)
@@ -611,6 +615,9 @@ struct MacSearchWindowView: View {
                   : String(localized: "search.checklist.on.help",
                            defaultValue: "Checklist review mode — hide results as you review them"))
             .accessibilityLabel(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"))
+            .accessibilityValue(searchVM.checklistMode
+                                ? String(localized: "search.checklist.state.on", defaultValue: "On")
+                                : String(localized: "search.checklist.state.off", defaultValue: "Off"))
 
             Divider().frame(height: 14)
 
