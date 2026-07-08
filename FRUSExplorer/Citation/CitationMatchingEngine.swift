@@ -185,9 +185,15 @@ public actor CitationMatchingEngine {
 
     // MARK: - Volume Resolution
 
-    /// Resolves subseries + volume number + title fragment to candidate manifest entries.
+    /// Resolves subseries + volume number + title fragment to candidate manifest entries,
+    /// best match first.
     ///
-    /// Returns entries sorted by match quality (exact subseries match first, then title fragment).
+    /// A strong title-fragment match can **override** the subseries filter. This is essential for
+    /// the round-trip of the app's own citations for pre-1906 "Papers Relating to Foreign Affairs"
+    /// volumes (#216): their only year is the *print* year (e.g. 1864 for a `frus1863` volume) and
+    /// carries no coverage year, so subseries resolution alone lands on the wrong volume group —
+    /// only the title ("First Session … Part II") disambiguates. The comparison is a normalized
+    /// token-subset test, so the manifest titles' embedded newlines/punctuation don't defeat it.
     func resolveVolume(
         subseries: String?,
         volumeNumber: String?,
@@ -195,33 +201,70 @@ public actor CitationMatchingEngine {
     ) async -> [VolumeManifestEntry] {
         let allVolumes = await manifestStore.bundledEntries
 
-        var candidates = allVolumes
-
-        // Filter by subseries (normalized comparison)
+        // Subseries-derived set (may be the WRONG group when the citation's only year is a print
+        // year); falls back to the whole manifest when the subseries matches nothing.
+        var subseriesCandidates = allVolumes
         if let sub = subseries {
             let normalized = normalizeSubseries(sub)
-            let filtered = candidates.filter { normalizeSubseries($0.subseries) == normalized }
-            if !filtered.isEmpty { candidates = filtered }
+            let filtered = allVolumes.filter { normalizeSubseries($0.subseries) == normalized }
+            if !filtered.isEmpty { subseriesCandidates = filtered }
         }
 
-        // Filter by volume number
-        if let vol = volumeNumber {
-            // The manifest volumeId encodes the volume number: "frus1969-76v01"
-            // Match both the suffix number and the Roman numeral form embedded in the title
-            let filtered = candidates.filter { entry in
-                volumeMatchesEntry(vol, entry: entry)
+        // Narrows a set by the parsed volume number; a no-op when nothing matches so it never
+        // empties an otherwise-good candidate list.
+        func applyVolumeNumber(_ set: [VolumeManifestEntry]) -> [VolumeManifestEntry] {
+            guard let vol = volumeNumber else { return set }
+            let filtered = set.filter { volumeMatchesEntry(vol, entry: $0) }
+            return filtered.isEmpty ? set : filtered
+        }
+
+        // Title-fragment resolution / subseries correction.
+        if let fragment = titleFragment {
+            let fragTokens = titleTokens(fragment)
+            if !fragTokens.isEmpty {
+                // A substantial fragment can OVERRIDE the subseries: find volumes whose title
+                // contains ALL of its tokens — a full, unambiguous match (e.g. only frus1863p2
+                // carries both "First Session" and "Part II"). Reserved for multi-token fragments
+                // so a single generic word can't hijack resolution across the whole manifest.
+                if fragTokens.count >= 4 {
+                    let fullMatches = allVolumes.filter { fragTokens.isSubset(of: titleTokens($0.title)) }
+                    if !fullMatches.isEmpty {
+                        let inSubseries = fullMatches.filter { e in
+                            subseriesCandidates.contains { $0.volumeId == e.volumeId }
+                        }
+                        // Prefer full matches that also satisfy the subseries; otherwise the title
+                        // corrects a print-year subseries collision.
+                        return applyVolumeNumber(inSubseries.isEmpty ? fullMatches : inSubseries)
+                    }
+                }
+                // Otherwise (short fragment, or no full match) apply the explicit volume number
+                // FIRST — it stays authoritative — then narrow that set by token overlap, keeping
+                // only the best-scoring volumes. This preserves the historic "narrow by a
+                // distinctive title word" behavior (e.g. "Vietnam") and ranks multi-token fragments
+                // for `match()`'s prefix(3), without letting a title word override an explicit
+                // volume number.
+                let byVolume = applyVolumeNumber(subseriesCandidates)
+                let scored = byVolume
+                    .map { entry in (entry: entry, overlap: fragTokens.intersection(titleTokens(entry.title)).count) }
+                    .filter { $0.overlap > 0 }
+                    .sorted { $0.overlap > $1.overlap }
+                if let maxOverlap = scored.first?.overlap {
+                    return scored.filter { $0.overlap == maxOverlap }.map(\.entry)
+                }
+                return byVolume
             }
-            if !filtered.isEmpty { candidates = filtered }
         }
 
-        // Filter by title fragment
-        if let fragment = titleFragment, candidates.count > 1 {
-            let lowFrag = fragment.lowercased()
-            let filtered = candidates.filter { $0.title.lowercased().contains(lowFrag) }
-            if !filtered.isEmpty { candidates = filtered }
-        }
+        return applyVolumeNumber(subseriesCandidates)
+    }
 
-        return candidates
+    /// Normalized token set of a title or citation fragment: lowercased, with every non-alphanumeric
+    /// character (punctuation, and the embedded newlines the TEI manifest titles carry) reduced to a
+    /// separator. Single-character tokens are kept so Roman-numeral part markers ("I" vs "II") stay
+    /// distinguishable.
+    private func titleTokens(_ s: String) -> Set<String> {
+        let separated = s.lowercased().map { $0.isLetter || $0.isNumber ? $0 : " " }
+        return Set(String(separated).split(separator: " ").map(String.init))
     }
 
     // MARK: - Document Number Match

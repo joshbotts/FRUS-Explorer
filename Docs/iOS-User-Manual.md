@@ -452,7 +452,7 @@ From any open document, choose **View Citation** in the toolbar to see the fully
 
 ### 9.2 Looking Up a Document by Citation
 
-From the Search tab, tap the citation-lookup button to open **Citation Lookup**: paste or type any citation string and FRUS Explorer parses it — recognizing volume, document number, subseries, and other common citation formats — and opens the matching document directly, even one you haven't browsed to before.
+From the Search tab, tap the citation-lookup button to open **Citation Lookup**: paste or type any citation string and FRUS Explorer parses it — recognizing volume, document number, subseries, and other common citation formats — and opens the matching document directly, even one you haven't browsed to before. This includes the app's **own** formatted citations: copy a citation from one document and paste it back into lookup and it resolves to that same document. For the pre-1906 *Papers Relating to Foreign Affairs* volumes — whose citations carry only the print year (e.g. 1864) rather than a coverage year — the volume title ("First Session … Part II") is what pins down the exact part, so paste the full citation rather than just the year.
 
 `[SCREENSHOT: Citation Lookup sheet parsing a pasted citation and showing a matched document]`
 

@@ -49,6 +49,11 @@ struct CitationLookupView: View {
     @State private var volumeField: String = ""
     @State private var documentField: String = ""
     @State private var pageField: String = ""
+    /// Parsed title fragment from the pasted citation. Not shown as an editable field — it's the
+    /// disambiguator the matcher needs to resolve volumes whose only year is a print year (e.g.
+    /// pre-1906 "Papers Relating to Foreign Affairs" parts), so it must be forwarded rather than
+    /// dropped (#216).
+    @State private var parsedTitleFragment: String? = nil
 
     // MARK: - Result State
 
@@ -136,6 +141,7 @@ struct CitationLookupView: View {
                     volumeField     = parsed.volumeNumber  ?? volumeField
                     documentField   = parsed.documentNumber.map(String.init) ?? documentField
                     pageField       = parsed.pageNumber.map(String.init)     ?? pageField
+                    parsedTitleFragment = parsed.titleFragment
                 }
             } header: {
                 Text(String(localized: "citation.paste.header", defaultValue: "Citation Text"))
@@ -286,6 +292,9 @@ struct CitationLookupView: View {
             volumeNumber: volumeField.isEmpty ? nil : volumeField,
             documentNumber: Int(documentField),
             pageNumber: Int(pageField),
+            // Forward the parsed title fragment (paste mode only) so the matcher can correct a
+            // print-year subseries and disambiguate part volumes (#216).
+            titleFragment: mode == .paste ? parsedTitleFragment : nil,
             parserConfidence: mode == .paste ? parser.parse(pasteText).parserConfidence : .structured
         )
 
