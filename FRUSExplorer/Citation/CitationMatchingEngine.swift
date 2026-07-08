@@ -237,18 +237,21 @@ public actor CitationMatchingEngine {
                         return applyVolumeNumber(inSubseries.isEmpty ? fullMatches : inSubseries)
                     }
                 }
-                // Otherwise (short fragment, or no full match) narrow the SUBSERIES set by token
-                // overlap and keep only the best-scoring volumes — this preserves the historic
-                // "narrow by a distinctive title word" behavior (e.g. "Vietnam") and ranks
-                // multi-token fragments for `match()`'s prefix(3).
-                let scored = subseriesCandidates
+                // Otherwise (short fragment, or no full match) apply the explicit volume number
+                // FIRST — it stays authoritative — then narrow that set by token overlap, keeping
+                // only the best-scoring volumes. This preserves the historic "narrow by a
+                // distinctive title word" behavior (e.g. "Vietnam") and ranks multi-token fragments
+                // for `match()`'s prefix(3), without letting a title word override an explicit
+                // volume number.
+                let byVolume = applyVolumeNumber(subseriesCandidates)
+                let scored = byVolume
                     .map { entry in (entry: entry, overlap: fragTokens.intersection(titleTokens(entry.title)).count) }
                     .filter { $0.overlap > 0 }
                     .sorted { $0.overlap > $1.overlap }
                 if let maxOverlap = scored.first?.overlap {
-                    let top = scored.filter { $0.overlap == maxOverlap }.map(\.entry)
-                    return applyVolumeNumber(top)
+                    return scored.filter { $0.overlap == maxOverlap }.map(\.entry)
                 }
+                return byVolume
             }
         }
 
