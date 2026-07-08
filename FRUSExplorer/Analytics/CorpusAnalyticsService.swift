@@ -40,12 +40,14 @@ struct YearVolumeFrequency: Sendable, Identifiable {
 
 /// Document frequency broken down by FRUS subseries.
 ///
-/// The subseries is the volume ID with the "frus" prefix and trailing
-/// `v\d+[a-z0-9]*` volume suffix stripped (e.g. `frus1969-76v01` →
-/// `1969-76`). Documents whose volume IDs cannot be parsed are omitted.
+/// The subseries is the volume ID's leading year (or year range) — the same
+/// publication-era bucket the Corpus Browser groups on (e.g. `frus1969-76v01` →
+/// `1969-76`, `frus1945Berlinv01` → `1945`); see `subseries(fromVolumeId:)`.
+/// Documents whose volume IDs cannot be parsed are omitted.
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
+///   1.1 — #208: subseries derived by the leading-year algorithm (Corpus Browser parity)
 struct SubseriesFrequency: Sendable, Identifiable {
     let subseries: String
     let count: Int
@@ -212,10 +214,11 @@ struct AnalyticsParameters: Sendable, Equatable {
 /// document in a volume under the volume's start year.
 ///
 /// ## Volume ID Parsing
-/// FRUS volume IDs follow the pattern `frus{subseries}v{number}[suffix]`,
-/// for example `frus1969-76v01`. The start year is the first four digits
-/// after "frus". The subseries is everything between "frus" and the
-/// trailing volume suffix (`v\d+[a-z0-9]*`).
+/// FRUS volume IDs follow the pattern `frus{subseries}{area?}v{number}[suffix]`,
+/// for example `frus1969-76v01`. The start year is the first four digits after
+/// "frus". The subseries is the **leading year (or year range)** only — the same
+/// value `ManifestGeneratorCore.VolumeIDParser` bakes into `manifest.json` and the
+/// Corpus Browser groups on (`subseries(fromVolumeId:)`, #208).
 ///
 /// ## Analytics Coverage
 /// - `termFrequencyByYear(term:)` — matching docs per year (actual document date)
@@ -773,19 +776,28 @@ actor CorpusAnalyticsService {
         return year
     }
 
-    /// Extracts the subseries string from a FRUS volume ID.
+    /// Extracts the subseries string from a FRUS volume ID, using the **leading-year** algorithm —
+    /// the single source of truth the Corpus Browser groups on (#208).
     ///
-    /// For `frus1969-76v01` this returns `"1969-76"`. Strips the "frus"
-    /// prefix and the trailing `v\d+[a-z0-9]*` volume suffix. Returns `nil`
-    /// if the volume ID does not begin with "frus" or has no volume suffix.
+    /// This matches `ManifestGeneratorCore.VolumeIDParser.subseries`, whose output is baked into
+    /// `manifest.json`'s `subseries` field. It takes the 4-digit year (plus an optional `-YY`/`-YYYY`
+    /// range) immediately after `"frus"` and ignores everything after it — volume markers, part
+    /// numbers, and conference/area/supplement tokens. So `frus1945Berlinv01` → `"1945"` (not
+    /// `"1945Berlin"`), `frus1863p2` → `"1863"`, `frus1969-76ve01` → `"1969-76"`. It is the
+    /// manifest-free fallback; consumers that have a `ManifestStore` prefer its precomputed
+    /// `VolumeManifestEntry.subseries` field, which this exactly mirrors.
+    ///
+    /// The previous trailing-`v\d+`-strip algorithm diverged from the browser for ~158 of the 552
+    /// bundled volumes: it returned `nil` for any id without a `vNN` marker (all pre-1918 annuals,
+    /// Vietnam extras, conference-only ids) and kept the area token for the rest.
+    ///
+    /// Returns `nil` only when the id does not begin with `"frus"` followed by a 4-digit year.
     nonisolated static func subseries(fromVolumeId volumeId: String) -> String? {
         guard volumeId.hasPrefix("frus") else { return nil }
-        let afterFrus = String(volumeId.dropFirst(4))
-        // Find the last occurrence of "v" followed by at least one digit.
-        guard let range = afterFrus.range(of: #"v\d+[a-z0-9]*$"#, options: .regularExpression) else {
+        let afterFrus = volumeId.dropFirst(4)
+        guard let range = afterFrus.range(of: #"^\d{4}(-\d{2,4})?"#, options: .regularExpression) else {
             return nil
         }
-        let sub = String(afterFrus[..<range.lowerBound])
-        return sub.isEmpty ? nil : sub
+        return String(afterFrus[range])
     }
 }

@@ -73,6 +73,88 @@ private func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: Indexing
 @Suite("CorpusAnalyticsService — By Volume")
 struct CorpusAnalyticsServiceTests {
 
+    // MARK: - Subseries parity with the Corpus Browser (#208)
+
+    @Test("subseries(fromVolumeId:) uses the leading-year algorithm — the structural cases the old trailing-strip failed")
+    func subseriesLeadingYearStructuralCases() {
+        func sub(_ id: String) -> String? { CorpusAnalyticsService.subseries(fromVolumeId: id) }
+        // Pre-1918 annuals / part-only / appendix ids (old algorithm returned nil — no vNN marker).
+        #expect(sub("frus1861") == "1861")
+        #expect(sub("frus1863p2") == "1863")
+        #expect(sub("frus1894app1") == "1894")
+        // Conference / area / supplement tokens (old algorithm kept them in the bucket key).
+        #expect(sub("frus1945Berlinv01") == "1945")
+        #expect(sub("frus1943CairoTehran") == "1943")
+        #expect(sub("frus1919Parisv13") == "1919")
+        #expect(sub("frus1917Supp01v01") == "1917")
+        // Year ranges, area-code, edition, Vietnam extras.
+        #expect(sub("frus1969-76v01") == "1969-76")
+        #expect(sub("frus1969-76ve01") == "1969-76")
+        #expect(sub("frus1952-54Gv01") == "1952-54")
+        #expect(sub("frus1951-54IranEd2") == "1951-54")
+        #expect(sub("frus1993-2000v01") == "1993-2000")
+        // Non-frus / malformed → nil.
+        #expect(sub("notfrus1969") == nil)
+        #expect(sub("frusABCD") == nil)
+    }
+
+    @Test("subseries(fromVolumeId:) equals every bundled manifest entry's subseries (whole-corpus browser parity)")
+    @MainActor
+    func subseriesMatchesBundledManifest() {
+        let entries = ManifestStore().bundledEntries
+        // The test bundle's manifest.json can be empty during development; assert only when present.
+        guard !entries.isEmpty else { return }
+        for entry in entries {
+            #expect(CorpusAnalyticsService.subseries(fromVolumeId: entry.volumeId) == entry.subseries,
+                    "\(entry.volumeId): analytics subseries must equal the manifest's '\(entry.subseries)'")
+        }
+    }
+
+    @Test("distilledVolumeLabel stays unique and unmangled with the leading-year subseries (#208)")
+    func distilledLabelUniqueForConferenceVolumes() {
+        // Conference / supplement volumes stay distinct from a plain annual of the same year —
+        // the descriptive topic prefix disambiguates even though the subseries is the leading year.
+        let plain = ChronologyViewModel.distilledVolumeLabel(
+            volumeId: "frus1945v01", subseries: "1945",
+            title: "Foreign Relations of the United States, 1945, Volume I")
+        let berlin = ChronologyViewModel.distilledVolumeLabel(
+            volumeId: "frus1945Berlinv01", subseries: "1945",
+            title: "Foreign Relations of the United States, The Conference of Berlin, 1945")
+        #expect(plain != berlin)
+        #expect(berlin.contains("Berlin"))
+        let annual = ChronologyViewModel.distilledVolumeLabel(
+            volumeId: "frus1917v01", subseries: "1917",
+            title: "Papers Relating to the Foreign Relations of the United States, 1917")
+        let supp = ChronologyViewModel.distilledVolumeLabel(
+            volumeId: "frus1917Supp01v01", subseries: "1917",
+            title: "Papers Relating to the Foreign Relations of the United States, 1917, Supplement 1")
+        #expect(annual != supp)
+
+        // Regression guard: boilerplate-titled appendix / edition ids must NOT be mangled into a
+        // stray area fragment. frus1894app1 renders the clean "1894 pt.1" (not "1894 ap pt.1"); the
+        // 1951-54 Iran edition stays distinct from the base volume via its full id suffix.
+        let appendix = ChronologyViewModel.distilledVolumeLabel(
+            volumeId: "frus1894app1", subseries: "1894",
+            title: "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I")
+        #expect(!appendix.contains(" ap "))
+        #expect(!appendix.contains("Sup "))
+    }
+
+    @Test("distilledVolumeLabel is unique across the whole bundled corpus (#208)")
+    @MainActor
+    func distilledLabelUniqueAcrossBundledCorpus() {
+        let entries = ManifestStore().bundledEntries
+        guard !entries.isEmpty else { return }  // empty test-bundle manifest during development
+        var seen: [String: String] = [:]
+        for entry in entries {
+            let label = ChronologyViewModel.distilledVolumeLabel(
+                volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title)
+            #expect(seen[label] == nil,
+                    "Chronology label collision: '\(label)' for both \(seen[label] ?? "") and \(entry.volumeId)")
+            seen[label] = entry.volumeId
+        }
+    }
+
     /// A term that appears in two of three indexed volumes must yield exactly those
     /// two `VolumeFrequency` rows (with correct per-volume counts), omit the volume
     /// with no match entirely, and be sorted ascending by volume ID.
