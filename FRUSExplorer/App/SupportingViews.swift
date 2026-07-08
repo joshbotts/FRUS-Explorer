@@ -3209,7 +3209,7 @@ private struct CorpusVolumeDetailView: View {
     @Environment(AppState.self) private var appState
 
     enum Phase {
-        case notDownloaded, downloading, indexing, loadingStructure, notIndexed, interrupted
+        case notDownloaded, downloading, indexing, loadingStructure
         case ready(VolumeStructure)
         case error(String)
     }
@@ -3217,6 +3217,12 @@ private struct CorpusVolumeDetailView: View {
     @State private var phase: Phase = .notDownloaded
     @State private var liveProgress: IndexingProgressUpdate? = nil
     @State private var showingSummaryCard = false
+    /// Whether the downloaded volume has been indexed, and whether a prior indexing pass was
+    /// interrupted. These drive a non-blocking status banner (#214): the structure itself is
+    /// now browsable regardless, at parity with iOS, so indexing is offered — not required —
+    /// to browse. Search / document text / connections still depend on the index.
+    @State private var isVolumeIndexed = false
+    @State private var isInterrupted = false
     private let parser = FRUSDocumentParser()
 
     var body: some View {
@@ -3254,10 +3260,10 @@ private struct CorpusVolumeDetailView: View {
         // stuck on `.notIndexed` after external indexing completes.
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             guard case .indexing = phase else {
-                // External indexing finished — re-evaluate if our volume may now be indexed.
-                if progress == nil {
-                    if case .notIndexed = phase { Task { await determinePhase() } }
-                    else if case .interrupted = phase { Task { await determinePhase() } }
+                // External indexing finished — refresh index state so the status banner clears
+                // and section document lists populate (structure is already shown regardless).
+                if progress == nil, !isVolumeIndexed {
+                    Task { await determinePhase() }
                 }
                 return
             }
@@ -3279,7 +3285,6 @@ private struct CorpusVolumeDetailView: View {
         switch phase {
         case .notDownloaded:    notDownloadedView
         case .downloading:      downloadingView
-        case .interrupted:      interruptedView
         case .indexing:
             if showingSummaryCard, let meta = appState.completedIndexingMetadata {
                 summaryCardView(meta)
@@ -3289,7 +3294,6 @@ private struct CorpusVolumeDetailView: View {
         case .loadingStructure:
             ProgressView("Loading contents…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .notIndexed:       notIndexedView
         case .ready(let s):     structureView(s)
         case .error(let msg):
             ContentUnavailableView(
@@ -3310,15 +3314,38 @@ private struct CorpusVolumeDetailView: View {
         guard let dm = appState.downloadManager, dm.isVolumeDownloaded(volume.volumeId) else {
             phase = .notDownloaded; return
         }
-        // Interrupted: sentinel present from a prior incomplete indexing pass.
-        if appState.interruptedVolumeIds.contains(volume.volumeId) {
-            phase = .interrupted; return
-        }
-        guard let pipeline = appState.indexingPipeline else { phase = .notIndexed; return }
-        if (try? pipeline.isVolumeIndexed(volume.volumeId)) == true {
-            await loadStructure()
+        // iOS parity (#214): a downloaded volume's structure is browsable straight from the
+        // downloaded XML, regardless of index state. The old macOS gate routed unindexed or
+        // interrupted volumes to a content wall — which bit the large early volumes that are
+        // most often left downloaded-but-unindexed (or whose long indexing pass was
+        // interrupted). Record index/interrupt state for the non-blocking banner, then load
+        // the structure; index-dependent affordances stay gated where they are actually used
+        // (per-section document lists, search scoping, connections).
+        isInterrupted = appState.interruptedVolumeIds.contains(volume.volumeId)
+        if let pipeline = appState.indexingPipeline {
+            isVolumeIndexed = (try? pipeline.isVolumeIndexed(volume.volumeId)) == true
         } else {
-            phase = .notIndexed
+            isVolumeIndexed = false
+        }
+        await loadStructure()
+    }
+
+    /// Kicks off (or restarts) indexing for this volume from the status banner, then reloads
+    /// the structure so section document lists populate. Surfaces failures instead of silently
+    /// swallowing them (the "persisted after reindex" report, #214).
+    private func indexVolume() {
+        guard let pipeline = appState.indexingPipeline else { return }
+        phase = .indexing
+        liveProgress = nil
+        Task {
+            do {
+                try await pipeline.indexVolume(volume.volumeId)
+                isVolumeIndexed = true
+                isInterrupted = false
+                await loadStructure()
+            } catch {
+                phase = .error(error.localizedDescription)
+            }
         }
     }
 
@@ -3450,72 +3477,47 @@ private struct CorpusVolumeDetailView: View {
         )
     }
 
-    private var notIndexedView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "magnifyingglass.circle")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text("Index Required")
-                .font(.headline)
-            Text("This volume has been downloaded but must be indexed before you can browse its documents.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
+    /// Non-blocking banner shown atop a browsable (downloaded) volume when it isn't fully
+    /// indexed or a prior pass was interrupted (#214). Unlike the old content walls it does not
+    /// hide the structure — it just explains that search / document text need indexing and
+    /// offers to run it. `interrupted` takes visual precedence when both apply.
+    @ViewBuilder
+    private var indexStatusBanner: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: isInterrupted ? "exclamationmark.triangle.fill" : "magnifyingglass.circle")
+                .foregroundStyle(isInterrupted ? .orange : .secondary)
+                .imageScale(.large)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isInterrupted
+                     ? String(localized: "corpus.volume.indexInterrupted.title",
+                              defaultValue: "Indexing Interrupted")
+                     : String(localized: "corpus.volume.indexRequired.title",
+                              defaultValue: "Not Indexed Yet"))
+                    .font(.subheadline.weight(.semibold))
+                Text(isInterrupted
+                     ? String(localized: "corpus.volume.indexInterrupted.detail",
+                              defaultValue: "You can browse this volume's contents now. Re-index it to restore full search coverage and document text.")
+                     : String(localized: "corpus.volume.indexRequired.detail",
+                              defaultValue: "You can browse this volume's contents now. Index it to search inside it and open its documents."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
             Button {
-                guard let pipeline = appState.indexingPipeline else { return }
-                phase = .indexing
-                liveProgress = nil
-                Task {
-                    do {
-                        try await pipeline.indexVolume(volume.volumeId)
-                        await loadStructure()
-                    } catch {
-                        phase = .error(error.localizedDescription)
-                    }
-                }
+                indexVolume()
             } label: {
-                Label("Index Now", systemImage: "arrow.triangle.2.circlepath")
+                Label(isInterrupted
+                      ? String(localized: "corpus.volume.reindexNow", defaultValue: "Re-index")
+                      : String(localized: "corpus.volume.indexNow", defaultValue: "Index"),
+                      systemImage: "arrow.triangle.2.circlepath")
             }
             .buttonStyle(.bordered)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
-    }
-
-    private var interruptedView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.orange)
-            Text("Indexing Interrupted")
-                .font(.headline)
-            Text("The previous indexing pass did not complete. Re-index this volume to restore full search coverage.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
-            Button {
-                guard let pipeline = appState.indexingPipeline else { return }
-                phase = .indexing
-                liveProgress = nil
-                Task {
-                    do {
-                        try await pipeline.indexVolume(volume.volumeId)
-                        await loadStructure()
-                    } catch {
-                        phase = .error(error.localizedDescription)
-                    }
-                }
-            } label: {
-                Label("Re-index Now", systemImage: "arrow.triangle.2.circlepath")
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
             .disabled(appState.indexingPipeline == nil)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background((isInterrupted ? Color.orange : Color.secondary).opacity(0.12))
     }
 
     /// Flattens front-matter sections for display under the "Front Matter" header.
@@ -3586,6 +3588,11 @@ private struct CorpusVolumeDetailView: View {
             let contentSections = structure.sections.filter {
                 !$0.isFrontMatterKind && $0.divType != "back"
             }
+            VStack(spacing: 0) {
+            if !isVolumeIndexed || isInterrupted {
+                indexStatusBanner
+                Divider()
+            }
             List {
                 if !frontMatterItems.isEmpty {
                     Section("Front Matter") {
@@ -3619,6 +3626,7 @@ private struct CorpusVolumeDetailView: View {
                 }
             }
             .listStyle(.inset)
+            }
         }
     }
 
@@ -3773,6 +3781,11 @@ private struct CorpusSectionDocumentView: View {
 
     @State private var documents: [DocumentBrowserEntry] = []
     @State private var isLoading = true
+    /// Whether this section's volume is indexed. Defaults `true` so an indexed volume never
+    /// flashes the prompt; set in `loadDocuments`. When `false`, an empty leaf section shows an
+    /// "index to view documents" prompt instead of the misleading "No documents" (#214), since
+    /// the document list reads `document_cache`, which is only populated for indexed volumes.
+    @State private var volumeIndexed = true
     /// Hoisted presentation targets for the section-emitting front-matter subviews —
     /// the sheets anchor on this view's Lists, exactly once (see the body comments).
     /// `sourceNeighborsTarget` and `crossVolumeTarget` are required by
@@ -3944,9 +3957,22 @@ private struct CorpusSectionDocumentView: View {
                 }
             } else if section.subsections.isEmpty {
                 Section {
-                    Text(String(localized: "corpus.section.noDocuments",
-                                defaultValue: "No documents in this section."))
-                        .foregroundStyle(.secondary)
+                    if volumeIndexed {
+                        Text(String(localized: "corpus.section.noDocuments",
+                                    defaultValue: "No documents in this section."))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(String(localized: "corpus.section.needsIndex",
+                                        defaultValue: "This volume isn't indexed yet."))
+                                .foregroundStyle(.secondary)
+                            Text(String(localized: "corpus.section.needsIndex.detail",
+                                        defaultValue: "Index the volume (from the banner atop its contents) to view and open its documents."))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
                 }
             }
         }
@@ -3973,7 +3999,10 @@ private struct CorpusSectionDocumentView: View {
     }
 
     private func loadDocuments() async {
-        guard let pipeline = appState.indexingPipeline else { isLoading = false; return }
+        guard let pipeline = appState.indexingPipeline else {
+            volumeIndexed = false; isLoading = false; return
+        }
+        volumeIndexed = (try? pipeline.isVolumeIndexed(volumeId)) == true
         let all = (try? await pipeline.documents(forVolume: volumeId)) ?? []
         // Direct documents only (`documentIds`, not `allDocumentIds`); subsections list and
         // load their own, so a compilation with chapters isn't flattened into one long list.
