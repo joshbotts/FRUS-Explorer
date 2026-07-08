@@ -492,7 +492,8 @@ struct MacSearchWindowView: View {
                     searchService: appState.searchService,
                     volumeEntries: appState.manifestStore.diffResult?.known
                         ?? appState.manifestStore.bundledEntries,
-                    indexedVolumeIds: appState.indexedVolumeIds
+                    indexedVolumeIds: appState.indexedVolumeIds,
+                    userTags: allUserTags
                 )
                 showAdvancedFilters = true
             } label: {

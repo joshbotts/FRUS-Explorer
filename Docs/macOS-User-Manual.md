@@ -289,7 +289,7 @@ Click **Filters** in the Search window to expand additional filter controls.
 |--------|-------------|
 | **Volume / Subseries scope** | Restrict the search to one or more specific volumes or an entire subseries. The corpus browser can also hand a scope directly to Search via **Search this volume**, so you arrive pre-scoped |
 | **Date Range** | Restrict results to documents dated within a range |
-| **User Tags** | Restrict to documents you have tagged yourself |
+| **My Tags** | Restrict to documents you have tagged yourself. The tag list refreshes **live** (188-D parity with iOS): create, rename, or delete a tag anywhere in the app — or receive one synced from another device — and the **Advanced…** filter reflects it the next time you open it, with no relaunch. Selecting a tag applies immediately and lights the **Tagged** chip above the results |
 | **Summaries** | *All*, *Specific prompt*, or *None* (documents with no generated summary) |
 | **Research Notes** | *All documents* or *Documents with notes only* |
 | **Document Type** | Include or exclude editorial notes |

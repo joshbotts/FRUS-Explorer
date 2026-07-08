@@ -834,6 +834,41 @@ struct MacSearchViewModelTests {
         #expect(vm.markedReviewedKeys.contains(key))             // mark preserved
         #expect(vm.displayedResults.count == 1)                  // still hidden
     }
+
+    // MARK: - Live user-tag filter (188-D parity, #212)
+
+    @Test("MacSearchViewModel round-trips user tags through the shared filter VM (#212)")
+    func macUserTagFilterRoundTrip() async throws {
+        let (service, dir) = try await makeAlphaBetaService()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let tagA = UserTag(name: "Backchannel")
+        let tagB = UserTag(name: "Détente")
+
+        let vm = MacSearchViewModel()
+        // An incoming filter carrying tagA must open the popover with tagA pre-checked.
+        vm.parameters.userTagIds = [tagA.id.uuidString]
+        vm.syncToFilterVM(searchService: service, userTags: [tagA, tagB])
+
+        // Feed step: both tags available so the shared userTagsSection renders on macOS.
+        #expect(vm.filterVM?.availableUserTags.count == 2)
+        // Round-trip in: the active selection is reconstructed from parameters.
+        #expect(vm.filterVM?.selectedUserTagIds == [tagA.id])
+
+        // Toggle tagB on and apply.
+        let versionBefore = vm.parametersVersion
+        vm.filterVM?.selectedUserTagIds.insert(tagB.id)
+        vm.applyAdvancedFilters()
+
+        // Round-trip out: the selection is written back to parameters and a re-search fires.
+        #expect(Set(vm.parameters.userTagIds) == Set([tagA.id.uuidString, tagB.id.uuidString]))
+        #expect(vm.parametersVersion > versionBefore)
+
+        // Clearing the selection removes the filter on the next apply.
+        vm.filterVM?.selectedUserTagIds.removeAll()
+        vm.applyAdvancedFilters()
+        #expect(vm.parameters.userTagIds.isEmpty)
+    }
 }
 
 #endif // os(macOS)
@@ -923,10 +958,23 @@ struct SearchDefaultsWiringTests {
         let afterPerson = vm.advancedFilterSignature
         #expect(afterPerson != afterDate)
 
+        // User-tag selection (188-D / #212) must perturb the signature so the macOS live
+        // popover re-applies a tag toggle, and it must be order-independent (sorted) so set
+        // iteration order can't cause a spurious re-search.
+        let idA = UUID(), idB = UUID()
+        vm.selectedUserTagIds = [idA]
+        let afterTagA = vm.advancedFilterSignature
+        #expect(afterTagA != afterPerson)
+        vm.selectedUserTagIds = [idA, idB]
+        let afterTagAB = vm.advancedFilterSignature
+        #expect(afterTagAB != afterTagA)
+        vm.selectedUserTagIds = [idB, idA]  // same set, different insertion order
+        #expect(vm.advancedFilterSignature == afterTagAB)
+
         // Legacy non-editable fields are deliberately excluded (cannot change while
         // the popover is open; excluding them avoids spurious re-searches).
         vm.phrase = "détente"
         vm.excludedTermsText = "telegram"
-        #expect(vm.advancedFilterSignature == afterPerson)
+        #expect(vm.advancedFilterSignature == afterTagAB)
     }
 }
