@@ -3260,10 +3260,25 @@ private struct CorpusVolumeDetailView: View {
         // stuck on `.notIndexed` after external indexing completes.
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             guard case .indexing = phase else {
-                // External indexing finished — refresh index state so the status banner clears
-                // and section document lists populate (structure is already shown regardless).
-                if progress == nil, !isVolumeIndexed {
-                    Task { await determinePhase() }
+                // External indexing finished. Only react when THIS volume's index/interrupt state
+                // actually changed — so an unrelated volume completing doesn't trigger a spurious
+                // re-parse + "Loading contents…" flash of this (possibly large) volume. Reload the
+                // structure only when we just became indexed (to populate section document lists);
+                // a bare interrupt-flag change just refreshes the banner.
+                if progress == nil {
+                    let nowIndexed: Bool = {
+                        guard let pipeline = appState.indexingPipeline else { return false }
+                        return (try? pipeline.isVolumeIndexed(volume.volumeId)) == true
+                    }()
+                    let nowInterrupted = appState.interruptedVolumeIds.contains(volume.volumeId)
+                    if nowIndexed != isVolumeIndexed || nowInterrupted != isInterrupted {
+                        let becameIndexed = nowIndexed && !isVolumeIndexed
+                        isVolumeIndexed = nowIndexed
+                        isInterrupted = nowInterrupted
+                        if becameIndexed, case .ready = phase {
+                            Task { await loadStructure() }
+                        }
+                    }
                 }
                 return
             }
@@ -3835,6 +3850,15 @@ private struct CorpusSectionDocumentView: View {
                 isLoading = false
             } else {
                 await loadDocuments()
+            }
+        }
+        // Live-refresh the document list / "index to view documents" prompt when indexing
+        // completes externally while the user is inside this section of a not-yet-indexed
+        // volume (#214 review). Only re-fetch for the structural document path.
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            if progress == nil, !volumeIndexed,
+               !(canReadSectionDirectly || isPersonsSection || isSourcesSection) {
+                Task { await loadDocuments() }
             }
         }
     }
