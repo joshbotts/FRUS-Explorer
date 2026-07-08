@@ -324,6 +324,11 @@ struct PersonAnalyticsView: View {
     @State private var scopeLabel: String? = nil
     @State private var byDecade = false
 
+    /// Per-chart expansion (#207), persisted so a user's focus choice sticks across visits.
+    /// Distinct keys per screen so the analytics dashboards don't share collapse state.
+    @AppStorage("frus.personAnalytics.rankingExpanded") private var rankingExpanded = true
+    @AppStorage("frus.personAnalytics.trajectoriesExpanded") private var trajectoriesExpanded = true
+
     /// Persisted normalization choice (default Raw).
     @AppStorage(PersonTrajectoryNormalization.storageKey)
     private var normalization: PersonTrajectoryNormalization = .raw
@@ -466,12 +471,67 @@ struct PersonAnalyticsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 yearRangeBar
                 Divider()
-                rankingSection
+                // Each chart is a collapsible section hosting its OWN controls (#207), so it's
+                // unambiguous which chart a control affects and users can focus on one at a time.
+                AnalyticsCollapsibleSection(
+                    title: String(localized: "personAnalytics.ranking.heading",
+                                  defaultValue: "Most-Mentioned People"),
+                    isExpanded: $rankingExpanded,
+                    controls: { rankingControls },
+                    content: { rankingSection }
+                )
                 Divider()
-                comparisonSection
+                AnalyticsCollapsibleSection(
+                    title: String(localized: "personAnalytics.comparison.heading",
+                                  defaultValue: "Mention Trajectories"),
+                    isExpanded: $trajectoriesExpanded,
+                    controls: { comparisonControls },
+                    content: { comparisonSection }
+                )
             }
             .padding(.vertical, 8)
         }
+    }
+
+    /// Chart/table display toggle for the ranking — moved out of the shared toolbar into this
+    /// chart's section (#207). Disabled when there are no people to rank.
+    @ViewBuilder
+    private var rankingControls: some View {
+        HStack {
+            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty)
+            Spacer()
+        }
+        .padding(.horizontal)
+    }
+
+    /// "By decade" bucketing + value normalization for the trajectory (and nested relationship)
+    /// charts — moved out of the shared toolbar into this chart's section (#207). Normalization is
+    /// disabled until people are selected.
+    @ViewBuilder
+    private var comparisonControls: some View {
+        HStack(spacing: 12) {
+            Toggle(isOn: $byDecade) {
+                Text(String(localized: "personAnalytics.decade.toggle", defaultValue: "By decade"))
+            }
+            .toggleStyle(.button)
+            .controlSize(.small)
+            .help(String(localized: "personAnalytics.decade.help",
+                         defaultValue: "Bucket the trajectory chart by decade instead of by year"))
+            Picker(
+                String(localized: "personAnalytics.normalize.picker", defaultValue: "Values"),
+                selection: $normalization
+            ) {
+                ForEach(PersonTrajectoryNormalization.allCases, id: \.self) { mode in
+                    Text(mode.pickerLabel).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .disabled(selectedPeople.isEmpty)
+            .help(String(localized: "personAnalytics.normalize.help",
+                         defaultValue: "Plot raw mention counts, or each person's share of all dated documents in that period — so a growing corpus doesn't masquerade as a rising person."))
+            Spacer()
+        }
+        .padding(.horizontal)
     }
 
     private var yearRangeBar: some View {
@@ -493,11 +553,6 @@ struct PersonAnalyticsView: View {
     @ViewBuilder
     private var rankingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "personAnalytics.ranking.heading",
-                        defaultValue: "Most-Mentioned People"))
-                .font(.headline)
-                .padding(.horizontal)
-
             Text(String(localized: "personAnalytics.ranking.subtitle",
                         defaultValue: "Top people by mentions in dated documents, \(yearRange.lowerBound)–\(yearRange.upperBound). Tap a person to compare them below."))
                 .font(.caption)
@@ -586,11 +641,6 @@ struct PersonAnalyticsView: View {
     @ViewBuilder
     private var comparisonSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "personAnalytics.comparison.heading",
-                        defaultValue: "Mention Trajectories"))
-                .font(.headline)
-                .padding(.horizontal)
-
             searchToAddField
 
             if !selectedPeople.isEmpty {
@@ -936,6 +986,9 @@ struct PersonAnalyticsView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        // Only the global Trends/Network mode picker lives in the toolbar now; each chart's own
+        // controls (display, by-decade, values) moved into its collapsible section (#207), so it's
+        // clear which chart each control affects and the compact-width "Options" fold is gone.
         ToolbarItem(placement: .primaryAction) {
             Picker(
                 String(localized: "personAnalytics.mode.picker", defaultValue: "Mode"),
@@ -949,78 +1002,6 @@ struct PersonAnalyticsView: View {
             .help(String(localized: "personAnalytics.mode.help",
                          defaultValue: "Switch between the trends dashboard (rankings, trajectories, relationship dynamics) and the co-mention network graph."))
         }
-        if isCompactWidth {
-            // iPhone: keep the primary Trends/Network mode picker inline and fold the
-            // trends-only refinements (display, by-decade, values) into one "Options" menu
-            // so the nav bar doesn't cram them. They don't apply in Network mode, so the
-            // menu is omitted there entirely (#188-A).
-            if mode == .trends {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        compactTrendsOptionsMenu
-                    } label: {
-                        Label(String(localized: "personAnalytics.options.menu", defaultValue: "Options"),
-                              systemImage: "ellipsis.circle")
-                    }
-                }
-            }
-        } else {
-            ToolbarItem(placement: .primaryAction) {
-                AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty || mode == .network)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Toggle(isOn: $byDecade) {
-                    Text(String(localized: "personAnalytics.decade.toggle", defaultValue: "By decade"))
-                }
-                .toggleStyle(.button)
-                .help(String(localized: "personAnalytics.decade.help",
-                             defaultValue: "Bucket the trajectory chart by decade instead of by year"))
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Picker(
-                    String(localized: "personAnalytics.normalize.picker", defaultValue: "Values"),
-                    selection: $normalization
-                ) {
-                    ForEach(PersonTrajectoryNormalization.allCases, id: \.self) { mode in
-                        Text(mode.pickerLabel).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .disabled(selectedPeople.isEmpty)
-                .help(String(localized: "personAnalytics.normalize.help",
-                             defaultValue: "Plot raw mention counts, or each person's share of all dated documents in that period — so a growing corpus doesn't masquerade as a rising person."))
-            }
-        }
-    }
-
-    /// The trends-mode refinements (display mode, by-decade bucketing, value normalization),
-    /// folded into the toolbar's "Options" menu on compact (iPhone) width. On regular width
-    /// these render as separate toolbar items instead (see `toolbarContent`) (#188-A).
-    @ViewBuilder
-    private var compactTrendsOptionsMenu: some View {
-        Picker(selection: $viewMode) {
-            Label(String(localized: "analytics.viewMode.chart.a11y", defaultValue: "Chart"),
-                  systemImage: "chart.bar").tag(AnalyticsViewMode.chart)
-            Label(String(localized: "analytics.viewMode.table.a11y", defaultValue: "Table"),
-                  systemImage: "list.bullet").tag(AnalyticsViewMode.table)
-        } label: {
-            Text(String(localized: "analytics.viewMode.picker", defaultValue: "Display"))
-        }
-        .disabled(ranking.isEmpty)
-
-        Divider()
-
-        Toggle(isOn: $byDecade) {
-            Text(String(localized: "personAnalytics.decade.toggle", defaultValue: "By decade"))
-        }
-        Picker(selection: $normalization) {
-            ForEach(PersonTrajectoryNormalization.allCases, id: \.self) { mode in
-                Text(mode.pickerLabel).tag(mode)
-            }
-        } label: {
-            Text(String(localized: "personAnalytics.normalize.picker", defaultValue: "Values"))
-        }
-        .disabled(selectedPeople.isEmpty)
     }
 
     // MARK: - Placeholder

@@ -284,3 +284,70 @@ struct AnalyticsScopeBar: View {
         .padding(.vertical, 6)
     }
 }
+
+// MARK: - AnalyticsCollapsibleSection
+
+/// A collapsible chart section for the analytics dashboards (#207/#209): a tappable header
+/// (title + chevron) that expands/collapses a chart body, with an optional strip of
+/// chart-specific controls pinned at the top of the disclosed body.
+///
+/// Wrapping each chart lets users focus on one at a time, and hosting a chart's own controls
+/// inside its section (instead of a shared toolbar) makes it unambiguous which chart a control
+/// like "By decade" or "Out-degree" affects. The parent owns the expansion `@Binding` (typically
+/// `@AppStorage`, so the choice persists), and each screen uses distinct keys so the sections
+/// don't share state.
+///
+/// Modeled on `DocumentView.iOSPanelSectionHeader` (same chevron/animation language). Children
+/// stay individually accessible; the header carries expanded/collapsed value + a header trait.
+///
+/// Version history:
+///   1.0 — #207 (analytics UI): shared collapsible chart section.
+struct AnalyticsCollapsibleSection<Controls: View, Content: View>: View {
+
+    /// Localized section title, shown in the header and used as its accessibility label.
+    let title: String
+    /// Whether the section is expanded. Owned (and typically persisted) by the parent.
+    @Binding var isExpanded: Bool
+    /// Chart-specific controls pinned at the top of the disclosed body (empty for chartless
+    /// sections). Rendered only when expanded.
+    @ViewBuilder var controls: () -> Controls
+    /// The chart/table body. Rendered only when expanded.
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() }
+            } label: {
+                HStack {
+                    Text(title)
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityValue(isExpanded
+                                ? String(localized: "analytics.section.expanded", defaultValue: "Expanded")
+                                : String(localized: "analytics.section.collapsed", defaultValue: "Collapsed"))
+
+            if isExpanded {
+                controls()
+                content()
+            }
+        }
+    }
+}
+
+extension AnalyticsCollapsibleSection where Controls == EmptyView {
+    /// Convenience for a section with no chart-specific controls.
+    init(title: String, isExpanded: Binding<Bool>, @ViewBuilder content: @escaping () -> Content) {
+        self.init(title: title, isExpanded: isExpanded, controls: { EmptyView() }, content: content)
+    }
+}
