@@ -330,11 +330,14 @@ struct SearchView: View {
         .disabled(vm.results.isEmpty)
     }
 
+    #if os(iOS)
     /// Checklist-review toggle (#189-D), promoted to a first-class, self-labeling control in the
     /// iOS `searchActionsBar` (#218) so it's discoverable without opening the overflow menu.
     /// Tints when active. Disabled until a search returns results, but — like the macOS control —
     /// stays enabled once results exist even in the all-reviewed state (gated on raw `results`,
-    /// not `displayedResults`), so the user can always turn it back off.
+    /// not `displayedResults`), so the user can always turn it back off. iOS-only: its sole call
+    /// site (`searchActionsBar`) is `#if os(iOS)`; the macOS `SearchView` surface keeps the
+    /// overflow-menu toggle.
     @ViewBuilder
     private var checklistButton: some View {
         Button {
@@ -357,6 +360,7 @@ struct SearchView: View {
                             : String(localized: "search.checklist.state.off", defaultValue: "Off"))
         .disabled(vm.results.isEmpty)
     }
+    #endif
 
     /// Save / Saved searches / Find by citation overflow menu.
     @ViewBuilder

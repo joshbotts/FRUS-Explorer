@@ -603,6 +603,9 @@ struct MacSearchWindowView: View {
                       systemImage: "checklist")
                     .font(.system(size: 12))
                     .foregroundStyle(searchVM.checklistMode ? Color.accentColor : Color.secondary)
+                    .lineLimit(1)
+                    .fixedSize()  // keep the label intact; the flexible result-count text absorbs
+                                  // any compression in the dense sort bar at minimum window width
             }
             .buttonStyle(.plain)
             .disabled(searchVM.results.isEmpty)
