@@ -537,6 +537,8 @@ Above the selected collection's document list sits a compact **ribbon** of four 
 
 **The collection note is now optional and out of the way.** A collection can carry a free-text note about its purpose, but the note field is no longer always shown. Instead, an **"Add a note"** affordance sits under the collection's name; click it to expand an editor and write a collection-level note, and it stays collapsed until you use it. (The same collapsed "Add a note" affordance appears in the iOS/iPad collection editor.)
 
+**Which collections the window lists.** By default the Collections window lists **every** collection, across all of your projects. When you have an active project, a banner above the collection list notes this and offers **Scope to “\<project\>”** to narrow the list to just that project's collections; **Show All** brings the rest back. This scope choice is per-session — reopening the window returns to showing everything. (This matches the iOS/iPad Collection Manager.)
+
 ### 10.2 The macOS ribbon
 
 Everything you do to compose a collection is reached from a compact **ribbon** above the document list — four always-labeled controls, replacing the older row of separate buttons and group headers:

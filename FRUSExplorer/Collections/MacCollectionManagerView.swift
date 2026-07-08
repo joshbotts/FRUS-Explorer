@@ -111,9 +111,17 @@ struct MacCollectionManagerView: View {
     @Query(sort: \Collection.lastModified, order: .reverse) private var allCollections: [Collection]
     @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
+    @Query(sort: \Project.name) private var allProjects: [Project]
 
     @State private var selectedId: UUID? = nil
     @State private var showNewCollection = false
+    /// User override of the active-project filter, toggled from `projectFilterBanner`.
+    ///
+    /// Defaults to `true` (issue #213): the Collections window opens showing collections
+    /// from *every* project, at parity with the iOS Collection Manager, and the user may
+    /// narrow to the active project via the banner. Ephemeral `@State` — resets to the
+    /// all-project default when the window is recreated.
+    @State private var showAllCollections = Collection.managerDefaultShowAllCollections
     /// Drives the `.fruscollection` file importer.
     @State private var isImporting = false
     /// Non-nil to present an import-failure alert.
@@ -122,8 +130,31 @@ struct MacCollectionManagerView: View {
     @State private var snapshotError: String? = nil
 
     private var filteredCollections: [Collection] {
-        guard let pid = appState.activeProjectId else { return allCollections }
-        return allCollections.filter { $0.projectIds.contains(pid) }
+        Collection.visibleCollections(allCollections,
+                                      activeProjectId: appState.activeProjectId,
+                                      showAll: showAllCollections)
+    }
+
+    /// The `Project` named by `appState.activeProjectId`, resolved for `projectFilterBanner`.
+    private var activeProject: Project? {
+        guard let projectId = appState.activeProjectId else { return nil }
+        return allProjects.first { $0.id == projectId }
+    }
+
+    /// Display name for `activeProject`, falling back to a localized placeholder.
+    private var activeProjectDisplayName: String {
+        guard let project = activeProject, !project.name.isEmpty else {
+            return String(localized: "collections.filterBanner.untitledProject",
+                          defaultValue: "Untitled Project")
+        }
+        return project.name
+    }
+
+    /// Count of collections hidden when scoped to the active project — drives whether the
+    /// banner offers "Show All" and the wording of the scoped-state message.
+    private var hiddenCollectionCount: Int {
+        guard let projectId = appState.activeProjectId else { return 0 }
+        return allCollections.filter { !$0.projectIds.contains(projectId) }.count
     }
 
     private var selectedCollection: Collection? {
@@ -259,6 +290,78 @@ struct MacCollectionManagerView: View {
     // MARK: - Sidebar
 
     private var sidebarContent: some View {
+        VStack(spacing: 0) {
+            projectFilterBanner
+            collectionSidebarList
+        }
+        .navigationTitle("Collections")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showNewCollection = true } label: {
+                    Label("New Collection", systemImage: "plus")
+                }
+                .help("Create a new collection")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { isImporting = true } label: {
+                    Label(String(localized: "collections.toolbar.import",
+                                 defaultValue: "Import Collection…"),
+                          systemImage: "square.and.arrow.down")
+                }
+                .help(String(localized: "collections.toolbar.import.help",
+                             defaultValue: "Import a shared .fruscollection file"))
+            }
+        }
+    }
+
+    /// Informs the user when the window is scoped to the active project and lets them
+    /// override that scoping (and back again) — the macOS parity of the iOS
+    /// `CollectionListView.projectFilterBanner`. Hidden when there is no active project.
+    @ViewBuilder
+    private var projectFilterBanner: some View {
+        if appState.activeProjectId != nil {
+            HStack(spacing: 8) {
+                Image(systemName: showAllCollections ? "tray.full" : "line.3.horizontal.decrease.circle")
+                    .foregroundStyle(.secondary)
+                    .imageScale(.small)
+
+                if showAllCollections {
+                    Text(String(localized: "collections.filterBanner.showingAll",
+                                defaultValue: "Showing collections from every project, including ones outside “\(activeProjectDisplayName)”."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Button(String(localized: "collections.filterBanner.scopeToProject",
+                                  defaultValue: "Scope to “\(activeProjectDisplayName)”")) {
+                        showAllCollections = false
+                    }
+                    .font(.caption)
+                } else {
+                    let hidden = hiddenCollectionCount
+                    Text(hidden > 0
+                         ? String(localized: "collections.filterBanner.filtered.withHidden",
+                                  defaultValue: "Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.")
+                         : String(localized: "collections.filterBanner.filtered.noHidden",
+                                  defaultValue: "Showing collections for “\(activeProjectDisplayName)”."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if hidden > 0 {
+                        Spacer(minLength: 8)
+                        Button(String(localized: "collections.filterBanner.showAll",
+                                      defaultValue: "Show All")) {
+                            showAllCollections = true
+                        }
+                        .font(.caption)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.1))
+        }
+    }
+
+    private var collectionSidebarList: some View {
         List(selection: $selectedId) {
             ForEach(filteredCollections) { c in
                 CollectionSidebarRow(collection: c)
@@ -288,24 +391,6 @@ struct MacCollectionManagerView: View {
                             Label("Delete Collection", systemImage: "trash")
                         }
                     }
-            }
-        }
-        .navigationTitle("Collections")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showNewCollection = true } label: {
-                    Label("New Collection", systemImage: "plus")
-                }
-                .help("Create a new collection")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button { isImporting = true } label: {
-                    Label(String(localized: "collections.toolbar.import",
-                                 defaultValue: "Import Collection…"),
-                          systemImage: "square.and.arrow.down")
-                }
-                .help(String(localized: "collections.toolbar.import.help",
-                             defaultValue: "Import a shared .fruscollection file"))
             }
         }
     }

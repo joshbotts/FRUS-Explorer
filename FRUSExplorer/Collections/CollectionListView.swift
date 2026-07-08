@@ -73,10 +73,13 @@ struct CollectionListView: View {
     @State private var snapshotError: String? = nil
 
     /// User override of the active-project filter, toggled from `projectFilterBanner`.
-    /// Resets implicitly whenever the view is recreated (e.g. the window is reopened),
-    /// so a "Show All" choice doesn't silently persist across sessions and surprise the
-    /// user the next time they're scoped to a different project.
-    @State private var showAllCollections = false
+    ///
+    /// Defaults to `true` (issue #213): the Collection Manager opens showing collections
+    /// from *every* project, and the user may narrow to the active project via the banner's
+    /// "Scope to …" button. The choice is ephemeral `@State` — it resets to the all-project
+    /// default whenever the view is recreated (e.g. the window is reopened), so a transient
+    /// "Scope to project" choice doesn't silently persist across sessions.
+    @State private var showAllCollections = Collection.managerDefaultShowAllCollections
 
     // MARK: - Body
 
@@ -280,10 +283,9 @@ struct CollectionListView: View {
     // MARK: - Filtering
 
     private var filteredCollections: [Collection] {
-        guard let projectId = appState.activeProjectId, !showAllCollections else {
-            return allCollections
-        }
-        return allCollections.filter { $0.projectIds.contains(projectId) }
+        Collection.visibleCollections(allCollections,
+                                      activeProjectId: appState.activeProjectId,
+                                      showAll: showAllCollections)
     }
 
     /// The `Project` named by `appState.activeProjectId`, resolved against `allProjects`
