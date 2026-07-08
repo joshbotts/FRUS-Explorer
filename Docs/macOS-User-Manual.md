@@ -474,12 +474,14 @@ Access it via **Document → Citation Lookup** in the menu bar, or press **⌘�
 
 ### 9.1 Input Modes
 
-**Paste Citation** — Paste any citation text. FRUS Explorer parses it in real time, extracting subseries year range, volume number, document number, and page number. Supported formats include:
+**Paste Citation** — Paste any citation text. FRUS Explorer parses it in real time, extracting subseries year range, volume number, document number, page number, and the volume **title fragment**. Supported formats include:
 
 - history.state.gov recommended style
 - Chicago footnote and bibliography
 - Informal abbreviated forms (*FRUS 1955–57, vol. XIV, doc. 23*)
 - Page-only citations
+
+This includes the app's **own** formatted citations — copy a citation from a document and paste it back and it resolves to that same document. For the pre-1906 *Papers Relating to Foreign Affairs* volumes, whose citations carry only the print year (e.g. 1864) rather than a coverage year, the title fragment ("First Session … Part II") is what pins the exact part, so paste the full citation rather than just the year.
 
 **Structured Entry** — Fill in fields manually: subseries/year, volume number, document number or page number, and an optional title fragment.
 
