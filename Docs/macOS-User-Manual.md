@@ -210,6 +210,8 @@ Open the **Corpus Browser** (⇧⌘B) to navigate the FRUS series as a hierarchy
 
 Any volume that has not been downloaded shows a download button. Click it to add the volume to the download queue. Progress appears in the status bar and in **Settings → Corpus → Storage**. Downloaded volumes are indexed automatically on completion.
 
+**Browsing vs. indexing.** Once a volume is *downloaded* you can browse its full structure — front matter, chapters, and compilations — straight away, whether or not it has finished indexing. If a volume isn't indexed yet (or a prior indexing pass was interrupted — most likely on the large early annual volumes), a non-blocking banner at the top of its contents explains this and offers to **Index** / **Re-index** it. Indexing is what enables full-text **search**, opening a chapter's **document list**, and the connections graph — so those wait until indexing completes, but the volume's structure never does. (This matches iOS, which has always browsed downloaded volumes without requiring an index.)
+
 `[SCREENSHOT: Volume entry in browser with the download button highlighted]`
 
 ### 4.3 Filtering the Browser

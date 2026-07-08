@@ -908,6 +908,53 @@ struct EditorialNoteIndexingTests {
         #expect(c1.documentIds.contains("d1"), "Normal document must appear in documentIds")
         #expect(c1.documentIds.contains("en1"), "Editorial note must also appear in documentIds")
     }
+
+    @Test("earlyVolumeStructureParses — a front-matter doc + nested compilation/chapter/subchapter yields non-empty structure (#214)")
+    func earlyVolumeStructureParses() async throws {
+        // Shape of a pre-1906 "Papers Relating to Foreign Affairs" volume: the President's
+        // annual message sits directly under <front>, and correspondence nests
+        // compilation → country chapter → subject subchapter. #214 relies on this parsing
+        // straight from the downloaded XML (no index) so macOS can browse early volumes.
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text>
+        <front>
+          <div type="document" xml:id="d1"><head>Annual Message</head><p>Message text.</p></div>
+        </front>
+        <body>
+        <div type="compilation" xml:id="comp1">
+          <head>Correspondence.</head>
+          <div type="chapter" xml:id="ch1">
+            <head>Great Britain.</head>
+            <div type="subchapter" xml:id="sub1">
+              <head>Correspondence respecting the capture of the Saxon.</head>
+              <div type="document" xml:id="d229"><head>229. Doc</head><p>Body.</p></div>
+            </div>
+          </div>
+        </div>
+        </body></text></TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("early-\(UUID().uuidString).xml")
+        try xml.data(using: .utf8)!.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let parser = FRUSDocumentParser()
+        let structure = try await parser.parseVolumeStructure(volumeURL: url)
+
+        #expect(!structure.isEmpty, "Early-volume structure must not be empty")
+        // The <front> annual-message document must survive (parser drops only stack-less docs).
+        let front = structure.sections.first { $0.divType == "front" }
+        #expect(front != nil, "A <front> section must be present")
+        #expect(front?.documentIds.contains("d1") == true
+                || front?.subsections.contains { $0.documentIds.contains("d1") } == true,
+                "The front-matter annual message (d1) must be reachable")
+        // The nested subject subchapter with its document must be reachable through the chain.
+        let comp = try #require(structure.sections.first { $0.sectionId == "comp1" })
+        let chapter = try #require(comp.subsections.first { $0.sectionId == "ch1" })
+        let sub = try #require(chapter.subsections.first { $0.sectionId == "sub1" })
+        #expect(sub.documentIds.contains("d229"), "Deeply nested document must appear in its subchapter")
+    }
 }
 
 // MARK: - FootnoteNumberTests (Session 42)
