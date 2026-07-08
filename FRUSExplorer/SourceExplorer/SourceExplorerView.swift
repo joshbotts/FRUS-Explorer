@@ -1124,13 +1124,30 @@ struct SourceExplorerView: View {
     }
 
     /// Queries the local index for documents from the same archival collection.
+    ///
+    /// Routes through the same widened, anchor-excluding `archivalNeighbors(forVolumeId:
+    /// documentId:)` entry point the dedicated Archival Neighbors surfaces use, so this
+    /// inline list shows the **identical** set of OTHER documents for the same document
+    /// — the #217 "same set regardless of trigger" guarantee. This inline section stays
+    /// at the all-indexed default scope; the scope picker lives on the dedicated
+    /// neighbors window/sheet.
     private func loadRelatedDocuments(for note: ParsedSourceNote) async {
         guard let pipeline = indexingPipeline else { return }
         relatedLoading = true
         do {
-            let result = try await pipeline.relatedDocuments(
-                for: note, limit: 30, documentYear: documentYear,
-                excludingVolumeId: documentVolumeId, excludingDocumentId: documentId)
+            let result: (documents: [IndexingPipeline.RelatedDocument], totalCount: Int)
+            if let volId = documentVolumeId, let docId = documentId {
+                // Anchored to an indexed document → the widened, anchor-excluding entry
+                // point, identical to the dedicated neighbors surfaces (#217 parity).
+                let r = try await pipeline.archivalNeighbors(
+                    forVolumeId: volId, documentId: docId, documentYear: documentYear)
+                result = (r.documents, r.totalCount)
+            } else {
+                // A source note explored without an indexed-document anchor: the
+                // note-keyed query, nothing to exclude.
+                result = try await pipeline.relatedDocuments(
+                    for: note, limit: 30, documentYear: documentYear)
+            }
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
         } catch {

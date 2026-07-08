@@ -83,8 +83,8 @@ struct CollectionDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $neighborsTarget) { target in
-            ArchivalNeighborsSheet(appState: appState) {
-                await loadNeighbors(for: target)
+            ArchivalNeighborsSheet(appState: appState) { scopeVolumeIds in
+                await loadNeighbors(for: target, scopeVolumeIds: scopeVolumeIds)
             }
             .environment(appState)
         }
@@ -317,18 +317,21 @@ struct CollectionDetailView: View {
     /// The collection-level query is `IndexingPipeline.collectionNeighbors` — the
     /// same OR-union clause `localCollectionStats` counts with, so the sheet's total
     /// always equals the "N documents in M volumes" line above the button.
-    private func loadNeighbors(for target: CollectionNeighborsTarget) async -> ArchivalNeighborsResult {
+    private func loadNeighbors(for target: CollectionNeighborsTarget,
+                               scopeVolumeIds: Set<String>?) async -> ArchivalNeighborsResult {
         guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
         if let cls = target.decimalClass {
             return (try? await pipeline.archivalNeighbors(
                 forLotFile: nil, recordGroup: nil, series: nil,
-                repository: nil, decimalClass: cls)) ?? ([], 0, nil)
+                repository: nil, decimalClass: cls,
+                scopeVolumeIds: scopeVolumeIds)) ?? ([], 0, nil)
         }
         return (try? await pipeline.collectionNeighbors(
             lotFileNorm: record.lotFileNorm,
             repository: record.repository,
             recordGroup: record.recordGroup,
-            names: [record.name] + record.aliases)) ?? ([], 0, nil)
+            names: [record.name] + record.aliases,
+            scopeVolumeIds: scopeVolumeIds)) ?? ([], 0, nil)
     }
     #endif
 }

@@ -4697,36 +4697,44 @@ public actor IndexingPipeline {
         limit: Int = 30,
         documentYear: Int? = nil,
         excludingVolumeId: String? = nil,
-        excludingDocumentId: String? = nil
+        excludingDocumentId: String? = nil,
+        scopeVolumeIds: Set<String>? = nil
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let exclude = (excludingVolumeId, excludingDocumentId)
+        // With a volume / subseries scope active, fetch the whole match set (not the
+        // display slice) so `applyScope` can count and re-slice the in-scope rows (#217).
+        let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
+        let raw: (documents: [RelatedDocument], totalCount: Int)
         switch parsed {
 
         case .lotFile(_, let lotNumber, _):
-            return try relatedByLotFile(lotNumber, limit: limit, excluding: exclude)
+            raw = try relatedByLotFile(lotNumber, limit: fetchLimit, excluding: exclude)
 
         case .naraCollection(_, _, let lot?, _):
-            return try relatedByLotFile(lot, limit: limit, excluding: exclude)
+            raw = try relatedByLotFile(lot, limit: fetchLimit, excluding: exclude)
 
         // Non-RG-59 collection (e.g. RG 84, RG 306) with no lot: same (RG, series).
         case .naraCollection(let rg, let series?, nil, _) where rg != "59" && rg != "RG-59":
-            return try relatedByCollection(recordGroup: rg, series: series,
-                                           limit: limit, excluding: exclude)
+            raw = try relatedByCollection(recordGroup: rg, series: series,
+                                          limit: fetchLimit, excluding: exclude)
 
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             // Only attempt decimal matching when the identifier contains a period
             // (distinguishes "862S.01/10-1646" from bare File No. values like "3767/5").
-            return try relatedByDecimal(ref: fileId, currentYear: documentYear,
-                                        limit: limit, excluding: exclude)
+            raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
+                                       limit: fetchLimit, excluding: exclude)
 
         case .presidentialLibrary(let library, let collection, _):
-            return try relatedByPresidentialLibrary(library: library,
-                                                    collection: collection,
-                                                    limit: limit)
+            // Excludes the anchor uniformly (#217): a presidential-library document
+            // previously listed itself among its own neighbors.
+            raw = try relatedByPresidentialLibrary(library: library,
+                                                   collection: collection,
+                                                   limit: fetchLimit, excluding: exclude)
 
         default:
-            return ([], 0)
+            raw = ([], 0)
         }
+        return Self.applyScope(raw, scopeVolumeIds: scopeVolumeIds, limit: limit)
     }
 
     /// Returns archival neighbors for an already-indexed document, keyed by its
@@ -4755,7 +4763,8 @@ public actor IndexingPipeline {
         forVolumeId volumeId: String,
         documentId: String,
         documentYear: Int? = nil,
-        limit: Int = 30
+        limit: Int = 30,
+        scopeVolumeIds: Set<String>? = nil
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
         let sql = "SELECT raw_text FROM document_sources WHERE volume_id = ? AND document_id = ? LIMIT 1"
         var stmt: OpaquePointer?
@@ -4771,11 +4780,36 @@ public actor IndexingPipeline {
         let raw = String(cString: cStr)
         guard !raw.isEmpty else { return ([], 0, nil) }
         let parsed = SourceNoteParser().parse(raw)
-        let result = try relatedDocuments(
-            for: parsed, limit: limit, documentYear: documentYear,
+        let exclude: (String?, String?) = (volumeId, documentId)
+        // Fetch the whole match set when scoped so `applyScope` (below) can filter and
+        // re-slice; the widening decision keys on the unscoped total, so scope is
+        // applied once, last (#217).
+        let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
+        var result = try relatedDocuments(
+            for: parsed, limit: fetchLimit, documentYear: documentYear,
             excludingVolumeId: volumeId, excludingDocumentId: documentId
         )
-        return (result.documents, result.totalCount, parsed.archivalNeighborKey)
+        var basis = parsed.archivalNeighborKey
+        // #217 reconciliation — widen the document path to the same Phase-4 collection-
+        // authority alias fallback the volume-source path runs, so the same collection
+        // returns the same OTHER documents whichever surface opened it. Fires only when
+        // every direct path returned zero; the authority record resolves 100% offline
+        // from the bundled index; the anchor stays excluded throughout.
+        if result.totalCount == 0,
+           let record = CollectionAuthorityStore.shared?.record(forParsed: parsed, note: raw) {
+            let fallback = IndexingPipeline.CollectionAliasFallback(record: record)
+            let keys = Self.directKeys(for: parsed)
+            if let viaAuthority = try aliasNeighbors(
+                fallback: fallback,
+                directLotFile: keys.lotFile, recordGroup: keys.recordGroup,
+                series: keys.series, repository: keys.repository,
+                limit: fetchLimit, excluding: exclude) {
+                result = (viaAuthority.documents, viaAuthority.totalCount)
+                basis = viaAuthority.basis
+            }
+        }
+        let scoped = Self.applyScope(result, scopeVolumeIds: scopeVolumeIds, limit: limit)
+        return (scoped.documents, scoped.totalCount, basis)
     }
 
     /// Returns archival neighbors for a **volume-level source entry** (a row in a
@@ -4830,19 +4864,30 @@ public actor IndexingPipeline {
         repository: String? = nil,
         decimalClass: String? = nil,
         aliasFallback: CollectionAliasFallback? = nil,
-        limit: Int = 30
+        limit: Int = 30,
+        scopeVolumeIds: Set<String>? = nil
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        // Fetch the whole match set when scoped; the alias-fallback decision keys on the
+        // unscoped total (a direct hit anywhere in the index short-circuits it), so the
+        // volume / subseries scope is applied once, last (#217).
+        let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
+        func scoped(_ r: (documents: [RelatedDocument], totalCount: Int, basis: String?))
+            -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+            let s = Self.applyScope((r.documents, r.totalCount),
+                                    scopeVolumeIds: scopeVolumeIds, limit: limit)
+            return (s.documents, s.totalCount, r.basis)
+        }
         let direct = try directArchivalNeighbors(
             forLotFile: lotFile, recordGroup: recordGroup, series: series,
-            repository: repository, decimalClass: decimalClass, limit: limit)
-        if direct.totalCount > 0 { return direct }
-        guard let aliasFallback else { return direct }
+            repository: repository, decimalClass: decimalClass, limit: fetchLimit)
+        if direct.totalCount > 0 { return scoped(direct) }
+        guard let aliasFallback else { return scoped(direct) }
         if let viaAuthority = try aliasNeighbors(
             fallback: aliasFallback, directLotFile: lotFile, recordGroup: recordGroup,
-            series: series, repository: repository, limit: limit) {
-            return viaAuthority
+            series: series, repository: repository, limit: fetchLimit) {
+            return scoped(viaAuthority)
         }
-        return direct
+        return scoped(direct)
     }
 
     /// The direct (pre-Phase-4) key paths of `archivalNeighbors(forLotFile:…)`,
@@ -4903,13 +4948,14 @@ public actor IndexingPipeline {
         recordGroup: String?,
         series: String?,
         repository: String?,
-        limit: Int
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?)? {
         // 1. The authority's canonical lot key (unless the direct path already was it).
         if let lotNorm = fallback.lotFileNorm, !lotNorm.isEmpty {
             let directNorm = directLotFile.map { SourceNoteParser.lotFileNorm($0) }
             if directNorm != lotNorm {
-                let r = try relatedByLotFile(lotNorm, limit: limit)
+                let r = try relatedByLotFile(lotNorm, limit: limit, excluding: excluding)
                 if r.totalCount > 0 {
                     return (r.documents, r.totalCount,
                             String(localized: "archivalNeighbors.basis.lot",
@@ -4929,11 +4975,13 @@ public actor IndexingPipeline {
             let r: (documents: [RelatedDocument], totalCount: Int)
             if let libraryRepo {
                 r = try relatedByPresidentialLibrary(library: libraryRepo,
-                                                     collection: name, limit: limit)
+                                                     collection: name, limit: limit,
+                                                     excluding: excluding)
             } else if let rg = bareRG, !rg.isEmpty {
-                r = try relatedByCollection(recordGroup: rg, series: name, limit: limit)
+                r = try relatedByCollection(recordGroup: rg, series: name, limit: limit,
+                                            excluding: excluding)
             } else {
-                r = try relatedBySeriesName(name, limit: limit)
+                r = try relatedBySeriesName(name, limit: limit, excluding: excluding)
             }
             if r.totalCount > 0 {
                 return (r.documents, r.totalCount,
@@ -5132,6 +5180,51 @@ public actor IndexingPipeline {
         return (" AND NOT (ds.volume_id = ? AND ds.document_id = ?)", [v, d])
     }
 
+    // MARK: - Neighbor Scope (#217)
+
+    /// The synthetic fetch ceiling used when a volume / subseries scope is active
+    /// (`scopeVolumeIds != nil`): the underlying neighbor query must return its **whole**
+    /// match set — not the display `limit` — so the post-query scope filter can both
+    /// recompute the total and re-slice correctly. A neighbor match set is structurally
+    /// bounded (one lot / collection / class), so this is effectively unbounded while
+    /// staying `Int32`-safe for the SQLite `LIMIT` binding.
+    private static let scopedFetchCeiling = 100_000
+
+    /// Restricts a neighbor result to a set of volume ids — the "This volume" / "This
+    /// subseries" scopes (#217) — recomputing the total from the filtered rows and
+    /// re-slicing to the display `limit`. A `nil` scope means "All indexed volumes" and
+    /// returns the result untouched. The scope filter is applied **uniformly in the
+    /// public entry points**, so the same archival key returns the same in-scope set on
+    /// every trigger surface (the #217 parity guarantee).
+    nonisolated private static func applyScope(
+        _ result: (documents: [RelatedDocument], totalCount: Int),
+        scopeVolumeIds: Set<String>?,
+        limit: Int
+    ) -> (documents: [RelatedDocument], totalCount: Int) {
+        guard let scopeVolumeIds else { return result }
+        let filtered = result.documents.filter { scopeVolumeIds.contains($0.volumeId) }
+        return (Array(filtered.prefix(limit)), filtered.count)
+    }
+
+    /// The direct match keys a parsed document source note routes through — the
+    /// document-path equivalent of a front-matter entry's lot / RG / series / repository
+    /// fields, so the widened alias fallback (#217) can skip the direct path it already
+    /// tried and name its winning form. `nil` on every field for cases with no archival key.
+    nonisolated private static func directKeys(
+        for parsed: ParsedSourceNote
+    ) -> (lotFile: String?, recordGroup: String?, series: String?, repository: String?) {
+        switch parsed {
+        case .lotFile(_, let lot, _):
+            return (lot, nil, nil, nil)
+        case .naraCollection(let rg, let series, let lot, _):
+            return (lot, rg, series, nil)
+        case .presidentialLibrary(let library, let collection, _):
+            return (nil, nil, collection, library)
+        default:
+            return (nil, nil, nil, nil)
+        }
+    }
+
     /// Returns documents indexed with the same canonical compact lot key.
     ///
     /// A single indexed equality on `document_sources.lot_file_norm`
@@ -5244,6 +5337,13 @@ public actor IndexingPipeline {
     ///
     /// Candidates are fetched (capped) and segment-filtered in Swift, since the period
     /// derivation isn't expressible in SQL.
+    ///
+    /// The SQL row cap is a **candidate** cap, not the display slice: it floors at 1000
+    /// (the historical ceiling for unscoped display) but honors a larger passed `limit`,
+    /// so a scoped call (`limit == scopedFetchCeiling`) fetches the whole location match
+    /// set before the entry point's `applyScope` filters and re-slices it (#217). Binding
+    /// the passed `limit` verbatim would instead cap candidates at the display 30 and
+    /// starve the segment filter.
     private func relatedByDecimal(
         ref: String,
         currentYear: Int?,
@@ -5268,7 +5368,7 @@ public actor IndexingPipeline {
             WHERE ds.citation_era = 'decimal'
                 AND (ds.series_name = ? OR ds.series_name LIKE ?)\(ex.clause)
             ORDER BY ds.volume_id, ds.document_id
-            LIMIT 1000
+            LIMIT ?
             """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -5276,6 +5376,7 @@ public actor IndexingPipeline {
         for (i, p) in params.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
         }
+        sqlite3_bind_int64(stmt, Int32(params.count + 1), Int64(max(1000, limit)))
 
         var matched: [RelatedDocument] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
@@ -5441,12 +5542,15 @@ public actor IndexingPipeline {
     private func relatedByPresidentialLibrary(
         library: String,
         collection: String,
-        limit: Int
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         guard let match = Self.libraryMatchClause(library: library, collection: collection) else {
             return ([], 0)
         }
-        let whereClause = match.clause
+        let ex = exclusion(excluding)
+        let whereClause = "\(match.clause)\(ex.clause)"
+        let params = match.params + ex.params
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
             SELECT ds.volume_id, ds.document_id,
@@ -5460,8 +5564,8 @@ public actor IndexingPipeline {
             """
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
-            countParams: match.params,
-            selectParams: match.params,
+            countParams: params,
+            selectParams: params,
             limit: limit
         )
     }
@@ -5475,13 +5579,15 @@ public actor IndexingPipeline {
     /// stronger key.
     private func relatedBySeriesName(
         _ series: String,
-        limit: Int
+        limit: Int,
+        excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let s = series.trimmingCharacters(in: .whitespaces)
         guard s.count >= 4 else { return ([], 0) }
         let esc = Self.likeEscaped(s)
-        let whereClause = "(ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')"
-        let params = [esc, esc + ",%"]
+        let ex = exclusion(excluding)
+        let whereClause = "(ds.series_name LIKE ? ESCAPE '\\' OR ds.series_name LIKE ? ESCAPE '\\')\(ex.clause)"
+        let params = [esc, esc + ",%"] + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -5686,13 +5792,16 @@ public actor IndexingPipeline {
         repository: String?,
         recordGroup: String?,
         names: [String],
-        limit: Int = 30
+        limit: Int = 30,
+        scopeVolumeIds: Set<String>? = nil
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
         guard let match = collectionMatchClause(
             lotFileNorm: lotFileNorm, repository: repository,
             recordGroup: recordGroup, names: names) else {
             return ([], 0, nil)
         }
+        // Fetch the whole match set when scoped so `applyScope` can filter + re-slice (#217).
+        let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(match.clause)"
         let selectSQL = """
             SELECT ds.volume_id, ds.document_id,
@@ -5707,13 +5816,14 @@ public actor IndexingPipeline {
         let r = try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
             countParams: match.params, selectParams: match.params,
-            limit: limit
+            limit: fetchLimit
         )
+        let scoped = Self.applyScope(r, scopeVolumeIds: scopeVolumeIds, limit: limit)
         let basis = names.first?.trimmingCharacters(in: .whitespaces)
             ?? lotFileNorm.map {
                 String(localized: "archivalNeighbors.basis.lot", defaultValue: "Lot \($0)")
             }
-        return (r.documents, r.totalCount, basis)
+        return (scoped.documents, scoped.totalCount, basis)
     }
 
     /// Shared executor for COUNT + SELECT related-document queries.

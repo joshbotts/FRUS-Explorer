@@ -31,6 +31,31 @@ struct ArchivalNeighborsDocKey: Identifiable, Equatable {
     var id: String { "\(volumeId)/\(documentId)" }
 }
 
+// MARK: - NeighborScope
+
+/// The volume breadth an Archival Neighbors query runs against (#217).
+///
+/// A neighbors surface with an anchor volume (a document, or a volume front-matter
+/// source) offers all three scopes; a cross-volume surface (a collection or
+/// decimal-class record, which has no single home volume) offers only `.allIndexed`.
+/// The scope is resolved to a `volumeId` set the query filters on — see
+/// `IndexingPipeline.applyScope(_:scopeVolumeIds:limit:)` — so the same archival key
+/// returns the same in-scope neighbors on every trigger surface.
+///
+/// `Codable`/`Hashable` so it can ride inside a restored macOS neighbors window's
+/// request payload and key the content view's reload `.task`.
+enum NeighborScope: Codable, Hashable, Sendable {
+    /// Every indexed volume (cross-corpus). The default for document, collection, and
+    /// decimal-class surfaces — the cross-corpus reach is the value of neighbors.
+    case allIndexed
+    /// Only the anchor's own volume. The default for a volume front-matter source.
+    case volume(String)
+    /// Every volume in the anchor's subseries (`VolumeManifestEntry.subseries`, e.g.
+    /// `"1969-76"`); `anchorVolumeId` seeds both the picker label and the manifest
+    /// member-set lookup.
+    case subseries(key: String, anchorVolumeId: String)
+}
+
 // MARK: - ArchivalNeighborsRequest
 
 /// A **value-typed, restorable description** of one Archival Neighbors query — the
@@ -54,10 +79,12 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
     /// Neighbors of a volume-level front-matter source entry
     /// (`IndexingPipeline.archivalNeighbors(forLotFile:recordGroup:series:repository:decimalClass:aliasFallback:)`).
     /// The Phase-4 alias fallback is flattened into `aliasLotFileNorm` + `aliasNames`
-    /// so the case stays `Codable`; `load(appState:)` reconstructs it.
+    /// so the case stays `Codable`; `load(appState:)` reconstructs it. `anchorVolumeId`
+    /// is the source entry's own volume, which seeds the "This volume" default scope (#217).
     case volumeSource(lotFile: String?, recordGroup: String?, series: String?,
                       repository: String?, decimalClass: String?,
-                      aliasLotFileNorm: String?, aliasNames: [String])
+                      aliasLotFileNorm: String?, aliasNames: [String],
+                      anchorVolumeId: String?)
     /// Record-level neighbors of a bundled collection-authority record
     /// (`IndexingPipeline.collectionNeighbors` — the same OR-union clause as the S5
     /// counts, so the window total equals the "N documents in M volumes" line).
@@ -84,7 +111,8 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
             repository:       target.repository,
             decimalClass:     target.decimalClass,
             aliasLotFileNorm: target.aliasFallback?.lotFileNorm,
-            aliasNames:       target.aliasFallback?.names ?? []
+            aliasNames:       target.aliasFallback?.names ?? [],
+            anchorVolumeId:   target.volumeId
         )
     }
 
@@ -103,47 +131,78 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
     /// key and no name forms can never match — semantically "no fallback attached").
     /// Factored out of `load(appState:)` so the round-trip is unit-testable.
     var reconstructedAliasFallback: IndexingPipeline.CollectionAliasFallback? {
-        guard case .volumeSource(_, _, _, _, _, let aliasLot, let aliasNames) = self else {
+        guard case .volumeSource(_, _, _, _, _, let aliasLot, let aliasNames, _) = self else {
             return nil
         }
         guard aliasLot != nil || !aliasNames.isEmpty else { return nil }
         return .init(lotFileNorm: aliasLot, names: aliasNames)
     }
 
+    /// The request's anchor volume, when it has one — a document's own volume or a
+    /// front-matter source entry's volume. `nil` for the inherently cross-volume
+    /// collection and decimal-class shapes. Seeds the scope picker's "This volume" /
+    /// "This subseries" options (#217).
+    var anchorVolumeId: String? {
+        switch self {
+        case .document(let volumeId, _, _):
+            return volumeId
+        case .volumeSource(_, _, _, _, _, _, _, let anchor):
+            return anchor
+        case .collection, .decimalClass:
+            return nil
+        }
+    }
+
+    /// The per-trigger default scope (#217): a volume front-matter source opens scoped
+    /// to its own volume (the researcher is reading that volume's provenance); every
+    /// other surface opens cross-corpus, where the neighbor reach is the point.
+    var defaultScope: NeighborScope {
+        switch self {
+        case .volumeSource:
+            return anchorVolumeId.map { .volume($0) } ?? .allIndexed
+        case .document, .collection, .decimalClass:
+            return .allIndexed
+        }
+    }
+
     /// Runs the query this request describes against the live index. Every shape
     /// resolves through `appState.indexingPipeline`, which is exactly what lets the
     /// macOS window scene reconstruct the fetch from the restored value.
     @MainActor
-    func load(appState: AppState) async -> ArchivalNeighborsResult {
+    func load(appState: AppState, scopeVolumeIds: Set<String>? = nil) async -> ArchivalNeighborsResult {
         guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
         switch self {
         case .document(let volumeId, let documentId, let documentYear):
             return (try? await pipeline.archivalNeighbors(
                 forVolumeId:  volumeId,
                 documentId:   documentId,
-                documentYear: documentYear
+                documentYear: documentYear,
+                scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
         case .volumeSource(let lotFile, let recordGroup, let series,
-                           let repository, let decimalClass, _, _):
+                           let repository, let decimalClass, _, _, _):
             return (try? await pipeline.archivalNeighbors(
                 forLotFile:    lotFile,
                 recordGroup:   recordGroup,
                 series:        series,
                 repository:    repository,
                 decimalClass:  decimalClass,
-                aliasFallback: reconstructedAliasFallback
+                aliasFallback: reconstructedAliasFallback,
+                scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
         case .collection(let lotFileNorm, let repository, let recordGroup, let names):
             return (try? await pipeline.collectionNeighbors(
                 lotFileNorm: lotFileNorm,
                 repository:  repository,
                 recordGroup: recordGroup,
-                names:       names
+                names:       names,
+                scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
         case .decimalClass(let cls):
             return (try? await pipeline.archivalNeighbors(
                 forLotFile: nil, recordGroup: nil, series: nil,
-                repository: nil, decimalClass: cls
+                repository: nil, decimalClass: cls,
+                scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
         }
     }
@@ -164,10 +223,19 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
 /// nothing so the list stays open beside the reading window.
 struct ArchivalNeighborsContent: View {
 
-    /// Shared app state, used to navigate to a tapped neighbor.
+    /// Shared app state, used to navigate to a tapped neighbor and to resolve a
+    /// subseries scope's member volumes from the manifest.
     let appState: AppState
-    /// Loads the neighbors when the view appears (runs the actor-isolated query).
-    let load: () async -> ArchivalNeighborsResult
+    /// Loads the neighbors for a resolved scope (`nil` = all indexed volumes) — the
+    /// actor-isolated query, re-run whenever the scope picker changes (#217).
+    let load: (Set<String>?) async -> ArchivalNeighborsResult
+    /// The scope the view opens at (per-trigger default #217); also the value the
+    /// picker resets toward.
+    let defaultScope: NeighborScope
+    /// The anchor volume, when the surface has one — enables the "This volume" / "This
+    /// subseries" scope options. `nil` on cross-volume surfaces (collection / decimal
+    /// class), which show no picker and always query the whole index.
+    let anchorVolumeId: String?
     /// Invoked after a row tap posts its navigation hand-off. Sheets dismiss here;
     /// the macOS window intentionally stays open (browsable alongside the document).
     var onNavigate: (() -> Void)? = nil
@@ -178,12 +246,30 @@ struct ArchivalNeighborsContent: View {
     @State private var docs: [IndexingPipeline.RelatedDocument] = []
     @State private var totalCount = 0
     @State private var isLoading = true
-    /// Guards the load task against duplicate runs. The body is a `Group`, and SwiftUI
-    /// applies `Group` modifiers to each child — so `.task` fires again when the loading
-    /// branch swaps to the loaded one (the codebase's documented Group gotcha; see
-    /// `VolumeSourcesView.didLoad`). Without the guard every open ran the full neighbors
-    /// query twice, including the alias fallback's expensive non-indexed scans.
-    @State private var didLoad = false
+    /// The currently selected scope, seeded from `defaultScope`.
+    @State private var scope: NeighborScope
+    /// The scope whose result is currently shown. Guards the load task against
+    /// duplicate runs for the *same* scope: `.task(id:)` sits above a branch-swapping
+    /// `Group` (the documented Group gotcha; see `VolumeSourcesView.didLoad`), so a
+    /// branch swap can re-fire it — this absorbs that while still reloading on a real
+    /// scope change. `nil` until the first load completes.
+    @State private var lastLoadedScope: NeighborScope?
+
+    /// Designated initializer — seeds the `@State` scope from the per-trigger default.
+    init(appState: AppState,
+         defaultScope: NeighborScope = .allIndexed,
+         anchorVolumeId: String? = nil,
+         load: @escaping (Set<String>?) async -> ArchivalNeighborsResult,
+         onNavigate: (() -> Void)? = nil,
+         onLoaded: ((ArchivalNeighborsResult) -> Void)? = nil) {
+        self.appState = appState
+        self.defaultScope = defaultScope
+        self.anchorVolumeId = anchorVolumeId
+        self.load = load
+        self.onNavigate = onNavigate
+        self.onLoaded = onLoaded
+        _scope = State(initialValue: defaultScope)
+    }
 
     /// Whether the live index exists to query. `false` during app boot — a restored
     /// macOS Archival Neighbors window's `.task` typically fires before
@@ -194,59 +280,162 @@ struct ArchivalNeighborsContent: View {
     private var pipelineReady: Bool { appState.indexingPipeline != nil }
 
     var body: some View {
-        Group {
-            if !pipelineReady {
-                // Pipeline not created yet (app still booting): show a preparing
-                // placeholder, never the honest-empty verdict — that state is reserved
-                // for a real zero-row query result against the live index.
-                ProgressView(String(localized: "archivalNeighbors.preparingIndex",
-                                    defaultValue: "Preparing your index…"))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if docs.isEmpty {
-                ContentUnavailableView(
-                    String(localized: "archivalNeighbors.empty",
-                           defaultValue: "No Archival Neighbors"),
-                    systemImage: "archivebox",
-                    description: Text(String(localized: "archivalNeighbors.empty.detail",
-                        defaultValue: "No documents in your indexed volumes cite this archival source — indexing more volumes may surface some."))
-                )
-            } else {
-                List {
-                    // Keyed by the composite volume/document pair: neighbors span
-                    // volumes and FRUS document ids are volume-local ("d12" recurs
-                    // in most volumes), so documentId alone collides.
-                    ForEach(docs, id: \.compositeKey) { doc in
-                        Button { open(doc) } label: { row(doc) }
-                            .buttonStyle(.plain)
+        VStack(spacing: 0) {
+            scopePicker
+            Group {
+                if !pipelineReady {
+                    // Pipeline not created yet (app still booting): show a preparing
+                    // placeholder, never the honest-empty verdict — that state is reserved
+                    // for a real zero-row query result against the live index.
+                    ProgressView(String(localized: "archivalNeighbors.preparingIndex",
+                                        defaultValue: "Preparing your index…"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if docs.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "archivalNeighbors.empty",
+                               defaultValue: "No Archival Neighbors"),
+                        systemImage: "archivebox",
+                        description: Text(emptyDetail)
+                    )
+                } else {
+                    List {
+                        // Keyed by the composite volume/document pair: neighbors span
+                        // volumes and FRUS document ids are volume-local ("d12" recurs
+                        // in most volumes), so documentId alone collides.
+                        ForEach(docs, id: \.compositeKey) { doc in
+                            Button { open(doc) } label: { row(doc) }
+                                .buttonStyle(.plain)
+                        }
+                        if totalCount > docs.count {
+                            Text(String(
+                                format: String(localized: "archivalNeighbors.overflow %lld",
+                                               defaultValue: "%lld more share this source — open Source Explorer to see them all."),
+                                Int64(totalCount - docs.count)
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
                     }
-                    if totalCount > docs.count {
-                        Text(String(
-                            format: String(localized: "archivalNeighbors.overflow %lld",
-                                           defaultValue: "%lld more share this source — open Source Explorer to see them all."),
-                            Int64(totalCount - docs.count)
-                        ))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
+                    .listStyle(.plain)
                 }
-                .listStyle(.plain)
             }
         }
-        // Keyed on pipeline availability so a window restored (or opened) before boot
-        // finishes re-runs the load once `appState.indexingPipeline` is assigned; the
-        // `didLoad` guard absorbs the Group-modifier replication (branch swaps re-fire
-        // the task) so the query itself runs exactly once.
-        .task(id: pipelineReady) {
-            guard pipelineReady, !didLoad else { return }
-            didLoad = true
-            let result = await load()
+        // Keyed on pipeline availability **and the selected scope**: a window restored
+        // before boot re-runs once the pipeline is assigned, and switching scope re-runs
+        // the query. The `lastLoadedScope` guard absorbs the Group-modifier replication
+        // (branch swaps re-fire the task) so a given scope loads exactly once.
+        .task(id: reloadKey) {
+            guard pipelineReady, lastLoadedScope != scope else { return }
+            lastLoadedScope = scope
+            isLoading = true
+            let result = await load(resolvedScopeVolumeIds(scope))
             docs       = result.documents
             totalCount = result.totalCount
             isLoading  = false
             onLoaded?(result)
+        }
+    }
+
+    /// Reload identity: the query re-runs when the pipeline becomes ready or the scope
+    /// changes. A `String` because `.task(id:)` needs a stable `Hashable`.
+    private var reloadKey: String {
+        let scopeKey: String
+        switch scope {
+        case .allIndexed:            scopeKey = "all"
+        case .volume(let v):         scopeKey = "vol:\(v)"
+        case .subseries(let k, _):   scopeKey = "sub:\(k)"
+        }
+        return "\(pipelineReady)|\(scopeKey)"
+    }
+
+    /// The empty-state detail, scope-aware so "nothing in this volume" doesn't read as
+    /// "nothing anywhere" (#217) — a scoped empty invites widening to all volumes.
+    private var emptyDetail: String {
+        switch scope {
+        case .allIndexed:
+            return String(localized: "archivalNeighbors.empty.detail",
+                defaultValue: "No documents in your indexed volumes cite this archival source — indexing more volumes may surface some.")
+        case .volume, .subseries:
+            return String(localized: "archivalNeighbors.empty.detail.scoped",
+                defaultValue: "No documents in this scope cite this archival source — switch to All volumes to search the whole index.")
+        }
+    }
+
+    // MARK: Scope (#217)
+
+    /// The scopes offered for this surface, most-specific first: this volume, this
+    /// subseries (only when it has more than one indexed-corpus member), all volumes.
+    /// Cross-volume surfaces (no `anchorVolumeId`) offer only "all" — so no picker.
+    private var availableScopes: [NeighborScope] {
+        guard let anchorVolumeId else { return [.allIndexed] }
+        var scopes: [NeighborScope] = [.volume(anchorVolumeId)]
+        if let key = anchorSubseriesKey, subseriesMembers(key).count > 1 {
+            scopes.append(.subseries(key: key, anchorVolumeId: anchorVolumeId))
+        }
+        scopes.append(.allIndexed)
+        return scopes
+    }
+
+    /// The anchor volume's non-empty subseries key, or `nil`.
+    private var anchorSubseriesKey: String? {
+        guard let anchorVolumeId,
+              let key = appState.manifestStore.entry(forVolumeId: anchorVolumeId)?.subseries,
+              !key.isEmpty else { return nil }
+        return key
+    }
+
+    /// The known volumes sharing a subseries key (the "all known" list, matching the
+    /// app-wide `diffResult?.known ?? bundledEntries` pattern).
+    private func subseriesMembers(_ key: String) -> [String] {
+        let all = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        return all.filter { $0.subseries == key }.map(\.volumeId)
+    }
+
+    /// Resolves a scope to the `volumeId` set the query filters on (`nil` = all indexed).
+    private func resolvedScopeVolumeIds(_ scope: NeighborScope) -> Set<String>? {
+        switch scope {
+        case .allIndexed:
+            return nil
+        case .volume(let v):
+            return [v]
+        case .subseries(let key, _):
+            let members = subseriesMembers(key)
+            return members.isEmpty ? nil : Set(members)
+        }
+    }
+
+    /// The scope segmented control — shown only when the surface offers more than one
+    /// scope (i.e. it has an anchor volume).
+    @ViewBuilder
+    private var scopePicker: some View {
+        if availableScopes.count > 1 {
+            Picker(selection: $scope) {
+                ForEach(availableScopes, id: \.self) { option in
+                    Text(scopeLabel(option)).tag(option)
+                }
+            } label: {
+                Text(String(localized: "archivalNeighbors.scope.label", defaultValue: "Scope"))
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            Divider()
+        }
+    }
+
+    /// The short segmented-control label for a scope.
+    private func scopeLabel(_ scope: NeighborScope) -> String {
+        switch scope {
+        case .allIndexed:
+            return String(localized: "archivalNeighbors.scope.all", defaultValue: "All volumes")
+        case .volume:
+            return String(localized: "archivalNeighbors.scope.volume", defaultValue: "This volume")
+        case .subseries:
+            return String(localized: "archivalNeighbors.scope.subseries", defaultValue: "This subseries")
         }
     }
 
@@ -323,29 +512,44 @@ struct ArchivalNeighborsSheet: View {
 
     /// Shared app state, used to navigate to a tapped neighbor.
     let appState: AppState
-    /// Loads the neighbors when the sheet appears (runs the actor-isolated query).
-    let load: () async -> ArchivalNeighborsResult
+    /// Loads the neighbors for a resolved scope (`nil` = all indexed) — the
+    /// actor-isolated query, re-run on scope change (#217).
+    let load: (Set<String>?) async -> ArchivalNeighborsResult
+    /// The scope the sheet opens at (per-trigger default #217).
+    let defaultScope: NeighborScope
+    /// The anchor volume, when the surface has one (enables the scope picker).
+    let anchorVolumeId: String?
 
     @Environment(\.dismiss) private var dismiss
     /// The loaded archival basis, shown under the title (reported by the content core).
     @State private var basis: String? = nil
 
-    /// Designated initializer — caller supplies the loader.
-    init(appState: AppState, load: @escaping () async -> ArchivalNeighborsResult) {
+    /// Designated initializer — caller supplies the scope-parameterized loader and,
+    /// when the surface has an anchor volume, the default scope + anchor for the picker.
+    init(appState: AppState,
+         defaultScope: NeighborScope = .allIndexed,
+         anchorVolumeId: String? = nil,
+         load: @escaping (Set<String>?) async -> ArchivalNeighborsResult) {
         self.appState = appState
+        self.defaultScope = defaultScope
+        self.anchorVolumeId = anchorVolumeId
         self.load = load
     }
 
     /// Convenience for document-keyed surfaces: loads neighbors by the document's key
-    /// via `IndexingPipeline.archivalNeighbors`.
+    /// via `IndexingPipeline.archivalNeighbors`. Defaults to all-indexed scope with the
+    /// document's own volume as the picker anchor.
     init(appState: AppState, docKey: ArchivalNeighborsDocKey) {
         self.appState = appState
-        self.load = {
+        self.defaultScope = .allIndexed
+        self.anchorVolumeId = docKey.volumeId
+        self.load = { scopeVolumeIds in
             guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
             return (try? await pipeline.archivalNeighbors(
                 forVolumeId:  docKey.volumeId,
                 documentId:   docKey.documentId,
-                documentYear: docKey.documentYear
+                documentYear: docKey.documentYear,
+                scopeVolumeIds: scopeVolumeIds
             )) ?? ([], 0, nil)
         }
     }
@@ -354,6 +558,8 @@ struct ArchivalNeighborsSheet: View {
         NavigationStack {
             ArchivalNeighborsContent(
                 appState: appState,
+                defaultScope: defaultScope,
+                anchorVolumeId: anchorVolumeId,
                 load: load,
                 onNavigate: { dismiss() },
                 onLoaded: { basis = $0.basis }
@@ -417,7 +623,11 @@ struct ArchivalNeighborsWindowView: View {
     var body: some View {
         ArchivalNeighborsContent(
             appState: appState,
-            load: { await request.load(appState: appState) },
+            defaultScope: request.defaultScope,
+            anchorVolumeId: request.anchorVolumeId,
+            load: { scopeVolumeIds in
+                await request.load(appState: appState, scopeVolumeIds: scopeVolumeIds)
+            },
             onNavigate: nil,   // the window stays open — that is the point of S6
             onLoaded: { basis = $0.basis }
         )
