@@ -1,23 +1,25 @@
-# What's New in Build 30 (iOS)
+# What's New in Build 31 (iOS)
 
-Build 30 gathers the tester-feedback fixes and research tools added since build 28 (build 29 was internal only). **No re-index this time** — the update installs and is ready to use immediately.
+Build 31 is a polish-and-fixes pass on the research tools from builds 28–30, plus a new way to scope Archival Neighbors. **No re-index** — it installs and is ready immediately.
 
-## Search
-- **Checklist Mode** — work a long result list like a shrinking to-do list. Turn it on from the search **••• (overflow) menu**; opening a result (or swiping a row → **Reviewed**, or long-press → **Mark Reviewed**) hides it, a "N reviewed hidden" banner tracks progress, and an **All Results Reviewed** state appears when you finish. It's per-session and resets on relaunch; starting a new search re-anchors it. Confirm reviewed rows disappear and the count/timeline stay correct.
-- **Adjustable snippet length** — choose how many lines of matched context each result shows (1–10, was fixed at 3). Set the global default in **Settings → General → Search Defaults → Result Preview**; override just one surface from the main-search **filter (funnel) panel** or the **Add Documents** sheet's text-lines menu. Confirm changes apply live and stick across launches.
-- **Add-document previews** — in a collection's **Add Documents → Search** tab, each result now shows a matched snippet + archival source note, so you can judge it without opening.
-- **Live tag filter chips** — user-tag chips in the search filter now update the moment you create, rename, or delete a tag elsewhere (e.g. in a research note) — no relaunch. Changes arriving from another device via iCloud show up too.
+## Archival Neighbors
+- **Scope selector** — the Archival Neighbors sheet now has a **This volume / This subseries / All indexed volumes** control that re-runs the list in place. A document opens at *All indexed volumes*; a volume's Sources entry opens at *This volume*. The same archival source returns the same set of *other* documents no matter which surface you opened it from (a document view excludes the document you started from). Confirm switching scope re-runs the list and that a source reached from a document, a search result, a graph node, or a Sources entry stays consistent.
 
 ## Analytics (Browse → Analysis Tools)
-- **Scope + year range** — Corpus, Person, and Cross-Reference Analytics gained a **Scope** bar (Whole corpus / By Subseries / By Volume) and a year-range bar, so you can narrow any dashboard to a project-specific slice. Cross-Reference figures are **source-anchored** (counted from the citing document), so scoping never collapses the graph.
-- **Same-volume references counted** — Cross-Reference figures (Most-Referenced, degree distribution, PageRank influence) now include within-volume citations that were previously dropped, so counts and rankings rise. The volume-to-volume heat matrix is unchanged by design.
-- **iPhone Options menu** — Corpus and Person Analytics fold their secondary controls into a single **Options (•••)** button so pickers like Values no longer truncate in the narrow toolbar.
+- **Collapsible charts** — Person and Cross-Reference Analytics now group their charts into collapsible sections, each with its own controls (chart/table toggle, By-decade, Values, the out-degree overlay); only the mode picker stays in the toolbar. Confirm sections expand/collapse and the choice sticks.
+- **Cleaner cross-reference figures** — Cross-Reference Analytics no longer counts non-document targets (page anchors, footnotes, back-of-book index items, chapters, appendices) as "landmark documents"; un-downloaded landmarks now read as "Document N — volume title" with a hint rather than an opaque key.
+- **Consistent subseries** — Corpus Analytics → **Group by → Subseries** now buckets early annual, conference, and supplement volumes by publication year to match the Corpus Browser (they were previously dropped or split off under an area label).
+- **More toolbar room** — Corpus, Person, Cross-Reference, and Chronology no longer squeeze a centered screen title into the toolbar on iPhone, so the controls render fully; VoiceOver still announces each screen's name.
+
+## Search
+- **Checklist Mode is easier to find** — the Checklist toggle is now a labeled button in the always-visible search actions bar (right of the timeline button), enabled once a search has results and tinted while active — no longer buried in the ••• menu.
+
+## Source Explorer & Citations
+- **Pre-1906 source links** — Source Explorer again resolves 19th-century / pre-1906 central-files citations (e.g. an 1863 despatch, frus1863p2/d1) to the right bundled reel-level / country-series link. Confirm an 1860s–1900s document's source note links correctly.
+- **Citation Lookup round-trip** — pasting a citation the app produced (Search tab → Citation Lookup) now reopens the *exact* document, including pre-1906 *Papers Relating to Foreign Affairs* part volumes where the title fragment disambiguates a print-year collision.
 
 ## Collections
-- **Editor** — tap **anywhere on a document row** to open its inspector (not just the ⓘ button). The inspector is now titled with the collection's own name and pins a **Collection** section at the top (description, subtitle, author line, colophon, and all export-composition defaults), so collection-wide settings stay reachable while a document is focused.
-
-## Settings
-- **Sync Diagnostics** (Settings → Data) — a local, on-device, **redacted** log of iCloud sync events you can read and export to help diagnose sync problems. It records only event types, timing, and error codes — never identifiers, account identity, or anything about your documents. Try Copy, Export, and Clear.
+- **Manager shows all projects by default** — the Collection Manager now lists collections from every project by default, with a banner offering **Scope to '<project>'** to narrow and **Show All** to restore.
 
 ## Feedback
-Report crashes, freezes, or anything unexpected — especially wrong/missing analytics after scoping, snippet length not sticking, checklist rows that won't hide, tag chips out of sync, or Collections inspector glitches. Include your device + iOS version, the volume/document number (top of screen), what you tapped, expected, and got. Screenshots help. Thanks for testing!
+Report anything unexpected — especially wrong or empty Archival Neighbors after scoping, mismatched subseries buckets, cross-reference figures that look off, a Citation Lookup landing on the wrong document, or a pre-1906 source link that misses. Include your device + iOS version, the volume/document number (top of screen), what you tapped, expected, and got. Screenshots help. Thanks for testing!
