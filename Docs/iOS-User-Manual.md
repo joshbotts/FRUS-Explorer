@@ -688,15 +688,16 @@ Corpus- and subseries-wide clouds can take a moment the first time; on iPhone th
 
 Where Corpus Analytics tracks *terms*, **Person Analytics** tracks *people* — how often the reconciled identities in the People browser (Section 4.5) are mentioned across the corpus, how that changed over time, and how they connect to one another. Open it from the **Analysis Tools** menu in the Browse tab toolbar (Section 4.4). A top-level **Trends / Network** picker splits the surface into two:
 
-**Trends** is a scrolling dashboard:
+**Trends** is a scrolling dashboard of two **collapsible chart sections** — tap a section's heading to expand or collapse it (your choice is remembered) so you can focus on one chart at a time. Each section carries **its own controls**, right beneath its heading, so it's always clear which chart a control affects:
 
-- **Most-mentioned people by era** — a ranking of the people named in the most documents within the year range you've set, so you can see who dominated the record in a given period.
-- **Mention-trajectory comparison** — search for people and add up to **five**, each as a chip, to plot their mention counts side by side over time and compare how their prominence rose and fell. A decade toggle switches between per-year and per-decade buckets, and you can read the trajectories as raw counts or as a share of documents.
-- **Relationship dynamics** — when you've selected exactly *two* people, an additional chart appears showing their **co-mention** count over time: how many documents name *both* of them in each period — a quick read on when two figures were entangled in the same events.
+- **Most-Mentioned People** — a ranking of the people named in the most documents within the year range you've set, so you can see who dominated the record in a given period. Its **chart / table** toggle lives in this section.
+- **Mention Trajectories** — search for people and add up to **five**, each as a chip, to plot their mention counts side by side over time and compare how their prominence rose and fell. This section's controls — a **By decade** toggle (per-year vs. per-decade buckets) and a **Values** toggle (raw counts vs. share of documents) — govern this chart (and the relationship chart below it). When you've selected exactly *two* people, an additional **Relationship dynamics** chart appears showing their **co-mention** count over time: how many documents name *both* of them in each period.
+
+Only the top-level **Trends / Network** picker remains in the toolbar.
 
 **Network** takes the full screen for a **co-mention ego-network graph**: a focus person at the centre, surrounded by the people most often mentioned in the same documents, with the strength of each connection reflected in the graph. It defaults to the top-ranked person and lets you re-centre on anyone, turning the raw mention data into a map of who moved in whose orbit.
 
-All of these views read your local index directly and honour the **Scope** bar (whole corpus, a subseries, or a single volume) and the **year-range** filter you set above them, so you can focus the rankings, trajectories, relationship charts, and network on one project's material; they sharpen as you index more of the corpus. On iPhone, the secondary Trends controls (Display, By decade, Values) fold into an **Options (•••)** menu, while the Trends / Network picker stays inline.
+All of these views read your local index directly and honour the **Scope** bar (whole corpus, a subseries, or a single volume) and the **year-range** filter you set above them, so you can focus the rankings, trajectories, relationship charts, and network on one project's material; they sharpen as you index more of the corpus.
 
 `[SCREENSHOT: Person Analytics on iPhone in Trends mode showing the most-mentioned-by-era ranking and a multi-person mention-trajectory comparison]`
 

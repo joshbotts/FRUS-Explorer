@@ -863,11 +863,10 @@ Where Corpus Analytics charts a *term* and the Word Cloud shows a *scope's* most
 
 A segmented control at the top switches between two modes. A **Scope** bar and a **year-range** bar sit above both modes and narrow every figure — the most-mentioned ranking, the trajectories, the relationship chart, and the co-mention network — to a chosen subseries or volume and a span of years (the same controls Corpus and Cross-Reference Analytics use), so you can focus the analysis on one project's material.
 
-**Trends.** The default mode looks at *how much* people are mentioned over time:
+**Trends.** The default mode looks at *how much* people are mentioned over time, as two **collapsible chart sections** — click a section's heading to expand or collapse it (remembered between visits) — each carrying **its own controls** right beneath the heading, so it's clear which chart a control affects (the shared window toolbar now holds only the Trends / Network switch):
 
-- **Most-mentioned people by era** — a ranked view of the people written about most in a chosen span, so you can see who dominates the record in, say, the early Cold War versus détente.
-- **Mention-trajectory comparison** — search for and pick **up to five people** and chart their mention counts over time on the same axes, to compare how prominent each was across the years.
-- **Relationship dynamics** — pick **two people** for a co-mention-over-time chart showing how often the two are named *together* in the same documents across the series — a proxy for when their dealings intensified.
+- **Most-Mentioned People** — a ranked view of the people written about most in a chosen span, so you can see who dominates the record in, say, the early Cold War versus détente. Its **chart / table** toggle lives in this section.
+- **Mention Trajectories** — search for and pick **up to five people** and chart their mention counts over time on the same axes. This section's **By decade** (per-year vs. per-decade) and **Values** (raw counts vs. share of documents) controls govern this chart. Pick exactly **two people** and a **Relationship dynamics** chart appears below, showing how often the two are named *together* in the same documents across the series — a proxy for when their dealings intensified.
 
 `[SCREENSHOT: Person Analytics window on macOS, Trends mode — the most-mentioned-by-era ranking above a multi-person mention-trajectory comparison]`
 
