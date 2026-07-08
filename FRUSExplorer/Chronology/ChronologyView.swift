@@ -100,6 +100,7 @@ struct ChronologyView: View {
             #if os(macOS)
             .navigationTitle(String(localized: "chronology.title", defaultValue: "Chronology"))
             #else
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "chronology.title", defaultValue: "Chronology"))
             #endif
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in

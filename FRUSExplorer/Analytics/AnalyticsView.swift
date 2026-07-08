@@ -354,13 +354,15 @@ struct AnalyticsView: View {
             }
             // iOS omits the nav title so the full nav-bar width goes to the trailing analytics
             // controls, which otherwise crowd/truncate against a centered title on narrow iPhones
-            // (#219). The accessible screen name is preserved via .accessibilityLabel. macOS keeps
-            // the title for its window title bar.
+            // (#219). The accessible screen name is preserved by naming the content container
+            // (children: .contain keeps the chart/table/toolbar elements individually navigable).
+            // macOS keeps the title for its window title bar.
             #if os(macOS)
             .navigationTitle(
                 String(localized: "analytics.title", defaultValue: "Corpus Analytics")
             )
             #else
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "analytics.title", defaultValue: "Corpus Analytics"))
             #endif
             .toolbar { toolbarContent }

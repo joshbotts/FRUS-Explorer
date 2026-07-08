@@ -162,6 +162,7 @@ struct CrossReferenceAnalyticsView: View {
                 String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics")
             )
             #else
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics"))
             #endif
             .toolbar { toolbarContent }

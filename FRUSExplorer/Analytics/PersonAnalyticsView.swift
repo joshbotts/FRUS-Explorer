@@ -417,6 +417,7 @@ struct PersonAnalyticsView: View {
                 String(localized: "personAnalytics.title", defaultValue: "Person Analytics")
             )
             #else
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "personAnalytics.title", defaultValue: "Person Analytics"))
             #endif
             .toolbar { toolbarContent }
