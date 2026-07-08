@@ -51,6 +51,42 @@ struct CentralFilesClassifierTests {
         #expect(d2.first?.confidence == .high)
     }
 
+    // MARK: Dateline year extraction (issue #215 — the pre-1906 gate)
+
+    @Test("extractYear parses 18xx datelines so pre-1906 docs reach country-series resolution")
+    @MainActor
+    func extractYearCoversPre1906Datelines() {
+        // Route to whichever platform's extractor is compiled; both must behave identically.
+        func year(_ dateline: String?) -> Int? {
+            #if os(iOS)
+            return DocumentView.extractYear(from: dateline)
+            #elseif os(macOS)
+            return MacDocumentView.extractYear(from: dateline)
+            #else
+            return nil
+            #endif
+        }
+
+        // The regression: an 1862 dateline used to yield nil under the 20th-century-only regex,
+        // tripping the `year < 1906` guard and suppressing the reel-level country-series section.
+        #expect(year("Department of State, Washington, November 30, 1862.") == 1862)
+        // Other pre-1906 reference datelines (Docs 1/4/5 in the classifier fixtures).
+        #expect(year("Department of State, Washington, July 6, 1863.") == 1863)
+        #expect(year("Legation of the United States, Berne, September 28, 1875.") == 1875)
+        #expect(year("American Legation, Tokyo, March 14, 1905.") == 1905)
+        // Boundaries around the pre-1906 / numerical-file (1906–1910) / modern branches.
+        #expect(year("Washington, January 1, 1899.") == 1899)
+        #expect(year("Washington, January 1, 1900.") == 1900)
+        #expect(year("Washington, January 1, 1906.") == 1906)
+        #expect(year("Washington, January 1, 1910.") == 1910)
+        // Upper bound: 2029 accepted, 2030 rejected.
+        #expect(year("Washington, January 1, 2029.") == 2029)
+        #expect(year("Meeting held in room 2030.") == nil)
+        // Out of range: pre-1800 (FRUS starts 1861) and no year at all.
+        #expect(year("An antique note dated 1799.") == nil)
+        #expect(year("Department of State, Washington.") == nil)
+    }
+
     @Test("Department of State outbound → ambiguous instruction / note-to candidates")
     func classifiesDeptOutbound() {
         // Doc 1 (instruction) and Doc 3 (note to) both date from the Department of State.

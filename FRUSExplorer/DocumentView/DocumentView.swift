@@ -758,9 +758,15 @@ struct DocumentView: View {
     /// Extracts a 4-digit year from a dateline string such as
     /// "Washington, January 15, 1946" or "Moscow, April 3, 1963".
     /// Returns `nil` when no plausible year is found.
+    ///
+    /// The pattern accepts 18xx–20xx (through 2029) so pre-1906 FRUS datelines
+    /// (e.g. "Washington, November 30, 1862") yield a year and reach the Source
+    /// Explorer's pre-1906 country-series resolution (issue #215). Keep in sync with
+    /// the identical pattern in `MacDocumentView.extractYear` and the inline extractor
+    /// in `SupportingViews`.
     static func extractYear(from dateline: String?) -> Int? {
         guard let dl = dateline else { return nil }
-        let pattern = #"\b(19[0-9]{2}|20[0-2][0-9])\b"#
+        let pattern = #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(
                   in: dl, range: NSRange(dl.startIndex..., in: dl)),
