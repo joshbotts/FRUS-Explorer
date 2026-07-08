@@ -399,6 +399,47 @@ struct CrossReferenceStoreTests {
         #expect(top[1].inDegree == 1)
     }
 
+    @Test("Page/front-matter anchors (pg_*) are excluded from every degree/edge query (#209)")
+    func pageAnchorsExcludedFromDegreeQueries() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Real document targets d1 (2 inbound) and d2 (1 inbound) in vol1.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s1",
+                       targetVolumeId: "vol1", targetDocumentId: "d1")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s2",
+                       targetVolumeId: "vol1", targetDocumentId: "d1")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s3",
+                       targetVolumeId: "vol1", targetDocumentId: "d2")
+        // Non-document page / front-matter anchors that used to be crowned as "landmark documents":
+        // roman-numeral page, arabic page, and a front-matter fragment.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s4",
+                       targetVolumeId: "vol1", targetDocumentId: "pg_III")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "s5",
+                       targetVolumeId: "vol1", targetDocumentId: "pg_427")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol3", sourceDocumentId: "s6",
+                       targetVolumeId: "vol1", targetDocumentId: "pg_fm12")
+
+        // (a) In-degree ranking excludes pg_* targets.
+        let top = try await store.topDocumentsByInDegree(limit: 10)
+        #expect(Set(top.map(\.documentId)) == ["d1", "d2"], "Only real documents ranked; no pg_* anchors")
+        #expect(!top.contains { $0.documentId.hasPrefix("pg_") })
+
+        // (b) In-degree distribution feeder excludes pg_* — so ranking and histogram stay lockstep.
+        #expect(try await store.resolvedInDegrees().sorted() == [1, 2])
+
+        // (c) Out-degree feeder drops edges TARGETING pg_* (same edge population as in-degree), so
+        // sources that emit only pg_* edges (s4,s5,s6) disappear entirely.
+        let outDeg = try await store.resolvedOutDegrees()
+        #expect(outDeg.count == 3, "Only s1,s2,s3 remain; s4,s5,s6 emitted only pg_* edges")
+        #expect(outDeg.allSatisfy { $0 == 1 })
+
+        // (d) PageRank edge set excludes pg_* targets.
+        let edges = try await store.resolvedCitationEdges()
+        #expect(edges.count == 3, "Only the 3 real document-target edges feed PageRank")
+        #expect(!edges.contains { $0.target.documentId.hasPrefix("pg_") })
+    }
+
     @Test("resolvedInDegrees returns per-document counts, including same-volume references")
     func resolvedInDegreesPerDocument() async throws {
         let (dir, dbURL, store) = try makeTempStore()

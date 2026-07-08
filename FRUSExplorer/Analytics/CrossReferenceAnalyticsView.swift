@@ -125,6 +125,13 @@ struct CrossReferenceAnalyticsView: View {
     @State private var isLoading = false
     @State private var didLoad = false
 
+    /// Per-chart expansion (#209), persisted so a user's focus choice sticks. Distinct keys so the
+    /// analytics dashboards don't share collapse state.
+    @AppStorage("frus.crossRefAnalytics.rankingExpanded") private var rankingExpanded = true
+    @AppStorage("frus.crossRefAnalytics.distributionExpanded") private var distributionExpanded = true
+    @AppStorage("frus.crossRefAnalytics.matrixExpanded") private var matrixExpanded = true
+    @AppStorage("frus.crossRefAnalytics.landmarkExpanded") private var landmarkExpanded = true
+
     /// Year-range filter (#189-B). Seeded to the corpus span on first appear; when the user
     /// narrows it, every CA-6 query is restricted to citations whose SOURCE document is dated in
     /// range (source-anchored). A whole-corpus span emits no date SQL (unfiltered = unchanged).
@@ -165,7 +172,8 @@ struct CrossReferenceAnalyticsView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics"))
             #endif
-            .toolbar { toolbarContent }
+            // Toolbar removed (#209): the chart/table picker and out-degree toggle moved into
+            // their own collapsible sections, so nothing chart-specific remains here.
         }
         #if os(macOS)
         .frame(minWidth: 720, minHeight: 600)
@@ -253,16 +261,70 @@ struct CrossReferenceAnalyticsView: View {
             VStack(alignment: .leading, spacing: 22) {
                 resolvedCaption
                 Divider()
-                rankingSection
+                // Each chart is a collapsible section hosting its OWN controls (#209): the
+                // chart/table picker lives with Most-Referenced, the out-degree overlay with the
+                // degree distribution — so it's clear which chart a control affects.
+                AnalyticsCollapsibleSection(
+                    title: String(localized: "crossRefAnalytics.ranking.heading",
+                                  defaultValue: "Most-Referenced Documents"),
+                    isExpanded: $rankingExpanded,
+                    controls: { rankingControls },
+                    content: { rankingSection }
+                )
                 Divider()
-                distributionSection
+                AnalyticsCollapsibleSection(
+                    title: String(localized: "crossRefAnalytics.distribution.heading",
+                                  defaultValue: "Citation Degree Distribution"),
+                    isExpanded: $distributionExpanded,
+                    controls: { distributionControls },
+                    content: { distributionSection }
+                )
                 Divider()
-                matrixSection
+                AnalyticsCollapsibleSection(
+                    title: String(localized: "crossRefAnalytics.matrix.heading",
+                                  defaultValue: "Volume Citation Heat Matrix"),
+                    isExpanded: $matrixExpanded,
+                    content: { matrixSection }
+                )
                 Divider()
-                landmarkSection
+                AnalyticsCollapsibleSection(
+                    title: String(localized: "crossRefAnalytics.landmarks.heading",
+                                  defaultValue: "Landmark Documents (Influence)"),
+                    isExpanded: $landmarkExpanded,
+                    content: { landmarkSection }
+                )
             }
             .padding(.vertical, 8)
         }
+    }
+
+    /// Chart/table display toggle for the Most-Referenced ranking — moved out of the shared
+    /// toolbar into this chart's section (#209). Disabled when there's nothing ranked.
+    @ViewBuilder
+    private var rankingControls: some View {
+        HStack {
+            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty)
+            Spacer()
+        }
+        .padding(.horizontal)
+    }
+
+    /// Out-degree overlay toggle for the degree distribution — moved out of the shared toolbar
+    /// into this chart's section (#209). Disabled when there's no distribution to chart.
+    @ViewBuilder
+    private var distributionControls: some View {
+        HStack {
+            Toggle(isOn: $showOutDegree) {
+                Text(String(localized: "crossRefAnalytics.outDegree.toggle", defaultValue: "Out-degree"))
+            }
+            .toggleStyle(.button)
+            .controlSize(.small)
+            .disabled(distribution.isEmpty)
+            .help(String(localized: "crossRefAnalytics.outDegree.help",
+                         defaultValue: "Overlay the out-degree distribution (how many citations documents make) on the in-degree histogram."))
+            Spacer()
+        }
+        .padding(.horizontal)
     }
 
     private var resolvedCaption: some View {
@@ -278,8 +340,6 @@ struct CrossReferenceAnalyticsView: View {
     @ViewBuilder
     private var rankingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeading(String(localized: "crossRefAnalytics.ranking.heading",
-                                  defaultValue: "Most-Referenced Documents"))
             sectionSubtitle(String(localized: "crossRefAnalytics.ranking.subtitle",
                                    defaultValue: "Top documents by inbound citation count (in-degree). Tap a document to open it."))
 
@@ -302,7 +362,7 @@ struct CrossReferenceAnalyticsView: View {
                 x: .value(String(localized: "crossRefAnalytics.axis.inDegree", defaultValue: "Inbound citations"),
                           row.inDegree),
                 y: .value(String(localized: "crossRefAnalytics.axis.document", defaultValue: "Document"),
-                          row.displayLabel)
+                          targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
             )
             .foregroundStyle(Color.accentColor)
             .annotation(position: .trailing) {
@@ -323,7 +383,7 @@ struct CrossReferenceAnalyticsView: View {
             ForEach(Array(ranking.enumerated()), id: \.element.id) { index, row in
                 Button {
                     openDocument(volumeId: row.volumeId, documentId: row.documentId,
-                                 header: row.displayLabel)
+                                 header: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
                 } label: {
                     HStack {
                         Text("\(index + 1).")
@@ -331,9 +391,15 @@ struct CrossReferenceAnalyticsView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 28, alignment: .trailing)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(row.displayLabel).font(.body).lineLimit(2)
+                            Text(targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                                .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
                                 .font(.caption2).foregroundStyle(.secondary)
+                            if isTargetUnindexed(header: row.header) {
+                                Text(String(localized: "crossRefAnalytics.row.notDownloaded",
+                                            defaultValue: "In a volume you haven't downloaded"))
+                                    .font(.caption2).foregroundStyle(.tertiary)
+                            }
                         }
                         Spacer()
                         Text(row.inDegree, format: .number)
@@ -355,8 +421,6 @@ struct CrossReferenceAnalyticsView: View {
     @ViewBuilder
     private var distributionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeading(String(localized: "crossRefAnalytics.distribution.heading",
-                                  defaultValue: "Citation Degree Distribution"))
             sectionSubtitle(String(localized: "crossRefAnalytics.distribution.subtitle",
                                    defaultValue: "How many documents have each inbound-citation count — a few landmark documents and a long tail. Toggle the out-degree overlay to compare how many citations documents make."))
 
@@ -424,8 +488,6 @@ struct CrossReferenceAnalyticsView: View {
     @ViewBuilder
     private var matrixSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeading(String(localized: "crossRefAnalytics.matrix.heading",
-                                  defaultValue: "Volume Citation Heat Matrix"))
             sectionSubtitle(String(localized: "crossRefAnalytics.matrix.subtitle",
                                    defaultValue: "Cross-volume citation counts among the \(Self.matrixVolumeLimit) most-connected volumes (by total inbound + outbound references). Rows cite columns; darker cells are more references. Tap a volume label to open it."))
 
@@ -530,8 +592,6 @@ struct CrossReferenceAnalyticsView: View {
     @ViewBuilder
     private var landmarkSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeading(String(localized: "crossRefAnalytics.landmarks.heading",
-                                  defaultValue: "Landmark Documents (Influence)"))
             sectionSubtitle(String(localized: "crossRefAnalytics.landmarks.subtitle",
                                    defaultValue: "Ranked by an offline PageRank influence score over the resolved citation graph — documents a citation-following reader keeps returning to. This is a structural influence measure, not a claim of historical importance. Tap to open."))
 
@@ -551,7 +611,7 @@ struct CrossReferenceAnalyticsView: View {
             ForEach(Array(landmarks.enumerated()), id: \.element.id) { index, row in
                 Button {
                     openDocument(volumeId: row.volumeId, documentId: row.documentId,
-                                 header: row.displayLabel)
+                                 header: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
                 } label: {
                     HStack {
                         Text("\(index + 1).")
@@ -559,9 +619,15 @@ struct CrossReferenceAnalyticsView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 28, alignment: .trailing)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(row.displayLabel).font(.body).lineLimit(2)
+                            Text(targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                                .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
                                 .font(.caption2).foregroundStyle(.secondary)
+                            if isTargetUnindexed(header: row.header) {
+                                Text(String(localized: "crossRefAnalytics.row.notDownloaded",
+                                            defaultValue: "In a volume you haven't downloaded"))
+                                    .font(.caption2).foregroundStyle(.tertiary)
+                            }
                         }
                         Spacer()
                         Text(row.score, format: .number.precision(.significantDigits(2)))
@@ -580,12 +646,26 @@ struct CrossReferenceAnalyticsView: View {
 
     // MARK: - Shared row chrome
 
-    private func sectionHeading(_ text: String) -> some View {
-        Text(text).font(.headline).padding(.horizontal)
-    }
-
     private func sectionSubtitle(_ text: String) -> some View {
         Text(text).font(.caption).foregroundStyle(.secondary).padding(.horizontal)
+    }
+
+    /// Primary label for a cross-reference target row (#209). An indexed target shows its document
+    /// header; a legitimate citation into a not-yet-downloaded volume (no cached header) falls back
+    /// to a manifest-derived "Document N — <volume title>" instead of the raw "volumeId · documentId"
+    /// key — so the highest-influence landmarks, which are frequently in un-downloaded volumes, read
+    /// as real documents rather than opaque keys.
+    private func targetLabel(volumeId: String, documentId: String, header: String?) -> String {
+        if let header, !header.isEmpty { return header }
+        let number = documentId.hasPrefix("d") ? String(documentId.dropFirst()) : documentId
+        let prefix = String(localized: "crossRefAnalytics.row.documentPrefix", defaultValue: "Document")
+        return "\(prefix) \(number) — \(volumeTitle(volumeId))"
+    }
+
+    /// Whether a target row's volume is not yet indexed (its header couldn't be resolved), used to
+    /// show a subtle "not downloaded" hint (#209).
+    private func isTargetUnindexed(header: String?) -> Bool {
+        header == nil || header?.isEmpty == true
     }
 
     private var loadingRow: some View {
@@ -598,24 +678,6 @@ struct CrossReferenceAnalyticsView: View {
             systemImage: "point.3.connected.trianglepath.dotted",
             description: Text(text)
         )
-    }
-
-    // MARK: - Toolbar
-
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty)
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Toggle(isOn: $showOutDegree) {
-                Text(String(localized: "crossRefAnalytics.outDegree.toggle", defaultValue: "Out-degree"))
-            }
-            .toggleStyle(.button)
-            .disabled(distribution.isEmpty)
-            .help(String(localized: "crossRefAnalytics.outDegree.help",
-                         defaultValue: "Overlay the out-degree distribution (how many citations documents make) on the histogram"))
-        }
     }
 
     // MARK: - Placeholder

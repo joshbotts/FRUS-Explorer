@@ -630,6 +630,15 @@ public actor CrossReferenceStore {
             "dds.date_iso IS NOT NULL AND length(dds.date_iso) >= 4 AND CAST(substr(dds.date_iso, 1, 4) AS INTEGER) BETWEEN ? AND ?"
     }
 
+    /// Excludes non-document citation targets — unresolved page / front-matter anchors stored as
+    /// `target_document_id` in the `pg_*` form (roman-numeral pages like `pg_III`, front-matter
+    /// like `pg_fm12`, and cross-volume `pg_*` fragments that `resolvePageBasedCrossReferences`
+    /// leaves unresolved). Real documents are `d`-prefixed (`d1`) and editorial notes `en`-prefixed,
+    /// so only these page anchors are dropped. Applied to every degree/edge query (#209) so the
+    /// in-degree ranking, degree histogram, and PageRank landmark list stay lockstep and never
+    /// crown a page fragment as a "landmark document".
+    private static let nonPageTargetPredicate = "cr.target_document_id NOT GLOB 'pg_*'"
+
     /// The bare `<columnExpr> IN (?, …)` predicate for a normalised volume scope, or `""` when nil.
     private static func volumeScopePredicate(_ scope: [String]?, columnExpr: String) -> String {
         guard let scope, !scope.isEmpty else { return "" }
@@ -695,7 +704,8 @@ public actor CrossReferenceStore {
             LEFT JOIN document_cache dc
                    ON dc.volume_id = COALESCE(cr.target_volume_id, cr.source_volume_id)
                   AND dc.document_id = cr.target_document_id
-            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+            \(Self.whereClause([Self.nonPageTargetPredicate,
+                                Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY resolved_target_volume, cr.target_document_id
             ORDER BY in_degree DESC, resolved_target_volume, cr.target_document_id
@@ -738,7 +748,8 @@ public actor CrossReferenceStore {
             SELECT COUNT(*) AS in_degree
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
-            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+            \(Self.whereClause([Self.nonPageTargetPredicate,
+                                Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY COALESCE(cr.target_volume_id, cr.source_volume_id), cr.target_document_id
             """
@@ -769,7 +780,8 @@ public actor CrossReferenceStore {
             SELECT COUNT(*) AS out_degree
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
-            \(Self.whereClause([Self.sourceDatePredicate(yearRange),
+            \(Self.whereClause([Self.nonPageTargetPredicate,
+                                Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY cr.source_volume_id, cr.source_document_id
             """
@@ -814,6 +826,7 @@ public actor CrossReferenceStore {
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
             \(Self.whereClause([selfLoop,
+                                Self.nonPageTargetPredicate,
                                 Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             """
