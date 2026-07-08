@@ -94,9 +94,13 @@ struct ChronologyView: View {
                     }
                 }
             }
+            // iOS omits the nav title to unify the "no-title" pattern across the analytics family
+            // and give the toolbar its full width (#219); the accessible screen name is preserved
+            // via .accessibilityLabel. macOS keeps the title for its window title bar.
+            #if os(macOS)
             .navigationTitle(String(localized: "chronology.title", defaultValue: "Chronology"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            #else
+            .accessibilityLabel(String(localized: "chronology.title", defaultValue: "Chronology"))
             #endif
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                 #if os(iOS)
