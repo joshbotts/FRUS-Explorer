@@ -420,7 +420,8 @@ final class MacSearchViewModel {
     func syncToFilterVM(
         searchService: SearchService?,
         volumeEntries: [VolumeManifestEntry] = [],
-        indexedVolumeIds: Set<String> = []
+        indexedVolumeIds: Set<String> = [],
+        userTags: [UserTag] = []
     ) {
         if filterVM == nil, let svc = searchService {
             filterVM = SearchViewModel(searchService: svc)
@@ -465,6 +466,14 @@ final class MacSearchViewModel {
         filterVM.includeDocumentText = parameters.includeDocumentText
         filterVM.includeSummaries   = parameters.includeSummaries
         filterVM.includeNotes       = parameters.includeNotes
+
+        // User-tag filter (188-D parity, #212): feed the live tag list so the shared
+        // `SearchFilterView.userTagsSection` appears on macOS, and reconstruct the active
+        // selection from `parameters` so an applied tag filter shows its tags checked. Because
+        // this runs on every "Advanced…" open with a live @Query source, the section always
+        // reflects current tags with no relaunch.
+        filterVM.availableUserTags  = userTags
+        filterVM.selectedUserTagIds = Set(parameters.userTagIds.compactMap { UUID(uuidString: $0) })
     }
 
     /// Copies `filterVM` state back into `parameters` and triggers a re-search.
@@ -501,6 +510,9 @@ final class MacSearchViewModel {
         parameters.includeDocumentText = filterVM.includeDocumentText
         parameters.includeSummaries = filterVM.includeSummaries
         parameters.includeNotes     = filterVM.includeNotes
+        // User-tag filter (188-D parity, #212): write the selection back so a chosen tag
+        // actually narrows the FTS query and drives the "Tagged" summary chip.
+        parameters.userTagIds       = filterVM.selectedUserTagIds.map(\.uuidString)
         // Volume/subseries scope: the filter VM unions the two pickers into
         // `effectiveVolumeIds`, which is what the FTS5 layer filters on.
         let effectiveVolumes = filterVM.effectiveVolumeIds

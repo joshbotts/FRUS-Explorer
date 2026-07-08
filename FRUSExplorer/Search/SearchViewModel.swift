@@ -193,6 +193,10 @@ final class SearchViewModel {
         parts.append(includeNotes ? "1" : "0")
         parts.append(selectedSubseriesIds.sorted().joined(separator: ","))
         parts.append(selectedVolumeIds.joined(separator: ","))
+        // User-tag filter (188-D): sorted for order-independence so toggling a tag perturbs the
+        // signature deterministically, which drives the macOS live-apply observer (#212). iOS
+        // does not observe this signature, so its behavior is unchanged.
+        parts.append(selectedUserTagIds.map(\.uuidString).sorted().joined(separator: ","))
         return parts.joined(separator: "§")
     }
 
