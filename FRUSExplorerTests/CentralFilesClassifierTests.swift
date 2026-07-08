@@ -85,6 +85,10 @@ struct CentralFilesClassifierTests {
         // Out of range: pre-1800 (FRUS starts 1861) and no year at all.
         #expect(year("An antique note dated 1799.") == nil)
         #expect(year("Department of State, Washington.") == nil)
+        // A stray 4-digit token BEFORE the real "Month D, YYYY" (e.g. a telegram/file number
+        // in a footnote-bearing dateline blob) must not hijack the year: the strict date parse
+        // wins, so this resolves to 1905, not the leading 1805 (issue #215 review hardening).
+        #expect(year("Ref. telegram No. 1805. Tokyo, March 14, 1905.") == 1905)
     }
 
     @Test("Department of State outbound → ambiguous instruction / note-to candidates")

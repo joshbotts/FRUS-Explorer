@@ -759,13 +759,19 @@ struct DocumentView: View {
     /// "Washington, January 15, 1946" or "Moscow, April 3, 1963".
     /// Returns `nil` when no plausible year is found.
     ///
-    /// The pattern accepts 18xx–20xx (through 2029) so pre-1906 FRUS datelines
-    /// (e.g. "Washington, November 30, 1862") yield a year and reach the Source
-    /// Explorer's pre-1906 country-series resolution (issue #215). Keep in sync with
-    /// the identical pattern in `MacDocumentView.extractYear` and the inline extractor
-    /// in `SupportingViews`.
+    /// It first tries the strict "Month D, YYYY" parse (`CentralFilesClassifier.datelineDateISO`,
+    /// the same parse that drives roll/geo resolution downstream) so a stray 4-digit token in a
+    /// footnote-bearing dateline blob can't hijack the year via first-match. It then falls back to
+    /// a loose 18xx–20xx (through 2029) scan for datelines with no parseable Month-D-YYYY (e.g.
+    /// bare-year editorial notes). Widening to 18xx lets pre-1906 FRUS datelines reach the Source
+    /// Explorer's pre-1906 country-series resolution (issue #215). Keep in sync with the fallback
+    /// pattern in `MacDocumentView.extractYear` and the inline extractor in `SupportingViews`.
     static func extractYear(from dateline: String?) -> Int? {
         guard let dl = dateline else { return nil }
+        if let iso = CentralFilesClassifier.datelineDateISO(from: dl),
+           let year = Int(iso.prefix(4)) {
+            return year
+        }
         let pattern = #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(
