@@ -352,6 +352,9 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
+///   1.1 — Session 3 / #236: optional `scopeVolumeIds` recomputes every count and
+///          proportion from each administration's per-volume breakdown; coverage spans
+///          drop to `nil` under a scope (pre-aggregated scalars, not re-derivable)
 struct AdministrationProfilesData: Sendable {
 
     // MARK: Point types

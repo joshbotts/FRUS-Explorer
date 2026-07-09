@@ -397,4 +397,87 @@ struct AdministrationProfilesDataTests {
             volumeTotals: [:]
         )
     }
+
+    // MARK: Subseries scope (#236)
+
+    @Test("scope: counts recompute from the in-scope volumes' breakdown")
+    func scopeRecomputesFromBreakdown() {
+        // volA touches both alpha (50 point / 5 range) and beta (40 point / 10 range).
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false,
+                                              scopeVolumeIds: ["volA"])
+        let alpha = data.profiles.first { $0.id == "alpha" }
+        let beta = data.profiles.first { $0.id == "beta" }
+        #expect(alpha?.pointDocCount == 50)   // volA only (was 100 whole-series)
+        #expect(alpha?.rangeDocCount == 5)
+        #expect(alpha?.documentCount == 50)   // toggle off
+        #expect(alpha?.volumeCount == 1)      // one in-scope contributing volume
+        #expect(beta?.pointDocCount == 40)
+        #expect(beta?.volumeCount == 1)
+    }
+
+    @Test("scope: an administration no in-scope volume touches drops out")
+    func scopeDropsUntouchedAdministration() {
+        // volB touches only alpha; beta has no volB row → beta must disappear.
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false,
+                                              scopeVolumeIds: ["volB"])
+        #expect(data.profiles.map(\.id) == ["alpha"])
+        #expect(data.profiles.first?.pointDocCount == 50)
+    }
+
+    @Test("scope: the editorial-note toggle still applies under a scope")
+    func scopeHonorsEditorialToggle() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: true,
+                                              scopeVolumeIds: ["volA"])
+        // alpha volA: 50 point + 5 range = 55 with the toggle on.
+        #expect(data.profiles.first { $0.id == "alpha" }?.documentCount == 55)
+    }
+
+    @Test("scope: per-administration coverage span is dropped (cannot be re-derived per scope)")
+    func scopeDropsCoverageSpan() {
+        let scoped = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false,
+                                                scopeVolumeIds: ["volA"])
+        for profile in scoped.profiles {
+            #expect(profile.coverageEarliest == nil)
+            #expect(profile.coverageLatest == nil)
+        }
+        // Whole-series (nil scope) keeps the span.
+        let whole = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        #expect(whole.profiles.first { $0.id == "alpha" }?.coverageEarliest == 1970)
+    }
+
+    @Test("scope: nil scope is identical to the un-parameterised whole-series result")
+    func nilScopeUnchanged() {
+        let whole = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false)
+        let explicit = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false,
+                                                  scopeVolumeIds: nil)
+        #expect(whole.profiles.map(\.pointDocCount) == explicit.profiles.map(\.pointDocCount))
+        #expect(whole.profiles.map(\.documentCount) == explicit.profiles.map(\.documentCount))
+    }
+
+    @Test("scope: proportions restrict to in-scope volume rows")
+    func scopeRestrictsVolumeShares() {
+        let data = AdministrationProfilesData(index: fixture(), includeEditorialNotes: false,
+                                              scopeVolumeIds: ["volA"])
+        // alpha's share rows should now list only volA.
+        #expect(data.volumeShares(for: "alpha").map(\.id) == ["volA"])
+    }
+
+    // MARK: Bundled-index invariant (the scoped recompute's correctness rests on this)
+
+    @Test("bundled index: each administration's pointDocCount equals the sum of its volumes[] pointDocs")
+    func bundledIndexVolumeSumsMatchTotals() async {
+        // Under a whole-series (all-volume) scope the recompute sums volumes[]; it can only
+        // equal the pre-aggregated pointDocCount when volumes[] is complete (not truncated).
+        guard let index = await MainActor.run(body: { AdministrationProfilesStore().index }) else {
+            return // resource unavailable in this host — nothing to assert
+        }
+        for admin in index.administrations {
+            let summedPoint = admin.volumes.reduce(0) { $0 + $1.pointDocs }
+            let summedRange = admin.volumes.reduce(0) { $0 + $1.rangeDocs }
+            #expect(summedPoint == admin.pointDocCount,
+                    "\(admin.id): volumes[] pointDocs sum \(summedPoint) != pointDocCount \(admin.pointDocCount)")
+            #expect(summedRange == admin.rangeDocCount,
+                    "\(admin.id): volumes[] rangeDocs sum \(summedRange) != rangeDocCount \(admin.rangeDocCount)")
+        }
+    }
 }

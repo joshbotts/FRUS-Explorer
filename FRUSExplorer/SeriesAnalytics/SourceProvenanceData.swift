@@ -194,6 +194,10 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 ///   1.0 — Analytics SA-3b: initial implementation
 ///   1.1 — Analytics SA (x-axis bounds): `shareByDecade(in:)` / `notesByDecade(in:)`
 ///          year-range filters for the editable dashboard year range
+///   1.2 — Session 3 / #236: retains raw per-decade counts and adds
+///          `shareByDecade(in:excluding:)` / `overallComposition(excluding:)` — the
+///          category include/exclude filter, renormalizing shares exactly over the
+///          shown categories
 struct SourceProvenanceData: Sendable {
 
     /// The decade at which the over-time trend begins; earlier decades are the
