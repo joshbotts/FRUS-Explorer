@@ -64,6 +64,11 @@ import SwiftUI
 ///   2.3 — Session 2026-07-04 (macOS UI audit gap 12): pendingBrowseVolume observer —
 ///          Cross-Volume Provenance rows dismiss-and-navigate to the cited volume
 ///          (the volume-grain sibling of the pendingBrowseDocument observer)
+///   2.4 — Session 1 / #238 Fix B: iPad (regular width) now uses `stackLayout`
+///          (`NavigationStack`) instead of `splitLayout` (`NavigationSplitView`). The nested
+///          split inside the `.sidebarAdaptable` TabView overlaid content in the iPadOS
+///          floating-top-tab-bar representation; `splitLayout`/`SubseriesListView` are kept
+///          unreferenced for easy revert. Breadcrumb also suppressed at regular width (Fix A).
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -90,11 +95,18 @@ struct BrowserView: View {
         @Bindable var appState = appState
         Group {
             if let vm = viewModel {
-                if sizeClass == .regular {
-                    splitLayout(vm: vm)
-                } else {
-                    stackLayout(vm: vm)
-                }
+                // #238 Fix B: use the NavigationStack layout on every size class. A
+                // NavigationSplitView nested inside the `.sidebarAdaptable` TabView is an
+                // unsupported composition on iPadOS 26 — in the collapsed floating-top-tab-bar
+                // representation the nested detail column mis-computes its top safe area and
+                // overlays content that can't be scrolled into view. NavigationStack-per-tab is
+                // the shape Apple documents for `.sidebarAdaptable`: the tab sidebar remains the
+                // persistent rail and the subseries list is the stack root (`CorpusView`).
+                //
+                // `splitLayout` / `SubseriesListView` are retained (currently unreferenced) so
+                // this change can be reverted by restoring the `sizeClass == .regular` branch.
+                // See Planning/Issues-233-243-Plan.md Session 1 and BigPicture-iPadMacParity.md.
+                stackLayout(vm: vm)
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -221,6 +233,12 @@ struct BrowserView: View {
 
     // MARK: - Layout Variants
 
+    /// The iPad/regular-width two-column layout.
+    ///
+    /// **Currently unreferenced (#238 Fix B):** `body` routes every size class through
+    /// `stackLayout` because nesting this `NavigationSplitView` inside the `.sidebarAdaptable`
+    /// TabView overlaid content in the collapsed top-tab-bar representation. It is kept intact
+    /// so the change is a one-line revert (restore the `sizeClass == .regular` branch in `body`).
     @ViewBuilder
     private func splitLayout(vm: BrowserViewModel) -> some View {
         NavigationSplitView {

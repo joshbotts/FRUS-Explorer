@@ -46,8 +46,14 @@ import SwiftData
 ///          on Research tab (it is a navigation tool, not an inbox)
 ///   1.8 — Session 159: `.tabViewStyle(.sidebarAdaptable)` — iPad renders the tabs as a
 ///          native adaptive sidebar (BigPicture-iPadMacParity Phase 1); iPhone keeps the
-///          bottom tab bar unchanged. Each tab's own NavigationSplitView/Stack becomes
-///          the sidebar's detail content, so no nested split view is introduced.
+///          bottom tab bar unchanged.
+///   1.9 — Session 1 / #238: correction to 1.8 — a tab hosting its own `NavigationSplitView`
+///          *does* nest a split view under `.sidebarAdaptable`, and in the collapsed
+///          floating-top-tab-bar representation that nested column overlaid content that
+///          could not be scrolled into view. `BrowserView` now uses a `NavigationStack`
+///          (its `stackLayout`) on all size classes; `ResearchView`/`SettingsView` still
+///          nest splits and are tracked as a follow-up. Rule going forward: tabs under
+///          `.sidebarAdaptable` host a `NavigationStack`, not a `NavigationSplitView`.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
