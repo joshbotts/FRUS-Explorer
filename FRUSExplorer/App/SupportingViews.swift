@@ -232,7 +232,7 @@ struct ResearchStripView: View {
         }
         .sheet(isPresented: $showTagPicker) {
             if let entry {
-                MacTagPickerSheet(
+                UserTagPickerSheet(
                     entry: entry,
                     indexingPipeline: appState.indexingPipeline,
                     initialTagIds: Set(currentDocumentAssignments.map(\.tagId))
@@ -2324,249 +2324,10 @@ struct DocumentSharePopover: View {
     }
 }
 
-// MARK: - MacTagPickerSheet
+// The document-level user-tag picker is now the shared `UserTagPickerSheet`
+// (`DocumentView/UserTagPickerSheet.swift`), consolidated from the former
+// macOS `MacTagPickerSheet` and iOS `TagPickerSheetView` (Session 1 / #242).
 
-/// Document-level user-tag picker presented from `ResearchStripView`.
-///
-/// Lists all `UserTag` records from SwiftData and lets the user toggle which tags
-/// apply to this document. A "New Tag" field lets the user create tags inline.
-///
-/// ## Platform layout
-/// On macOS, `NavigationStack { List }` inside a `.sheet()` renders the list as a
-/// collapsed sidebar with an empty detail area, hiding all controls. The macOS body
-/// uses a plain `VStack` with explicit Cancel / Done buttons so all controls are always
-/// visible. The iOS body retains the `NavigationStack` toolbar approach.
-///
-/// ## Persistence
-/// On appear the view reads existing tag IDs from `IndexingPipeline.currentUserTagIds`
-/// and pre-populates the toggle list. When the user taps/clicks Done, the updated set is
-/// written back to both `document_cache` and the FTS5 index via
-/// `IndexingPipeline.updateUserTagIds`. If `indexingPipeline` is nil (document not yet
-/// indexed), the selection is a no-op and the sheet dismisses normally.
-///
-/// Version history:
-///   1.0 — Session 60+: initial scaffold (save was a no-op; stale comment referenced a
-///          non-existent DocumentUserTag model)
-///   1.1 — Session 121: loads existing tags on appear; saves via IndexingPipeline.updateUserTagIds
-///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
-///   1.2 — Session 129: split macOS / iOS bodies; macOS uses VStack + button-bar to prevent
-///          NavigationStack sidebar from hiding list content in a sheet presentation
-///   1.3 — Session 130: `documentTaggingGeneration` increment added so `ResearchView`
-///          reloads its SQLite-sourced tag data whenever tags are applied or removed
-struct MacTagPickerSheet: View {
-    let entry: DocumentBrowserEntry
-    let indexingPipeline: IndexingPipeline?
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Query(sort: \UserTag.name) private var allTags: [UserTag]
-    @State private var selectedTagIds: Set<UUID>
-    @State private var newTagName: String = ""
-    /// Tags inserted during this session — deleted if the user cancels rather than
-    /// saves, preventing orphan UserTag records when Cancel is tapped.
-    @State private var newlyCreatedTags: [UserTag] = []
-
-    init(entry: DocumentBrowserEntry,
-         indexingPipeline: IndexingPipeline?,
-         initialTagIds: Set<UUID>) {
-        self.entry = entry
-        self.indexingPipeline = indexingPipeline
-        _selectedTagIds = State(initialValue: initialTagIds)
-    }
-
-    var body: some View {
-        #if os(macOS)
-        macBody
-        #else
-        iOSBody
-        #endif
-    }
-
-    // MARK: - Tag List Content (shared between both platforms)
-
-    /// The toggle rows and new-tag field — same content on both platforms.
-    private var tagListContent: some View {
-        Group {
-            if allTags.isEmpty {
-                Section {
-                    Text(String(localized: "tags.picker.empty",
-                                defaultValue: "No user tags yet. Type a name below to create one."))
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                }
-            } else {
-                Section(String(localized: "tags.picker.section.yourTags",
-                               defaultValue: "Your Tags")) {
-                    ForEach(allTags) { tag in
-                        Toggle(isOn: Binding(
-                            get: { selectedTagIds.contains(tag.id) },
-                            set: { on in
-                                if on { selectedTagIds.insert(tag.id) }
-                                else  { selectedTagIds.remove(tag.id) }
-                            }
-                        )) {
-                            Text(tag.name)
-                        }
-                    }
-                }
-            }
-
-            Section(String(localized: "tags.picker.section.newTag", defaultValue: "New Tag")) {
-                HStack {
-                    TextField(String(localized: "tags.picker.newTag.placeholder",
-                                     defaultValue: "Tag name…"), text: $newTagName)
-                        .onSubmit { createTag() }
-                    Button(String(localized: "tags.picker.newTag.add",
-                                  defaultValue: "Add"), action: createTag)
-                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-        }
-    }
-
-    // MARK: - macOS Body
-
-    #if os(macOS)
-    private var macBody: some View {
-        VStack(spacing: 0) {
-            // Title bar
-            HStack {
-                Text(String(localized: "tags.picker.nav.title",
-                            defaultValue: "Tags"))
-                    .font(.headline)
-                if let docNum = entry.documentNumber {
-                    Text("— Doc \(docNum)")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-
-            Divider()
-
-            List {
-                tagListContent
-            }
-            .listStyle(.inset)
-
-            Divider()
-
-            // Button bar
-            HStack {
-                Button(String(localized: "tags.picker.cancel", defaultValue: "Cancel")) {
-                    cancelAndDismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Spacer()
-
-                Button(String(localized: "tags.picker.done", defaultValue: "Done")) {
-                    saveAndDismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-        }
-        .frame(minWidth: 340, minHeight: 300)
-    }
-    #endif
-
-    // MARK: - iOS Body
-
-    private var iOSBody: some View {
-        NavigationStack {
-            List {
-                tagListContent
-            }
-            .listStyle(.inset)
-            .navigationTitle(String(localized: "tags.picker.nav.title", defaultValue: "Tags"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "tags.picker.cancel",
-                                  defaultValue: "Cancel")) { cancelAndDismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "tags.picker.done",
-                                  defaultValue: "Done")) { saveAndDismiss() }
-                }
-            }
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func createTag() {
-        let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        let tag = UserTag(name: name)
-        modelContext.insert(tag)
-        newlyCreatedTags.append(tag)
-        selectedTagIds.insert(tag.id)
-        newTagName = ""
-    }
-
-    private func cancelAndDismiss() {
-        for tag in newlyCreatedTags { modelContext.delete(tag) }
-        dismiss()
-    }
-
-    private func saveAndDismiss() {
-        // SwiftData write and dismissal happen immediately on the main thread.
-        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
-        // on iPhone storage; running it in the background eliminates visible lag.
-        // For unindexed documents the FTS5 path is skipped entirely.
-        syncAssignmentsToSwiftData()
-        dismiss()
-        guard let pipeline = indexingPipeline else { return }
-        let tagString = selectedTagIds.isEmpty
-            ? nil
-            : selectedTagIds.map(\.uuidString).joined(separator: " ")
-        let vId = entry.volumeId
-        let dId = entry.documentId
-        Task.detached(priority: .utility) {
-            try? await pipeline.updateUserTagIds(
-                volumeId: vId,
-                documentId: dId,
-                userTagIds: tagString
-            )
-        }
-    }
-
-    /// Replaces all `DocumentTagAssignment` records for the current document with the
-    /// current `selectedTagIds` selection, then saves the context.
-    ///
-    /// This keeps `DocumentTagAssignment` (SwiftData/CloudKit) in sync with
-    /// `document_cache.user_tag_ids` (SQLite/FTS5) written by the pipeline.
-    private func syncAssignmentsToSwiftData() {
-        let vId = entry.volumeId
-        let dId = entry.documentId
-
-        // Delete all existing assignments for this document.
-        let descriptor = FetchDescriptor<DocumentTagAssignment>(
-            predicate: #Predicate<DocumentTagAssignment> { a in
-                a.volumeId == vId && a.documentId == dId
-            }
-        )
-        for assignment in (try? modelContext.fetch(descriptor)) ?? [] {
-            modelContext.delete(assignment)
-        }
-
-        // Insert a new assignment for each selected tag.
-        for tagId in selectedTagIds {
-            modelContext.insert(DocumentTagAssignment(
-                volumeId: vId, documentId: dId, tagId: tagId
-            ))
-        }
-
-        try? modelContext.save()
-    }
-}
 
 /// Popover that lists available summarization prompts for the document view.
 ///
@@ -3100,34 +2861,52 @@ private struct SubseriesVolumeListView: View {
 
     private func volumeRow(_ vol: VolumeManifestEntry) -> some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(vol.title)
-                    .font(.system(size: 12))
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    Text(vol.volumeId)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                    if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
-                        Label("Downloaded", systemImage: "arrow.down.circle.fill")
+            // Primary navigation is a Button, not a whole-row `.onTapGesture` (which is
+            // invisible to VoiceOver and unreachable by keyboard). The two accessory actions
+            // stay as separate trailing buttons; `CorpusVolumeDetailView`'s rows already use
+            // this Button(.plain) pattern.
+            Button {
+                path.append(.volume(volumeId: vol.volumeId))
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(vol.title)
+                        .font(.system(size: 12))
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        Text(vol.volumeId)
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
-                            .labelStyle(.titleAndIcon)
-                        if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
-                            Label("Indexed", systemImage: "checkmark.circle.fill")
+                        if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
+                            Label("Downloaded", systemImage: "arrow.down.circle.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.secondary)
+                                .labelStyle(.titleAndIcon)
+                            if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
+                                Label("Indexed", systemImage: "checkmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.green)
+                                    .labelStyle(.titleAndIcon)
+                            }
+                        } else if appState.downloadQueue.contains(vol.volumeId) {
+                            Label("Downloading", systemImage: "arrow.down.circle")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.blue)
                                 .labelStyle(.titleAndIcon)
                         }
-                    } else if appState.downloadQueue.contains(vol.volumeId) {
-                        Label("Downloading", systemImage: "arrow.down.circle")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.blue)
-                            .labelStyle(.titleAndIcon)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            Spacer()
+            .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "corpus.volume.row.a11y",
+                                       defaultValue: "Volume \(vol.volumeId), \(vol.title)"))
+            // The explicit label above replaces the content-derived one, which would
+            // otherwise have carried the status badges — restate them as the value so
+            // VoiceOver still reports download/index state.
+            .accessibilityValue(volumeStatusA11yValue(vol))
+            .accessibilityHint(String(localized: "corpus.volume.row.hint",
+                                      defaultValue: "Opens the volume's contents"))
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
@@ -3163,8 +2942,6 @@ private struct SubseriesVolumeListView: View {
             )
         }
         .padding(.vertical, 2)
-        .contentShape(Rectangle())
-        .onTapGesture { path.append(.volume(volumeId: vol.volumeId)) }
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
@@ -3174,55 +2951,31 @@ private struct SubseriesVolumeListView: View {
             }
         }
     }
-}
 
-// MARK: - BoundedTitleHeader
-
-/// A full, selectable volume/section title that heads a corpus-browser detail view but is
-/// bounded in height so it can never crowd out the content below it.
-///
-/// FRUS titles for older volumes carry appended clauses hundreds of characters long
-/// (`frus1865p4` runs 618) and are stored with the TEI source's embedded newlines and
-/// indentation, so they render as tall multi-line blocks. The corpus-browser detail column
-/// (`CorpusVolumeDetailView` / `CorpusSectionDocumentView`) is a **non-scrolling** `VStack`
-/// with the title above a greedy `List`/phase view; an unbounded `fixedSize` title there
-/// overflowed the fixed-height column and pushed the volume's contents entirely out of view.
-///
-/// This header measures the title's natural wrapped height and takes exactly that — up to
-/// `maxHeight`, beyond which it scrolls internally. Short titles hug their content (no empty
-/// band); paragraph-length titles are capped and scrollable, leaving the content list room
-/// to render. The full value also remains available via the window's navigation title.
-///
-/// Version history:
-///   1.0 — Session 2026-07-08: fixes the long-title blank-detail regression from the
-///          "complete long titles wrap on every platform" change (57f6b33)
-private struct BoundedTitleHeader: View {
-    /// The complete title text to display.
-    let title: String
-    /// The tallest the header may grow before it starts scrolling internally.
-    var maxHeight: CGFloat = 120
-
-    /// The title's natural wrapped height at the current column width, measured live.
-    @State private var naturalHeight: CGFloat = 0
-
-    var body: some View {
-        ScrollView(.vertical) {
-            Text(title)
-                .font(.headline)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
+    /// The download/index state of a volume as a VoiceOver value string, mirroring the
+    /// row's visual status badges (which live inside the navigation Button's label and are
+    /// therefore replaced by its explicit `accessibilityLabel`). Empty when the volume is
+    /// not downloaded and not downloading.
+    private func volumeStatusA11yValue(_ vol: VolumeManifestEntry) -> String {
+        if appState.downloadManager?.isVolumeDownloaded(vol.volumeId) == true {
+            if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
+                return String(localized: "corpus.volume.row.status.downloadedIndexed",
+                              defaultValue: "Downloaded and indexed")
+            }
+            return String(localized: "corpus.volume.row.status.downloaded",
+                          defaultValue: "Downloaded")
         }
-        // Hug short titles (height == natural), cap tall ones (height == maxHeight, scrolls).
-        // Starts at 0 before the first measurement — a briefly-collapsed header is harmless,
-        // whereas a nil/greedy height would reintroduce the very overflow this guards against.
-        .frame(height: min(naturalHeight, maxHeight))
-        .scrollDisabled(naturalHeight <= maxHeight)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        if appState.downloadQueue.contains(vol.volumeId) {
+            return String(localized: "corpus.volume.row.status.downloading",
+                          defaultValue: "Downloading")
+        }
+        return ""
     }
 }
+
+// `BoundedTitleHeader` — the height-bounded full-title header used by the corpus-browser
+// detail columns below — now lives in its own file, `App/BoundedTitleHeader.swift`
+// (extracted Session 1 / #238 so it is reusable and Dynamic-Type-aware).
 
 // MARK: - CorpusVolumeDetailView
 
@@ -3253,6 +3006,9 @@ private struct BoundedTitleHeader: View {
 ///   1.5 — Session 2026-07-08: the full-title header is now `BoundedTitleHeader` (height
 ///          capped, scrolls when longer) — an unbounded `fixedSize` title overflowed the
 ///          non-scrolling column and blanked the volume's contents for long-titled volumes
+///   1.6 — Session 1 / #238 hardening: `indexingView` is wrapped in a `ScrollView` so its
+///          discovered-metadata row and context card can't be clipped at the window's
+///          minimum height (`BoundedTitleHeader` now lives in `App/BoundedTitleHeader.swift`)
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -3481,42 +3237,48 @@ private struct CorpusVolumeDetailView: View {
     }
 
     private var indexingView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Indexing Volume", systemImage: "arrow.triangle.2.circlepath")
-                .font(.headline)
-            if let prog = liveProgress, prog.totalDocuments > 0 {
-                ProgressView(value: Double(prog.completedDocuments),
-                             total: Double(prog.totalDocuments))
-                HStack {
-                    Text(indexingStageLabel(prog.stage))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(prog.completedDocuments) / \(prog.totalDocuments)")
-                        .font(.callout.monospacedDigit())
-                        .foregroundStyle(.secondary)
+        // Wrapped in a ScrollView so the discovered-metadata row and the indexing-context
+        // card can't be clipped at the corpus-browser window's minimum height (#238 hardening
+        // — this phase is not a List, so a ScrollView is the right fix here; the List phases
+        // are never wrapped, which would break their own scrolling).
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Indexing Volume", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.headline)
+                if let prog = liveProgress, prog.totalDocuments > 0 {
+                    ProgressView(value: Double(prog.completedDocuments),
+                                 total: Double(prog.totalDocuments))
+                    HStack {
+                        Text(indexingStageLabel(prog.stage))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(prog.completedDocuments) / \(prog.totalDocuments)")
+                            .font(.callout.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Preparing…")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            } else {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text("Preparing…")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                if let meta = appState.lastDiscoveredMetadata,
+                   meta.volumeId == volume.volumeId {
+                    DiscoveredMetadataRow(metadata: meta)
                 }
+                IndexingContextCard(
+                    volume: volume,
+                    metadata: appState.lastDiscoveredMetadata.flatMap {
+                        $0.volumeId == volume.volumeId ? $0 : nil
+                    }
+                )
             }
-            if let meta = appState.lastDiscoveredMetadata,
-               meta.volumeId == volume.volumeId {
-                DiscoveredMetadataRow(metadata: meta)
-            }
-            IndexingContextCard(
-                volume: volume,
-                metadata: appState.lastDiscoveredMetadata.flatMap {
-                    $0.volumeId == volume.volumeId ? $0 : nil
-                }
-            )
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder

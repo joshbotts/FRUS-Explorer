@@ -507,10 +507,15 @@ private struct TagPickerRow: View {
                 if isActive {
                     Image(systemName: "checkmark")
                         .foregroundStyle(Color.accentColor)
+                        // Decorative: the selected state is conveyed by the .isSelected trait.
+                        .accessibilityHidden(true)
                 }
             }
         }
         .buttonStyle(.plain)
+        // VoiceOver announces which taxonomy filters are active; the visual checkmark
+        // alone is invisible to it (#242 session a11y rider).
+        .accessibilityAddTraits(isActive ? [.isSelected] : [])
     }
 }
 

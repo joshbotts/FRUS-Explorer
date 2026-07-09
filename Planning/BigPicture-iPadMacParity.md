@@ -41,6 +41,20 @@ nested split. The `iPadRootView`/`NavigationSplitView` design in Phase 1 below
 is therefore superseded and kept only for historical context. A future
 enhancement could add `TabSection` grouping for sidebar section headers.
 
+**Correction (Session 1 / #238):** the claim above that `.sidebarAdaptable`
+introduces "no nested split" was wrong. A tab that *itself* hosts a
+`NavigationSplitView` (`BrowserView.splitLayout`, `ResearchView`) still nests a
+split view under the adaptable TabView — and in the collapsed *floating top
+tab-bar* representation (which Session 159 never exercised — it verified only
+the leading-sidebar representation) the nested detail column mis-computes its
+top safe area and overlays content that cannot be scrolled into view. The fix:
+`BrowserView` now uses a `NavigationStack` (its `stackLayout`) on iPad too, so
+the subseries list becomes the stack root and the TabView's adaptive sidebar is
+the only rail. **Guard rule going forward: a tab under `.sidebarAdaptable`
+hosts a `NavigationStack`, not a `NavigationSplitView`.** `ResearchView` and
+`SettingsView` still nest splits and are tracked as a follow-up issue (verify
+reproduction, then flatten the same way).
+
 ---
 
 ## Problem Statement

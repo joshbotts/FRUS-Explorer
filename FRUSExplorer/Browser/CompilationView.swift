@@ -63,6 +63,9 @@ import SwiftUI
 ///          Provenance sheet joined the `#if os(iOS)` block — on macOS
 ///          `VolumeSourcesView` opens the value-based Cross-Volume Provenance
 ///          window directly, so `crossVolumeTarget` is never set there
+///   2.0 — Session 1 / #237: iOS two-line principal nav-bar title
+///          (`TwoLineNavTitleView`) matching `VolumeView`; the in-content full title
+///          gains the `.isHeader` trait for the headings rotor
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -107,6 +110,8 @@ struct CompilationView: View {
                     .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
+                    // Canonical full-title display; expose to the VoiceOver headings rotor.
+                    .accessibilityAddTraits(.isHeader)
             }
 
             // Subsection navigation if this section has subsections
@@ -127,6 +132,13 @@ struct CompilationView: View {
         // Inline (not large) title: the full title now heads the content list, so the
         // large title would only restate a truncated copy of it.
         .navigationBarTitleDisplayMode(.inline)
+        // Two-line principal title so long chapter/compilation titles show their
+        // distinctive tail past the boilerplate prefix; the full title heads the list. (#237)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                TwoLineNavTitleView(title: section.title)
+            }
+        }
         #endif
         .task {
             guard volume != nil else { return }

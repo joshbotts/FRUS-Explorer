@@ -7,13 +7,19 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import XCTest
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// UI tests verifying that composed views do not obstruct interactive content.
 ///
-/// Three obstruction scenarios are exercised:
+/// Four obstruction scenarios are exercised:
 ///   1. Tab bar (bottom) — does not cover the last row in a browser list
 ///   2. Breadcrumb bar (top safeAreaInset) — does not cover the first row of a pushed view
 ///   3. Software keyboard — does not cover the citation lookup field in CitationLookupView
+///   4. iPad `.sidebarAdaptable` representations — Browse content stays reachable in BOTH
+///      the leading-sidebar and floating-top-tab-bar representations, asserted before and
+///      after a live toggle (#238)
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
@@ -33,9 +39,32 @@ import XCTest
 ///          `CitationLookupView` (Search tab → "Find by citation") since the
 ///          "Activity tab → New Project" flow it previously exercised no longer
 ///          exists on iOS
+///   1.2 — Session 1 / #238: added scenario 4 (iPad sidebar → floating top tab bar);
+///          the Browse-tab guards resolve the control across bottom-bar / sidebar /
+///          top-bar representations and now fail loudly instead of silently skipping
+///          on iPad.
+///   1.3 — Session 1 review pass: scenario 4 made representation-agnostic — it asserts
+///          content hittability in the launch representation AND after toggling, using a
+///          content-specific subseries cell (sidebar tab rows are also `cells` and were
+///          trivially hittable). A single blind toggle could otherwise assert only the
+///          never-broken sidebar mode when a prior aborted run leaked the persisted
+///          representation.
+//
+// Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
+// actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
+// context` warnings on every UI call throughout the file. These are pre-existing and
+// SDK-driven (they cover the original scenarios 1–3 too); `@MainActor` on the class would
+// silence them but conflicts with the throwing `setUpWithError`/`tearDownWithError`
+// overrides ("sending self"), so they are left as-is. The app-target zero-warning gate
+// (`CodingStandardsAuditTests`) does not cover this UI-test target.
 final class UIObstructionTests: XCTestCase {
 
     var app: XCUIApplication!
+
+    /// Set when scenario 4 toggles the iPad sidebar representation, so `tearDown` can
+    /// restore it (the representation is system-persisted per install and would otherwise
+    /// leak into later tests / runs).
+    private var didToggleSidebar = false
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -46,7 +75,57 @@ final class UIObstructionTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        if didToggleSidebar, let toggle = sidebarToggleButton(), toggle.exists {
+            toggle.tap()
+            didToggleSidebar = false
+        }
         app = nil
+    }
+
+    // MARK: - Helpers
+
+    /// Selects the Browse section, resolving the control across the iPhone bottom tab bar
+    /// and the iPad `.sidebarAdaptable` sidebar / floating-top-tab-bar representations
+    /// (where the tab items surface as buttons, sidebar cells, or plain labelled elements
+    /// depending on the representation). Fails the test (rather than silently skipping, as
+    /// the earlier `if browseTab.exists` guards did on iPad) when no Browse control can be
+    /// found — and dumps the element tree so the failure describes what it actually saw.
+    @discardableResult
+    private func selectBrowseSection() -> Bool {
+        // Every candidate is resolved with .firstMatch: some representations expose more
+        // than one element labelled "Browse" (e.g. the collapsed top bar plus the sidebar
+        // row mid-transition), and tapping an ambiguous element fails with
+        // "multiple matching elements found".
+        let candidates = [
+            app.tabBars.firstMatch.buttons["Browse"].firstMatch,
+            app.buttons["Browse"].firstMatch,
+            app.cells["Browse"].firstMatch,
+            app.cells.containing(NSPredicate(format: "label CONTAINS[c] 'Browse'")).firstMatch,
+            app.descendants(matching: .any).matching(
+                NSPredicate(format: "label == 'Browse'")).firstMatch,
+        ]
+        for control in candidates where control.waitForExistence(timeout: 3) {
+            control.tap()
+            return true
+        }
+        print("[UIObstructionTests] Browse control not found; element tree:\n\(app.debugDescription)")
+        XCTFail("Could not find a 'Browse' control in any tab-bar / sidebar representation "
+                + "(element tree printed to the test log)")
+        return false
+    }
+
+    /// The OS-provided control that toggles the `.sidebarAdaptable` TabView between its
+    /// leading-sidebar and floating-top-tab-bar representations. On iPadOS 26 it carries the
+    /// stable accessibility identifier `ToggleSideBar` (label "Toggle sidebar" — confirmed by
+    /// a live simulator run); the fuzzy label predicate remains as a fallback for OS versions
+    /// that rename the identifier. Callers must treat a `nil` result as "skip".
+    private func sidebarToggleButton() -> XCUIElement? {
+        let byIdentifier = app.buttons["ToggleSideBar"]
+        if byIdentifier.exists { return byIdentifier }
+        let predicate = NSPredicate(format:
+            "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
+        let matches = app.buttons.matching(predicate)
+        return matches.count > 0 ? matches.firstMatch : nil
     }
 
     // MARK: - 1. Tab bar does not obstruct the last browser row
@@ -64,11 +143,7 @@ final class UIObstructionTests: XCTestCase {
     /// remains permanently obscured no matter how far the user scrolls.
     func testTabBarNotObstructingLastBrowserRow() throws {
         // The Browse tab is selected by default; confirm we are in the browser.
-        // On iOS the tab bar item is labelled "Browse".
-        let browseTab = app.tabBars.firstMatch.buttons["Browse"]
-        if browseTab.exists {
-            browseTab.tap()
-        }
+        selectBrowseSection()
 
         // The corpus list (CorpusView) shows subseries groups as rows.
         // Wait for at least one cell to appear before scrolling.
@@ -110,10 +185,7 @@ final class UIObstructionTests: XCTestCase {
     /// underreported and the first row slides beneath it.
     func testBreadcrumbBarNotObstructingFirstRow() throws {
         // Ensure we are on the Browse tab.
-        let browseTab = app.tabBars.firstMatch.buttons["Browse"]
-        if browseTab.exists {
-            browseTab.tap()
-        }
+        selectBrowseSection()
 
         // Wait for the corpus list to load then tap the first cell to navigate in.
         let firstCell = app.cells.firstMatch
@@ -197,6 +269,95 @@ final class UIObstructionTests: XCTestCase {
         XCTAssertTrue(
             pasteField.isHittable,
             "Citation paste field is not hittable after keyboard appeared — keyboard may be covering it"
+        )
+    }
+
+    // MARK: - 4. iPad tab-bar representations do not obstruct Browse content
+
+    /// A Browse content cell (corpus subseries row), excluding any sidebar tab rows the
+    /// `.sidebarAdaptable` sidebar representation exposes as cells — those are trivially
+    /// hittable and would let an obstruction assertion pass without testing content.
+    private var corpusContentCell: XCUIElement {
+        app.cells.containing(NSPredicate(format: "label BEGINSWITH 'Subseries'")).firstMatch
+    }
+
+    /// On iPad the tabs render via `.tabViewStyle(.sidebarAdaptable)`, which the user can
+    /// toggle between a leading sidebar and a floating top tab bar. In the top-tab-bar
+    /// representation a `NavigationSplitView` nested inside the TabView mis-computed the
+    /// Browse detail column's top safe area and overlaid content that could not be scrolled
+    /// into view (#238).
+    ///
+    /// The representation is system-persisted per install, the OS toggle is direction-blind
+    /// (one control, no state readback), and a fresh install can launch in EITHER
+    /// representation — so rather than assuming which mode a single tap lands in, this test
+    /// asserts content hittability in the launch representation, toggles, and asserts again
+    /// in the other representation. Both modes are always exercised regardless of persisted
+    /// state, so a leaked representation from an aborted earlier run cannot green-light the
+    /// buggy mode.
+    ///
+    /// The sidebar toggle is an OS-provided control (`ToggleSideBar` on iPadOS 26); the test
+    /// **skips gracefully** (`XCTSkip`) when it cannot be located rather than failing on an
+    /// iPadOS version where the affordance moved. It restores the representation in
+    /// `tearDown`. iPhone destinations skip (no sidebar representation exists).
+    func testBothTabBarRepresentationsDoNotObstructBrowseContent() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: exercises the .sidebarAdaptable representations"
+        )
+        #else
+        throw XCTSkip("iPad-only test")
+        #endif
+
+        guard let toggle = sidebarToggleButton(), toggle.waitForExistence(timeout: 5) else {
+            throw XCTSkip("Could not locate the system sidebar/tab-bar toggle on this iPadOS version")
+        }
+
+        // Representation A — whatever the install launched in.
+        selectBrowseSection()
+        XCTAssertTrue(
+            corpusContentCell.waitForExistence(timeout: 10),
+            "Corpus subseries rows did not appear in the launch representation"
+        )
+        app.swipeDown(velocity: .fast) // ensure we are scrolled to the top
+        XCTAssertTrue(
+            corpusContentCell.isHittable,
+            "First subseries row is not hittable in the launch tab-bar representation — "
+                + "chrome may be overlaying content (#238)"
+        )
+
+        // Representation B — toggle (sidebar ⇄ floating top tab bar) and re-assert. The bug
+        // is transition-sensitive — the size class stays .regular, so Browse never
+        // re-evaluates its layout on the switch. Log the matched control for diagnosis.
+        print("[UIObstructionTests] Tapping representation toggle: label='\(toggle.label)' id='\(toggle.identifier)'")
+        toggle.tap()
+        didToggleSidebar = true
+        Thread.sleep(forTimeInterval: 0.7)
+
+        XCTAssertTrue(
+            corpusContentCell.waitForExistence(timeout: 10),
+            "Corpus subseries rows did not appear after toggling the tab-bar representation"
+        )
+        app.swipeDown(velocity: .fast)
+        XCTAssertTrue(
+            corpusContentCell.isHittable,
+            "First subseries row is not hittable after toggling the tab-bar representation — "
+                + "chrome may be overlaying content (#238)"
+        )
+
+        // Drill one level in (still representation B); the pushed level's content must also
+        // be reachable. The subseries row label is "Subseries <id>, N volumes"; the pushed
+        // SubseriesView lists volume rows.
+        corpusContentCell.tap()
+        let pushedFirstCell = app.cells.firstMatch
+        XCTAssertTrue(
+            pushedFirstCell.waitForExistence(timeout: 5),
+            "Pushed browser level cells did not appear after the representation toggle"
+        )
+        app.swipeDown(velocity: .fast)
+        XCTAssertTrue(
+            app.cells.firstMatch.isHittable,
+            "First row of the pushed Browse level is not hittable after the representation toggle (#238)"
         )
     }
 }

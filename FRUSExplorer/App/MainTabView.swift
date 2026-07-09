@@ -46,8 +46,14 @@ import SwiftData
 ///          on Research tab (it is a navigation tool, not an inbox)
 ///   1.8 — Session 159: `.tabViewStyle(.sidebarAdaptable)` — iPad renders the tabs as a
 ///          native adaptive sidebar (BigPicture-iPadMacParity Phase 1); iPhone keeps the
-///          bottom tab bar unchanged. Each tab's own NavigationSplitView/Stack becomes
-///          the sidebar's detail content, so no nested split view is introduced.
+///          bottom tab bar unchanged.
+///   1.9 — Session 1 / #238: correction to 1.8 — a tab hosting its own `NavigationSplitView`
+///          *does* nest a split view under `.sidebarAdaptable`, and in the collapsed
+///          floating-top-tab-bar representation that nested column overlaid content that
+///          could not be scrolled into view. `BrowserView` now uses a `NavigationStack`
+///          (its `stackLayout`) on all size classes; `ResearchView`/`SettingsView` still
+///          nest splits and are tracked as a follow-up. Rule going forward: tabs under
+///          `.sidebarAdaptable` host a `NavigationStack`, not a `NavigationSplitView`.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -102,13 +108,15 @@ struct MainTabView: View {
             // a specific count.
             .badge(appState.unindexedVolumeCount > 0 ? "·" : "")
         }
-        // iPad (regular width) renders the tabs as a native adaptive sidebar — the
-        // macOS-like layout researchers expect on a keyboard/trackpad iPad — while
-        // iPhone (compact width) automatically falls back to the bottom tab bar, so
-        // the phone experience is unchanged. Each tab keeps its own internal
-        // navigation (e.g. BrowserView's / ResearchView's NavigationSplitView),
-        // which becomes the sidebar's detail content rather than nesting a second
-        // split. (BigPicture-iPadMacParity Phase 1.)
+        // iPad renders the tabs as a native adaptive sidebar (toggleable to a floating
+        // top tab bar) — the macOS-like layout researchers expect on a keyboard/trackpad
+        // iPad — while iPhone automatically keeps the bottom tab bar, so the phone
+        // experience is unchanged. GUARD RULE (#238, see version history 1.9): a tab's
+        // content must host a NavigationStack, NOT a NavigationSplitView — a nested split
+        // mis-computes its top safe area under the floating top tab bar and overlays
+        // content. BrowserView complies (stackLayout on all size classes); ResearchView
+        // and SettingsView still nest splits and are tracked as a follow-up.
+        // (BigPicture-iPadMacParity Phase 1 + #238 correction.)
         .tabViewStyle(.sidebarAdaptable)
         // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
         // sheet presents over whichever tab is active and clears it on dismiss.

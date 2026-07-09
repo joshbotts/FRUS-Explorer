@@ -575,7 +575,7 @@ struct DocumentView: View {
                     documentId: entry.documentId
                 )
             case .tagPicker:
-                TagPickerSheetView(
+                UserTagPickerSheet(
                     entry: entry,
                     indexingPipeline: appState.indexingPipeline,
                     initialTagIds: Set(documentTagAssignments.map(\.tagId))
@@ -2629,173 +2629,10 @@ private struct GlossDetailSheet: View {
     }
 }
 
-// MARK: - TagPickerSheetView (iOS)
+// The iOS document-level user-tag picker is now the shared `UserTagPickerSheet`
+// (`DocumentView/UserTagPickerSheet.swift`), consolidated with the former macOS
+// `MacTagPickerSheet` (Session 1 / #242).
 
-/// iOS document-level user-tag picker.
-///
-/// Lists all `UserTag` records from SwiftData and lets the user toggle which tags
-/// apply to this document. A "New Tag" field lets the user create tags inline.
-/// Presented from `DocumentView`'s toolbar "Tag Document" button.
-///
-/// ## Persistence
-/// On appear the view reads the current tag IDs stored in `IndexingPipeline`'s
-/// `document_cache` and pre-populates `selectedTagIds`. When the user taps Done,
-/// the updated set is written back to both `document_cache` and the FTS5 index via
-/// `IndexingPipeline.updateUserTagIds`. If `indexingPipeline` is nil (document not
-/// yet indexed), the selection is a no-op and the sheet dismisses normally.
-///
-/// Version history:
-///   1.0 — Session 120: initial implementation; replaces empty Session-14 stub
-///   1.1 — Session 121: loads existing tags on appear; saves via IndexingPipeline.updateUserTagIds
-///          on Done (Bug 2 — selection was stored in @State only, lost on dismiss)
-///   1.2 — Session 130: `documentTaggingGeneration` increment added
-private struct TagPickerSheetView: View {
-
-    let entry: DocumentBrowserEntry
-    let indexingPipeline: IndexingPipeline?
-
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Query(sort: \UserTag.name) private var allTags: [UserTag]
-    @State private var selectedTagIds: Set<UUID>
-    @State private var newTagName: String = ""
-    /// Tags inserted during this session — deleted if the user cancels rather than
-    /// saves, preventing orphan UserTag records when Cancel is tapped.
-    @State private var newlyCreatedTags: [UserTag] = []
-
-    init(entry: DocumentBrowserEntry,
-         indexingPipeline: IndexingPipeline?,
-         initialTagIds: Set<UUID>) {
-        self.entry = entry
-        self.indexingPipeline = indexingPipeline
-        _selectedTagIds = State(initialValue: initialTagIds)
-    }
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if allTags.isEmpty {
-                    Section {
-                        Text(String(localized: "document.tags.empty",
-                                    defaultValue: "No tags yet. Type a name below to create one."))
-                            .foregroundStyle(.secondary)
-                            .font(.callout)
-                    }
-                } else {
-                    Section(String(localized: "document.tags.yourTags",
-                                   defaultValue: "Your Tags")) {
-                        ForEach(allTags) { tag in
-                            Toggle(isOn: Binding(
-                                get: { selectedTagIds.contains(tag.id) },
-                                set: { on in
-                                    if on { selectedTagIds.insert(tag.id) }
-                                    else  { selectedTagIds.remove(tag.id) }
-                                }
-                            )) {
-                                Text(tag.name)
-                            }
-                        }
-                    }
-                }
-
-                Section(String(localized: "document.tags.newTag",
-                               defaultValue: "New Tag")) {
-                    HStack {
-                        TextField(
-                            String(localized: "document.tags.newTag.placeholder",
-                                   defaultValue: "Tag name…"),
-                            text: $newTagName
-                        )
-                        .onSubmit { createTag() }
-                        Button(
-                            String(localized: "document.tags.addButton",
-                                   defaultValue: "Add"),
-                            action: createTag
-                        )
-                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                }
-            }
-            .navigationTitle(
-                String(
-                    localized: "document.tags.sheet.title",
-                    defaultValue: "Tags — \(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)"
-                )
-            )
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "document.tags.cancel",
-                                  defaultValue: "Cancel")) { cancelAndDismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "document.tags.done",
-                                  defaultValue: "Done")) {
-                        saveAndDismiss()
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-    }
-
-    private func createTag() {
-        let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        let tag = UserTag(name: name)
-        modelContext.insert(tag)
-        newlyCreatedTags.append(tag)
-        selectedTagIds.insert(tag.id)
-        newTagName = ""
-    }
-
-    private func cancelAndDismiss() {
-        for tag in newlyCreatedTags { modelContext.delete(tag) }
-        dismiss()
-    }
-
-    private func saveAndDismiss() {
-        // SwiftData write and sheet dismissal happen immediately on the main thread.
-        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
-        // on iPhone storage; running it in the background eliminates the visible lag.
-        syncAssignmentsToSwiftData()
-        dismiss()
-        guard let pipeline = indexingPipeline else { return }
-        let tagString = selectedTagIds.isEmpty
-            ? nil
-            : selectedTagIds.map(\.uuidString).joined(separator: " ")
-        let vId = entry.volumeId
-        let dId = entry.documentId
-        Task.detached(priority: .utility) {
-            try? await pipeline.updateUserTagIds(
-                volumeId: vId,
-                documentId: dId,
-                userTagIds: tagString
-            )
-        }
-    }
-
-    /// Identical to MacTagPickerSheet.syncAssignmentsToSwiftData() — see that method
-    /// for documentation. Separate copy for this iOS-only private struct.
-    private func syncAssignmentsToSwiftData() {
-        let vId = entry.volumeId
-        let dId = entry.documentId
-        let descriptor = FetchDescriptor<DocumentTagAssignment>(
-            predicate: #Predicate<DocumentTagAssignment> { a in
-                a.volumeId == vId && a.documentId == dId
-            }
-        )
-        for assignment in (try? modelContext.fetch(descriptor)) ?? [] {
-            modelContext.delete(assignment)
-        }
-        for tagId in selectedTagIds {
-            modelContext.insert(DocumentTagAssignment(
-                volumeId: vId, documentId: dId, tagId: tagId
-            ))
-        }
-        try? modelContext.save()
-    }
-}
 
 // MARK: - CollectionPickerSheetView (iOS)
 

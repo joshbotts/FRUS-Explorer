@@ -64,6 +64,14 @@ import SwiftUI
 ///   2.3 — Session 2026-07-04 (macOS UI audit gap 12): pendingBrowseVolume observer —
 ///          Cross-Volume Provenance rows dismiss-and-navigate to the cited volume
 ///          (the volume-grain sibling of the pendingBrowseDocument observer)
+///   2.4 — Session 1 / #238 Fix B: iPad (regular width) now uses `stackLayout`
+///          (`NavigationStack`) instead of `splitLayout` (`NavigationSplitView`). The nested
+///          split inside the `.sidebarAdaptable` TabView overlaid content in the iPadOS
+///          floating-top-tab-bar representation; `splitLayout`/`SubseriesListView` are kept
+///          unreferenced for easy revert. Breadcrumb also suppressed at regular width (Fix A).
+///   2.5 — Session 1 review: Fix A's breadcrumb suppression gated on pad idiom + regular
+///          width (size class alone also fired on Plus/Max iPhones in landscape, where the
+///          bottom tab bar never occludes the bar)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -90,11 +98,18 @@ struct BrowserView: View {
         @Bindable var appState = appState
         Group {
             if let vm = viewModel {
-                if sizeClass == .regular {
-                    splitLayout(vm: vm)
-                } else {
-                    stackLayout(vm: vm)
-                }
+                // #238 Fix B: use the NavigationStack layout on every size class. A
+                // NavigationSplitView nested inside the `.sidebarAdaptable` TabView is an
+                // unsupported composition on iPadOS 26 — in the collapsed floating-top-tab-bar
+                // representation the nested detail column mis-computes its top safe area and
+                // overlays content that can't be scrolled into view. NavigationStack-per-tab is
+                // the shape Apple documents for `.sidebarAdaptable`: the tab sidebar remains the
+                // persistent rail and the subseries list is the stack root (`CorpusView`).
+                //
+                // `splitLayout` / `SubseriesListView` are retained (currently unreferenced) so
+                // this change can be reverted by restoring the `sizeClass == .regular` branch.
+                // See Planning/Issues-233-243-Plan.md Session 1 and BigPicture-iPadMacParity.md.
+                stackLayout(vm: vm)
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -221,6 +236,12 @@ struct BrowserView: View {
 
     // MARK: - Layout Variants
 
+    /// The iPad/regular-width two-column layout.
+    ///
+    /// **Currently unreferenced (#238 Fix B):** `body` routes every size class through
+    /// `stackLayout` because nesting this `NavigationSplitView` inside the `.sidebarAdaptable`
+    /// TabView overlaid content in the collapsed top-tab-bar representation. It is kept intact
+    /// so the change is a one-line revert (restore the `sizeClass == .regular` branch in `body`).
     @ViewBuilder
     private func splitLayout(vm: BrowserViewModel) -> some View {
         NavigationSplitView {
@@ -328,13 +349,18 @@ struct BrowserView: View {
     /// (triggered by any change to `vm.navigationPath`), SwiftUI cannot diff through `AnyView`
     /// and recreates the wrapped view, resetting `@State` and restarting document loading.
     ///
-    /// ## Breadcrumb suppression at the document level
-    /// `BrowserBreadcrumbBar` is not shown when `level == .document`. A full-path breadcrumb
-    /// at the document level wraps to multiple rows on narrow screens (the `BreadcrumbFlowLayout`
-    /// path can reach 4–5 crumbs, each row ~36 pt, totalling ~100 pt). This tall bar sits as a
-    /// `.safeAreaInset` overlay and blocks the document header and initial body content. The
-    /// navigation bar title (inline document header) and the navigation back button are
-    /// sufficient for navigation once inside a document.
+    /// ## Breadcrumb suppression
+    /// `BrowserBreadcrumbBar` is a pinned `.safeAreaInset(edge: .top)` overlay. It is suppressed in
+    /// two cases:
+    ///  - **Regular-width iPad (#238):** under the iPadOS floating top tab bar (the collapsed
+    ///    `.sidebarAdaptable` representation) a pinned top inset is drawn beneath the tab bar and
+    ///    cannot be scrolled into view. The tab sidebar and the navigation back button convey
+    ///    location on iPad, so the bar is dropped when the pad idiom reports regular width
+    ///    (Plus/Max iPhones in landscape and compact-width iPads keep the bottom tab bar and
+    ///    keep the breadcrumb).
+    ///  - **Document level (any width, Session 121):** a full corpus-to-document path wraps to
+    ///    2–3 rows (~100 pt) and, as a `.safeAreaInset` overlay, blocks the document header and
+    ///    initial body content. The inline document title and back button suffice inside a document.
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
         Group {
@@ -348,8 +374,22 @@ struct BrowserView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            // Suppress the breadcrumb bar at the document level (see doc comment above).
-            if case .document = level {
+            // Breadcrumb suppression (see doc comment above):
+            //  - iPad (#238): a pinned `.safeAreaInset` breadcrumb is occluded by the iPadOS
+            //    floating top tab bar (`.sidebarAdaptable`) and cannot be scrolled into view.
+            //    The tab sidebar and the navigation back button convey location instead.
+            //    Rendering `EmptyView` (rather than hiding a laid-out bar) keeps the crumbs
+            //    out of the accessibility tree too — no hidden-but-focusable chrome for
+            //    VoiceOver / keyboard users. Gated on the pad idiom AND regular width, NOT
+            //    size class alone: Plus/Max iPhones report regular width in landscape but
+            //    keep the bottom tab bar (no occlusion, no sidebar rail), and a compact-width
+            //    iPad (Slide Over / narrow Split View) also shows the bottom tab bar, where
+            //    the breadcrumb is safe and useful.
+            //  - Document level (any width, Session 121): the wrapped multi-row path blocks
+            //    the document header.
+            if UIDevice.current.userInterfaceIdiom == .pad && sizeClass == .regular {
+                EmptyView()
+            } else if case .document = level {
                 EmptyView()
             } else {
                 BrowserBreadcrumbBar(path: vm.navigationPath) { index in
