@@ -38,6 +38,11 @@ import SwiftData
 ///          `TagPickerSheetView` (v1.2). Behaviour preserved on both platforms; the macOS
 ///          title's "— Doc N" fragment is now localized and the title reads as one
 ///          accessibility element. The `tags.picker.*` localization family is retained.
+///   1.1 — Session 1 / #242: tags created in this sheet session are pinned to the top of
+///          "Your Tags" (newest-first, with a "New" badge) instead of materialising at their
+///          alphabetical position off-screen; the New Tag field moves above the list so
+///          creation and the pinned tag are co-located; creating a tag moves VoiceOver focus
+///          onto the new row and announces it.
 struct UserTagPickerSheet: View {
     let entry: DocumentBrowserEntry
     let indexingPipeline: IndexingPipeline?
@@ -48,7 +53,14 @@ struct UserTagPickerSheet: View {
     @State private var newTagName: String = ""
     /// Tags inserted during this session — deleted if the user cancels rather than
     /// saves, preventing orphan `UserTag` records when Cancel is tapped.
+    ///
+    /// This array is also the *source of truth for the pin-to-top ordering* (#242): it is
+    /// synchronous state, so a freshly created tag can be shown at the top of the list
+    /// immediately, without waiting for the alphabetical `@Query` (`allTags`) to refresh.
     @State private var newlyCreatedTags: [UserTag] = []
+    /// Drives VoiceOver focus onto a tag row the moment it is created, confirming the
+    /// creation to a VoiceOver user even though the field they were typing in is elsewhere.
+    @AccessibilityFocusState private var focusedTagID: UUID?
 
     init(entry: DocumentBrowserEntry,
          indexingPipeline: IndexingPipeline?,
@@ -68,10 +80,40 @@ struct UserTagPickerSheet: View {
 
     // MARK: - Tag List Content (shared between both platforms)
 
+    /// Set of IDs for tags created during this sheet session (pinned to the top).
+    private var newTagIDs: Set<UUID> { Set(newlyCreatedTags.map(\.id)) }
+
+    /// The tag list in display order: tags created this session first (newest-first),
+    /// then the remaining tags in their alphabetical `@Query` order (#242). Built from the
+    /// synchronous `newlyCreatedTags` state so a just-created tag appears at the top
+    /// immediately rather than materialising at its alphabetical position off-screen.
+    private var displayTags: [UserTag] {
+        guard !newlyCreatedTags.isEmpty else { return allTags }
+        let pinned = newTagIDs
+        return newlyCreatedTags.reversed() + allTags.filter { !pinned.contains($0.id) }
+    }
+
     /// The toggle rows and the new-tag field — identical content on both platforms.
+    ///
+    /// The New Tag field sits at the *top* so creation and the freshly-pinned tag are
+    /// co-located: a tag created here jumps to the head of "Your Tags" directly below,
+    /// giving immediate visible confirmation without scrolling (#242).
     private var tagListContent: some View {
         Group {
-            if allTags.isEmpty {
+            Section(String(localized: "tags.picker.section.newTag", defaultValue: "New Tag")) {
+                HStack {
+                    TextField(String(localized: "tags.picker.newTag.placeholder",
+                                     defaultValue: "Tag name…"), text: $newTagName)
+                        .accessibilityLabel(String(localized: "tags.picker.newTag.field.a11y",
+                                                   defaultValue: "New tag name"))
+                        .onSubmit { createTag() }
+                    Button(String(localized: "tags.picker.newTag.add",
+                                  defaultValue: "Add"), action: createTag)
+                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+
+            if displayTags.isEmpty {
                 Section {
                     Text(String(localized: "tags.picker.empty",
                                 defaultValue: "No user tags yet. Type a name below to create one."))
@@ -81,7 +123,7 @@ struct UserTagPickerSheet: View {
             } else {
                 Section(String(localized: "tags.picker.section.yourTags",
                                defaultValue: "Your Tags")) {
-                    ForEach(allTags) { tag in
+                    ForEach(displayTags) { tag in
                         Toggle(isOn: Binding(
                             get: { selectedTagIds.contains(tag.id) },
                             set: { on in
@@ -89,20 +131,24 @@ struct UserTagPickerSheet: View {
                                 else  { selectedTagIds.remove(tag.id) }
                             }
                         )) {
-                            Text(tag.name)
+                            HStack(spacing: 8) {
+                                Text(tag.name)
+                                if newTagIDs.contains(tag.id) {
+                                    // A text badge (not colour alone) so the non-alphabetical
+                                    // position is self-explanatory and survives VoiceOver /
+                                    // colour-blind viewing.
+                                    Text(String(localized: "tags.picker.badge.new",
+                                                defaultValue: "New"))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 1)
+                                        .background(.quaternary, in: Capsule())
+                                }
+                            }
                         }
+                        .accessibilityFocused($focusedTagID, equals: tag.id)
                     }
-                }
-            }
-
-            Section(String(localized: "tags.picker.section.newTag", defaultValue: "New Tag")) {
-                HStack {
-                    TextField(String(localized: "tags.picker.newTag.placeholder",
-                                     defaultValue: "Tag name…"), text: $newTagName)
-                        .onSubmit { createTag() }
-                    Button(String(localized: "tags.picker.newTag.add",
-                                  defaultValue: "Add"), action: createTag)
-                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
@@ -208,6 +254,14 @@ struct UserTagPickerSheet: View {
         newlyCreatedTags.append(tag)
         selectedTagIds.insert(tag.id)
         newTagName = ""
+        // The new tag is now pinned at the top of "Your Tags" and selected. Move VoiceOver
+        // focus onto it and announce, so a VoiceOver user (whose focus was in the field)
+        // gets confirmation that the tag was created and applied (#242).
+        focusedTagID = tag.id
+        AccessibilityNotification.Announcement(
+            String(localized: "tags.picker.created.a11y",
+                   defaultValue: "Tag \(name) created and selected")
+        ).post()
     }
 
     private func cancelAndDismiss() {
