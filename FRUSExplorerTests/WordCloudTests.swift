@@ -517,3 +517,57 @@ struct WordCloudSettingsStoreTests {
         #expect(tuning.minimumCount >= 1)
     }
 }
+
+/// `WordCloudResult.visibleTerms(excluding:)` — the pure filter behind the #233
+/// non-persistent "Hide in this word cloud" action.
+struct WordCloudSessionHideTests {
+
+    private func result() -> WordCloudResult {
+        WordCloudResult(
+            terms: [
+                TermCount(term: "Diplomacy", count: 100),
+                TermCount(term: "treaty", count: 60),
+                TermCount(term: "Embassy", count: 40),
+            ],
+            documentCount: 5,
+            totalTokenCount: 200
+        )
+    }
+
+    @Test("visibleTerms: empty hidden set returns the terms unchanged (identity)")
+    func emptyHiddenReturnsAll() {
+        let r = result()
+        let visible = r.visibleTerms(excluding: [])
+        #expect(visible.map(\.term) == ["Diplomacy", "treaty", "Embassy"])
+    }
+
+    @Test("visibleTerms: hiding is case-insensitive on the bare term")
+    func caseInsensitive() {
+        let r = result()
+        // Hidden words are stored lowercased; a differently-cased term still drops.
+        let visible = r.visibleTerms(excluding: ["diplomacy", "embassy"])
+        #expect(visible.map(\.term) == ["treaty"])
+    }
+
+    @Test("visibleTerms: preserves order and count of the surviving terms")
+    func preservesOrderAndCount() {
+        let r = result()
+        let visible = r.visibleTerms(excluding: ["treaty"])
+        #expect(visible.map(\.term) == ["Diplomacy", "Embassy"])
+        #expect(visible.map(\.count) == [100, 40])
+    }
+
+    @Test("visibleTerms: a hidden word not present is a no-op")
+    func unknownHiddenIsNoOp() {
+        let r = result()
+        let visible = r.visibleTerms(excluding: ["summit"])
+        #expect(visible.count == r.terms.count)
+    }
+
+    @Test("visibleTerms: hiding everything visible yields an empty list")
+    func hideAll() {
+        let r = result()
+        let visible = r.visibleTerms(excluding: ["diplomacy", "treaty", "embassy"])
+        #expect(visible.isEmpty)
+    }
+}
