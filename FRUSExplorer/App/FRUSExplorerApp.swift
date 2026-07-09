@@ -559,8 +559,9 @@ struct FRUSExplorerApp: App {
         // audit's gap 7). The scene owns ⌘⇧F exactly as frus.search owns ⌘F, which
         // also lists it in the Window menu; the old CommandGroup item (which set the
         // now-removed appState.showCitationLookup flag) is gone. Parsed matches stay
-        // around while the researcher reads documents; result taps push the document
-        // inside this window's own NavigationStack (as they did inside the sheet).
+        // around while the researcher reads documents; result taps open the document in
+        // its own window via DocumentWindowID (#239 — matching the Search window; the
+        // earlier in-window push used a constant navigationPath that broke prev/next).
         Window(String(localized: "citationLookup.window.title", defaultValue: "Citation Lookup"),
                id: "frus.citationLookup") {
             CitationLookupWindowView()

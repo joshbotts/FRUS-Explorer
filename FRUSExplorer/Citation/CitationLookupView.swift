@@ -25,17 +25,25 @@ import SwiftUI
 /// For undownloaded volumes, a Download button replaces the navigation action.
 ///
 /// ## Navigation integration
-/// On iOS, presented as a sheet from `SearchView`'s "Find by Citation" button. On
-/// macOS, hosted in the `frus.citationLookup` Window scene (⌘⇧F) via
-/// `CitationLookupWindowView` — a window, not a sheet, so parsed matches stay
-/// around while the researcher reads documents (UI audit B4); result taps push
-/// `MacDocumentView` onto this view's own `NavigationStack`.
+/// On iOS, presented as a sheet from `SearchView`'s "Find by Citation" button; result
+/// taps push `DocumentView` onto the sheet's own `NavigationStack`. On macOS, hosted in
+/// the `frus.citationLookup` Window scene (⌘⇧F) via `CitationLookupWindowView` — a window,
+/// not a sheet, so parsed matches stay around while the researcher reads documents (UI
+/// audit B4); result taps open the document in its **own** window (`DocumentWindowID`,
+/// matching the Search window), so the lookup's matches stay visible and the document gets
+/// working prev/next and cross-reference navigation.
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
 ///   1.1 — Session 2026-07-04 (macOS UI audit B4): the Done toolbar button became
 ///          iOS-only sheet chrome — on macOS the view lives in a window whose own
 ///          close control is the exit (gap 11: no dead Done buttons in windows)
+///   1.2 — Session 2 / #239 (macOS platform fit): `.formStyle(.grouped)` so the sections
+///          render like every other Mac form; Return runs the lookup and the paste field
+///          takes initial focus; result taps open a real document window (`DocumentWindowID`)
+///          instead of pushing a `MacDocumentView(navigationPath: .constant([]))` whose
+///          constant binding silently broke prev/next + cross-refs; result rows group for
+///          VoiceOver and the lookup announces its result count; `.help` tooltips added
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -65,6 +73,19 @@ struct CitationLookupView: View {
     // MARK: - Navigation
 
     @State private var navigationPath = NavigationPath()
+    #if os(macOS)
+    // On macOS a match opens a real document window (the Search-window convention) rather
+    // than pushing onto this small lookup window's own stack, so parsed matches stay
+    // visible and the document gets working prev/next + cross-reference navigation.
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
+    // MARK: - Focus
+
+    /// The fields that can hold keyboard focus, so the sheet/window opens focused and
+    /// Return runs the lookup from any field.
+    private enum LookupField: Hashable { case paste, subseries, volume, document, page }
+    @FocusState private var focusedField: LookupField?
 
     // MARK: - Parser
 
@@ -80,6 +101,14 @@ struct CitationLookupView: View {
                 lookUpSection
                 if hasSearched { resultsSection }
             }
+            #if os(macOS)
+            // The grouped Mac form style every other macOS form in the app uses (Settings,
+            // Search filters, editors). The default columnar style rendered the sections as
+            // cramped rows, which is the platform-fit defect this addresses (#239).
+            .formStyle(.grouped)
+            #endif
+            // Return in any field runs the lookup (guarded), matching the Search window.
+            .onSubmit(of: .text) { submitIfActionable() }
             .navigationTitle(String(localized: "citation.lookup.title",
                                     defaultValue: "Citation Lookup"))
             #if os(iOS)
@@ -94,12 +123,20 @@ struct CitationLookupView: View {
                 }
             }
             #endif
+            // macOS opens matches as their own document windows (see `openMatch`), so the
+            // stack destination is iOS-only. The previous macOS branch pushed a
+            // `MacDocumentView(navigationPath: .constant([]))` whose constant binding
+            // silently broke prev/next and cross-reference navigation (B4 follow-up).
+            #if os(iOS)
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
-                #if os(iOS)
                 DocumentView(entry: entry)
-                #else
-                MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
-                #endif
+            }
+            #endif
+            .defaultFocus($focusedField, .paste)
+            .onChange(of: mode) { _, newMode in
+                // Keep focus on a field that exists in the new mode (paste field only
+                // shows in .paste; the structured fields always show).
+                focusedField = newMode == .paste ? .paste : .subseries
             }
         }
         #if os(macOS)
@@ -134,6 +171,9 @@ struct CitationLookupView: View {
                     axis: .vertical
                 )
                 .lineLimit(3...6)
+                .focused($focusedField, equals: .paste)
+                .accessibilityLabel(String(localized: "citation.paste.a11y",
+                                           defaultValue: "Citation text"))
                 .onChange(of: pasteText) { _, new in
                     guard !new.isEmpty else { return }
                     let parsed = parser.parse(new)
@@ -153,6 +193,7 @@ struct CitationLookupView: View {
                 TextField(String(localized: "citation.field.subseries.placeholder",
                                  defaultValue: "e.g. 1969-76"),
                           text: $subseriesField)
+                    .focused($focusedField, equals: .subseries)
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     #endif
@@ -165,6 +206,7 @@ struct CitationLookupView: View {
                 TextField(String(localized: "citation.field.volume.placeholder",
                                  defaultValue: "e.g. I or 1"),
                           text: $volumeField)
+                    .focused($focusedField, equals: .volume)
                     #if os(iOS)
                     .textInputAutocapitalization(.characters)
                     #endif
@@ -177,6 +219,7 @@ struct CitationLookupView: View {
                 TextField(String(localized: "citation.field.document.placeholder",
                                  defaultValue: "e.g. 15"),
                           text: $documentField)
+                    .focused($focusedField, equals: .document)
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
@@ -188,6 +231,7 @@ struct CitationLookupView: View {
                 TextField(String(localized: "citation.field.page.placeholder",
                                  defaultValue: "e.g. 47"),
                           text: $pageField)
+                    .focused($focusedField, equals: .page)
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
@@ -206,7 +250,7 @@ struct CitationLookupView: View {
     private var lookUpSection: some View {
         Section {
             Button {
-                Task { await performLookup() }
+                submitIfActionable()
             } label: {
                 if isSearching {
                     HStack {
@@ -221,6 +265,13 @@ struct CitationLookupView: View {
                 }
             }
             .disabled(!isInputActionable || isSearching)
+            #if os(macOS)
+            // Return activates Look Up when focus is not in a text field (fields have their
+            // own .onSubmit); macOS-only so it can't collide with the iOS Done confirmation.
+            .keyboardShortcut(.defaultAction)
+            #endif
+            .help(String(localized: "citation.lookup.button.help",
+                         defaultValue: "Resolve the citation to matching FRUS documents"))
         }
     }
 
@@ -253,9 +304,7 @@ struct CitationLookupView: View {
             Section {
                 ForEach(matches) { match in
                     CitationResultRow(match: match, appState: appState) {
-                        if let entry = makeEntry(for: match) {
-                            navigationPath.append(entry)
-                        }
+                        openMatch(match)
                     } onDownload: {
                         initiateDownload(for: match)
                     }
@@ -271,6 +320,31 @@ struct CitationLookupView: View {
 
     private var isInputActionable: Bool {
         !documentField.isEmpty || !pageField.isEmpty || !volumeField.isEmpty
+    }
+
+    /// Runs the lookup if there is enough input and one isn't already in flight — the
+    /// shared trigger for the Look Up button, Return-in-field, and the default-action key.
+    private func submitIfActionable() {
+        guard isInputActionable, !isSearching else { return }
+        Task { await performLookup() }
+    }
+
+    /// Opens the match's document. On macOS this is a real document window (so parsed
+    /// matches stay visible and the document gets working prev/next + cross-references);
+    /// on iOS it pushes onto this sheet's navigation stack.
+    private func openMatch(_ match: CitationMatch) {
+        guard !match.documentId.isEmpty else { return }
+        #if os(macOS)
+        openWindow(value: DocumentWindowID(
+            volumeId: match.volumeId,
+            documentId: match.documentId,
+            header: match.documentId
+        ))
+        #else
+        if let entry = makeEntry(for: match) {
+            navigationPath.append(entry)
+        }
+        #endif
     }
 
     @MainActor
@@ -305,6 +379,20 @@ struct CitationLookupView: View {
         }
 
         isSearching = false
+
+        // Announce the outcome for VoiceOver users, who otherwise get no cue that the
+        // async lookup finished or how many results arrived.
+        let announcement: String
+        if let error {
+            announcement = error
+        } else if matches.isEmpty {
+            announcement = String(localized: "citation.noMatch.title", defaultValue: "No Matches Found")
+        } else {
+            announcement = String(format: String(localized: "citation.results.count.a11y",
+                                                  defaultValue: "%lld matches found"),
+                                  Int64(matches.count))
+        }
+        AccessibilityNotification.Announcement(announcement).post()
     }
 
     private func makeEntry(for match: CitationMatch) -> DocumentBrowserEntry? {
@@ -322,8 +410,7 @@ struct CitationLookupView: View {
     private func initiateDownload(for match: CitationMatch) {
         guard let entry = match.volumeManifestEntry,
               let dm = appState.downloadManager else { return }
-        let downloadUrl = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
-        Task { await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: downloadUrl) }
+        Task { await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl) }
     }
 }
 
@@ -381,45 +468,51 @@ private struct CitationResultRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Confidence label badge — icon + text so confidence level is not
-            // communicated by color alone (WCAG 1.4.1 / F-023).
-            Label {
-                Text(match.confidenceLabel)
-                    .font(.caption)
-                    .fontWeight(.medium)
-            } icon: {
-                Image(systemName: confidenceLabelIcon)
-                    .font(.caption2)
-            }
-            .foregroundStyle(confidenceLabelColor)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(confidenceLabelColor.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            // The confidence badge + identity + correction note read as one VoiceOver
+            // element (they describe a single result); the action buttons below stay
+            // separate so they remain individually activatable.
+            VStack(alignment: .leading, spacing: 6) {
+                // Confidence label badge — icon + text so confidence level is not
+                // communicated by color alone (WCAG 1.4.1 / F-023).
+                Label {
+                    Text(match.confidenceLabel)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                } icon: {
+                    Image(systemName: confidenceLabelIcon)
+                        .font(.caption2)
+                }
+                .foregroundStyle(confidenceLabelColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(confidenceLabelColor.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
 
-            if let entry = match.volumeManifestEntry {
-                // Manifest-only result
-                Text(entry.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                Text(entry.volumeId)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            } else {
-                Text(match.documentId)
-                    .font(.headline)
-                Text(match.volumeId)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
+                if let entry = match.volumeManifestEntry {
+                    // Manifest-only result
+                    Text(entry.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                    Text(entry.volumeId)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Text(match.documentId)
+                        .font(.headline)
+                    Text(match.volumeId)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
 
-            // Correction note
-            if let note = match.correctionNote {
-                Text(note)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
+                // Correction note
+                if let note = match.correctionNote {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
             }
+            .accessibilityElement(children: .combine)
 
             // Action button
             if match.requiresDownload {
@@ -434,6 +527,8 @@ private struct CitationResultRow: View {
                 }
                 .buttonStyle(.bordered)
                 .font(.caption)
+                .help(String(localized: "citation.result.download.help",
+                             defaultValue: "Download this volume so its documents can be opened"))
             } else if !match.documentId.isEmpty {
                 Button {
                     onNavigate()
@@ -443,6 +538,8 @@ private struct CitationResultRow: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .font(.caption)
+                .help(String(localized: "citation.result.view.help",
+                             defaultValue: "Open this document"))
             }
         }
         .padding(.vertical, 4)
