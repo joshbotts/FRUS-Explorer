@@ -62,11 +62,26 @@ struct AdministrationProfilesDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
-    /// The pure derivation driving every chart, rebuilt whenever the toggle flips.
+    /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
+    /// visit. Under a scope every count/proportion is recomputed from each
+    /// administration's per-volume breakdown, and the coverage-span stat is hidden
+    /// (it is a pre-aggregated scalar that cannot be re-derived per scope).
+    @State private var scope = SeriesScope.whole
+
+    /// The manifest entries backing the scope bar's subseries menu (this dashboard
+    /// otherwise reads the bundled profiles index, not the manifest).
+    private var entries: [VolumeManifestEntry] {
+        guard let store = appState?.manifestStore else { return [] }
+        return store.diffResult?.known ?? store.bundledEntries
+    }
+
+    /// The pure derivation driving every chart, rebuilt whenever the toggle or scope
+    /// changes.
     private var data: AdministrationProfilesData {
         AdministrationProfilesData(
             index: appState?.administrationProfilesStore.index,
-            includeEditorialNotes: includeEditorialNotes
+            includeEditorialNotes: includeEditorialNotes,
+            scopeVolumeIds: scope.volumeIds
         )
     }
 
@@ -93,17 +108,29 @@ struct AdministrationProfilesDashboard: View {
         return data.mostDocumentedProfile
     }
 
+    /// `true` when the bundled profiles index decoded to at least one administration —
+    /// the guard for the "no data at all" empty state (distinct from a scope that simply
+    /// touches no administration, which keeps the scope bar reachable so it can be reset).
+    private var indexHasData: Bool {
+        !(appState?.administrationProfilesStore.index?.administrations.isEmpty ?? true)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
-            if data.profiles.isEmpty {
+            if !indexHasData {
                 emptyState
             } else {
                 intro
-                editorialNotesToggle
-                documentsChart
-                volumesPerYearChart
-                administrationDetail
-                caveats
+                SeriesScopeBar(entries: entries, scope: $scope)
+                if data.profiles.isEmpty {
+                    scopedEmptyState
+                } else {
+                    editorialNotesToggle
+                    documentsChart
+                    volumesPerYearChart
+                    administrationDetail
+                    caveats
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -113,6 +140,22 @@ struct AdministrationProfilesDashboard: View {
                 selectedAdministrationID = data.mostDocumentedProfile?.id
             }
         }
+    }
+
+    /// Shown when a subseries scope is active but touches no administration — keeps the
+    /// scope bar above it reachable so the user can reset rather than seeing a blank.
+    private var scopedEmptyState: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(String(localized: "series.admin.scopedEmpty.title",
+                        defaultValue: "No administrations in this subseries"))
+                .font(.headline)
+            Text(String(localized: "series.admin.scopedEmpty.message",
+                        defaultValue: "The volumes in the selected subseries carry no dated documents attributed to a presidential administration. Reset the scope above for the whole series."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 12)
     }
 
     // MARK: - Intro
@@ -414,6 +457,14 @@ struct AdministrationProfilesDashboard: View {
             Text(String(localized: "series.admin.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if let label = scope.label {
+                Text(String(format: String(localized: "series.admin.caveats.scope %@",
+                                           defaultValue: "Scoped to the %@ subseries — counts and proportions are recomputed from that subseries' volumes only, and the per-administration coverage span (which the source data pre-aggregates for the whole series) is hidden. Reset the scope above for the whole series."),
+                            label))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.admin.caveats.body",
                         defaultValue: "Documents are attributed to an administration by any overlap between the document's date and the president's term, so a volume spanning two administrations is counted in both — which is why the summed volume counts exceed the 552-volume corpus and a volume's proportions can sum to over 100% across administrations. These counts measure which administration's foreign policy the documents cover, not when the volumes were published. Editorial-note documents carry a range of dates rather than a single date; their inclusion is controlled by the toggle above (off by default). Pre-1861 retrospective compilations concern no single administration and are omitted. Administrations are counted per president — Nixon and Ford are separate, as are Grover Cleveland's two non-consecutive terms — and administrations for which the series is not yet published do not appear."))
                 .font(.footnote)

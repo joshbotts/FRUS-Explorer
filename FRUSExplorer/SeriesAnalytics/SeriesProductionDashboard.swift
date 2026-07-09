@@ -65,17 +65,21 @@ struct SeriesProductionDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
-    /// The manifest entries to summarise: the diff's known set when a live
-    /// refresh has happened, else the always-available bundled set, else empty
-    /// (defensive — `AppState` absent).
+    /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
+    /// visit — a stale narrowed scope would misrepresent the whole-series story.
+    @State private var scope = SeriesScope.whole
+
+    /// The manifest entries to summarise: the diff's known set when a live refresh
+    /// has happened, else the always-available bundled set, else empty (defensive —
+    /// `AppState` absent). The full set drives the scope bar's menu and the empty check.
     private var entries: [VolumeManifestEntry] {
         guard let store = appState?.manifestStore else { return [] }
         return store.diffResult?.known ?? store.bundledEntries
     }
 
-    /// The pure derivation driving every chart.
+    /// The pure derivation driving every chart, over the in-scope entries (#236).
     private var data: SeriesProductionData {
-        SeriesProductionData(entries: entries)
+        SeriesProductionData(entries: scope.filter(entries))
     }
 
     /// `true` on compact-width (iPhone); always `false` on macOS / regular-width.
@@ -92,6 +96,7 @@ struct SeriesProductionDashboard: View {
                 emptyState
             } else {
                 intro
+                SeriesScopeBar(entries: entries, scope: $scope)
                 yearRangeBar
                 lagChart
                 perYearChart
@@ -330,6 +335,14 @@ struct SeriesProductionDashboard: View {
             Text(String(localized: "series.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if let label = scope.label {
+                Text(String(format: String(localized: "series.caveats.scope %@",
+                                           defaultValue: "Scoped to the %@ subseries — reset the scope above for the whole series."),
+                            label))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.caveats.body",
                         defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's publication year, so it shows exactly the target in force when the volume was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)

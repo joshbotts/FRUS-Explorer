@@ -62,9 +62,15 @@ struct SeriesGeographyDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
+    /// visit. Scoping rebuilds every chart — including the two categorical bar charts
+    /// (region totals, top countries) the year-range bar cannot narrow, so scope
+    /// answers "the most-covered countries in the 1969–76 subseries".
+    @State private var scope = SeriesScope.whole
+
     /// The manifest entries to summarise: the diff's known set when a live
     /// refresh has happened, else the always-available bundled set, else empty
-    /// (defensive — `AppState` absent).
+    /// (defensive — `AppState` absent). The full set drives the scope bar's menu.
     private var entries: [VolumeManifestEntry] {
         guard let store = appState?.manifestStore else { return [] }
         return store.diffResult?.known ?? store.bundledEntries
@@ -82,9 +88,9 @@ struct SeriesGeographyDashboard: View {
         return map
     }
 
-    /// The pure derivation driving every chart.
+    /// The pure derivation driving every chart, over the in-scope entries (#236).
     private var data: SeriesGeographyData {
-        SeriesGeographyData(entries: entries, placeRegions: placeRegions)
+        SeriesGeographyData(entries: scope.filter(entries), placeRegions: placeRegions)
     }
 
     /// Resolves a place-tag slug to its display name via the tag store, falling
@@ -107,6 +113,7 @@ struct SeriesGeographyDashboard: View {
                 emptyState
             } else {
                 intro
+                SeriesScopeBar(entries: entries, scope: $scope)
                 yearRangeBar
                 regionTrendChart
                 regionTotalsChart
@@ -299,6 +306,14 @@ struct SeriesGeographyDashboard: View {
             Text(String(localized: "series.geography.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if let label = scope.label {
+                Text(String(format: String(localized: "series.caveats.scope %@",
+                                           defaultValue: "Scoped to the %@ subseries — reset the scope above for the whole series."),
+                            label))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.geography.caveats.body",
                         defaultValue: "Place tags are volume-level editorial tags: a volume \"touches\" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)
