@@ -159,6 +159,26 @@ public actor SearchService {
         )
     }
 
+    /// Deterministically resolves the document carrying the given canonical printed
+    /// number in a volume — the lookup path citation matching uses.
+    ///
+    /// Unlike `search(parameters:)`, this is a direct `document_cache` query, not a
+    /// ranked full-text search: a bare number as a keyword matches every document that
+    /// merely mentions the digits, and the BM25 result cap can starve out the actual
+    /// document row in a realistically-sized volume.
+    ///
+    /// - Parameters:
+    ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`).
+    ///   - volumeId: The volume to query.
+    /// - Returns: The matching entry, or `nil` when the volume is not indexed or has
+    ///   no document with that number.
+    public func document(
+        byNumber documentNumber: String,
+        inVolume volumeId: String
+    ) async throws -> DocumentBrowserEntry? {
+        try await pipeline.document(forDocumentNumber: documentNumber, inVolume: volumeId)
+    }
+
     // MARK: - Query Building
 
     /// Renders the corpus and user-content FTS5 MATCH expressions from the raw

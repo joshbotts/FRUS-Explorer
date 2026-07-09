@@ -278,12 +278,14 @@ public actor CitationMatchingEngine {
     ) async throws -> CitationMatch? {
         guard let service = searchService else { return nil }
 
-        var params = SearchParameters()
-        params.keywords = "\(documentNumber)"
-        params.volumeIds = [volumeId]
-        let results = try await service.search(parameters: params)
-
-        if let hit = results.first(where: { $0.documentNumber == "\(documentNumber)" }) {
+        // Deterministic document_cache lookup by canonical printed number. The previous
+        // implementation ran a full-text search for the bare number and filtered the
+        // hits — but a number like "15" matches every document mentioning it (dates,
+        // telegram numbers, page references), and with results BM25-ranked and capped
+        // at a page, the actual Document 15 row was starved out of the result set in
+        // any realistically-sized volume, so valid citations resolved to nothing.
+        if let hit = try await service.document(byNumber: "\(documentNumber)",
+                                                inVolume: volumeId) {
             let strategy: MatchStrategy = preModern ? .superimposedDocumentNumber : .exactDocumentNumber
             let label = preModern
                 ? ConfidenceLabels.superimposedDocumentNumber
@@ -354,11 +356,10 @@ public actor CitationMatchingEngine {
             return nil // should be found by exactDocumentNumber; something went wrong
         }
 
-        var params = SearchParameters()
-        params.keywords = "\(nearest)"
-        params.volumeIds = [volumeId]
-        let results = try await service.search(parameters: params)
-        guard let hit = results.first(where: { $0.documentNumber == "\(nearest)" }) else {
+        // Same deterministic lookup as the exact strategy (see matchByDocumentNumber) —
+        // the nearest number is a specific document, not a keyword.
+        guard let hit = try await service.document(byNumber: "\(nearest)",
+                                                   inVolume: volumeId) else {
             return nil
         }
 

@@ -1670,6 +1670,49 @@ public actor IndexingPipeline {
         return entries
     }
 
+    /// Returns the document carrying the given canonical printed number in a volume, or
+    /// `nil` when the volume is not indexed or has no such document.
+    ///
+    /// This is a **deterministic** `document_cache` lookup by `document_number` — the
+    /// resolution path citation matching requires. A full-text keyword search for a bare
+    /// number is NOT a substitute: BM25 ranks every document whose body merely mentions
+    /// the digits (dates, telegram numbers, page references) and the result cap starves
+    /// out the actual document row in any realistically-sized volume.
+    ///
+    /// - Parameters:
+    ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`).
+    ///   - volumeId: The volume to query.
+    /// - Returns: The matching entry, or `nil`.
+    public func document(
+        forDocumentNumber documentNumber: String,
+        inVolume volumeId: String
+    ) throws -> DocumentBrowserEntry? {
+        let sql = """
+            SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
+            FROM document_cache WHERE volume_id = ? AND document_number = ?
+            ORDER BY rowid
+            LIMIT 1
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentNumber, -1, SQLITE_TRANSIENT_IP)
+
+        // auxStep (not a raw sqlite3_step) so a step-level error (I/O, corruption)
+        // throws instead of masquerading as "no such document" — a silent false
+        // negative here is exactly the user-visible symptom this lookup exists to fix.
+        guard try auxStep(stmt) else { return nil }
+        return DocumentBrowserEntry(
+            documentId:     auxColumnString(stmt, 0) ?? "",
+            volumeId:       volumeId,
+            documentNumber: auxColumnString(stmt, 1),
+            header:         auxColumnString(stmt, 2) ?? "",
+            dateline:       auxColumnString(stmt, 3),
+            sourceNote:     auxColumnString(stmt, 4),
+            isEditorialNote: sqlite3_column_int(stmt, 5) != 0
+        )
+    }
+
     /// Returns the complete, in-order reading sequence for a volume: every front- and
     /// back-matter section plus every numbered document, in source order.
     ///
