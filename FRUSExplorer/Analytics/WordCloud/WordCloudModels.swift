@@ -431,3 +431,18 @@ struct WordCloudResult: Sendable, Codable {
     /// An empty result (no documents in scope, or no surviving tokens).
     static let empty = WordCloudResult(terms: [], documentCount: 0, totalTokenCount: 0)
 }
+
+extension WordCloudResult {
+    /// The terms with any words hidden **just for the current open cloud** removed
+    /// (#233 — a non-persistent, per-view-session hide, distinct from the persistent
+    /// per-scope `WordCloudOverrides` and the global/lens stop lists).
+    ///
+    /// Comparison is case-insensitive against the bare term (hidden words are stored
+    /// lowercased). Returns `terms` unchanged when `hidden` is empty. Because this filters
+    /// the already-computed list, a hide takes effect instantly and the cloud backfills
+    /// from the fetched-but-unplaced surplus without a recompute.
+    func visibleTerms(excluding hidden: Set<String>) -> [TermCount] {
+        guard !hidden.isEmpty else { return terms }
+        return terms.filter { !hidden.contains($0.term.lowercased()) }
+    }
+}

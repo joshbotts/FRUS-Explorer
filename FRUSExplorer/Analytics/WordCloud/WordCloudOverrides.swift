@@ -41,15 +41,10 @@ enum WordCloudOverrides {
         Set(load()[signature] ?? [])
     }
 
-    /// Hides `word` (lowercased) for the given scope.
-    static func hide(_ word: String, for signature: String) {
-        let normalized = word.lowercased()
-        var map = load()
-        var words = Set(map[signature] ?? [])
-        words.insert(normalized)
-        map[signature] = Array(words).sorted()
-        save(map)
-    }
+    // (A per-scope `hide(_:for:)` writer previously lived here but had no callers — hides
+    // are written through `WordCloudSettings` (global / per-lens) and, non-persistently,
+    // through `WordCloudView.sessionHiddenWords` (#233). The reader + reset remain so any
+    // legacy persisted per-scope hides still load and can be cleared.)
 
     /// Clears all hidden words for the given scope.
     static func reset(for signature: String) {

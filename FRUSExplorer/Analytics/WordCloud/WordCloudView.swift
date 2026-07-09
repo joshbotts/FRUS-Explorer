@@ -73,6 +73,11 @@ enum WordCloudViewMode: String, CaseIterable {
 ///          Without Color — polarised words gain +/− prefixes (in the layout input,
 ///          so packing stays overlap-free), the legend swaps its dots for the same
 ///          glyphs, and image exports carry the marks through
+///   1.4 — Session 2 / #233: a word's menu can "Hide in this word cloud" — a
+///          non-persistent, per-open-cloud hide (`sessionHiddenWords`) applied at the
+///          display layer via `visibleTerms`, so it is instant, backfills from the fetched
+///          surplus, and evaporates when the cloud closes; "Show N hidden words" now also
+///          restores it
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -122,6 +127,12 @@ struct WordCloudView: View {
     @State private var exportItem: WordCloudExportItem?
     @State private var progressModel = WordCloudProgressModel()
     @State private var hiddenWords: Set<String> = []
+    /// Words hidden **only** for this open cloud (#233): non-persistent, per-view-instance,
+    /// lowercased bare terms. Because it is `@State` on the sheet/window-scoped view it
+    /// resets automatically when the cloud closes (iOS sheet dismissal) or is retargeted
+    /// (the macOS window applies `.id(scope.signature)` to this view). Applied at the
+    /// display layer via `visibleTerms`, so a hide is instant and never triggers a recompute.
+    @State private var sessionHiddenWords: Set<String> = []
     @State private var comparisonScope: WordCloudScope?
     @State private var lens: WordCloudLens = .allTerms
 
@@ -197,9 +208,18 @@ struct WordCloudView: View {
     }
 
     /// `true` when the active lens depends on semantic signal the current scope
-    /// doesn't contain enough of to be meaningful.
+    /// doesn't contain enough of to be meaningful. Keyed to the *unfiltered* `result` so
+    /// per-cloud session hides can't tip the cloud into the "Not Enough Signal" placeholder.
     private var belowSignalThreshold: Bool {
         lens.isSignalDependent && result.terms.count < lens.minimumSignalTerms
+    }
+
+    /// The terms actually shown — `result.terms` minus this cloud's session hides (#233).
+    /// The layout, ranked list, header count, and exports all read this so what the user
+    /// sees, curates, and exports agree; the empty-state / signal-threshold / Options-menu
+    /// checks deliberately keep reading the full `result` so a user can't hide into a dead end.
+    private var visibleTerms: [TermCount] {
+        result.visibleTerms(excluding: sessionHiddenWords)
     }
 
     /// Horizontally-scrolling lens selector. A scrolling chip bar rather than a
@@ -303,7 +323,7 @@ struct WordCloudView: View {
                 Text(String(
                     format: String(localized: "wordcloud.provenance %lld %lld",
                                    defaultValue: "%lld terms from %lld documents"),
-                    Int64(result.terms.count), Int64(result.documentCount)
+                    Int64(visibleTerms.count), Int64(result.documentCount)
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -341,13 +361,17 @@ struct WordCloudView: View {
                                 signature: scope.signature, exclude: excludeBoilerplate,
                                 lens: lens, termCount: result.terms.count,
                                 fontDesign: fontDesign, density: density,
-                                sentimentMarks: useSentimentMarks)) {
+                                sentimentMarks: useSentimentMarks,
+                                hidden: sessionHiddenWords)) {
                 // A8: lay out the marked display terms so the +/− prefixes get the
-                // width they render with.
+                // width they render with. Filter this cloud's session hides first (#233),
+                // before the mark mapping, so hidden words don't reappear under the
+                // sentiment lens (where the layout term carries a +/− prefix).
+                let base = visibleTerms
                 let layoutTerms = useSentimentMarks
-                    ? result.terms.map { TermCount(term: WordCloudLexicons.markedTerm($0.term),
-                                                   count: $0.count) }
-                    : result.terms
+                    ? base.map { TermCount(term: WordCloudLexicons.markedTerm($0.term),
+                                           count: $0.count) }
+                    : base
                 placements = WordCloudLayout.place(
                     terms: layoutTerms, in: geo.size,
                     spacingScale: density.spacingScale, widthFactor: fontDesign.widthFactor
@@ -359,9 +383,9 @@ struct WordCloudView: View {
 
     /// Ranked term list — also the accessibility representation of the cloud.
     private var rankedList: some View {
-        let maxCount = result.terms.first?.count ?? 1
+        let maxCount = visibleTerms.first?.count ?? 1
         return List {
-            ForEach(Array(result.terms.enumerated()), id: \.element.id) { index, term in
+            ForEach(Array(visibleTerms.enumerated()), id: \.element.id) { index, term in
                 Button { analyze(for: term.term) } label: {
                     HStack(spacing: 10) {
                         Text("\(index + 1)")
@@ -391,8 +415,22 @@ struct WordCloudView: View {
                                    defaultValue: "%lld occurrences"),
                     Int64(term.count)
                 )))
+                // The row's tap (its default VoiceOver action) charts the term in Corpus
+                // Analytics — not a search (the stale "Search for this term" hint predated
+                // the analyze hand-off).
                 .accessibilityHint(String(localized: "wordcloud.tap.hint",
-                                          defaultValue: "Search for this term"))
+                                          defaultValue: "Charts this term in Corpus Analytics"))
+                // Mirror the word menu into the VoiceOver actions rotor so hide/search are
+                // reachable without opening the context menu (which VoiceOver surfaces
+                // inconsistently across platforms).
+                .accessibilityAction(named: Text(String(localized: "wordcloud.word.hide.session",
+                                                        defaultValue: "Hide in this word cloud"))) {
+                    hideWordInThisCloud(term.term)
+                }
+                .accessibilityAction(named: Text(String(localized: "wordcloud.word.search",
+                                                        defaultValue: "Search for this term"))) {
+                    search(for: term.term)
+                }
                 .contextMenu { wordContextMenu(term: term.term) }
             }
         }
@@ -498,7 +536,7 @@ struct WordCloudView: View {
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.filters.title", defaultValue: "What's filtered out"),
                         detail: String(localized: "wordcloud.info.filters.detail",
-                                       defaultValue: "Common stopwords are always removed. You can also hide diplomatic boilerplate and maintain your own hidden-word lists (globally or per lens) in Settings → Word Cloud.")),
+                                       defaultValue: "Common stopwords are always removed. A word's menu can hide it just from this cloud (temporary — it comes back next time), or add it to your hidden-word lists (globally or per lens) that you manage in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.tap.title", defaultValue: "Tapping a word"),
                         detail: String(localized: "wordcloud.info.tap.detail",
@@ -521,13 +559,15 @@ struct WordCloudView: View {
                 Toggle(String(localized: "wordcloud.filter.boilerplate",
                               defaultValue: "Hide common diplomatic words"),
                        isOn: $excludeBoilerplate)
-                if !hiddenWords.isEmpty {
+                if !hiddenWords.isEmpty || !sessionHiddenWords.isEmpty {
                     Button {
                         resetHiddenWords()
                     } label: {
+                        // Union of the persistent per-scope hides and this cloud's session
+                        // hides, de-duplicated so a word hidden both ways is counted once.
                         Label(String(format: String(localized: "wordcloud.filter.showHidden %lld",
                                                      defaultValue: "Show %lld hidden words"),
-                                     Int64(hiddenWords.count)),
+                                     Int64(hiddenWords.union(sessionHiddenWords).count)),
                               systemImage: "eye")
                     }
                 }
@@ -536,14 +576,14 @@ struct WordCloudView: View {
                 Divider()
                 Section(String(localized: "wordcloud.export.section", defaultValue: "Export")) {
                     Button {
-                        exportItem = WordCloudExporter.csv(terms: result.terms, title: title)
+                        exportItem = WordCloudExporter.csv(terms: visibleTerms, title: title)
                     } label: {
                         Label(String(localized: "wordcloud.export.csv", defaultValue: "CSV…"),
                               systemImage: "tablecells")
                     }
                     Button {
                         exportItem = WordCloudExporter.image(
-                            terms: result.terms, title: title, format: .png,
+                            terms: visibleTerms, title: title, format: .png,
                             palette: Self.palette, sentimentColors: lens.colorsBySentiment,
                             sentimentMarks: useSentimentMarks
                         )
@@ -553,7 +593,7 @@ struct WordCloudView: View {
                     }
                     Button {
                         exportItem = WordCloudExporter.image(
-                            terms: result.terms, title: title, format: .pdf,
+                            terms: visibleTerms, title: title, format: .pdf,
                             palette: Self.palette, sentimentColors: lens.colorsBySentiment,
                             sentimentMarks: useSentimentMarks
                         )
@@ -679,6 +719,15 @@ struct WordCloudView: View {
             Label(String(localized: "wordcloud.word.search", defaultValue: "Search for this term"),
                   systemImage: "magnifyingglass")
         }
+        // Hide actions, narrowest → broadest scope. The first is non-persistent (this cloud
+        // only, until it closes); the other two persist and recompute (#233).
+        Button(role: .destructive) {
+            hideWordInThisCloud(term)
+        } label: {
+            Label(String(localized: "wordcloud.word.hide.session",
+                         defaultValue: "Hide in this word cloud"),
+                  systemImage: "eye.slash.fill")
+        }
         Button(role: .destructive) {
             hideWordGlobally(term)
         } label: {
@@ -693,6 +742,20 @@ struct WordCloudView: View {
                          defaultValue: "Hide this word in this lens"),
                   systemImage: "eye.slash.circle")
         }
+    }
+
+    /// Hides `term` from **this open cloud only** (#233): non-persistent, no recompute.
+    /// Inserting into `sessionHiddenWords` updates `visibleTerms` and the `LayoutKey`, so the
+    /// cloud, ranked list, header count, and exports all drop the word and the cloud backfills
+    /// from the fetched surplus instantly. Reversible via the Options menu's "Show N hidden
+    /// words"; evaporates when the cloud closes.
+    private func hideWordInThisCloud(_ term: String) {
+        sessionHiddenWords.insert(term.lowercased())
+        AccessibilityNotification.Announcement(
+            String(format: String(localized: "wordcloud.word.hidden.a11y",
+                                   defaultValue: "%@ hidden from this word cloud"),
+                   term)
+        ).post()
     }
 
     /// Hides `term` from **every** word cloud by adding it to the global custom stop
@@ -724,11 +787,19 @@ struct WordCloudView: View {
         )
     }
 
-    /// Clears this scope's hidden-word overrides and recomputes.
+    /// Restores every word hidden from this cloud — both the non-persistent session hides
+    /// (#233) and this scope's persistent `WordCloudOverrides`.
     ///
-    /// The previous manual load (if any) is cancelled *before* the new task is
-    /// created — never from inside `load()`, which would self-cancel (see `load()`).
+    /// Session hides clear with a pure state change (no recompute — `visibleTerms` and the
+    /// `LayoutKey` update immediately). Only when persistent overrides were also in play does
+    /// the cloud reload from the pipeline. The previous manual load (if any) is cancelled
+    /// *before* the new task is created — never from inside `load()`, which would self-cancel
+    /// (see `load()`).
     private func resetHiddenWords() {
+        sessionHiddenWords.removeAll()
+        // `hiddenWords` mirrors the persisted per-scope overrides (set in `load()`); when it
+        // is empty only session hides were active, so skip the pipeline recompute entirely.
+        guard !hiddenWords.isEmpty else { return }
         WordCloudOverrides.reset(for: scope.signature)
         loadTask?.cancel()
         loadTask = Task { await load() }
@@ -881,6 +952,10 @@ struct WordCloudView: View {
         /// Whether the A8 +/− marks are in the layout input (re-lays out when the
         /// Differentiate Without Color setting or the lens flips).
         let sentimentMarks: Bool
+        /// The words hidden just for this open cloud (#233). Included so hiding/un-hiding a
+        /// word re-runs the spiral packer — the placed set backfills from the fetched
+        /// surplus rather than relying on a term-count change.
+        let hidden: Set<String>
     }
 }
 
