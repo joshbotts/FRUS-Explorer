@@ -55,6 +55,11 @@ enum SeriesChartKind: Sendable {
         case .production: return Self.floorYear...Self.productionCeilingYear
         }
     }
+
+    /// Format style for integer year/decade axis labels that suppresses comma
+    /// grouping — years should display as `1950`, not `1,950`. Shared by all four
+    /// "About the Series" dashboards (previously a `private static let` in each).
+    static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 }
 
 // MARK: - Effective domain

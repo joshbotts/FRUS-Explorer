@@ -450,36 +450,15 @@ struct AdministrationProfilesDashboard: View {
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 
     // MARK: - Helpers

@@ -42,10 +42,6 @@ import Charts
 ///          range-filtered data
 struct SeriesProductionDashboard: View {
 
-    /// Format style for integer year/decade axis labels that suppresses comma
-    /// grouping — years should display as `1950`, not `1,950`.
-    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
-
     /// Optional so a missing environment yields a neutral empty state instead
     /// of a trap. Both live presentation paths (the onboarding sheet and the
     /// standalone Research Guide) inject `AppState` at the scene root, so this
@@ -213,7 +209,7 @@ struct SeriesProductionDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.chart.lag.x", defaultValue: "Publication year"))
@@ -261,7 +257,7 @@ struct SeriesProductionDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.chart.peryear.x", defaultValue: "Print year"))
@@ -317,7 +313,7 @@ struct SeriesProductionDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.chart.cumulative.x", defaultValue: "Print year"))
@@ -362,42 +358,21 @@ struct SeriesProductionDashboard: View {
 
     // MARK: - Chart card
 
-    /// A titled, captioned container for a single chart, keeping the four
-    /// sections visually consistent. When `inspector` is non-nil, the header
-    /// gains a trailing "View as table" button that opens the data pop-up.
+    /// Thin binding of the shared `SeriesChartCard` to this dashboard's
+    /// `inspectorData` sheet state. Extracted in #236 — the card body now lives in
+    /// `SeriesChartCard.swift`.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 }

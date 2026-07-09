@@ -43,10 +43,6 @@ import Charts
 ///          table" button opening a `ChartDataInspectorView` pop-up
 struct SourceProvenanceDashboard: View {
 
-    /// Format style for integer decade axis labels that suppresses comma
-    /// grouping — decades should display as `1950`, not `1,950`.
-    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
-
     /// Optional so a missing environment yields a neutral empty state instead of
     /// a trap. Both live presentation paths (the onboarding sheet and the
     /// standalone Research Guide) inject `AppState` at the scene root, so this
@@ -176,7 +172,7 @@ struct SourceProvenanceDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartYAxis {
@@ -274,7 +270,7 @@ struct SourceProvenanceDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.provenance.density.x", defaultValue: "Coverage decade"))
@@ -327,35 +323,14 @@ struct SourceProvenanceDashboard: View {
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 }
