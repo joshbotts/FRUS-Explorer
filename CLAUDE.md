@@ -41,6 +41,16 @@ xcodebuild test \
   -only-testing FRUSExplorerTests/CitationParserTests
 ```
 
+**Run the UI obstruction suite on an iPad destination** (scenario 4 covers the iPadOS
+`.sidebarAdaptable` floating-top-tab-bar overlay, #238; it self-skips on an iPhone destination):
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M4)" \
+  -only-testing FRUSExplorerUITests/UIObstructionTests
+```
+
 **SPM command-line tools (run from repo root):**
 ```bash
 swift run ManifestGenerator   # Regenerate manifest.json from GitHub FRUS TEI headers. Env: OUTPUT_PATH override; GITHUB_TOKEN. VOLUMES_DIR=<local corpus> switches to OFFLINE local overlay mode (no GitHub): loads the existing manifest at OUTPUT_PATH as the base and re-derives ONLY publicationDate (publicationStmt/date[@type="publication-date"] TEXT = print year) and dateRange (content-date @notBefore/@notAfter, else creation/date) from each VOLUMES_DIR/<filename> header, preserving all other fields

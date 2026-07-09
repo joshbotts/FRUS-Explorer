@@ -2861,34 +2861,48 @@ private struct SubseriesVolumeListView: View {
 
     private func volumeRow(_ vol: VolumeManifestEntry) -> some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(vol.title)
-                    .font(.system(size: 12))
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    Text(vol.volumeId)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                    if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
-                        Label("Downloaded", systemImage: "arrow.down.circle.fill")
+            // Primary navigation is a Button, not a whole-row `.onTapGesture` (which is
+            // invisible to VoiceOver and unreachable by keyboard). The two accessory actions
+            // stay as separate trailing buttons; `CorpusVolumeDetailView`'s rows already use
+            // this Button(.plain) pattern.
+            Button {
+                path.append(.volume(volumeId: vol.volumeId))
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(vol.title)
+                        .font(.system(size: 12))
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 8) {
+                        Text(vol.volumeId)
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
-                            .labelStyle(.titleAndIcon)
-                        if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
-                            Label("Indexed", systemImage: "checkmark.circle.fill")
+                        if let dm = appState.downloadManager, dm.isVolumeDownloaded(vol.volumeId) {
+                            Label("Downloaded", systemImage: "arrow.down.circle.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.secondary)
+                                .labelStyle(.titleAndIcon)
+                            if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
+                                Label("Indexed", systemImage: "checkmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.green)
+                                    .labelStyle(.titleAndIcon)
+                            }
+                        } else if appState.downloadQueue.contains(vol.volumeId) {
+                            Label("Downloading", systemImage: "arrow.down.circle")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.blue)
                                 .labelStyle(.titleAndIcon)
                         }
-                    } else if appState.downloadQueue.contains(vol.volumeId) {
-                        Label("Downloading", systemImage: "arrow.down.circle")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.blue)
-                            .labelStyle(.titleAndIcon)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            Spacer()
+            .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "corpus.volume.row.a11y",
+                                       defaultValue: "Volume \(vol.volumeId), \(vol.title)"))
+            .accessibilityHint(String(localized: "corpus.volume.row.hint",
+                                      defaultValue: "Opens the volume's contents"))
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
             } label: {
@@ -2924,8 +2938,6 @@ private struct SubseriesVolumeListView: View {
             )
         }
         .padding(.vertical, 2)
-        .contentShape(Rectangle())
-        .onTapGesture { path.append(.volume(volumeId: vol.volumeId)) }
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
@@ -2970,6 +2982,9 @@ private struct SubseriesVolumeListView: View {
 ///   1.5 — Session 2026-07-08: the full-title header is now `BoundedTitleHeader` (height
 ///          capped, scrolls when longer) — an unbounded `fixedSize` title overflowed the
 ///          non-scrolling column and blanked the volume's contents for long-titled volumes
+///   1.6 — Session 1 / #238 hardening: `indexingView` is wrapped in a `ScrollView` so its
+///          discovered-metadata row and context card can't be clipped at the window's
+///          minimum height (`BoundedTitleHeader` now lives in `App/BoundedTitleHeader.swift`)
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -3198,42 +3213,48 @@ private struct CorpusVolumeDetailView: View {
     }
 
     private var indexingView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Indexing Volume", systemImage: "arrow.triangle.2.circlepath")
-                .font(.headline)
-            if let prog = liveProgress, prog.totalDocuments > 0 {
-                ProgressView(value: Double(prog.completedDocuments),
-                             total: Double(prog.totalDocuments))
-                HStack {
-                    Text(indexingStageLabel(prog.stage))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(prog.completedDocuments) / \(prog.totalDocuments)")
-                        .font(.callout.monospacedDigit())
-                        .foregroundStyle(.secondary)
+        // Wrapped in a ScrollView so the discovered-metadata row and the indexing-context
+        // card can't be clipped at the corpus-browser window's minimum height (#238 hardening
+        // — this phase is not a List, so a ScrollView is the right fix here; the List phases
+        // are never wrapped, which would break their own scrolling).
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Indexing Volume", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.headline)
+                if let prog = liveProgress, prog.totalDocuments > 0 {
+                    ProgressView(value: Double(prog.completedDocuments),
+                                 total: Double(prog.totalDocuments))
+                    HStack {
+                        Text(indexingStageLabel(prog.stage))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(prog.completedDocuments) / \(prog.totalDocuments)")
+                            .font(.callout.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Preparing…")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            } else {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text("Preparing…")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                if let meta = appState.lastDiscoveredMetadata,
+                   meta.volumeId == volume.volumeId {
+                    DiscoveredMetadataRow(metadata: meta)
                 }
+                IndexingContextCard(
+                    volume: volume,
+                    metadata: appState.lastDiscoveredMetadata.flatMap {
+                        $0.volumeId == volume.volumeId ? $0 : nil
+                    }
+                )
             }
-            if let meta = appState.lastDiscoveredMetadata,
-               meta.volumeId == volume.volumeId {
-                DiscoveredMetadataRow(metadata: meta)
-            }
-            IndexingContextCard(
-                volume: volume,
-                metadata: appState.lastDiscoveredMetadata.flatMap {
-                    $0.volumeId == volume.volumeId ? $0 : nil
-                }
-            )
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder
