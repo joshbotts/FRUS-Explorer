@@ -43,6 +43,12 @@ import SwiftData
 ///          alphabetical position off-screen; the New Tag field moves above the list so
 ///          creation and the pinned tag are co-located; creating a tag moves VoiceOver focus
 ///          onto the new row and announces it.
+///   1.2 — Session 1 review pass: restored two iOS parity losses from consolidating toward
+///          the old struct's never-compiled iOS body (`.insetGrouped` list style; documentId
+///          title fallback for unnumbered documents); empty-state copy re-pointed "above"
+///          under a new key after the field reorder; Cancel now clears `newlyCreatedTags`
+///          before deleting so `displayTags` never renders context-deleted models
+///          (mid-dismissal SwiftData trap).
 struct UserTagPickerSheet: View {
     let entry: DocumentBrowserEntry
     let indexingPipeline: IndexingPipeline?
@@ -115,8 +121,10 @@ struct UserTagPickerSheet: View {
 
             if displayTags.isEmpty {
                 Section {
-                    Text(String(localized: "tags.picker.empty",
-                                defaultValue: "No user tags yet. Type a name below to create one."))
+                    // New key (not tags.picker.empty): the field moved above this message,
+                    // so the directional copy changed meaning.
+                    Text(String(localized: "tags.picker.empty.fieldAbove",
+                                defaultValue: "No user tags yet. Type a name above to create one."))
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 }
@@ -154,13 +162,17 @@ struct UserTagPickerSheet: View {
         }
     }
 
-    /// The document-scoped sheet title, including the document number when known.
+    /// The document-scoped sheet title: "Tags — Doc N" when the printed document number is
+    /// known, falling back to the document's xml:id (editorial notes and unnumbered
+    /// front-matter entries have no number) so the sheet always identifies WHICH document is
+    /// being tagged — parity with the original iOS picker.
     private var navTitle: String {
         if let docNum = entry.documentNumber {
             return String(localized: "tags.picker.nav.titleDoc",
                           defaultValue: "Tags — Doc \(docNum)")
         }
-        return String(localized: "tags.picker.nav.title", defaultValue: "Tags")
+        return String(localized: "tags.picker.nav.titleId",
+                      defaultValue: "Tags — \(entry.documentId)")
     }
 
     // MARK: - macOS Body
@@ -226,7 +238,10 @@ struct UserTagPickerSheet: View {
             List {
                 tagListContent
             }
-            .listStyle(.inset)
+            // .insetGrouped, matching the shipped iOS picker (which used the platform
+            // default) and the sibling document sheets — NOT .inset, which came from the
+            // never-compiled iOSBody of the old macOS struct.
+            .listStyle(.insetGrouped)
             .navigationTitle(navTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -265,7 +280,14 @@ struct UserTagPickerSheet: View {
     }
 
     private func cancelAndDismiss() {
-        for tag in newlyCreatedTags { modelContext.delete(tag) }
+        // Snapshot-and-clear BEFORE deleting: `displayTags`/`newTagIDs` render directly from
+        // `newlyCreatedTags`, and deleting a model the body still references re-renders the
+        // sheet mid-dismissal against context-deleted instances (SwiftData traps on property
+        // access once the deletion saves). Clearing first drops every render path back to the
+        // `@Query`, which removes deleted models atomically.
+        let doomed = newlyCreatedTags
+        newlyCreatedTags.removeAll()
+        for tag in doomed { modelContext.delete(tag) }
         dismiss()
     }
 

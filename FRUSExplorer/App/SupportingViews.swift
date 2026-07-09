@@ -2901,6 +2901,10 @@ private struct SubseriesVolumeListView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(String(localized: "corpus.volume.row.a11y",
                                        defaultValue: "Volume \(vol.volumeId), \(vol.title)"))
+            // The explicit label above replaces the content-derived one, which would
+            // otherwise have carried the status badges — restate them as the value so
+            // VoiceOver still reports download/index state.
+            .accessibilityValue(volumeStatusA11yValue(vol))
             .accessibilityHint(String(localized: "corpus.volume.row.hint",
                                       defaultValue: "Opens the volume's contents"))
             Button {
@@ -2946,6 +2950,26 @@ private struct SubseriesVolumeListView: View {
                     icon: { Image(systemName: WordCloudGlyph.symbol) }
             }
         }
+    }
+
+    /// The download/index state of a volume as a VoiceOver value string, mirroring the
+    /// row's visual status badges (which live inside the navigation Button's label and are
+    /// therefore replaced by its explicit `accessibilityLabel`). Empty when the volume is
+    /// not downloaded and not downloading.
+    private func volumeStatusA11yValue(_ vol: VolumeManifestEntry) -> String {
+        if appState.downloadManager?.isVolumeDownloaded(vol.volumeId) == true {
+            if (try? appState.indexingPipeline?.isVolumeIndexed(vol.volumeId)) == true {
+                return String(localized: "corpus.volume.row.status.downloadedIndexed",
+                              defaultValue: "Downloaded and indexed")
+            }
+            return String(localized: "corpus.volume.row.status.downloaded",
+                          defaultValue: "Downloaded")
+        }
+        if appState.downloadQueue.contains(vol.volumeId) {
+            return String(localized: "corpus.volume.row.status.downloading",
+                          defaultValue: "Downloading")
+        }
+        return ""
     }
 }
 

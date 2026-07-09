@@ -69,6 +69,9 @@ import SwiftUI
 ///          split inside the `.sidebarAdaptable` TabView overlaid content in the iPadOS
 ///          floating-top-tab-bar representation; `splitLayout`/`SubseriesListView` are kept
 ///          unreferenced for easy revert. Breadcrumb also suppressed at regular width (Fix A).
+///   2.5 — Session 1 review: Fix A's breadcrumb suppression gated on pad idiom + regular
+///          width (size class alone also fired on Plus/Max iPhones in landscape, where the
+///          bottom tab bar never occludes the bar)
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -349,10 +352,12 @@ struct BrowserView: View {
     /// ## Breadcrumb suppression
     /// `BrowserBreadcrumbBar` is a pinned `.safeAreaInset(edge: .top)` overlay. It is suppressed in
     /// two cases:
-    ///  - **Regular width / iPad (#238):** under the iPadOS floating top tab bar (the collapsed
+    ///  - **Regular-width iPad (#238):** under the iPadOS floating top tab bar (the collapsed
     ///    `.sidebarAdaptable` representation) a pinned top inset is drawn beneath the tab bar and
     ///    cannot be scrolled into view. The tab sidebar and the navigation back button convey
-    ///    location on iPad, so the bar is dropped entirely at `sizeClass == .regular`.
+    ///    location on iPad, so the bar is dropped when the pad idiom reports regular width
+    ///    (Plus/Max iPhones in landscape and compact-width iPads keep the bottom tab bar and
+    ///    keep the breadcrumb).
     ///  - **Document level (any width, Session 121):** a full corpus-to-document path wraps to
     ///    2–3 rows (~100 pt) and, as a `.safeAreaInset` overlay, blocks the document header and
     ///    initial body content. The inline document title and back button suffice inside a document.
@@ -370,15 +375,19 @@ struct BrowserView: View {
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             // Breadcrumb suppression (see doc comment above):
-            //  - Regular width / iPad (#238): a pinned `.safeAreaInset` breadcrumb is
-            //    occluded by the iPadOS floating top tab bar (`.sidebarAdaptable`) and cannot
-            //    be scrolled into view. The tab sidebar and the navigation back button convey
-            //    location instead. Rendering `EmptyView` (rather than hiding a laid-out bar)
-            //    keeps the crumbs out of the accessibility tree too — no hidden-but-focusable
-            //    chrome for VoiceOver / keyboard users.
+            //  - iPad (#238): a pinned `.safeAreaInset` breadcrumb is occluded by the iPadOS
+            //    floating top tab bar (`.sidebarAdaptable`) and cannot be scrolled into view.
+            //    The tab sidebar and the navigation back button convey location instead.
+            //    Rendering `EmptyView` (rather than hiding a laid-out bar) keeps the crumbs
+            //    out of the accessibility tree too — no hidden-but-focusable chrome for
+            //    VoiceOver / keyboard users. Gated on the pad idiom AND regular width, NOT
+            //    size class alone: Plus/Max iPhones report regular width in landscape but
+            //    keep the bottom tab bar (no occlusion, no sidebar rail), and a compact-width
+            //    iPad (Slide Over / narrow Split View) also shows the bottom tab bar, where
+            //    the breadcrumb is safe and useful.
             //  - Document level (any width, Session 121): the wrapped multi-row path blocks
             //    the document header.
-            if sizeClass == .regular {
+            if UIDevice.current.userInterfaceIdiom == .pad && sizeClass == .regular {
                 EmptyView()
             } else if case .document = level {
                 EmptyView()
