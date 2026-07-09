@@ -73,16 +73,42 @@ struct SeriesScopeBar: View {
     /// Invoked after the scope changes so the host can rebuild its derived data.
     var onChange: () -> Void = {}
 
-    /// The distinct subseries present in the manifest, each with its member volume ids,
-    /// sorted by subseries name.
-    private var subseriesBuckets: [(subseries: String, volumeIds: Set<String>)] {
+    /// One subseries' menu entry: its display name and member volume ids.
+    private struct SubseriesBucket {
+        /// The subseries identifier (e.g. `"1969-76"` or `"1861"`).
+        let subseries: String
+        /// The volume ids belonging to the subseries.
+        let volumeIds: Set<String>
+    }
+
+    /// One decade's submenu: the label (e.g. `"1860s"`) and its subseries, sorted.
+    private struct DecadeGroup {
+        /// The decade's leading year (e.g. `1860`), the sort key.
+        let decade: Int
+        /// The subseries whose leading year falls in this decade.
+        let buckets: [SubseriesBucket]
+        /// The submenu label (e.g. `"1860s"`).
+        var label: String { "\(decade)s" }
+    }
+
+    /// The manifest's subseries grouped by the **decade of their leading year** — the
+    /// manifest carries ~107 distinct subseries (the early annual volumes each use their
+    /// year, e.g. `"1861"`), and a flat submenu of 107 items is unusable (verified live).
+    /// Decade nesting yields ~14 submenus of at most a dozen entries each.
+    private var decadeGroups: [DecadeGroup] {
         var byName: [String: Set<String>] = [:]
         for entry in entries where !entry.subseries.isEmpty {
             byName[entry.subseries, default: []].insert(entry.volumeId)
         }
-        return byName
-            .map { (subseries: $0.key, volumeIds: $0.value) }
-            .sorted { $0.subseries < $1.subseries }
+        var byDecade: [Int: [SubseriesBucket]] = [:]
+        for (name, ids) in byName {
+            let leadingYear = Int(name.prefix(4)) ?? 0
+            let decade = (leadingYear / 10) * 10
+            byDecade[decade, default: []].append(SubseriesBucket(subseries: name, volumeIds: ids))
+        }
+        return byDecade
+            .map { DecadeGroup(decade: $0.key, buckets: $0.value.sorted { $0.subseries < $1.subseries }) }
+            .sorted { $0.decade < $1.decade }
     }
 
     /// The label shown in the menu button for the active scope.
@@ -108,18 +134,22 @@ struct SeriesScopeBar: View {
                     Label(String(localized: "series.scope.wholeSeries", defaultValue: "Whole series"),
                           systemImage: scope.isNarrowed ? "globe" : "checkmark")
                 }
-                let buckets = subseriesBuckets
-                if !buckets.isEmpty {
+                let groups = decadeGroups
+                if !groups.isEmpty {
                     Divider()
                     Menu(String(localized: "series.scope.bySubseries", defaultValue: "By Subseries")) {
-                        ForEach(buckets, id: \.subseries) { bucket in
-                            Button {
-                                setScope(SeriesScope(volumeIds: bucket.volumeIds, label: bucket.subseries))
-                            } label: {
-                                if scope.label == bucket.subseries {
-                                    Label(bucket.subseries, systemImage: "checkmark")
-                                } else {
-                                    Text(bucket.subseries)
+                        ForEach(groups, id: \.decade) { group in
+                            Menu(group.label) {
+                                ForEach(group.buckets, id: \.subseries) { bucket in
+                                    Button {
+                                        setScope(SeriesScope(volumeIds: bucket.volumeIds, label: bucket.subseries))
+                                    } label: {
+                                        if scope.label == bucket.subseries {
+                                            Label(bucket.subseries, systemImage: "checkmark")
+                                        } else {
+                                            Text(bucket.subseries)
+                                        }
+                                    }
                                 }
                             }
                         }
