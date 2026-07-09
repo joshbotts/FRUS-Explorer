@@ -78,28 +78,39 @@ final class UIObstructionTests: XCTestCase {
     // MARK: - Helpers
 
     /// Selects the Browse section, resolving the control across the iPhone bottom tab bar
-    /// and the iPad `.sidebarAdaptable` sidebar / floating-top-tab-bar representations.
-    /// Fails the test (rather than silently skipping, as the earlier `if browseTab.exists`
-    /// guards did on iPad) when no Browse control can be found.
+    /// and the iPad `.sidebarAdaptable` sidebar / floating-top-tab-bar representations
+    /// (where the tab items surface as buttons, sidebar cells, or plain labelled elements
+    /// depending on the representation). Fails the test (rather than silently skipping, as
+    /// the earlier `if browseTab.exists` guards did on iPad) when no Browse control can be
+    /// found — and dumps the element tree so the failure describes what it actually saw.
     @discardableResult
     private func selectBrowseSection() -> Bool {
         let candidates = [
             app.tabBars.firstMatch.buttons["Browse"],
             app.buttons["Browse"],
+            app.cells["Browse"],
+            app.cells.containing(NSPredicate(format: "label CONTAINS[c] 'Browse'")).firstMatch,
+            app.descendants(matching: .any).matching(
+                NSPredicate(format: "label == 'Browse'")).firstMatch,
         ]
         for control in candidates where control.waitForExistence(timeout: 3) {
             control.tap()
             return true
         }
-        XCTFail("Could not find a 'Browse' control in any tab-bar / sidebar representation")
+        print("[UIObstructionTests] Browse control not found; element tree:\n\(app.debugDescription)")
+        XCTFail("Could not find a 'Browse' control in any tab-bar / sidebar representation "
+                + "(element tree printed to the test log)")
         return false
     }
 
     /// The OS-provided control that toggles the `.sidebarAdaptable` TabView between its
-    /// leading-sidebar and floating-top-tab-bar representations. It has no stable
-    /// accessibility identifier and its label wording varies by iPadOS version, so it is
-    /// matched by a fuzzy label predicate; callers must treat a `nil` result as "skip".
+    /// leading-sidebar and floating-top-tab-bar representations. On iPadOS 26 it carries the
+    /// stable accessibility identifier `ToggleSideBar` (label "Toggle sidebar" — confirmed by
+    /// a live simulator run); the fuzzy label predicate remains as a fallback for OS versions
+    /// that rename the identifier. Callers must treat a `nil` result as "skip".
     private func sidebarToggleButton() -> XCUIElement? {
+        let byIdentifier = app.buttons["ToggleSideBar"]
+        if byIdentifier.exists { return byIdentifier }
         let predicate = NSPredicate(format:
             "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
         let matches = app.buttons.matching(predicate)
@@ -279,7 +290,9 @@ final class UIObstructionTests: XCTestCase {
 
         // Switch representation (sidebar ⇄ floating top tab bar) and let it settle. The bug
         // is transition-sensitive — the size class stays .regular, so Browse never
-        // re-evaluates its layout on the switch.
+        // re-evaluates its layout on the switch. Log which control the fuzzy predicate
+        // matched so a mis-match is diagnosable from the test log.
+        print("[UIObstructionTests] Tapping representation toggle: label='\(toggle.label)' id='\(toggle.identifier)'")
         toggle.tap()
         didToggleSidebar = true
         Thread.sleep(forTimeInterval: 0.7)

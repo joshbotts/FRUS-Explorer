@@ -42,12 +42,13 @@ xcodebuild test \
 ```
 
 **Run the UI obstruction suite on an iPad destination** (scenario 4 covers the iPadOS
-`.sidebarAdaptable` floating-top-tab-bar overlay, #238; it self-skips on an iPhone destination):
+`.sidebarAdaptable` floating-top-tab-bar overlay, #238; it self-skips on an iPhone
+destination — any installed iPad simulator works; check `xcrun simctl list devices available`):
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M4)" \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
   -only-testing FRUSExplorerUITests/UIObstructionTests
 ```
 
