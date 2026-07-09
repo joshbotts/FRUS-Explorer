@@ -37,6 +37,9 @@ import SwiftUI
 ///          height (HIG requirement for touch targets on iOS)
 ///   1.3 — Session 121: bar is suppressed at the document level in BrowserView.levelView
 ///          to prevent the wrapped multi-row path from blocking document content
+///   1.4 — Session 1 / #237: individual crumbs are width-capped (tail-truncated) so a
+///          paragraph-length volume title can't blow up the flow layout; the full label
+///          stays available to VoiceOver
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
@@ -81,12 +84,23 @@ struct BrowserBreadcrumbBar: View {
             .accessibilityHidden(true)
     }
 
+    /// The widest a single crumb may render before its label tail-truncates. A volume
+    /// crumb carries the full volume title (`entry.title`), which for older volumes can run
+    /// hundreds of characters — uncapped, one crumb becomes an enormous block that blows up
+    /// the wrapping flow layout. The full string stays available to VoiceOver via
+    /// `accessibilityLabel`. (#237)
+    private static let maxCrumbWidth: CGFloat = 220
+
     @ViewBuilder
     private func crumbButton(label: String, isCurrent: Bool, action: @escaping () -> Void) -> some View {
         if isCurrent {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: Self.maxCrumbWidth, alignment: .leading)
+                .accessibilityLabel(label)
                 // Non-interactive current crumb: match the padding of interactive crumbs
                 // so the bar height stays consistent as the user navigates.
                 .padding(.vertical, 12)
@@ -95,6 +109,10 @@ struct BrowserBreadcrumbBar: View {
                 Text(label)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: Self.maxCrumbWidth, alignment: .leading)
+                    .accessibilityLabel(label)
                     // Vertical padding expands the rendered hit area to ≥ 44 pt
                     // (caption text ≈ 12 pt + 12 pt top + 12 pt bottom = 36 pt visual,
                     //  but .contentShape expands the tap zone to the full padded frame).

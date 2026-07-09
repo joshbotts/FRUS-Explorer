@@ -42,6 +42,9 @@ import SwiftUI
 ///   2.4 — Session 2026-07-03: complete long titles — the full volume title heads the
 ///          metadata section (the inline nav-bar title truncates), and
 ///          `SectionRowLabel` wraps section titles instead of clipping at two lines
+///   2.5 — Session 1 / #237: iOS two-line principal nav-bar title (`TwoLineNavTitleView`)
+///          so the distinctive title tail shows past the boilerplate prefix; the
+///          in-content full title gains the `.isHeader` trait for the headings rotor
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -99,6 +102,14 @@ struct VolumeView: View {
             Task { await vm.loadVolumeStructure(for: volume) }
         }
         .toolbar {
+            #if os(iOS)
+            // Two-line principal title: the inline nav-bar title (below) tail-truncates to
+            // the constant "Foreign Relations of the United States, …" boilerplate; two lines
+            // show the distinctive tail. The full title still heads the content list. (#237)
+            ToolbarItem(placement: .principal) {
+                TwoLineNavTitleView(title: volume.title)
+            }
+            #endif
             ToolbarItem(placement: .primaryAction) {
                 let isIndexed = vm.isIndexed(volume.volumeId)
                 Button {
@@ -345,6 +356,8 @@ private struct VolumeMetadataView: View {
                 .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
+                // Canonical full-title display; expose to the VoiceOver headings rotor.
+                .accessibilityAddTraits(.isHeader)
             if volume.documentCount > 0 {
                 Text("\(volume.documentCount) documents")
                     .font(.subheadline)
