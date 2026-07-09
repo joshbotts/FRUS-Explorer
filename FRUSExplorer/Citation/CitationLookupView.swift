@@ -44,6 +44,13 @@ import SwiftUI
 ///          instead of pushing a `MacDocumentView(navigationPath: .constant([]))` whose
 ///          constant binding silently broke prev/next + cross-refs; result rows group for
 ///          VoiceOver and the lookup announces its result count; `.help` tooltips added
+///   1.3 — Session 2 review pass: initial focus verified live and hardened (a settle-then-
+///          focus task backs up `.defaultFocus`, which alone never landed; mode-switch
+///          refocus deferred one tick); document windows are titled "volumeId — documentId"
+///          (a bare TEI id left same-numbered documents indistinguishable); the no-engine
+///          error announces to VoiceOver like every other outcome; badge caption text mixed
+///          toward `.primary` for AA contrast (icon keeps the full hue); `.submitLabel(.search)`
+///          on the iOS fields
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -133,10 +140,25 @@ struct CitationLookupView: View {
             }
             #endif
             .defaultFocus($focusedField, .paste)
+            .task {
+                // `.defaultFocus` alone does not land in a Form-hosted field when the
+                // macOS window first opens (verified live in the simulator-free window
+                // drive: typing after ⌘⇧F was dropped until a manual click). Nudge focus
+                // once the window has settled — but only if the user hasn't already
+                // focused something themselves.
+                try? await Task.sleep(for: .milliseconds(350))
+                if focusedField == nil {
+                    focusedField = mode == .paste ? .paste : .subseries
+                }
+            }
             .onChange(of: mode) { _, newMode in
                 // Keep focus on a field that exists in the new mode (paste field only
-                // shows in .paste; the structured fields always show).
-                focusedField = newMode == .paste ? .paste : .subseries
+                // shows in .paste; the structured fields always show). Deferred one tick:
+                // the paste field is being INSERTED by this same view update, and assigning
+                // @FocusState to a not-yet-mounted field can be silently dropped.
+                Task { @MainActor in
+                    focusedField = newMode == .paste ? .paste : .subseries
+                }
             }
         }
         #if os(macOS)
@@ -172,6 +194,11 @@ struct CitationLookupView: View {
                 )
                 .lineLimit(3...6)
                 .focused($focusedField, equals: .paste)
+                #if os(iOS)
+                // With a submit label, Return submits instead of inserting a newline —
+                // citations are pasted, not typed with line breaks.
+                .submitLabel(.search)
+                #endif
                 .accessibilityLabel(String(localized: "citation.paste.a11y",
                                            defaultValue: "Citation text"))
                 .onChange(of: pasteText) { _, new in
@@ -195,6 +222,9 @@ struct CitationLookupView: View {
                           text: $subseriesField)
                     .focused($focusedField, equals: .subseries)
                     #if os(iOS)
+                    .submitLabel(.search)
+                    #endif
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
                     #endif
                     .disableAutocorrection(true)
@@ -207,6 +237,9 @@ struct CitationLookupView: View {
                                  defaultValue: "e.g. I or 1"),
                           text: $volumeField)
                     .focused($focusedField, equals: .volume)
+                    #if os(iOS)
+                    .submitLabel(.search)
+                    #endif
                     #if os(iOS)
                     .textInputAutocapitalization(.characters)
                     #endif
@@ -221,6 +254,9 @@ struct CitationLookupView: View {
                           text: $documentField)
                     .focused($focusedField, equals: .document)
                     #if os(iOS)
+                    .submitLabel(.search)
+                    #endif
+                    #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
             } label: {
@@ -232,6 +268,9 @@ struct CitationLookupView: View {
                                  defaultValue: "e.g. 47"),
                           text: $pageField)
                     .focused($focusedField, equals: .page)
+                    #if os(iOS)
+                    .submitLabel(.search)
+                    #endif
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
@@ -335,10 +374,14 @@ struct CitationLookupView: View {
     private func openMatch(_ match: CitationMatch) {
         guard !match.documentId.isEmpty else { return }
         #if os(macOS)
+        // The header doubles as the window/tab title (MacDocumentWindowView pins it), so a
+        // bare TEI id would leave two "d15" windows indistinguishable — include the volume.
+        // (CitationMatch carries no document heading; volumeManifestEntry is only populated
+        // on manifest-only matches, which are never openable.)
         openWindow(value: DocumentWindowID(
             volumeId: match.volumeId,
             documentId: match.documentId,
-            header: match.documentId
+            header: "\(match.volumeId) — \(match.documentId)"
         ))
         #else
         if let entry = makeEntry(for: match) {
@@ -350,9 +393,13 @@ struct CitationLookupView: View {
     @MainActor
     private func performLookup() async {
         guard let engine = appState.citationMatchingEngine else {
-            error = String(localized: "citation.error.noEngine",
-                           defaultValue: "Citation lookup is not available until a volume is downloaded.")
+            let message = String(localized: "citation.error.noEngine",
+                                 defaultValue: "Citation lookup is not available until a volume is downloaded.")
+            error = message
             hasSearched = true
+            // This early-out is an outcome too — announce it like the shared block below,
+            // so VoiceOver users get a cue on every path out of a lookup attempt.
+            AccessibilityNotification.Announcement(message).post()
             return
         }
 
@@ -473,16 +520,20 @@ private struct CitationResultRow: View {
             // separate so they remain individually activatable.
             VStack(alignment: .leading, spacing: 6) {
                 // Confidence label badge — icon + text so confidence level is not
-                // communicated by color alone (WCAG 1.4.1 / F-023).
+                // communicated by color alone (WCAG 1.4.1 / F-023). The caption TEXT is
+                // mixed toward .primary so small type clears AA contrast on the tinted
+                // background (raw system orange/green caption text sits well below 4.5:1);
+                // the icon keeps the full hue as the color-language carrier.
                 Label {
                     Text(match.confidenceLabel)
                         .font(.caption)
                         .fontWeight(.medium)
+                        .foregroundStyle(confidenceLabelColor.mix(with: .primary, by: 0.45))
                 } icon: {
                     Image(systemName: confidenceLabelIcon)
                         .font(.caption2)
+                        .foregroundStyle(confidenceLabelColor)
                 }
-                .foregroundStyle(confidenceLabelColor)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background(confidenceLabelColor.opacity(0.1))

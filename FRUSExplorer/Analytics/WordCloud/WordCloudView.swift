@@ -719,8 +719,8 @@ struct WordCloudView: View {
             Label(String(localized: "wordcloud.word.search", defaultValue: "Search for this term"),
                   systemImage: "magnifyingglass")
         }
-        // Hide actions, narrowest → broadest scope. The first is non-persistent (this cloud
-        // only, until it closes); the other two persist and recompute (#233).
+        // Hide actions, narrowest → broadest scope: this cloud (non-persistent, until it
+        // closes) → this lens (persists) → all word clouds (persists, broadest) (#233).
         Button(role: .destructive) {
             hideWordInThisCloud(term)
         } label: {
@@ -729,18 +729,18 @@ struct WordCloudView: View {
                   systemImage: "eye.slash.fill")
         }
         Button(role: .destructive) {
-            hideWordGlobally(term)
-        } label: {
-            Label(String(localized: "wordcloud.word.hide.global",
-                         defaultValue: "Hide this word in all word clouds"),
-                  systemImage: "eye.slash")
-        }
-        Button(role: .destructive) {
             hideWordInLens(term)
         } label: {
             Label(String(localized: "wordcloud.word.hide.lens",
                          defaultValue: "Hide this word in this lens"),
                   systemImage: "eye.slash.circle")
+        }
+        Button(role: .destructive) {
+            hideWordGlobally(term)
+        } label: {
+            Label(String(localized: "wordcloud.word.hide.global",
+                         defaultValue: "Hide this word in all word clouds"),
+                  systemImage: "eye.slash")
         }
     }
 
