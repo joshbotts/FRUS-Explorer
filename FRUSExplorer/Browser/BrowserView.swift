@@ -328,13 +328,16 @@ struct BrowserView: View {
     /// (triggered by any change to `vm.navigationPath`), SwiftUI cannot diff through `AnyView`
     /// and recreates the wrapped view, resetting `@State` and restarting document loading.
     ///
-    /// ## Breadcrumb suppression at the document level
-    /// `BrowserBreadcrumbBar` is not shown when `level == .document`. A full-path breadcrumb
-    /// at the document level wraps to multiple rows on narrow screens (the `BreadcrumbFlowLayout`
-    /// path can reach 4–5 crumbs, each row ~36 pt, totalling ~100 pt). This tall bar sits as a
-    /// `.safeAreaInset` overlay and blocks the document header and initial body content. The
-    /// navigation bar title (inline document header) and the navigation back button are
-    /// sufficient for navigation once inside a document.
+    /// ## Breadcrumb suppression
+    /// `BrowserBreadcrumbBar` is a pinned `.safeAreaInset(edge: .top)` overlay. It is suppressed in
+    /// two cases:
+    ///  - **Regular width / iPad (#238):** under the iPadOS floating top tab bar (the collapsed
+    ///    `.sidebarAdaptable` representation) a pinned top inset is drawn beneath the tab bar and
+    ///    cannot be scrolled into view. The tab sidebar and the navigation back button convey
+    ///    location on iPad, so the bar is dropped entirely at `sizeClass == .regular`.
+    ///  - **Document level (any width, Session 121):** a full corpus-to-document path wraps to
+    ///    2–3 rows (~100 pt) and, as a `.safeAreaInset` overlay, blocks the document header and
+    ///    initial body content. The inline document title and back button suffice inside a document.
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
         Group {
@@ -348,8 +351,18 @@ struct BrowserView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            // Suppress the breadcrumb bar at the document level (see doc comment above).
-            if case .document = level {
+            // Breadcrumb suppression (see doc comment above):
+            //  - Regular width / iPad (#238): a pinned `.safeAreaInset` breadcrumb is
+            //    occluded by the iPadOS floating top tab bar (`.sidebarAdaptable`) and cannot
+            //    be scrolled into view. The tab sidebar and the navigation back button convey
+            //    location instead. Rendering `EmptyView` (rather than hiding a laid-out bar)
+            //    keeps the crumbs out of the accessibility tree too — no hidden-but-focusable
+            //    chrome for VoiceOver / keyboard users.
+            //  - Document level (any width, Session 121): the wrapped multi-row path blocks
+            //    the document header.
+            if sizeClass == .regular {
+                EmptyView()
+            } else if case .document = level {
                 EmptyView()
             } else {
                 BrowserBreadcrumbBar(path: vm.navigationPath) { index in
