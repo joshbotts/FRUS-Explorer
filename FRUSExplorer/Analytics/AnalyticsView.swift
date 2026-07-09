@@ -622,17 +622,33 @@ struct AnalyticsView: View {
     /// component (Prep-B), supplying the range bindings and bounds context; the
     /// reset action restores the `1861...corpusMaxYear` default span.
     private var yearRangeBar: some View {
-        AnalyticsYearRangeBar(
-            start: $yearRangeStart,
-            end: $yearRangeEnd,
-            corpusMaxYear: corpusMaxYear,
-            isCompactWidth: isCompactWidth,
-            isCustom: yearRangeIsCustom,
-            onReset: {
-                yearRangeStart = 1861
-                yearRangeEnd = corpusMaxYear
+        VStack(spacing: 2) {
+            AnalyticsYearRangeBar(
+                start: $yearRangeStart,
+                end: $yearRangeEnd,
+                corpusMaxYear: corpusMaxYear,
+                isCompactWidth: isCompactWidth,
+                isCustom: yearRangeIsCustom,
+                onReset: {
+                    yearRangeStart = 1861
+                    yearRangeEnd = corpusMaxYear
+                }
+            )
+            // Administration presets (#236): one tap sets the year range to a president's
+            // term — the date-based analytics charts filter by the document's year.
+            let administrations = appState.administrationProfilesStore.index?.administrations ?? []
+            if !administrations.isEmpty {
+                HStack {
+                    AdministrationPresetMenu(
+                        administrations: administrations,
+                        yearStart: $yearRangeStart,
+                        yearEnd: $yearRangeEnd
+                    )
+                    Spacer()
+                }
+                .padding(.horizontal)
             }
-        )
+        }
     }
 
     // MARK: - Search Handoff Bar
