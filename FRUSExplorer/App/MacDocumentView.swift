@@ -231,7 +231,7 @@ struct MacDocumentView: View {
         // (the non-optional variant is deprecated on macOS 15).
         .focusedSceneValue(\.documentCommands, documentCommands)
         .sheet(isPresented: $showTagPicker) {
-            MacTagPickerSheet(
+            UserTagPickerSheet(
                 entry: entry,
                 indexingPipeline: appState.indexingPipeline,
                 initialTagIds: Set(documentTagAssignments.map(\.tagId))
