@@ -41,7 +41,15 @@ import UIKit
 ///   1.2 — Session 1 / #238: added scenario 4 (iPad sidebar → floating top tab bar);
 ///          the Browse-tab guards resolve the control across bottom-bar / sidebar /
 ///          top-bar representations and now fail loudly instead of silently skipping
-///          on iPad
+///          on iPad.
+//
+// Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
+// actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
+// context` warnings on every UI call throughout the file. These are pre-existing and
+// SDK-driven (they cover the original scenarios 1–3 too); `@MainActor` on the class would
+// silence them but conflicts with the throwing `setUpWithError`/`tearDownWithError`
+// overrides ("sending self"), so they are left as-is. The app-target zero-warning gate
+// (`CodingStandardsAuditTests`) does not cover this UI-test target.
 final class UIObstructionTests: XCTestCase {
 
     var app: XCUIApplication!
