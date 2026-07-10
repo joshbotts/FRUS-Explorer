@@ -388,6 +388,82 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - CrossRefKit
+
+        /// The FRUS cross-reference target grammar, mirrored from the app so the offline validator
+        /// classifies `<ref target>` values exactly as the reading view navigates them
+        /// (`CrossRefGrammar.resolveDestination` ≡ `FRUSURLSchemeHandler.resolveCrossRefTarget`),
+        /// plus the existence-oriented `classifyForValidation`. Pure Foundation; parity-tested
+        /// against the app's documented cases. SPM-only this session (a generator dependency);
+        /// wiring it into the app targets is a later session's step.
+        .target(
+            name: "CrossRefKit",
+            path: "CrossRefKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for the shared cross-reference grammar (navigation parity + validation
+        /// classification + candidate generation).
+        .testTarget(
+            name: "CrossRefKitTests",
+            dependencies: [.target(name: "CrossRefKit")],
+            path: "CrossRefKitTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - GeneratorKit
+
+        /// Reusable utilities shared across the corpus-scanning generators: a deterministic
+        /// `VolumeCorpusEnumerator`, a stderr logger, a reproducible `yyyy-MM-dd` date stamp, and an
+        /// RFC-4180 `CSVWriter`. Factored out so every generator's output stays byte-stable.
+        .target(
+            name: "GeneratorKit",
+            path: "GeneratorKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for GeneratorKit (CSV escaping, date stamp, enumerator sort/filter).
+        .testTarget(
+            name: "GeneratorKitTests",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "GeneratorKitTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - CrossRefValidationGenerator
+
+        /// Validates every `<ref target>` across the local FRUS corpus (issue #240): a byte-scan
+        /// xml:id inventory (Pass A), a byte-scan ref harvest capturing offset/line/enclosing
+        /// document (Pass B), and classification against the shared `CrossRefKit` grammar (Pass C).
+        /// Emits the OH-submittable `broken-refs-report.{csv,json}` plus the candidate bundled
+        /// `broken-refs-index.json`. Entirely offline & deterministic; changes no app output.
+        .target(
+            name: "CrossRefValidationGeneratorCore",
+            dependencies: [
+                .target(name: "CrossRefKit"),
+                .target(name: "GeneratorKit"),
+            ],
+            path: "CrossRefValidationGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls CrossRefValidationRunner.run() and exits.
+        .executableTarget(
+            name: "CrossRefValidationGenerator",
+            dependencies: [.target(name: "CrossRefValidationGeneratorCore")],
+            path: "CrossRefValidationGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit + fixture tests for CrossRefValidationGeneratorCore (inventory extraction, ref
+        /// harvest location, per-reason classification, end-to-end report/CSV/index).
+        .testTarget(
+            name: "CrossRefValidationGeneratorTests",
+            dependencies: [.target(name: "CrossRefValidationGeneratorCore")],
+            path: "CrossRefValidationGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - FTS5Store
 
         /// SQLite FTS5 Swift wrapper. Actor-based, async/await, Swift 6 strict concurrency.
