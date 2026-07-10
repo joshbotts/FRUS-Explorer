@@ -14,16 +14,17 @@ import Foundation
 public struct HarvestedRef: Equatable, Sendable {
     /// The verbatim `target` attribute value.
     public let rawTarget: String
-    /// UTF-8 byte offset of the `<ref>`'s `<` in the file.
-    public let charOffset: Int
+    /// UTF-8 **byte** offset of the `<ref>`'s `<` in the file.
+    public let byteOffset: Int
     /// 1-based line of the `<ref>` in the file.
     public let line: Int
     /// The nearest enclosing `<div type="document">` xml:id, or `nil` for front/back-matter refs.
     public let enclosingDocument: String?
 
-    public init(rawTarget: String, charOffset: Int, line: Int, enclosingDocument: String?) {
+    /// Memberwise initializer (fields documented on the properties).
+    public init(rawTarget: String, byteOffset: Int, line: Int, enclosingDocument: String?) {
         self.rawTarget = rawTarget
-        self.charOffset = charOffset
+        self.byteOffset = byteOffset
         self.line = line
         self.enclosingDocument = enclosingDocument
     }
@@ -117,7 +118,7 @@ public enum RefHarvester {
                 if let target = attribute("target", in: tag) {
                     let enclosing = lastEnclosingDocument(divStack)
                     refs.append(HarvestedRef(rawTarget: target,
-                                             charOffset: start,
+                                             byteOffset: start,
                                              line: startLine,
                                              enclosingDocument: enclosing))
                 }

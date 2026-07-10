@@ -27,6 +27,8 @@ struct GeneratorKitTests {
         #expect(CSVWriter.field("say \"hi\"") == "\"say \"\"hi\"\"\"")
         #expect(CSVWriter.field("line1\nline2") == "\"line1\nline2\"")
         #expect(CSVWriter.field("cr\rlf") == "\"cr\rlf\"")
+        // Both a quote and a comma in one field: quoted once, interior quote doubled.
+        #expect(CSVWriter.field("a,\"b") == "\"a,\"\"b\"")
     }
 
     @Test("Rows are comma-joined and CRLF-terminated")

@@ -27,7 +27,7 @@ struct CrossRefValidatorTests {
     }
 
     private func outcome(_ target: String, source: String = "frus1901") -> ValidationOutcome {
-        let ref = HarvestedRef(rawTarget: target, charOffset: 0, line: 1, enclosingDocument: "d1")
+        let ref = HarvestedRef(rawTarget: target, byteOffset: 0, line: 1, enclosingDocument: "d1")
         return Self.makeValidator().validate(ref, sourceVolume: source, sourceFilename: "\(source).xml")
     }
 
@@ -78,10 +78,15 @@ struct CrossRefValidatorTests {
         } else { Issue.record("expected broken") }
     }
 
-    @Test("A bare token that is not a known volume is malformedTarget")
+    @Test("A bare token that is not a known volume is malformedTarget, hinted as a same-volume anchor")
     func malformed() {
         #expect(reason("randomtoken") == .malformedTarget)
         #expect(reason("pg_1602") == .malformedTarget)   // page anchor written without its '#'
+        // The record carries the apparent intent (a same-volume anchor missing its '#') for OH.
+        if case .broken(let r) = outcome("pg_1602") {
+            #expect(r.resolvedVolume == "frus1901")
+            #expect(r.resolvedAnchor == "pg_1602")
+        } else { Issue.record("expected broken") }
     }
 
     @Test("Empty targets are emptyTarget")

@@ -63,12 +63,15 @@ public enum CrossRefValidationRunner {
         generatorLog("Manifest: \(seriesVolumeIds.count) series volumes; corpus: \(files.count) files")
 
         // MARK: Pass A — xml:id inventory for every corpus volume.
+        // An unreadable file throws rather than being skipped: a silently dropped volume would
+        // reclassify every ref targeting it (fabricating unknownVolume rows or hiding real broken
+        // anchors behind volumeNotInSnapshot) — an I/O fault must never reshape the OH report.
         var inventories: [String: Set<String>] = [:]
         inventories.reserveCapacity(files.count)
         var totalIds = 0
         for (index, file) in files.enumerated() {
             let volumeId = VolumeCorpusEnumerator.volumeId(for: file)
-            guard let data = try? Data(contentsOf: file) else { continue }
+            let data = try Data(contentsOf: file)
             let ids = AnchorInventory.xmlIds(in: data)
             inventories[volumeId] = ids
             totalIds += ids.count
@@ -90,7 +93,7 @@ public enum CrossRefValidationRunner {
         for (index, file) in files.enumerated() {
             let volumeId = VolumeCorpusEnumerator.volumeId(for: file)
             let filename = file.lastPathComponent
-            guard let data = try? Data(contentsOf: file) else { continue }
+            let data = try Data(contentsOf: file)
             let refs = RefHarvester.harvest(from: data)
             totalRefs += refs.count
             for ref in refs {
@@ -112,7 +115,7 @@ public enum CrossRefValidationRunner {
         broken.sort {
             if $0.sourceVolume != $1.sourceVolume { return $0.sourceVolume < $1.sourceVolume }
             if $0.line != $1.line { return $0.line < $1.line }
-            return $0.charOffset < $1.charOffset
+            return $0.byteOffset < $1.byteOffset
         }
 
         let unknownVolumeIds = Set(broken.filter { $0.reason == .unknownVolume }
@@ -131,7 +134,11 @@ public enum CrossRefValidationRunner {
             seriesVolumeCount: seriesVolumeIds.count,
             totalRefsScanned: totalRefs,
             totalBroken: broken.count,
-            totalsByReason: Dictionary(uniqueKeysWithValues: reasonCounts.map { ($0.key.rawValue, $0.value) }),
+            // Every reason key is always present (zero-count included) so the report schema is
+            // stable across runs and consumers never key-miss.
+            totalsByReason: Dictionary(uniqueKeysWithValues: BrokenRefReason.allCases.map {
+                ($0.rawValue, reasonCounts[$0] ?? 0)
+            }),
             informationalCounts: [
                 "external": externalCount,
                 "wholeVolumeRef": wholeVolumeCount,
@@ -148,11 +155,13 @@ public enum CrossRefValidationRunner {
         try reportEncoder.encode(report)
             .write(to: outputDir.appendingPathComponent("broken-refs-report.json"))
 
-        // MARK: Report CSV (the OH-facing spreadsheet).
-        let header = ["source_volume", "source_document", "line", "char_offset",
+        // MARK: Report CSV (the OH-facing spreadsheet). The offset column is named for its unit —
+        // UTF-8 bytes — because these files are non-ASCII-heavy and a character interpretation
+        // would land thousands of positions off.
+        let header = ["source_volume", "source_document", "line", "byte_offset",
                       "raw_target", "reason", "resolved_volume", "resolved_anchor", "source_filename"]
         let rows = broken.map { r in
-            [r.sourceVolume, r.sourceDocument ?? "", String(r.line), String(r.charOffset),
+            [r.sourceVolume, r.sourceDocument ?? "", String(r.line), String(r.byteOffset),
              r.rawTarget, r.reason.rawValue, r.resolvedVolume ?? "", r.resolvedAnchor ?? "", r.sourceFilename]
         }
         try Data(CSVWriter.document(header: header, rows: rows).utf8)
@@ -177,11 +186,16 @@ public enum CrossRefValidationRunner {
 
     // MARK: - Bundled index writer
 
-    private static func writeBundledIndex(broken: [BrokenRef], generated: String,
-                                          corpusVolumeCount: Int, seriesVolumeCount: Int,
-                                          to url: URL) throws {
+    /// Writes the candidate bundled exclusion index: records deduplicated to one per distinct
+    /// composite `(sv, sd, t)` key (the same broken target recurs many times within a document —
+    /// duplicates are pure dead weight for the app's lookup, and their `r`/`rv`/`ra` are
+    /// guaranteed identical because resolution is a pure function of `(sv, t)`). Internal (not
+    /// private) with an injectable `threshold` so tests can exercise the compact fallback branch.
+    static func writeBundledIndex(broken: [BrokenRef], generated: String,
+                                  corpusVolumeCount: Int, seriesVolumeCount: Int,
+                                  to url: URL, threshold: Int = bundledSizeThreshold) throws {
         func records(fullDetail: Bool) -> [BrokenRefsIndexRecord] {
-            broken.map {
+            let sorted = broken.map {
                 BrokenRefsIndexRecord(sv: $0.sourceVolume,
                                       sd: $0.sourceDocument ?? "",
                                       t: $0.rawTarget,
@@ -193,29 +207,38 @@ public enum CrossRefValidationRunner {
                 if $0.sd != $1.sd { return $0.sd < $1.sd }
                 return $0.t < $1.t
             }
+            // Adjacent after the sort — keep the first of each composite key.
+            var deduped: [BrokenRefsIndexRecord] = []
+            for record in sorted where deduped.last.map({
+                $0.sv != record.sv || $0.sd != record.sd || $0.t != record.t
+            }) ?? true {
+                deduped.append(record)
+            }
+            return deduped
         }
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
 
-        func encoded(fullDetail: Bool) throws -> Data {
+        func encoded(fullDetail: Bool) throws -> (Data, Int) {
+            let recs = records(fullDetail: fullDetail)
             let index = BrokenRefsIndex(schemaVersion: 1, generated: generated,
                                         corpusVolumeCount: corpusVolumeCount,
                                         seriesVolumeCount: seriesVolumeCount,
                                         totalBroken: broken.count,
                                         fullDetail: fullDetail,
-                                        records: records(fullDetail: fullDetail))
-            return try encoder.encode(index)
+                                        records: recs)
+            return (try encoder.encode(index), recs.count)
         }
 
-        var data = try encoded(fullDetail: true)
+        var (data, distinct) = try encoded(fullDetail: true)
         var fullDetail = true
-        if data.count > bundledSizeThreshold {
-            data = try encoded(fullDetail: false)
+        if data.count > threshold {
+            (data, distinct) = try encoded(fullDetail: false)
             fullDetail = false
         }
         try data.write(to: url)
-        generatorLog("  bundled index: \(data.count) bytes (\(fullDetail ? "full-detail" : "compact — rv/ra dropped, threshold \(bundledSizeThreshold) exceeded"))")
+        generatorLog("  bundled index: \(data.count) bytes, \(distinct) distinct keys of \(broken.count) occurrences (\(fullDetail ? "full-detail" : "compact — rv/ra dropped, threshold \(threshold) exceeded"))")
     }
 
     private static func reasonSummary(_ counts: [BrokenRefReason: Int]) -> String {

@@ -17,7 +17,9 @@ public enum BrokenRefReason: String, Codable, Sendable, Equatable, CaseIterable 
     /// `""`, `"#"`, or `"vol#"` — no anchor to resolve.
     case emptyTarget
     /// A `#`-less token that is neither a known volume id nor an external URL
-    /// (e.g. a page anchor `pg_1602` written without its `#`).
+    /// (e.g. a page anchor `pg_1602` written without its `#`). The record carries the source
+    /// volume and the bare token as the apparent same-volume anchor — the reading of the target
+    /// the app's navigation grammar would take — so OH sees what the ref meant.
     case malformedTarget
     /// A cross-volume prefix that matches no volume in the series or the local corpus.
     case unknownVolume
@@ -51,12 +53,15 @@ public struct BrokenRef: Codable, Sendable, Equatable {
     public let reason: BrokenRefReason
     /// 1-based line of the `<ref>` in the source file (for a human opening the TEI).
     public let line: Int
-    /// UTF-8 byte offset of the `<ref>`'s `<` in the source file (for programmatic patch tooling).
-    public let charOffset: Int
+    /// UTF-8 **byte** offset of the `<ref>`'s `<` in the source file (for programmatic patch
+    /// tooling). Named for its unit — these files are non-ASCII-heavy, so a byte offset and a
+    /// character offset diverge by thousands of positions.
+    public let byteOffset: Int
 
+    /// Memberwise initializer (fields documented on the properties).
     public init(sourceVolume: String, sourceDocument: String?, sourceFilename: String,
                 rawTarget: String, resolvedVolume: String?, resolvedAnchor: String?,
-                reason: BrokenRefReason, line: Int, charOffset: Int) {
+                reason: BrokenRefReason, line: Int, byteOffset: Int) {
         self.sourceVolume = sourceVolume
         self.sourceDocument = sourceDocument
         self.sourceFilename = sourceFilename
@@ -65,7 +70,7 @@ public struct BrokenRef: Codable, Sendable, Equatable {
         self.resolvedAnchor = resolvedAnchor
         self.reason = reason
         self.line = line
-        self.charOffset = charOffset
+        self.byteOffset = byteOffset
     }
 }
 
@@ -104,6 +109,13 @@ public struct CrossRefValidationReport: Codable, Sendable {
 /// target resolves differently per source document, so a raw-target-only key would collide with
 /// valid refs.
 ///
+/// `records` holds **one record per distinct composite key** — the same broken target often recurs
+/// many times within a document (the shipped corpus has 652 broken occurrences but only 213
+/// distinct keys), and duplicates are guaranteed self-consistent (`r`/`rv`/`ra` are pure functions
+/// of `(sv, t)`), so a Session-7 loader can build a keyed dictionary without collision handling.
+/// `totalBroken` remains the *occurrence* count (matching the report); per-occurrence detail lives
+/// only in `broken-refs-report.{csv,json}`.
+///
 /// This session writes it beside the report as the *measured proposal*; wiring it into the app
 /// bundle (and the `is_broken` retroactive update) is Session 7's step.
 public struct BrokenRefsIndex: Codable, Sendable {
@@ -111,6 +123,8 @@ public struct BrokenRefsIndex: Codable, Sendable {
     public let generated: String
     public let corpusVolumeCount: Int
     public let seriesVolumeCount: Int
+    /// Broken *occurrences* corpus-wide (the report's record count); `records.count` is the
+    /// distinct-key count.
     public let totalBroken: Int
     /// `true` when records carry the full `rv`/`ra` detail; `false` when the size threshold forced
     /// the compact exclusion-key-only form.

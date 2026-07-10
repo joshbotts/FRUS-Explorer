@@ -42,6 +42,7 @@ public struct CrossRefValidator {
     /// Volume ids in the app manifest (the shippable series).
     public let seriesVolumeIds: Set<String>
 
+    /// Memberwise initializer (fields documented on the properties).
     public init(inventories: [String: Set<String>],
                 corpusVolumeIds: Set<String>,
                 seriesVolumeIds: Set<String>) {
@@ -70,7 +71,7 @@ public struct CrossRefValidator {
                               resolvedAnchor: resolvedAnchor,
                               reason: reason,
                               line: ref.line,
-                              charOffset: ref.charOffset))
+                              byteOffset: ref.byteOffset))
         }
 
         switch CrossRefGrammar.classifyForValidation(ref.rawTarget, sourceVolumeId: sourceVolume) {
@@ -83,7 +84,9 @@ public struct CrossRefValidator {
 
         case .wholeVolumeOrMalformed(let token):
             guard isKnownVolume(token) else {
-                return broken(.malformedTarget, resolvedVolume: nil, resolvedAnchor: nil)
+                // The apparent intent of a bare non-volume token is a same-volume anchor missing
+                // its '#' (the app's grammar reads it that way) — record that hint for OH.
+                return broken(.malformedTarget, resolvedVolume: sourceVolume, resolvedAnchor: token)
             }
             return seriesVolumeIds.contains(token) ? .wholeVolumeRef : .nonShippable(targetVolume: token)
 

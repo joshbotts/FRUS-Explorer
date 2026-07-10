@@ -1,4 +1,4 @@
-source_volume,source_document,line,char_offset,raw_target,reason,resolved_volume,resolved_anchor,source_filename
+source_volume,source_document,line,byte_offset,raw_target,reason,resolved_volume,resolved_anchor,source_filename
 frus1872p2v3,d29,45329,3509089,#pg_700,unknownPage,frus1872p2v3,pg_700,frus1872p2v3.xml
 frus1875v02,,60780,5068833,#pg_678,unknownPage,frus1875v02,pg_678,frus1875v02.xml
 frus1880,,99259,8183102,#pg_1177,unknownPage,frus1880,pg_1177,frus1880.xml
@@ -127,7 +127,7 @@ frus1945-50Intel,,78725,6288001,#in41,unknownAnchor,frus1945-50Intel,in41,frus19
 frus1945v01,d310,114070,9074545,frus1900-18Index#pg_316,unknownPage,frus1900-18Index,pg_316,frus1945v01.xml
 frus1946v08,,55372,4549612,frus1946v06#pg_1158,unknownPage,frus1946v06,pg_1158,frus1946v08.xml
 frus1951v02,d764,102281,8117828,frus1950v01#pg_1245,unknownPage,frus1950v01,pg_1245,frus1951v02.xml
-frus1951v03p2,,68023,5418206,pg_1602,malformedTarget,,,frus1951v03p2.xml
+frus1951v03p2,,68023,5418206,pg_1602,malformedTarget,frus1951v03p2,pg_1602,frus1951v03p2.xml
 frus1952-54v08,,99148,8424343,#in1,unknownAnchor,frus1952-54v08,in1,frus1952-54v08.xml
 frus1952-54v08,,99181,8427047,#in2,unknownAnchor,frus1952-54v08,in2,frus1952-54v08.xml
 frus1952-54v08,,99200,8428731,#in3,unknownAnchor,frus1952-54v08,in3,frus1952-54v08.xml
@@ -217,7 +217,7 @@ frus1952-54v09p2,,66106,5507286,frus1952-54v09p1#pg_1738,unknownPage,frus1952-54
 frus1952-54v09p2,,66107,5507382,frus1952-54v09p1#pg_1739,unknownPage,frus1952-54v09p1,pg_1739,frus1952-54v09p2.xml
 frus1952-54v09p2,,66108,5507477,frus1952-54v09p1#pg_1741,unknownPage,frus1952-54v09p1,pg_1741,frus1952-54v09p2.xml
 frus1952-54v09p2,,66241,5518698,#in51,unknownAnchor,frus1952-54v09p2,in51,frus1952-54v09p2.xml
-frus1952-54v09p2,,66383,5528880,pg_1743,malformedTarget,,,frus1952-54v09p2.xml
+frus1952-54v09p2,,66383,5528880,pg_1743,malformedTarget,frus1952-54v09p2,pg_1743,frus1952-54v09p2.xml
 frus1952-54v09p2,,66462,5534617,frus1952-54v09p1#pg_1687,unknownPage,frus1952-54v09p1,pg_1687,frus1952-54v09p2.xml
 frus1952-54v09p2,,66463,5534713,frus1952-54v09p1#pg_1688,unknownPage,frus1952-54v09p1,pg_1688,frus1952-54v09p2.xml
 frus1952-54v09p2,,66484,5536352,frus1952-54v09p1#pg_1687,unknownPage,frus1952-54v09p1,pg_1687,frus1952-54v09p2.xml
@@ -511,7 +511,7 @@ frus1952-54v09p2,,77979,6462068,frus1952-54v09p1#pg_1718,unknownPage,frus1952-54
 frus1952-54v09p2,,78008,6464493,frus1952-54v09p1#pg_1727,unknownPage,frus1952-54v09p1,pg_1727,frus1952-54v09p2.xml
 frus1952-54v09p2,,78009,6464581,frus1952-54v09p1#pg_1730,unknownPage,frus1952-54v09p1,pg_1730,frus1952-54v09p2.xml
 frus1952-54v09p2,,78212,6480030,frus1952-54v09p1#pg_1727,unknownPage,frus1952-54v09p1,pg_1727,frus1952-54v09p2.xml
-frus1952-54v09p2,,78230,6481433,pg_1743,malformedTarget,,,frus1952-54v09p2.xml
+frus1952-54v09p2,,78230,6481433,pg_1743,malformedTarget,frus1952-54v09p2,pg_1743,frus1952-54v09p2.xml
 frus1952-54v09p2,,78429,6496691,frus1952-54v09p1#pg_1683,unknownPage,frus1952-54v09p1,pg_1683,frus1952-54v09p2.xml
 frus1952-54v09p2,,78430,6496779,frus1952-54v09p1#pg_1685,unknownPage,frus1952-54v09p1,pg_1685,frus1952-54v09p2.xml
 frus1952-54v09p2,,78431,6496866,frus1952-54v09p1#pg_1693,unknownPage,frus1952-54v09p1,pg_1693,frus1952-54v09p2.xml
