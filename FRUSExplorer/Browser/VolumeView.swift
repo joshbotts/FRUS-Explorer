@@ -75,6 +75,15 @@ struct VolumeView: View {
                 }
             }
 
+            // Top subjects (#236 / Session 9): the volume's most characteristic subjects
+            // from the bundled aggregate. Renders even for undownloaded/unindexed volumes.
+            if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
+                Section(header: Text(String(localized: "browser.volume.subjects.header",
+                                            defaultValue: "Top subjects"))) {
+                    VolumeSubjectsChips(volume: volume)
+                }
+            }
+
             // Structure / section list
             volumeStructureSection
         }

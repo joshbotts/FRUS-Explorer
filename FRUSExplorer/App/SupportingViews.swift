@@ -3043,6 +3043,21 @@ private struct CorpusVolumeDetailView: View {
         VStack(alignment: .leading, spacing: 0) {
             BoundedTitleHeader(title: volume.title)
             Divider()
+            // Top subjects (Session 9): the volume's most characteristic subjects from the
+            // bundled aggregate. Placed above the phase content so it shows regardless of
+            // download/index state (the profiles are bundled, not index-derived).
+            if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(localized: "corpus.volume.subjects.header",
+                                defaultValue: "Top subjects"))
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                    VolumeSubjectsChips(volume: volume)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                Divider()
+            }
             phaseContent
         }
             .navigationTitle(volume.title)
