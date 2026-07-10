@@ -42,6 +42,13 @@ import Charts
 ///         president name), so Grover Cleveland's two non-consecutive terms no
 ///         longer collapse into one stacked bar; axis labels map the id back to a
 ///         year-disambiguated last name.
+///   1.2 — Session 3 / #236: subseries scope bar (counts recompute from the
+///         per-volume breakdown; coverage span hidden under scope) and the
+///         previously-missing year-range bar (an administration shows when its term
+///         overlaps the range), bringing this dashboard onto the same chrome as the
+///         other three; a narrowed-empty state keeps the controls reachable.
+///   1.3 — Session 3 review: the scope bar's and year bar's resets clear scope +
+///         year range together (#236 plan item 7).
 struct AdministrationProfilesDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -49,6 +56,20 @@ struct AdministrationProfilesDashboard: View {
     /// standalone Research Guide) inject `AppState` at the scene root, so this
     /// normally resolves; the optionality is purely defensive.
     @Environment(AppState.self) private var appState: AppState?
+
+    /// Compact-width detection for the year-range bar (drops its label on iPhone).
+    /// Resolves to `.regular` on macOS, so `isCompactWidth` is `false` there.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// This dashboard's default upper year: administrations run to the present, so
+    /// the range ends at the production ceiling (the sitting administration's term
+    /// has no end date).
+    private static let defaultEnd = SeriesChartKind.productionCeilingYear
+
+    /// The editable range's start year (floors at the series' start).
+    @State private var yearStart = SeriesChartKind.floorYear
+    /// The editable range's end year (defaults to the production ceiling).
+    @State private var yearEnd = defaultEnd
 
     /// When `true`, range-dated (editorial-note) documents are folded into every
     /// count and proportion. Off by default (disclosed in the caveats).
@@ -62,11 +83,26 @@ struct AdministrationProfilesDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
-    /// The pure derivation driving every chart, rebuilt whenever the toggle flips.
+    /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
+    /// visit. Under a scope every count/proportion is recomputed from each
+    /// administration's per-volume breakdown, and the coverage-span stat is hidden
+    /// (it is a pre-aggregated scalar that cannot be re-derived per scope).
+    @State private var scope = SeriesScope.whole
+
+    /// The manifest entries backing the scope bar's subseries menu (this dashboard
+    /// otherwise reads the bundled profiles index, not the manifest).
+    private var entries: [VolumeManifestEntry] {
+        guard let store = appState?.manifestStore else { return [] }
+        return store.diffResult?.known ?? store.bundledEntries
+    }
+
+    /// The pure derivation driving every chart, rebuilt whenever the toggle or scope
+    /// changes.
     private var data: AdministrationProfilesData {
         AdministrationProfilesData(
             index: appState?.administrationProfilesStore.index,
-            includeEditorialNotes: includeEditorialNotes
+            includeEditorialNotes: includeEditorialNotes,
+            scopeVolumeIds: scope.volumeIds
         )
     }
 
@@ -83,27 +119,67 @@ struct AdministrationProfilesDashboard: View {
         PoliticalParty.ordered.map(\.color)
     }
 
-    /// The resolved focus profile: the selection if it still exists, else the
-    /// most-documented administration, else `nil`.
+    /// `true` on compact-width (iPhone); always `false` on macOS / regular-width.
+    private var isCompactWidth: Bool { horizontalSizeClass == .compact }
+
+    /// `true` when the range has been narrowed away from its `1861…2026` default.
+    private var isCustomRange: Bool {
+        yearStart != SeriesChartKind.floorYear || yearEnd != Self.defaultEnd
+    }
+
+    /// The scoped profiles further narrowed by the year range: an administration is
+    /// shown when its term **overlaps** the range (the sitting administration's open
+    /// term ends at the production ceiling). This is a term-year filter — the plan's
+    /// "which administrations sat in these years" reading — not a re-count of documents.
+    private var visibleProfiles: [AdministrationProfilesData.Profile] {
+        data.profiles.filter { profile in
+            guard let termStart = Int(profile.start.prefix(4)) else { return true }
+            let termEnd = profile.end.flatMap { Int($0.prefix(4)) } ?? Self.defaultEnd
+            return termStart <= yearEnd && termEnd >= yearStart
+        }
+    }
+
+    /// The resolved focus profile: the selection if it is still visible, else the
+    /// most-documented visible administration, else `nil`.
     private var focusProfile: AdministrationProfilesData.Profile? {
+        let visible = visibleProfiles
         if let id = selectedAdministrationID,
-           let match = data.profiles.first(where: { $0.id == id }) {
+           let match = visible.first(where: { $0.id == id }) {
             return match
         }
-        return data.mostDocumentedProfile
+        return visible.max { $0.documentCount < $1.documentCount }
+    }
+
+    /// `true` when the bundled profiles index decoded to at least one administration —
+    /// the guard for the "no data at all" empty state (distinct from a scope that simply
+    /// touches no administration, which keeps the scope bar reachable so it can be reset).
+    private var indexHasData: Bool {
+        !(appState?.administrationProfilesStore.index?.administrations.isEmpty ?? true)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
-            if data.profiles.isEmpty {
+            if !indexHasData {
                 emptyState
             } else {
                 intro
-                editorialNotesToggle
-                documentsChart
-                volumesPerYearChart
-                administrationDetail
-                caveats
+                // Reset affordances clear scope + year range together (#236 plan
+                // item 7): the scope bar's reset also restores the default years,
+                // and the year bar's reset (below) also restores the whole series.
+                SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                    yearStart = SeriesChartKind.floorYear
+                    yearEnd = Self.defaultEnd
+                })
+                yearRangeBar
+                if visibleProfiles.isEmpty {
+                    narrowedEmptyState
+                } else {
+                    editorialNotesToggle
+                    documentsChart
+                    volumesPerYearChart
+                    administrationDetail
+                    caveats
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -113,6 +189,44 @@ struct AdministrationProfilesDashboard: View {
                 selectedAdministrationID = data.mostDocumentedProfile?.id
             }
         }
+    }
+
+    /// Shown when the active scope and/or year range leave no administration to show —
+    /// keeps the controls above it reachable so the user can reset rather than seeing a
+    /// blank (or worse, empty chart axes).
+    private var narrowedEmptyState: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(String(localized: "series.admin.narrowedEmpty.title",
+                        defaultValue: "No administrations in view"))
+                .font(.headline)
+            Text(String(localized: "series.admin.narrowedEmpty.message",
+                        defaultValue: "No presidential administration matches the current scope and year range — the selected subseries' volumes may carry no attributed documents, or the years may fall outside every term. Reset the scope or year range above for the whole series."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Year-range bar
+
+    /// The editable start/end year filter (#236 — the one dashboard that lacked it):
+    /// an administration is shown when its **term** overlaps the range, aligning the
+    /// four Series dashboards on the same chrome. Counts are per-administration
+    /// coverage attributions and are not themselves re-counted by year.
+    private var yearRangeBar: some View {
+        AnalyticsYearRangeBar(
+            start: $yearStart,
+            end: $yearEnd,
+            corpusMaxYear: Self.defaultEnd,
+            isCompactWidth: isCompactWidth,
+            isCustom: isCustomRange,
+            onReset: {
+                yearStart = SeriesChartKind.floorYear
+                yearEnd = Self.defaultEnd
+                scope = .whole
+            }
+        )
     }
 
     // MARK: - Intro
@@ -153,7 +267,7 @@ struct AdministrationProfilesDashboard: View {
     /// Bars of the document count for each populated administration, chronological
     /// and party-colored.
     private var documentsChart: some View {
-        let profiles = data.profiles
+        let profiles = visibleProfiles
         let labels = Self.axisLabels(for: profiles)
         return chartCard(
             title: String(localized: "series.admin.docs.title",
@@ -205,7 +319,7 @@ struct AdministrationProfilesDashboard: View {
     /// Bars of the volumes-per-term-year density for each populated administration,
     /// chronological and party-colored. Presented raw — no baseline reference line.
     private var volumesPerYearChart: some View {
-        let profiles = data.profiles.filter { $0.termYears > 0 }
+        let profiles = visibleProfiles.filter { $0.termYears > 0 }
         let labels = Self.axisLabels(for: profiles)
         return chartCard(
             title: String(localized: "series.admin.perYear.title",
@@ -268,7 +382,7 @@ struct AdministrationProfilesDashboard: View {
                     set: { selectedAdministrationID = $0 }
                 )
             ) {
-                ForEach(data.profiles) { profile in
+                ForEach(visibleProfiles) { profile in
                     Text(pickerLabel(for: profile)).tag(profile.id)
                 }
             }
@@ -414,6 +528,14 @@ struct AdministrationProfilesDashboard: View {
             Text(String(localized: "series.admin.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if let label = scope.label {
+                Text(String(format: String(localized: "series.admin.caveats.scope %@",
+                                           defaultValue: "Scoped to the %@ subseries — counts and proportions are recomputed from that subseries' volumes only, and the per-administration coverage span (which the source data pre-aggregates for the whole series) is hidden. Reset the scope above for the whole series."),
+                            label))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.admin.caveats.body",
                         defaultValue: "Documents are attributed to an administration by any overlap between the document's date and the president's term, so a volume spanning two administrations is counted in both — which is why the summed volume counts exceed the 552-volume corpus and a volume's proportions can sum to over 100% across administrations. These counts measure which administration's foreign policy the documents cover, not when the volumes were published. Editorial-note documents carry a range of dates rather than a single date; their inclusion is controlled by the toggle above (off by default). Pre-1861 retrospective compilations concern no single administration and are omitted. Administrations are counted per president — Nixon and Ford are separate, as are Grover Cleveland's two non-consecutive terms — and administrations for which the series is not yet published do not appear."))
                 .font(.footnote)
@@ -450,36 +572,15 @@ struct AdministrationProfilesDashboard: View {
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 
     // MARK: - Helpers

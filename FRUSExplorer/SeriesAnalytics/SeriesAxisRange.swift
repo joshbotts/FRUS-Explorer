@@ -29,6 +29,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA (series x-axis bounds): initial implementation
+///   1.1 — Session 3 / #236: shared `yearAxisFormat` (grouping-free integer years),
+///          consolidated here from the four dashboards' per-file copies
 enum SeriesChartKind: Sendable {
     /// The x value is a document coverage year/decade (clamps at 1993).
     case coverage
@@ -55,6 +57,11 @@ enum SeriesChartKind: Sendable {
         case .production: return Self.floorYear...Self.productionCeilingYear
         }
     }
+
+    /// Format style for integer year/decade axis labels that suppresses comma
+    /// grouping — years should display as `1950`, not `1,950`. Shared by all four
+    /// "About the Series" dashboards (previously a `private static let` in each).
+    static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 }
 
 // MARK: - Effective domain

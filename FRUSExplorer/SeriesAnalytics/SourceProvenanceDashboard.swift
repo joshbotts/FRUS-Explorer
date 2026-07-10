@@ -41,11 +41,15 @@ import Charts
 ///          provenance-mix and density charts
 ///   1.3 — Analytics SA (chart table inspector): each chart card gains a "View as
 ///          table" button opening a `ChartDataInspectorView` pop-up
+///   1.4 — Session 3 / #236: category include/exclude filter (per-category menu +
+///          "Hide Other / Unclassified" shortcut) with shares renormalized exactly
+///          over the shown categories; a filter caveat discloses the re-basing;
+///          `chartCard` delegates to the shared `SeriesChartCard`
+///   1.5 — Session 3 review: per-category rows are menu `Toggle`s so shown/hidden
+///          state is voiced (the icon-swapped Buttons read identically under
+///          VoiceOver); the last shown category's items disable instead of the tap
+///          silently dead-ending
 struct SourceProvenanceDashboard: View {
-
-    /// Format style for integer decade axis labels that suppresses comma
-    /// grouping — decades should display as `1950`, not `1,950`.
-    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 
     /// Optional so a missing environment yields a neutral empty state instead of
     /// a trap. Both live presentation paths (the onboarding sheet and the
@@ -70,6 +74,12 @@ struct SourceProvenanceDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// Provenance categories hidden from the mix + composition charts (#236). The
+    /// bundled aggregate is decade × category only — no volume/subseries dimension —
+    /// so this category include/exclude filter is the one narrowing the data supports;
+    /// shares renormalize over the shown categories. `@State`, resets per visit.
+    @State private var hiddenCategories: Set<SourceProvenanceCategory> = []
+
     /// The pure derivation driving every chart, built from the bundled aggregate
     /// (empty/zeroed when `AppState` or the resource is absent).
     private var data: SourceProvenanceData {
@@ -91,6 +101,7 @@ struct SourceProvenanceDashboard: View {
             } else {
                 intro
                 yearRangeBar
+                categoryFilterBar
                 mixOverTimeChart
                 compositionChart
                 densityChart
@@ -132,13 +143,104 @@ struct SourceProvenanceDashboard: View {
         )
     }
 
+    // MARK: - Category filter
+
+    /// A compact menu to hide provenance categories (the only narrowing the
+    /// decade × category aggregate supports). Offers a one-tap "Hide Other /
+    /// Unclassified" — the most common narrowing — plus a per-category checklist.
+    /// At least one category must stay shown, so the charts never blank.
+    private var categoryFilterBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+            Menu {
+                Button {
+                    toggleCategory(.unrecognized)
+                } label: {
+                    Label(hiddenCategories.contains(.unrecognized)
+                          ? String(localized: "series.provenance.filter.showOther", defaultValue: "Show Other / Unclassified")
+                          : String(localized: "series.provenance.filter.hideOther", defaultValue: "Hide Other / Unclassified"),
+                          systemImage: hiddenCategories.contains(.unrecognized) ? "eye" : "eye.slash")
+                }
+                .disabled(isLastShownCategory(.unrecognized))
+                Divider()
+                ForEach(SourceProvenanceCategory.ordered, id: \.self) { category in
+                    // A menu Toggle renders the native checkmark AND announces its
+                    // on/off state to VoiceOver — an icon-swapped Button label would
+                    // read identically shown or hidden (Session 3 review).
+                    Toggle(isOn: Binding(
+                        get: { !hiddenCategories.contains(category) },
+                        set: { _ in toggleCategory(category) }
+                    )) {
+                        Text(category.displayName)
+                    }
+                    // The last shown category cannot be hidden (the charts would
+                    // blank); a disabled item is dimmed and voiced as such, instead
+                    // of the tap silently dead-ending.
+                    .disabled(isLastShownCategory(category))
+                }
+                if !hiddenCategories.isEmpty {
+                    Divider()
+                    Button {
+                        hiddenCategories.removeAll()
+                    } label: {
+                        Label(String(localized: "series.provenance.filter.showAll", defaultValue: "Show all categories"),
+                              systemImage: "eye")
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(hiddenCategories.isEmpty
+                         ? String(localized: "series.provenance.filter.label", defaultValue: "Categories: all")
+                         : String(format: String(localized: "series.provenance.filter.label.count %lld",
+                                                  defaultValue: "Categories: %lld shown"),
+                                  Int64(SourceProvenanceCategory.ordered.count - hiddenCategories.count)))
+                        .font(.caption)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2)
+                }
+            }
+            .accessibilityLabel(String(localized: "series.provenance.filter.a11y",
+                                       defaultValue: "Provenance categories shown"))
+            .accessibilityValue(hiddenCategories.isEmpty
+                                ? String(localized: "series.provenance.filter.a11y.all", defaultValue: "All shown")
+                                : String(format: String(localized: "series.provenance.filter.a11y.count %lld",
+                                                        defaultValue: "%lld of 10 shown"),
+                                         Int64(SourceProvenanceCategory.ordered.count - hiddenCategories.count)))
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+    }
+
+    /// Toggles a category's hidden state, but never hides the last shown category
+    /// (that would blank the charts with no way back except this menu). The UI
+    /// communicates the constraint by disabling the last shown item
+    /// (`isLastShownCategory(_:)`); this guard is the state-level backstop.
+    private func toggleCategory(_ category: SourceProvenanceCategory) {
+        if hiddenCategories.contains(category) {
+            hiddenCategories.remove(category)
+        } else if hiddenCategories.count < SourceProvenanceCategory.ordered.count - 1 {
+            hiddenCategories.insert(category)
+        }
+    }
+
+    /// `true` when `category` is the only category still shown — the one item the
+    /// filter refuses to hide. Drives `.disabled` on its menu item so the constraint
+    /// is dimmed and voiced rather than a silent dead-end tap.
+    private func isLastShownCategory(_ category: SourceProvenanceCategory) -> Bool {
+        !hiddenCategories.contains(category)
+            && hiddenCategories.count == SourceProvenanceCategory.ordered.count - 1
+    }
+
     // MARK: - Chart 1: Provenance mix over time (stacked area, the anchor)
 
     /// Stacked area of each provenance category's share of a decade's source
     /// notes, over coverage decades from 1900. The anchor chart.
     private var mixOverTimeChart: some View {
         let domain = effectiveDomain(userStart: yearStart, userEnd: yearEnd, kind: .coverage)
-        let shares = data.shareByDecade(in: domain)
+        let shares = data.shareByDecade(in: domain, excluding: hiddenCategories)
         return chartCard(
             title: String(localized: "series.provenance.trend.title",
                           defaultValue: "Archival provenance over time"),
@@ -176,7 +278,7 @@ struct SourceProvenanceDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartYAxis {
@@ -193,16 +295,16 @@ struct SourceProvenanceDashboard: View {
     /// Bars of the total note count for each provenance category across the shown
     /// decades.
     private var compositionChart: some View {
-        let data = data
+        let composition = data.overallComposition(excluding: hiddenCategories)
         return chartCard(
             title: String(localized: "series.provenance.composition.title",
                           defaultValue: "Overall provenance composition"),
             caption: String(localized: "series.provenance.composition.caption",
                             defaultValue: "How many source notes across the whole series (from 1900) cite each kind of archival collection. The Central Decimal File dwarfs the rest — most published FRUS documents came from the State Department's own central filing."),
-            inspector: ChartInspectorAdapters.compositionTable(data.overallComposition)
+            inspector: ChartInspectorAdapters.compositionTable(composition)
         ) {
             Chart {
-                ForEach(data.overallComposition) { item in
+                ForEach(composition) { item in
                     BarMark(
                         x: .value(
                             String(localized: "series.provenance.composition.x", defaultValue: "Provenance"),
@@ -274,7 +376,7 @@ struct SourceProvenanceDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.provenance.density.x", defaultValue: "Coverage decade"))
@@ -291,6 +393,15 @@ struct SourceProvenanceDashboard: View {
             Text(String(localized: "series.provenance.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if !hiddenCategories.isEmpty {
+                // New key (.v2): the zero-decade sentence changed this string's meaning
+                // when the review pass made gap decades collapse to zero (1.5).
+                Text(String(localized: "series.provenance.caveats.filtered.v2",
+                            defaultValue: "Some categories are hidden — the shares shown are re-based to the shown categories, not the full mix. A decade with no notes in any shown category collapses to zero rather than being skipped. Use the Categories menu above to show all."))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.provenance.caveats.body",
                         defaultValue: "These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. \"Other / Unclassified\" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1960 central filing system, the Central Foreign Policy File its post-1960 successor, lot files are bureau and office working files, and presidential libraries hold the White House records that dominate the modern volumes. Above all, these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives."))
                 .font(.footnote)
@@ -327,35 +438,14 @@ struct SourceProvenanceDashboard: View {
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 }

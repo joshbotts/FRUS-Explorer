@@ -38,13 +38,14 @@ import Charts
 ///          volume's publication year (production domain), so the timeliness-target
 ///          step is exact — the directive in force when a volume was published
 ///   1.4 — Analytics SA (chart table inspector): each chart card gains a "View as
-///          table" button opening a `ChartDataInspectorView` pop-up over the
+///          table" button opening a `ChartDataInspectorView` pop-up
+///   1.5 — Session 3 / #236: subseries scope bar (`SeriesScopeBar` over the manifest
+///          entries; charts derive from the scoped entries) with a scope caveat;
+///          `chartCard` delegates to the shared `SeriesChartCard`
+///   1.6 — Session 3 review: the scope bar's and year bar's resets clear scope +
+///          year range together (#236 plan item 7) over the
 ///          range-filtered data
 struct SeriesProductionDashboard: View {
-
-    /// Format style for integer year/decade axis labels that suppresses comma
-    /// grouping — years should display as `1950`, not `1,950`.
-    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 
     /// Optional so a missing environment yields a neutral empty state instead
     /// of a trap. Both live presentation paths (the onboarding sheet and the
@@ -69,17 +70,21 @@ struct SeriesProductionDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
-    /// The manifest entries to summarise: the diff's known set when a live
-    /// refresh has happened, else the always-available bundled set, else empty
-    /// (defensive — `AppState` absent).
+    /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
+    /// visit — a stale narrowed scope would misrepresent the whole-series story.
+    @State private var scope = SeriesScope.whole
+
+    /// The manifest entries to summarise: the diff's known set when a live refresh
+    /// has happened, else the always-available bundled set, else empty (defensive —
+    /// `AppState` absent). The full set drives the scope bar's menu and the empty check.
     private var entries: [VolumeManifestEntry] {
         guard let store = appState?.manifestStore else { return [] }
         return store.diffResult?.known ?? store.bundledEntries
     }
 
-    /// The pure derivation driving every chart.
+    /// The pure derivation driving every chart, over the in-scope entries (#236).
     private var data: SeriesProductionData {
-        SeriesProductionData(entries: entries)
+        SeriesProductionData(entries: scope.filter(entries))
     }
 
     /// `true` on compact-width (iPhone); always `false` on macOS / regular-width.
@@ -96,6 +101,12 @@ struct SeriesProductionDashboard: View {
                 emptyState
             } else {
                 intro
+                // Reset affordances clear scope + year range together (#236 plan
+                // item 7); the year bar's reset mirrors this below.
+                SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                    yearStart = SeriesChartKind.floorYear
+                    yearEnd = Self.defaultEnd
+                })
                 yearRangeBar
                 lagChart
                 perYearChart
@@ -134,6 +145,7 @@ struct SeriesProductionDashboard: View {
             onReset: {
                 yearStart = SeriesChartKind.floorYear
                 yearEnd = Self.defaultEnd
+                scope = .whole
             }
         )
     }
@@ -213,7 +225,7 @@ struct SeriesProductionDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.chart.lag.x", defaultValue: "Publication year"))
@@ -261,7 +273,7 @@ struct SeriesProductionDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.chart.peryear.x", defaultValue: "Print year"))
@@ -317,7 +329,7 @@ struct SeriesProductionDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartXAxisLabel(String(localized: "series.chart.cumulative.x", defaultValue: "Print year"))
@@ -334,6 +346,14 @@ struct SeriesProductionDashboard: View {
             Text(String(localized: "series.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if let label = scope.label {
+                Text(String(format: String(localized: "series.caveats.scope %@",
+                                           defaultValue: "Scoped to the %@ subseries — reset the scope above for the whole series."),
+                            label))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.caveats.body",
                         defaultValue: "Production figures reflect only published, digitized volumes. Publication year is the volume's TEI print year and coverage is the span of its document dates; lag is print year minus coverage-end year, and can be near-zero or negative for the near-contemporaneous early volumes. The publication-timeliness target evolved over time — no formal target before 1961, then 15 years (1961 directive), 20 years (1972 directive), and 30 years (1985 directive, codified by the 1991 statute); the step line is drawn against each volume's publication year, so it shows exactly the target in force when the volume was published. These charts reflect the 552 volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)
@@ -362,42 +382,21 @@ struct SeriesProductionDashboard: View {
 
     // MARK: - Chart card
 
-    /// A titled, captioned container for a single chart, keeping the four
-    /// sections visually consistent. When `inspector` is non-nil, the header
-    /// gains a trailing "View as table" button that opens the data pop-up.
+    /// Thin binding of the shared `SeriesChartCard` to this dashboard's
+    /// `inspectorData` sheet state. Extracted in #236 — the card body now lives in
+    /// `SeriesChartCard.swift`.
     private func chartCard<Content: View>(
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 }

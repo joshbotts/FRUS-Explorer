@@ -37,11 +37,12 @@ import Charts
 ///          regional-emphasis trend
 ///   1.3 — Analytics SA (chart table inspector): each chart card gains a "View as
 ///          table" button opening a `ChartDataInspectorView` pop-up
+///   1.4 — Session 3 / #236: subseries scope bar (`SeriesScopeBar` over the manifest
+///          entries; charts derive from the scoped entries) with a scope caveat;
+///          `chartCard` delegates to the shared `SeriesChartCard`
+///   1.5 — Session 3 review: the scope bar's and year bar's resets clear scope +
+///          year range together (#236 plan item 7)
 struct SeriesGeographyDashboard: View {
-
-    /// Format style for integer decade axis labels that suppresses comma
-    /// grouping — decades should display as `1950`, not `1,950`.
-    private static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 
     /// Optional so a missing environment yields a neutral empty state instead
     /// of a trap. Both live presentation paths (the onboarding sheet and the
@@ -66,9 +67,15 @@ struct SeriesGeographyDashboard: View {
     /// pop-up, or `nil` when none. Drives the single dashboard-level `.sheet`.
     @State private var inspectorData: ChartInspectorData?
 
+    /// The active subseries scope (#236). `@State`, so it resets per Research-Guide
+    /// visit. Scoping rebuilds every chart — including the two categorical bar charts
+    /// (region totals, top countries) the year-range bar cannot narrow, so scope
+    /// answers "the most-covered countries in the 1969–76 subseries".
+    @State private var scope = SeriesScope.whole
+
     /// The manifest entries to summarise: the diff's known set when a live
     /// refresh has happened, else the always-available bundled set, else empty
-    /// (defensive — `AppState` absent).
+    /// (defensive — `AppState` absent). The full set drives the scope bar's menu.
     private var entries: [VolumeManifestEntry] {
         guard let store = appState?.manifestStore else { return [] }
         return store.diffResult?.known ?? store.bundledEntries
@@ -86,9 +93,9 @@ struct SeriesGeographyDashboard: View {
         return map
     }
 
-    /// The pure derivation driving every chart.
+    /// The pure derivation driving every chart, over the in-scope entries (#236).
     private var data: SeriesGeographyData {
-        SeriesGeographyData(entries: entries, placeRegions: placeRegions)
+        SeriesGeographyData(entries: scope.filter(entries), placeRegions: placeRegions)
     }
 
     /// Resolves a place-tag slug to its display name via the tag store, falling
@@ -111,6 +118,12 @@ struct SeriesGeographyDashboard: View {
                 emptyState
             } else {
                 intro
+                // Reset affordances clear scope + year range together (#236 plan
+                // item 7); the year bar's reset mirrors this below.
+                SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                    yearStart = SeriesChartKind.floorYear
+                    yearEnd = Self.defaultEnd
+                })
                 yearRangeBar
                 regionTrendChart
                 regionTotalsChart
@@ -148,6 +161,7 @@ struct SeriesGeographyDashboard: View {
             onReset: {
                 yearStart = SeriesChartKind.floorYear
                 yearEnd = Self.defaultEnd
+                scope = .whole
             }
         )
     }
@@ -196,7 +210,7 @@ struct SeriesGeographyDashboard: View {
                 AxisMarks { value in
                     AxisGridLine()
                     AxisTick()
-                    AxisValueLabel(format: Self.yearAxisFormat)
+                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
                 }
             }
             .chartYAxis {
@@ -303,6 +317,14 @@ struct SeriesGeographyDashboard: View {
             Text(String(localized: "series.geography.caveats.title", defaultValue: "About these figures"))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
+            if let label = scope.label {
+                Text(String(format: String(localized: "series.caveats.scope %@",
+                                           defaultValue: "Scoped to the %@ subseries — reset the scope above for the whole series."),
+                            label))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text(String(localized: "series.geography.caveats.body",
                         defaultValue: "Place tags are volume-level editorial tags: a volume \"touches\" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)
@@ -339,35 +361,14 @@ struct SeriesGeographyDashboard: View {
         title: String,
         caption: String,
         inspector: ChartInspectorData?,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title)
-                    .font(.headline)
-                Spacer()
-                if let inspector {
-                    Button {
-                        inspectorData = inspector
-                    } label: {
-                        Label(
-                            String(localized: "series.inspector.viewTable", defaultValue: "View as table"),
-                            systemImage: "tablecells"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(Text(String(
-                        localized: "series.inspector.viewTable.a11y",
-                        defaultValue: "View \(title) as a table"
-                    )))
-                }
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            content()
-        }
+        SeriesChartCard(
+            title: title,
+            caption: caption,
+            inspector: inspector,
+            onInspect: { inspectorData = $0 },
+            content: content
+        )
     }
 }

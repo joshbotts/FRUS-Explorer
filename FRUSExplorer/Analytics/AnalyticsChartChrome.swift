@@ -25,12 +25,19 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Prep-B (analytics CA-track): lifted from `AnalyticsView.yearRangeBar` /
 ///          `yearEntryField` with identical appearance and behavior.
+///   1.1 — Session 3 review / #236: the year fields' width scales with Dynamic Type
+///          via `@ScaledMetric` (the fixed 44pt clipped four digits at AX sizes).
 struct AnalyticsYearRangeBar: View {
 
     /// Start year of the range. Clamped on write to `1776...end`.
     @Binding var start: Int
     /// End year of the range. Clamped on write to `start...corpusMaxYear`.
     @Binding var end: Int
+
+    /// The year fields' width: 44pt at the default type size, scaling with the
+    /// `.caption` text style so four digits stay legible at accessibility Dynamic
+    /// Type sizes instead of clipping.
+    @ScaledMetric(relativeTo: .caption) private var yearFieldWidth: CGFloat = 44
 
     /// Most recent corpus year — the upper bound and the reset target for `end`.
     let corpusMaxYear: Int
@@ -122,7 +129,7 @@ struct AnalyticsYearRangeBar: View {
             .labelsHidden()
             .multilineTextAlignment(.trailing)
             .font(.caption.monospacedDigit())
-            .frame(width: 44)
+            .frame(width: yearFieldWidth)
             .textFieldStyle(.roundedBorder)
             #if os(iOS)
             .keyboardType(.numberPad)

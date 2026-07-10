@@ -352,6 +352,9 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
+///   1.1 — Session 3 / #236: optional `scopeVolumeIds` recomputes every count and
+///          proportion from each administration's per-volume breakdown; coverage spans
+///          drop to `nil` under a scope (pre-aggregated scalars, not re-derivable)
 struct AdministrationProfilesData: Sendable {
 
     // MARK: Point types
@@ -441,7 +444,16 @@ struct AdministrationProfilesData: Sendable {
     ///   - index: The decoded `administration-profiles-index.json`, or `nil`.
     ///   - includeEditorialNotes: When `true`, range-dated documents are added to
     ///     every document count and to the proportion numerator/denominator.
-    init(index: AdministrationProfilesIndex?, includeEditorialNotes: Bool) {
+    ///   - scopeVolumeIds: When non-nil, restricts every count and proportion to the
+    ///     documents from these volumes, recomputing each administration's totals from
+    ///     its per-volume breakdown (#236). Coverage spans are pre-aggregated scalars
+    ///     that cannot be re-derived per scope, so `coverageEarliest`/`coverageLatest`
+    ///     are dropped (`nil`) under a scope; the dashboard hides the span accordingly.
+    init(
+        index: AdministrationProfilesIndex?,
+        includeEditorialNotes: Bool,
+        scopeVolumeIds: Set<String>? = nil
+    ) {
         includesEditorialNotes = includeEditorialNotes
 
         guard let index else {
@@ -457,16 +469,33 @@ struct AdministrationProfilesData: Sendable {
         totalDocumentsRangeDated = index.totalDocumentsRangeDated
         volumesCovered = index.volumesCovered
 
-        // Populated = at least one attributed document of either kind (stable
-        // across the toggle so the chart's bar set does not appear/disappear).
-        let populated = index.administrations
-            .filter { $0.pointDocCount > 0 || $0.rangeDocCount > 0 }
-            .sorted { $0.number < $1.number }
+        // One administration's contribution under the active scope. Whole-series scope
+        // uses the pre-aggregated counts directly; a subseries scope re-sums the
+        // per-volume breakdown over the in-scope volumes only.
+        func contribution(_ admin: AdministrationProfile) -> (point: Int, range: Int, volumeCount: Int) {
+            guard let scope = scopeVolumeIds else {
+                return (admin.pointDocCount, admin.rangeDocCount, admin.volumeCount)
+            }
+            let inScope = admin.volumes.filter { scope.contains($0.volumeId) }
+            let point = inScope.reduce(0) { $0 + $1.pointDocs }
+            let range = inScope.reduce(0) { $0 + $1.rangeDocs }
+            let vCount = inScope.reduce(0) { $0 + (($1.pointDocs > 0 || $1.rangeDocs > 0) ? 1 : 0) }
+            return (point, range, vCount)
+        }
 
-        profiles = populated.map { admin in
-            let docCount = admin.pointDocCount + (includeEditorialNotes ? admin.rangeDocCount : 0)
+        // Populated = at least one attributed document of either kind (under scope, so a
+        // subseries that never touches an administration drops it from the charts).
+        let populated = index.administrations
+            .map { (admin: $0, contribution: contribution($0)) }
+            .filter { $0.contribution.point > 0 || $0.contribution.range > 0 }
+            .sorted { $0.admin.number < $1.admin.number }
+
+        profiles = populated.map { pair in
+            let admin = pair.admin
+            let c = pair.contribution
+            let docCount = c.point + (includeEditorialNotes ? c.range : 0)
             let years = Self.termYears(start: admin.start, end: admin.end)
-            let perYear = years > 0 ? Double(admin.volumeCount) / years : 0
+            let perYear = years > 0 ? Double(c.volumeCount) / years : 0
             return Profile(
                 id: admin.id,
                 number: admin.number,
@@ -474,21 +503,27 @@ struct AdministrationProfilesData: Sendable {
                 party: PoliticalParty.from(raw: admin.party),
                 start: admin.start,
                 end: admin.end,
-                pointDocCount: admin.pointDocCount,
-                rangeDocCount: admin.rangeDocCount,
+                pointDocCount: c.point,
+                rangeDocCount: c.range,
                 documentCount: docCount,
-                volumeCount: admin.volumeCount,
+                volumeCount: c.volumeCount,
                 termYears: years,
                 volumesPerAdministrationYear: perYear,
-                coverageEarliest: admin.coverageEarliest,
-                coverageLatest: admin.coverageLatest
+                coverageEarliest: scopeVolumeIds == nil ? admin.coverageEarliest : nil,
+                coverageLatest: scopeVolumeIds == nil ? admin.coverageLatest : nil
             )
         }
 
-        // Per-administration volume proportions.
+        // Per-administration volume proportions (in-scope volumes only when scoped; the
+        // per-volume denominators from `volumeTotals` stay correct because they are
+        // per-volume regardless of scope).
         var shares: [String: [VolumeShare]] = [:]
-        for admin in populated {
-            let rows: [VolumeShare] = admin.volumes.map { vol in
+        for pair in populated {
+            let admin = pair.admin
+            let volumes = scopeVolumeIds == nil
+                ? admin.volumes
+                : admin.volumes.filter { scopeVolumeIds!.contains($0.volumeId) }
+            let rows: [VolumeShare] = volumes.map { vol in
                 let numerator = vol.pointDocs + (includeEditorialNotes ? vol.rangeDocs : 0)
                 let totals = index.volumeTotals[vol.volumeId]
                 let denominator = (totals?.pointDocs ?? 0)

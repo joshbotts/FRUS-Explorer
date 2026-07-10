@@ -194,6 +194,13 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 ///   1.0 — Analytics SA-3b: initial implementation
 ///   1.1 — Analytics SA (x-axis bounds): `shareByDecade(in:)` / `notesByDecade(in:)`
 ///          year-range filters for the editable dashboard year range
+///   1.2 — Session 3 / #236: retains raw per-decade counts and adds
+///          `shareByDecade(in:excluding:)` / `overallComposition(excluding:)` — the
+///          category include/exclude filter, renormalizing shares exactly over the
+///          shown categories
+///   1.3 — Session 3 review: a filtered decade whose shown categories sum to zero
+///          emits explicit zero-share rows instead of being dropped (an interior
+///          x-gap made the stacked `AreaMark` interpolate fabricated shares)
 struct SourceProvenanceData: Sendable {
 
     /// The decade at which the over-time trend begins; earlier decades are the
@@ -271,6 +278,11 @@ struct SourceProvenanceData: Sendable {
     /// Total notes across the shown decades (the denominator for `overallComposition`).
     let shownNoteCount: Int
 
+    /// Retained raw per-decade, per-category note counts for the shown decades (zero
+    /// counts omitted), so the category include/exclude filter can renormalize shares
+    /// *exactly* from counts rather than rescaling the pre-divided shares (#236).
+    let shownDecadeCategoryCounts: [Int: [SourceProvenanceCategory: Int]]
+
     // MARK: Init
 
     /// Computes every derived collection and statistic from the decoded index.
@@ -291,6 +303,7 @@ struct SourceProvenanceData: Sendable {
             decadeRangeShown = nil
             prewarExcludedNoteCount = 0
             shownNoteCount = 0
+            shownDecadeCategoryCounts = [:]
             return
         }
 
@@ -305,6 +318,18 @@ struct SourceProvenanceData: Sendable {
             .filter { $0.decade < Self.trendStartDecade }
 
         prewarExcludedNoteCount = excludedDecades.reduce(0) { $0 + $1.totalNotes }
+
+        // ── Raw per-decade counts (retained for exact category-filter renormalization) ──
+        var decadeCounts: [Int: [SourceProvenanceCategory: Int]] = [:]
+        for decade in shownDecades {
+            var perCategory: [SourceProvenanceCategory: Int] = [:]
+            for category in SourceProvenanceCategory.ordered {
+                let count = decade.count(for: category)
+                if count > 0 { perCategory[category] = count }
+            }
+            decadeCounts[decade.decade] = perCategory
+        }
+        shownDecadeCategoryCounts = decadeCounts
 
         // ── Share by decade (stacked area) ──────────────────────────────────
         var shares: [CategoryDecadeShare] = []
@@ -373,5 +398,74 @@ struct SourceProvenanceData: Sendable {
     /// - Returns: The in-range density points, order preserved.
     func notesByDecade(in domain: ClosedRange<Int>) -> [DecadeDensity] {
         notesByDecade.filter { domain.contains($0.decade) }
+    }
+
+    // MARK: Category filtering
+
+    /// `shareByDecade(in:)` with `hidden` categories removed and each decade's shares
+    /// **renormalized** over the remaining categories, so a stacked decade still sums to
+    /// `1.0` and reads as "share of the shown categories" (#236). Computed exactly from
+    /// the retained raw counts, not by rescaling the pre-divided shares. Identity (the
+    /// plain `shareByDecade(in:)`) when `hidden` is empty.
+    ///
+    /// A decade whose shown categories sum to zero emits explicit **zero-share rows**
+    /// (summing to 0, not 1) rather than being dropped — an interior x-gap would be
+    /// linearly interpolated by the stacked `AreaMark`, fabricating shares the data
+    /// does not contain.
+    ///
+    /// - Parameters:
+    ///   - domain: The inclusive coverage-year range to keep decades within.
+    ///   - hidden: The categories to exclude.
+    /// - Returns: The in-range, renormalized decade shares in decade then display order.
+    func shareByDecade(
+        in domain: ClosedRange<Int>,
+        excluding hidden: Set<SourceProvenanceCategory>
+    ) -> [CategoryDecadeShare] {
+        guard !hidden.isEmpty else { return shareByDecade(in: domain) }
+        var out: [CategoryDecadeShare] = []
+        for decade in shownDecadeCategoryCounts.keys.sorted() where domain.contains(decade) {
+            let counts = shownDecadeCategoryCounts[decade] ?? [:]
+            let shownTotal = counts.reduce(0) { $0 + (hidden.contains($1.key) ? 0 : $1.value) }
+            for category in SourceProvenanceCategory.ordered where !hidden.contains(category) {
+                let count = counts[category] ?? 0
+                // A decade whose shown categories sum to zero still emits explicit
+                // zero-share rows: dropping the decade would leave an interior x-gap
+                // that the stacked `AreaMark` linearly interpolates across, rendering
+                // a fabricated band between its neighbours (e.g. presidential-library
+                // notes are zero in the 1920s–30s between non-zero 1910s and 1940s).
+                // Zero rows collapse the band honestly to zero instead.
+                guard count > 0 || shownTotal == 0 else { continue }
+                let share = shownTotal > 0 ? Double(count) / Double(shownTotal) : 0
+                out.append(CategoryDecadeShare(decade: decade, category: category, share: share))
+            }
+        }
+        return out
+    }
+
+    /// `overallComposition` with `hidden` categories removed and shares renormalized over
+    /// the remaining categories across all shown decades (#236). The returned rows keep
+    /// the stable display order (hidden categories simply drop out, so the chart's colour
+    /// domain stays consistent). Identity when `hidden` is empty.
+    ///
+    /// - Parameter hidden: The categories to exclude.
+    /// - Returns: The renormalized composition rows for the shown categories.
+    func overallComposition(
+        excluding hidden: Set<SourceProvenanceCategory>
+    ) -> [CategoryComposition] {
+        guard !hidden.isEmpty else { return overallComposition }
+        var totalByCategory: [SourceProvenanceCategory: Int] = [:]
+        for counts in shownDecadeCategoryCounts.values {
+            for (category, count) in counts where !hidden.contains(category) {
+                totalByCategory[category, default: 0] += count
+            }
+        }
+        let shownTotal = totalByCategory.values.reduce(0, +)
+        return SourceProvenanceCategory.ordered
+            .filter { !hidden.contains($0) }
+            .map { category in
+                let count = totalByCategory[category] ?? 0
+                let share = shownTotal > 0 ? Double(count) / Double(shownTotal) : 0
+                return CategoryComposition(category: category, noteCount: count, share: share)
+            }
     }
 }

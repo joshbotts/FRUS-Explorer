@@ -96,6 +96,9 @@ private struct HeatCell: Identifiable, Equatable {
 ///
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
+///   1.1 — Session 3 / #236: administration preset menu beneath the year-range bar
+///          (one tap sets the document-year range to a president's term, bounded
+///          and clamped to the corpus span)
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -240,17 +243,34 @@ struct CrossReferenceAnalyticsView: View {
     }
 
     private var yearRangeBar: some View {
-        AnalyticsYearRangeBar(
-            start: $yearRangeStart,
-            end: $yearRangeEnd,
-            corpusMaxYear: corpusMaxYear,
-            isCompactWidth: isCompactWidth,
-            isCustom: yearRangeIsCustom,
-            onReset: {
-                yearRangeStart = 1861
-                yearRangeEnd = corpusMaxYear
+        VStack(spacing: 2) {
+            AnalyticsYearRangeBar(
+                start: $yearRangeStart,
+                end: $yearRangeEnd,
+                corpusMaxYear: corpusMaxYear,
+                isCompactWidth: isCompactWidth,
+                isCustom: yearRangeIsCustom,
+                onReset: {
+                    yearRangeStart = 1861
+                    yearRangeEnd = corpusMaxYear
+                }
+            )
+            // Administration presets (#236): one tap sets the document-year range to a
+            // president's term — this view's year filter is the document's coverage year.
+            let administrations = appState.administrationProfilesStore.index?.administrations ?? []
+            if !administrations.isEmpty {
+                HStack {
+                    AdministrationPresetMenu(
+                        administrations: administrations,
+                        corpusMaxYear: corpusMaxYear,
+                        yearStart: $yearRangeStart,
+                        yearEnd: $yearRangeEnd
+                    )
+                    Spacer()
+                }
+                .padding(.horizontal)
             }
-        )
+        }
     }
 
     // MARK: - Content

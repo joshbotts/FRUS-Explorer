@@ -23,6 +23,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   1.1 — Session 3 / #236: category include/exclude filter tests (identity,
+///          exact renormalization, composition order)
+///   1.2 — Session 3 review: the all-zero-decade test asserts explicit zero rows
+///          (no x-gap) instead of the dropped decade it previously locked in
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -241,5 +245,72 @@ struct SourceProvenanceDataTests {
             let sum = derived.shareByDecade.filter { $0.decade == decade }.reduce(0.0) { $0 + $1.share }
             #expect(abs(sum - 1.0) < 1e-6, "real decade \(decade) shares summed to \(sum)")
         }
+    }
+
+    // MARK: Category filter (#236)
+
+    /// The full coverage-year domain (well past the shown decades) so decade filtering
+    /// never confounds the category-exclusion assertions.
+    private var allDecades: ClosedRange<Int> { 1900...2000 }
+
+    @Test("category filter: empty exclusion set is identity")
+    func categoryFilterEmptyIsIdentity() {
+        let data = SourceProvenanceData(index: fixture())
+        let filtered = data.shareByDecade(in: allDecades, excluding: [])
+        let plain = data.shareByDecade(in: allDecades)
+        #expect(filtered.map(\.id) == plain.map(\.id))
+        #expect(filtered.map(\.share) == plain.map(\.share))
+        #expect(data.overallComposition(excluding: []).map(\.category)
+                == data.overallComposition.map(\.category))
+    }
+
+    @Test("category filter: hidden category is removed and remaining shares renormalize to 1.0")
+    func categoryFilterRenormalizes() {
+        let data = SourceProvenanceData(index: fixture())
+        // 1950 raw (known) counts: centralDecimalFile 40, lotFile 20, presidentialLibrary 20.
+        // Hide presidentialLibrary → shown total 60 → cdf 40/60, lot 20/60.
+        let filtered = data.shareByDecade(in: allDecades, excluding: [.presidentialLibrary])
+        let d1950 = filtered.filter { $0.decade == 1950 }
+        #expect(!d1950.contains { $0.category == .presidentialLibrary })
+        let cdf = d1950.first { $0.category == .centralDecimalFile }?.share ?? 0
+        let lot = d1950.first { $0.category == .lotFile }?.share ?? 0
+        #expect(abs(cdf - 40.0 / 60.0) < 1e-9)
+        #expect(abs(lot - 20.0 / 60.0) < 1e-9)
+        // Every shown decade still sums to 1.0 across the shown categories.
+        for decade in Set(filtered.map(\.decade)) {
+            let sum = filtered.filter { $0.decade == decade }.reduce(0.0) { $0 + $1.share }
+            #expect(abs(sum - 1.0) < 1e-9, "decade \(decade) filtered shares summed to \(sum)")
+        }
+    }
+
+    @Test("category filter: an all-zero decade emits explicit zero rows (no x-gap for AreaMark to interpolate)")
+    func categoryFilterEmitsZeroRowsForEmptyDecade() {
+        let data = SourceProvenanceData(index: fixture())
+        // 1910 is 100% centralDecimalFile; hiding it leaves that decade with no shown
+        // notes. The decade must still be present with zero shares — dropping it would
+        // leave an interior x-gap that the stacked AreaMark linearly interpolates
+        // across, fabricating a band between its neighbours (Session 3 review).
+        let filtered = data.shareByDecade(in: allDecades, excluding: [.centralDecimalFile])
+        let d1910 = filtered.filter { $0.decade == 1910 }
+        #expect(!d1910.isEmpty)
+        #expect(d1910.allSatisfy { $0.share == 0 })
+        #expect(!d1910.contains { $0.category == .centralDecimalFile })
+        // 1970 (presidentialLibrary + CFPF) is unaffected and still sums to 1.0.
+        let d1970 = filtered.filter { $0.decade == 1970 }
+        #expect(abs(d1970.reduce(0.0) { $0 + $1.share } - 1.0) < 1e-9)
+    }
+
+    @Test("category filter: overallComposition renormalizes over shown categories, hidden dropped")
+    func overallCompositionFilter() {
+        let data = SourceProvenanceData(index: fixture())
+        let filtered = data.overallComposition(excluding: [.unrecognized])
+        #expect(!filtered.contains { $0.category == .unrecognized })
+        // Shown categories' shares sum to 1.0 (categories with zero notes contribute 0).
+        let sum = filtered.reduce(0.0) { $0 + $1.share }
+        #expect(abs(sum - 1.0) < 1e-9)
+        // Stable order preserved (subsequence of the canonical order).
+        let order = SourceProvenanceCategory.ordered
+        let idx = filtered.map { order.firstIndex(of: $0.category)! }
+        #expect(idx == idx.sorted())
     }
 }
