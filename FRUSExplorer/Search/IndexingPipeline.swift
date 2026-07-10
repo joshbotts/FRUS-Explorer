@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CryptoKit
 import Foundation
 import OSLog
 import SQLite3
@@ -603,9 +604,40 @@ public actor IndexingPipeline {
     public static let currentPersonRollupVersion: Int = 8
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
-    /// UserDefaults key tracking the override count the rollup was last built with, so a launch after
-    /// corrections sync in from another device re-consolidates even when the version is unchanged.
-    public static let personRollupOverrideCountKey = "frusExplorer.personRollupOverrideCount"
+    /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
+    /// so a launch after corrections sync in from another device re-consolidates even when the
+    /// version is unchanged. A content fingerprint (not a count) so a remove-plus-add that nets the
+    /// same count — routine once undo exists — still triggers reconsolidation. (Supersedes the old
+    /// `frusExplorer.personRollupOverrideCount` key; its absence on first launch forces one free
+    /// reconsolidation that re-stamps this one.)
+    public static let personRollupOverrideFingerprintKey = "frusExplorer.personRollupOverrideFingerprint"
+
+    /// An order-independent, cross-device-stable fingerprint of the applied override set.
+    ///
+    /// Each override becomes a canonical string (a `merge` sorts its symmetric endpoint pair so the
+    /// anchor order can't affect the hash); the strings are sorted and SHA-256-hashed. Deterministic
+    /// regardless of SwiftData fetch order or CloudKit merge nondeterminism — two devices with the
+    /// same logical corrections produce the same fingerprint and don't thrash reconsolidation.
+    /// `Swift.Hasher` is deliberately NOT used (its per-process random seed would differ every launch).
+    ///
+    /// - Parameter overrides: The current override snapshots.
+    /// - Returns: A 64-character lowercase hex digest (a fixed constant for the empty set).
+    static func overrideFingerprint(_ overrides: [PersonClusterOverrideData]) -> String {
+        let u = "\u{1F}"   // unit separator — cannot occur in a volumeId or TEI ref
+        let canonical: [String] = overrides.map { o in
+            switch o.kind {
+            case .split:
+                return "split\(u)\(o.volumeIdA)\(u)\(o.refA)"
+            case .merge:
+                let a = "\(o.volumeIdA)\(u)\(o.refA)"
+                let b = "\(o.volumeIdB ?? "")\(u)\(o.refB ?? "")"
+                let pair = [a, b].sorted()
+                return "merge\(u)\(pair[0])\(u)\(pair[1])"
+            }
+        }
+        let joined = canonical.sorted().joined(separator: "\n")
+        return SHA256.hash(data: Data(joined.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 
     /// Rebuilds the materialised `person_rollup` / `person_rollup_member` tables if they are stale —
     /// the version was bumped, the rollup was never built, or the member set has drifted from the
@@ -616,10 +648,10 @@ public actor IndexingPipeline {
         let installedVersion = UserDefaults.standard.integer(forKey: Self.personRollupVersionKey)
         let members = (try? auxScalarInt("SELECT COUNT(*) FROM person_rollup_member")) ?? -1
         let persons = (try? auxScalarInt("SELECT COUNT(*) FROM persons")) ?? 0
-        let lastOverrideCount = UserDefaults.standard.integer(forKey: Self.personRollupOverrideCountKey)
+        let lastFingerprint = UserDefaults.standard.string(forKey: Self.personRollupOverrideFingerprintKey) ?? ""
         guard installedVersion < Self.currentPersonRollupVersion
             || members != persons
-            || lastOverrideCount != overrides.count else { return }
+            || lastFingerprint != Self.overrideFingerprint(overrides) else { return }
         try consolidatePersonRollup(overrides: overrides)
         logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries, \(overrides.count, privacy: .public) overrides).")
     }
@@ -750,7 +782,7 @@ public actor IndexingPipeline {
 
         // Record what this build reflects so the gated launch path knows when it is stale.
         UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
-        UserDefaults.standard.set(overrides.count, forKey: Self.personRollupOverrideCountKey)
+        UserDefaults.standard.set(Self.overrideFingerprint(overrides), forKey: Self.personRollupOverrideFingerprintKey)
     }
 
     /// Translates user `PersonClusterOverride` snapshots into clusterer constraints.

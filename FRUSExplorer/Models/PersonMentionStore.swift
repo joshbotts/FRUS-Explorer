@@ -881,6 +881,25 @@ public actor PersonMentionStore {
     ///
     /// Returns `nil` if the persons table has no row for this volume/ref pair
     /// (e.g. the volume has not been indexed yet).
+    /// Human-readable name for a stored `(volumeId, ref)` correction anchor.
+    ///
+    /// The corrections manager renders each override by name; the anchor may no longer
+    /// resolve (the volume was removed from the index, or a rebuild dropped that person),
+    /// in which case this returns `nil` and the caller shows the raw `volumeId/ref`.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The anchor's volume.
+    ///   - ref: The anchor's per-volume TEI `ref`.
+    /// - Returns: The person's name, or `nil` when the anchor no longer resolves.
+    public func personName(volumeId: String, ref: String) throws -> String? {
+        let stmt = try prepare("SELECT name FROM persons WHERE volume_id = ? AND ref = ?")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
+        guard step(stmt) else { return nil }
+        return columnString(stmt, 0)
+    }
+
     public func person(forRef ref: String, volumeId: String) throws -> PersonEntry? {
         let sql = """
             SELECT ref, name, description, role, start_year, end_year FROM persons
