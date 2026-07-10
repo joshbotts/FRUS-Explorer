@@ -283,6 +283,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         bump — an emptied derived column, not a parse-semantics change) and the
 ///         subject-tag WHERE filter is neutralized; `subjectTagStore` dependency
 ///         removed from the initializer.
+///   Session 4 / #243: the person-rollup staleness gate compares a deterministic
+///         content fingerprint of the override set (`overrideFingerprint`) instead of
+///         its count — a remove-plus-add that nets the same count (routine once the
+///         corrections manager's undo exists) now correctly reconsolidates; the old
+///         `personRollupOverrideCount` UserDefaults value is cleaned up on first stamp.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -783,9 +788,17 @@ public actor IndexingPipeline {
         // Record what this build reflects so the gated launch path knows when it is stale.
         UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
         UserDefaults.standard.set(Self.overrideFingerprint(overrides), forKey: Self.personRollupOverrideFingerprintKey)
+        // One-time hygiene: drop the superseded count marker so it doesn't sit orphaned
+        // in every upgraded install's defaults ("frusExplorer.personRollupOverrideCount").
+        UserDefaults.standard.removeObject(forKey: "frusExplorer.personRollupOverrideCount")
     }
 
     /// Translates user `PersonClusterOverride` snapshots into clusterer constraints.
+    ///
+    /// An override whose anchor `(volumeId, ref)` is not among the loaded cluster inputs
+    /// (its volume was removed from the index) is a **silent no-op**: the constraint is
+    /// passed through and simply matches nothing. The override record itself is kept, so
+    /// the correction reactivates automatically if that volume is indexed again (#243).
     private static func clusterConstraints(from overrides: [PersonClusterOverrideData])
         -> (mustLink: [(PersonClusterer.MemberKey, PersonClusterer.MemberKey)], detach: [PersonClusterer.MemberKey]) {
         var mustLink: [(PersonClusterer.MemberKey, PersonClusterer.MemberKey)] = []

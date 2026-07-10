@@ -20,6 +20,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Person rollup Phase 3: initial implementation
+///   1.1 — Session 4 / #243: `saveAndReconsolidate(context:pipeline:)` — the shared
+///          persist → snapshot → live-reconsolidate tail used by every correction surface
 @MainActor
 enum PersonClusterOverrideStore {
 
@@ -76,5 +78,23 @@ enum PersonClusterOverrideStore {
     /// `Sendable` snapshots of all overrides, for passing into the `IndexingPipeline` actor.
     static func snapshot(context: ModelContext) -> [PersonClusterOverrideData] {
         fetchAll(context: context).compactMap(\.snapshot)
+    }
+
+    /// The shared tail of every override mutation (merge, split, undo/remove): persist the
+    /// change, snapshot the surviving set, and re-consolidate the rollup live — reusing the
+    /// pipeline's cached cluster inputs so a single correction re-applies fast. Extracted so
+    /// the detail sheet's corrections and the corrections manager's undo share one code path
+    /// (Session 4 / #243).
+    ///
+    /// Overrides whose anchors' volume is not in the index are silent no-ops during
+    /// consolidation and reactivate automatically if that volume is indexed again.
+    ///
+    /// - Parameters:
+    ///   - context: The main-actor model context holding the just-mutated overrides.
+    ///   - pipeline: The indexing pipeline that owns the materialised rollup.
+    static func saveAndReconsolidate(context: ModelContext, pipeline: IndexingPipeline) async {
+        try? context.save()
+        let overrides = snapshot(context: context)
+        try? await pipeline.consolidatePersonRollup(overrides: overrides, forceReload: false)
     }
 }

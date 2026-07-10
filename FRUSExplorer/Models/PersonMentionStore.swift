@@ -165,6 +165,9 @@ public struct PersonMentionRanking: Sendable, Identifiable {
 ///          `coMentionTimeline(rollupA:rollupB:)` (two-person shared-document counts per
 ///          dated year, for relationship dynamics). All read-only, distinct-document
 ///          counted — no schema change.
+///   1.7 — Session 4 / #243: `personName(volumeId:ref:)` — tolerant name lookup for a
+///          stored correction anchor (the corrections manager renders overrides by name;
+///          `nil` when the anchor's volume is no longer indexed). Read-only.
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -877,10 +880,6 @@ public actor PersonMentionStore {
 
     // MARK: - Persons Table Queries (Session 41)
 
-    /// Looks up a single person entry by volume and ref.
-    ///
-    /// Returns `nil` if the persons table has no row for this volume/ref pair
-    /// (e.g. the volume has not been indexed yet).
     /// Human-readable name for a stored `(volumeId, ref)` correction anchor.
     ///
     /// The corrections manager renders each override by name; the anchor may no longer
@@ -900,6 +899,10 @@ public actor PersonMentionStore {
         return columnString(stmt, 0)
     }
 
+    /// Looks up a single person entry by volume and ref.
+    ///
+    /// Returns `nil` if the persons table has no row for this volume/ref pair
+    /// (e.g. the volume has not been indexed yet).
     public func person(forRef ref: String, volumeId: String) throws -> PersonEntry? {
         let sql = """
             SELECT ref, name, description, role, start_year, end_year FROM persons

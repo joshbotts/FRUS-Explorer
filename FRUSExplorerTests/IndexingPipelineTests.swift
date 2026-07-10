@@ -3508,6 +3508,12 @@ struct PersonRollupConsolidationTests {
         try await withTempDir { dir in
             // The gate persists version + fingerprint in process-global UserDefaults; clear both so
             // this test starts from a clean slate regardless of run order.
+            //
+            // Fixture ids (volFP1/volFP2, p_fpk/p_fpa) are deliberately UNIQUE to this test:
+            // every ungated consolidatePersonRollup call in parallel suite-mates stamps ITS
+            // override set's fingerprint into the same global key, and a sibling using
+            // identical anchors could stamp exactly the fingerprint this test's gate is about
+            // to compare — a spurious skip and a flake. Unique anchors make collision impossible.
             UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
             UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
             defer {
@@ -3518,17 +3524,17 @@ struct PersonRollupConsolidationTests {
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
             try writeVolume(
-                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1970",
-                documents: [("dA1", "p_k", "Kissinger")],
-                persons: [("p_k", "Kissinger, Henry A.")]
+                to: volDir.appendingPathComponent("volFP1.xml"), volumeId: "volFP1", year: "1970",
+                documents: [("dA1", "p_fpk", "Kissinger")],
+                persons: [("p_fpk", "Kissinger, Henry A.")]
             )
             try writeVolume(
-                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1949",
-                documents: [("dB1", "p_a", "Acheson")],
-                persons: [("p_a", "Acheson, Dean")]
+                to: volDir.appendingPathComponent("volFP2.xml"), volumeId: "volFP2", year: "1949",
+                documents: [("dB1", "p_fpa", "Acheson")],
+                persons: [("p_fpa", "Acheson, Dean")]
             )
-            try await pipeline.indexVolume("volA")
-            try await pipeline.indexVolume("volB")
+            try await pipeline.indexVolume("volFP1")
+            try await pipeline.indexVolume("volFP2")
             let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
             func count() async throws -> Int { try await store.allPersonsSortedByName().count }
 
@@ -3538,8 +3544,8 @@ struct PersonRollupConsolidationTests {
 
             // One merge (count 0→1): fingerprint differs → reconsolidate → 1 identity.
             let merge = PersonClusterOverrideData(kind: .merge,
-                                                  volumeIdA: "volA", refA: "p_k",
-                                                  volumeIdB: "volB", refB: "p_a")
+                                                  volumeIdA: "volFP1", refA: "p_fpk",
+                                                  volumeIdB: "volFP2", refB: "p_fpa")
             try await pipeline.consolidatePersonRollupIfNeeded(overrides: [merge])
             #expect(try await count() == 1)
 
@@ -3547,7 +3553,7 @@ struct PersonRollupConsolidationTests {
             // the stale merged rollup; the fingerprint gate detects the changed set → reconsolidate.
             // (Splitting an already-isolated member is a no-op on the partition, so the two are
             // separate again once the merge is gone.)
-            let split = PersonClusterOverrideData(kind: .split, volumeIdA: "volA", refA: "p_k")
+            let split = PersonClusterOverrideData(kind: .split, volumeIdA: "volFP1", refA: "p_fpk")
             try await pipeline.consolidatePersonRollupIfNeeded(overrides: [split])
             #expect(try await count() == 2, "same-count swap must still reconsolidate")
         }
