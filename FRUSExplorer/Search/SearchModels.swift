@@ -16,6 +16,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 38: initial implementation
+///   Session 09: `SearchParameters.subjectTagIds` is retained-but-inert (the
+///         document-level subject taxonomy was retired; the SQL filter is gone).
 public enum DocumentTypeFilter: Sendable, Equatable {
     /// Return all documents regardless of type (default).
     case all
@@ -69,8 +71,12 @@ public struct SearchParameters: Sendable, Equatable {
     /// Documents without a parseable date are excluded when this is non-nil.
     public var dateRange: DateRange?
 
-    /// Restrict results to documents that carry ALL of the given subject tag IDs.
-    /// Empty array = no subject-tag filter.
+    /// Formerly restricted results to documents carrying the given subject tag IDs.
+    ///
+    /// Retained for API/persistence stability (`SavedSearch`, `Project` defaults) but
+    /// **inert since Session 09**: document-level subject-tag filtering was retired
+    /// (the subject taxonomy was dropped for low signal-to-noise), so this value no
+    /// longer contributes a WHERE condition — see `IndexingPipeline.searchDocuments`.
     public var subjectTagIds: [String]
 
     /// Restrict results to documents that carry ALL of the given user tag IDs.

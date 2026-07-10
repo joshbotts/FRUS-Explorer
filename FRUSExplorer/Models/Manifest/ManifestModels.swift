@@ -17,9 +17,8 @@ import Foundation
 /// app bundle and merges it with the live GitHub API response.
 ///
 /// The `tags` array contains volume-level subject tag slugs curated by OH staff and
-/// embedded in each volume's published TEI. These are distinct from document-level
-/// subject tags (see `SubjectTag`). An empty array is valid — some volumes predate
-/// the tagging system.
+/// embedded in each volume's published TEI (resolved via `VolumeLevelTag`). An empty
+/// array is valid — some volumes predate the tagging system.
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation

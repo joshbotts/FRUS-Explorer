@@ -58,7 +58,6 @@ private func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: Indexing
         fts5Store: store,
         databaseURL: dbURL,
         volumesDirectory: volDir,
-        subjectTagStore: SubjectTagStore(entries: [], appearances: []),
         concurrencyLimit: 2
     )
     return (pipeline, store)

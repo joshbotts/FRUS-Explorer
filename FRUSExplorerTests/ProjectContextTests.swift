@@ -58,12 +58,10 @@ struct ProjectContextTests {
         let container = try ModelContainer.makeTestContainer()
         let ctx = container.mainContext
 
-        let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeProjectEntry(),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
+            parser: FRUSDocumentParser()
         )
         vm.recordReadingHistory(projectId: nil, in: ctx)
 
@@ -81,12 +79,10 @@ struct ProjectContextTests {
         let ctx = container.mainContext
         let projectId = UUID()
 
-        let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeProjectEntry(documentId: "d42", volumeId: "frus1969-76v01"),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
+            parser: FRUSDocumentParser()
         )
         vm.recordReadingHistory(projectId: projectId, in: ctx)
 

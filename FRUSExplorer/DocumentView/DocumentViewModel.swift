@@ -12,15 +12,14 @@ import SwiftData
 
 // MARK: - DocumentViewModel
 
-/// Manages state for the Document view: loading the rendered document, subject tags,
-/// person/gloss lookup tables, and research-note cross-project indicator.
+/// Manages state for the Document view: loading the rendered document, person/gloss
+/// lookup tables, and research-note cross-project indicator.
 ///
 /// ## Loading Sequence
 /// 1. `load()` is called on appear with the volume URL.
 /// 2. Parses the document AST and persons/terms in parallel.
 /// 3. Converts the AST to a `FRUSDocumentRenderModel` with person/gloss lookup closures.
-/// 4. Fetches subject tags from `SubjectTagStore`.
-/// 5. `recordReadingHistory()` inserts a `ReadingHistoryEntry` into SwiftData.
+/// 4. `recordReadingHistory()` inserts a `ReadingHistoryEntry` into SwiftData.
 ///
 /// ## persName / gloss Sheets
 /// `selectedPerson` and `selectedGloss` are set by the renderer callbacks and drive
@@ -57,6 +56,8 @@ import SwiftData
 ///          found first (with the dual-encoding gate deferring non-`Source:`-prefixed
 ///          head remarks to top-level citations), `[Source: …]` wrapper stripped,
 ///          interior whitespace collapsed, e-volume summary segs excluded
+///   Session 09: subject-tag loading removed with the document-level taxonomy
+///         (`subjectTags` property and the `subjectTagStore` init dependency are gone).
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -96,11 +97,6 @@ public final class DocumentViewModel {
 
     /// Glossary terms from the volume's `<glossary>`, indexed by `ref` attribute.
     public var termsByRef: [String: GlossEntry] = [:]
-
-    // MARK: - Tag State
-
-    /// Subject tags for this document (curated + string-match), loaded after parse.
-    public var subjectTags: [SubjectTag] = []
 
     // MARK: - Sheet State
 
@@ -373,7 +369,6 @@ public final class DocumentViewModel {
     /// Volume manifest entry used for citation generation. `nil` when not found in manifest.
     public let volumeEntry: VolumeManifestEntry?
     private let parser: FRUSDocumentParser
-    private let subjectTagStore: SubjectTagStore
     /// Person mention store for "Find all mentions" feature. Optional — `nil` if the
     /// database could not be opened at boot or in test contexts that don't need it.
     private let personMentionStore: PersonMentionStore?
@@ -389,14 +384,12 @@ public final class DocumentViewModel {
         entry: DocumentBrowserEntry,
         volumeEntry: VolumeManifestEntry?,
         parser: FRUSDocumentParser,
-        subjectTagStore: SubjectTagStore,
         personMentionStore: PersonMentionStore? = nil,
         astCache: DocumentASTCache? = nil
     ) {
         self.entry = entry
         self.volumeEntry = volumeEntry
         self.parser = parser
-        self.subjectTagStore = subjectTagStore
         self.personMentionStore = personMentionStore
         self.astCache = astCache
     }
@@ -511,13 +504,9 @@ public final class DocumentViewModel {
             )
             renderModel = converter.convert(ast)
 
-            // Fetch subject tags
-            subjectTags = await subjectTagStore.tags(forDocumentId: entry.documentId)
-
             #if DEBUG
             print("[DocumentView] Loaded \(entry.volumeId)/\(entry.documentId) " +
-                  "bodyNodes=\(renderModel?.bodyNodes.count ?? 0) " +
-                  "subjectTags=\(subjectTags.count)")
+                  "bodyNodes=\(renderModel?.bodyNodes.count ?? 0)")
             #endif
         } catch {
             loadError = error

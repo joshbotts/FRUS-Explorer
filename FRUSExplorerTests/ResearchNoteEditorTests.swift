@@ -133,12 +133,10 @@ struct ResearchNoteEditorTests {
         )
         ctx.insert(note)
 
-        let store = SubjectTagStore(entries: [], appearances: [])
         let docVM = DocumentViewModel(
             entry: makeEditorEntry(documentId: "d1", volumeId: "frus1969-76v01"),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
+            parser: FRUSDocumentParser()
         )
 
         // With projectB active, note should appear as cross-project

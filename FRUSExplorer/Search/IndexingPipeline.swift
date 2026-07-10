@@ -277,6 +277,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          algorithm the reader (`PageRangeStore`) uses — so the graph agrees with the
 ///          footnote links. Roman/front-matter anchors (`pg_III`) and cross-volume page
 ///          refs stay unresolved (no containing document).
+///   Session 09: document-level subject tags retired — `subject_tag_ids` is written
+///         NULL (column kept for schema stability; no `currentDateIndexVersion`
+///         bump — an emptied derived column, not a parse-semantics change) and the
+///         subject-tag WHERE filter is neutralized; `subjectTagStore` dependency
+///         removed from the initializer.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -917,7 +922,6 @@ public actor IndexingPipeline {
 
     private let fts5Store: FTS5Store
     private let volumesDirectory: URL
-    private let subjectTagStore: SubjectTagStore
     private let stateTracker: IndexingStateTracker?
 
     // MARK: - Person rollup cache (Phase 3)
@@ -1008,21 +1012,18 @@ public actor IndexingPipeline {
     ///   - fts5Store: The shared FTS5 store. Must use the same `databaseURL`.
     ///   - databaseURL: Path to the shared SQLite database file.
     ///   - volumesDirectory: Directory containing downloaded volume XML files.
-    ///   - subjectTagStore: Provides subject tag IDs for indexed documents.
     ///   - stateTracker: Optional tracker for interrupted-indexing sentinel persistence.
     ///   - concurrencyLimit: Maximum simultaneous XML parsers. Default 4.
     public init(
         fts5Store: FTS5Store,
         databaseURL: URL,
         volumesDirectory: URL,
-        subjectTagStore: SubjectTagStore,
         stateTracker: IndexingStateTracker? = nil,
         concurrencyLimit: Int = 4
     ) throws {
         self.fts5Store = fts5Store
         self.databaseURL = databaseURL
         self.volumesDirectory = volumesDirectory
-        self.subjectTagStore = subjectTagStore
         self.stateTracker = stateTracker
         self.concurrencyLimit = concurrencyLimit
 
@@ -2131,10 +2132,12 @@ public actor IndexingPipeline {
             binds.append(String(rollupId))
         }
 
-        for tagId in filters.subjectTagIds {
-            conditions.append("(' ' || COALESCE(dc.subject_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
-            binds.append(tagId)
-        }
+        // Subject-tag filtering is retired (Session 9): the document-level subject
+        // taxonomy was dropped for low signal-to-noise. `filters.subjectTagIds` is
+        // retained on the persisted/CloudKit surfaces (SavedSearch, SearchParameters,
+        // Project defaults) for schema stability but no longer contributes a WHERE
+        // condition — otherwise a persisted saved search carrying now-retired subject
+        // ids would silently filter every result out against the (now-empty) column.
         for tagId in filters.userTagIds {
             conditions.append("(' ' || COALESCE(dc.user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
             binds.append(tagId)
@@ -2604,12 +2607,6 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var personMentionRows: [PersonMentionRow] = []
 
-        // One actor hop to resolve subject tags for all documents in this volume (#3).
-        // Previously: N sequential `await subjectTagStore.tags(forDocumentId:)` calls.
-        let subjectTagStrings = await subjectTagStore.tagsStringMap(
-            forDocumentIds: astDocs.map(\.documentId)
-        )
-
         for astDoc in astDocs {
             let did = astDoc.documentId
             let header     = Self.extractHeader(from: astDoc.nodes)
@@ -2626,8 +2623,6 @@ public actor IndexingPipeline {
                 guard let first = astDoc.nodes.first, case .editorialNote = first else { return false }
                 return true
             }()
-
-            let subjectTagStr = subjectTagStrings[did]
 
             // Single recursive walk collects cross-refs, person refs, and page ranges
             // simultaneously (#4 — replaces 3 separate full-tree traversals per doc).
@@ -2662,7 +2657,12 @@ public actor IndexingPipeline {
             cacheRows.append(DocumentCacheRow(
                 volumeId: volumeId, documentId: did, documentNumber: docNumber,
                 header: header, dateline: dateline, sourceNote: sourceNote,
-                bodyText: bodyText, subjectTagIds: subjectTagStr,
+                // subject_tag_ids is retired (Session 9): the document-level subject
+                // taxonomy was dropped for low signal-to-noise. The column is kept for
+                // schema stability but written NULL — new and re-indexed rows carry no
+                // subject ids. No `currentDateIndexVersion` bump (an empty derived column,
+                // not a parse-semantics change).
+                bodyText: bodyText, subjectTagIds: nil,
                 userTagIds: nil, summaryText: nil, noteText: nil,
                 isEditorialNote: isEditorialNote,
                 isFrontMatter: astDoc.isFrontMatter
@@ -6211,7 +6211,9 @@ public struct IndexedSearchRow: Sendable {
     public let sourceNote: String?
     /// Full plain-text body — used by `SearchService` to build context snippets.
     public let bodyText: String
-    /// Space-separated subject tag IDs, if any.
+    /// Space-separated subject tag IDs, if any. **Inert since Session 09** (the
+    /// document-level subject taxonomy was retired) — non-nil only on rows indexed
+    /// before the retirement; new/re-indexed rows are NULL.
     public let subjectTagIds: String?
     /// Space-separated user tag IDs, if any.
     public let userTagIds: String?
@@ -6240,7 +6242,9 @@ public struct SearchSQLFilters: Sendable {
     public var personRef: String?
     /// Restrict results to documents mentioning any member of this person rollup (cross-corpus).
     public var personRollupId: Int?
-    /// Subject tag IDs that must all be present (AND).
+    /// Subject tag IDs. **Inert since Session 09** — the document-level subject
+    /// taxonomy was retired, so these no longer contribute a WHERE condition; the
+    /// field survives for `SearchParameters`/`SavedSearch` plumbing stability.
     public var subjectTagIds: [String]
     /// User tag IDs that must all be present (AND).
     public var userTagIds: [String]

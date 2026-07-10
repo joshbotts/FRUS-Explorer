@@ -45,6 +45,9 @@ import SwiftUI
 ///   2.5 — Session 1 / #237: iOS two-line principal nav-bar title (`TwoLineNavTitleView`)
 ///          so the distinctive title tail shows past the boilerplate prefix; the
 ///          in-content full title gains the `.isHeader` trait for the headings rotor
+///   Session 09: "Top subjects" Section (bundled volume-subject profiles) between
+///         the Tags section and the structure list; chips pivot to the other
+///         volumes covering a subject.
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -72,6 +75,15 @@ struct VolumeView: View {
                 Section(header: Text(String(localized: "browser.volume.tags.header",
                                             defaultValue: "Tags"))) {
                     VolumeTagChipsView(vm: vm, volume: volume, chips: chips)
+                }
+            }
+
+            // Top subjects (#236 / Session 9): the volume's most characteristic subjects
+            // from the bundled aggregate. Renders even for undownloaded/unindexed volumes.
+            if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
+                Section(header: Text(String(localized: "browser.volume.subjects.header",
+                                            defaultValue: "Top subjects"))) {
+                    VolumeSubjectsChips(volume: volume)
                 }
             }
 

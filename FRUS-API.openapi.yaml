@@ -749,18 +749,22 @@ paths:
 
   /subjects:
     get:
-      summary: Full subject tag taxonomy
+      summary: Full subject tag taxonomy (retired)
+      deprecated: true
       description: |
-        Returns the complete flat list of subject tags used across all FRUS
-        volumes and documents, each with its display name and category.
+        Returned the complete flat list of document-level subject tags, each
+        with its display name and category.
 
-        **Current implementation:** `SubjectTagStore` loads `taxonomy.json`
-        (bundled with the app) at launch and holds the taxonomy in memory.
-        No network call is made at runtime; the taxonomy is updated by
-        regenerating the bundle file. Introduced in Session 08.
-
-        A purpose-built API would serve the current taxonomy and allow the
-        app to fetch updates without a full app update.
+        **Retired in Session 09.** The document-level subject taxonomy
+        (`SubjectTagStore`, `taxonomy.json`, `subject-appearances.json`,
+        introduced in Session 08) was removed for low signal-to-noise. The
+        successor is the **volume-level** subject-profiles aggregate
+        (`volume-subject-profiles-index.json`, decoded lazily by
+        `VolumeSubjectProfilesStore`) — see `/volumes/{volumeId}` volume-detail
+        surfaces; per-volume "top subjects" are derived offline by
+        `VolumeSubjectProfilesGenerator` from the Office of the Historian's
+        public-domain frus-subjects data. This endpoint and its schemas are
+        kept for historical reference only.
       operationId: listSubjects
       tags:
         - Subjects
@@ -796,17 +800,17 @@ paths:
 
   /subjects/appearances/{volumeId}:
     get:
-      summary: Subject tag appearances for a volume
+      summary: Subject tag appearances for a volume (retired)
+      deprecated: true
       description: |
-        Returns all document-level subject tag assignments for a volume: each
-        record links a subject tag to a document with a confidence tier
+        Returned all document-level subject tag assignments for a volume: each
+        record linked a subject tag to a document with a confidence tier
         (`curated` or `stringMatch`).
 
-        **Current implementation:** `SubjectTagStore` loads `subject-appearances.json`
-        (bundled with the app). The file is generated during corpus analysis and
-        bundled rather than fetched at runtime. `IndexingPipeline` also writes
-        appearances to the `subject_appearances` SQLite table for FTS5 filtering.
-        Introduced in Session 08.
+        **Retired in Session 09** with the document-level subject taxonomy
+        (see `/subjects`). The `document_cache.subject_tag_ids` column survives
+        for schema stability but is written NULL; no appearances data ships
+        with the app. Kept for historical reference only.
       operationId: getSubjectAppearances
       tags:
         - Subjects
@@ -859,8 +863,9 @@ paths:
       description: |
         Executes a BM25-ranked full-text search across all indexed FRUS volumes.
         Supports keyword queries, phrase search, prefix wildcard, boolean NOT,
-        subject-tag filtering, volume-scoped filtering, and optional date-range
-        filtering.
+        volume-scoped filtering, and optional date-range filtering. (Subject-tag
+        filtering was retired in Session 09; the parameter survives, inert, for
+        persistence stability.)
 
         Results are ordered by BM25 relevance (lower score = more relevant).
 
@@ -922,13 +927,18 @@ paths:
           description: Only return documents on or before this ISO 8601 date.
         - name: subjectTagIds
           in: query
+          deprecated: true
           schema:
             type: array
             items:
               type: string
           style: form
           explode: true
-          description: Restrict to documents carrying ALL of the given subject tag IDs.
+          description: |
+            **Inert since Session 09** (document-level subject tags retired).
+            Retained for persistence stability — `SavedSearch`/`Project`
+            snapshots round-trip the value losslessly, but it no longer
+            constrains results.
         - name: volumeIds
           in: query
           schema:
@@ -1291,7 +1301,10 @@ components:
 
     SubjectTagList:
       type: object
-      description: Paginated response wrapping subject tag entries.
+      deprecated: true
+      description: |
+        Paginated response wrapping subject tag entries. **Historical** — the
+        document-level subject taxonomy was retired in Session 09 (see `/subjects`).
       required:
         - total
         - items
@@ -1725,13 +1738,13 @@ components:
 
     SubjectTag:
       type: object
+      deprecated: true
       description: |
-        A single entry in the FRUS subject taxonomy. Tags are used at both the
-        volume level (via `VolumeManifestEntry.tags`) and the document level
-        (via `SubjectAppearance`).
+        A single entry in the retired document-level FRUS subject taxonomy.
 
-        Mirrors `SubjectTag` and `SubjectTagEntry` in
-        `FRUSExplorer/Models/Tags/TaxonomyModels.swift`. Introduced in Session 08.
+        **Historical** — mirrored the `SubjectTag`/`SubjectTagEntry` Swift types
+        (introduced Session 08, removed with the taxonomy in Session 09; the
+        volume-level `VolumeLevelTag` system is unrelated and remains live).
       required:
         - subjectId
         - displayName
@@ -1758,13 +1771,14 @@ components:
 
     SubjectAppearance:
       type: object
+      deprecated: true
       description: |
         A record linking a subject tag to a specific document, with a confidence
         tier reflecting how the association was assigned.
 
-        Mirrors `SubjectAppearance` in TaxonomyModels.swift. Used by
-        `SubjectTagStore` to answer "which subjects appear in document X?" and
-        "which documents mention subject Y?". Introduced in Session 08.
+        **Historical** — mirrored the `SubjectAppearance` Swift type consumed by
+        `SubjectTagStore` (introduced Session 08, removed with the document-level
+        taxonomy in Session 09).
       required:
         - subjectId
         - documentId
@@ -1785,15 +1799,17 @@ components:
 
     SubjectTagConfidence:
       type: string
+      deprecated: true
       description: |
         Confidence tier for a document-level subject tag assignment.
 
         - `curated`: Manually verified by OH staff or the data pipeline operator.
-          Displayed in the UI with a checkmark badge (per accessibility decision Q5).
         - `stringMatch`: Derived algorithmically via string matching. May include
-          false positives. Displayed with a question-mark badge.
+          false positives.
 
-        Mirrors `SubjectTagConfidence` in TaxonomyModels.swift.
+        **Historical** — mirrored the `SubjectTagConfidence` Swift type
+        (introduced Session 08, removed with the document-level taxonomy in
+        Session 09).
       enum:
         - curated
         - stringMatch
@@ -1854,7 +1870,10 @@ components:
           type: array
           items:
             type: string
-          description: Subject tag IDs associated with this document.
+          description: |
+            Subject tag IDs associated with this document. **Inert since
+            Session 09** — new/re-indexed documents carry none; only databases
+            indexed before the retirement still surface values here.
         userTagIds:
           type: array
           items:

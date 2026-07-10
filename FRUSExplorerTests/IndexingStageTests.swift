@@ -62,8 +62,7 @@ struct IndexingStageTests {
         let pipeline = try IndexingPipeline(
             fts5Store: store,
             databaseURL: dbURL,
-            volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: [])
+            volumesDirectory: volDir
         )
         return (pipeline, store)
     }

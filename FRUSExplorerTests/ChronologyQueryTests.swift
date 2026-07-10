@@ -53,7 +53,6 @@ private func makeChronPipeline(dir: URL) async throws -> (pipeline: IndexingPipe
         fts5Store: store,
         databaseURL: dbURL,
         volumesDirectory: volDir,
-        subjectTagStore: SubjectTagStore(entries: [], appearances: []),
         concurrencyLimit: 2
     )
     return (pipeline, store)

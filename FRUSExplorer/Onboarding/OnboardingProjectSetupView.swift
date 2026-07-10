@@ -27,15 +27,15 @@ import SwiftData
 ///          downloads and completes onboarding in one step; pre-fill from corpus dates
 ///   2.1 — Session 57: "Skip for now" button creates a default-named project; name-required
 ///          error softened to a hint; proceed logic extracted to proceedWithProject() (F-009)
+///   Session 09: "Default Subject Tags" control removed (subject-tag search
+///         filtering retired; the control wrote volume-tag slugs into a
+///         subject-id-keyed filter and could no longer affect any search).
 @MainActor
 struct OnboardingProjectSetupView: View {
 
     @Bindable var viewModel: OnboardingViewModel
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    /// Used to preserve the system color scheme on unselected tag chips so that
-    /// forcing `.dark` on selected chips does not affect surrounding content (F-012).
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showDateRangePicker = false
 
@@ -164,10 +164,11 @@ struct OnboardingProjectSetupView: View {
                     }
                 }
 
-                // Subject tag defaults (optional)
-                if !viewModel.tagStore.allEntries.isEmpty {
-                    subjectTagDefaults
-                }
+                // (The former "Default Subject Tags" control was removed in Session 09:
+                // document-level subject-tag search filtering was retired for low
+                // signal-to-noise, so pre-selecting subject tags no longer affects
+                // searches. The successor volume-level subject feature lives in the
+                // volume detail view, not onboarding.)
 
                 Spacer(minLength: 32)
             }
@@ -177,56 +178,6 @@ struct OnboardingProjectSetupView: View {
         Divider()
 
         footerButtons
-    }
-
-    // MARK: - Subject Tag Defaults
-
-    @ViewBuilder
-    private var subjectTagDefaults: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                String(localized: "onboarding.project.tags.label",
-                       defaultValue: "Default Subject Tags"),
-                systemImage: "tag"
-            )
-            .font(.headline)
-            Text(String(localized: "onboarding.project.tags.hint",
-                        defaultValue: "Optional — pre-select tags for new searches."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            let topicTags = viewModel.tagStore.allEntries
-                .filter { $0.category == TagCategory.topics.rawValue }
-                .prefix(10)
-
-            FlowLayout(spacing: 6) {
-                ForEach(Array(topicTags), id: \.slug) { tag in
-                    let selected = viewModel.projectSubjectTagIds.contains(tag.slug)
-                    Button {
-                        if selected {
-                            viewModel.projectSubjectTagIds.remove(tag.slug)
-                        } else {
-                            viewModel.projectSubjectTagIds.insert(tag.slug)
-                        }
-                    } label: {
-                        Text(tag.displayName)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                selected ? Color.accentColor : Color.secondary.opacity(0.15),
-                                in: Capsule()
-                            )
-                            // Use Color.primary with a forced .dark color scheme on selected
-                            // chips so the foreground adapts to white semantically rather
-                            // than being a hardcoded Color.white (F-012).
-                            .foregroundStyle(Color.primary)
-                            .environment(\.colorScheme, selected ? .dark : colorScheme)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
     }
 
     // MARK: - Footer
@@ -290,47 +241,5 @@ struct OnboardingProjectSetupView: View {
     }
 }
 
-// MARK: - Flow Layout (local copy for this file)
-
-private struct FlowLayout: Layout {
-
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var currentX: CGFloat = 0
-        var lineHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if currentX + size.width > maxWidth, currentX > 0 {
-                currentX = 0
-                totalHeight += lineHeight + spacing
-                lineHeight = 0
-            }
-            currentX += size.width + spacing
-            lineHeight = max(lineHeight, size.height)
-        }
-        totalHeight += lineHeight
-        return CGSize(width: maxWidth, height: max(0, totalHeight))
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var currentX: CGFloat = bounds.minX
-        var currentY: CGFloat = bounds.minY
-        var lineHeight: CGFloat = 0
-
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if currentX + size.width > bounds.maxX, currentX > bounds.minX {
-                currentX = bounds.minX
-                currentY += lineHeight + spacing
-                lineHeight = 0
-            }
-            view.place(at: CGPoint(x: currentX, y: currentY), proposal: .unspecified)
-            currentX += size.width + spacing
-            lineHeight = max(lineHeight, size.height)
-        }
-    }
-}
+// (The private FlowLayout copy and the `colorScheme` environment that served the
+// removed "Default Subject Tags" chips were deleted with the control in Session 09.)

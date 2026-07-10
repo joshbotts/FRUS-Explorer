@@ -72,6 +72,9 @@ import SwiftUI
 ///   2.5 — Session 1 review: Fix A's breadcrumb suppression gated on pad idiom + regular
 ///          width (size class alone also fired on Plus/Max iPhones in landscape, where the
 ///          bottom tab bar never occludes the bar)
+///   Session 09: `pendingBrowseVolume` resolves against the unfiltered manifest —
+///         the filtered-groups lookup silently dropped hand-offs to undownloaded
+///         volumes, which the subject pivot routinely targets.
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -124,13 +127,16 @@ struct BrowserView: View {
             #endif
         }
         // Volume-grain sibling of the observer above (UI audit gap 12): Cross-Volume
-        // Provenance rows hand off a volume id; push its browser level and clear.
+        // Provenance rows and the Session-9 subject pivot hand off a volume id; push
+        // its browser level and clear. Resolve from the UNFILTERED manifest — the old
+        // lookup through `allSubseriesGroups` respected the "downloaded only" filter,
+        // silently dropping hand-offs to undownloaded volumes, which the subject
+        // pivot's cross-corpus list routinely targets (VolumeView shows its own
+        // Download placeholder for those).
         .onChange(of: appState.pendingBrowseVolume) { _, volumeId in
             guard let volumeId, let vm = viewModel else { return }
             appState.pendingBrowseVolume = nil
-            guard let entry = vm.allSubseriesGroups
-                .flatMap(\.volumes)
-                .first(where: { $0.volumeId == volumeId }) else { return }
+            guard let entry = appState.manifestStore.entry(forVolumeId: volumeId) else { return }
             vm.navigationPath.append(.volume(entry))
             #if DEBUG
             print("[BrowserView] pendingBrowseVolume consumed: \(volumeId)")
@@ -171,6 +177,13 @@ struct BrowserView: View {
             showChronology = true
         }
         .onAppear { bootstrapViewModel() }
+        // Warm the lazy volume-subject-profiles decode off the main thread while the
+        // user is still at the subseries/volume lists, so the first VolumeView push
+        // doesn't pay the (small) decode inside its body evaluation. `static let`
+        // initialization is thread-safe; later main-thread reads are plain accesses.
+        .task {
+            Task.detached(priority: .utility) { _ = VolumeSubjectProfilesStore.shared }
+        }
     }
 
     // MARK: - Shared Toolbar Content

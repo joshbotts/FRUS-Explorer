@@ -177,8 +177,7 @@ struct SettingsTests {
         let pipeline = try IndexingPipeline(
             fts5Store: fts5,
             databaseURL: dbURL,
-            volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore()
+            volumesDirectory: volDir
         )
 
         // indexAllVolumes on an empty directory should complete without error

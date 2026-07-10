@@ -64,7 +64,11 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
-    /// Subject tag IDs (from the document-level subject taxonomy) to pre-filter when active.
+    /// Subject tag IDs from the retired document-level subject taxonomy.
+    ///
+    /// Retained for schema/CloudKit stability only (Session 09): subject-tag search
+    /// filtering is inert, `SearchViewModel.applyProjectDefaults` no longer reads this,
+    /// and new projects are seeded with an empty list.
     var defaultSubjectTagIds: [String] = [] {
         didSet { lastModified = .now }
     }

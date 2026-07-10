@@ -2730,7 +2730,12 @@ struct CorpusBrowserWindowView: View {
         // `.task` covers a window freshly created by the hand-off (`.onChange` misses
         // a value that was already set), `.onChange` covers one already open —
         // mirroring MacSearchWindowView's pendingSearch pattern.
-        .task { consumePendingVolume() }
+        .task {
+            consumePendingVolume()
+            // Warm the lazy volume-subject-profiles decode off the main thread while
+            // the user is at the subseries/volume lists (see BrowserView's twin note).
+            Task.detached(priority: .utility) { _ = VolumeSubjectProfilesStore.shared }
+        }
         .onChange(of: appState.pendingBrowseVolume) { _, volumeId in
             guard volumeId != nil else { return }
             consumePendingVolume()
@@ -2977,6 +2982,54 @@ private struct SubseriesVolumeListView: View {
 // detail columns below — now lives in its own file, `App/BoundedTitleHeader.swift`
 // (extracted Session 1 / #238 so it is reusable and Dynamic-Type-aware).
 
+// MARK: - BoundedSubjectsBlock
+
+/// The macOS host for `VolumeSubjectsChips`: a "Top subjects" header + the chips,
+/// bounded in height so the block can never crowd the phase content out of
+/// `CorpusVolumeDetailView`'s **non-scrolling** column (the same geometry class
+/// `BoundedTitleHeader` exists for — 101 volumes' profiles span 8–9 category groups
+/// and three span 10, up to ~540 pt unbounded, against a 440 pt window minimum).
+///
+/// Mirrors `BoundedTitleHeader`: the natural content height is measured live; the
+/// block hugs short profiles exactly and caps tall ones at a Dynamic-Type-scaled
+/// maximum, beyond which it scrolls internally.
+///
+/// Version history:
+///   1.0 — Session 9 review: bounds the Top-subjects block (unbounded, it crushed
+///          the structure list / Download button for many-category volumes)
+private struct BoundedSubjectsBlock: View {
+    /// The volume whose subject profile is shown.
+    let volume: VolumeManifestEntry
+
+    /// The tallest the block may grow before it scrolls internally. Scaled with the
+    /// user's text-size setting (relative to `.caption`, the chips' text style).
+    @ScaledMetric(relativeTo: .caption) private var maxHeight: CGFloat = 180
+
+    /// The block's natural height at the current column width, measured live.
+    @State private var naturalHeight: CGFloat = 0
+
+    var body: some View {
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "corpus.volume.subjects.header",
+                            defaultValue: "Top subjects"))
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                VolumeSubjectsChips(volume: volume)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
+        }
+        // Hug short profiles (height == natural), cap tall ones (scrolls internally).
+        // Starts at 0 before the first measurement — briefly collapsed is harmless,
+        // a greedy height would reintroduce the overflow this guards against.
+        .frame(height: min(naturalHeight, maxHeight))
+        .scrollDisabled(naturalHeight <= maxHeight)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+}
+
 // MARK: - CorpusVolumeDetailView
 
 /// A volume's structural overview (chapters, compilations), pushed into the corpus browser
@@ -3009,6 +3062,11 @@ private struct SubseriesVolumeListView: View {
 ///   1.6 — Session 1 / #238 hardening: `indexingView` is wrapped in a `ScrollView` so its
 ///          discovered-metadata row and context card can't be clipped at the window's
 ///          minimum height (`BoundedTitleHeader` now lives in `App/BoundedTitleHeader.swift`)
+///   1.7 — Session 9: "Top subjects" block (bundled volume-subject profiles) above the
+///          phase content, height-bounded via `BoundedSubjectsBlock`; `determinePhase`
+///          re-keyed on the volume id (`.task(id:)`) — `consumePendingVolume` replaces
+///          the path element in place, and the identity-stable view otherwise kept the
+///          previous volume's structure under the new volume's header
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -3043,10 +3101,26 @@ private struct CorpusVolumeDetailView: View {
         VStack(alignment: .leading, spacing: 0) {
             BoundedTitleHeader(title: volume.title)
             Divider()
+            // Top subjects (Session 9): the volume's most characteristic subjects from the
+            // bundled aggregate. Placed above the phase content so it shows regardless of
+            // download/index state (the profiles are bundled, not index-derived).
+            if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
+                BoundedSubjectsBlock(volume: volume)
+                Divider()
+            }
             phaseContent
         }
             .navigationTitle(volume.title)
-            .task { await determinePhase() }
+            // Keyed to the volume id: `consumePendingVolume` REPLACES the detail path's
+            // `.volume` element in place (same structural position), so SwiftUI reuses
+            // this view's identity and a plain `.task` would never re-run — leaving the
+            // previous volume's structure under the new volume's header. Reachable from
+            // any same-subseries volume hand-off (cross-volume provenance rows, and the
+            // Session 9 subject pivot, whose hops are typically within one subseries).
+            .task(id: volume.volumeId) {
+                liveProgress = nil
+                await determinePhase()
+            }
         // Download completion: queue no longer contains volumeId AND file now exists → auto-index begins
         .onChange(of: appState.downloadQueue) { _, queue in
             if case .downloading = phase,

@@ -57,12 +57,10 @@ struct DocumentViewTests {
         let url = try makeDocumentFixture()
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeEntry(),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
+            parser: FRUSDocumentParser()
         )
         await vm.load(volumeURL: url)
 
@@ -79,12 +77,10 @@ struct DocumentViewTests {
         let ctx = container.mainContext
         let projectId = UUID()
 
-        let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeEntry(documentId: "d42", volumeId: "frus1969-76v01"),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
+            parser: FRUSDocumentParser()
         )
         vm.recordReadingHistory(projectId: projectId, in: ctx)
 
@@ -94,34 +90,6 @@ struct DocumentViewTests {
         #expect(record.documentId == "d42")
         #expect(record.volumeId == "frus1969-76v01")
         #expect(record.projectId == projectId)
-    }
-
-    // MARK: - Subject Tags
-
-    @Test("DocumentViewModel loads subject tags from the store after parsing")
-    func subjectTagsLoadedAfterParse() async throws {
-        let url = try makeDocumentFixture(documentId: "d1")
-        defer { try? FileManager.default.removeItem(at: url) }
-
-        let entries = [
-            SubjectTagEntry(subjectId: "kissinger-henry-a", displayName: "Kissinger, Henry A.", category: "people"),
-        ]
-        let appearances = [
-            SubjectAppearance(subjectId: "kissinger-henry-a", documentId: "d1",
-                              volumeId: "frus1969-76v01", confidence: .curated),
-        ]
-        let store = SubjectTagStore(entries: entries, appearances: appearances)
-        let vm = DocumentViewModel(
-            entry: makeEntry(documentId: "d1", volumeId: "frus1969-76v01"),
-            volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
-        )
-        await vm.load(volumeURL: url)
-
-        #expect(vm.subjectTags.count == 1)
-        #expect(vm.subjectTags.first?.displayName == "Kissinger, Henry A.")
-        #expect(vm.subjectTags.first?.category == .people)
     }
 
     // MARK: - Cross-Project Note Indicator
@@ -145,12 +113,10 @@ struct DocumentViewTests {
             ctx.insert(foreignNote)
         }
 
-        let store = SubjectTagStore(entries: [], appearances: [])
         let vm = DocumentViewModel(
             entry: makeEntry(documentId: "d1", volumeId: "frus1969-76v01"),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: store
+            parser: FRUSDocumentParser()
         )
         vm.refreshCrossProjectNoteCount(activeProjectId: activeProjectId, context: ctx)
 
@@ -183,7 +149,6 @@ struct PersonMentionBadgeTests {
             entry: entry,
             volumeEntry: nil,
             parser: FRUSDocumentParser(),
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             personMentionStore: personStore
         )
 
@@ -205,7 +170,6 @@ struct PersonMentionBadgeTests {
             entry: entry,
             volumeEntry: nil,
             parser: FRUSDocumentParser(),
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             personMentionStore: nil
         )
 
@@ -231,7 +195,6 @@ private func makePersonMentionStore() throws -> (dir: URL, dbURL: URL, store: Pe
         fts5Store: fts5,
         databaseURL: dbURL,
         volumesDirectory: volDir,
-        subjectTagStore: SubjectTagStore(entries: [], appearances: []),
         concurrencyLimit: 1
     )
     let store = try PersonMentionStore(databaseURL: dbURL)
@@ -300,8 +263,7 @@ struct SummarizationErrorSurfacingTests {
             entry: DocumentBrowserEntry(
                 documentId: "d1", volumeId: "frus1969-76v01", header: "Memo"),
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: SubjectTagStore(entries: [], appearances: [])
+            parser: FRUSDocumentParser()
         )
         vm.documentPlainText = "Some document text to summarize."
 

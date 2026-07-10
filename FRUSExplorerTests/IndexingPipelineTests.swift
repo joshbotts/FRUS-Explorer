@@ -57,12 +57,10 @@ private func makeTestPipeline(
     try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
 
     let store = try FTS5Store(databaseURL: dbURL)
-    let subjectStore = SubjectTagStore(entries: [], appearances: [])
     let pipeline = try IndexingPipeline(
         fts5Store: store,
         databaseURL: dbURL,
         volumesDirectory: volDir,
-        subjectTagStore: subjectStore,
         concurrencyLimit: 2
     )
     return (pipeline, store)
@@ -1651,7 +1649,6 @@ struct EditorialNoteFilterTests {
             fts5Store: fts5,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         try await pipeline.indexVolume("vol1")
@@ -1896,7 +1893,6 @@ struct GlossaryPersistenceTests {
             fts5Store: fts5,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         let store = try PersonMentionStore(databaseURL: dbURL)
@@ -2123,7 +2119,6 @@ struct FTS5RebuildTests {
                 fts5Store: store,
                 databaseURL: dbURL,
                 volumesDirectory: volDir,
-                subjectTagStore: SubjectTagStore(entries: [], appearances: []),
                 concurrencyLimit: 1
             )
             try writeTEIVolume(
