@@ -248,6 +248,20 @@ enum HTMLTemplate {
     }
     a.cross-ref:hover { text-decoration: underline; }
 
+    /* Unresolvable cross-reference (issue #240): muted, dotted underline, help cursor,
+       and a superscript marker so it reads as broken without relying on colour alone. */
+    a.cross-ref-broken {
+      color: var(--color-secondary);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--color-secondary);
+      cursor: help;
+    }
+    a.cross-ref-broken .cross-ref-broken-mark {
+      font-size: 0.72em;
+      vertical-align: super;
+      margin-left: 1px;
+    }
+
     /* ─── Footnote markers ──────────────────────────────────────────────────── */
     button.fn-marker {
       -webkit-appearance: none;

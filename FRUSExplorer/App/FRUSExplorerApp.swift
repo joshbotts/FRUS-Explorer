@@ -1151,6 +1151,7 @@ struct FRUSExplorerApp: App {
                     // Rebuild the materialised person rollup after the persons table changes.
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
                     try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
+                    try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index complete.")
                     #endif
@@ -1165,6 +1166,7 @@ struct FRUSExplorerApp: App {
                     }
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
                     try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
+                    try? await pipeline.applyBrokenRefsIndexIfNeeded()
                     #if DEBUG
                     print("[FRUSExplorer] FTS rebuild from document_cache complete.")
                     #endif
@@ -1175,6 +1177,9 @@ struct FRUSExplorerApp: App {
                 Task {
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
                     try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
+                    // Backfill cross_references.is_broken for already-indexed volumes (#240B).
+                    // Gated + idempotent; a no-op once the current index has been applied.
+                    try? await pipeline.applyBrokenRefsIndexIfNeeded()
                 }
             }
 

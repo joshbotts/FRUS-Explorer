@@ -230,7 +230,7 @@ struct FRUSOffsetEngineTests {
             .paragraph([
                 .plainText("See "),
                 .crossRefLink(target: "d42", volumeId: "frus1969-76v02",
-                              children: [.plainText("Document 42")]),
+                              broken: nil, children: [.plainText("Document 42")]),
                 .plainText(".")
             ])
         ])

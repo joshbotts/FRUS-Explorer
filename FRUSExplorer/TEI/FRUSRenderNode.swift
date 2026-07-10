@@ -96,7 +96,10 @@ public indirect enum FRUSRenderNode: Sendable {
     case glossLink(ref: String?, children: [FRUSRenderNode], entry: GlossEntry?)
 
     /// A cross-reference link (`<ref>`).
-    case crossRefLink(target: String, volumeId: String?, children: [FRUSRenderNode])
+    /// `broken` is non-nil when the corpus validation dataset (issue #240) flags this target as
+    /// unresolvable; the serializer then renders a non-navigable explained span instead of a link,
+    /// and the payload drives the reading view's explanation sheet. `nil` = a live link.
+    case crossRefLink(target: String, volumeId: String?, broken: BrokenRefInfo?, children: [FRUSRenderNode])
 
     // MARK: Page Breaks (Session 07)
 
@@ -272,7 +275,7 @@ private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout Strin
             appendFlatText(from: cs, into: &flat)
         case .glossLink(_, let cs, _):
             appendFlatText(from: cs, into: &flat)
-        case .crossRefLink(_, _, let cs):
+        case .crossRefLink(_, _, _, let cs):
             appendFlatText(from: cs, into: &flat)
         case .attachmentBlock(_, let cs), .unknown(_, let cs):
             appendFlatText(from: cs, into: &flat)
@@ -407,7 +410,7 @@ private func appendFlatTextBlocks(
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
         case .glossLink(_, let cs, _):
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
-        case .crossRefLink(_, _, let cs):
+        case .crossRefLink(_, _, _, let cs):
             // Inline in the HTML serializer (<a>), so it never splits a block.
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
         case .unknown(_, let cs):

@@ -966,7 +966,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 + "<w:footnoteReference w:id=\"\(wordId)\"/></w:r>"
         case .termText(let c), .corrText(let c):
             return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
-        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c):
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
             return inlineRunsXML(c, props: props, labelMap: labelMap, tracker: tracker)
         case .pageBreak:
             return ""

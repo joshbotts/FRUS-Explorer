@@ -3100,6 +3100,23 @@ private struct SettingsDataPane: View {
                         .foregroundStyle(.secondary)
                         .padding(.top, 8)
                 }
+
+                if BrokenRefsIndexStore.shared != nil {
+                    PaneSectionHeader(title: "Broken Cross-References Report")
+                        .padding(.top, 16)
+                    Text("The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus — for reporting to the Office of the Historian. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 8)
+                    HStack(spacing: 8) {
+                        Button("Export CSV…") { exportBrokenRefsCSV() }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        Button("Export JSON…") { exportBrokenRefsJSON() }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    }
+                }
             }
             .padding(24)
         }
@@ -3139,6 +3156,45 @@ private struct SettingsDataPane: View {
             }
         } catch {
             statusMessage = "Couldn't prepare the export: \(error.localizedDescription)"
+        }
+    }
+
+    /// Writes the bundled broken cross-references index as CSV via `NSSavePanel` (#240B).
+    private func exportBrokenRefsCSV() {
+        guard let index = BrokenRefsIndexStore.shared else { return }
+        let data = Data(BrokenRefsReportExporter.csv(from: index).utf8)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.nameFieldStringValue = "frus-broken-cross-references.csv"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try data.write(to: url, options: .atomic)
+                statusMessage = "Saved to \(url.lastPathComponent)."
+            } catch {
+                statusMessage = "Couldn't save the report: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// Writes the bundled broken cross-references index as JSON via `NSSavePanel` (#240B).
+    private func exportBrokenRefsJSON() {
+        do {
+            let data = try BrokenRefsReportExporter.jsonData()
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue = "frus-broken-cross-references.json"
+            panel.begin { response in
+                guard response == .OK, let url = panel.url else { return }
+                do {
+                    try data.write(to: url, options: .atomic)
+                    statusMessage = "Saved to \(url.lastPathComponent)."
+                } catch {
+                    statusMessage = "Couldn't save the report: \(error.localizedDescription)"
+                }
+            }
+        } catch {
+            statusMessage = "Couldn't prepare the report: \(error.localizedDescription)"
         }
     }
 

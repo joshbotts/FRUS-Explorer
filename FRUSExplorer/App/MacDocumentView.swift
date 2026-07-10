@@ -87,6 +87,8 @@ struct MacDocumentView: View {
     @State private var nextEntry: DocumentBrowserEntry? = nil
     @State private var showPersonNotFound = false
     @State private var showGlossNotFound  = false
+    /// Set when an unresolvable cross-reference is tapped; drives the explanation sheet (#240).
+    @State private var brokenRefExplanation: BrokenRefInfo? = nil
     /// Set when a cross-reference targets a document in an undownloaded volume; drives
     /// a prompt offering to download it instead of pushing into a guaranteed load failure.
     @State private var crossRefDownloadVolumeId: String? = nil
@@ -258,6 +260,9 @@ struct MacDocumentView: View {
         .sheet(item: $vm.selectedGloss) { gloss in
             GlossDetailSheet(gloss: gloss)
         }
+        .sheet(item: $brokenRefExplanation) { info in
+            BrokenRefExplanationSheet(info: info)
+        }
         .alert(
             String(localized: "personNotFound.title",
                    defaultValue: "Person Information Unavailable"),
@@ -376,6 +381,9 @@ struct MacDocumentView: View {
                 },
                 onCrossRefTap: { target, volumeId in
                     handleCrossRefTap(target: target, volumeId: volumeId)
+                },
+                onBrokenRefTap: { info in
+                    brokenRefExplanation = info
                 }
             )
             .highlights(highlights)

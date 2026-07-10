@@ -500,7 +500,12 @@ public final class DocumentViewModel {
             var converter = ASTToRenderNodeConverter(
                 personLookup: { [pByRef] ref in pByRef[ref] },
                 glossLookup:  { [tByRef] ref in tByRef[ref] },
-                abbrLookup:   { [tByText] text in tByText[text.lowercased()] }
+                abbrLookup:   { [tByText] text in tByText[text.lowercased()] },
+                // Degrade dead cross-references (issue #240). Volume-scoped: brokenness is
+                // independent of the source document, so front/back-matter refs resolve too.
+                brokenRefLookup: { [vol = entry.volumeId] target in
+                    BrokenRefsIndexStore.shared?.degradableInfo(sourceVolume: vol, rawTarget: target)
+                }
             )
             renderModel = converter.convert(ast)
 

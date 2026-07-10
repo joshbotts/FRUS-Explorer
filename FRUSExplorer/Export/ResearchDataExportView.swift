@@ -44,6 +44,8 @@ struct ResearchDataExportView: View {
     @State private var jsonExportError: String?
     @State private var markdownExportURLs: [URL] = []
     @State private var isPreparingMarkdown = true
+    @State private var brokenRefsCSVURL: URL?
+    @State private var brokenRefsJSONURL: URL?
 
     private var userPromptCount: Int {
         prompts.filter { !$0.isStandard }.count
@@ -89,6 +91,20 @@ struct ResearchDataExportView: View {
                     defaultValue: "One Markdown file per research note, with a citation and link back to the source document. Compatible with Obsidian and similar note-taking tools."
                 ))
             }
+
+            if BrokenRefsIndexStore.shared != nil {
+                Section {
+                    brokenRefsCSVExportRow
+                    brokenRefsJSONExportRow
+                } header: {
+                    Text(String(localized: "settings.export.brokenRefs.header", defaultValue: "Broken Cross-References Report"))
+                } footer: {
+                    Text(String(
+                        localized: "settings.export.brokenRefs.footer",
+                        defaultValue: "The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus — for reporting to the Office of the Historian. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline."
+                    ))
+                }
+            }
         }
         .navigationTitle(String(localized: "settings.export.title", defaultValue: "Export Research Data"))
         #if os(iOS)
@@ -99,6 +115,9 @@ struct ResearchDataExportView: View {
         }
         .task {
             await prepareMarkdownExports()
+        }
+        .task {
+            prepareBrokenRefsExports()
         }
     }
 
@@ -145,7 +164,59 @@ struct ResearchDataExportView: View {
         }
     }
 
+    // MARK: - Broken Cross-References Export Rows
+
+    @ViewBuilder
+    private var brokenRefsCSVExportRow: some View {
+        if let brokenRefsCSVURL {
+            ShareLink(item: brokenRefsCSVURL) {
+                Label(String(localized: "settings.export.brokenRefs.csv", defaultValue: "Export as CSV"), systemImage: "tablecells")
+            }
+        } else {
+            preparingRow
+        }
+    }
+
+    @ViewBuilder
+    private var brokenRefsJSONExportRow: some View {
+        if let brokenRefsJSONURL {
+            ShareLink(item: brokenRefsJSONURL) {
+                Label(String(localized: "settings.export.brokenRefs.json", defaultValue: "Export as JSON"), systemImage: "doc.badge.arrow.up")
+            }
+        } else {
+            preparingRow
+        }
+    }
+
+    @ViewBuilder
+    private var preparingRow: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+            Text(String(localized: "settings.export.preparing", defaultValue: "Preparing export…"))
+                .foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: - Export Preparation
+
+    /// Writes the bundled broken-refs index to temporary CSV + JSON files for `ShareLink`.
+    private func prepareBrokenRefsExports() {
+        guard let index = BrokenRefsIndexStore.shared else { return }
+        do {
+            let csv = BrokenRefsReportExporter.csv(from: index)
+            let csvURL = FileManager.default.temporaryDirectory.appendingPathComponent("frus-broken-cross-references.csv")
+            try Data(csv.utf8).write(to: csvURL, options: .atomic)
+            brokenRefsCSVURL = csvURL
+
+            let jsonURL = FileManager.default.temporaryDirectory.appendingPathComponent("frus-broken-cross-references.json")
+            try BrokenRefsReportExporter.jsonData().write(to: jsonURL, options: .atomic)
+            brokenRefsJSONURL = jsonURL
+        } catch {
+            #if DEBUG
+            print("[ResearchDataExportView] broken-refs export prep failed — \(error)")
+            #endif
+        }
+    }
 
     /// Builds the JSON envelope and writes it to a temporary file for `ShareLink`.
     private func prepareJSONExport() {

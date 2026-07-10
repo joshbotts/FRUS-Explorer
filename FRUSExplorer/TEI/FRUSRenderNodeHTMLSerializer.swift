@@ -432,7 +432,7 @@ public struct FRUSRenderNodeHTMLSerializer {
             let href = ref.map { "frusexplorer://gloss/\(urlEncoded($0.hasPrefix("#") ? String($0.dropFirst()) : $0))" } ?? "#"
             return "<a class=\"gloss\" href=\"\(href)\">\(inline(children))</a>"
 
-        case .crossRefLink(let target, let volumeId, let children):
+        case .crossRefLink(let target, let volumeId, let broken, let children):
             // URL: frusexplorer://doc/{target}/{volumeId} (target first so
             // FRUSURLSchemeHandler can extract it as pathComponents[0]).
             let path: String
@@ -440,6 +440,17 @@ public struct FRUSRenderNodeHTMLSerializer {
                 path = "\(urlEncoded(target))/\(urlEncoded(vol))"
             } else {
                 path = urlEncoded(target)
+            }
+            if let broken {
+                // A dead reference (issue #240): still an <a> so the tap is captured, but the
+                // `brokenref` host routes to the explanation sheet and never navigates a document.
+                // Dotted underline + muted colour + a data-skip'd marker glyph is a non-colour-only
+                // affordance. The marker MUST carry data-skip="1" so the JS flat-text walker doesn't
+                // count it and shift every downstream highlight offset.
+                let a11y = Self.brokenRefAriaLabel(reason: broken.reason)
+                return "<a class=\"cross-ref-broken\" href=\"frusexplorer://brokenref/\(path)\" "
+                    + "role=\"button\" aria-label=\"\(escaped(a11y))\">\(inline(children))"
+                    + "<span class=\"cross-ref-broken-mark\" data-skip=\"1\" aria-hidden=\"true\">\u{2020}</span></a>"
             }
             return "<a class=\"cross-ref\" href=\"frusexplorer://doc/\(path)\">\(inline(children))</a>"
 
@@ -492,6 +503,25 @@ public struct FRUSRenderNodeHTMLSerializer {
         // data-skip is belt-and-suspenders: both insertion points are already
         // offset-invisible (aside data-skip; footnotes section outside the DFS root).
         return "<span class=\"classification-chip\" data-skip=\"1\" aria-label=\"Classification markings: \(escaped(marking))\">\(escaped(marking))</span>"
+    }
+
+    // MARK: - Broken cross-references
+
+    /// A concise localized VoiceOver label for a broken cross-reference, by failure reason.
+    /// The full explanation is in the tap-through sheet; this is the inline announcement.
+    static func brokenRefAriaLabel(reason: String) -> String {
+        let detail: String
+        switch reason {
+        case "unknownPage":
+            detail = String(localized: "the referenced page could not be found")
+        case "unknownVolume":
+            detail = String(localized: "the referenced volume isn't part of this collection")
+        case "emptyTarget":
+            detail = String(localized: "it has no destination")
+        default:   // unknownAnchor and any future reason
+            detail = String(localized: "the referenced document or section no longer exists")
+        }
+        return String(localized: "Unresolved cross-reference: \(detail). Activate for details.")
     }
 
     // MARK: - Aggregation Helpers

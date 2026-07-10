@@ -382,6 +382,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
         let out = html([.crossRefLink(
             target: "d42",
             volumeId: "frus1969-76v02",
+            broken: nil,
             children: [.plainText("Doc 42")]
         )])
         #expect(out.contains("class=\"cross-ref\""))
@@ -394,9 +395,30 @@ struct FRUSRenderNodeHTMLSerializerTests {
         let out = html([.crossRefLink(
             target: "d5",
             volumeId: nil,
+            broken: nil,
             children: [.plainText("Doc 5")]
         )])
         #expect(out.contains("href=\"frusexplorer://doc/d5\""))
+    }
+
+    @Test("A broken crossRefLink emits a non-navigable brokenref span, not a doc link")
+    func crossRefLinkBroken() {
+        let info = BrokenRefInfo(target: "frus1877#pg_1077", reason: "unknownPage",
+                                 resolvedVolume: "frus1877", resolvedAnchor: "pg_1077")
+        let out = html([.crossRefLink(
+            target: "frus1877#pg_1077",
+            volumeId: "frus1877",
+            broken: info,
+            children: [.plainText("page 1077")]
+        )])
+        #expect(out.contains("class=\"cross-ref-broken\""))
+        #expect(out.contains("frusexplorer://brokenref/"))
+        #expect(!out.contains("frusexplorer://doc/"))
+        // The marker glyph must be offset-invisible so it doesn't shift highlight offsets.
+        #expect(out.contains("cross-ref-broken-mark") && out.contains("data-skip=\"1\""))
+        #expect(out.contains("role=\"button\""))
+        // The display text (children) is preserved as real flat text.
+        #expect(out.contains("page 1077"))
     }
 
     // MARK: - Unknown elements
