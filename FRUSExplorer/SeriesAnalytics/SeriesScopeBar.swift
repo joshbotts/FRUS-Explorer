@@ -64,6 +64,9 @@ struct SeriesScope: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 3 / #236: subseries scope for the Series dashboards
+///   1.1 — Session 3 review: the trailing reset button gains an `onReset` hook so
+///         hosts can clear their year range with it (the plan's combined reset);
+///         selected menu items carry `.isSelected` for VoiceOver
 struct SeriesScopeBar: View {
 
     /// The manifest entries the dashboard summarises — the source of the subseries buckets.
@@ -72,6 +75,11 @@ struct SeriesScopeBar: View {
     @Binding var scope: SeriesScope
     /// Invoked after the scope changes so the host can rebuild its derived data.
     var onChange: () -> Void = {}
+    /// Invoked when the trailing **reset** button restores the whole series, after
+    /// `onChange`. Hosts use it to reset their year range in the same tap — the plan's
+    /// "reset affordances clear scope + range together" (#236). Selecting "Whole
+    /// series" from the menu is scope *selection* and does not fire this.
+    var onReset: () -> Void = {}
 
     /// One subseries' menu entry: its display name and member volume ids.
     private struct SubseriesBucket {
@@ -134,6 +142,9 @@ struct SeriesScopeBar: View {
                     Label(String(localized: "series.scope.wholeSeries", defaultValue: "Whole series"),
                           systemImage: scope.isNarrowed ? "globe" : "checkmark")
                 }
+                // The checkmark icon alone is not voiced inside a Menu; the trait
+                // lets VoiceOver announce the active scope per item (Session 3 review).
+                .accessibilityAddTraits(scope.isNarrowed ? [] : .isSelected)
                 let groups = decadeGroups
                 if !groups.isEmpty {
                     Divider()
@@ -150,6 +161,7 @@ struct SeriesScopeBar: View {
                                             Text(bucket.subseries)
                                         }
                                     }
+                                    .accessibilityAddTraits(scope.label == bucket.subseries ? .isSelected : [])
                                 }
                             }
                         }
@@ -173,6 +185,7 @@ struct SeriesScopeBar: View {
             if scope.isNarrowed {
                 Button {
                     setScope(.whole)
+                    onReset()
                 } label: {
                     Text(String(localized: "series.scope.reset", defaultValue: "Whole series"))
                         .font(.caption)

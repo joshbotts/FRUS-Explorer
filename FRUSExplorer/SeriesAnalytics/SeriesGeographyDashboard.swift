@@ -37,6 +37,11 @@ import Charts
 ///          regional-emphasis trend
 ///   1.3 — Analytics SA (chart table inspector): each chart card gains a "View as
 ///          table" button opening a `ChartDataInspectorView` pop-up
+///   1.4 — Session 3 / #236: subseries scope bar (`SeriesScopeBar` over the manifest
+///          entries; charts derive from the scoped entries) with a scope caveat;
+///          `chartCard` delegates to the shared `SeriesChartCard`
+///   1.5 — Session 3 review: the scope bar's and year bar's resets clear scope +
+///          year range together (#236 plan item 7)
 struct SeriesGeographyDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead
@@ -113,7 +118,12 @@ struct SeriesGeographyDashboard: View {
                 emptyState
             } else {
                 intro
-                SeriesScopeBar(entries: entries, scope: $scope)
+                // Reset affordances clear scope + year range together (#236 plan
+                // item 7); the year bar's reset mirrors this below.
+                SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                    yearStart = SeriesChartKind.floorYear
+                    yearEnd = Self.defaultEnd
+                })
                 yearRangeBar
                 regionTrendChart
                 regionTotalsChart
@@ -151,6 +161,7 @@ struct SeriesGeographyDashboard: View {
             onReset: {
                 yearStart = SeriesChartKind.floorYear
                 yearEnd = Self.defaultEnd
+                scope = .whole
             }
         )
     }

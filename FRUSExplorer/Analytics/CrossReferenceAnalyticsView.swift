@@ -96,6 +96,9 @@ private struct HeatCell: Identifiable, Equatable {
 ///
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
+///   1.1 — Session 3 / #236: administration preset menu beneath the year-range bar
+///          (one tap sets the document-year range to a president's term, bounded
+///          and clamped to the corpus span)
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -259,6 +262,7 @@ struct CrossReferenceAnalyticsView: View {
                 HStack {
                     AdministrationPresetMenu(
                         administrations: administrations,
+                        corpusMaxYear: corpusMaxYear,
                         yearStart: $yearRangeStart,
                         yearEnd: $yearRangeEnd
                     )

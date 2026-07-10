@@ -25,6 +25,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
+///   1.1 — Session 3 / #236: subseries-scope recompute tests (scoped counts,
+///          coverage-span hiding, nil-scope identity, in-scope volume shares) and
+///          the bundled-index volumes[]-sums-equal-totals invariant guard
 struct AdministrationProfilesDataTests {
 
     // MARK: Fixtures
@@ -479,5 +482,90 @@ struct AdministrationProfilesDataTests {
             #expect(summedRange == admin.rangeDocCount,
                     "\(admin.id): volumes[] rangeDocs sum \(summedRange) != rangeDocCount \(admin.rangeDocCount)")
         }
+    }
+}
+
+// MARK: - AdministrationPresetMenuTests
+
+/// Tests for `AdministrationPresetMenu.presets(from:corpusMaxYear:currentYear:)` — the
+/// bounding/clamping contract that keeps a preset write inside the host year bar's
+/// eagerly-built `start...corpusMaxYear` field bounds (Session 3 review: a raw
+/// post-corpus term start, e.g. Clinton's 1993 against a 1992 corpus ceiling, formed
+/// an invalid `ClosedRange` and trapped).
+///
+/// Lives beside `AdministrationProfilesDataTests` because it exercises the same
+/// `AdministrationProfile` fixture shape; no SwiftUI view is instantiated.
+///
+/// Version history:
+///   1.0 — Session 3 review / #236: preset bounding + clamping regression tests
+struct AdministrationPresetMenuTests {
+
+    /// A minimal profile fixture — only `number`/`start`/`end` matter to the presets.
+    private func profile(number: Int, president: String, start: String, end: String?) -> AdministrationProfile {
+        AdministrationProfile(
+            id: president.lowercased(), number: number, president: president, party: "Republican",
+            start: start, end: end, pointDocCount: 0, rangeDocCount: 0,
+            volumeCount: 0, volumeCountPointOnly: 0,
+            coverageEarliest: nil, coverageLatest: nil, volumes: []
+        )
+    }
+
+    @Test("presets: terms entirely past the corpus ceiling are dropped (the crash input)")
+    func postCorpusTermsDropped() {
+        let admins = [
+            profile(number: 36, president: "Lyndon B. Johnson", start: "1963-11-22", end: "1969-01-20"),
+            profile(number: 42, president: "Bill Clinton", start: "1993-01-20", end: "2001-01-20"),
+            profile(number: 47, president: "Sitting", start: "2025-01-20", end: nil),
+        ]
+        let presets = AdministrationPresetMenu.presets(from: admins, corpusMaxYear: 1992, currentYear: 2026)
+        // Clinton (1993–2001) and the open 2025– term never intersect 1861...1992:
+        // offering them would write a start year past the ceiling and trap the year bar.
+        #expect(presets.map(\.profile.number) == [36])
+        #expect(presets.first?.start == 1963)
+        #expect(presets.first?.end == 1969)
+    }
+
+    @Test("presets: a term straddling the corpus ceiling is clamped to it")
+    func straddlingTermClamped() {
+        let admins = [profile(number: 41, president: "George Bush", start: "1989-01-20", end: "1993-01-20")]
+        let presets = AdministrationPresetMenu.presets(from: admins, corpusMaxYear: 1992, currentYear: 2026)
+        #expect(presets.count == 1)
+        #expect(presets.first?.start == 1989)
+        #expect(presets.first?.end == 1992)
+    }
+
+    @Test("presets: a term straddling the 1861 floor is clamped up to it")
+    func preFloorTermClamped() {
+        let admins = [profile(number: 15, president: "James Buchanan", start: "1857-03-04", end: "1861-03-04")]
+        let presets = AdministrationPresetMenu.presets(from: admins, corpusMaxYear: 1992, currentYear: 2026)
+        // 1857–1861 intersects the span only at the floor year: clamps to 1861...1861,
+        // still a valid (degenerate) range for the year bar.
+        #expect(presets.first?.start == 1861)
+        #expect(presets.first?.end == 1861)
+        // A term entirely before the floor is dropped.
+        let early = [profile(number: 1, president: "George Washington", start: "1789-04-30", end: "1797-03-04")]
+        #expect(AdministrationPresetMenu.presets(from: early, corpusMaxYear: 1992, currentYear: 2026).isEmpty)
+    }
+
+    @Test("presets: every preset stays inside floorYear...corpusMaxYear with start <= end, in number order")
+    func presetsAlwaysWithinHostBounds() async {
+        // The bundled index end-to-end: no preset it yields may ever escape the host
+        // bounds, whatever administrations the index carries.
+        guard let index = await MainActor.run(body: { AdministrationProfilesStore().index }) else {
+            return // resource unavailable in this host — nothing to assert
+        }
+        let corpusMaxYear = 1992
+        let presets = AdministrationPresetMenu.presets(from: index.administrations,
+                                                       corpusMaxYear: corpusMaxYear,
+                                                       currentYear: 2026)
+        #expect(!presets.isEmpty)
+        for preset in presets {
+            #expect(preset.start >= AdministrationPresetMenu.floorYear)
+            #expect(preset.end <= corpusMaxYear)
+            #expect(preset.start <= preset.end)
+        }
+        #expect(presets.map(\.profile.number) == presets.map(\.profile.number).sorted())
+        // The bundled index's post-corpus administrations (Clinton onward) are gone.
+        #expect(!presets.contains { $0.profile.id == "clinton" })
     }
 }

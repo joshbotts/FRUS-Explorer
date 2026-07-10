@@ -198,6 +198,9 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 ///          `shareByDecade(in:excluding:)` / `overallComposition(excluding:)` — the
 ///          category include/exclude filter, renormalizing shares exactly over the
 ///          shown categories
+///   1.3 — Session 3 review: a filtered decade whose shown categories sum to zero
+///          emits explicit zero-share rows instead of being dropped (an interior
+///          x-gap made the stacked `AreaMark` interpolate fabricated shares)
 struct SourceProvenanceData: Sendable {
 
     /// The decade at which the over-time trend begins; earlier decades are the
@@ -405,6 +408,11 @@ struct SourceProvenanceData: Sendable {
     /// the retained raw counts, not by rescaling the pre-divided shares. Identity (the
     /// plain `shareByDecade(in:)`) when `hidden` is empty.
     ///
+    /// A decade whose shown categories sum to zero emits explicit **zero-share rows**
+    /// (summing to 0, not 1) rather than being dropped — an interior x-gap would be
+    /// linearly interpolated by the stacked `AreaMark`, fabricating shares the data
+    /// does not contain.
+    ///
     /// - Parameters:
     ///   - domain: The inclusive coverage-year range to keep decades within.
     ///   - hidden: The categories to exclude.
@@ -418,12 +426,17 @@ struct SourceProvenanceData: Sendable {
         for decade in shownDecadeCategoryCounts.keys.sorted() where domain.contains(decade) {
             let counts = shownDecadeCategoryCounts[decade] ?? [:]
             let shownTotal = counts.reduce(0) { $0 + (hidden.contains($1.key) ? 0 : $1.value) }
-            guard shownTotal > 0 else { continue }
             for category in SourceProvenanceCategory.ordered where !hidden.contains(category) {
                 let count = counts[category] ?? 0
-                guard count > 0 else { continue }
-                out.append(CategoryDecadeShare(decade: decade, category: category,
-                                               share: Double(count) / Double(shownTotal)))
+                // A decade whose shown categories sum to zero still emits explicit
+                // zero-share rows: dropping the decade would leave an interior x-gap
+                // that the stacked `AreaMark` linearly interpolates across, rendering
+                // a fabricated band between its neighbours (e.g. presidential-library
+                // notes are zero in the 1920s–30s between non-zero 1910s and 1940s).
+                // Zero rows collapse the band honestly to zero instead.
+                guard count > 0 || shownTotal == 0 else { continue }
+                let share = shownTotal > 0 ? Double(count) / Double(shownTotal) : 0
+                out.append(CategoryDecadeShare(decade: decade, category: category, share: share))
             }
         }
         return out

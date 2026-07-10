@@ -38,7 +38,12 @@ import Charts
 ///          volume's publication year (production domain), so the timeliness-target
 ///          step is exact — the directive in force when a volume was published
 ///   1.4 — Analytics SA (chart table inspector): each chart card gains a "View as
-///          table" button opening a `ChartDataInspectorView` pop-up over the
+///          table" button opening a `ChartDataInspectorView` pop-up
+///   1.5 — Session 3 / #236: subseries scope bar (`SeriesScopeBar` over the manifest
+///          entries; charts derive from the scoped entries) with a scope caveat;
+///          `chartCard` delegates to the shared `SeriesChartCard`
+///   1.6 — Session 3 review: the scope bar's and year bar's resets clear scope +
+///          year range together (#236 plan item 7) over the
 ///          range-filtered data
 struct SeriesProductionDashboard: View {
 
@@ -96,7 +101,12 @@ struct SeriesProductionDashboard: View {
                 emptyState
             } else {
                 intro
-                SeriesScopeBar(entries: entries, scope: $scope)
+                // Reset affordances clear scope + year range together (#236 plan
+                // item 7); the year bar's reset mirrors this below.
+                SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                    yearStart = SeriesChartKind.floorYear
+                    yearEnd = Self.defaultEnd
+                })
                 yearRangeBar
                 lagChart
                 perYearChart
@@ -135,6 +145,7 @@ struct SeriesProductionDashboard: View {
             onReset: {
                 yearStart = SeriesChartKind.floorYear
                 yearEnd = Self.defaultEnd
+                scope = .whole
             }
         )
     }

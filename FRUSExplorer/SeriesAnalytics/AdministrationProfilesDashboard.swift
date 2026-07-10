@@ -47,6 +47,8 @@ import Charts
 ///         previously-missing year-range bar (an administration shows when its term
 ///         overlaps the range), bringing this dashboard onto the same chrome as the
 ///         other three; a narrowed-empty state keeps the controls reachable.
+///   1.3 — Session 3 review: the scope bar's and year bar's resets clear scope +
+///         year range together (#236 plan item 7).
 struct AdministrationProfilesDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -161,7 +163,13 @@ struct AdministrationProfilesDashboard: View {
                 emptyState
             } else {
                 intro
-                SeriesScopeBar(entries: entries, scope: $scope)
+                // Reset affordances clear scope + year range together (#236 plan
+                // item 7): the scope bar's reset also restores the default years,
+                // and the year bar's reset (below) also restores the whole series.
+                SeriesScopeBar(entries: entries, scope: $scope, onReset: {
+                    yearStart = SeriesChartKind.floorYear
+                    yearEnd = Self.defaultEnd
+                })
                 yearRangeBar
                 if visibleProfiles.isEmpty {
                     narrowedEmptyState
@@ -216,6 +224,7 @@ struct AdministrationProfilesDashboard: View {
             onReset: {
                 yearStart = SeriesChartKind.floorYear
                 yearEnd = Self.defaultEnd
+                scope = .whole
             }
         )
     }

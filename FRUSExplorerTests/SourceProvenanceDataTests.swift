@@ -23,6 +23,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   1.1 — Session 3 / #236: category include/exclude filter tests (identity,
+///          exact renormalization, composition order)
+///   1.2 — Session 3 review: the all-zero-decade test asserts explicit zero rows
+///          (no x-gap) instead of the dropped decade it previously locked in
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -279,12 +283,18 @@ struct SourceProvenanceDataTests {
         }
     }
 
-    @Test("category filter: an all-zero decade for the shown categories is dropped, not divided by zero")
-    func categoryFilterDropsEmptyDecade() {
+    @Test("category filter: an all-zero decade emits explicit zero rows (no x-gap for AreaMark to interpolate)")
+    func categoryFilterEmitsZeroRowsForEmptyDecade() {
         let data = SourceProvenanceData(index: fixture())
-        // 1910 is 100% centralDecimalFile; hiding it leaves that decade with no shown notes.
+        // 1910 is 100% centralDecimalFile; hiding it leaves that decade with no shown
+        // notes. The decade must still be present with zero shares — dropping it would
+        // leave an interior x-gap that the stacked AreaMark linearly interpolates
+        // across, fabricating a band between its neighbours (Session 3 review).
         let filtered = data.shareByDecade(in: allDecades, excluding: [.centralDecimalFile])
-        #expect(!filtered.contains { $0.decade == 1910 })
+        let d1910 = filtered.filter { $0.decade == 1910 }
+        #expect(!d1910.isEmpty)
+        #expect(d1910.allSatisfy { $0.share == 0 })
+        #expect(!d1910.contains { $0.category == .centralDecimalFile })
         // 1970 (presidentialLibrary + CFPF) is unaffected and still sums to 1.0.
         let d1970 = filtered.filter { $0.decade == 1970 }
         #expect(abs(d1970.reduce(0.0) { $0 + $1.share } - 1.0) < 1e-9)

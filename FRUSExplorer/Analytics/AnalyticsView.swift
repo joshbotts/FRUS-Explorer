@@ -641,6 +641,7 @@ struct AnalyticsView: View {
                 HStack {
                     AdministrationPresetMenu(
                         administrations: administrations,
+                        corpusMaxYear: corpusMaxYear,
                         yearStart: $yearRangeStart,
                         yearEnd: $yearRangeEnd
                     )

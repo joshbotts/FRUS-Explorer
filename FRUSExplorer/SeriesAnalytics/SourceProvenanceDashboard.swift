@@ -41,6 +41,14 @@ import Charts
 ///          provenance-mix and density charts
 ///   1.3 — Analytics SA (chart table inspector): each chart card gains a "View as
 ///          table" button opening a `ChartDataInspectorView` pop-up
+///   1.4 — Session 3 / #236: category include/exclude filter (per-category menu +
+///          "Hide Other / Unclassified" shortcut) with shares renormalized exactly
+///          over the shown categories; a filter caveat discloses the re-basing;
+///          `chartCard` delegates to the shared `SeriesChartCard`
+///   1.5 — Session 3 review: per-category rows are menu `Toggle`s so shown/hidden
+///          state is voiced (the icon-swapped Buttons read identically under
+///          VoiceOver); the last shown category's items disable instead of the tap
+///          silently dead-ending
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -155,15 +163,22 @@ struct SourceProvenanceDashboard: View {
                           : String(localized: "series.provenance.filter.hideOther", defaultValue: "Hide Other / Unclassified"),
                           systemImage: hiddenCategories.contains(.unrecognized) ? "eye" : "eye.slash")
                 }
+                .disabled(isLastShownCategory(.unrecognized))
                 Divider()
                 ForEach(SourceProvenanceCategory.ordered, id: \.self) { category in
-                    Button {
-                        toggleCategory(category)
-                    } label: {
-                        // Checkmark = shown; the empty box = hidden.
-                        Label(category.displayName,
-                              systemImage: hiddenCategories.contains(category) ? "square" : "checkmark.square")
+                    // A menu Toggle renders the native checkmark AND announces its
+                    // on/off state to VoiceOver — an icon-swapped Button label would
+                    // read identically shown or hidden (Session 3 review).
+                    Toggle(isOn: Binding(
+                        get: { !hiddenCategories.contains(category) },
+                        set: { _ in toggleCategory(category) }
+                    )) {
+                        Text(category.displayName)
                     }
+                    // The last shown category cannot be hidden (the charts would
+                    // blank); a disabled item is dimmed and voiced as such, instead
+                    // of the tap silently dead-ending.
+                    .disabled(isLastShownCategory(category))
                 }
                 if !hiddenCategories.isEmpty {
                     Divider()
@@ -200,13 +215,23 @@ struct SourceProvenanceDashboard: View {
     }
 
     /// Toggles a category's hidden state, but never hides the last shown category
-    /// (that would blank the charts with no way back except this menu).
+    /// (that would blank the charts with no way back except this menu). The UI
+    /// communicates the constraint by disabling the last shown item
+    /// (`isLastShownCategory(_:)`); this guard is the state-level backstop.
     private func toggleCategory(_ category: SourceProvenanceCategory) {
         if hiddenCategories.contains(category) {
             hiddenCategories.remove(category)
         } else if hiddenCategories.count < SourceProvenanceCategory.ordered.count - 1 {
             hiddenCategories.insert(category)
         }
+    }
+
+    /// `true` when `category` is the only category still shown — the one item the
+    /// filter refuses to hide. Drives `.disabled` on its menu item so the constraint
+    /// is dimmed and voiced rather than a silent dead-end tap.
+    private func isLastShownCategory(_ category: SourceProvenanceCategory) -> Bool {
+        !hiddenCategories.contains(category)
+            && hiddenCategories.count == SourceProvenanceCategory.ordered.count - 1
     }
 
     // MARK: - Chart 1: Provenance mix over time (stacked area, the anchor)
@@ -369,8 +394,10 @@ struct SourceProvenanceDashboard: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             if !hiddenCategories.isEmpty {
-                Text(String(localized: "series.provenance.caveats.filtered",
-                            defaultValue: "Some categories are hidden — the shares shown are re-based to the shown categories (each decade still sums to 100% of what's visible), not the full mix. Use the Categories menu above to show all."))
+                // New key (.v2): the zero-decade sentence changed this string's meaning
+                // when the review pass made gap decades collapse to zero (1.5).
+                Text(String(localized: "series.provenance.caveats.filtered.v2",
+                            defaultValue: "Some categories are hidden — the shares shown are re-based to the shown categories, not the full mix. A decade with no notes in any shown category collapses to zero rather than being skipped. Use the Categories menu above to show all."))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

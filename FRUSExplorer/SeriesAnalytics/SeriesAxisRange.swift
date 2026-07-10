@@ -29,6 +29,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA (series x-axis bounds): initial implementation
+///   1.1 — Session 3 / #236: shared `yearAxisFormat` (grouping-free integer years),
+///          consolidated here from the four dashboards' per-file copies
 enum SeriesChartKind: Sendable {
     /// The x value is a document coverage year/decade (clamps at 1993).
     case coverage
