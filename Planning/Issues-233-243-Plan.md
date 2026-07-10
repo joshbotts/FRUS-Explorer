@@ -13,6 +13,17 @@
 | #241 deliverable | **Report + prototype** — Planning/ investigation doc plus a small proving PR (ArchivalNeighbors scene ported to iPad, `.defaultSize` on the 3 iOS scenes, stale Stage-Manager comments refreshed). |
 | #238 platform + fix depth (corrected 2026-07-08: the overlay is **iOS/iPadOS**, most apparent when the `.sidebarAdaptable` sidebar is toggled into the floating top tab bar — not macOS) | **Fix A + Fix B, staged** — unpin the iPad breadcrumb (A) AND flatten iPad Browse to NavigationStack (B), as separate commits with B independently revertible; owner accepts losing the in-tab subseries sidebar (the TabView's adaptive sidebar remains the rail). Research/Settings share the nested-split composition → verify during reproduction, file as follow-up, don't fix in-session. |
 
+## Owner decisions (2026-07-09) — colleague data repos
+
+Mid-wave, three Office of the Historian repos were shared and critically reviewed via a 7-agent adversarial workflow (`frus-subject-taxonomy` internal pipeline, `frus-name-authority` person reconciliation, `frus-subjects` public-domain handoff). Key verified facts: the app's **dropped subject tags were this same pipeline's 2026-05-16 output** (`scripts/export_app_bundle.py` targets FRUS Explorer by name; `confidence:"curated"` upstream means vocabulary-level curation only); the document-level mappings are 97% raw string-match with 60–77% researcher-usefulness and the shipped export is stale against the pipeline's own round-3 fixes; the person data joins the app's authority keyspace perfectly (people-id ⊇ app's 12,836 ids; 99.99% frus-ref anchor resolution) but `persons-complete.xml` carries 1,662 unreviewed auto-merges incl. 17 audit-confirmed wrong ones, and a v2 re-mint of its xml:ids is planned upstream (people-id survives). Full profile + integration rules: memory `project_colleague_data_repos.md`.
+
+| Decision | Choice |
+|---|---|
+| Person enrichment (Wikidata/VIAF/roles from `persons-complete.xml`) | **Fold into Session 8's** already-planned authority schema v2 — one indexVersion bump carries both the POCOM slug crosswalk and the enrichment overlay. |
+| Subject data this wave | **Volume-level + cleanup** — new **Session 9**: bundle the curated 543-subject vocabulary, per-volume weighted subject profiles, remove the dead 9 MB doc-level bundle + retired-id hazards. Doc-level tags stay backlogged behind the regeneration gate. |
+| Dedup clusters as #243 merge suggestions | **Next wave** — file as a backlog issue with the extraction recipe; Session 4's undo/corrections manager must ship and settle first. |
+| Upstream regeneration ask (fresh post-round-3 exports) | **Not yet** — volume-level aggregation tolerates the staleness; raise the ask only if doc-level tags are greenlit later. |
+
 **Resolved conflicts** (from the critique, decided by the planner):
 - **#236 scope component:** new `SeriesScopeBar` sharing AnalyticsScopeBar's visual language — NOT a generalization of AnalyticsScopeBar. The data sources differ fundamentally (bundled manifest entries, zero-index onboarding-safe vs indexed FTS volume ids via CorpusAnalyticsService); forcing one component would couple the education dashboards to the corpus-analytics service.
 - **#242 tag pickers:** **consolidate** `MacTagPickerSheet` + `TagPickerSheetView` into one internal `UserTagPickerSheet` *before* the feature change (extraction as its own commit inside the Session 1 PR). Justified by the wave's modularity mandate plus the adversarial review pass; keep the `tags.picker.*` localization key family.
@@ -33,7 +44,7 @@
 
 ## Sessions
 
-Dependency order: **1 → everything** (SupportingViews extractions); **4 → 8**; **6 → 7 and 8**; #241 anytime; Closing last. Sessions 2, 3, 4, 5 are mutually independent after 1.
+Dependency order: **1 → everything** (SupportingViews extractions); **4 → 8**; **6 → 7 and 8**; **9 anytime after 1** (independent of the people family); #241 anytime; Closing last. Sessions 2, 3, 4, 5 are mutually independent after 1.
 
 ---
 
@@ -161,16 +172,38 @@ Generator-only; no app changes. Produces the measurements that scope Session 7.
 
 ---
 
-### Session 8 — People: POCOM M0 (#234-M0) — L-lean *(after 4 and 6)*
-**Environment prerequisite (owner, before the session):** a local checkout of `HistoryAtState/pocom` (CC0 XML: `people/{a-z}/*.xml`, `missions-countries/*.xml`, code tables) — note its path for `POCOM_DIR`. Record the checkout SHA in the generated index's provenance string (upstream is "early beta — identifiers subject to change").
+### Session 8 — People: POCOM M0 + authority enrichment (#234-M0 + colleague data) — L *(after 4 and 6)*
+**Environment prerequisites (owner, before the session):** (a) a local checkout of `HistoryAtState/pocom` (CC0 XML: `people/{a-z}/*.xml`, `missions-countries/*.xml`, code tables) — note its path for `POCOM_DIR`. Record the checkout SHA in the generated index's provenance string (upstream is "early beta — identifiers subject to change"). (b) `/Users/jbotts/Development/frus-name-authority` (CC0) for the enrichment overlay — record its `persons-complete.xml` date/hash in the provenance string too.
 1. **`POCOMIndexGenerator`** (Core/exec/Tests on GeneratorKit): parse person records + chief-of-mission assignments + code tables → per-person career records {slug, name, birth/death, assignments: [{roleTitle, territory/org, appointed/started/ended}]} → `Resources/pocom-index.json`.
 2. **Authority index schema v2:** `PersonAuthorityIndexBuilder` additionally captures the `departmenthistory/people/{slug}` source-urls it currently discards (the slug→canonical-numeric-id crosswalk falls out of the existing PEOPLE_DATA_DIR checkout — verified on record 100001); new optional terse field, `indexVersion` 2, regenerate the bundled index, mirror the field in the app-side tolerant decoder. Hand-mirror both twins this one time; PersonAuthorityKit shared-target extraction → follow-up chip.
+2b. **Enrichment overlay (2026-07-09 decision — same v2 bump, display-only, zero rollup risk):** the builder additionally overlays `frus-name-authority/4_Outputs/persons-complete.xml` keyed **strictly on `idno@type="people-id"`** onto existing authority entries: Wikidata QID (`q`, ~3,810 entries), VIAF (`v` — coverage jumps from 142 to ~3,186), short role text (`r`, truncated — occupation and bio were duplicated upstream, dedupe them). **Defensive generator rules (all empirically derived, non-negotiable):** parse ALL `people-id` idnos per entry (64 auto-merged entries carry several; 46 app ids exist only as secondary idnos — a one-id-per-entry parse silently orphans them); skip enrichment for entries whose pair verdict in `4_Outputs/merge_audit_report.csv` is `unmerge`/`unmerge_likely`/`uncertain` (17+15 suspect auto-merges — wrong-person contamination risk); never read the `FRUS-NNNNN` xml:ids (renumbered between files; upstream plans a v2 re-mint — people-id is the only durable key); use a recovering XML parse only if falling back to `persons.xml` (it has 13 malformed entities; prefer persons-complete, which strict-parses). Keep the regenerated index under ~2.5 MB raw (role-text truncation is the lever). Variants and the +13,439 crosswalk pairs are explicitly OUT (Backlog — rollup-outcome eval needed).
 3. App: pocom-index loader (loadBundled pattern) + **Career section** in `PersonIndexDetailSheet` for rollups whose authority entry carries a slug — list-based timeline (rows, not a visual timeline: free Dynamic Type/VoiceOver ordering), formatted dates.
+3b. **Enrichment UI (small):** in `PersonIndexDetailSheet`, a role line (the `r` text) and an outbound-links row — Wikidata (`https://www.wikidata.org/wiki/{QID}`) and VIAF — with "opens in your browser" a11y hints; render only when present.
 4. Fix `FrontMatterPersonsView`'s misleading empty state ("Index this volume…" is wrong for the 409 no-list volumes — distinct no-editor-list message).
 5. project.yml resource wiring (+ scheme restore); CLAUDE.md tool entry; generator tests on fixture records.
 6. Zero rollup risk by construction (no derived entries this wave — no synthetic refs, no reindex, no clusterer changes).
 
-**Review focus:** POCOM parse coverage across the 5+ record types, v2 tolerant-decode both directions, crosswalk correctness spot-checks against history.state.gov.
+**Review focus:** POCOM parse coverage across the 5+ record types, v2 tolerant-decode both directions, crosswalk correctness spot-checks against history.state.gov; enrichment overlay — multi-people-id handling (the 46 secondary-id app entries), audit-verdict skip-list correctness, index size, and spot-checks that QID/VIAF land on the right person (sample against the 17 known-wrong merges as negative controls).
+
+---
+
+### Session 9 — Subjects: volume-level profiles + dead-bundle cleanup (colleague data, 2026-07-09 decision) — M *(anytime after 1)*
+**Environment prerequisite:** `/Users/jbotts/Development/frus-subjects` (public-domain LICENSE — bundle from THIS handoff lineage, never from the unlicensed pipeline repo). Pin the drop: record `generated: 2026-06-16` + md5 in the generated artifact's provenance string; refs are stable only within a drop (~95 synthetic ids are `sha1(time_ns)`-minted upstream).
+
+**Part 1 — remove the dead document-level subject machinery (the cleanup is most of the value):**
+1. Delete `Resources/subject-appearances.json` (9.09 MB — the app's largest bundled resource, for a feature with no UI since 844680f/6cc57c5) and the old 683-subject `Resources/taxonomy.json`; remove the **synchronous AppState-init parse** (AppState.swift:381) — the single biggest bundled-resource launch cost.
+2. `IndexingPipeline`: stop populating `document_cache.subject_tag_ids` (keep the column — dropping it would force a schema migration for nothing; new rows write empty). This changes parse output for future indexing but only empties an already-orphaned column — document against the index rule in the PR (no `currentDateIndexVersion` bump; same class of rationale as Session 7's substitute).
+3. `SavedSearch.subjectTagIdsCSV` + `SearchParameters.subjectTagIds`: keep the persisted CloudKit/model fields (schema stability) but neutralize the dead SQL filter path, with a doc comment explaining why the fields survive. This retires the latent hazard that persisted saved searches reference ~140 upstream-retired subject ids against a filter no user can see or edit.
+4. `SubjectTagStore`: delete or repurpose as the Part-2 store (decide in-session by what Part 2 needs).
+
+**Part 2 — volume-level subject profiles (noise washes out at volume granularity):**
+5. **`VolumeSubjectProfilesGenerator`** (SPM tool, GeneratorKit if Session 6 has landed, standalone otherwise): read the handoff's `taxonomy.json` + `document_subjects.json`, aggregate to per-volume weighted subject profiles — top-N (~10–15) subjects per volume by a TF-IDF-style score (volume ref-share × inverse corpus doc-frequency), **excluding generic mega-subjects by a self-derived threshold** (e.g. subjects tagging >20% of all corpus documents; do NOT depend on the pipeline repo's over-broad CSV — it lives in the unlicensed repo). Output `Resources/volume-subject-profiles.json` (~100–300 KB target) embedding the used subset of the vocabulary (name, category, subcategory — the curated 13-category hierarchy is the asset).
+6. App: lazy `loadBundled` store (VolumeSourcesIndex pattern — NOT AppState-init), "Top subjects" section in volume detail (both platforms) with category-grouped chips; tapping a subject lists other volumes sharing it (cross-volume discovery at volume level, works for undownloaded volumes). No search-filter integration this wave.
+7. A11y: chips as buttons with subject + category labels; section header trait; the volume list announces counts.
+8. Tests: generator determinism + weighting/threshold unit tests on a fixture; store decode; profile-content sanity for 2–3 known volumes (e.g. a Vietnam volume surfaces Vietnam-war-adjacent subjects above generic ones).
+9. project.yml resource wiring (+ scheme restore); CLAUDE.md tool entry.
+
+**Review focus:** launch-cost regression actually realized (measure AppState init before/after); SavedSearch neutralization doesn't break decode of existing CloudKit records; weighting quality on real volumes (the whole feature fails if War/Peace top every list); provenance pinning.
 
 ---
 
@@ -185,7 +218,7 @@ Generator-only; no app changes. Produces the measurements that scope Session 7.
 ### Closing Session — consolidated docs pass + build 32
 Per the build-31 precedent (dabc386): collect every session's docs-delta notes →
 1. `Docs/iOS-User-Manual.md`, `Docs/macOS-User-Manual.md`, `Docs/EditableContent.md`, README.
-2. In-app `ResearchGuideView` + `IndexingEducationView` (scope pickers, suggested NARA matches, broken-ref explanation, career timelines are new research concepts — unlike the 207–219 wave, this one has in-app-help-worthy additions).
+2. In-app `ResearchGuideView` + `IndexingEducationView` (scope pickers, suggested NARA matches, broken-ref explanation, career timelines, volume subject profiles, and Wikidata/VIAF person links are new research concepts — unlike the 207–219 wave, this one has in-app-help-worthy additions).
 3. Testing-checklist §33 delta (memory file), including the #238 tester item (iPad: toggle the sidebar into the top tab bar — the system "Toggle Sidebar" control — then Browse deep into a subseries/volume in both orientations and confirm breadcrumb-free/visible content and reachable first rows) and #237 before/after.
 4. TestFlight "What's New" files; `Planning/DEVELOPMENT-PLAN.md` session entries.
 5. **Build 31 → 32**: edit `project.yml` + `project.pbxproj` directly (`replace_all`), **never xcodegen**. Reindex note: no `currentDateIndexVersion` bump anywhere in this wave (Session 7's UPDATE pass substitutes); index stays v21.
@@ -197,12 +230,15 @@ Per the build-31 precedent (dabc386): collect every session's docs-delta notes �
 
 Calibration: the 207–219 wave (11 mostly-S issues, per-issue implement + adversarial refute passes) fit in ~2 days of Max 20x usage. This wave as decided = **8 implementation sessions + Session R + 8 Fable review passes + the docs session** with a larger average session size — roughly **1.5–2× the 207–219 wave's consumption, call it 4–6 days of similar-intensity usage**. Spread across a week (or with review passes on off-peak days), it fits a Max 20x weekly budget that handled the previous wave comfortably; run Sessions 1–2 early and reassess consumption after their review passes.
 
+**2026-07-09 revision:** the colleague-data decisions add Session 9 (M, +review) and grow Session 8 from L-lean to L (enrichment overlay ≈ +half a session) — call the delta **+1 to +1.5 days**, keeping the wave at roughly a week of Max 20x. Sessions 1–3 actuals ran at or under plan, so the calibration holds.
+
 **Ordered contingency cuts if limits bite mid-wave:**
 1. Session 7 (#240 app half) → follow-up issue (Session 6 alone satisfies the OH-report core).
-2. Session 8 (#234 M0) → next wave (self-contained; nothing else depends on it).
-3. Session R prototype → report-only.
-4. Drop the chronology-pivot ride-along; trim administration presets to the SA dashboards only.
-5. Run Session 2 and Session R under a single combined review pass (Session 1 is no longer S-tier after the #238 correction, so it keeps its own review).
+2. **Session 9 → next wave** (self-contained; the Part-1 cleanup alone can ride any session as a small extraction-style commit if the full session slips).
+3. Session 8 (#234 M0 + enrichment) → next wave (self-contained; nothing else depends on it). The enrichment overlay (items 2b/3b) is separately droppable from within Session 8 — POCOM M0 stands alone.
+4. Session R prototype → report-only.
+5. Drop the chronology-pivot ride-along; trim administration presets to the SA dashboards only.
+6. Run Session 2 and Session R under a single combined review pass (Session 1 is no longer S-tier after the #238 correction, so it keeps its own review).
 
 **Out of interactive scope regardless of budget:** #234 M1/M2 (surface-form matching + NER + adversarial review over ~409 volumes with committed accept/reject artifacts) is a multi-week offline program requiring a ground-truth eval set that doesn't exist. When resumed: build the eval set first, pilot on the 62 pre-1910 volumes with measured precision, and run the LLM-assisted review as scripted offline/API batch jobs rather than interactive sessions.
 
@@ -210,11 +246,14 @@ Calibration: the 207–219 wave (11 mostly-S issues, per-issue implement + adver
 
 | Item | Origin | Notes |
 |---|---|---|
-| #234 M1 (POCOM-anchored derived entries, pre-1910 pilot) + M2 (NER + adversarial review) + M3 (provenance UI) | #234 | Own program; see feasibility note. Synthetic-ref namespace, index-version bump batching, and rollup force-merge-only rules are documented in the investigation findings. |
+| #234 M1 (POCOM-anchored derived entries, pre-1910 pilot) + M2 (NER + adversarial review) + M3 (provenance UI) | #234 | Own program; see feasibility note. Synthetic-ref namespace, index-version bump batching, and rollup force-merge-only rules are documented in the investigation findings. **2026-07-09 revision:** `frus-name-authority/4_Outputs/persons-new.xml` (4,542 records scanned from 285 volumes, 100% resolvable anchors, 3,466 model-vetted `new_person` verdicts in `persons_new_reconciliation.csv`) reframes M1 from "NER from scratch" to "adopt + human-review the colleague's extraction" — much smaller program, same ground-truth-first discipline. |
+| #243 external merge suggestions from frus-name-authority dedup clusters | 2026-07-09 decision | **Next wave, after Session 4 ships and settles.** Recipe: extract `DEDUP_CLUSTERS` (5,756 scored clusters, layered signals incl. same_qid/same_viaf/transliteration) from `3_Tools/Name_Authority_Lookup_Tool_standalone.html` (~30 lines of Python, verified); translate members via people-id → authority_id → rollup; only clusters with ≥2 app-mapped members; insert as `person_cluster_candidate` rows with layer/signal reason strings — never auto-applied, surfaced through Session 4's merge UI. These are model-audited machine suggestions, not curator decisions; label accordingly. |
+| Person authority crosswalk expansion (+13,439 (volume,anchor) pairs, +56 volumes from persons-complete) | 2026-07-09 review | Deliberately OUT of Session 8: crosswalk pairs force rollup merges, so this changes rollup outcomes and needs its own eval — or waits for the upstream "persons authority TEI v2" (which fixes the 17 wrong merges and re-mints ids; people-id join survives). The 6,111 pairs without people-ids additionally need minted canonical ids. |
+| Document-level subject tags revisit | ideas-1 + 2026-07-09 review | **Gated, in order:** (1) ask upstream (Virginia) to rerun `export_json.py`/`export_app_bundle.py` post-round-3 (current export ships 579 anachronistic pre-1970 AIDS refs; 40–48%/volume unreconcilable pairs) + re-run the 5 stale string-match volumes; (2) filter: over-broad blocklist + min-instance-per-doc + flagged-instance exclusions; (3) pilot on the 11 curated volumes framed as "detected topics," never authoritative. Owner decision 2026-07-09: ask not yet sent. Session 9 delivers the volume-level browsing surface that supersedes the old "subject index browser" idea's foundation; a doc-level subject timeline remains contingent on this gate. |
 | Bundled resolved-edge manifest → complete inbound citations across undownloaded volumes | ideas-2 | Revisit after Session 6 measures edge-list size; must reconcile with the is_broken design. |
 | Batch citation lookup (footnote triage table) | ideas-3 | Natural Mac-window content for CitationLookupView; engine needs zero changes. |
-| Person↔subject affinity chips | ideas-5 | S; rides any future people session. |
-| Subject index browser + subject timeline | ideas-1 | Strongest standalone idea: 8.7MB curated subject-appearances data has no browsing surface. Own session. |
+| Person↔subject affinity chips | ideas-5 | S; rides any future people session. Volume-level only until the doc-level gate clears. |
+| hsg volume-tag ↔ subject-vocabulary crosswalk | 2026-07-09 review | `frus-subject-taxonomy/hsg_tag_gaps.json` maps 82 hsg topic-tag slugs (the app's live volume-tag space) to subject names (27 with refs) — partial seed if Session 9's profiles ever link to the Browse tag navigation. |
 | Corpus-wide glossary/abbreviation lookup | ideas-6 | terms table already indexed by term string. |
 | Saved-search freshness ("new results since last run") | ideas-7 | CloudKit model change; needs its own design pass. |
 | SA-3 source-provenance index v2 (per-volume category counts → true volume scope) | #236 | Generator schema bump + regeneration + tolerant decode. |
