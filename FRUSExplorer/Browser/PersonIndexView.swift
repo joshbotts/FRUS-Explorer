@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - PersonIndexView
 
@@ -27,6 +28,13 @@ import SwiftUI
 ///          Corpus Browser sheet (which stacked the person-detail sheet on top of
 ///          itself) to the frus.people window — the detail sheet is now a single
 ///          window-level modal; this view is unchanged apart from placement
+///   1.2 — Session 4 / #243: "Corrections" toolbar entry opening `PersonCorrectionsSheet`
+///          (undo merges/separations); `PersonIndexRow` reads as one combined VoiceOver
+///          element with a labeled mention count and a hidden decorative chevron
+///   1.3 — Session 4 review: row context-menu "Merge with another person…" shortcut
+///          (auto-opens the picker in the detail sheet); the list reloads reactively on
+///          `AppState.personCorrectionsGeneration` so corrections applied from surfaces
+///          without an `onCorrection` closure (front-matter/compilation sheets) refresh it
 struct PersonIndexView: View {
 
     @Environment(AppState.self) private var appState
@@ -37,6 +45,11 @@ struct PersonIndexView: View {
     @State private var selectedIndexEntry: PersonIndexEntry?
     /// Rollup ids with a pending "possibly the same" suggestion, loaded once for row hints.
     @State private var candidateRollupIds: Set<Int> = []
+    /// Presents the corrections/undo manager (#243).
+    @State private var showCorrections = false
+    /// When `true`, the next presented detail sheet auto-opens the merge picker — set by
+    /// the row context-menu "Merge with another person…" shortcut (#243 plan item 2).
+    @State private var autoOpenMergePicker = false
 
     private var displaySections: [PersonIndexSection] {
         guard !searchText.isEmpty else { return sections }
@@ -75,7 +88,21 @@ struct PersonIndexView: View {
                                 ) {
                                     selectedIndexEntry = indexEntry
                                 }
-                                .contextMenu { mentionsButton(for: indexEntry) }
+                                .contextMenu {
+                                    mentionsButton(for: indexEntry)
+                                    // #243 plan item 2: per-row shortcut into the manual-merge
+                                    // flow — opens the detail sheet with the picker pre-opened.
+                                    if indexEntry.rollupId != nil {
+                                        Button {
+                                            autoOpenMergePicker = true
+                                            selectedIndexEntry = indexEntry
+                                        } label: {
+                                            Label(String(localized: "people.detail.mergeManual",
+                                                         defaultValue: "Merge with another person…"),
+                                                  systemImage: "person.2.badge.gearshape")
+                                        }
+                                    }
+                                }
                                 #if os(iOS)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     mentionsButton(for: indexEntry).tint(.accentColor)
@@ -100,11 +127,35 @@ struct PersonIndexView: View {
             text: $searchText,
             prompt: String(localized: "people.search.prompt", defaultValue: "Search people")
         )
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showCorrections = true
+                } label: {
+                    Label(String(localized: "people.corrections.toolbar", defaultValue: "Corrections"),
+                          systemImage: "arrow.uturn.backward.circle")
+                }
+                .help(String(localized: "people.corrections.toolbar.help",
+                             defaultValue: "Review and undo your merge and separate corrections"))
+            }
+        }
         .task { await loadPeople() }
-        .sheet(item: $selectedIndexEntry) { indexEntry in
-            PersonIndexDetailSheet(indexEntry: indexEntry, onCorrection: {
+        // Live corrections signal: reload whenever ANY surface applies or undoes a
+        // person correction (detail sheets launched from front-matter/compilation views
+        // don't hold an onCorrection closure into this list — the app-wide generation
+        // counter covers them, and any other open People surface, reactively).
+        .onChange(of: appState.personCorrectionsGeneration) { _, _ in
+            Task { await loadPeople() }
+        }
+        .sheet(item: $selectedIndexEntry, onDismiss: { autoOpenMergePicker = false }) { indexEntry in
+            PersonIndexDetailSheet(indexEntry: indexEntry,
+                                   openMergePickerOnAppear: autoOpenMergePicker,
+                                   onCorrection: {
                 Task { await loadPeople() }
             })
+        }
+        .sheet(isPresented: $showCorrections) {
+            PersonCorrectionsSheet(onChange: { Task { await loadPeople() } })
         }
     }
 
@@ -176,6 +227,22 @@ private struct PersonIndexRow: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
+    /// One combined VoiceOver label — name, subtitle, labeled mention count, and the
+    /// possible-duplicate hint — so the row reads as a single stop instead of four elements.
+    private var accessibilityLabelText: String {
+        var parts: [String] = [indexEntry.entry.name]
+        if let subtitle { parts.append(subtitle) }
+        if indexEntry.mentionCount > 0 {
+            parts.append(String(format: String(localized: "people.row.mentionCount.a11y %lld",
+                                               defaultValue: "%lld mentions"),
+                                Int64(indexEntry.mentionCount)))
+        }
+        if hasCandidate {
+            parts.append(String(localized: "people.row.candidate.a11y", defaultValue: "Possible duplicate"))
+        }
+        return parts.joined(separator: ", ")
+    }
+
     var body: some View {
         Button(action: onTap) {
             HStack {
@@ -197,8 +264,6 @@ private struct PersonIndexRow: View {
                         .foregroundStyle(.tint)
                         .help(String(localized: "people.row.candidate.help",
                                      defaultValue: "May be the same as another person — open to review"))
-                        .accessibilityLabel(String(localized: "people.row.candidate.a11y",
-                                                   defaultValue: "Possible duplicate"))
                 }
                 if indexEntry.mentionCount > 0 {
                     Text("\(indexEntry.mentionCount)")
@@ -212,9 +277,12 @@ private struct PersonIndexRow: View {
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelText)
     }
 }
 
@@ -238,9 +306,20 @@ private struct PersonIndexRow: View {
 ///          across Phases 2–5)
 ///   1.1 — Session 2026-07-04 (macOS UI audit gap 11): macOS body normalized to
 ///          VStack + bottom-right Done; shared `detailList` extracted
+///   1.2 — Session 4 / #243: manual "Merge with another person…" (searchable picker +
+///          confirmation with a differing-authority warning); the merge/split/manual
+///          paths share one `applyCorrection` tail (persist → consolidate → announce →
+///          refresh → dismiss); per-person Merge/Separate a11y labels
+///   1.3 — Session 4 review: reentrancy guard raised before the representative-member
+///          awaits; in-progress + completion VoiceOver announcements; the correction tail
+///          delegates to `PersonClusterOverrideStore.saveAndReconsolidate` and bumps the
+///          app-wide corrections generation; `openMergePickerOnAppear` context-menu entry
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
+    /// When `true`, the merge picker opens as soon as this sheet's rollup id is resolved —
+    /// the row context-menu "Merge with another person…" shortcut (#243 plan item 2).
+    var openMergePickerOnAppear: Bool = false
     /// Called after a correction (merge) changes the rollup, so the caller can reload its list.
     var onCorrection: (() -> Void)? = nil
 
@@ -257,6 +336,11 @@ struct PersonIndexDetailSheet: View {
     /// Authority id / VIAF id resolved for a per-volume front-matter entry (Phase 5).
     @State private var resolvedAuthorityId: Int?
     @State private var resolvedViafId: String?
+    /// Presents the searchable person picker for a manual merge (#243).
+    @State private var showMergePicker = false
+    /// The person chosen in the picker, awaiting merge confirmation.
+    @State private var pendingMergeTarget: PersonIndexEntry?
+
     /// "Possibly the same person" suggestions for this rollup (Phase 2 candidates).
     @State private var candidates: [PersonMergeCandidate] = []
     /// The per-volume records folded into this rollup (Phase 4 drill-in).
@@ -293,6 +377,12 @@ struct PersonIndexDetailSheet: View {
                 }
             }
             await loadCorrectionContext()
+            // Context-menu shortcut: jump straight into the merge picker once the rollup
+            // id is known (immediate for People-browser rows; resolved above for
+            // front-matter entries).
+            if openMergePickerOnAppear && effectiveRollupId != nil {
+                showMergePicker = true
+            }
         }
     }
 
@@ -426,6 +516,24 @@ struct PersonIndexDetailSheet: View {
                     }
                 }
 
+                if effectiveRollupId != nil {
+                    Section {
+                        Button {
+                            showMergePicker = true
+                        } label: {
+                            Label(String(localized: "people.detail.mergeManual",
+                                         defaultValue: "Merge with another person…"),
+                                  systemImage: "person.2.badge.gearshape")
+                        }
+                        .disabled(isMerging)
+                        .help(String(localized: "people.detail.mergeManual.help",
+                                     defaultValue: "Combine this identity with another person you choose"))
+                    } footer: {
+                        Text(String(localized: "people.detail.mergeManual.footer",
+                                    defaultValue: "Use this when one person appears under different names and the app kept them apart. The change syncs across your devices and can be undone from Corrections."))
+                    }
+                }
+
                 if !candidates.isEmpty {
                     Section {
                         ForEach(candidates) { candidate in
@@ -447,6 +555,9 @@ struct PersonIndexDetailSheet: View {
                                 }
                                 .buttonStyle(.borderless)
                                 .disabled(isMerging)
+                                .accessibilityLabel(String(format: String(
+                                    localized: "people.detail.merge.a11y %@",
+                                    defaultValue: "Merge %@ into this person"), candidate.name))
                             }
                         }
                     } header: {
@@ -477,6 +588,9 @@ struct PersonIndexDetailSheet: View {
                                 }
                                 .buttonStyle(.borderless)
                                 .disabled(isMerging)
+                                .accessibilityLabel(String(format: String(
+                                    localized: "people.detail.separate.a11y %@",
+                                    defaultValue: "Separate %@ into its own identity"), member.entry.name))
                             }
                         }
                     } header: {
@@ -487,6 +601,25 @@ struct PersonIndexDetailSheet: View {
                                     defaultValue: "Separate a record if it refers to a different person."))
                     }
                 }
+        }
+        .sheet(isPresented: $showMergePicker) {
+            PersonMergePickerSheet(excludingRollupId: effectiveRollupId) { picked in
+                pendingMergeTarget = picked
+            }
+        }
+        .alert(
+            String(localized: "people.detail.mergeConfirm.title", defaultValue: "Merge these identities?"),
+            isPresented: Binding(get: { pendingMergeTarget != nil },
+                                 set: { if !$0 { pendingMergeTarget = nil } }),
+            presenting: pendingMergeTarget
+        ) { target in
+            Button(String(localized: "people.detail.mergeConfirm.action", defaultValue: "Merge"),
+                   role: .destructive) {
+                Task { await manualMerge(with: target) }
+            }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
+        } message: { target in
+            Text(mergeConfirmMessage(for: target))
         }
     }
 
@@ -499,39 +632,90 @@ struct PersonIndexDetailSheet: View {
         members = (try? await store.members(forRollupId: rollupId)) ?? []
     }
 
-    /// Records a "split" correction detaching `member` into its own identity, re-consolidates so it
-    /// takes effect immediately, then dismisses.
-    private func separate(_ member: PersonRollupMember) async {
+    /// The shared tail of every correction (merge, manual merge, separate): persist the override
+    /// just inserted by `insert` and re-consolidate the rollup live (via the store's shared
+    /// `saveAndReconsolidate`), announce progress and completion for VoiceOver (re-consolidation
+    /// takes seconds on a large corpus), bump the app-wide corrections signal, refresh the
+    /// launching list via `onCorrection`, and dismiss. `insert` performs the SwiftData mutation
+    /// on the main-actor context and runs only once the pipeline is confirmed available.
+    ///
+    /// - Parameters:
+    ///   - announcement: The localized VoiceOver completion announcement.
+    ///   - insert: The override insertion (a `PersonClusterOverrideStore.merge`/`split` call).
+    private func applyCorrection(announcement: String, _ insert: (ModelContext) -> Void) async {
         guard let pipeline = appState.indexingPipeline else { return }
         isMerging = true
         defer { isMerging = false }
-        PersonClusterOverrideStore.split((volumeId: member.volumeId, ref: member.entry.ref),
-                                         context: modelContext)
-        try? modelContext.save()
-        let snapshot = PersonClusterOverrideStore.snapshot(context: modelContext)
-        try? await pipeline.consolidatePersonRollup(overrides: snapshot, forceReload: false)
+        AccessibilityNotification.Announcement(
+            String(localized: "people.detail.correction.inProgress",
+                   defaultValue: "Applying correction…")).post()
+        insert(modelContext)
+        await PersonClusterOverrideStore.saveAndReconsolidate(context: modelContext, pipeline: pipeline)
+        AccessibilityNotification.Announcement(announcement).post()
+        appState.personCorrectionsGeneration += 1
         onCorrection?()
         dismiss()
     }
 
-    /// Records a user "merge" correction (a must-link `PersonClusterOverride`) between this rollup and
-    /// `candidate`, re-consolidates so the change takes effect immediately, then dismisses.
+    /// Records a "split" correction detaching `member` into its own identity, re-consolidates so it
+    /// takes effect immediately, then dismisses.
+    private func separate(_ member: PersonRollupMember) async {
+        guard !isMerging else { return }
+        await applyCorrection(
+            announcement: String(format: String(localized: "people.detail.separate.done %@",
+                                                 defaultValue: "Separated %@"), member.entry.name)
+        ) { context in
+            PersonClusterOverrideStore.split((volumeId: member.volumeId, ref: member.entry.ref),
+                                             context: context)
+        }
+    }
+
+    /// Records a "merge" correction from a candidate suggestion.
     private func merge(with candidate: PersonMergeCandidate) async {
-        guard let store = appState.personMentionStore,
-              let pipeline = appState.indexingPipeline,
-              let myRollup = effectiveRollupId else { return }
+        await mergeRollup(candidate.rollupId, named: candidate.name)
+    }
+
+    /// Records a "merge" correction from an arbitrary person chosen in the merge picker (#243).
+    private func manualMerge(with entry: PersonIndexEntry) async {
+        guard let rollupId = entry.rollupId else { return }
+        await mergeRollup(rollupId, named: entry.entry.name)
+    }
+
+    /// Resolves this rollup and `otherRollupId` to their stable `(volumeId, ref)` member anchors and
+    /// records a must-link merge override between them. Shared by the candidate and manual paths.
+    /// `isMerging` is raised BEFORE the representative-member lookups so a double-tap cannot enter
+    /// twice during those awaits (the buttons disable on it).
+    private func mergeRollup(_ otherRollupId: Int, named otherName: String) async {
+        guard !isMerging else { return }
         isMerging = true
         defer { isMerging = false }
-        guard let mine = try? await store.representativeMember(forRollupId: myRollup),
-              let theirs = try? await store.representativeMember(forRollupId: candidate.rollupId) else { return }
-        PersonClusterOverrideStore.merge((volumeId: mine.volumeId, ref: mine.ref),
-                                         (volumeId: theirs.volumeId, ref: theirs.ref),
-                                         context: modelContext)
-        try? modelContext.save()
-        let snapshot = PersonClusterOverrideStore.snapshot(context: modelContext)
-        try? await pipeline.consolidatePersonRollup(overrides: snapshot, forceReload: false)
-        onCorrection?()
-        dismiss()
+        guard let store = appState.personMentionStore,
+              let myRollup = effectiveRollupId,
+              let mine = try? await store.representativeMember(forRollupId: myRollup),
+              let theirs = try? await store.representativeMember(forRollupId: otherRollupId) else { return }
+        await applyCorrection(
+            announcement: String(format: String(localized: "people.detail.merge.done %1$@ %2$@",
+                                                 defaultValue: "Merged %1$@ into %2$@"),
+                                 otherName, indexEntry.entry.name)
+        ) { context in
+            PersonClusterOverrideStore.merge((volumeId: mine.volumeId, ref: mine.ref),
+                                             (volumeId: theirs.volumeId, ref: theirs.ref),
+                                             context: context)
+        }
+    }
+
+    /// The merge-confirmation body: names both identities, explains the transitive union, and warns
+    /// when both are already matched to *different* Office-of-the-Historian authority records
+    /// (advisory — the historian may know better, so the merge is allowed to proceed).
+    private func mergeConfirmMessage(for target: PersonIndexEntry) -> String {
+        var message = String(format: String(localized: "people.detail.mergeConfirm.message %1$@ %2$@",
+            defaultValue: "“%1$@” and “%2$@” will become a single identity. Merging is transitive — if you later merge a third record with either one, all three become one identity. You can undo this from Corrections."),
+            target.entry.name, indexEntry.entry.name)
+        if let mine = effectiveAuthorityId, let theirs = target.authorityId, mine != theirs {
+            message += "\n\n" + String(localized: "people.detail.mergeConfirm.authorityWarning",
+                defaultValue: "These records are matched to different people in the Office of the Historian's registry, so they may be distinct. Merge only if you're sure.")
+        }
+        return message
     }
 }
 

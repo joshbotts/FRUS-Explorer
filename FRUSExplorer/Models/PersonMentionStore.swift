@@ -165,6 +165,9 @@ public struct PersonMentionRanking: Sendable, Identifiable {
 ///          `coMentionTimeline(rollupA:rollupB:)` (two-person shared-document counts per
 ///          dated year, for relationship dynamics). All read-only, distinct-document
 ///          counted — no schema change.
+///   1.7 — Session 4 / #243: `personName(volumeId:ref:)` — tolerant name lookup for a
+///          stored correction anchor (the corrections manager renders overrides by name;
+///          `nil` when the anchor's volume is no longer indexed). Read-only.
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -876,6 +879,25 @@ public actor PersonMentionStore {
     }
 
     // MARK: - Persons Table Queries (Session 41)
+
+    /// Human-readable name for a stored `(volumeId, ref)` correction anchor.
+    ///
+    /// The corrections manager renders each override by name; the anchor may no longer
+    /// resolve (the volume was removed from the index, or a rebuild dropped that person),
+    /// in which case this returns `nil` and the caller shows the raw `volumeId/ref`.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The anchor's volume.
+    ///   - ref: The anchor's per-volume TEI `ref`.
+    /// - Returns: The person's name, or `nil` when the anchor no longer resolves.
+    public func personName(volumeId: String, ref: String) throws -> String? {
+        let stmt = try prepare("SELECT name FROM persons WHERE volume_id = ? AND ref = ?")
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, ref)
+        guard step(stmt) else { return nil }
+        return columnString(stmt, 0)
+    }
 
     /// Looks up a single person entry by volume and ref.
     ///

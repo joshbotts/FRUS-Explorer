@@ -3426,6 +3426,156 @@ struct PersonRollupConsolidationTests {
         }
     }
 
+    // MARK: - Session 4 / #243: corrections round-trip, arbitrary union, fingerprint staleness
+
+    @Test("removing a split override reverts the rollup (undo round-trip, #243)")
+    func overrideRoundTripIncludingRemove() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Two exact-name records the clusterer merges into one identity.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1970",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1971",
+                documents: [("dB1", "p_z", "Kissinger")],
+                persons: [("p_z", "Kissinger, Henry A.")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+
+            func kissingerCount() async throws -> Int {
+                try await store.allPersonsSortedByName().filter { $0.entry.name == "Kissinger, Henry A." }.count
+            }
+
+            try await pipeline.consolidatePersonRollup()
+            #expect(try await kissingerCount() == 1)
+
+            // Split volB's record out → two identities.
+            let split = PersonClusterOverrideData(kind: .split, volumeIdA: "volB", refA: "p_z")
+            try await pipeline.consolidatePersonRollup(overrides: [split], forceReload: false)
+            #expect(try await kissingerCount() == 2)
+
+            // Undo = remove the override → re-consolidate with the empty set → back to one.
+            try await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+            #expect(try await kissingerCount() == 1, "removing the override reverts the split")
+        }
+    }
+
+    @Test("a merge override unions two arbitrary (differently-named) identities (#243 manual merge)")
+    func arbitraryMustLinkUnion() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Two DIFFERENT names the clusterer never groups — the manual-merge picker can union
+            // arbitrary identities, not just clusterer-flagged candidates.
+            try writeVolume(
+                to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1970",
+                documents: [("dA1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1949",
+                documents: [("dB1", "p_a", "Acheson")],
+                persons: [("p_a", "Acheson, Dean")]
+            )
+            try await pipeline.indexVolume("volA")
+            try await pipeline.indexVolume("volB")
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+
+            try await pipeline.consolidatePersonRollup()
+            #expect(try await store.allPersonsSortedByName().count == 2, "two distinct identities")
+
+            let merge = PersonClusterOverrideData(kind: .merge,
+                                                  volumeIdA: "volA", refA: "p_k",
+                                                  volumeIdB: "volB", refB: "p_a")
+            try await pipeline.consolidatePersonRollup(overrides: [merge], forceReload: false)
+            let people = try await store.allPersonsSortedByName()
+            #expect(people.count == 1, "the manual merge unions the two arbitrary identities")
+            let rid = try #require(people.first?.rollupId)
+            let keys = try await store.documentKeys(forRollupId: rid)
+                .map { "\($0.volumeId)/\($0.documentId)" }.sorted()
+            #expect(keys == ["volA/dA1", "volB/dB1"], "the merged identity spans both volumes")
+        }
+    }
+
+    @Test("the gated path reconsolidates on a same-count override SWAP (fingerprint, not count, #243)")
+    func fingerprintStalenessReconsolidates() async throws {
+        try await withTempDir { dir in
+            // The gate persists version + fingerprint in process-global UserDefaults; clear both so
+            // this test starts from a clean slate regardless of run order.
+            //
+            // Fixture ids (volFP1/volFP2, p_fpk/p_fpa) are deliberately UNIQUE to this test:
+            // every ungated consolidatePersonRollup call in parallel suite-mates stamps ITS
+            // override set's fingerprint into the same global key, and a sibling using
+            // identical anchors could stamp exactly the fingerprint this test's gate is about
+            // to compare — a spurious skip and a flake. Unique anchors make collision impossible.
+            UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
+            UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
+            defer {
+                UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
+                UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
+            }
+
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume(
+                to: volDir.appendingPathComponent("volFP1.xml"), volumeId: "volFP1", year: "1970",
+                documents: [("dA1", "p_fpk", "Kissinger")],
+                persons: [("p_fpk", "Kissinger, Henry A.")]
+            )
+            try writeVolume(
+                to: volDir.appendingPathComponent("volFP2.xml"), volumeId: "volFP2", year: "1949",
+                documents: [("dB1", "p_fpa", "Acheson")],
+                persons: [("p_fpa", "Acheson, Dean")]
+            )
+            try await pipeline.indexVolume("volFP1")
+            try await pipeline.indexVolume("volFP2")
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            func count() async throws -> Int { try await store.allPersonsSortedByName().count }
+
+            // Baseline: no overrides → 2 identities; stamps version + fingerprint(empty).
+            try await pipeline.consolidatePersonRollupIfNeeded(overrides: [])
+            #expect(try await count() == 2)
+
+            // One merge (count 0→1): fingerprint differs → reconsolidate → 1 identity.
+            let merge = PersonClusterOverrideData(kind: .merge,
+                                                  volumeIdA: "volFP1", refA: "p_fpk",
+                                                  volumeIdB: "volFP2", refB: "p_fpa")
+            try await pipeline.consolidatePersonRollupIfNeeded(overrides: [merge])
+            #expect(try await count() == 1)
+
+            // SWAP to a single split (count stays 1): the old count-only gate would SKIP and leave
+            // the stale merged rollup; the fingerprint gate detects the changed set → reconsolidate.
+            // (Splitting an already-isolated member is a no-op on the partition, so the two are
+            // separate again once the merge is gone.)
+            let split = PersonClusterOverrideData(kind: .split, volumeIdA: "volFP1", refA: "p_fpk")
+            try await pipeline.consolidatePersonRollupIfNeeded(overrides: [split])
+            #expect(try await count() == 2, "same-count swap must still reconsolidate")
+        }
+    }
+
+    @Test("override fingerprint is order-independent and merge-endpoint-symmetric (#243)")
+    func overrideFingerprintCanonicalization() {
+        let a = PersonClusterOverrideData(kind: .merge, volumeIdA: "v1", refA: "p_a",
+                                          volumeIdB: "v2", refB: "p_b")
+        let aSwapped = PersonClusterOverrideData(kind: .merge, volumeIdA: "v2", refA: "p_b",
+                                                 volumeIdB: "v1", refB: "p_a")
+        let s = PersonClusterOverrideData(kind: .split, volumeIdA: "v3", refA: "p_c")
+        // Same set, different array order (as CloudKit createdAt ordering can differ) → same hash.
+        #expect(IndexingPipeline.overrideFingerprint([a, s]) == IndexingPipeline.overrideFingerprint([s, a]))
+        // A merge's symmetric endpoints (A↔B) must not change the hash.
+        #expect(IndexingPipeline.overrideFingerprint([a]) == IndexingPipeline.overrideFingerprint([aSwapped]))
+        // A changed set → a different hash (the whole point of replacing the count).
+        #expect(IndexingPipeline.overrideFingerprint([a]) != IndexingPipeline.overrideFingerprint([a, s]))
+        // The empty set hashes to a stable non-empty constant (so a first launch mismatches "" → reconsolidates once).
+        #expect(!IndexingPipeline.overrideFingerprint([]).isEmpty)
+    }
+
     @Test("merged rollup widens the active span across members (MIN start, MAX end)")
     func consolidationWidensEra() async throws {
         try await withTempDir { dir in

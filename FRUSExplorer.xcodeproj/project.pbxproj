@@ -391,6 +391,7 @@
 		A71FD8F16EA54AD18DF949FD /* BrowserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81475CA28849923822135AD /* BrowserViewModel.swift */; };
 		A720A8CBE9671A43BC31F30B /* OnboardingProjectSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1434C098DA61D946980046B5 /* OnboardingProjectSetupView.swift */; };
 		A8065087F9358A1B00FB8B98 /* ModelContainer+FRUS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */; };
+		A80C0A2291FD9201DABE91BA /* PersonCorrectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CFAE4BD52F4B87A79FC7ED /* PersonCorrectionsView.swift */; };
 		A81D07949B501145CEF370E0 /* ResearchDataExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A3F68E6417D30946C5FAABE /* ResearchDataExportView.swift */; };
 		A8ED34A01450FC39D53C533D /* CollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 423271170536DE4B8160B34A /* CollectionExporter.swift */; };
 		A8F5DB5C348A0DF6249D3C26 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2914FB296F951A74A8E2CE5 /* PromptEditorView.swift */; };
@@ -465,6 +466,7 @@
 		C2612142F4D226704DCF71C1 /* ResearchNoteEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6B99F69428BCC52D934736 /* ResearchNoteEditorTests.swift */; };
 		C2EEB3BFCC6AB2E4F6E5B5E5 /* word-cloud-stopwords.json in Resources */ = {isa = PBXBuildFile; fileRef = 661866B4560BAA662EBB3C2F /* word-cloud-stopwords.json */; };
 		C314EE4A51455413DAE6DC25 /* CompilationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C1E215AA6C01CF6ED2EECC /* CompilationView.swift */; };
+		C37770A7CADA9E91F9DD8A0B /* PersonCorrectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CFAE4BD52F4B87A79FC7ED /* PersonCorrectionsView.swift */; };
 		C4AEDF016A8AF6CC938CB041 /* CitationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B6853FFE22B49DD12CED96 /* CitationParser.swift */; };
 		C50945F54AD47651EC8D1CD4 /* WordCloudScopeResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902A3937D1FAC16D46AAF626 /* WordCloudScopeResolver.swift */; };
 		C52A33DBA54ED2DCC18F8E38 /* DocumentHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A9A5C7AD20F734859573CFC /* DocumentHighlight.swift */; };
@@ -957,6 +959,7 @@
 		D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibTeXCollectionExporter.swift; sourceTree = "<group>"; };
 		D4822CCAB395C9147304BB90 /* AppActivityTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
 		D498F562E475FF5CF7981134 /* CollectionKeying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionKeying.swift; sourceTree = "<group>"; };
+		D4CFAE4BD52F4B87A79FC7ED /* PersonCorrectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonCorrectionsView.swift; sourceTree = "<group>"; };
 		D506EF1097D8D556812C9287 /* VolumeSourcesIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSourcesIndex.swift; sourceTree = "<group>"; };
 		D5F8698F22479B30B2FFFB1F /* person-authority-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "person-authority-index.json"; sourceTree = "<group>"; };
 		D707625BB386335733C8C9E5 /* FRUSExplorerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FRUSExplorerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1037,6 +1040,7 @@
 				6DF3800E6EA9F402E0F8B123 /* CorpusView.swift */,
 				B1D4101100CE5F1F5C3C9024 /* FrontMatterPersonsView.swift */,
 				E099012C9338BFC7C655B092 /* NavBarFullTitle.swift */,
+				D4CFAE4BD52F4B87A79FC7ED /* PersonCorrectionsView.swift */,
 				A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */,
 				373770EEFB83CBEE8238D8D2 /* SubseriesView.swift */,
 				0FFC3D2EF12D1AB4841E13DE /* VolumeSourcesView.swift */,
@@ -2055,6 +2059,7 @@
 				B6C4325BD8996C5EB026C95A /* PersonClusterOverrideStore.swift in Sources */,
 				BCAD69DDEB470FDFE43EE409 /* PersonClusterer.swift in Sources */,
 				02B5A0A8D64CC4600DEDC153 /* PersonCoMentionGraphView.swift in Sources */,
+				A80C0A2291FD9201DABE91BA /* PersonCorrectionsView.swift in Sources */,
 				48491876D648872B3A051420 /* PersonIndexView.swift in Sources */,
 				EDF17EAD96A8DC3A5D6082EA /* PersonMentionStore.swift in Sources */,
 				EDCB64D5D242AE9D865B3222 /* Project.swift in Sources */,
@@ -2307,6 +2312,7 @@
 				60104E52630DAD34651553D2 /* PersonClusterOverrideStore.swift in Sources */,
 				D11BA2598C862FCCB6853366 /* PersonClusterer.swift in Sources */,
 				A68ADD4A6777A0EFBDB70DAC /* PersonCoMentionGraphView.swift in Sources */,
+				C37770A7CADA9E91F9DD8A0B /* PersonCorrectionsView.swift in Sources */,
 				4B72551F127ADEFB79ED3C2B /* PersonIndexView.swift in Sources */,
 				DE25DE234FCC53145F57C808 /* PersonMentionStore.swift in Sources */,
 				2750EFD858438D223004C453 /* Project.swift in Sources */,

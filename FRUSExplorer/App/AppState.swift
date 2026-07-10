@@ -376,6 +376,15 @@ final class AppState {
     /// this to show download indicators without calling into the actor directly.
     var downloadQueue: [String] = []
 
+    // MARK: - Person Corrections Signal
+
+    /// Bumped after every person-cluster correction (merge / separate / undo) once the
+    /// rollup has re-consolidated, so any People surface can refresh reactively via
+    /// `.onChange` — the live-signal pattern this codebase prefers over navigation- or
+    /// scene-phase-triggered reloads (Session 4 / #243). The value itself is meaningless;
+    /// only changes matter.
+    var personCorrectionsGeneration: Int = 0
+
     // MARK: - Tag Stores
 
     /// Resolves volume-level tag slugs and provides volume-by-tag queries.
