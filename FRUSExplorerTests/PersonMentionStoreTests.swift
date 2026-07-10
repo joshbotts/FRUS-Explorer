@@ -36,7 +36,6 @@ struct PersonMentionStoreTests {
             fts5Store: fts5,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         let store = try PersonMentionStore(databaseURL: dbURL)
@@ -232,7 +231,6 @@ struct PersonMentionStoreTests {
             fts5Store: fts5,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         try await pipeline.indexVolume("vol1")
@@ -264,7 +262,6 @@ struct PersonsByNameTests {
         let fts5 = try FTS5Store(databaseURL: dbURL)
         _ = try IndexingPipeline(
             fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         let store = try PersonMentionStore(databaseURL: dbURL)

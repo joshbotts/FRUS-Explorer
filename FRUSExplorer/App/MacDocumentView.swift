@@ -120,8 +120,7 @@ struct MacDocumentView: View {
         self._vm = State(initialValue: DocumentViewModel(
             entry: entry,
             volumeEntry: nil,
-            parser: FRUSDocumentParser(),
-            subjectTagStore: SubjectTagStore()
+            parser: FRUSDocumentParser()
         ))
         let vId = entry.volumeId
         let dId = entry.documentId
@@ -878,7 +877,6 @@ struct MacDocumentView: View {
             entry: entry,
             volumeEntry: volumeEntry,
             parser: FRUSDocumentParser(),
-            subjectTagStore: appState.subjectTagStore,
             personMentionStore: appState.personMentionStore,
             astCache: appState.documentASTCache
         )

@@ -74,6 +74,11 @@ import SwiftData
     // MARK: - Filters
 
     /// Comma-separated subject tag IDs — maps to `SearchParameters.subjectTagIds`.
+    ///
+    /// Retained for schema/CloudKit stability only. Document-level subject-tag
+    /// filtering was retired in Session 09 (the subject taxonomy was dropped for low
+    /// signal-to-noise); this field round-trips losslessly but no longer constrains a
+    /// search — see the neutralized filter in `IndexingPipeline.searchDocuments`.
     var subjectTagIdsCSV: String = ""
     /// Document type filter: `"all"`, `"documentsOnly"`, or `"editorialNotesOnly"`.
     var documentTypeFilterRaw: String = "all"

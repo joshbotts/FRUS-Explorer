@@ -164,10 +164,11 @@ struct OnboardingProjectSetupView: View {
                     }
                 }
 
-                // Subject tag defaults (optional)
-                if !viewModel.tagStore.allEntries.isEmpty {
-                    subjectTagDefaults
-                }
+                // (The former "Default Subject Tags" control was removed in Session 09:
+                // document-level subject-tag search filtering was retired for low
+                // signal-to-noise, so pre-selecting subject tags no longer affects
+                // searches. The successor volume-level subject feature lives in the
+                // volume detail view, not onboarding.)
 
                 Spacer(minLength: 32)
             }
@@ -177,56 +178,6 @@ struct OnboardingProjectSetupView: View {
         Divider()
 
         footerButtons
-    }
-
-    // MARK: - Subject Tag Defaults
-
-    @ViewBuilder
-    private var subjectTagDefaults: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                String(localized: "onboarding.project.tags.label",
-                       defaultValue: "Default Subject Tags"),
-                systemImage: "tag"
-            )
-            .font(.headline)
-            Text(String(localized: "onboarding.project.tags.hint",
-                        defaultValue: "Optional — pre-select tags for new searches."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            let topicTags = viewModel.tagStore.allEntries
-                .filter { $0.category == TagCategory.topics.rawValue }
-                .prefix(10)
-
-            FlowLayout(spacing: 6) {
-                ForEach(Array(topicTags), id: \.slug) { tag in
-                    let selected = viewModel.projectSubjectTagIds.contains(tag.slug)
-                    Button {
-                        if selected {
-                            viewModel.projectSubjectTagIds.remove(tag.slug)
-                        } else {
-                            viewModel.projectSubjectTagIds.insert(tag.slug)
-                        }
-                    } label: {
-                        Text(tag.displayName)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                selected ? Color.accentColor : Color.secondary.opacity(0.15),
-                                in: Capsule()
-                            )
-                            // Use Color.primary with a forced .dark color scheme on selected
-                            // chips so the foreground adapts to white semantically rather
-                            // than being a hardcoded Color.white (F-012).
-                            .foregroundStyle(Color.primary)
-                            .environment(\.colorScheme, selected ? .dark : colorScheme)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
     }
 
     // MARK: - Footer

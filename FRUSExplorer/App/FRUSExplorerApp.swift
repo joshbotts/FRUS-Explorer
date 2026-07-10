@@ -1071,7 +1071,6 @@ struct FRUSExplorerApp: App {
                fts5Store: store,
                databaseURL: dbURL,
                volumesDirectory: volumesDir,
-               subjectTagStore: appState.subjectTagStore,
                stateTracker: stateTracker
            ) {
             appState.indexingPipeline = pipeline

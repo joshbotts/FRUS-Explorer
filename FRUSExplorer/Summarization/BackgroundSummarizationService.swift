@@ -77,7 +77,6 @@ public final class BackgroundSummarizationProgress {
 ///     concurrencyLimit: 3,
 ///     downloadedVolumeURLs: [volumeId: localURL],
 ///     manifestEntries: appState.manifestStore.allEntries,
-///     subjectTagStore: appState.subjectTagStore,
 ///     activeProjectId: appState.activeProjectId
 /// )
 /// ```

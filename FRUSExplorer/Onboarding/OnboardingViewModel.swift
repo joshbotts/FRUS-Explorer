@@ -76,7 +76,6 @@ final class OnboardingViewModel {
     var projectQuestion: String = "Explore app"
     var projectDateStart: Date?
     var projectDateEnd: Date?
-    var projectSubjectTagIds: Set<String> = []
 
     // MARK: - Intro Text
 
@@ -206,7 +205,10 @@ final class OnboardingViewModel {
                 : projectQuestion.trimmingCharacters(in: .whitespaces),
             defaultDateRangeStart: projectDateStart,
             defaultDateRangeEnd: projectDateEnd,
-            defaultSubjectTagIds: Array(projectSubjectTagIds),
+            // Subject-tag search filtering was retired in Session 09; the onboarding
+            // "Default Subject Tags" control was removed with it. The persisted field
+            // is kept for schema/CloudKit stability but seeded empty.
+            defaultSubjectTagIds: [],
             defaultCountryTagIds: []
         )
         project.lastModified = .now

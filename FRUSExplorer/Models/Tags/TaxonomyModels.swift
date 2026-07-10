@@ -14,17 +14,18 @@ import Foundation
 ///
 /// Sourced from the published TEI `<teiHeader>` (curated by OH staff). Authoritative.
 ///
-/// ## Distinction from SubjectTag
-/// - `VolumeLevelTag`: per-**volume**, authoritative, no confidence distinction,
-///   derived from the TEI header's `keywords[@scheme="https://history.state.gov/tags"]`.
-/// - `SubjectTag` (Session 08): per-**document**, experimental pipeline, confidence
-///   `.curated | .stringMatch`.
+/// `VolumeLevelTag` is per-**volume** and authoritative (no confidence distinction),
+/// derived from the TEI header's `keywords[@scheme="https://history.state.gov/tags"]`.
+/// It drives the Browse-by-Tag volume list.
 ///
-/// These two tag systems coexist in the app. `VolumeLevelTag` drives the Browse-by-Tag
-/// volume list; `SubjectTag` drives document-level search filtering.
+/// (The former per-**document** `SubjectTag` system was retired in Session 09 along with
+/// the experimental document-level subject taxonomy; the successor is the volume-level
+/// subject-profiles feature over `volume-subject-profiles-index.json`.)
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — Session 09: retired the document-level `SubjectTag` family (dropped for low
+///         signal-to-noise); `VolumeLevelTag`, `TagCategory`, `TagTaxonomyEntry` remain
 public struct VolumeLevelTag: Identifiable, Sendable, Equatable {
     /// URL path segment slug. e.g. `"kissinger-henry-a"`. Stable primary key.
     public let slug: String
@@ -70,70 +71,4 @@ public struct TagTaxonomyEntry: Codable, Sendable, Equatable {
     public let subcategory: String
     public let parentSlug: String?
     public let description: String?
-}
-
-// MARK: - SubjectTag
-
-/// A document-level subject tag produced by the experimental tagging pipeline.
-///
-/// Unlike `VolumeLevelTag` (which is per-volume and authoritative), `SubjectTag` is
-/// per-document and carries a `confidence` tier that reflects how the tag was assigned.
-///
-/// `.curated` tags are manually verified; `.stringMatch` tags are algorithmically
-/// derived and may have false positives.
-///
-/// Version history:
-///   1.0 — Session 08: initial implementation
-public struct SubjectTag: Identifiable, Sendable, Equatable {
-    /// Stable primary key. Shares the namespace with `VolumeLevelTag.slug`.
-    public let subjectId: String
-
-    /// Human-readable display name.
-    public let displayName: String
-
-    /// Top-level category.
-    public let category: TagCategory
-
-    /// Confidence tier assigned by the tagging pipeline.
-    public let confidence: SubjectTagConfidence
-
-    public var id: String { subjectId }
-}
-
-/// Confidence tier for a document-level `SubjectTag`.
-public enum SubjectTagConfidence: String, Codable, Sendable, CaseIterable {
-    /// Manually verified by OH staff or the data pipeline operator.
-    case curated
-    /// Derived algorithmically via string matching. May include false positives.
-    case stringMatch
-}
-
-// MARK: - SubjectTagEntry
-
-/// A single entry decoded from `taxonomy.json` (the document-level subject taxonomy).
-///
-/// Decoded by `SubjectTagStore` at launch and used to resolve `SubjectTag` values.
-///
-/// Version history:
-///   1.0 — Session 08: initial implementation
-public struct SubjectTagEntry: Codable, Sendable, Equatable {
-    public let subjectId: String
-    public let displayName: String
-    public let category: String
-}
-
-// MARK: - SubjectAppearance
-
-/// A record linking a subject to a specific document, decoded from `subject-appearances.json`.
-///
-/// `SubjectTagStore` uses these records to answer "which subjects appear in document X?"
-/// and "which documents mention subject Y?".
-///
-/// Version history:
-///   1.0 — Session 08: initial implementation
-public struct SubjectAppearance: Codable, Sendable, Equatable {
-    public let subjectId: String
-    public let documentId: String
-    public let volumeId: String
-    public let confidence: SubjectTagConfidence
 }

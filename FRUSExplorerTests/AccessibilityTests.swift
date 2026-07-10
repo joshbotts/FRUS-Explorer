@@ -40,28 +40,6 @@ struct VoiceOverLabelTests {
         let node = DisplayNode(id: "vol1/d1", kind: .inbound, metadata: meta, isDownloaded: true)
         #expect(node.accessibilityLabel.contains("Meeting of the NSC"))
     }
-
-    @Test("VoiceOverLabelTest: curated tag accessibility label does not include 'approximate'")
-    func curatedTagLabelPattern() {
-        let tag = SubjectTag(subjectId: "t1", displayName: "Berlin Crisis",
-                             category: .topics, confidence: .curated)
-        let label = tag.confidence == .curated
-            ? "\(tag.displayName), subject tag"
-            : "\(tag.displayName), approximate subject tag match"
-        #expect(label == "Berlin Crisis, subject tag")
-        #expect(!label.contains("approximate"))
-    }
-
-    @Test("VoiceOverLabelTest: string-match tag accessibility label includes 'approximate'")
-    func stringMatchTagLabelPattern() {
-        let tag = SubjectTag(subjectId: "t2", displayName: "Kennedy",
-                             category: .people, confidence: .stringMatch)
-        let label = tag.confidence == .curated
-            ? "\(tag.displayName), subject tag"
-            : "\(tag.displayName), approximate subject tag match"
-        #expect(label == "Kennedy, approximate subject tag match")
-        #expect(label.contains("approximate"))
-    }
 }
 
 // MARK: TapTargetTest
@@ -87,23 +65,6 @@ struct TapTargetTests {
 // MARK: ColorIndependenceTest
 
 struct ColorIndependenceTests {
-
-    @Test("ColorIndependenceTest: SubjectTagConfidence has distinct curated and stringMatch cases")
-    func confidenceCasesAreDistinct() {
-        #expect(SubjectTagConfidence.curated != SubjectTagConfidence.stringMatch)
-    }
-
-    @Test("ColorIndependenceTest: curated and string-match tags produce different icon system names")
-    func curatedAndStringMatchUseDifferentIcons() {
-        // DocumentTagChip renders checkmark.circle.fill for curated, questionmark.circle otherwise.
-        // This test encodes the icon selection logic as a verified invariant.
-        func iconName(for confidence: SubjectTagConfidence) -> String {
-            confidence == .curated ? "checkmark.circle.fill" : "questionmark.circle"
-        }
-        #expect(iconName(for: .curated)      == "checkmark.circle.fill")
-        #expect(iconName(for: .stringMatch)  == "questionmark.circle")
-        #expect(iconName(for: .curated) != iconName(for: .stringMatch))
-    }
 
     @Test("ColorIndependenceTest: all TagCategory cases have distinct background color mapping")
     func tagCategoryColorsAreDistinct() {

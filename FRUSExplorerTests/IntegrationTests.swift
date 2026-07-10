@@ -47,16 +47,6 @@ struct ComponentWiringTests {
         #expect(!store.isFetchingLive)
     }
 
-    // MARK: - Session 08 — SubjectTagStore
-
-    @Test("ComponentWiringTest: SubjectTagStore initialises without crashing")
-    func subjectTagStoreInitialises() async {
-        let store = SubjectTagStore()
-        // Empty store is valid in a test bundle without the JSON fixtures.
-        let count = await store.allTags().count
-        #expect(count >= 0)
-    }
-
     // MARK: - Session 13 — CitationFormatter
 
     @Test("ComponentWiringTest: HistoryAtStateCitationFormatter produces a non-empty string")
@@ -321,18 +311,6 @@ struct CrossSessionDependencyTests {
             volumeManifestEntry: entry
         )
         #expect(match.volumeManifestEntry?.volumeId == "frus1969-76v01")
-    }
-
-    @Test("CrossSessionDependencyTest: SubjectTag (S08) used by AccessibilityTests (S27)")
-    func s08TypeUsedByS27() {
-        let tag = SubjectTag(
-            subjectId: "t1",
-            displayName: "Berlin Crisis",
-            category: .topics,
-            confidence: .curated
-        )
-        #expect(tag.confidence == .curated)
-        #expect(tag.displayName == "Berlin Crisis")
     }
 
     @Test("CrossSessionDependencyTest: SearchResult (S09) and CitationMatch (S30) share volumeId semantics")

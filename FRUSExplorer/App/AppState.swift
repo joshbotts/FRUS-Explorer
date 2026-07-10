@@ -39,8 +39,10 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///
 /// ## Tag Stores
 /// `volumeLevelTagStore` resolves volume-level tag slugs and provides volume-by-tag
-/// index queries. `subjectTagStore` provides document-level subject tag lookups.
-/// Both are loaded synchronously at init from the app bundle.
+/// index queries, loaded synchronously at init from the app bundle. (The former
+/// document-level `subjectTagStore` was retired in Session 09 — see the
+/// `volume-subject-profiles-index.json` lazy store for the successor volume-level
+/// subject feature.)
 ///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
@@ -376,10 +378,6 @@ final class AppState {
     /// Resolves volume-level tag slugs and provides volume-by-tag queries.
     /// Loaded synchronously from `volume-tag-taxonomy.json` and `manifest.json` at init.
     let volumeLevelTagStore: VolumeLevelTagStore = VolumeLevelTagStore()
-
-    /// Provides document-level subject tag lookups by document ID, subject ID, and category.
-    /// Loaded synchronously from `taxonomy.json` and `subject-appearances.json` at init.
-    let subjectTagStore: SubjectTagStore = SubjectTagStore()
 
     /// Loads and merges the volume manifest. Loaded from bundle at init; live data fetched at boot.
     var manifestStore: ManifestStore = ManifestStore()

@@ -28,7 +28,6 @@ private func makeTempStore() throws -> (dir: URL, dbURL: URL, store: CrossRefere
         fts5Store: fts5,
         databaseURL: dbURL,
         volumesDirectory: volDir,
-        subjectTagStore: SubjectTagStore(entries: [], appearances: []),
         concurrencyLimit: 1
     )
 

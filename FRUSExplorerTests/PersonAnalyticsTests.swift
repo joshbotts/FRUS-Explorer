@@ -38,7 +38,6 @@ struct PersonAnalyticsQueryTests {
             fts5Store: fts5,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         let store = try PersonMentionStore(databaseURL: dbURL)

@@ -58,12 +58,10 @@ struct SearchViewTests {
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
 
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: subjectStore,
             concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
@@ -102,12 +100,10 @@ struct SearchViewTests {
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
 
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: subjectStore,
             concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
@@ -147,10 +143,9 @@ struct SearchViewTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -181,10 +176,9 @@ struct SearchViewTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -211,10 +205,9 @@ struct SearchViewTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -261,10 +254,9 @@ struct SearchViewTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -296,10 +288,9 @@ struct PersonFilterTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -324,10 +315,9 @@ struct PersonFilterTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -366,10 +356,9 @@ struct PersonFilterTests {
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: subjectStore, concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
@@ -420,12 +409,10 @@ struct PersonFilterTests {
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
 
         let store = try FTS5Store(databaseURL: dbURL)
-        let subjectStore = SubjectTagStore(entries: [], appearances: [])
         let pipeline = try IndexingPipeline(
             fts5Store: store,
             databaseURL: dbURL,
             volumesDirectory: volDir,
-            subjectTagStore: subjectStore,
             concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
@@ -476,7 +463,7 @@ struct SearchChecklistModeTests {
         let store = try FTS5Store(databaseURL: dbURL)
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []), concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
         return (SearchViewModel(searchService: service), dir)
@@ -581,7 +568,7 @@ struct SearchChecklistModeTests {
         let store = try FTS5Store(databaseURL: dbURL)
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []), concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
         // Two documents, both containing "alpha" and "beta" so they match either query.
@@ -760,7 +747,7 @@ struct MacSearchViewModelTests {
         let store = try FTS5Store(databaseURL: dbURL)
         let pipeline = try IndexingPipeline(
             fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []), concurrencyLimit: 1
+            concurrencyLimit: 1
         )
         let service = SearchService(fts5Store: store, pipeline: pipeline)
         try writeSearchFixture(
@@ -889,7 +876,6 @@ struct SearchDefaultsWiringTests {
             fts5Store: store,
             databaseURL: dbURL,
             volumesDirectory: dir,
-            subjectTagStore: SubjectTagStore(entries: [], appearances: []),
             concurrencyLimit: 1
         )
         return SearchService(fts5Store: store, pipeline: pipeline)

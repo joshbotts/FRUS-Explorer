@@ -378,7 +378,6 @@ struct DocumentView: View {
             entry: entry,
             volumeEntry: volumeEntry,
             parser: FRUSDocumentParser(),
-            subjectTagStore: appState.subjectTagStore,
             personMentionStore: appState.personMentionStore,
             astCache: appState.documentASTCache
         )
@@ -2407,9 +2406,10 @@ private struct PromptPickerRow: View {
     }
 }
 
-// DocumentTagSection and DocumentTagChip removed — document-level subject tags
-// are no longer shown in the UI. The SubjectTagStore and DocumentViewModel.subjectTags
-// remain populated for potential future use; only the display layer is removed.
+// (Document-level subject tags were fully retired in Session 09: the display layer was
+// removed earlier, and the underlying SubjectTagStore / DocumentViewModel.subjectTags /
+// bundled taxonomy were dropped for low signal-to-noise. The successor is the
+// volume-level subject-profiles feature in the volume browser.)
 
 // MARK: - CrossProjectNoteIndicator
 
