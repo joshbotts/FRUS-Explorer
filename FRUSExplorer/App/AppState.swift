@@ -118,6 +118,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.5 — Session 2026-07-04 (macOS UI audit C1): pendingNoteComposer added — the
 ///          macOS research-note editor is the frus.noteComposer utility window
 ///          (document stays readable while composing) instead of a modal sheet
+///   4.6 — Session 09: retired the document-level subjectTagStore (and its 9 MB
+///         synchronous bundle parse at init); the volume-level successor loads
+///         lazily via `VolumeSubjectProfilesStore`, not on AppState.
 
 // MARK: - CloudKitSyncState
 

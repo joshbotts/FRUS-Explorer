@@ -42,14 +42,14 @@ struct DocumentSubjectsInput: Decodable {
         let subcategory: String
     }
 
-    /// Loads and decodes the input from a JSON file.
+    /// Decodes the input from already-loaded JSON bytes (the runner reads the file
+    /// once so the same bytes can be MD5-pinned into the provenance).
     ///
-    /// - Parameter url: The `document_subjects.json` path.
+    /// - Parameter data: The raw `document_subjects.json` contents.
     /// - Returns: The decoded input.
-    /// - Throws: If the file cannot be read or decoded.
-    static func load(from url: URL) throws -> DocumentSubjectsInput {
-        let data = try Data(contentsOf: url)
-        return try JSONDecoder().decode(DocumentSubjectsInput.self, from: data)
+    /// - Throws: If the data cannot be decoded.
+    static func load(from data: Data) throws -> DocumentSubjectsInput {
+        try JSONDecoder().decode(DocumentSubjectsInput.self, from: data)
     }
 
     /// Splits a comma+space-joined document-id list (`"d10, d111, d113"`) into its

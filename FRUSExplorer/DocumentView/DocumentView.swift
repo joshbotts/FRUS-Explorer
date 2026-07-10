@@ -28,6 +28,8 @@ import TipKit
 ///          collection membership control; only tag-based membership was available)
 ///   1.2 — Authoring Phase 5 (excerpts): `addSelectionAsExcerpt` — the collection picker
 ///          reused with a frozen selection capture (creation path b)
+///   Session 09: `subjectTagStore` no longer passed to `DocumentViewModel` (the
+///         document-level subject taxonomy was retired).
 enum DocumentSheet: Identifiable {
     case personDetail(PersonEntry)
     case glossDetail(GlossEntry)

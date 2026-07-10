@@ -30,7 +30,8 @@ struct VolumeSubjectProfilesGeneratorTests {
     ///   minimum-count floor.
     /// - `warSpecific` / `peaceSpecific` are volume-characteristic → must rank.
     private func fixture() -> DocumentSubjectsInput {
-        // v1 has 10 docs, v2 has 10 docs, v3 has 10 docs (implied by the unions below).
+        // Tagged-doc unions: v1 = d1…d9 (9 docs), v2 = d1…d9 (9), v3 = d1…d9 (9) —
+        // corpus total 27 tagged documents.
         let subjectsIndex: [String: DocumentSubjectsInput.SubjectMeta] = [
             "generic": .init(name: "Generic Topic", category: "Global Issues", subcategory: "General"),
             "single": .init(name: "Single Mention", category: "Warfare", subcategory: "General"),

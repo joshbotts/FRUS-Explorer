@@ -54,8 +54,7 @@ struct OnboardingFlowTests {
 
     private func makeViewModel(entries: [VolumeManifestEntry]) -> OnboardingViewModel {
         let store = makeManifestStore(entries)
-        let tagStore = VolumeLevelTagStore()
-        return OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
+        return OnboardingViewModel(manifestStore: store, volumesDirectory: nil)
     }
 
     // MARK: - corpusDateRange

@@ -29,6 +29,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 9: initial implementation
+///   1.1 — Session 9 review: surfaces `provenance` (source-drop MD5 pin) for the
+///         bundled-artifact integrity test; `generated` doc corrected (it is the
+///         artifact's own stamp, not the source drop's)
 struct VolumeSubjectProfiles: Decodable, Sendable {
 
     /// One subject characteristic of a volume, fully resolved (name/category/score).
@@ -47,8 +50,14 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
         var id: String { ref }
     }
 
-    /// The generated-on date of the underlying dataset drop (provenance).
+    /// The artifact's own `yyyy-MM-dd` generation stamp (when the bundled index was
+    /// built — the source drop's date and MD5 live in `provenance`).
     let generated: String
+
+    /// The generator's provenance string: names the source dataset, its generated
+    /// date, its MD5 (refs are stable only within a drop), and the derivation
+    /// parameters. Empty when absent.
+    let provenance: String
 
     /// `volumeId → [ResolvedSubject]`, each list ranked (highest score first).
     let resolvedByVolume: [String: [ResolvedSubject]]
@@ -60,7 +69,7 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
     // MARK: Decoding
 
     private enum CodingKeys: String, CodingKey {
-        case generated, vocab, profiles
+        case generated, provenance, vocab, profiles
     }
 
     /// One vocabulary entry (short keys mirror the generator's compact encoding).
@@ -86,6 +95,7 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         generated = (try? container.decode(String.self, forKey: .generated)) ?? ""
+        provenance = (try? container.decode(String.self, forKey: .provenance)) ?? ""
         let vocab = (try? container.decode([RawVocab].self, forKey: .vocab)) ?? []
         let profiles = (try? container.decode([RawProfile].self, forKey: .profiles)) ?? []
 
@@ -175,7 +185,7 @@ enum VolumeSubjectProfilesStore {
     private static func load() -> VolumeSubjectProfiles? {
         guard let url = Bundle.main.url(forResource: "volume-subject-profiles-index", withExtension: "json") else {
             #if DEBUG
-            print("[Browser] VolumeSubjectProfilesStore: volume-subject-profiles-index.json not found in bundle.")
+            print("[VolumeSubjectProfilesStore] volume-subject-profiles-index.json not found in bundle.")
             #endif
             return nil
         }
@@ -184,7 +194,7 @@ enum VolumeSubjectProfilesStore {
             return try JSONDecoder().decode(VolumeSubjectProfiles.self, from: data)
         } catch {
             #if DEBUG
-            print("[Browser] VolumeSubjectProfilesStore: failed to decode volume-subject-profiles-index.json — \(error)")
+            print("[VolumeSubjectProfilesStore] failed to decode volume-subject-profiles-index.json — \(error)")
             #endif
             return nil
         }

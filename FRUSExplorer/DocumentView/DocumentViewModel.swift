@@ -56,6 +56,8 @@ import SwiftData
 ///          found first (with the dual-encoding gate deferring non-`Source:`-prefixed
 ///          head remarks to top-level citations), `[Source: …]` wrapper stripped,
 ///          interior whitespace collapsed, e-volume summary segs excluded
+///   Session 09: subject-tag loading removed with the document-level taxonomy
+///         (`subjectTags` property and the `subjectTagStore` init dependency are gone).
 @Observable
 @MainActor
 public final class DocumentViewModel {

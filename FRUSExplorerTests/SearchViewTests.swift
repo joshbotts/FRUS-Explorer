@@ -164,9 +164,9 @@ struct SearchViewTests {
 
     // MARK: - SubjectTagFilterTest
 
-    @Test("Selected subject tag IDs are included in search parameters")
+    @Test("Subject tag ids are inert: live parameters always emit an empty list (Session 09)")
     @MainActor
-    func subjectTagFilterIncludedInParameters() throws {
+    func subjectTagIdsEmittedEmpty() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("FRUSSearchST-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -183,12 +183,14 @@ struct SearchViewTests {
         let service = SearchService(fts5Store: store, pipeline: pipeline)
 
         let vm = SearchViewModel(searchService: service)
-        vm.selectedSubjectTagIds = ["kissinger-henry-a", "soviet-union"]
-
-        let params = vm.searchParameters
-        #expect(params.subjectTagIds.contains("kissinger-henry-a"))
-        #expect(params.subjectTagIds.contains("soviet-union"))
-        #expect(params.subjectTagIds.count == 2)
+        // A restored snapshot carrying retired subject ids must neither resurrect the
+        // (neutralized) filter nor fake an "active filters" state.
+        vm.applyParameters(SearchParameters(
+            keywords: "test",
+            subjectTagIds: ["kissinger-henry-a", "soviet-union"]
+        ))
+        #expect(vm.searchParameters.subjectTagIds.isEmpty)
+        #expect(!vm.hasActiveFilters)
     }
 
     // MARK: - ScopeTest
@@ -264,9 +266,9 @@ struct SearchViewTests {
         vm.applyProjectDefaults(project)
 
         #expect(vm.dateRangeEnabled)
-        #expect(vm.selectedSubjectTagIds.contains("nixon-richard-m"))
-        #expect(vm.selectedSubjectTagIds.contains("foreign-policy"))
-        #expect(vm.selectedSubjectTagIds.count == 2)
+        // Persisted defaultSubjectTagIds survive on the model but are inert since
+        // Session 09: they must NOT surface as live filter state or emitted parameters.
+        #expect(vm.searchParameters.subjectTagIds.isEmpty)
     }
 }
 

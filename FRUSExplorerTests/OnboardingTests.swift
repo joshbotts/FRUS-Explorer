@@ -96,8 +96,7 @@ struct VolumePickerTests {
             makeEntry(volumeId: "frus1969v02", subseries: "1969-76"),
         ]
         let store = ManifestStore(bundledEntries: entries)
-        let tagStore = VolumeLevelTagStore(taxonomyEntries: [], manifestEntries: entries)
-        let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
+        let vm = OnboardingViewModel(manifestStore: store, volumesDirectory: nil)
 
         let subseries = vm.allSubseries
         #expect(subseries.count == 3)
@@ -115,8 +114,7 @@ struct VolumePickerTests {
             makeEntry(volumeId: "frus1977v01", subseries: "1977-80", sizeBytes: 20_000),
         ]
         let store = ManifestStore(bundledEntries: entries)
-        let tagStore = VolumeLevelTagStore(taxonomyEntries: [], manifestEntries: entries)
-        let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
+        let vm = OnboardingViewModel(manifestStore: store, volumesDirectory: nil)
 
         let volumes = vm.allVolumes
         #expect(volumes.count == 2)
@@ -133,8 +131,7 @@ struct ProjectSetupTests {
     @Test("canProceedFromProjectSetup requires non-empty name")
     func requiresName() {
         let store = ManifestStore(bundledEntries: [])
-        let tagStore = VolumeLevelTagStore(taxonomyEntries: [], manifestEntries: [])
-        let vm = OnboardingViewModel(manifestStore: store, tagStore: tagStore, volumesDirectory: nil)
+        let vm = OnboardingViewModel(manifestStore: store, volumesDirectory: nil)
 
         vm.projectName = ""
         #expect(vm.canProceedFromProjectSetup == false)

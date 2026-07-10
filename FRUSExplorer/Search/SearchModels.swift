@@ -16,6 +16,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 38: initial implementation
+///   Session 09: `SearchParameters.subjectTagIds` is retained-but-inert (the
+///         document-level subject taxonomy was retired; the SQL filter is gone).
 public enum DocumentTypeFilter: Sendable, Equatable {
     /// Return all documents regardless of type (default).
     case all

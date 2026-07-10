@@ -54,6 +54,9 @@ import Observation
 ///   1.8 — Session 2026-07-04 (macOS UI audit C4): `advancedFilterSignature` added —
 ///          Equatable fingerprint of the applied advanced-filter fields, observed by
 ///          the macOS Search window's live filter popover to apply edits immediately.
+///   Session 09: `selectedSubjectTagIds` live state removed — persisted subject ids
+///         no longer echo into `hasActiveFilters`, emitted parameters, or new
+///         `SavedSearch` records (the filter is inert).
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -108,7 +111,11 @@ final class SearchViewModel {
 
     // MARK: - Tag Filter Parameters
 
-    var selectedSubjectTagIds: Set<String> = []
+    // (The former `selectedSubjectTagIds` live state was removed in Session 09 with the
+    // document-level subject taxonomy: the SQL filter is inert, so echoing persisted
+    // subject ids here would only fake an "active filter" and write retired ids into
+    // new SavedSearch records. `SearchParameters.subjectTagIds` itself survives for
+    // persistence stability and is always emitted empty from live state.)
     var selectedUserTagIds: Set<UUID> = []
 
     // MARK: - Content Scope Parameters
@@ -361,9 +368,8 @@ final class SearchViewModel {
             dateRangeStart = start
             dateRangeEnd = end
         }
-        if !project.defaultSubjectTagIds.isEmpty {
-            selectedSubjectTagIds = Set(project.defaultSubjectTagIds)
-        }
+        // Project.defaultSubjectTagIds is deliberately NOT applied: subject-tag
+        // filtering is inert since Session 09 (see SearchParameters.subjectTagIds).
     }
 
     // MARK: - Search
@@ -427,7 +433,6 @@ final class SearchViewModel {
         booleanMode = .and
         excludedTermsText = ""
         dateRangeEnabled = false
-        selectedSubjectTagIds = []
         selectedUserTagIds = []
         selectedVolumeIds = []
         selectedSubseriesIds = []
@@ -488,7 +493,7 @@ final class SearchViewModel {
             excludedTerms: excluded,
             prefixWildcard: pw.isEmpty ? nil : pw,
             dateRange: range,
-            subjectTagIds: Array(selectedSubjectTagIds),
+            subjectTagIds: [],
             userTagIds: selectedUserTagIds.map(\.uuidString),
             volumeIds: effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds,
             includeDocumentText: includeDocumentText,
@@ -525,7 +530,6 @@ final class SearchViewModel {
         if dateRangeEnabled { return true }
         if !selectedVolumeIds.isEmpty { return true }
         if !selectedSubseriesIds.isEmpty { return true }
-        if !selectedSubjectTagIds.isEmpty { return true }
         if !selectedUserTagIds.isEmpty { return true }
         if !excludedTermsText.isEmpty { return true }
         if !phrase.isEmpty { return true }
@@ -573,7 +577,8 @@ final class SearchViewModel {
         } else {
             dateRangeEnabled = false
         }
-        selectedSubjectTagIds = Set(params.subjectTagIds)
+        // params.subjectTagIds is intentionally dropped (inert since Session 09) —
+        // restoring it would fake an "active filter" for a constraint that does nothing.
         selectedUserTagIds    = Set(params.userTagIds.compactMap { UUID(uuidString: $0) })
         let scope = Self.reconstructScope(from: params.volumeIds ?? [], available: availableVolumes)
         selectedSubseriesIds  = scope.subseries

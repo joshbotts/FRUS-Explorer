@@ -24,6 +24,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 9: initial implementation
+///   1.1 — Session 9 review: chip-row scroll indicators stay visible on macOS
+///         (an indicator-less overflowing row gave no cue that more chips exist)
 struct VolumeSubjectsChips: View {
 
     /// The volume whose profile is shown.
@@ -53,7 +55,15 @@ struct VolumeSubjectsChips: View {
                         .foregroundStyle(.secondary)
                         .textCase(.uppercase)
                         .accessibilityAddTraits(.isHeader)
-                    ScrollView(.horizontal, showsIndicators: false) {
+                    // Indicators stay visible on macOS: without them an overflowing
+                    // chip row gives no cue that more chips exist (no touch affordance
+                    // there); on iOS the platform swipe convention carries it.
+                    #if os(macOS)
+                    let showsIndicators = true
+                    #else
+                    let showsIndicators = false
+                    #endif
+                    ScrollView(.horizontal, showsIndicators: showsIndicators) {
                         HStack(spacing: 6) {
                             ForEach(group.subjects) { subject in
                                 chip(subject)
@@ -102,6 +112,9 @@ struct VolumeSubjectsChips: View {
 ///
 /// Version history:
 ///   1.0 — Session 9: initial implementation
+///   1.1 — Session 9 review: singular/plural header forms; the zero-volume case is
+///         owned entirely by the ContentUnavailableView (no "0 other volumes" header
+///         behind the overlay)
 struct VolumeSubjectVolumesSheet: View {
 
     /// The subject being pivoted on.
@@ -120,37 +133,51 @@ struct VolumeSubjectVolumesSheet: View {
             .otherVolumes(forSubjectRef: subject.ref, excluding: currentVolumeId) ?? []
     }
 
+    /// The pluralized section header ("1 other volume covers…" / "N other volumes
+    /// cover…"). Two keys rather than a format inflection so translators see both forms.
+    private var countHeader: String {
+        otherVolumeIds.count == 1
+            ? String(localized: "browser.volume.subjectVolumes.header.one",
+                     defaultValue: "1 other volume covers this subject")
+            : String(format: String(localized: "browser.volume.subjectVolumes.header.many %lld",
+                                    defaultValue: "%lld other volumes cover this subject"),
+                     Int64(otherVolumeIds.count))
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    ForEach(otherVolumeIds, id: \.self) { volumeId in
-                        Button {
-                            open(volumeId)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
-                                    .font(.callout)
-                                Text(volumeId)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                // The Section renders only when there are rows: the zero-volume case is
+                // fully owned by the ContentUnavailableView overlay (a "0 other volumes"
+                // header peeking out from behind it read as a glitch).
+                if !otherVolumeIds.isEmpty {
+                    Section {
+                        ForEach(otherVolumeIds, id: \.self) { volumeId in
+                            Button {
+                                open(volumeId)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId)
+                                        .font(.callout)
+                                    Text(volumeId)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
-                            .padding(.vertical, 2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            .accessibilityHint(String(localized: "browser.volume.subjectVolumes.row.hint",
+                                                      defaultValue: "Opens this volume in the browser"))
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint(String(localized: "browser.volume.subjectVolumes.row.hint",
-                                                  defaultValue: "Opens this volume in the browser"))
+                    } header: {
+                        Text(countHeader)
+                    } footer: {
+                        Text(subject.name)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                } header: {
-                    Text(String(format: String(localized: "browser.volume.subjectVolumes.header %lld",
-                                               defaultValue: "%lld other volumes cover this subject"),
-                                Int64(otherVolumeIds.count)))
-                } footer: {
-                    Text(subject.name)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle(subject.name)

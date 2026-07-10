@@ -27,15 +27,15 @@ import SwiftData
 ///          downloads and completes onboarding in one step; pre-fill from corpus dates
 ///   2.1 — Session 57: "Skip for now" button creates a default-named project; name-required
 ///          error softened to a hint; proceed logic extracted to proceedWithProject() (F-009)
+///   Session 09: "Default Subject Tags" control removed (subject-tag search
+///         filtering retired; the control wrote volume-tag slugs into a
+///         subject-id-keyed filter and could no longer affect any search).
 @MainActor
 struct OnboardingProjectSetupView: View {
 
     @Bindable var viewModel: OnboardingViewModel
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    /// Used to preserve the system color scheme on unselected tag chips so that
-    /// forcing `.dark` on selected chips does not affect surrounding content (F-012).
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showDateRangePicker = false
 
@@ -241,47 +241,5 @@ struct OnboardingProjectSetupView: View {
     }
 }
 
-// MARK: - Flow Layout (local copy for this file)
-
-private struct FlowLayout: Layout {
-
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var currentX: CGFloat = 0
-        var lineHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if currentX + size.width > maxWidth, currentX > 0 {
-                currentX = 0
-                totalHeight += lineHeight + spacing
-                lineHeight = 0
-            }
-            currentX += size.width + spacing
-            lineHeight = max(lineHeight, size.height)
-        }
-        totalHeight += lineHeight
-        return CGSize(width: maxWidth, height: max(0, totalHeight))
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var currentX: CGFloat = bounds.minX
-        var currentY: CGFloat = bounds.minY
-        var lineHeight: CGFloat = 0
-
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if currentX + size.width > bounds.maxX, currentX > bounds.minX {
-                currentX = bounds.minX
-                currentY += lineHeight + spacing
-                lineHeight = 0
-            }
-            view.place(at: CGPoint(x: currentX, y: currentY), proposal: .unspecified)
-            currentX += size.width + spacing
-            lineHeight = max(lineHeight, size.height)
-        }
-    }
-}
+// (The private FlowLayout copy and the `colorScheme` environment that served the
+// removed "Default Subject Tags" chips were deleted with the control in Session 09.)

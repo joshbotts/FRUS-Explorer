@@ -277,6 +277,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          algorithm the reader (`PageRangeStore`) uses — so the graph agrees with the
 ///          footnote links. Roman/front-matter anchors (`pg_III`) and cross-volume page
 ///          refs stay unresolved (no containing document).
+///   Session 09: document-level subject tags retired — `subject_tag_ids` is written
+///         NULL (column kept for schema stability; no `currentDateIndexVersion`
+///         bump — an emptied derived column, not a parse-semantics change) and the
+///         subject-tag WHERE filter is neutralized; `subjectTagStore` dependency
+///         removed from the initializer.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -6206,7 +6211,9 @@ public struct IndexedSearchRow: Sendable {
     public let sourceNote: String?
     /// Full plain-text body — used by `SearchService` to build context snippets.
     public let bodyText: String
-    /// Space-separated subject tag IDs, if any.
+    /// Space-separated subject tag IDs, if any. **Inert since Session 09** (the
+    /// document-level subject taxonomy was retired) — non-nil only on rows indexed
+    /// before the retirement; new/re-indexed rows are NULL.
     public let subjectTagIds: String?
     /// Space-separated user tag IDs, if any.
     public let userTagIds: String?
@@ -6235,7 +6242,9 @@ public struct SearchSQLFilters: Sendable {
     public var personRef: String?
     /// Restrict results to documents mentioning any member of this person rollup (cross-corpus).
     public var personRollupId: Int?
-    /// Subject tag IDs that must all be present (AND).
+    /// Subject tag IDs. **Inert since Session 09** — the document-level subject
+    /// taxonomy was retired, so these no longer contribute a WHERE condition; the
+    /// field survives for `SearchParameters`/`SavedSearch` plumbing stability.
     public var subjectTagIds: [String]
     /// User tag IDs that must all be present (AND).
     public var userTagIds: [String]

@@ -34,6 +34,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 96: initial implementation
+///   Session 09: `subjectTagIdsCSV` is retained-but-inert (document-level subject
+///         tags retired); round-trip stays lossless for CloudKit stability.
 @Model final class SavedSearch {
 
     // MARK: - Identity

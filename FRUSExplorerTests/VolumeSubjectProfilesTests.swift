@@ -125,4 +125,43 @@ struct VolumeSubjectProfilesTests {
         }
         #expect(volumesChecked > 0)
     }
+
+    @Test("bundled artifact provenance pins the source drop (generated date + md5)")
+    func bundledArtifactProvenancePinned() throws {
+        guard let profiles = VolumeSubjectProfilesStore.shared else { return }
+        // The plan requires the provenance to pin the exact frus-subjects drop: the
+        // upstream re-mints ~95 synthetic subject refs per export, so only a content
+        // hash distinguishes two drops. A regeneration that loses the pin must fail here.
+        #expect(profiles.provenance.contains("frus-subjects"))
+        #expect(profiles.provenance.contains("source generated"))
+        let md5Token = profiles.provenance.range(of: #"md5 [0-9a-f]{32}"#, options: .regularExpression)
+        #expect(md5Token != nil, "provenance must carry the source drop's 32-hex md5 pin")
+    }
+
+    @Test("bundled artifact content sanity: known volumes surface era-specific subjects, never stoplisted generics")
+    func bundledArtifactContentSanity() throws {
+        guard let profiles = VolumeSubjectProfilesStore.shared else { return }
+        // Plan item 8's known-volume checks (empirically tuned during Session 9):
+        // the Vietnam volume's most characteristic subject is Vietnamization…
+        let v06 = try #require(profiles.topSubjects(forVolumeId: "frus1969-76v06"))
+        #expect(v06.first?.name == "Vietnamization")
+        // …the WWII/USSR volume surfaces Lend-lease, and 1898 surfaces Neutrality.
+        let v1944 = try #require(profiles.topSubjects(forVolumeId: "frus1944v04"))
+        #expect(v1944.contains { $0.name == "Lend-lease program" })
+        let v1898 = try #require(profiles.topSubjects(forVolumeId: "frus1898"))
+        #expect(v1898.contains { $0.name == "Neutrality" })
+        // The genericity floor holds: the 7 corpus-wide mega-subjects must appear in
+        // NO volume's profile (the whole feature fails if War/Peace top every list).
+        let stoplisted: Set<String> = [
+            "War", "Peace", "Science and technology",
+            "Treaties and international agreements", "Trade relations",
+            "Financial and monetary affairs", "International law",
+        ]
+        for (volumeId, subjects) in profiles.resolvedByVolume {
+            for subject in subjects {
+                #expect(!stoplisted.contains(subject.name),
+                        "\(volumeId) carries stoplisted generic subject \(subject.name)")
+            }
+        }
+    }
 }

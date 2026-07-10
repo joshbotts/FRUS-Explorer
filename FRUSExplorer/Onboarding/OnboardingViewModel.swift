@@ -43,6 +43,8 @@ import SwiftData
 ///   1.1 — Session 32: removed `fetchIntroText()` — intro text is now static (bundled only)
 ///   2.0 — Session 49: redesigned to three-step flow; added DownloadScope; default project
 ///          pre-fill; subseries/tag pickers moved to DownloadManagerSettingsView
+///   Session 09: `projectSubjectTagIds` + the unused `tagStore` dependency removed
+///         with the onboarding subject-tag control; projects seed empty defaults.
 @Observable
 @MainActor
 final class OnboardingViewModel {
@@ -84,14 +86,12 @@ final class OnboardingViewModel {
     // MARK: - Dependencies
 
     let manifestStore: ManifestStore
-    let tagStore: VolumeLevelTagStore
     let volumesDirectory: URL?
 
     // MARK: - Initialization
 
-    init(manifestStore: ManifestStore, tagStore: VolumeLevelTagStore, volumesDirectory: URL?) {
+    init(manifestStore: ManifestStore, volumesDirectory: URL?) {
         self.manifestStore = manifestStore
-        self.tagStore = tagStore
         self.volumesDirectory = volumesDirectory
 
         // Pre-fill project dates from corpus range.
