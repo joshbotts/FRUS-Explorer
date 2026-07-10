@@ -303,6 +303,36 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - VolumeSubjectProfilesGenerator
+
+        /// Builds the bundled `volume-subject-profiles-index.json` (Wave-6 Session 9):
+        /// reads the Office of the Historian's public-domain `frus-subjects`
+        /// document–subject mappings and aggregates a per-volume "top subjects" profile
+        /// (TF-IDF-style ranking with a genericity floor) for the volume-level Subjects
+        /// feature. Entirely offline & deterministic.
+        .target(
+            name: "VolumeSubjectProfilesGeneratorCore",
+            path: "VolumeSubjectProfilesGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls VolumeSubjectProfilesRunner.run() and exits.
+        .executableTarget(
+            name: "VolumeSubjectProfilesGenerator",
+            dependencies: [.target(name: "VolumeSubjectProfilesGeneratorCore")],
+            path: "VolumeSubjectProfilesGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for VolumeSubjectProfilesGeneratorCore (genericity exclusion,
+        /// min-count floor, ranking, top-N, vocab factoring, determinism).
+        .testTarget(
+            name: "VolumeSubjectProfilesGeneratorTests",
+            dependencies: [.target(name: "VolumeSubjectProfilesGeneratorCore")],
+            path: "VolumeSubjectProfilesGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - SourceNoteKit
 
         /// The FRUS source-note parser (`SourceNoteParser`, `ParsedSourceNote`,
