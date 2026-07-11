@@ -101,6 +101,12 @@ private struct HeatCell: Identifiable, Equatable {
 ///          and clamped to the corpus span)
 ///   1.2 — Session 7 / #240B: broken-reference disclosure — `excludedBrokenCount`
 ///          fetched per scope and appended to the resolved caption when non-zero
+///   1.3 — #275 follow-up: (a) the most-referenced-documents bar chart keys each bar on the
+///          document's unique id, not its title — distinct documents sharing a generic FRUS
+///          title (e.g. "Department of State Minutes") were being summed into one oversized
+///          bar by Swift Charts' categorical aggregation; (b) reloads on
+///          `readOnlyStoresGeneration` so a dashboard on screen when a reindex finishes
+///          refreshes against the reopened store instead of showing stale-connection emptiness
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -192,6 +198,12 @@ struct CrossReferenceAnalyticsView: View {
             await loadAll()
         }
         .onChange(of: yearRange) { _, _ in
+            Task { await loadAll() }
+        }
+        // Reload against the freshly reopened store after a reindex settles (#275): the boot-time
+        // read-only connection this view read through can be left stale by the rebuild, so a
+        // dashboard already on screen would otherwise keep showing "No Data" until relaunch.
+        .onChange(of: appState.readOnlyStoresGeneration) { _, _ in
             Task { await loadAll() }
         }
     }
@@ -389,12 +401,28 @@ struct CrossReferenceAnalyticsView: View {
     }
 
     private var rankingChart: some View {
-        Chart(ranking) { row in
+        // Key each bar on the row's UNIQUE id (volumeId/documentId), never its title. FRUS reuses
+        // generic titles ("Department of State Minutes", "Mr. Adams to Mr. Seward") across many
+        // distinct documents, and Swift Charts SUMS a `BarMark`'s x-values whenever rows share a
+        // categorical y — so a title-keyed y silently merged several documents into one oversized
+        // bar (e.g. four "Department of State Minutes" documents at in-degrees 48/43/42/39 rendered
+        // as a single 172-long bar) while the annotation and table still showed one document's count
+        // (#243-followup). Ids are unique → one bar per document, correct length. An explicit domain
+        // preserves the in-degree-descending order (a categorical scale otherwise reorders the axis),
+        // and a lookup renders the human title — disambiguated when a title is shared — on the axis.
+        let axisLabels = disambiguatedRankingLabels(
+            ranking.map { row in
+                (id: row.id,
+                 name: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header),
+                 shortSuffix: row.documentId)
+            }
+        )
+        return Chart(ranking) { row in
             BarMark(
                 x: .value(String(localized: "crossRefAnalytics.axis.inDegree", defaultValue: "Inbound citations"),
                           row.inDegree),
                 y: .value(String(localized: "crossRefAnalytics.axis.document", defaultValue: "Document"),
-                          targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                          row.id)
             )
             .foregroundStyle(Color.accentColor)
             .annotation(position: .trailing) {
@@ -402,9 +430,23 @@ struct CrossReferenceAnalyticsView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            // The bar is keyed on the opaque id for correct geometry, so restore a meaningful
+            // VoiceOver announcement: the human document label + its inbound-citation count.
+            .accessibilityLabel(Text(axisLabels[row.id] ?? row.displayLabel))
+            .accessibilityValue(Text(String(localized: "crossRefAnalytics.axis.inDegreeValue",
+                                             defaultValue: "\(row.inDegree) inbound citations")))
         }
+        // Highest in-degree at the top: `ranking` is sorted descending, and the first domain
+        // element is placed at the top of a horizontal-bar categorical y-axis.
+        .chartYScale(domain: ranking.map(\.id))
         .chartYAxis {
-            AxisMarks(preset: .aligned) { _ in AxisValueLabel() }
+            AxisMarks(preset: .aligned) { value in
+                AxisValueLabel {
+                    if let id = value.as(String.self) {
+                        Text(axisLabels[id] ?? id)
+                    }
+                }
+            }
         }
         .frame(height: CGFloat(ranking.count) * 30 + 40)
         .padding(.horizontal)

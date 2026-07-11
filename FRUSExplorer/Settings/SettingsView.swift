@@ -1664,6 +1664,8 @@ private struct StorageManagementView: View {
             print("[Settings] Reindex failed for \(volumeId): \(error)")
             #endif
         }
+        // The single-volume reindex mutated the aux tables — reopen the read-only stores (#275).
+        appState.refreshReadOnlyStores()
         if reindexingVolumeId == volumeId { reindexingVolumeId = nil }
     }
 
@@ -1705,7 +1707,12 @@ private struct StorageManagementView: View {
                 }
             }
             _ = await progressTask
-            await MainActor.run { isReindexAll = false }
+            // Reopen the read-only stores so analytics / citation lookup don't read through the
+            // now-stale boot connections after this in-session rebuild (#275).
+            await MainActor.run {
+                appState.refreshReadOnlyStores()
+                isReindexAll = false
+            }
         }
     }
 
@@ -1720,7 +1727,12 @@ private struct StorageManagementView: View {
                     reindexAllError = error.localizedDescription
                 }
             }
-            await MainActor.run { reindexingInterruptedId = nil }
+            // The single-volume reindex mutated the aux tables too — reopen the read-only
+            // stores so they don't strand a stale connection (#275).
+            await MainActor.run {
+                appState.refreshReadOnlyStores()
+                reindexingInterruptedId = nil
+            }
         }
     }
 
@@ -1740,7 +1752,10 @@ private struct StorageManagementView: View {
                     }
                 }
             }
-            await MainActor.run { reindexingInterruptedId = nil }
+            await MainActor.run {
+                appState.refreshReadOnlyStores()
+                reindexingInterruptedId = nil
+            }
         }
     }
 
@@ -1768,6 +1783,9 @@ private struct StorageManagementView: View {
                 #endif
             }
         }
+        // Newly indexed volumes added rows the boot read-only connections can't see — reopen them
+        // so analytics / citation lookup include the just-indexed volumes (#275).
+        appState.refreshReadOnlyStores()
         settingsBatch = nil
         // Reload report to refresh per-volume indexed status.
         if let dm = appState.downloadManager {
@@ -1807,6 +1825,9 @@ private struct StorageManagementView: View {
             print("[Settings] rebuildIndex: indexAllVolumes failed — \(error)")
             #endif
         }
+        // Reopen the read-only stores post-rebuild so analytics / citation lookup don't read the
+        // stale boot connections (#275).
+        appState.refreshReadOnlyStores()
         settingsBatch = nil
         // Refresh indexed status.
         if let dm = appState.downloadManager {
@@ -2074,6 +2095,9 @@ private struct SideloadView: View {
                         let volumeURL = dm.volumeURL(for: volumeId)
                         try? await pipeline.indexVolume(volumeId)
                         _ = volumeURL
+                        // Reopen the read-only stores so the sideloaded volume's cross-references /
+                        // mentions appear in analytics without a relaunch (#275).
+                        await MainActor.run { appState.refreshReadOnlyStores() }
                     }
                 }
             } catch {

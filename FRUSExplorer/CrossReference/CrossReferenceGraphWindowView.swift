@@ -114,7 +114,10 @@ struct CrossReferenceGraphWindowView: View {
                     crossReferenceStore: store,
                     downloadedVolumeIds: downloadedVolumeIds
                 )
-                .id(entry.id)
+                // Rebuild (re-querying the reopened store) when the focus changes OR after an
+                // in-session reindex settles — otherwise a graph left open across a reindex would
+                // read the stale boot connection until relaunch (#275).
+                .id("\(entry.id)-\(appState.readOnlyStoresGeneration)")
             } else {
                 pickerContent
                     .task { await loadIndexedVolumes() }
