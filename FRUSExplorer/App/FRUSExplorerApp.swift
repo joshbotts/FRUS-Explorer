@@ -1026,6 +1026,9 @@ struct FRUSExplorerApp: App {
         let volumesDir = Self.makeVolumesDirectory()
         let dbURL = Self.makeDatabaseURL()
         appState.indexDirectory = dbURL.deletingLastPathComponent()
+        // Retained so any in-session index rebuild can reopen the read-only stores against them (#275).
+        appState.databaseURL = dbURL
+        appState.volumesDirectory = volumesDir
 
         // Surface the CloudKit init result in AppState so the status bar and settings
         // panel can show a "Local Only" warning when sync is unavailable.
@@ -1152,6 +1155,10 @@ struct FRUSExplorerApp: App {
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
                     try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
+                    // Reopen the read-only stores now that the rebuild + WAL checkpoints have
+                    // settled — the boot-time connections opened before this Task can be left
+                    // stale, blanking cross-reference / person analytics until relaunch (#275).
+                    appState.refreshReadOnlyStores()
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index complete.")
                     #endif
@@ -1167,6 +1174,8 @@ struct FRUSExplorerApp: App {
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
                     try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
+                    // See the date-reindex branch: reopen the read-only stores post-rebuild (#275).
+                    appState.refreshReadOnlyStores()
                     #if DEBUG
                     print("[FRUSExplorer] FTS rebuild from document_cache complete.")
                     #endif
@@ -1180,6 +1189,10 @@ struct FRUSExplorerApp: App {
                     // Backfill cross_references.is_broken for already-indexed volumes (#240B).
                     // Gated + idempotent; a no-op once the current index has been applied.
                     try? await pipeline.applyBrokenRefsIndexIfNeeded()
+                    // Both steps above can mutate the persons rollup / is_broken column even on an
+                    // otherwise-normal launch, so reopen the read-only stores here too (#275). When
+                    // they were no-ops this is a cheap reconnect with no dashboard open to reload.
+                    appState.refreshReadOnlyStores()
                 }
             }
 

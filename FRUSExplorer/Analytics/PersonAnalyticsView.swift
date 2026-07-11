@@ -437,6 +437,12 @@ struct PersonAnalyticsView: View {
         .onChange(of: yearRange) { _, _ in
             Task { await loadRanking() }
         }
+        // Reload against the freshly reopened person store after a reindex settles (#275): the
+        // boot-time read-only connection can be left stale by the rebuild, so a dashboard already
+        // on screen would otherwise keep showing empty results until the app is relaunched.
+        .onChange(of: appState.readOnlyStoresGeneration) { _, _ in
+            reloadForScopeChange()
+        }
     }
 
     // MARK: - Scope
@@ -580,12 +586,22 @@ struct PersonAnalyticsView: View {
     }
 
     private var rankingChart: some View {
-        Chart(ranking) { row in
+        // Key each bar on the rollup's UNIQUE id (as a string), never the canonical name: two
+        // distinct rollups can share a canonical name (homonymous or not-yet-merged people), and
+        // Swift Charts SUMS a `BarMark`'s x-values whenever rows share a categorical y — which would
+        // silently merge distinct people into one oversized bar (#275 follow-up, mirroring the
+        // cross-reference ranking fix). Ids are unique → one bar per person; an explicit domain
+        // preserves the mention-descending order, and a lookup renders the (disambiguated) name.
+        let rowKey: (PersonMentionRanking) -> String = { String($0.rollupId) }
+        let axisLabels = disambiguatedRankingLabels(
+            ranking.map { (id: rowKey($0), name: $0.canonicalName, shortSuffix: String($0.rollupId)) }
+        )
+        return Chart(ranking) { row in
             BarMark(
                 x: .value(String(localized: "personAnalytics.axis.mentions", defaultValue: "Mentions"),
                           row.mentionCount),
                 y: .value(String(localized: "personAnalytics.axis.person", defaultValue: "Person"),
-                          row.canonicalName)
+                          rowKey(row))
             )
             .foregroundStyle(Color.accentColor)
             .annotation(position: .trailing) {
@@ -593,10 +609,20 @@ struct PersonAnalyticsView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            .accessibilityLabel(Text(axisLabels[rowKey(row)] ?? row.canonicalName))
+            .accessibilityValue(Text(String(localized: "personAnalytics.axis.mentionsValue",
+                                             defaultValue: "\(row.mentionCount) mentions")))
         }
+        // Highest mention count at the top: `ranking` is sorted descending, and the first domain
+        // element is placed at the top of a horizontal-bar categorical y-axis.
+        .chartYScale(domain: ranking.map(rowKey))
         .chartYAxis {
-            AxisMarks(preset: .aligned) { _ in
-                AxisValueLabel()
+            AxisMarks(preset: .aligned) { value in
+                AxisValueLabel {
+                    if let id = value.as(String.self) {
+                        Text(axisLabels[id] ?? id)
+                    }
+                }
             }
         }
         .frame(height: CGFloat(ranking.count) * 30 + 40)
@@ -768,7 +794,11 @@ struct PersonAnalyticsView: View {
                             rollupId: rollupId, canonicalName: name, mentionCount: 0))
                     }
                 )
-                .id(focus.rollupId)
+                // Recreate the graph (re-running its load against the reopened store) when the
+                // focus changes OR after a reindex settles — its own `.task` is keyed on
+                // focus/scope, not the store, so a generation bump alone would otherwise leave it
+                // showing the stale-connection empty state until relaunch (#275).
+                .id("\(focus.rollupId)-\(appState.readOnlyStoresGeneration)")
             } else {
                 ContentUnavailableView(
                     String(localized: "personAnalytics.network.noFocus.title", defaultValue: "Pick a Focus Person"),

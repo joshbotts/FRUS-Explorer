@@ -1778,6 +1778,8 @@ private struct SettingsStoragePane: View {
         guard let pipeline = appState.indexingPipeline else { return }
         reindexingVolumeId = volumeId
         try? await pipeline.indexVolume(volumeId)
+        // The single-volume reindex mutated the aux tables — reopen the read-only stores (#275).
+        appState.refreshReadOnlyStores()
         reindexingVolumeId = nil
         await loadReport()
     }
@@ -1799,6 +1801,8 @@ private struct SettingsStoragePane: View {
                 failures += 1
             }
         }
+        // Newly indexed volumes added rows the boot read-only connections can't see (#275).
+        appState.refreshReadOnlyStores()
         settingsBatch = nil
         bulkIndexingFailureCount = failures > 0 ? failures : nil
         await loadReport()
@@ -1813,6 +1817,10 @@ private struct SettingsStoragePane: View {
         // events and do not propagate as thrown errors. Monitor the failure count via
         // the .failed events on AppState or check Console.app for error-level entries.
         try? await pipeline.indexAllVolumes()
+        // Reopen the read-only stores so cross-reference / person analytics and citation lookup
+        // don't keep reading through the now-stale boot connections after this in-session
+        // rebuild (#275).
+        appState.refreshReadOnlyStores()
         settingsBatch = nil
         // Compute the failure count post-hoc by comparing the indexed count against
         // the total downloaded count.
@@ -1852,6 +1860,9 @@ private struct SettingsStoragePane: View {
             return
         }
         try? await pipeline.indexAllVolumes()
+        // Reopen the read-only stores post-rebuild so analytics / citation lookup don't read the
+        // stale boot connections (#275).
+        appState.refreshReadOnlyStores()
         settingsBatch = nil
         if let report = storageReport {
             let downloaded = report.perVolume.count
@@ -1867,6 +1878,9 @@ private struct SettingsStoragePane: View {
               let pipeline = appState.indexingPipeline else { return }
         try? await pipeline.removeVolume(volumeId)
         appState.indexedVolumeIds.remove(volumeId)
+        // Removing a volume deleted its aux-table rows — reopen the read-only stores so analytics
+        // don't keep counting the removed volume's cross-references / mentions (#275).
+        appState.refreshReadOnlyStores()
         try? await dm.deleteVolume(volumeId: volumeId)
         await loadReport()
     }

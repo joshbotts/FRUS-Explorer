@@ -383,6 +383,15 @@ struct VolumeConnectionGraphView: View {
                 await vm.load(from: store)
             }
         }
+        // Reload against the reopened store after an in-session reindex settles (#275): the boot
+        // connection this graph read through can be left stale by the rebuild.
+        .onChange(of: appState.readOnlyStoresGeneration) { _, _ in
+            Task {
+                if let store = appState.crossReferenceStore {
+                    await vm.load(from: store)
+                }
+            }
+        }
     }
 
     // MARK: - Graph Content

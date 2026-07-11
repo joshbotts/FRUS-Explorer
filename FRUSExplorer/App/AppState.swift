@@ -512,6 +512,64 @@ final class AppState {
     /// database could not be opened.
     var pageRangeStore: PageRangeStore?
 
+    /// Bumped each time `refreshReadOnlyStores` reopens the read-only stores after an index
+    /// rebuild. Dashboards that read those stores (`CrossReferenceAnalyticsView`,
+    /// `PersonAnalyticsView`) observe this and reload, so a view already on screen when a reindex
+    /// finishes refreshes instead of showing the empty results a stale connection returns (#275).
+    var readOnlyStoresGeneration: Int = 0
+
+    /// The `frus.db` URL, set at boot alongside the read-only stores. Retained so any in-session
+    /// index rebuild (Settings "Reindex All" / "Rebuild Index", boot reindex) can reopen the stores
+    /// against it via `refreshReadOnlyStores()` (#275).
+    var databaseURL: URL?
+
+    /// The downloaded-volumes directory, set at boot. Retained so `refreshReadOnlyStores()` can
+    /// recompute the citation engine's downloaded-volume set after a rebuild.
+    var volumesDirectory: URL?
+
+    /// Reopens the read-only SQLite stores (`crossReferenceStore`, `personMentionStore`,
+    /// `pageRangeStore`) and the `citationMatchingEngine` that captures one, against the settled
+    /// database after an index rebuild. Call this whenever the index tables are rebuilt in-session —
+    /// the boot reindex branches AND the Settings "Reindex All" / "Rebuild Index" actions.
+    ///
+    /// Each store is created once at boot and holds a single long-lived read-only connection opened
+    /// *before* any reindex runs. A rebuild's per-volume delete+reinsert and repeated WAL
+    /// checkpoints can leave those connections returning empty results for the rest of the session —
+    /// so cross-reference / person analytics show "No Data" until the app is relaunched, even though
+    /// the index is fully intact (#275). Recreating the stores yields fresh connections against the
+    /// settled database; the old connections close in their `deinit`. Bumping
+    /// `readOnlyStoresGeneration` lets dashboards on screen reload. `searchService` /
+    /// `indexingPipeline` read through the pipeline's own writer connection, which sees the
+    /// rebuild's writes directly, so they are intentionally left untouched.
+    ///
+    /// No-op if `databaseURL` has not been set yet (index infrastructure never came up).
+    func refreshReadOnlyStores() {
+        guard let databaseURL else { return }
+        crossReferenceStore = try? CrossReferenceStore(databaseURL: databaseURL)
+        personMentionStore = try? PersonMentionStore(databaseURL: databaseURL)
+        let freshPageRangeStore = try? PageRangeStore(databaseURL: databaseURL)
+        pageRangeStore = freshPageRangeStore
+        // The citation engine captures the page-range store by value, so recreating the store on
+        // `AppState` alone would leave the engine holding the stale connection; rebuild it too.
+        if let searchService, let volumesDirectory {
+            let downloadedIds = Set(
+                (try? FileManager.default.contentsOfDirectory(
+                    at: volumesDirectory, includingPropertiesForKeys: nil
+                ).map { $0.deletingPathExtension().lastPathComponent }) ?? []
+            )
+            citationMatchingEngine = CitationMatchingEngine(
+                manifestStore: manifestStore,
+                searchService: searchService,
+                pageRangeStore: freshPageRangeStore,
+                downloadedVolumeIds: downloadedIds
+            )
+        }
+        readOnlyStoresGeneration &+= 1
+        #if DEBUG
+        print("[AppState] Reopened read-only stores after reindex (generation=\(readOnlyStoresGeneration)).")
+        #endif
+    }
+
     /// Directory containing the SQLite index databases (frus.db). Set at boot;
     /// used by `StorageManagementView` to report index disk usage.
     var indexDirectory: URL?
