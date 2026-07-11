@@ -697,3 +697,220 @@ struct ClassificationChipSerializationTests {
                 "the [Source: …] wrapper must collapse exactly as indexing does before extraction")
     }
 }
+
+// MARK: - HighlightInjectionTests (Session 7 #240B follow-up)
+
+/// Verifies that `injectHighlights` places `<mark>` elements using the same
+/// flat-text coordinate space as `frus-offset-engine.js` — i.e. it excludes every
+/// `data-skip="1"` subtree (footnote-marker labels, figure captions, page-break
+/// spans, the broken cross-reference dagger) and counts `<br>` as one character.
+///
+/// This guards the pre-existing offset-shift bug found in the Session 7 #240B
+/// adversarial review: a flat position counter that counted skipped text would
+/// drag every highlight after a footnote marker to the left and could emit a
+/// boundary-crossing `<mark>` (opened inside a `<button>`, closed outside it).
+///
+/// Each test derives the highlight's offsets from the document's own flat text
+/// (`flatText(of:)`, the offset coordinate space) so the assertions can't drift
+/// out of sync with a hand-counted index.
+@Suite("FRUSRenderNodeHTMLSerializer — highlight injection")
+struct HighlightInjectionTests {
+
+    private let s = FRUSRenderNodeHTMLSerializer()
+
+    private func model(_ body: [FRUSRenderNode]) -> FRUSDocumentRenderModel {
+        FRUSDocumentRenderModel(documentId: "doc-1", bodyNodes: body, footnotes: [])
+    }
+
+    /// Serialises `body` with a single yellow highlight over the flat-text range of
+    /// `substring`. Offsets come from `flatText(of:)`, the exact space stored
+    /// `DocumentHighlight` offsets live in.
+    private func highlighted(_ body: [FRUSRenderNode], mark substring: String,
+                             color: DocumentHighlight.Color = .yellow) -> String {
+        let flat = flatText(of: body)
+        guard let r = flat.range(of: substring) else {
+            Issue.record("substring \(substring) not present in flat text \(flat)")
+            return ""
+        }
+        let start = flat.distance(from: flat.startIndex, to: r.lowerBound)
+        let end   = flat.distance(from: flat.startIndex, to: r.upperBound)
+        return s.serialize(model(body), includeFootnotes: true,
+                           highlights: [ExportHighlight(startOffset: start, endOffset: end, color: color)])
+    }
+
+    // MARK: - Baselines (no skipped subtrees)
+
+    @Test("A whole-word highlight wraps exactly that word")
+    func baselineWholeWord() {
+        let out = highlighted([.paragraph([.plainText("Hello world")])], mark: "world")
+        #expect(out.contains("<mark class=\"hl-yellow\">world</mark>"))
+        #expect(out.contains("<p class=\"body\">Hello <mark class=\"hl-yellow\">world</mark></p>"))
+    }
+
+    @Test("A highlight over an HTML entity counts the entity as one character")
+    func highlightOverEntity() {
+        // "AT&T" serialises to "AT&amp;T"; flat text is "AT&T", so "&T" is 2..4.
+        let out = highlighted([.paragraph([.plainText("AT&T")])], mark: "&T")
+        #expect(out.contains("AT<mark class=\"hl-yellow\">&amp;T</mark>"))
+    }
+
+    // MARK: - Footnote markers (the reported bug)
+
+    @Test("A highlight after a footnote marker is not dragged onto the marker label")
+    func highlightAfterFootnoteMarker() {
+        // Flat text = "Text more text" — the marker label "12" is offset-invisible.
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("Text "),
+            .footnoteMarker(id: nil, displayLabel: "12"),
+            .plainText("more text")
+        ])]
+        let out = highlighted(body, mark: "more")
+        // The mark opens *after* the button, on the real word "more".
+        #expect(out.contains(">12</button><mark class=\"hl-yellow\">more</mark> text"))
+        // It must NOT open inside the button on the "12" label (the old bug).
+        #expect(!out.contains("<mark class=\"hl-yellow\">12"))
+    }
+
+    @Test("A highlight spanning a footnote marker is hoisted around the button")
+    func highlightSpanningFootnoteMarker() {
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("Text "),
+            .footnoteMarker(id: nil, displayLabel: "12"),
+            .plainText("more text")
+        ])]
+        // Highlight "Text more" — it straddles the offset-invisible marker.
+        let out = highlighted(body, mark: "Text more")
+        // The mark closes before the button and reopens after — never wrapping it,
+        // so the <mark>/<button> nesting is well-formed.
+        #expect(out.contains("<mark class=\"hl-yellow\">Text </mark><button"))
+        #expect(out.contains(">12</button><mark class=\"hl-yellow\">more</mark> text"))
+        // The button label is never inside a mark.
+        #expect(!out.contains("<mark class=\"hl-yellow\">Text <button"))
+        #expect(!out.contains("<mark class=\"hl-yellow\">12"))
+    }
+
+    // MARK: - Figure captions
+
+    @Test("A highlight after a figure caption ignores the caption text")
+    func highlightAfterFigcaption() {
+        // Flat text = "After text" — the figcaption "Map of X" is offset-invisible.
+        let body: [FRUSRenderNode] = [
+            .figureBlock(altText: "Map of X"),
+            .paragraph([.plainText("After text")])
+        ]
+        let out = highlighted(body, mark: "After")
+        // The caption text survives verbatim, un-marked …
+        #expect(out.contains("<figcaption>Map of X</figcaption>"))
+        // … and the mark lands on the real word after the figure.
+        #expect(out.contains("<mark class=\"hl-yellow\">After</mark> text"))
+        #expect(!out.contains("<mark class=\"hl-yellow\">Map"))
+    }
+
+    // MARK: - Broken cross-reference dagger (data-skip span)
+
+    @Test("A highlight after a broken cross-reference dagger ignores the dagger")
+    func highlightAfterBrokenRefDagger() {
+        // Flat text = "See page 1077 now" — the dagger glyph is offset-invisible.
+        let broken = BrokenRefInfo(target: "frus1877#pg_1077", reason: "unknownPage",
+                                   resolvedVolume: "frus1877", resolvedAnchor: "pg_1077")
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("See "),
+            .crossRefLink(target: "frus1877#pg_1077", volumeId: "frus1877",
+                          broken: broken, children: [.plainText("page 1077")]),
+            .plainText(" now")
+        ])]
+        let out = highlighted(body, mark: "now")
+        // The dagger span is present and offset-invisible …
+        #expect(out.contains("cross-ref-broken-mark") && out.contains("data-skip=\"1\""))
+        // … the mark lands on "now", never on the dagger or the link text.
+        #expect(out.contains("<mark class=\"hl-yellow\">now</mark>"))
+        #expect(!out.contains("<mark class=\"hl-yellow\">\u{2020}"))
+        #expect(!out.contains("hl-yellow\">page"))
+    }
+
+    @Test("A highlight spanning into the broken-ref link hoists around the dagger")
+    func highlightSpanningBrokenRefDagger() {
+        let broken = BrokenRefInfo(target: "frus1877#pg_1077", reason: "unknownPage",
+                                   resolvedVolume: "frus1877", resolvedAnchor: "pg_1077")
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("See "),
+            .crossRefLink(target: "frus1877#pg_1077", volumeId: "frus1877",
+                          broken: broken, children: [.plainText("page 1077")]),
+            .plainText(" now")
+        ])]
+        // "1077 now" straddles the link's trailing dagger and the following text.
+        let out = highlighted(body, mark: "1077 now")
+        // The mark closes before the dagger span (inside the <a>) and reopens after
+        // it (after the </a>) — the dagger is never inside a mark.
+        #expect(out.contains("<mark class=\"hl-yellow\">1077</mark>"))
+        #expect(!out.contains("<mark class=\"hl-yellow\">\u{2020}"))
+        // "now" is still highlighted after the link closes.
+        #expect(out.contains("<mark class=\"hl-yellow\"> now</mark>")
+                || out.contains("<mark class=\"hl-yellow\">now</mark>"))
+    }
+
+    // MARK: - Line breaks (br counts as one flat character)
+
+    @Test("A highlight after a line break lands on the right characters")
+    func highlightAfterLineBreak() {
+        // Flat text = "ab\ncd" — <br> counts as one "\n" character.
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("ab"), .lineBreak, .plainText("cd")
+        ])]
+        let out = highlighted(body, mark: "cd")
+        #expect(out.contains("<br><mark class=\"hl-yellow\">cd</mark>"))
+        #expect(!out.contains("<mark class=\"hl-yellow\">ab"))
+    }
+
+    @Test("A highlight before a line break stops at the break")
+    func highlightBeforeLineBreak() {
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("ab"), .lineBreak, .plainText("cd")
+        ])]
+        let out = highlighted(body, mark: "ab")
+        #expect(out.contains("<mark class=\"hl-yellow\">ab</mark><br>"))
+    }
+
+    // MARK: - Page break span
+
+    @Test("A highlight after an empty page-break span ignores it")
+    func highlightAfterPageBreak() {
+        // Flat text = "abcd" — the page-break span contributes nothing.
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("ab"), .pageBreak(pageNumber: .arabic(5)), .plainText("cd")
+        ])]
+        let out = highlighted(body, mark: "cd")
+        #expect(out.contains("</span><mark class=\"hl-yellow\">cd</mark>"))
+        #expect(!out.contains("<mark class=\"hl-yellow\">ab"))
+    }
+
+    // MARK: - Footnote aside (data-skip subtree inside .frus-document)
+
+    @Test("A body-spanning highlight is unaffected by the footnote aside popover")
+    func highlightWithFootnoteAside() {
+        // The aside popover is emitted inside .frus-document with data-skip="1";
+        // its text must not shift or absorb a body highlight.
+        let body: [FRUSRenderNode] = [.paragraph([
+            .plainText("Alpha"),
+            .footnoteMarker(id: nil, displayLabel: "1"),
+            .plainText("Bravo")
+        ])]
+        let footnote = FRUSRenderNode.footnoteBody(
+            id: nil, type: .footnote, printedNumber: "1",
+            sequentialNumber: 1, displayLabel: "1",
+            children: [.paragraph([.plainText("Aside body text.")])]
+        )
+        let flat = flatText(of: body)   // "AlphaBravo"
+        let r = flat.range(of: "Bravo")!
+        let start = flat.distance(from: flat.startIndex, to: r.lowerBound)
+        let end   = flat.distance(from: flat.startIndex, to: r.upperBound)
+        let out = s.serialize(
+            FRUSDocumentRenderModel(documentId: "doc-1", bodyNodes: body, footnotes: [footnote]),
+            includeFootnotes: true,
+            highlights: [ExportHighlight(startOffset: start, endOffset: end, color: .green)])
+        #expect(out.contains(">1</button><mark class=\"hl-green\">Bravo</mark>"))
+        // The aside's own text is never wrapped in a mark.
+        #expect(out.contains("Aside body text."))
+        #expect(!out.contains("<mark class=\"hl-green\">Aside"))
+    }
+}

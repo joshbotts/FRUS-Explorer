@@ -69,6 +69,12 @@ import Foundation
 ///   1.2 — Session 7 / #240B: broken cross-references (non-nil `broken` payload) emit a
 ///          non-navigable `frusexplorer://brokenref/` explained span — dotted underline,
 ///          muted colour, and a `data-skip="1"` dagger so highlight offsets never shift.
+///   1.3 — Session 7 #240B follow-up: `injectHighlights` is now `data-skip="1"` aware and
+///          counts `<br>` as one flat-text character, so its `flatPos` counter mirrors the
+///          `frus-offset-engine.js` coordinate space exactly. Previously it counted the text
+///          inside skipped subtrees (footnote-marker labels, figure captions, the broken-ref
+///          dagger) and skipped `<br>`, so any HTML-export highlight after a footnote marker
+///          was shifted and could emit boundary-crossing `<mark>` markup.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -165,14 +171,34 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// Injects `<mark class="hl-{color}">` elements into a serialised HTML string.
     ///
     /// The algorithm walks the HTML character by character, tracking a `flatPos`
-    /// counter that increments for each character that would appear in the JS offset
-    /// engine's flat text (i.e. real text characters; HTML tags and entities count as
-    /// zero or one respectively). At each highlight boundary the algorithm inserts
-    /// `<mark>` or `</mark>` tags.
+    /// counter that mirrors the JS offset engine's flat-text coordinate space
+    /// (`frus-offset-engine.js`) exactly — the same space `ExportHighlight` offsets
+    /// (verbatim `DocumentHighlight.startOffset`/`endOffset`) live in. `flatPos`
+    /// advances by one for each character that appears in that flat text; at each
+    /// highlight boundary the algorithm inserts `<mark>` or `</mark>` tags.
     ///
-    /// Limitations of the post-processing approach:
-    /// - A highlight that spans across an HTML element boundary (e.g. `<em>`) will
-    ///   have its mark split across the element, which is valid HTML.
+    /// ## Offset-space fidelity (issue: Session 7 #240B adversarial review)
+    /// The flat-text space the offsets index deliberately **excludes** any
+    /// `data-skip="1"` subtree (footnote-marker button labels, figure captions,
+    /// page-break spans, footnote-aside popovers, and the broken cross-reference
+    /// dagger) and **counts `<br>` as one `"\n"` character**. This walker therefore:
+    ///
+    /// - Copies each `data-skip="1"` subtree verbatim through its matching close
+    ///   tag **without** advancing `flatPos` or emitting any mark boundary inside
+    ///   it. Without this, a highlight positioned after a footnote marker (or any
+    ///   skipped subtree) would be shifted left by the cumulative length of the
+    ///   preceding skipped text, and a `<mark>` could open inside a `<button>` and
+    ///   close outside it — malformed, boundary-crossing HTML.
+    /// - Hoists an open `<mark>` out of a skipped subtree (closes it before, lazily
+    ///   reopens it at the next flat-text character) so the mark never wraps a
+    ///   skipped, possibly block-level element (`<figure>`, `<aside>`).
+    /// - Advances `flatPos` by one at each `<br>` (mirroring `.lineBreak → "\n"`),
+    ///   so a highlight after a line break lands on the right characters.
+    ///
+    /// ## Limitations of the post-processing approach
+    /// - A highlight that spans across an HTML element boundary (e.g. `<em>`, or a
+    ///   hoisted skip subtree) has its mark split across the element, which is valid
+    ///   HTML.
     /// - Overlapping highlights are handled by prioritising the one that opens first.
     func injectHighlights(into html: String, highlights: [ExportHighlight]) -> String {
         // Sort highlights by start offset ascending for clean insertion.
@@ -182,26 +208,104 @@ public struct FRUSRenderNodeHTMLSerializer {
         var result   = ""
         var flatPos  = 0           // position in the flat-text coordinate space
         var idx      = html.startIndex
-        var openIdx  = 0           // which highlight is currently open (-1 = none)
-        var openEnd  = -1
-        var openCSS  = ""
+        var openEnd  = -1          // endOffset of the logically-open highlight (-1 = none)
+        var openCSS  = ""          // CSS class of the logically-open highlight
+        var markOpen = false       // whether a physical <mark> is currently unclosed
 
         func cssClass(_ color: DocumentHighlight.Color) -> String {
             "hl-\(color.rawValue)"
         }
 
+        // Close the physical <mark> without touching the *logical* highlight state.
+        // Used both at a genuine highlight end and to hoist a <mark> out of a
+        // skipped, offset-invisible subtree so element nesting stays well-formed.
+        func closeMarkTag() {
+            if markOpen { result += "</mark>"; markOpen = false }
+        }
+
+        // Reconcile the physical <mark> with the logical highlight state at the
+        // current flatPos, just before emitting a flat-text character: start a
+        // highlight that opens here, and (re)open the <mark> tag when a highlight
+        // is logically active but the tag is closed (freshly opened, or previously
+        // hoisted around a skip subtree).
+        func openMarkIfNeeded() {
+            if openEnd < 0 {
+                for hl in sorted where hl.startOffset == flatPos {
+                    openEnd = hl.endOffset; openCSS = cssClass(hl.color)
+                    break
+                }
+            }
+            if openEnd >= 0 && !markOpen {
+                result += "<mark class=\"\(openCSS)\">"
+                markOpen = true
+            }
+        }
+
         while idx < html.endIndex {
             let ch = html[idx]
 
-            // ── Inside an HTML tag — copy verbatim, don't advance flatPos ──
+            // ── HTML tag ──
             if ch == "<" {
+                let tagStart = idx
                 var tagEnd = idx
-                // Scan to closing `>`
                 while tagEnd < html.endIndex && html[tagEnd] != ">" {
                     tagEnd = html.index(after: tagEnd)
                 }
                 if tagEnd < html.endIndex { tagEnd = html.index(after: tagEnd) }
-                result += html[idx..<tagEnd]
+                let tag = html[tagStart..<tagEnd]
+
+                // <br> contributes "\n" (one flat-text character) — mirror the
+                // offset engine's `.lineBreak → "\n"` so highlights after a line
+                // break stay aligned. Treated exactly like a regular character.
+                if Self.openTagName(tag) == "br" {
+                    openMarkIfNeeded()
+                    result += tag
+                    flatPos += 1
+                    idx = tagEnd
+                    if openEnd == flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
+                    continue
+                }
+
+                // A data-skip="1" opening tag begins an offset-invisible subtree
+                // the flat-text space excludes. Copy the whole subtree verbatim,
+                // never advancing flatPos or emitting a mark boundary inside it,
+                // and hoist any open <mark> out of it.
+                if let skipTag = Self.skipSubtreeTagName(tag) {
+                    closeMarkTag()               // hoist; keep openEnd/openCSS to reopen later
+                    result += tag
+                    idx = tagEnd
+                    // Copy through the matching close tag, tracking nesting depth on
+                    // the same tag name (depth-safe even though the serializer never
+                    // nests skip elements inside one another today). A self-closing
+                    // skip tag has no subtree to consume.
+                    if !Self.isSelfClosing(tag) {
+                        var depth = 1
+                        while idx < html.endIndex && depth > 0 {
+                            if html[idx] == "<" {
+                                var tEnd = idx
+                                while tEnd < html.endIndex && html[tEnd] != ">" {
+                                    tEnd = html.index(after: tEnd)
+                                }
+                                if tEnd < html.endIndex { tEnd = html.index(after: tEnd) }
+                                let inner = html[idx..<tEnd]
+                                result += inner
+                                idx = tEnd
+                                if Self.isCloseTag(inner, name: skipTag) {
+                                    depth -= 1
+                                } else if Self.isOpenTag(inner, name: skipTag) {
+                                    depth += 1
+                                }
+                            } else {
+                                result += String(html[idx])
+                                idx = html.index(after: idx)
+                            }
+                        }
+                    }
+                    continue
+                }
+
+                // ── Ordinary tag — copy verbatim, don't advance flatPos ──
+                result += tag
                 idx = tagEnd
                 continue
             }
@@ -215,49 +319,84 @@ public struct FRUSRenderNodeHTMLSerializer {
                 if entEnd < html.endIndex { entEnd = html.index(after: entEnd) }
                 let entity = String(html[idx..<entEnd])
 
-                // Open highlights at this position if needed
-                if openEnd < 0 {
-                    for (i, hl) in sorted.enumerated() where hl.startOffset == flatPos {
-                        result += "<mark class=\"\(cssClass(hl.color))\">"
-                        openIdx = i; openEnd = hl.endOffset; openCSS = cssClass(hl.color)
-                        break
-                    }
-                }
-
+                openMarkIfNeeded()
                 result += entity
                 flatPos += 1
                 idx = entEnd
-
-                if openEnd == flatPos {
-                    result += "</mark>"; openEnd = -1; openCSS = ""
-                }
+                if openEnd == flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
                 continue
             }
 
-            // ── Regular text character ──
-            // Open a highlight if one starts here
-            if openEnd < 0 {
-                for (i, hl) in sorted.enumerated() where hl.startOffset == flatPos {
-                    result += "<mark class=\"\(cssClass(hl.color))\">"
-                    openIdx = i; openEnd = hl.endOffset; openCSS = cssClass(hl.color)
-                    break
-                }
-            }
-
+            // ── Regular flat-text character ──
+            openMarkIfNeeded()
             result += String(ch)
             flatPos += 1
             idx = html.index(after: idx)
-
-            // Close a highlight if it ends here
-            if openEnd == flatPos {
-                result += "</mark>"; openEnd = -1; openCSS = ""
-            }
+            if openEnd == flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
         }
 
-        // Close any highlight still open at end of document
-        if openEnd >= 0 { result += "</mark>" }
+        // Close any highlight still physically open at end of document.
+        closeMarkTag()
 
         return result
+    }
+
+    // MARK: - Highlight injection tag helpers
+
+    /// The lowercased tag name of an *opening* element tag substring
+    /// (`<button …>` → `"button"`), or `nil` if `tag` is a closing tag (`</…>`),
+    /// a comment/PI/doctype (`<!…`, `<?…`), or otherwise not an opening tag.
+    private static func openTagName(_ tag: Substring) -> String? {
+        guard tag.hasPrefix("<"), !tag.hasPrefix("</"),
+              !tag.hasPrefix("<!"), !tag.hasPrefix("<?") else { return nil }
+        var name = ""
+        for ch in tag.dropFirst() {
+            if ch.isLetter || ch.isNumber { name.append(ch) } else { break }
+        }
+        return name.isEmpty ? nil : name.lowercased()
+    }
+
+    /// The lowercased tag name of a *closing* element tag substring
+    /// (`</aside>` → `"aside"`), or `nil` if `tag` is not a closing tag.
+    private static func closeTagName(_ tag: Substring) -> String? {
+        guard tag.hasPrefix("</") else { return nil }
+        var name = ""
+        for ch in tag.dropFirst(2) {
+            if ch.isLetter || ch.isNumber { name.append(ch) } else { break }
+        }
+        return name.isEmpty ? nil : name.lowercased()
+    }
+
+    /// Returns the opening tag's lowercased name when `tag` is an opening element
+    /// tag carrying `data-skip="1"` — the marker the flat-text offset engine uses
+    /// to exclude a subtree — else `nil`. Closing tags and comments never match.
+    private static func skipSubtreeTagName(_ tag: Substring) -> String? {
+        guard tag.contains("data-skip=\"1\"") else { return nil }
+        return openTagName(tag)
+    }
+
+    /// `true` when `tag` is a self-closing element tag (`<… />`). The serializer
+    /// never emits a self-closing `data-skip` element today, but the skip walk
+    /// stays correct if one is ever introduced.
+    private static func isSelfClosing(_ tag: Substring) -> Bool {
+        guard tag.hasSuffix(">") else { return false }
+        for ch in tag.dropLast().reversed() {
+            if ch == "/" { return true }
+            if !ch.isWhitespace { return false }
+        }
+        return false
+    }
+
+    /// `true` when `tag` is the closing tag `</name>` (case-insensitive).
+    private static func isCloseTag(_ tag: Substring, name: String) -> Bool {
+        closeTagName(tag) == name
+    }
+
+    /// `true` when `tag` opens a (non-self-closing) element named `name`
+    /// (case-insensitive) — used to bump skip-subtree nesting depth for same-name
+    /// descendants.
+    private static func isOpenTag(_ tag: Substring, name: String) -> Bool {
+        openTagName(tag) == name && !isSelfClosing(tag)
     }
 
     /// CSS for the five highlight colours. Embed in the export stylesheet.
