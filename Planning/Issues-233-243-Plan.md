@@ -31,6 +31,18 @@ Mid-wave, three Office of the Historian repos were shared and critically reviewe
 - **PersonIndexRow accessibility fixes:** assigned once, to Session 4 (#243), which runs first in the people family.
 - **Docs policy:** consolidated model (build-31 precedent). Every session emits **delta notes only** (a short "docs-delta" list in its PR description); the Closing Session performs the single docs pass. Exception: doc-comment version histories and in-view FeatureInfoButton text update in-session as usual.
 
+## Owner decisions (2026-07-10) — wave close (budget)
+
+With Fable review-pass usage near its allowance, the owner elected to **close the wave now**. This takes contingency cut #3 from *Feasibility vs Max 20x* below (Session 8 → next wave) and defers Session R in full (beyond cut #4's report-only trim).
+
+| Decision | Choice |
+|---|---|
+| Wave scope | **Ship Sessions 1–7 + 9 (all done/in-review), then run the Closing Session next as the wave's final step.** The docs pass + build 31 → 32 bump is the immediate next work. |
+| Session 8 (People: POCOM M0 + enrichment, #234-M0 + colleague data) | **Deferred to a future wave.** Self-contained; nothing shipped depends on it. Its environment prerequisites (local `HistoryAtState/pocom` + `frus-name-authority` checkouts) and the `frus-name-authority` dedup-cluster backlog item carry forward together. |
+| Session R (iPad windowing investigation, #241) | **Deferred to a future wave.** No dependencies; the investigation doc + prototype PR move as a unit. |
+
+**What landed this wave (the docs pass / build bump cover ONLY these):** Session 1 (#237/#238 Browse titles + iPad tab-bar overlay + tag picker), Session 2 (#233/#239 word-cloud hide + Citation Lookup macOS fit), Session 3 (#236 Series analytics scope + presets), Session 4 (#243 manual person merge + corrections/undo), Session 6 (#240A cross-ref validation generator), Session 7 (#240B cross-ref validation app half), Session 9 (volume-level subject profiles + dead-bundle cleanup). Session 5's ride-along (the Document→Chronology pivot) landed within its host session. **New research concepts to document:** analytics scope pickers + administration presets, broken cross-reference explanation + report export, volume subject profiles + cross-volume subject discovery. **NOT to document (deferred):** POCOM career timelines, Wikidata/VIAF person links, iPad multi-window ports.
+
 ## Shared session preamble (paste into every implementation AND review session)
 
 - **Worktree/branch:** branch per session off `v2`, e.g. `claude/issue-233-239-wave6`. Give Workflow agents absolute paths (worktree-path gotcha in memory).
@@ -198,6 +210,8 @@ Generator-only; no app changes. Produces the measurements that scope Session 7.
 ---
 
 ### Session 8 — People: POCOM M0 + authority enrichment (#234-M0 + colleague data) — L *(after 4 and 6)*
+> **DEFERRED to a future wave (2026-07-10, Fable-budget close).** Self-contained; nothing shipped this wave depends on it. Everything below is intact and ready to run as a future wave's opener — the environment prerequisites and the `frus-name-authority` dedup-cluster backlog item carry forward with it.
+
 **Environment prerequisites (owner, before the session):** (a) a local checkout of `HistoryAtState/pocom` (CC0 XML: `people/{a-z}/*.xml`, `missions-countries/*.xml`, code tables) — note its path for `POCOM_DIR`. Record the checkout SHA in the generated index's provenance string (upstream is "early beta — identifiers subject to change"). (b) `/Users/jbotts/Development/frus-name-authority` (CC0) for the enrichment overlay — record its `persons-complete.xml` date/hash in the provenance string too.
 1. **`POCOMIndexGenerator`** (Core/exec/Tests on GeneratorKit): parse person records + chief-of-mission assignments + code tables → per-person career records {slug, name, birth/death, assignments: [{roleTitle, territory/org, appointed/started/ended}]} → `Resources/pocom-index.json`.
 2. **Authority index schema v2:** `PersonAuthorityIndexBuilder` additionally captures the `departmenthistory/people/{slug}` source-urls it currently discards (the slug→canonical-numeric-id crosswalk falls out of the existing PEOPLE_DATA_DIR checkout — verified on record 100001); new optional terse field, `indexVersion` 2, regenerate the bundled index, mirror the field in the app-side tolerant decoder. Hand-mirror both twins this one time; PersonAuthorityKit shared-target extraction → follow-up chip.
@@ -233,6 +247,8 @@ Generator-only; no app changes. Produces the measurements that scope Session 7.
 ---
 
 ### Session R — iPad windowing investigation (#241) — S/M *(anytime; no dependencies)*
+> **DEFERRED to a future wave (2026-07-10, Fable-budget close).** No dependencies; the investigation doc + prototype PR move as a unit. Everything below is intact and ready to run standalone.
+
 1. `Planning/241-iPad-Windowing-Investigation.md` (extends BigPicture-iPadMacParity for the iPadOS 26 era): scene inventory (3 iOS vs ~17 macOS scenes), platform-inherent gaps (no `bringMacWindowToFront` equivalent; no singleton Window scene; Settings scene + scene-attached shortcuts macOS-only; pending-state hand-off scenes restore to empty placeholders; process-global AppState means multiple iPad main windows mirror activeTab and race pendingX hand-offs), recommendation: **keep MainTabView root; incremental window ports; iPad menu bar as its own follow-up**; sizing answer: full MainWindowView adoption is XL (blocked by the forked reading surface), incremental path is L across small PRs.
 2. Prototype PR (decided): port `WindowGroup(for: ArchivalNeighborsRequest.self)` outside `#if os(macOS)` (verify the content view actually compiles cross-platform first — its wrapper sits in a macOS region), gate open-sites on `supportsMultipleWindows` with the existing sheet fallback, add `.defaultSize` to the 3 iOS scenes, refresh stale "M-chip/Stage Manager" comments.
 3. File follow-up issues: per-scene ports (Word Cloud, Citation Lookup, People, Chronology, Cross-Volume Provenance), iPad `.commands` menu bar, per-window state (@SceneStorage for activeTab — a latent bug today), value-based conversion of the two pending-state iOS scenes.
@@ -240,14 +256,14 @@ Generator-only; no app changes. Produces the measurements that scope Session 7.
 
 ---
 
-### Closing Session — consolidated docs pass + build 32
-Per the build-31 precedent (dabc386): collect every session's docs-delta notes →
+### Closing Session — consolidated docs pass + build 32  *(RUNS NEXT — the wave's final step, per the 2026-07-10 close)*
+Per the build-31 precedent (dabc386): collect the docs-delta notes from the landed sessions (**1–7 + 9 only** — Sessions 8 and R are deferred) →
 1. `Docs/iOS-User-Manual.md`, `Docs/macOS-User-Manual.md`, `Docs/EditableContent.md`, README.
-2. In-app `ResearchGuideView` + `IndexingEducationView` (scope pickers, suggested NARA matches, broken-ref explanation, career timelines, volume subject profiles, and Wikidata/VIAF person links are new research concepts — unlike the 207–219 wave, this one has in-app-help-worthy additions).
+2. In-app `ResearchGuideView` + `IndexingEducationView` — the new research concepts that actually shipped: **analytics scope pickers + administration presets (#236), broken cross-reference explanation + report export (#240), volume subject profiles + cross-volume subject discovery (Session 9)**. (POCOM career timelines and Wikidata/VIAF person links are NOT in this wave — they ship with the deferred Session 8.)
 3. Testing-checklist §33 delta (memory file), including the #238 tester item (iPad: toggle the sidebar into the top tab bar — the system "Toggle Sidebar" control — then Browse deep into a subseries/volume in both orientations and confirm breadcrumb-free/visible content and reachable first rows) and #237 before/after.
 4. TestFlight "What's New" files; `Planning/DEVELOPMENT-PLAN.md` session entries.
 5. **Build 31 → 32**: edit `project.yml` + `project.pbxproj` directly (`replace_all`), **never xcodegen**. Reindex note: the wave PLANNED no `currentDateIndexVersion` bump (Session 7's UPDATE pass substitutes for the `is_broken` flag) — but the Session 7 **review** found a pre-existing v21 data-corruption bug (`resolvePageBasedCrossReferences` rewriting cross-volume page refs; ~44K fabricated edges) whose fix is a genuine parse-output change, so the index is now **v22** per the standing rule. One forced background reindex per install; the `is_broken` UPDATE-pass substitute rationale still applies to the flag itself.
-6. Close issues with resolution notes; file the Backlog's follow-up issues.
+6. Close the landed issues (#233, #236, #237, #238, #239, #240, #242, #243, and the Session-9 subject cleanup) with resolution notes; file the Backlog's follow-up issues. **Carry forward as the next wave** (do not close): **#234-M0 (POCOM) + the colleague-data person enrichment (Session 8)** and **#241 iPad windowing (Session R)** — file/annotate each so the next wave opens from this plan's intact Session 8 / Session R blocks.
 
 ---
 
