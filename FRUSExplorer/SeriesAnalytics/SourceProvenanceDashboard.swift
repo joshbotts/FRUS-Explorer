@@ -117,7 +117,7 @@ struct SourceProvenanceDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.provenance.intro",
-                    defaultValue: "Where did the editors of Foreign Relations of the United States find the documents they published? Every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's Central Decimal File in the early twentieth century, through the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes."))
+                    defaultValue: "Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's central files in until the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -348,7 +348,7 @@ struct SourceProvenanceDashboard: View {
             title: String(localized: "series.provenance.density.title",
                           defaultValue: "The documentary base by decade"),
             caption: String(localized: "series.provenance.density.caption",
-                            defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base; a share in a thin decade rests on far fewer documents."),
+                            defaultValue: "How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base. Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. Those decades will look different as new volumes are released."),
             inspector: ChartInspectorAdapters.densityTable(density)
         ) {
             Chart {
@@ -403,7 +403,7 @@ struct SourceProvenanceDashboard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.provenance.caveats.body",
-                        defaultValue: "These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. \"Other / Unclassified\" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1960 central filing system, the Central Foreign Policy File its post-1960 successor, lot files are bureau and office working files, and presidential libraries hold the White House records that dominate the modern volumes. Above all, these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives."))
+                        defaultValue: "These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. \"Other / Unclassified\" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1963 central filing system; the Central Foreign Policy File its post-1963 successor; lot files were maintained by individual bureaus, offices, and posts; and presidential libraries hold the White House records that dominate modern volumes. Remember that these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
