@@ -155,7 +155,7 @@ The status bar at the bottom of the main window provides at-a-glance information
   - **Not Signed In** (orange) — iCloud account is unavailable; data will not sync until you sign in via System Settings → Apple ID.
 - **iCloud Keychain** — Availability of NARA API key sync across devices.
 
-> **One-time re-index after this update.** This build advances the search-index format (to index version 21) so that page-number cross-references resolve correctly (Section 8). The first launch after updating automatically re-indexes the volumes you have already downloaded — you'll see indexing progress in the status bar for a while, and no re-download is needed. Search and reading remain available while it runs.
+> **One-time re-index after this update.** This build advances the search-index format (to index version 22) and rebuilds the cross-reference index: cross-references confirmed unresolvable by the corpus-wide validation dataset are marked so they no longer pose as working links (Section 6.2), and a long-standing defect where some cross-volume page references pointed at the wrong document in graphs and analytics is repaired. The first launch after updating automatically re-indexes the volumes you have already downloaded — you'll see indexing progress in the status bar for a while, and no re-download is needed. Search and reading remain available while it runs.
 
 `[SCREENSHOT: Status bar detail showing indexing progress indicator]`
 
@@ -200,7 +200,11 @@ Open the **Corpus Browser** (⇧⌘B) to navigate the FRUS series as a hierarchy
 
 **Volume view** — Click a volume to see its front matter, chapters, and appendices. Each chapter entry shows the number of documents it contains.
 
+A **Top subjects** section on the volume view lists the subjects most characteristic of that volume — derived from the Office of the Historian's subject data and grouped by category — and it appears even before the volume is downloaded, so you can size up an unfamiliar volume's themes before committing to it. Click a subject to see the *other* FRUS volumes across the whole corpus that cover the same subject (downloaded or not) and jump straight to any of them in the browser.
+
 `[SCREENSHOT: Volume detail view showing chapter list with document counts]`
+
+`[SCREENSHOT: Volume view's Top subjects section, with one subject's list of other volumes covering the same subject open]`
 
 **Chapter / Compilation view** — Click a chapter to see individual document listings with their dateline, source note, and document number.
 
@@ -241,6 +245,8 @@ Use the **search field** to filter the list by name; click a person to open thei
 - **Find all mentions** runs a person-scoped search returning every document that references this identity (see Section 5).
 - **Records in This Identity** lists each underlying `(volume, ref)` record that was folded into this person; click **Separate** on any record that is actually a different person to split it out. Your correction syncs across your devices via iCloud and is reapplied whenever the index is rebuilt.
 - When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action.
+- You can also merge any two people **yourself**, for cases the cautious automatic grouping keeps apart: choose **Merge with another person…** in a person's detail panel — or right-click the person's row for the same command — and pick the other person from a searchable list. A confirmation names both people before anything changes, and warns you when they look like genuinely different people (each matched to a distinct Office of the Historian identity).
+- A **Corrections** toolbar button in the People browser lists every merge and separation you've made and lets you **undo** any of them. Corrections sync across your devices via iCloud.
 - Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
 
 > The consolidation is deliberately cautious: when in doubt it keeps identities **separate** rather than merging two different people. Your merge/separate corrections always take precedence.
@@ -362,6 +368,10 @@ Each rendered document shows:
 
 `[SCREENSHOT: Document close-up showing a person reference, glossary term, and cross-reference link all visible]`
 
+**Unresolvable cross-references.** Not every printed cross-reference can be followed: occasionally the printed volume cites a page, document, or volume that does not exist in the digital corpus. FRUS Explorer ships a corpus-wide validation dataset of these, and a reference it confirms cannot be followed renders in **muted grey with a dotted underline and a small dagger (†) marker** instead of looking like a working link. Click one to open an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. Valid references are unchanged, and the printed text is always preserved — nothing is removed from the document. (These errors can be exported for reporting to the Office of the Historian — see Section 16.)
+
+`[SCREENSHOT: A document with an unresolvable cross-reference in muted grey with the dagger marker, and the Unresolved Reference sheet open explaining why it can't be followed]`
+
 ### 6.3 Navigation History
 
 FRUS Explorer tracks every document you open in the current session. Use **⌘[** (Back) and **⌘]** (Forward) to move through your reading history, just as in a web browser.
@@ -410,10 +420,12 @@ User tags are global labels you define. They are not the same as the official su
 
 **To tag a document:**
 1. Click **Tags** in the research strip, or click the **+ Add Tag** button that appears next to the existing tag chips in the Tags section of the research panel.
-2. Start typing to search existing tags or create a new one.
-3. Press Return to apply.
+2. Create a new tag from the **New Tag** field at the **top** of the picker — type a name and click **Add**, which creates the tag and selects it in one step — or choose from your existing tags listed beneath.
+3. Click **Done** to apply.
 
-`[SCREENSHOT: Tag picker popover showing existing tags and a text field for creating a new one]`
+The picker's title names the document you are tagging (e.g. **Tags — Doc 42**, or the document's id where a volume has no document numbers), so you always know which document a batch of tags lands on. Any tag you create while the picker is open stays **pinned to the top of the list with a "New" badge** until the picker closes — no scrolling back down to find the tag you just made.
+
+`[SCREENSHOT: Tag picker sheet titled "Tags — Doc 42" with the New Tag field at the top and a just-created tag pinned beneath it with a New badge]`
 
 Tags appear as **removable chips** in the Tags section of the research panel. Each chip has an **×** button — click it to remove that tag directly without opening the tag picker. A **+** button next to the chips adds more tags. Click any tag chip (without the × button) to run a search filtered to documents with that tag. Manage all your tags — rename, merge, delete — in **Settings → Research → Tags**.
 
@@ -464,15 +476,17 @@ Nodes in volumes that have not been downloaded are shown distinctly. Clicking su
 
 > **Page-number references now resolve.** Cross-references that cite a target by page rather than by document number (e.g. "see p. 427") now resolve to the correct target document, so they appear as real edges in the graph and are counted in Cross-Reference Analytics (Section 13.6). This improvement required a search-index change; the first launch after updating performs a one-time re-index of your downloaded volumes (see Section 3.4).
 
+> **Unresolvable references are excluded.** Cross-references that the corpus-wide validation dataset confirms cannot be followed (Section 6.2) are left out of the graph, so every edge you see leads to a real document.
+
 ---
 
 ## 9. Citation Lookup
 
 If you have a citation from a footnote, bibliography, or note and want to find the actual document, use **Citation Lookup**.
 
-Access it via **Document → Citation Lookup** in the menu bar, or press **⌘⇧F**.
+Access it via **Document → Citation Lookup** in the menu bar, or press **⌘⇧F**. Citation Lookup opens in its **own window**: the form uses the same grouped style as the rest of the app's Mac forms, the paste field takes focus as the window opens, and pressing **Return** runs the lookup.
 
-`[SCREENSHOT: Citation Lookup sheet showing the two-mode interface — Paste Citation tab active with a sample citation entered]`
+`[SCREENSHOT: Citation Lookup window showing the two-mode grouped form — Paste Citation tab active with a sample citation entered]`
 
 ### 9.1 Input Modes
 
@@ -502,7 +516,7 @@ Results are ranked by confidence:
 | Volume identified — download to find document | Volume not yet downloaded |
 | Best guess | Explanation provided |
 
-Click any result to open that document. If the volume is not downloaded, a **Download** button appears in place of the open link.
+Click any result to open that document **in its own document window** — with working previous/next navigation — so the lookup window and its match list stay visible while you work through several candidates. On indexed volumes, a document-number citation resolves directly to that document. If the volume is not downloaded, a **Download** button appears in place of the open link.
 
 ### 9.3 Copying and Sharing Citations
 
@@ -819,7 +833,7 @@ Open it from the **Analytics** toolbar button in the main window, or by clicking
 1. Type a search term in the field at the top of the window. The same query syntax as the Search window is supported (see Section 5.2), including quoted phrases (Analytics and Search now agree on phrase queries).
 2. Choose a **dimension**: Decade, Year, Month, Day, **Subseries**, or **By Volume**. The time dimensions chart frequency over time; **Subseries** and **By Volume** break the same query down by where in the corpus it appears, omitting subseries or volumes where the query never occurs. The **Subseries** grouping uses the same publication-era buckets as the Corpus Browser, so early annual, conference, and supplement volumes bucket consistently between the two. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-cited source volumes each get a colour, the rest fold into a grey "Other", and a legend names each volume with its count — so you can see which part of the corpus drives a term in any period (the same encoding the Chronology graph uses). The number of distinct colour-coded volumes shown before the remainder fold into "Other" is **configurable** (6–12, default 8): use the **Chart colors** menu in the toolbar to set the count for this view, or set the app-wide default in the Display settings pane (Section 16). 
 3. Choose a **grouping**: All subseries combined, or broken out by subseries.
-4. Drag the **Year Range** slider to zoom in on a particular period, and set an optional **volume/subseries scope** — the same scope Search uses, so you can chart and read the identical corpus subset. (Person and Cross-Reference Analytics now offer the same **Scope** and **year-range** controls — Sections 13.5–13.6.)
+4. Drag the **Year Range** slider to zoom in on a particular period, and set an optional **volume/subseries scope** — the same scope Search uses, so you can chart and read the identical corpus subset. An **Administration** preset menu beside the year-range bar sets the range to a presidential administration's years in office in one click — the fastest way to frame a question like "how often was this term used under Ford?". (Person and Cross-Reference Analytics now offer the same **Scope** and **year-range** controls — Sections 13.5–13.6; Cross-Reference Analytics also carries the Administration preset.)
 
 On a **Subseries** or **By Volume** chart, clicking a bar drills straight into a Search scoped to that subseries or volume.
 
@@ -852,7 +866,7 @@ Where Analytics charts one term over time, a **Word Cloud** shows the most frequ
 
 - **Two views.** A packed **spiral cloud** sizes each term by frequency (rotating some terms to pack the space); a **List** view ranks the same terms with a weight bar and exact counts, and is what VoiceOver reads.
 - **Lenses.** A row of lens chips narrows the cloud to a kind of term: **All terms**, **People / Places / Organizations** (recognised on-device), **Topics / Actions / Descriptors** (nouns / verbs / adjectives), **Concepts** (abstract ideas like *sovereignty* or *deterrence*), or **Sentiment** (positively- and negatively-charged words, coloured green and red). When a scope lacks enough of a given kind of term, the cloud says so rather than showing a near-empty result.
-- **Act on a term.** Click a word to chart how often it appears across the whole corpus in **Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word — either **in all word clouds** or only **in this lens** (managed afterwards in Settings → Word Cloud) — **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
+- **Act on a term.** Click a word to chart how often it appears across the whole corpus in **Analytics** (Section 13) — a fast way to tell whether a term that caught your eye was a passing mention or a sustained concern over the life of the series. The handoff is corpus-wide for every cloud; for a **volume** or **subseries** cloud the word's options menu adds **Analyze within this volume / this subseries** for a chart scoped to just that material. That menu also offers **Search for this term**, and lets you **hide** a word — **in this word cloud** only (a temporary hide: the word returns the next time the cloud is generated), **in all word clouds**, or only **in this lens** (the two persistent lists are managed afterwards in Settings → Word Cloud); a **Show N hidden words** control restores everything you've hidden. It can also **compare** the scope against another (corpus, a collection, or a tag) side by side, and **export** the cloud as a PNG, PDF, or CSV.
 - **Date-range clouds and Chronology.** A word cloud can be scoped to a date range in two ways. From **Chronology** (Section 14), the **Word Cloud for this range** toolbar button (a cloud icon) builds a cloud from the documents in the range currently displayed; it draws on the same documents as the Chronology list, up to the same 5,000-document cap, and is disabled when the range contains no documents. From a date-range cloud, the options menu (the "…"/ellipsis menu in the toolbar) adds a **View in Chronology** item that opens the Chronology browser for the same date range. (That item appears only for a date-range cloud.)
 - **Tuning.** Settings → Word Cloud sets minimum word length and occurrence count, toggles plural-merging and the classification-marking / diplomatic-boilerplate filters, and maintains your own **hidden-word lists** (global, or per lens). A separate **Appearance** section sets the cloud's **font** — *Rounded* (the default), *Default*, *Serif*, or *Monospaced* — and its **density** — *Compact* (fits more terms), *Balanced* (default), or *Airy* (spaces terms out for legibility). These are **device-local** preferences (they are not synced via iCloud) and apply to the interactive cloud, the side-by-side comparison columns, and PNG / PDF / collection image exports.
 - **Info.** An **info** button (ⓘ) in the toolbar opens a popover explaining what the cloud shows and how to read it.
@@ -891,7 +905,9 @@ The window presents four **collapsible chart sections** — click a section's he
 
 Because **page-number cross-references now resolve** to their target documents (Section 8), citations that a footnote expressed as "see p. 427" are counted here alongside document-number references, so the in-degree, histogram, matrix, and PageRank all reflect the fuller citation graph. The three document-level figures — most-referenced, the degree distribution, and PageRank — also count **same-volume citations** (a document citing another in the same volume), which were previously dropped; counts and rankings rise accordingly. The heat matrix still counts only citations *between* volumes, by definition.
 
-**Scoping the network.** A **Scope** bar and a **year-range** bar narrow the analysis to a subseries or volume and a span of years. These figures are **source-anchored**: a citation is attributed to — and filtered by — its *citing* (source) document's volume and date, while the cited target is left unrestricted. That keeps a heavily-cited foundational document in the rankings even when it falls outside your current slice, and it stops scoping from collapsing the graph (many citation targets are undated editorial notes or unresolved page references). The volume-to-volume heat matrix is the exception, filtering on *both* endpoints' volumes plus the source date.
+**Scoping the network.** A **Scope** bar and a **year-range** bar narrow the analysis to a subseries or volume and a span of years; an **Administration** preset menu beside the year bar sets the range to a presidential administration's years in office in one click (the same preset Corpus Analytics offers — Section 13.1). These figures are **source-anchored**: a citation is attributed to — and filtered by — its *citing* (source) document's volume and date, while the cited target is left unrestricted. That keeps a heavily-cited foundational document in the rankings even when it falls outside your current slice, and it stops scoping from collapsing the graph (many citation targets are undated editorial notes or unresolved page references). The volume-to-volume heat matrix is the exception, filtering on *both* endpoints' volumes plus the source date.
+
+When any cross-references confirmed unresolvable by the corpus-wide validation dataset (Section 6.2) fall within the current scope, a caption discloses "*N unresolvable references are excluded from this analysis*" — so the counts you see are always built from references that actually lead somewhere.
 
 `[SCREENSHOT: Cross-Reference Analytics window on macOS — most-referenced documents, the degree-distribution histogram, the volume-to-volume heat matrix, and the PageRank influence list, narrowed by the Scope and year-range bars]`
 
@@ -1013,6 +1029,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | **NARA API** | API key entry (stored in iCloud Keychain); *Need a Key?* link |
 | **Zotero** | Connect your Zotero account with a Web API key (stored in iCloud Keychain, so the connection follows you to your other devices) so **Send to Zotero Library** can push documents and collections straight into your library; a link creates a key with the right permissions |
 | **Summarization** | Prompt management, summary browser, background summarizer |
+| **Data** | Research-data export: a summary of everything you've created (notes, tags, highlights, collections, prompts, projects) with **Export as JSON…** and **Export Notes as Markdown…** buttons. A **Broken Cross-References Report** section exports the corpus-wide list of unresolvable cross-references (Section 6.2) — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus — via **Export CSV…** / **Export JSON…**, for reporting to the Office of the Historian |
 
 ### Reset
 
@@ -1061,10 +1078,10 @@ The Research Guide now includes an **About the Series** category: four interacti
 
 - **Production & Timeliness** — a publication-lag **scatter** plotting each volume by its publication year (x) against the years it took to publish (y), overlaid with an **evolving timeliness-target step line**: no formal target before 1961, then **15 years** from the 1961 directive, **20** from 1972, and **30** from the 1985 directive and 1991 statute. Companion charts show **volumes per print year** (bars) and a **cumulative-volumes** curve.
 - **Geographic Emphasis** — how the series' attention is distributed across the six State Department **regional bureaus**, shown as regional **share over time** (stacked), **region totals**, and the **top-covered countries**.
-- **Archival Sourcing** — the **provenance mix** of the documents over coverage decades — the shift from the central decimal file toward lot files, presidential libraries, and the Central Foreign Policy File — plus **overall composition** and **note density by decade**.
-- **Administration Profiles** — coverage by **president** (Nixon and Ford are treated as distinct; Cleveland's two terms are separate): **documents per administration** and **volumes per administration-year** colored by **party**, each administration's **coverage span**, and a per-administration **volume list** giving each volume's **document proportion**. An **include/exclude editorial-notes** toggle and an **any-overlap attribution** caveat make the counting method explicit (range-dated documents can be attributed to more than one administration).
+- **Archival Sourcing** — the **provenance mix** of the documents over coverage decades — the shift from the central decimal file toward lot files, presidential libraries, and the Central Foreign Policy File — plus **overall composition** and **note density by decade**. A **Categories** filter menu shows or hides individual archival categories, **re-basing** the mix to just the categories shown (a footnote flags the re-based reading; the last visible category can't be hidden).
+- **Administration Profiles** — coverage by **president** (Nixon and Ford are treated as distinct; Cleveland's two terms are separate): **documents per administration** and **volumes per administration-year** colored by **party**, each administration's **coverage span**, and a per-administration **volume list** giving each volume's **document proportion**. A **year-range bar** narrows the view to the administrations whose term overlaps the chosen years. An **include/exclude editorial-notes** toggle and an **any-overlap attribution** caveat make the counting method explicit (range-dated documents can be attributed to more than one administration).
 
-**Cross-cutting controls.** Every dashboard carries an **editable start/end year range** so you can zoom to a period of interest (defaults are roughly **1861–1993** for coverage-based views and **1861–2026** for production-based views). Every chart also offers a **View as table** pop-up — a native **Table** on macOS and iPad, a list on iPhone — with **Copy CSV**, so you can lift any dashboard's underlying numbers into a spreadsheet or paper.
+**Cross-cutting controls.** Every dashboard carries a **Scope** control — **Whole series** (the default) or **By Subseries**, with the subseries gathered into decade submenus — so any dashboard can be re-read against a single publication era, and an **editable start/end year range** so you can zoom to a period of interest (defaults are roughly **1861–1993** for coverage-based views and **1861–2026** for production-based views). The **Reset** affordances on the scope and year bars clear **both together**, returning the dashboard to the whole series over its full span in one click. Every chart also offers a **View as table** pop-up — a native **Table** on macOS and iPad, a list on iPhone — with **Copy CSV**, so you can lift any dashboard's underlying numbers into a spreadsheet or paper.
 
 `[SCREENSHOT: The Research Guide "About the Series" category on macOS showing the Production & Timeliness dashboard — the publication-lag scatter with the evolving timeliness-target step line]`
 

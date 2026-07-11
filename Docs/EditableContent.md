@@ -264,6 +264,14 @@ When a source note records classification markings — "Secret; Nodis", or expli
 
 The app also ships a corpus-wide authority of the archival collections FRUS cites: from Source Explorer you can open any matched collection to see its variant citation forms, its National Archives catalog record, every volume across the series that cites it, and how many documents in your own indexed volumes came from it.
 
+<!-- section-id: broken-references -->
+
+**When a Cross-Reference Leads Nowhere**
+
+The printed volumes cite each other constantly — "see page 700," "see Document 42." Because pre-digital volumes were retyped from the printed books and their cross-references retroactively tagged, a small number cite a page, document, or volume that does not exist in the digital corpus. The app ships a corpus-wide validation of every cross-reference (about 2.7 million checked), so it knows exactly which ones cannot be followed.
+
+A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many). From Settings you can export the full Broken Cross-References Report — the same dataset is reported to the Office of the Historian to support corrections to the digital editions.
+
 <!-- section-id: classifications -->
 
 **Excisions**
@@ -360,6 +368,14 @@ Browse the series the way it is published: corpus → subseries → volume → c
 
 Find it on the Browse tab (iOS) or the Corpus Browser window, ⇧⌘B (Mac).
 
+<!-- section-id: volume-subjects -->
+
+**Top Subjects on Volumes**
+
+Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category. They are surfaced at the volume grain deliberately: subject tagging is too noisy to trust document by document, but it becomes a reliable signal aggregated across a whole volume.
+
+Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.
+
 <!-- section-id: chronology -->
 
 **Chronology**
@@ -373,6 +389,8 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Chronology window
 **Person Index**
 
 An alphabetical directory of everyone named across your indexed volumes. Select a person to see every document that mentions them — a fast way to follow an individual policymaker, diplomat, or foreign leader through the record.
+
+The app groups a person's appearances across volumes automatically, but it is deliberately cautious — it won't merge two entries unless it is confident they are the same person, so some people appear more than once. You can finish the job by hand: merge two entries from a person's detail (or a row's context menu), and undo any merge or separation later from the Corrections list. Your corrections sync across your devices.
 
 Find it in the Corpus Browser's People section.
 
@@ -446,7 +464,9 @@ Find it from a document's toolbar (iOS) or the Graph window (Mac).
 
 Where the graph traces one document's neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network's shape — a few heavily-cited landmarks and a long tail — a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of "landmark" documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.
 
-These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes.
+These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes. References the corpus-wide validation has confirmed unresolvable are excluded, and the caption discloses how many fell in the current scope.
+
+An Administration menu sets the document-year range to a president's term in one tap; the same presets appear in Corpus Analytics.
 
 Find it from the Browse tab's Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
 

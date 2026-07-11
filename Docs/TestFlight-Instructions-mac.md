@@ -1,28 +1,32 @@
-# What's New in Build 31 (Mac)
+# What's New in Build 32 (Mac)
 
-Build 31 is a polish-and-fixes pass on the research tools from builds 28–30, plus a new way to scope Archival Neighbors and macOS parity for two iOS features. **No re-index** — ready immediately.
+Build 32 is a feature wave: broken cross-references are labeled instead of dead-ending, people can be merged by hand, volumes get Top subjects profiles, Citation Lookup results open in their own window, and the series dashboards gain scoping. **One-time re-index** — first launch rebuilds the cross-reference index (v22) in the background; it may take a while on a large library, but the app stays usable. It also fixes some cross-volume page references that pointed at the wrong document in graphs and analytics.
 
-## Archival Neighbors (windows)
-- **Scope selector** — the Archival Neighbors window (and the inline Source Explorer "Documents from This Collection" section) now has a **This volume / This subseries / All indexed volumes** control that re-runs the list in place. A document opens at *All indexed volumes*; a volume's Sources entry opens at *This volume*. The chosen scope is part of the window's identity, so it restores on relaunch, and the same source returns the same set of *other* documents whichever action opened it (a document window excludes the document you started from).
+## Cross-References
+- **Unresolvable links are labeled** — cross-references that corpus-wide validation confirms can't be followed (the print edition cites a page, document, or volume absent from the digital corpus) now render in muted grey with a dotted underline and a small dagger, instead of looking like working links. Clicking one opens an **Unresolved Reference** sheet explaining why and the apparent destination. Valid references and the printed text are unchanged.
+- **Analytics disclosure** — when any fall in scope, Cross-Reference Analytics notes "N unresolvable references are excluded from this analysis".
+- **Report export** — the **Settings → Data** pane adds a **Broken Cross-References Report** (CSV or JSON) for reporting to the Office of the Historian.
 
-## Analytics (windows)
-- **Collapsible charts** — Person and Cross-Reference Analytics group their charts into collapsible sections, each with its own controls (chart/table toggle, the out-degree overlay); the shared toolbar is gone. Confirm expand/collapse persists.
-- **Cleaner cross-reference figures** — Cross-Reference Analytics no longer ranks non-document targets (page anchors, footnotes, index items, chapters, appendices) as "landmark documents"; un-downloaded landmarks read as "Document N — volume title" with a hint.
-- **Consistent subseries** — Corpus Analytics → **Subseries** now buckets early annual, conference, and supplement volumes by publication year to match the Corpus Browser.
+## People
+- **Manual merge** — **Merge with another person…** (in a person's detail sheet, or the row's context menu) merges two people into one identity, for cases the app's deliberately cautious automatic grouping kept apart. The confirmation names both and warns when they look like genuinely different people (distinct Office of the Historian identities). A **Corrections** toolbar button lists every merge and separation you've made, with undo; they sync via iCloud.
 
 ## Corpus Browser
-- **Early volumes browse without indexing** — a downloaded-but-unindexed early annual volume (e.g. an 1860s *Papers Relating to Foreign Affairs*) now opens its full front matter and chapters immediately, with a non-blocking **Index / Re-index** banner instead of a blocking "Index Required" wall. Full-text search, chapter document lists, and the connections graph still wait for indexing.
+- **Top subjects** — every volume shows the subjects most characteristic of it (from the Office of the Historian's subject data), grouped by category, visible before downloading. Click one to see the *other* FRUS volumes covering it corpus-wide (even undownloaded) and jump there.
 
-## Search (⇧⌘F)
-- **Live tag filter chips** — the Search window's **Advanced…** filter now has a **My Tags** section listing your tags that updates live when you create, rename, or delete a tag elsewhere (matching iOS); picking one narrows results immediately and lights the **Tagged** chip above the list.
-- **Checklist Mode button** — the checklist control in the sort bar is now an icon-plus-text **Checklist** button that reads without hovering and highlights while it's on.
+## Citation Lookup (⇧⌘F)
+- **Own-window results, Return to run** — the lookup form is now grouped and Return runs it; a result opens the document in its own window (with previous/next navigation), so the match list stays visible.
+- **Document-number lookups** — document-number citations now reliably find their document on indexed volumes.
 
-## Source Explorer & Citations
-- **Pre-1906 source links** — Source Explorer again resolves 19th-century / pre-1906 central-files citations to the right bundled reel-level / country-series link.
-- **Citation Lookup round-trip** — pasting a citation the app produced (⌘⇧F) reopens the *exact* document, including pre-1906 *Papers Relating to Foreign Affairs* part volumes where the title fragment disambiguates a print-year collision.
+## Analytics (windows)
+- **Series dashboard scoping** — each **About the Series** dashboard (Research Guide) gains a **Scope** control: **Whole series** / **By Subseries** (nested by decade). Archival Sourcing Over Time adds a **Categories** filter that re-bases the mix to the shown categories (the last visible one can't be hidden); Administration Production Profiles adds a year-range bar showing administrations overlapping the years. **Reset** clears both scope and year range.
+- **Administration presets** — Corpus and Cross-Reference Analytics add an Administration menu that sets the document-year range to a president's term in one click.
+- **Per-cloud word hiding** — a word's context menu can hide it from just the current cloud (it returns when the cloud regenerates), alongside the persistent global/per-lens lists; **Show N hidden words** restores all.
 
-## Collections (⇧⌘K)
-- **Window shows all projects by default** — the Collections window now lists collections from every project by default, with a banner offering **Scope to '<project>'** and **Show All** (previously it hard-filtered to the active project with no override).
+## Tags
+- **New Tag field on top** — the tag picker's New Tag field moved to the top; tags created in the sheet pin to the top with a **New** badge until it closes, and the title shows the document ("Tags - Doc N").
+
+## Performance
+- **Faster launch, smaller app** — a 9 MB synchronous parse was removed from launch; the app bundle is ~8.5 MB smaller.
 
 ## Feedback
-Report anything unexpected — especially wrong or empty Archival Neighbors after scoping, tag chips out of sync, an unindexed early volume that won't open, a Citation Lookup on the wrong document, or a pre-1906 source link that misses. Include your macOS version, the volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!
+Report anything unexpected — especially a working link shown as unresolvable (or vice versa), a merge/undo that misbehaves, wrong-looking Top subjects, or analytics that shift oddly after scoping. Include your macOS version, volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!

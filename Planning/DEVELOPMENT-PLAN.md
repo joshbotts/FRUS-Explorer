@@ -1398,3 +1398,56 @@ verify) per issue. Plan: Planning/Issues-207-219-Remediation-Plan.md.
   "What's New" files for build 31 (≤4000 chars each). No re-index (build 30 already shipped
   index v21; none of the 11 changed parse output). In-app help unchanged (all fixes/
   refinements, no new research concepts). Both schemes build clean; targeted test suites green.
+
+### Session 2026-07-08/10 — Issues 233–243 wave: wave 6 (build 32)
+Wave 6 per the committed plan (Planning/Issues-233-243-Plan.md, PR #244; revised 2026-07-09
+for the colleague data repos, PR #250). Each session ran an implement pass (Opus) plus an
+adversarial review pass (Fable) on its own branch off v2, self-merged.
+- **Session 1 (#237/#238/#242)** the two user-tag pickers consolidated into UserTagPickerSheet
+  (New Tag field moved to the top; sheet-created tags pin to the top with a "New" badge until
+  the sheet closes; "Tags - Doc N" title); iOS Browse two-line nav titles at the
+  volume/compilation levels; iPad Browse flattened to NavigationStack with the pinned
+  breadcrumb suppressed + an iPad UI-obstruction regression test; BoundedTitleHeader and
+  shared pieces extracted into SupportingViews — PR #245.
+- **Session 2 (#233/#239)** word cloud "Hide in this word cloud" context-menu action
+  (non-persistent, per-generation; "Show N hidden words" restores) beside the persistent
+  global/per-lens lists; macOS Citation Lookup platform fit (grouped form, Return submits,
+  results open the document in its own window with working prev/next so the match list stays
+  visible) — PR #247. Follow-up: document-number citations resolve via a deterministic lookup
+  instead of keyword search — PR #248.
+- **Session 3 (#236)** Scope control (Whole series / By Subseries, decade-nested submenus) on
+  every "About the Series" dashboard; SA-3 provenance Categories filter (re-bases the mix;
+  the last visible category can't be hidden); SA-2b year-range bar (administration
+  term-overlap); Reset clears scope + year range together; Corpus + Cross-Reference Analytics
+  gain an Administration year-range preset menu; SeriesChartCard extracted — PR #249.
+- **Session 4 (#243)** manual person merge: "Merge with another person…" in the detail sheet
+  or the row context menu; confirmation names both people and warns on distinct OOH
+  identities; "Corrections" toolbar manager lists every merge/separation with per-item undo;
+  corrections sync via CloudKit; backend fingerprint-staleness fix — PR #252.
+- **Session 6 (#240A)** offline cross-reference validation generator:
+  CrossRefValidationGenerator (SPM-only; the shared CrossRefKit grammar parity-tested against
+  the app's resolver) byte-scans the local corpus → broken-refs-report.csv/.json (the
+  OH-submittable report) + the candidate bundled exclusion index — PR #254.
+- **Session 7 (#240B)** app half: known-unresolvable cross-references render muted grey with
+  a dotted underline + dagger instead of as working links; tapping opens an "Unresolved
+  Reference" sheet (reason + apparent destination); Cross-Reference Analytics captions
+  "N unresolvable references are excluded from this analysis" when any fall in scope; Broken
+  Cross-References Report export (CSV/JSON — iOS Settings > Export Research Data, macOS
+  Settings > Data pane); **currentDateIndexVersion 21→22** — the one-time background re-index
+  also repairs the v21 defect that indexed some cross-volume page references against the
+  wrong document in graphs/analytics — PR #255.
+- **Session 9** volume subject profiles: VolumeSubjectProfilesGenerator aggregates the OOH
+  frus-subjects document–subject data into a per-volume "Top subjects" profile (~224KB
+  bundled); volume detail on both platforms shows category-grouped top subjects even
+  pre-download; tapping a subject lists the other volumes covering it corpus-wide (incl.
+  undownloaded) with navigation; the dead document-level subject-tag machinery retired
+  (~81 ms main-thread launch win; bundle ~8.5 MB smaller) — PR #251.
+- **Plan close (PR #257):** with Fable review-pass usage near its allowance the owner closed
+  the wave after Sessions 1–7 + 9. Session 8 (#234-M0 POCOM + colleague-data person
+  enrichment) and Session R (#241 iPad windowing investigation) deferred to a future wave;
+  their plan sections stay intact so the next wave opens straight from them.
+- **Closing Session (this branch):** consolidated docs pass (both manuals, TestFlight
+  "What's New", README, in-app Research Guide/education views — scope pickers + presets,
+  unresolvable-reference explanation + report export, volume subject profiles; POCOM/
+  Wikidata-VIAF explicitly excluded as not shipped) + **build 31 → 32** (project.yml +
+  project.pbxproj, no xcodegen; MARKETING_VERSION 0.2 unchanged).

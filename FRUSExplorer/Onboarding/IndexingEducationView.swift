@@ -78,6 +78,11 @@ import SwiftUI
 ///          sections and a "% of documents" normalization note; page 7 Collections
 ///          notes the two Sort-by-Date modes; struct doc corrected to eleven pages
 ///          and the `Docs/EditableContent.md` mirror path
+///   1.13 — 233–243 wave docs pass: page 3 gains "When a Cross-Reference Leads
+///          Nowhere" (#240 validation, degraded links, OH report); page 5 gains
+///          "Top Subjects on Volumes" and a person-index identity-curation
+///          paragraph (#243); page 6 notes the unresolvable-reference exclusion
+///          disclosure and the Administration presets (#236)
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -727,6 +732,14 @@ private extension EducationPage {
                 ]
             ),
             EducationSection(
+                id: "broken-references",
+                heading: "When a Cross-Reference Leads Nowhere",
+                paragraphs: [
+                    "The printed volumes cite each other constantly — \"see page 700,\" \"see Document 42.\" Because pre-digital volumes were retyped from the printed books and their cross-references retroactively tagged, a small number cite a page, document, or volume that does not exist in the digital corpus. The app ships a corpus-wide validation of every cross-reference (about 2.7 million checked), so it knows exactly which ones cannot be followed.",
+                    "A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many). From Settings you can export the full Broken Cross-References Report — the same dataset is reported to the Office of the Historian to support corrections to the digital editions."
+                ]
+            ),
+            EducationSection(
                 id: "classifications",
                 heading: "Excisions",
                 paragraphs: [
@@ -836,6 +849,15 @@ private extension EducationPage {
                 ]
             ),
             EducationSection(
+                id: "volume-subjects",
+                heading: "Top Subjects on Volumes",
+                systemImage: "tag",
+                paragraphs: [
+                    "Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category. They are surfaced at the volume grain deliberately: subject tagging is too noisy to trust document by document, but it becomes a reliable signal aggregated across a whole volume.",
+                    "Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library."
+                ]
+            ),
+            EducationSection(
                 id: "chronology",
                 heading: "Chronology",
                 systemImage: "calendar.day.timeline.left",
@@ -850,6 +872,7 @@ private extension EducationPage {
                 systemImage: "person.2",
                 paragraphs: [
                     "An alphabetical directory of everyone named across your indexed volumes. Select a person to see every document that mentions them — a fast way to follow an individual policymaker, diplomat, or foreign leader through the record.",
+                    "The app groups a person's appearances across volumes automatically, but it is deliberately cautious — it won't merge two entries unless it is confident they are the same person, so some people appear more than once. You can finish the job by hand: merge two entries from a person's detail (or a row's context menu), and undo any merge or separation later from the Corrections list. Your corrections sync across your devices.",
                     "Find it in the Corpus Browser's People section."
                 ]
             ),
@@ -921,7 +944,8 @@ private extension EducationPage {
                 systemImage: "point.3.connected.trianglepath.dotted",
                 paragraphs: [
                     "Where the graph traces one document\u{2019}s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network\u{2019}s shape \u{2014} a few heavily-cited landmarks and a long tail \u{2014} a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of \u{201C}landmark\u{201D} documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.",
-                    "These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes.",
+                    "These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes. References the corpus-wide validation has confirmed unresolvable are excluded, and the caption discloses how many fell in the current scope.",
+                    "An Administration menu sets the document-year range to a president\u{2019}s term in one tap; the same presets appear in Corpus Analytics.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac)."
                 ]
             ),
