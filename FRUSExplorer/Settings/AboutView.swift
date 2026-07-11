@@ -132,6 +132,7 @@ struct AboutView: View {
             attributionSection
             openSourceSection
             naraDisclaimerSection
+            dosDisclaimerSection
         }
         #if os(iOS)
         .listStyle(.insetGrouped)
@@ -213,23 +214,6 @@ The **Foreign Relations of the United States** (FRUS) series is the official \
 documentary record of U.S. foreign policy. The Department of State has \
 published FRUS continuously since 1861. The series now comprises more than \
 550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
-
-Today, the Office of the Historian at the Department of State produces the \
-series under a [1991 federal statute](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351) \
-that requires the series to provide a "thorough, accurate, and reliable \
-documentary record of major United States foreign policy decisions and \
-significant United States diplomatic activity." To fulfill this mandate, the \
-historians who produce FRUS consult records from the White House, National \
-Security Council, Departments of State and Defense, the CIA, other U.S. \
-Government agencies, and sometimes even the private papers of key \
-policymakers to identify the most critical documentation for editorial \
-annotation, declassification, and publication.
-
-The statute requires that this work be guided by historical objectivity: \
-records may not be altered without acknowledgment, no fact of major \
-importance in reaching a decision should be omitted, and information should \
-not be withheld to conceal a defect in policy. Volumes should be published \
-within 30 years of the events they document.
 
 While the content of the series has shifted over time, recent FRUS volumes \
 cover U.S. bilateral and regional relations across the globe; U.S. \
@@ -445,6 +429,23 @@ to their terms of use.
                 )
                 .accessibilityAddTraits(.isLink)
             }
+        }
+    }
+
+    // MARK: - DOS Disclaimer
+
+    @ViewBuilder
+    private var dosDisclaimerSection: some View {
+        Section(String(localized: "about.dos.header",
+                       defaultValue: "Department of State")) {
+            Text(String(localized: "about.dos.disclaimer",
+                        defaultValue: """
+FRUS Explorer is an independently-developed research tool and is not an \
+official product of the Office of the Historian or the U.S. Department of \
+State. The FRUS series itself is a public domain resource.
+"""))
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
     }
 }

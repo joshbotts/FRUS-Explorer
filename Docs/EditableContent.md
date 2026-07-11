@@ -21,15 +21,11 @@ lists, and changing headings.
 
 ### 1.1 FRUS Series Description
 
-*This is Markdown source — it renders with an inline link on "1991 federal statute". Keep the `[text](url)` link syntax intact.*
+*This is Markdown source — the series name renders bold. Keep the `**text**` emphasis intact.*
 
 <!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: frusDescriptionRaw | lines: 210–243 | key: about.frus.description -->
 
 The **Foreign Relations of the United States** (FRUS) series is the official documentary record of U.S. foreign policy. The Department of State has published FRUS continuously since 1861. The series now comprises more than 550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
-
-Today, the Office of the Historian at the Department of State produces the series under a [1991 federal statute](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351) that requires the series to provide a "thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity." To fulfill this mandate, the historians who produce FRUS consult records from the White House, National Security Council, Departments of State and Defense, the CIA, other U.S. Government agencies, and sometimes even the private papers of key policymakers to identify the most critical documentation for editorial annotation, declassification, and publication.
-
-The statute requires that this work be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision should be omitted, and information should not be withheld to conceal a defect in policy. Volumes should be published within 30 years of the events they document.
 
 While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
 
@@ -70,6 +66,16 @@ TEI rendering approaches informed by the TEI Publisher project (teipublisher.com
 FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration (NARA). NARA Catalog data accessed through this app is provided by the National Archives and is subject to their terms of use.
 
 <!-- END SOURCE: about.nara.disclaimer -->
+
+---
+
+### 1.5 DOS Disclaimer
+
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: dosDisclaimerSection | lines: 438–448 | key: about.dos.disclaimer -->
+
+FRUS Explorer is an independently-developed research tool and is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is a public domain resource.
+
+<!-- END SOURCE: about.dos.disclaimer -->
 
 ---
 
@@ -372,7 +378,7 @@ Find it on the Browse tab (iOS) or the Corpus Browser window, ⇧⌘B (Mac).
 
 **Top Subjects on Volumes**
 
-Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category. They are surfaced at the volume grain deliberately: subject tagging is too noisy to trust document by document, but it becomes a reliable signal aggregated across a whole volume.
+Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category.
 
 Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.
 
@@ -398,7 +404,7 @@ Find it in the Corpus Browser's People section.
 
 **Find by Citation**
 
-Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app resolves it straight to the document — no manual hunting through volumes and document numbers.
+Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app helps you look for the right document — no manual hunting through volumes and document numbers.
 
 Find it in the Search screen's overflow (More) menu.
 
@@ -420,11 +426,11 @@ Find it in the Search screen's overflow (More) menu.
 
 Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.
 
-A caution: FRUS volumes are selective, uneven proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. Analytics runs entirely on your local index; no network connection is required.
+A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The "% of documents" toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count — the percentage of that period's documents that contain it — so a term doesn't look like it is surging simply because the series published more in later decades.
 
-The By-Year and By-Decade charts colour-code each period by its top source volumes; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into "Other."
+On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into "Other."
 
-On those same two charts, a "% of documents" toggle reads a term as a share of the corpus rather than a raw count — the percentage of that period's documents that contain it — so a term doesn't look like it is surging simply because the series published more in later decades.
+Analytics runs entirely on your local index; no network connection is required.
 
 Find it from the Browse tab's Analysis Tools menu (iOS) or the Corpus Analytics window (Mac).
 
@@ -432,9 +438,9 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Corpus Analytics 
 
 **Person Analytics**
 
-Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period's dated documents), and — when exactly two people are selected — draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.
+Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people that were tagged by Office of the Historian editors during production appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period's dated documents), and — when exactly two people are selected — draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.
 
-Mentions come only from documents the app can place on a date, and FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
+Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
 
 Find it from the Browse tab's Analysis Tools menu (iOS) or the Person Analytics window (Mac).
 
@@ -464,7 +470,9 @@ Find it from a document's toolbar (iOS) or the Graph window (Mac).
 
 Where the graph traces one document's neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network's shape — a few heavily-cited landmarks and a long tail — a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of "landmark" documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.
 
-These are structural measures of how the editors linked documents, not a claim about historical importance, and they count only resolved citations in your indexed volumes. References the corpus-wide validation has confirmed unresolvable are excluded, and the caption discloses how many fell in the current scope.
+These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record.
+
+Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.
 
 An Administration menu sets the document-year range to a president's term in one tap; the same presets appear in Corpus Analytics.
 
@@ -474,13 +482,13 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Cross-Reference A
 
 **Source Explorer & NARA Catalog**
 
-Open the Source Explorer from any document to read its source note broken into structured archival fields, and to follow detected citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.
+Open the Source Explorer from any document to read its source note broken into structured archival fields detected during indexing, and to follow citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.
 
-You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies use a free NARA Catalog API key you add in Settings.
+You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies rely on a free NARA Catalog API key you can request from the National Archives and then add in Settings.
 
-From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document's row in a volume's sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.
+From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same detected archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document's row in a volume's sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.
 
-A volume's front matter names the archival collections its editors drew on. In the volume's Sources section, each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app's cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series.
+More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — becomes linked straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app's cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series.
 
 <!-- section-id: timeline -->
 
@@ -542,7 +550,7 @@ Sending to Zotero is one action: connect a Zotero account (Settings → Zotero) 
 
 **AI Summaries**
 
-Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be exported alongside documents in collections; every summary in an exported collection is labeled as AI-generated content attributed to Apple Intelligence. Treat them as orientation only: always read the primary document yourself for your actual research.
+Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be used as first drafts of research notes that you revise or exported alongside documents in collections; every summary in an exported collection is labeled as AI-generated content attributed to Apple Intelligence. Treat them as orientation only: always read the primary document yourself for your actual research.
 
 To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, or date range unattended, reporting progress as it goes — so a stack of summaries is ready when you return.
 
@@ -641,7 +649,7 @@ The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Admi
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 108–109 | key: series.provenance.intro -->
 
-Where did the editors of Foreign Relations of the United States find the documents they published? Every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's Central Decimal File in the early twentieth century, through the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes.
+Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's central files until the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes.
 
 <!-- END SOURCE: series.provenance.intro -->
 
@@ -665,7 +673,7 @@ How many source notes across the whole series (from 1900) cite each kind of arch
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 248–249 | key: series.provenance.density.caption -->
 
-How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base; a share in a thin decade rests on far fewer documents.
+How many source notes each decade contributes — the density behind the shares above. The 1940s carry the deepest base. Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. Those decades will look different as new volumes are released.
 
 <!-- END SOURCE: series.provenance.density.caption -->
 
@@ -673,7 +681,7 @@ How many source notes each decade contributes — the density behind the shares 
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 294–295 | key: series.provenance.caveats.body -->
 
-These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. "Other / Unclassified" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1960 central filing system, the Central Foreign Policy File its post-1960 successor, lot files are bureau and office working files, and presidential libraries hold the White House records that dominate the modern volumes. Above all, these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives.
+These figures are derived by parsing each document's source note — the citation naming where its archival original was found — not from a catalog of the archives. "Other / Unclassified" is a citation form the parser could not classify, not the absence of a source note. Coverage spans 522 of the 552 catalogued volumes. Pre-1900 volumes are largely published diplomatic correspondence carrying no archival source notes, so the trend begins around 1900; those early retrospective compilations are excluded from the charts. The categories map to State Department filing practice: the Central Decimal File is the pre-1963 central filing system; the Central Foreign Policy File its post-1963 successor; lot files were maintained by individual bureaus, offices, and posts; and presidential libraries hold the White House records that dominate modern volumes. Remember that these counts reflect where FRUS editors drew documents — an editorial and archival signal — rather than a full census of the underlying archives.
 
 <!-- END SOURCE: series.provenance.caveats.body -->
 
@@ -703,12 +711,16 @@ Editorial-note documents carry a span of dates rather than a single date; includ
 
 How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both.
 
+Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released.
+
 <!-- END SOURCE: series.admin.docs.caption -->
 
 #### Chart 2 subtitle — Volumes per administration-year
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.volumesPerYearChart | lines: 213–214 | key: series.admin.perYear.caption | shared: iOS+macOS (single edit point) -->
 
 How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted.
+
+Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released.
 
 <!-- END SOURCE: series.admin.perYear.caption -->
 
@@ -763,7 +775,7 @@ The individual place tags carried by the most volumes — the concrete detail be
 #### Regional-bureau mapping footnote
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 306–307 | key: series.geography.caveats.body -->
 
-Place tags are volume-level editorial tags: a volume "touches" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear.
+Place tags are volume-level editorial tags: a volume "touches" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear.
 
 <!-- END SOURCE: series.geography.caveats.body -->
 

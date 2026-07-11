@@ -273,7 +273,7 @@ struct AdministrationProfilesDashboard: View {
             title: String(localized: "series.admin.docs.title",
                           defaultValue: "Documents per administration"),
             caption: String(localized: "series.admin.docs.caption",
-                            defaultValue: "How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both."),
+                            defaultValue: "How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both.\n\nNote that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
             inspector: ChartInspectorAdapters.administrationDocumentsTable(profiles)
         ) {
             Chart {
@@ -325,7 +325,7 @@ struct AdministrationProfilesDashboard: View {
             title: String(localized: "series.admin.perYear.title",
                           defaultValue: "Volumes per administration-year"),
             caption: String(localized: "series.admin.perYear.caption",
-                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted."),
+                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted.\n\nNote that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
             inspector: ChartInspectorAdapters.administrationVolumesPerYearTable(profiles)
         ) {
             Chart {
