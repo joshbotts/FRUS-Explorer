@@ -1056,7 +1056,7 @@ final class PDFCollectionExporter: CollectionExporter {
             var attrs = makeAttrs(fontSize: max(fontSize - 3, 6), bold: false)
             attrs[NSAttributedString.Key(kCTSuperscriptAttributeName as String)] = 1 as CFNumber
             return NSAttributedString(string: label, attributes: attrs)
-        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, let c):
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
             return inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: italic)
         case .pageBreak:
             return NSAttributedString()

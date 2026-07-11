@@ -41,6 +41,8 @@ import Foundation
 ///          whose text matches a glossary term are emitted as `.glossLink` nodes so they
 ///          render with the accent-coloured dotted underline and open `GlossDetailSheet`
 ///          on tap, identical to explicit `<gloss ref="…">` elements.
+///   1.5 — Session 7 / #240B: `brokenRefLookup` added; `crossRefLink` carries the
+///          broken-ref payload so validated-dead references render as explained spans.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -103,7 +105,7 @@ public struct ASTToRenderNodeConverter {
                  .titlePageBlock(let c), .attachmentHeading(let c):
                 result += flatText(c)
             case .persNameLink(_, let c, _), .glossLink(_, let c, _),
-                 .crossRefLink(_, _, let c), .attachmentBlock(_, let c),
+                 .crossRefLink(_, _, _, let c), .attachmentBlock(_, let c),
                  .unknown(_, let c):
                 result += flatText(c)
             }
@@ -132,6 +134,13 @@ public struct ASTToRenderNodeConverter {
     /// `nil` (default) means `<abbr>` elements are rendered as plain text without linking.
     public var abbrLookup: ((String) -> GlossEntry?)?
 
+    /// Returns broken-ref detail for a raw `<ref target>` value, or `nil` when the ref resolves
+    /// (or is a non-degradable `malformedTarget` the store already filters). Closes over the source
+    /// volume so the lookup is volume-scoped. When it returns non-nil the `<ref>` renders as a
+    /// non-navigable explained span (issue #240B). `nil` (default) keeps every cross-reference live
+    /// — so exporters, which inject no lookup, are unaffected.
+    public var brokenRefLookup: ((String) -> BrokenRefInfo?)?
+
     // MARK: State
 
     private var footnoteCounter = 0
@@ -141,10 +150,12 @@ public struct ASTToRenderNodeConverter {
 
     public init(personLookup: ((String) -> PersonEntry?)? = nil,
                 glossLookup: ((String) -> GlossEntry?)? = nil,
-                abbrLookup: ((String) -> GlossEntry?)? = nil) {
+                abbrLookup: ((String) -> GlossEntry?)? = nil,
+                brokenRefLookup: ((String) -> BrokenRefInfo?)? = nil) {
         self.personLookup = personLookup
         self.glossLookup = glossLookup
         self.abbrLookup = abbrLookup
+        self.brokenRefLookup = brokenRefLookup
     }
 
     // MARK: - Public API
@@ -237,7 +248,11 @@ public struct ASTToRenderNodeConverter {
             return [.glossLink(ref: normRef, children: convertNodes(children), entry: entry)]
 
         case .crossReference(let target, let volumeId, let children):
-            return [.crossRefLink(target: target, volumeId: volumeId, children: convertNodes(children))]
+            // `target` is the verbatim `@target` attribute — the exact key the broken-refs index
+            // is keyed on. A non-nil result renders as a non-navigable explained span.
+            let broken = brokenRefLookup?(target)
+            return [.crossRefLink(target: target, volumeId: volumeId, broken: broken,
+                                  children: convertNodes(children))]
 
         case .emphasis(let style, let children):
             let inner = convertNodes(children)

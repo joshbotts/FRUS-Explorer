@@ -99,6 +99,8 @@ private struct HeatCell: Identifiable, Equatable {
 ///   1.1 — Session 3 / #236: administration preset menu beneath the year-range bar
 ///          (one tap sets the document-year range to a president's term, bounded
 ///          and clamped to the corpus span)
+///   1.2 — Session 7 / #240B: broken-reference disclosure — `excludedBrokenCount`
+///          fetched per scope and appended to the resolved caption when non-zero
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -122,6 +124,8 @@ struct CrossReferenceAnalyticsView: View {
     @State private var matrixCells: [HeatCell] = []
     @State private var matrixMaxCount: Int = 0
     @State private var landmarks: [LandmarkRow] = []
+    /// Count of unresolvable references excluded from the current scope (#240B); drives the footnote.
+    @State private var excludedBrokenCount: Int = 0
 
     @State private var viewMode: AnalyticsViewMode = .chart
     @State private var showOutDegree = false
@@ -348,11 +352,19 @@ struct CrossReferenceAnalyticsView: View {
     }
 
     private var resolvedCaption: some View {
-        Text(String(localized: "crossRefAnalytics.resolvedCaption",
-                    defaultValue: "The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "crossRefAnalytics.resolvedCaption",
+                        defaultValue: "The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
+            // No accessibilityLabel override: the explanatory clause exists nowhere else in the
+            // view, so VoiceOver must read the full visible caption.
+            if excludedBrokenCount > 0 {
+                Text(String(localized: "crossRefAnalytics.excludedBrokenCaption",
+                            defaultValue: "\(excludedBrokenCount) unresolvable references are excluded from this analysis — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus."))
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal)
     }
 
     // MARK: - Most-referenced documents
@@ -774,6 +786,9 @@ struct CrossReferenceAnalyticsView: View {
         // document-level figures; the heat matrix reuses the scope as its both-endpoints filter.
         let range = effectiveYearRange
         let scope = scopeVolumeIds
+
+        // Unresolvable references excluded from this scope (#240B) — disclosed in the caption.
+        excludedBrokenCount = (try? await store.excludedBrokenCount(yearRange: range, volumeIds: scope)) ?? 0
 
         // In-degree ranking.
         let topDocs = (try? await store.topDocumentsByInDegree(limit: Self.rankingLimit, yearRange: range, volumeIds: scope)) ?? []

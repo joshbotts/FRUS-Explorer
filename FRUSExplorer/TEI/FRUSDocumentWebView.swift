@@ -76,6 +76,9 @@ public struct FRUSDocumentWebView: View {
     /// Called with the target document ID and optional source volume ID.
     public var onCrossRefTap: ((String, String?) -> Void)? = nil
 
+    /// Called with the broken-ref detail (or `nil`) when an unresolvable `<ref>` is tapped.
+    public var onBrokenRefTap: ((BrokenRefInfo?) -> Void)? = nil
+
     // MARK: Selection callbacks (Session 145)
 
     /// Called with `(start, end, text)` when the user selects text in the WKWebView.
@@ -126,6 +129,7 @@ public struct FRUSDocumentWebView: View {
             onPersonTap:        onPersonTap,
             onGlossTap:         onGlossTap,
             onCrossRefTap:      onCrossRefTap,
+            onBrokenRefTap:     onBrokenRefTap,
             onSelectionChanged: onSelectionChanged,
             onSelectionCleared: onSelectionCleared,
             onHighlightTapped:  onHighlightTapped
@@ -139,6 +143,7 @@ public struct FRUSDocumentWebView: View {
             onPersonTap:        onPersonTap,
             onGlossTap:         onGlossTap,
             onCrossRefTap:      onCrossRefTap,
+            onBrokenRefTap:     onBrokenRefTap,
             onSelectionChanged: onSelectionChanged,
             onSelectionCleared: onSelectionCleared,
             onHighlightTapped:  onHighlightTapped,
@@ -383,6 +388,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
+    var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
     var onSelectionChanged: ((Int, Int, String) -> Void)?
     var onSelectionCleared: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
@@ -432,6 +438,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             context.coordinator.schemeHandler?.onPersonTap   = onPersonTap
             context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
+            context.coordinator.schemeHandler?.onBrokenRefTap = onBrokenRefTap
             let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
             webView.loadHTMLString(html, baseURL: nil)
         } else if highlightsChanged {
@@ -508,6 +515,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
+    var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
     var onSelectionChanged: ((Int, Int, String) -> Void)?
     var onSelectionCleared: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
@@ -565,6 +573,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
             context.coordinator.schemeHandler?.onPersonTap   = onPersonTap
             context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
+            context.coordinator.schemeHandler?.onBrokenRefTap = onBrokenRefTap
             let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
             webView.loadHTMLString(html, baseURL: nil)
         } else if highlightsChanged {

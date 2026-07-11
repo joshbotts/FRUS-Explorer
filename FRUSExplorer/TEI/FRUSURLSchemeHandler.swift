@@ -77,10 +77,16 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     /// Called with the target document ID and optional source volume ID.
     var onCrossRefTap: ((String, String?) -> Void)?
 
+    /// Called with the broken-ref detail (or `nil`) when an unresolvable `<ref>` is tapped.
+    var onBrokenRefTap: ((BrokenRefInfo?) -> Void)?
+
     // MARK: - Ref lookup tables
 
     private var personsByRef: [String: PersonEntry] = [:]
     private var glossByRef:   [String: GlossEntry]  = [:]
+    /// Broken-ref detail keyed by the verbatim `target` (the value the serializer percent-encodes
+    /// into the `brokenref` href, decoded back on dispatch).
+    private var brokenByRef:  [String: BrokenRefInfo] = [:]
 
     // MARK: - Registration
 
@@ -98,14 +104,16 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     func register(model: FRUSDocumentRenderModel) {
         var persons: [String: PersonEntry] = [:]
         var gloss:   [String: GlossEntry]  = [:]
-        Self.scan(nodes: model.bodyNodes, persons: &persons, gloss: &gloss)
-        Self.scan(nodes: model.footnotes, persons: &persons, gloss: &gloss)
+        var broken:  [String: BrokenRefInfo] = [:]
+        Self.scan(nodes: model.bodyNodes, persons: &persons, gloss: &gloss, broken: &broken)
+        Self.scan(nodes: model.footnotes, persons: &persons, gloss: &gloss, broken: &broken)
         personsByRef = persons
         glossByRef   = gloss
+        brokenByRef  = broken
 
         #if DEBUG
         print("[FRUSURLSchemeHandler] registered model \(model.documentId): "
-              + "\(persons.count) persons, \(gloss.count) gloss entries")
+              + "\(persons.count) persons, \(gloss.count) gloss entries, \(broken.count) broken refs")
         #endif
     }
 
@@ -144,6 +152,15 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             guard let target = parts.first else { return }
             let volumeId: String? = parts.count >= 2 ? parts[1] : nil
             onCrossRefTap?(target, volumeId)
+
+        case "brokenref":
+            // URL: frusexplorer://brokenref/{target} — a dead cross-reference. Never navigates;
+            // presents the explanation sheet with the registered detail. The serializer encodes
+            // the target with the strict alphanumeric charset and `URL.pathComponents` already
+            // percent-decodes once, so use the single-decoded component — the doubly-decoded
+            // `parts` would corrupt a target containing a literal '%' sequence.
+            guard let target = url.pathComponents.filter({ $0 != "/" }).first else { return }
+            onBrokenRefTap?(brokenByRef[target])
 
         default:
             break
@@ -235,7 +252,8 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     private static func scan(
         nodes: [FRUSRenderNode],
         persons: inout [String: PersonEntry],
-        gloss: inout [String: GlossEntry]
+        gloss: inout [String: GlossEntry],
+        broken: inout [String: BrokenRefInfo]
     ) {
         for node in nodes {
             switch node {
@@ -245,14 +263,14 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
                     let key = r.hasPrefix("#") ? String(r.dropFirst()) : r
                     persons[key] = p
                 }
-                scan(nodes: children, persons: &persons, gloss: &gloss)
+                scan(nodes: children, persons: &persons, gloss: &gloss, broken: &broken)
 
             case .glossLink(let ref, let children, let entry):
                 if let r = ref, let e = entry {
                     let key = r.hasPrefix("#") ? String(r.dropFirst()) : r
                     gloss[key] = e
                 }
-                scan(nodes: children, persons: &persons, gloss: &gloss)
+                scan(nodes: children, persons: &persons, gloss: &gloss, broken: &broken)
 
             // Container nodes — recurse into children
             case .heading(let cs), .dateline(let cs), .paragraph(let cs),
@@ -261,27 +279,28 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
                  .underlineText(let cs), .termText(let cs), .suppliedText(let cs),
                  .sicText(let cs), .corrText(let cs), .editorialNoteBlock(let cs),
                  .titlePageBlock(let cs), .attachmentHeading(let cs):
-                scan(nodes: cs, persons: &persons, gloss: &gloss)
+                scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
-            case .crossRefLink(_, _, let cs):
-                scan(nodes: cs, persons: &persons, gloss: &gloss)
+            case .crossRefLink(_, _, let brokenInfo, let cs):
+                if let brokenInfo { broken[brokenInfo.target] = brokenInfo }
+                scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
             case .attachmentBlock(_, let cs), .unknown(_, let cs):
-                scan(nodes: cs, persons: &persons, gloss: &gloss)
+                scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
             case .footnoteBody(_, _, _, _, _, let cs):
-                scan(nodes: cs, persons: &persons, gloss: &gloss)
+                scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
             case .tableBlock(let rows):
                 for row in rows {
                     for cell in row {
-                        scan(nodes: cell.children, persons: &persons, gloss: &gloss)
+                        scan(nodes: cell.children, persons: &persons, gloss: &gloss, broken: &broken)
                     }
                 }
 
             case .listBlock(_, let items):
                 for item in items {
-                    scan(nodes: item, persons: &persons, gloss: &gloss)
+                    scan(nodes: item, persons: &persons, gloss: &gloss, broken: &broken)
                 }
 
             default:

@@ -715,4 +715,66 @@ struct CrossReferenceStoreTests {
         #expect(try await store.resolvedOutDegrees().sorted() == [1, 1])
         #expect(try await store.resolvedInDegrees() == [2])
     }
+
+    // MARK: - Broken-reference exclusion (#240B)
+
+    @Test("Broken edges are excluded from graph, degree, and count queries")
+    func brokenEdgesExcluded() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // A live edge and a broken edge sharing the same source document.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "src", targetVolumeId: nil, targetDocumentId: "d5")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "src", targetVolumeId: nil, targetDocumentId: "dX")
+        try setBroken(dbURL: dbURL, sourceVolumeId: "vol1", targetDocumentId: "dX")
+
+        // Outbound edges: only the live d5 survives.
+        let out = try await store.outboundEdges(forDocumentId: "src", volumeId: "vol1")
+        #expect(out.map(\.targetDocumentId) == ["d5"])
+
+        // Inbound to the broken target returns nothing.
+        #expect(try await store.inboundEdges(forDocumentId: "dX", volumeId: "vol1").isEmpty)
+        // Inbound to the live target still resolves.
+        #expect(try await store.inboundEdges(forDocumentId: "d5", volumeId: "vol1").count == 1)
+
+        // edgeCount excludes the broken edge (1 live outbound, not 2).
+        #expect(try await store.edgeCount(forDocumentId: "src", volumeId: "vol1") == 1)
+
+        // Degree queries and the disclosure count.
+        #expect(try await store.resolvedOutDegrees() == [1])
+        #expect(try await store.excludedBrokenCount() == 1)
+    }
+
+    @Test("excludedBrokenCount honors the source volume scope")
+    func excludedBrokenCountScoped() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol1", sourceDocumentId: "a", targetVolumeId: nil, targetDocumentId: "bad1")
+        try setBroken(dbURL: dbURL, sourceVolumeId: "vol1", targetDocumentId: "bad1")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "vol2", sourceDocumentId: "b", targetVolumeId: nil, targetDocumentId: "bad2")
+        try setBroken(dbURL: dbURL, sourceVolumeId: "vol2", targetDocumentId: "bad2")
+
+        #expect(try await store.excludedBrokenCount() == 2)
+        #expect(try await store.excludedBrokenCount(volumeIds: ["vol1"]) == 1)
+    }
+}
+
+// MARK: - Broken-flag helper
+
+/// Sets `is_broken = 1` on cross_reference rows matching `(sourceVolumeId, targetDocumentId)`.
+private func setBroken(dbURL: URL, sourceVolumeId: String, targetDocumentId: String) throws {
+    var db: OpaquePointer?
+    guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
+          let db else {
+        throw CrossReferenceError.databaseOpenFailed(message: "setBroken: cannot open")
+    }
+    defer { sqlite3_close_v2(db) }
+    let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    var stmt: OpaquePointer?
+    sqlite3_prepare_v2(db, "UPDATE cross_references SET is_broken = 1 WHERE source_volume_id = ? AND target_document_id = ?", -1, &stmt, nil)
+    defer { sqlite3_finalize(stmt) }
+    sqlite3_bind_text(stmt, 1, sourceVolumeId, -1, TRANSIENT)
+    sqlite3_bind_text(stmt, 2, targetDocumentId, -1, TRANSIENT)
+    sqlite3_step(stmt)
 }

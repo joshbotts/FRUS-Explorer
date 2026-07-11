@@ -30,6 +30,8 @@ import TipKit
 ///          reused with a frozen selection capture (creation path b)
 ///   Session 09: `subjectTagStore` no longer passed to `DocumentViewModel` (the
 ///         document-level subject taxonomy was retired).
+///   1.3 — Session 7 / #240B: `brokenRefExplanation` — the explanation sheet for
+///          unresolvable cross-references degraded by the broken-refs index.
 enum DocumentSheet: Identifiable {
     case personDetail(PersonEntry)
     case glossDetail(GlossEntry)
@@ -55,11 +57,14 @@ enum DocumentSheet: Identifiable {
     case glossNotFound
     /// User selected text in the document and chose "Look Up in NARA Catalog".
     case naraLookup(text: String)
+    /// An unresolvable cross-reference was tapped — explains why it can't be followed (#240).
+    case brokenRefExplanation(BrokenRefInfo)
 
     var id: String {
         switch self {
         case .personDetail(let p):             return "person-\(p.ref)"
         case .glossDetail(let g):              return "gloss-\(g.term)"
+        case .brokenRefExplanation(let i):     return "brokenRef-\(i.id)"
         case .citation:                        return "citation"
         case .noteEditor:                      return "noteEditor"
         case .noteEditorForHighlight(let hId): return "noteEditorForHighlight-\(hId)"
@@ -591,6 +596,9 @@ struct DocumentView: View {
                 glossNotFoundSheet
             case .naraLookup(let text):
                 NARACatalogLookupView(initialText: text)
+            case .brokenRefExplanation(let info):
+                BrokenRefExplanationSheet(info: info)
+                    .presentationDetents([.medium])
             }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
@@ -1387,6 +1395,9 @@ struct DocumentView: View {
                 },
                 onCrossRefTap: { target, targetVolumeId in
                     handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
+                },
+                onBrokenRefTap: { info in
+                    if let info { activeSheet = .brokenRefExplanation(info) }
                 }
             )
             .highlights(highlights)

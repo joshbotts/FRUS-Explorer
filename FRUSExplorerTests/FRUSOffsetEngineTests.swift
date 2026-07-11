@@ -230,13 +230,34 @@ struct FRUSOffsetEngineTests {
             .paragraph([
                 .plainText("See "),
                 .crossRefLink(target: "d42", volumeId: "frus1969-76v02",
-                              children: [.plainText("Document 42")]),
+                              broken: nil, children: [.plainText("Document 42")]),
                 .plainText(".")
             ])
         ])
         let swift = buildFlatText(from: m)
         let js    = try await jsFlatText(for: m)
         #expect(swift == "See Document 42.")
+        #expect(swift == js)
+    }
+
+    @Test("Broken crossRefLink: dagger marker is offset-invisible, children still contribute (#240B)")
+    func brokenCrossRefLink() async throws {
+        let info = BrokenRefInfo(target: "#pg_700", reason: "unknownPage",
+                                 resolvedVolume: "frus1872p2v3", resolvedAnchor: "pg_700")
+        let m = model(body: [
+            .paragraph([
+                .plainText("See "),
+                .crossRefLink(target: "#pg_700", volumeId: nil,
+                              broken: info, children: [.plainText("700")]),
+                .plainText(".")
+            ])
+        ])
+        let swift = buildFlatText(from: m)
+        let js    = try await jsFlatText(for: m)
+        // The serializer-injected dagger (†) must not enter the JS flat text — a counted
+        // dagger would shift every downstream highlight offset in the document.
+        #expect(swift == "See 700.")
+        #expect(!js.contains("\u{2020}"))
         #expect(swift == js)
     }
 

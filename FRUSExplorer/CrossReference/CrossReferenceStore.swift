@@ -33,6 +33,9 @@ import SQLite3
 ///          `topDocumentsByInDegree(limit:)`, `resolvedInDegrees()`, `resolvedOutDegrees()`,
 ///          and `resolvedCitationEdges()` (all resolved-target-only, for in-degree ranking,
 ///          the degree-distribution histogram, and the offline PageRank input)
+///   1.6 — Session 7 / #240B: `is_broken = 0` exclusion across every edge/degree/count
+///          query (validated-broken refs never reach graphs or analytics) +
+///          `excludedBrokenCount(yearRange:volumeIds:)` for the disclosure caption
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -345,6 +348,7 @@ public actor CrossReferenceStore {
             FROM cross_references
             WHERE target_document_id = ?
               AND COALESCE(target_volume_id, source_volume_id) = ?
+              AND is_broken = 0
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -366,6 +370,7 @@ public actor CrossReferenceStore {
             FROM cross_references
             WHERE source_document_id = ?
               AND source_volume_id = ?
+              AND is_broken = 0
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -471,6 +476,7 @@ public actor CrossReferenceStore {
             \(Self.sourceDateJoin(yearRange))
             WHERE cr.target_volume_id IS NOT NULL
               AND cr.target_volume_id != cr.source_volume_id
+              AND cr.is_broken = 0
             """
         let datePredicate = Self.sourceDatePredicate(yearRange)
         if !datePredicate.isEmpty { sql += "\n  AND \(datePredicate)" }
@@ -528,6 +534,7 @@ public actor CrossReferenceStore {
             FROM cross_references
             WHERE target_volume_id = ?
               AND source_volume_id != ?
+              AND is_broken = 0
             GROUP BY source_volume_id
             ORDER BY ref_count DESC
             """
@@ -545,6 +552,7 @@ public actor CrossReferenceStore {
             WHERE source_volume_id = ?
               AND target_volume_id IS NOT NULL
               AND target_volume_id != ?
+              AND is_broken = 0
             GROUP BY target_volume_id
             ORDER BY ref_count DESC
             """
@@ -589,8 +597,9 @@ public actor CrossReferenceStore {
     ) throws -> Int {
         let sql = """
             SELECT COUNT(*) FROM cross_references
-            WHERE (source_document_id = ? AND source_volume_id = ?)
-               OR (target_document_id = ? AND COALESCE(target_volume_id, source_volume_id) = ?)
+            WHERE is_broken = 0
+              AND ((source_document_id = ? AND source_volume_id = ?)
+                OR (target_document_id = ? AND COALESCE(target_volume_id, source_volume_id) = ?))
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -654,6 +663,11 @@ public actor CrossReferenceStore {
         AND cr.target_document_id NOT GLOB 'frus*' \
         AND cr.target_document_id NOT GLOB '*://*'
         """
+
+    /// Excludes cross-references the corpus validation dataset flags as unresolvable (#240B), so the
+    /// degree rankings / edge lists / analytics never count a dead reference. Uses the `cr` alias the
+    /// analytics queries assign.
+    private static let brokenExclusionPredicate = "cr.is_broken = 0"
 
     /// The bare `<columnExpr> IN (?, …)` predicate for a normalised volume scope, or `""` when nil.
     private static func volumeScopePredicate(_ scope: [String]?, columnExpr: String) -> String {
@@ -720,7 +734,7 @@ public actor CrossReferenceStore {
             LEFT JOIN document_cache dc
                    ON dc.volume_id = COALESCE(cr.target_volume_id, cr.source_volume_id)
                   AND dc.document_id = cr.target_document_id
-            \(Self.whereClause([Self.documentTargetPredicate,
+            \(Self.whereClause([Self.documentTargetPredicate, Self.brokenExclusionPredicate,
                                 Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY resolved_target_volume, cr.target_document_id
@@ -764,7 +778,7 @@ public actor CrossReferenceStore {
             SELECT COUNT(*) AS in_degree
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
-            \(Self.whereClause([Self.documentTargetPredicate,
+            \(Self.whereClause([Self.documentTargetPredicate, Self.brokenExclusionPredicate,
                                 Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY COALESCE(cr.target_volume_id, cr.source_volume_id), cr.target_document_id
@@ -778,6 +792,32 @@ public actor CrossReferenceStore {
             result.append(Int(sqlite3_column_int64(stmt, 0)))
         }
         return result
+    }
+
+    /// The number of unresolvable cross-references (`is_broken = 1`) emitted by source documents in
+    /// the given scope — the count disclosed in the analytics footnote (#240B). Source-anchored like
+    /// the degree queries so it moves in lockstep with the era/scope filters.
+    ///
+    /// - Parameters:
+    ///   - yearRange: When non-nil, count only refs whose source document is dated in this span.
+    ///   - volumeIds: When non-empty, count only refs whose source volume is in this set.
+    /// - Returns: The count of excluded broken references.
+    public func excludedBrokenCount(yearRange: ClosedRange<Int>? = nil, volumeIds: [String]? = nil) throws -> Int {
+        let scope = Self.normalizedScope(volumeIds)
+        let sql = """
+            SELECT COUNT(*) AS broken_count
+            FROM cross_references cr
+            \(Self.sourceDateJoin(yearRange))
+            \(Self.whereClause(["cr.is_broken = 1",
+                                Self.sourceDatePredicate(yearRange),
+                                Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        _ = Self.bindVolumeScope(scope, to: stmt, from: col)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     /// The out-degree of every source document that emits at least one cross-reference —
@@ -796,7 +836,7 @@ public actor CrossReferenceStore {
             SELECT COUNT(*) AS out_degree
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
-            \(Self.whereClause([Self.documentTargetPredicate,
+            \(Self.whereClause([Self.documentTargetPredicate, Self.brokenExclusionPredicate,
                                 Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             GROUP BY cr.source_volume_id, cr.source_document_id
@@ -842,7 +882,7 @@ public actor CrossReferenceStore {
             FROM cross_references cr
             \(Self.sourceDateJoin(yearRange))
             \(Self.whereClause([selfLoop,
-                                Self.documentTargetPredicate,
+                                Self.documentTargetPredicate, Self.brokenExclusionPredicate,
                                 Self.sourceDatePredicate(yearRange),
                                 Self.volumeScopePredicate(scope, columnExpr: "cr.source_volume_id")]))
             """
