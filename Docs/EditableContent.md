@@ -649,7 +649,7 @@ The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Admi
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 108–109 | key: series.provenance.intro -->
 
-Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's central files in until the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes.
+Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it was drawn from. These charts parse those notes across the whole series to trace how its archival base evolved — from the near-total dominance of the State Department's central files until the postwar appearance of bureau lot files and presidential libraries, to the diversified sourcing of the modern volumes.
 
 <!-- END SOURCE: series.provenance.intro -->
 
@@ -711,7 +711,7 @@ Editorial-note documents carry a span of dates rather than a single date; includ
 
 How many published documents concern each administration's foreign policy, in chronological order. Attribution is by any overlap, so a volume spanning two terms counts in both.
 
-Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administration will look different as new volumes are released.
+Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released.
 
 <!-- END SOURCE: series.admin.docs.caption -->
 
@@ -720,7 +720,7 @@ Note that volumes covering the 1970s, 1980s, and 1990s are currently in producti
 
 How many volumes cover each administration, divided by the length of its term in years — a measure of how densely the series covers each presidency. The sitting administration (no end date) is omitted.
 
-Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administration will look different as new volumes are released.
+Note that volumes covering the 1970s, 1980s, and 1990s are currently in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released.
 
 <!-- END SOURCE: series.admin.perYear.caption -->
 
