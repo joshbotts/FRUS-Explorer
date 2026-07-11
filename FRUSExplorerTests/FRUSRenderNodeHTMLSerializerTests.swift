@@ -421,6 +421,38 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("page 1077"))
     }
 
+    @Test("brokenref href round-trips hostile targets through the scheme handler dispatch")
+    @MainActor
+    func brokenRefRoundTrip() throws {
+        // Targets with '/', '%', '#', and spaces — the strict alphanumeric encoding plus the
+        // dispatch's single decode must recover the verbatim string in every case.
+        for target in ["frus1877#pg_1077", "#dX", "a/b#pg_1", "we%2Fird#x", "sp ace#1"] {
+            let info = BrokenRefInfo(target: target, reason: "unknownAnchor",
+                                     resolvedVolume: nil, resolvedAnchor: nil)
+            let out = html([.crossRefLink(target: target, volumeId: nil,
+                                          broken: info, children: [.plainText("t")])])
+            // Extract the emitted href.
+            guard let range = out.range(of: "href=\"frusexplorer://brokenref/"),
+                  let end = out[range.upperBound...].firstIndex(of: "\"") else {
+                Issue.record("no brokenref href for \(target)"); continue
+            }
+            let encoded = String(out[range.upperBound..<end])
+            let url = try #require(URL(string: "frusexplorer://brokenref/\(encoded)"))
+
+            let handler = FRUSURLSchemeHandler()
+            let model = FRUSDocumentRenderModel(
+                documentId: "d1",
+                bodyNodes: [.crossRefLink(target: target, volumeId: nil,
+                                          broken: info, children: [.plainText("t")])],
+                footnotes: [])
+            handler.register(model: model)
+            var received: BrokenRefInfo?
+            handler.onBrokenRefTap = { received = $0 }
+            handler.dispatch(url: url)
+            #expect(received?.target == target, "round-trip failed for \(target)")
+        }
+    }
+
     // MARK: - Unknown elements
 
     @Test("Unknown element emits span.unknown with data-element-name")

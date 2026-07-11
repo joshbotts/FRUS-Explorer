@@ -30,6 +30,8 @@ import TipKit
 ///          reused with a frozen selection capture (creation path b)
 ///   Session 09: `subjectTagStore` no longer passed to `DocumentViewModel` (the
 ///         document-level subject taxonomy was retired).
+///   1.3 — Session 7 / #240B: `brokenRefExplanation` — the explanation sheet for
+///          unresolvable cross-references degraded by the broken-refs index.
 enum DocumentSheet: Identifiable {
     case personDetail(PersonEntry)
     case glossDetail(GlossEntry)

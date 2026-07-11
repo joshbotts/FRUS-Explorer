@@ -169,8 +169,9 @@ public struct BrokenRefsIndex: Sendable, Decodable {
 /// resource yields `nil`, and every consumer treats a `nil` store as "nothing is known-broken"
 /// (links stay live, no exclusion, the export section hides) — never a crash.
 ///
-/// Mirrors `VolumeSubjectProfilesStore`. Never touched at app launch; consumers warm it with a
-/// detached utility task on view appear.
+/// Mirrors `VolumeSubjectProfilesStore`'s shape. Loaded on first use — typically the post-launch
+/// `applyBrokenRefsIndexIfNeeded` Task, or the first document open / export view otherwise. The
+/// decode is a 23 KB JSON parse, so no warm-up task is needed.
 enum BrokenRefsIndexStore {
 
     /// The bundled broken-refs index, or `nil` if unavailable. Loaded once.

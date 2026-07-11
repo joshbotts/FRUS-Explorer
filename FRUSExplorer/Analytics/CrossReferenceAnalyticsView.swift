@@ -99,6 +99,8 @@ private struct HeatCell: Identifiable, Equatable {
 ///   1.1 — Session 3 / #236: administration preset menu beneath the year-range bar
 ///          (one tap sets the document-year range to a president's term, bounded
 ///          and clamped to the corpus span)
+///   1.2 — Session 7 / #240B: broken-reference disclosure — `excludedBrokenCount`
+///          fetched per scope and appended to the resolved caption when non-zero
 struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -353,11 +355,11 @@ struct CrossReferenceAnalyticsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "crossRefAnalytics.resolvedCaption",
                         defaultValue: "The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations."))
+            // No accessibilityLabel override: the explanatory clause exists nowhere else in the
+            // view, so VoiceOver must read the full visible caption.
             if excludedBrokenCount > 0 {
                 Text(String(localized: "crossRefAnalytics.excludedBrokenCaption",
                             defaultValue: "\(excludedBrokenCount) unresolvable references are excluded from this analysis — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus."))
-                    .accessibilityLabel(Text(String(localized: "crossRefAnalytics.excludedBrokenCaption.a11y",
-                        defaultValue: "\(excludedBrokenCount) unresolvable references excluded from this analysis.")))
             }
         }
         .font(.caption)

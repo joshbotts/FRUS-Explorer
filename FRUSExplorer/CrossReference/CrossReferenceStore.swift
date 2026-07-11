@@ -33,6 +33,9 @@ import SQLite3
 ///          `topDocumentsByInDegree(limit:)`, `resolvedInDegrees()`, `resolvedOutDegrees()`,
 ///          and `resolvedCitationEdges()` (all resolved-target-only, for in-degree ranking,
 ///          the degree-distribution histogram, and the offline PageRank input)
+///   1.6 — Session 7 / #240B: `is_broken = 0` exclusion across every edge/degree/count
+///          query (validated-broken refs never reach graphs or analytics) +
+///          `excludedBrokenCount(yearRange:volumeIds:)` for the disclosure caption
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle

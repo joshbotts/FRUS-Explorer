@@ -154,9 +154,12 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             onCrossRefTap?(target, volumeId)
 
         case "brokenref":
-            // URL: frusexplorer://brokenref/{target}[/{volumeId}] — a dead cross-reference.
-            // Never navigates; presents the explanation sheet with the registered detail.
-            guard let target = parts.first else { return }
+            // URL: frusexplorer://brokenref/{target} — a dead cross-reference. Never navigates;
+            // presents the explanation sheet with the registered detail. The serializer encodes
+            // the target with the strict alphanumeric charset and `URL.pathComponents` already
+            // percent-decodes once, so use the single-decoded component — the doubly-decoded
+            // `parts` would corrupt a target containing a literal '%' sequence.
+            guard let target = url.pathComponents.filter({ $0 != "/" }).first else { return }
             onBrokenRefTap?(brokenByRef[target])
 
         default:

@@ -66,6 +66,9 @@ import Foundation
 ///          popover aside (already `data-skip="1"`) and the visible footnotes section
 ///          (outside the offset engine's DFS root), so flat-text offsets and existing
 ///          highlights are untouched. Default `false` keeps every export byte-identical.
+///   1.2 — Session 7 / #240B: broken cross-references (non-nil `broken` payload) emit a
+///          non-navigable `frusexplorer://brokenref/` explained span — dotted underline,
+///          muted colour, and a `data-skip="1"` dagger so highlight offsets never shift.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -447,8 +450,13 @@ public struct FRUSRenderNodeHTMLSerializer {
                 // Dotted underline + muted colour + a data-skip'd marker glyph is a non-colour-only
                 // affordance. The marker MUST carry data-skip="1" so the JS flat-text walker doesn't
                 // count it and shift every downstream highlight offset.
+                //
+                // The target is encoded with the strict alphanumeric charset (NOT urlPathAllowed):
+                // `.urlPathAllowed` leaves '/' bare — a target containing one would split into two
+                // path components and the dispatch registry lookup would silently miss.
                 let a11y = Self.brokenRefAriaLabel(reason: broken.reason)
-                return "<a class=\"cross-ref-broken\" href=\"frusexplorer://brokenref/\(path)\" "
+                let strictTarget = target.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? target
+                return "<a class=\"cross-ref-broken\" href=\"frusexplorer://brokenref/\(strictTarget)\" "
                     + "role=\"button\" aria-label=\"\(escaped(a11y))\">\(inline(children))"
                     + "<span class=\"cross-ref-broken-mark\" data-skip=\"1\" aria-hidden=\"true\">\u{2020}</span></a>"
             }

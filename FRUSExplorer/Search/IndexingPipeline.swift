@@ -288,6 +288,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         its count — a remove-plus-add that nets the same count (routine once the
 ///         corrections manager's undo exists) now correctly reconsolidates; the old
 ///         `personRollupOverrideCount` UserDefaults value is cleaned up on first stamp.
+///   Session 7 / #240B: `cross_references.is_broken` column + per-volume
+///         `markBrokenCrossReferences` (runs before page resolution) + the gated
+///         `applyBrokenRefsIndexIfNeeded` backfill keyed to the bundled index's
+///         `generated` stamp. Review fix: `resolvePageBasedCrossReferences` enforces
+///         its same-volume-only contract (`target_volume_id IS NULL`) —
+///         `currentDateIndexVersion` → 22 (see the v22 note above).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -559,7 +565,17 @@ public actor IndexingPipeline {
     ///   plural `Lots …` leads (83 front-matter rows) and the spaced letter suffix
     ///   `Lot 61 D 282 A` (norm parity with the legacy doc-side captures).
     ///   Parse output changes on both tables; a reindex repopulates them.
-    public static let currentDateIndexVersion: Int = 21
+    ///
+    ///   v22 — Session 7 review / #240B: `resolvePageBasedCrossReferences` now enforces its
+    ///   documented same-volume-only contract (`target_volume_id IS NULL`). v21 and earlier
+    ///   resolved CROSS-volume page refs against the SOURCE volume's pagination, fabricating
+    ///   up to ~44K wrong document-level edges corpus-wide (target volume kept, target
+    ///   document replaced with a source-volume doc id) — polluting ego graphs, the heat
+    ///   matrix, in-degree/PageRank, and defeating the #240B `is_broken` matching for the
+    ///   13 broken cross-volume page records whose page number exists in the source volume.
+    ///   The bump forces the reindex that rebuilds `cross_references` cleanly; the broken-ref
+    ///   marking then re-applies via `markBrokenCrossReferences` during the reindex.
+    public static let currentDateIndexVersion: Int = 22
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -4536,10 +4552,18 @@ public actor IndexingPipeline {
         // Find cross-reference rows for this volume whose target is an arabic page anchor.
         // GLOB 'pg_[0-9]*' matches "pg_" followed by a digit (e.g. "pg_427"); roman
         // fragments like "pg_III" do not match and stay unresolved.
+        //
+        // `target_volume_id IS NULL` enforces the same-volume-only contract documented
+        // above. Without it (index v21 and earlier), CROSS-volume page refs matched too and
+        // were resolved against the SOURCE volume's pagination — rewriting
+        // (frus1907p1, pg_773) into (frus1907p1, <some frus1910 doc id>): a fabricated edge
+        // in every graph/analytics query, and a row the #240B broken-ref marking can no
+        // longer match. currentDateIndexVersion 22 forces the reindex that heals those rows.
         let findSQL = """
             SELECT rowid, target_document_id
             FROM cross_references
             WHERE source_volume_id = ?
+              AND target_volume_id IS NULL
               AND target_document_id GLOB 'pg_[0-9]*'
             """
         let findStmt = try auxPrepare(findSQL)
@@ -4617,8 +4641,8 @@ public actor IndexingPipeline {
     /// Reconstructs the stored `(target_volume_id, target_document_id)` columns from a verbatim
     /// `<ref target>` value the way the indexer did (`collectDocumentRefs` splits the anchor;
     /// the volume prefix is the substring before the first `#`), so a broken-refs record can be
-    /// matched back to its cross_references rows.
-    private static func targetColumns(forRawTarget raw: String) -> (volumeId: String?, documentId: String) {
+    /// matched back to its cross_references rows. Internal for direct test coverage.
+    static func targetColumns(forRawTarget raw: String) -> (volumeId: String?, documentId: String) {
         let documentId = raw.hasPrefix("#")
             ? String(raw.dropFirst())
             : (raw.components(separatedBy: "#").last ?? raw)
@@ -4648,6 +4672,19 @@ public actor IndexingPipeline {
     private func markBrokenCrossReferences(volumeId: String) throws {
         guard let index = BrokenRefsIndexStore.shared else { return }
         let targets = index.degradableTargets.filter { $0.sourceVolume == volumeId }
+            .map { (sourceVolume: $0.sourceVolume, rawTarget: $0.rawTarget) }
+        try markBrokenCrossReferences(volumeId: volumeId, brokenTargets: targets)
+    }
+
+    /// The store-independent core of the per-volume marking (internal so tests can inject
+    /// synthetic targets without a bundled index).
+    ///
+    /// - Parameters:
+    ///   - volumeId: The source volume whose rows are marked.
+    ///   - brokenTargets: `(sourceVolume, rawTarget)` pairs; entries for other volumes are ignored.
+    func markBrokenCrossReferences(volumeId: String,
+                                   brokenTargets: [(sourceVolume: String, rawTarget: String)]) throws {
+        let targets = brokenTargets.filter { $0.sourceVolume == volumeId }
         guard !targets.isEmpty else { return }
 
         let sameVolSQL = "UPDATE cross_references SET is_broken = 1 " +
@@ -4697,6 +4734,25 @@ public actor IndexingPipeline {
         let applied = UserDefaults.standard.string(forKey: Self.brokenRefsIndexAppliedKey)
         guard applied != index.generated else { return }
 
+        let targets = index.degradableTargets.map { (sourceVolume: $0.sourceVolume, rawTarget: $0.rawTarget) }
+        let marked = try applyBrokenRefsIndex(targets: targets)
+
+        #if DEBUG
+        print("[IndexingPipeline] applyBrokenRefsIndexIfNeeded: flagged \(marked) rows for index \(index.generated)")
+        #endif
+
+        UserDefaults.standard.set(index.generated, forKey: Self.brokenRefsIndexAppliedKey)
+    }
+
+    /// The store/marker-independent core of the backfill (internal so tests can inject synthetic
+    /// targets): resets every `is_broken` flag, then re-marks from `targets` in one transaction —
+    /// so a *shrinking* index un-marks refs the editors have since fixed.
+    ///
+    /// - Parameter targets: `(sourceVolume, rawTarget)` pairs to mark corpus-wide.
+    /// - Returns: The number of rows flagged.
+    @discardableResult
+    func applyBrokenRefsIndex(targets: [(sourceVolume: String, rawTarget: String)]) throws -> Int {
+        var marked = 0
         try inTransaction {
             try auxExec("UPDATE cross_references SET is_broken = 0")
 
@@ -4709,8 +4765,7 @@ public actor IndexingPipeline {
             let crossStmt = try auxPrepare(crossVolSQL)
             defer { sqlite3_finalize(crossStmt) }
 
-            var marked = 0
-            for target in index.degradableTargets {
+            for target in targets {
                 let cols = Self.targetColumns(forRawTarget: target.rawTarget)
                 guard !cols.documentId.isEmpty else { continue }
                 if let tvol = cols.volumeId {
@@ -4727,13 +4782,8 @@ public actor IndexingPipeline {
                 }
                 marked += Int(sqlite3_changes(auxDb))
             }
-
-            #if DEBUG
-            print("[IndexingPipeline] applyBrokenRefsIndexIfNeeded: flagged \(marked) rows for index \(index.generated)")
-            #endif
         }
-
-        UserDefaults.standard.set(index.generated, forKey: Self.brokenRefsIndexAppliedKey)
+        return marked
     }
 
     private func auxDeleteVolume(_ volumeId: String) throws {

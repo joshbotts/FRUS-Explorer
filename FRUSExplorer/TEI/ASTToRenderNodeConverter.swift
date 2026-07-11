@@ -41,6 +41,8 @@ import Foundation
 ///          whose text matches a glossary term are emitted as `.glossLink` nodes so they
 ///          render with the accent-coloured dotted underline and open `GlossDetailSheet`
 ///          on tap, identical to explicit `<gloss ref="…">` elements.
+///   1.5 — Session 7 / #240B: `brokenRefLookup` added; `crossRefLink` carries the
+///          broken-ref payload so validated-dead references render as explained spans.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes

@@ -68,6 +68,8 @@ import SwiftData
 ///          value, wiring the "Document" menu's reading shortcuts (⌥⌘↑/⌥⌘↓
 ///          prev/next, ⌘⇧N add note, ⌘⇧H highlight selection, ⌘⇧R research
 ///          panel) to this view's existing actions in whichever window is key
+///   2.3 — Session 7 / #240B: `onBrokenRefTap` presents `BrokenRefExplanationSheet`
+///          for cross-references the broken-refs index degrades
 @MainActor
 struct MacDocumentView: View {
 

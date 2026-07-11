@@ -23,17 +23,19 @@ struct BrokenRefExplanationSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    /// The plain-language reason, by failure category.
+    /// The plain-language reason, by failure category. Worded volume-neutrally ("the cited
+    /// volume") because ~half the broken refs point at a *different* volume than the one being
+    /// read — the "Apparent destination" section names it precisely.
     private var reasonText: String {
         switch info.reason {
         case "unknownPage":
-            return String(localized: "The referenced page could not be found in this volume.")
+            return String(localized: "The page this reference cites could not be found in the cited volume.")
         case "unknownVolume":
             return String(localized: "The referenced volume isn't part of this collection.")
         case "emptyTarget":
             return String(localized: "This cross-reference has no destination.")
         default:   // unknownAnchor and any future reason
-            return String(localized: "The referenced document or section no longer exists in this volume.")
+            return String(localized: "The document or section this reference cites no longer exists in the cited volume.")
         }
     }
 
@@ -53,7 +55,7 @@ struct BrokenRefExplanationSheet: View {
                     Label {
                         Text(reasonText)
                     } icon: {
-                        Image(systemName: "link.badge.plus")
+                        Image(systemName: "questionmark.circle")
                             .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
@@ -83,5 +85,10 @@ struct BrokenRefExplanationSheet: View {
                 }
             }
         }
+        #if os(macOS)
+        // macOS sheets collapse to intrinsic size without an explicit frame, leaving only the
+        // title bar visible (mirrors GlossDetailSheet's sizing).
+        .frame(minWidth: 420, minHeight: 300)
+        #endif
     }
 }

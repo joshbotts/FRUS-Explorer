@@ -25,6 +25,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 154: initial implementation
+///   1.1 — Session 7 / #240B: "Broken Cross-References Report" section — CSV/JSON
+///          ShareLinks re-serialized from the bundled broken-refs index.
 struct ResearchDataExportView: View {
 
     @Environment(AppState.self) private var appState
