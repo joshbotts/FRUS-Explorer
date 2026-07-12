@@ -569,7 +569,10 @@ struct CollectionEditorView: View {
             set: { if !$0 { inspectedEntryId = nil } }
         )) {
             if let entry = inspectedEntry {
-                entryInspectorContent(entry, isPushed: true)
+                // Composer v2 §C: document-only — the collection's settings/composition live in the
+                // top Collection Settings drill-in now, so the per-document push omits the collection
+                // section (mirroring the iPad Configure sheet).
+                entryInspectorContent(entry, isPushed: true, documentOnly: true)
             }
         }
         // Inline note-create (Collections Manager M2, D5): the entry inspector's
@@ -648,7 +651,12 @@ struct CollectionEditorView: View {
     /// and the composition-only drill-in — one clearly labeled collection-scope entry, the compact
     /// equivalent of the iPad ⚙ Collection sheet.
     private var collectionSettingsDrillInSection: some View {
-        Section {
+        // Caption leads with the active preset when one matches (canvas: "Briefing packet ·
+        // summaries"), else the plain-language composition summary for a customized composition.
+        let activePreset = CollectionPreset.allCases.first { $0.matches(collection) }
+        let caption = activePreset.map { "\($0.displayName) · \($0.shortTag)" }
+            ?? collection.compositionSummarySentence
+        return Section {
             NavigationLink {
                 iPhoneCollectionSettingsScreen
             } label: {
@@ -656,7 +664,7 @@ struct CollectionEditorView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(String(localized: "collection.editor.settings.title",
                                     defaultValue: "Collection settings"))
-                        Text(collection.compositionSummarySentence)
+                        Text(caption)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -1333,9 +1341,11 @@ struct CollectionEditorView: View {
                      documentDate: documentDates[key],
                      isDuplicate: duplicateKeys.contains(key),
                      onInspect: { presentEntryInspector(for: entry.id) },
-                     // iPad (regular) shows the ⚙ Configure pill; iPhone (compact) drills in via the
-                     // whole-row chevron disclosure (Composer v2 §D).
-                     showsConfigurePill: isRegularWidth,
+                     // iPad (regular) and the macOS sheet editor show the ⚙ Configure pill; only iPhone
+                     // (compact) drills in via the whole-row chevron disclosure (Composer v2 §D).
+                     // `isRegularWidth` is false on macOS too, so OR in `isMacOS` to keep the pill there
+                     // (macBody has no drill-in destination — a chevron would imply a push that doesn't exist).
+                     showsConfigurePill: isRegularWidth || isMacOS,
                      onMoveUp: moveUp,
                      onMoveDown: moveDown)
         case .heading:
@@ -1732,9 +1742,10 @@ struct CollectionEditorView: View {
                         entryIndex: idx)
                 }
             },
-            // Composer v2 §A: the Document | Composition segment is gone — composition now lives in
-            // the ⚙ Collection sheet. The iPad Configure sheet is `documentOnly`; the iPhone drill-in
-            // keeps the pinned Collection section for now (Phase 4 restructures the compact editor).
+            // Composer v2 §A/§C: the Document | Composition segment is gone — composition now lives in
+            // the ⚙ Collection sheet (iPad) / the top Collection Settings drill-in (iPhone). Both the
+            // iPad Configure sheet and the iPhone drill-in pass `documentOnly: true`, so this per-entry
+            // surface never re-shows the collection section.
             showsCompositionSegment: false,
             showsCollectionSettings: !documentOnly,
             // Presets route apparatus through this host's entry-list management (4a).

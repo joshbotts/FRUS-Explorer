@@ -714,10 +714,35 @@ struct EntryRow: View {
         // first, so there is no double-fire, and a discrete tap does not swallow swipe-to-delete.
         .contentShape(Rectangle())
         .onTapGesture { onInspect() }
-        // Without the pill (iPhone) the row itself is the configure control — mark it a button so
-        // VoiceOver activation opens the document screen.
-        .accessibilityAddTraits(showsConfigurePill ? [] : .isButton)
+        // Without the pill (iPhone) the row itself is the configure control: merge its children into
+        // one focusable button and bridge VoiceOver activation to `onInspect` — a bare
+        // `.onTapGesture` is not exposed to VoiceOver. With the pill (iPad) the `ConfigurePill` is
+        // already the labeled a11y button, so the row's children stay individually navigable.
+        .modifier(EntryRowConfigureAccessibility(enabled: !showsConfigurePill, action: onInspect))
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
+    }
+}
+
+/// Accessibility grouping for the pill-less (iPhone drill-in) `EntryRow`: collapses the row's
+/// identity + status chips into a single focusable **button** and wires VoiceOver activation to the
+/// configure action, since a bare `.onTapGesture` is not surfaced to VoiceOver. Inert on the pill
+/// path — the `ConfigurePill` is already a labeled button and the row stays child-navigable.
+private struct EntryRowConfigureAccessibility: ViewModifier {
+    /// Whether to apply the button grouping (true on the iPhone chevron rows).
+    let enabled: Bool
+    /// The configure action VoiceOver activation invokes.
+    let action: () -> Void
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text(String(localized: "collection.entry.configure.hint",
+                                                defaultValue: "Opens this document's settings")))
+                .accessibilityAction { action() }
+        } else {
+            content
+        }
     }
 }
 
