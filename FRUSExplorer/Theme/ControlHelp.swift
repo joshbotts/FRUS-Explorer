@@ -95,3 +95,44 @@ extension View {
         modifier(ControlHelpModifier(label: label, detail: detail, systemImage: systemImage))
     }
 }
+
+// MARK: - TransientToastModifier
+
+/// A brief confirmation toast pinned to the top of a view, auto-dismissing after ~2.6s
+/// (Composer redesign 5). Set `message` to a non-nil string to show it; it clears itself.
+/// A capsule with the material background so it reads over any content, announced to VoiceOver.
+private struct TransientToastModifier: ViewModifier {
+    @Binding var message: String?
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .top) {
+                if let message {
+                    Text(message)
+                        .font(.callout.weight(.medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.regularMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(.quaternary))
+                        .shadow(radius: 8, y: 2)
+                        .padding(.top, 12)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .accessibilityAddTraits(.isStaticText)
+                        .task(id: message) {
+                            try? await Task.sleep(for: .seconds(2.6))
+                            withAnimation { self.message = nil }
+                        }
+                }
+            }
+            .animation(.spring(duration: 0.3), value: message)
+    }
+}
+
+public extension View {
+
+    /// Shows a brief, auto-dismissing confirmation toast at the top of the view (Composer redesign
+    /// 5). Bind a `@State String?`; set it to show, and it clears itself after a moment.
+    func transientToast(_ message: Binding<String?>) -> some View {
+        modifier(TransientToastModifier(message: message))
+    }
+}

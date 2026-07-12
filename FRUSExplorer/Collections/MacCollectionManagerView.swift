@@ -506,6 +506,8 @@ private struct CollectionDetailPane: View {
     /// never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
     @State private var showAddDocuments = false
+    /// A transient "Added N documents" confirmation toast after the Add Documents sheet commits (5).
+    @State private var addDocumentsToast: String?
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights = false
     @State private var showExport = false
@@ -593,9 +595,11 @@ private struct CollectionDetailPane: View {
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
+                addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
             }
             .environment(appState)
         }
+        .transientToast($addDocumentsToast)
         .sheet(isPresented: $showAddHighlights) {
             CollectionAddHighlightsSheet(
                 documentKeys: orderedDocumentKeys,

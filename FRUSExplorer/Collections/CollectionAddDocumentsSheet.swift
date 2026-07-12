@@ -313,6 +313,13 @@ enum CollectionDocumentDiscovery {
     /// the entry list, in selection order (section-aware placement arrives with
     /// Phase 4).
     @MainActor
+    /// The localized "Added N documents" confirmation toast message (Composer redesign 5), shared by
+    /// both editors so the wording stays consistent.
+    static func addedToastMessage(_ count: Int) -> String {
+        String(format: String(localized: "collection.addDocs.addedToast %lld",
+                              defaultValue: "Added %lld documents"), Int64(count))
+    }
+
     static func appendEntries(
         _ refs: [(documentId: String, volumeId: String)],
         collection: Collection,
@@ -1067,6 +1074,7 @@ struct CollectionAddDocumentsSheet: View {
                     emptyState(String(localized: "collection.addDocs.citations.empty",
                                       defaultValue: "Nothing to resolve — paste at least one line."))
                 } else {
+                    citationResultsHeader(results)
                     List(results) { result in
                         citationRow(result)
                     }
@@ -1077,6 +1085,35 @@ struct CollectionAddDocumentsSheet: View {
                                   defaultValue: "Each line is resolved against the FRUS manifest and your local index — footnotes, bibliography entries, and document links all work."))
             }
         }
+    }
+
+    /// A one-line summary of the citation-resolution outcome (Composer redesign 5): how many of the
+    /// pasted lines resolved to a document, with a secondary count of any ambiguous lines that need
+    /// review — so a bulk paste reports its result at a glance rather than only per-line.
+    @ViewBuilder
+    private func citationResultsHeader(_ results: [CollectionCitationLineResolver.LineResult]) -> some View {
+        let resolved = results.reduce(into: 0) { count, result in
+            if case .resolved = result.outcome { count += 1 }
+        }
+        let ambiguous = results.reduce(into: 0) { count, result in
+            if case .ambiguous = result.outcome { count += 1 }
+        }
+        HStack(spacing: 8) {
+            Text(String(format: String(localized: "collection.addDocs.citations.resolvedHeader %1$lld %2$lld",
+                                       defaultValue: "%1$lld of %2$lld resolved"),
+                        Int64(resolved), Int64(results.count)))
+                .font(.callout.weight(.medium))
+            if ambiguous > 0 {
+                Text(String(format: String(localized: "collection.addDocs.citations.needReview %lld",
+                                           defaultValue: "· %lld to review"),
+                            Int64(ambiguous)))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
     }
 
     /// One per-line result row: a selectable match row or an unresolved marker.

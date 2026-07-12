@@ -170,6 +170,8 @@ struct CollectionEditorView: View {
     @State private var collapsedHeadingIds: Set<UUID> = []
 
     @State private var showAddDocuments   = false
+    /// A transient "Added N documents" confirmation toast after the Add Documents sheet commits (5).
+    @State private var addDocumentsToast: String?
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights  = false
     @State private var showExport         = false
@@ -277,6 +279,7 @@ struct CollectionEditorView: View {
             iOSBody
             #endif
         }
+        .transientToast($addDocumentsToast)
         // Reload document headers and per-document dates whenever the entry list changes.
         // (The Group has exactly one child per platform, so this task attaches once.)
         .task(id: sortedEntries.map(\.id)) {
@@ -426,6 +429,7 @@ struct CollectionEditorView: View {
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
+                addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
             }
         }
         .sheet(isPresented: $showAddHighlights) {
@@ -529,6 +533,7 @@ struct CollectionEditorView: View {
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
                 appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
+                addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
             }
         }
         .sheet(isPresented: $showAddHighlights) {
