@@ -469,12 +469,80 @@ struct CollectionEntryInspector: View {
         }
     }
 
+    // MARK: - Resolved-inheritance display (Composer redesign, idea #5)
+
+    /// What a document entry's overrides resolve to *right now* — the section (nearest ancestor
+    /// heading) value, else the collection default — so each override at "Default" can show
+    /// "Default → On/Off" instead of a prose-only inheritance note. Reuses the existing ancestor
+    /// cascade (`CollectionOutline.sectionOverrideValues`) and the canonical `CollectionBodyDepth
+    /// .resolve`; the UI DISPLAYS the resolver's result, it does not reimplement resolution.
+    private struct ResolvedEntryDefaults {
+        let bodyDepth: CollectionBodyDepth
+        let highlights: Bool
+        let notes: Bool
+        let sourceNote: Bool
+        let footnotes: Bool
+        let related: Bool
+        let summaryPromptId: UUID?
+    }
+
+    /// The resolved defaults for the focused document entry, or `nil` for headings (whose own
+    /// values ARE the section default) and when the outline can't be read. Computed on the
+    /// MainActor view: reads `@Model` fields to build plain `[Value?]` arrays, then the pure
+    /// cascade resolves them.
+    private var resolvedEntryDefaults: ResolvedEntryDefaults? {
+        guard !isHeading, let collection = entry.collection else { return nil }
+        let ordered = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        guard let index = ordered.firstIndex(where: { $0.id == entry.id }) else { return nil }
+        let refs = ordered.map(CollectionOutline.StructuralRef.init)
+        // The nearest-ancestor-heading value for one override field at this entry's position.
+        func section<Value>(_ field: (CollectionEntry) -> Value?) -> Value? {
+            CollectionOutline.sectionOverrideValues(
+                refs, headingValues: ordered.map { $0.entryKind == .heading ? field($0) : nil }
+            )[index]
+        }
+        return ResolvedEntryDefaults(
+            bodyDepth: CollectionBodyDepth.resolve(entryOverride: nil,
+                                                   sectionOverride: section { $0.bodyDepthOverride },
+                                                   collectionDefault: collection.defaultBodyDepth),
+            highlights: section { $0.applyHighlightsOverride } ?? collection.applyHighlights,
+            notes: section { $0.includeNotesOverride } ?? collection.includeNotes,
+            sourceNote: section { $0.includeSourceNoteOverride } ?? collection.effectiveIncludeSourceNote,
+            footnotes: section { $0.includeFootnotesOverride } ?? collection.effectiveIncludeFootnotes,
+            related: section { $0.includeRelatedDocuments } ?? false,
+            summaryPromptId: section { $0.summaryPromptIdOverride } ?? collection.summaryPromptId
+        )
+    }
+
+    /// "Default → On" / "Default → Off" for a resolved Bool override.
+    private func defaultResolves(_ value: Bool) -> String {
+        value
+            ? String(localized: "collection.inspector.override.resolvesOn", defaultValue: "Default → On")
+            : String(localized: "collection.inspector.override.resolvesOff", defaultValue: "Default → Off")
+    }
+
+    /// "Default → <value>" for a resolved non-Bool override (body depth, summary prompt).
+    private func defaultResolves(to text: String) -> String {
+        String(localized: "collection.inspector.override.resolvesTo",
+               defaultValue: "Default → \(text)")
+    }
+
+    /// The resolved summary-prompt name for the "Default → …" subtitle (or "None" when unset).
+    private func resolvedPromptName(_ id: UUID?) -> String {
+        guard let id, let choice = promptChoices.first(where: { $0.id == id }) else {
+            return String(localized: "collection.inspector.override.prompt.none", defaultValue: "None")
+        }
+        return choice.name
+    }
+
     // MARK: - Export overrides (Authoring Phase 5)
 
     /// A Default / On / Off picker bound to one optional-Bool override field.
-    /// "Default" (`nil`) inherits the section default, else the collection setting.
-    private func overridePicker(_ title: String, _ binding: Binding<Bool?>) -> some View {
-        Picker(title, selection: binding) {
+    /// "Default" (`nil`) inherits the section default, else the collection setting; when at Default,
+    /// an optional `subtitle` shows what it resolves to right now (Composer redesign, idea #5).
+    private func overridePicker(_ title: String, _ binding: Binding<Bool?>,
+                                subtitle: String? = nil) -> some View {
+        Picker(selection: binding) {
             Text(String(localized: "collection.inspector.override.default",
                         defaultValue: "Default"))
                 .tag(Bool?.none)
@@ -484,6 +552,15 @@ struct CollectionEntryInspector: View {
             Text(String(localized: "collection.inspector.override.off",
                         defaultValue: "Off"))
                 .tag(Bool?.some(false))
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                if let subtitle, binding.wrappedValue == nil {
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .pickerStyle(.menu)
     }
@@ -494,26 +571,31 @@ struct CollectionEntryInspector: View {
     /// source note, and footnotes (PDF/DOCX gated since the 2026-07-03 owner decision)
     /// gate all three export formats and the preview.
     @ViewBuilder private var overrideControls: some View {
+        // Resolve the section/collection defaults once so each override at "Default" can show what
+        // it resolves to right now (Composer redesign idea #5). `nil` for headings.
+        let rd = resolvedEntryDefaults
         overridePicker(String(localized: "collection.inspector.override.highlights",
                               defaultValue: "Highlights"),
                        Binding(get: { entry.applyHighlightsOverride },
-                               set: { entry.applyHighlightsOverride = $0 }))
+                               set: { entry.applyHighlightsOverride = $0 }),
+                       subtitle: rd.map { defaultResolves($0.highlights) })
         overridePicker(String(localized: "collection.inspector.override.notes",
                               defaultValue: "Research notes"),
                        Binding(get: { entry.includeNotesOverride },
-                               set: { entry.includeNotesOverride = $0 }))
+                               set: { entry.includeNotesOverride = $0 }),
+                       subtitle: rd.map { defaultResolves($0.notes) })
         overridePicker(String(localized: "collection.inspector.override.sourceNote",
                               defaultValue: "Source note"),
                        Binding(get: { entry.includeSourceNoteOverride },
-                               set: { entry.includeSourceNoteOverride = $0 }))
+                               set: { entry.includeSourceNoteOverride = $0 }),
+                       subtitle: rd.map { defaultResolves($0.sourceNote) })
         overridePicker(String(localized: "collection.inspector.override.footnotes",
                               defaultValue: "Footnotes"),
                        Binding(get: { entry.includeFootnotesOverride },
-                               set: { entry.includeFootnotesOverride = $0 }))
+                               set: { entry.includeFootnotesOverride = $0 }),
+                       subtitle: rd.map { defaultResolves($0.footnotes) })
 
-        Picker(String(localized: "collection.inspector.override.prompt",
-                      defaultValue: "Summary prompt"),
-               selection: Binding(get: { entry.summaryPromptIdOverride },
+        Picker(selection: Binding(get: { entry.summaryPromptIdOverride },
                                   set: { entry.summaryPromptIdOverride = $0 })) {
             Text(String(localized: "collection.inspector.override.default",
                         defaultValue: "Default"))
@@ -521,13 +603,24 @@ struct CollectionEntryInspector: View {
             ForEach(promptChoices) { choice in
                 Text(choice.name).tag(UUID?.some(choice.id))
             }
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "collection.inspector.override.prompt",
+                            defaultValue: "Summary prompt"))
+                if entry.summaryPromptIdOverride == nil, let rd {
+                    Text(defaultResolves(to: resolvedPromptName(rd.summaryPromptId)))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .pickerStyle(.menu)
 
         overridePicker(String(localized: "collection.inspector.override.related",
                               defaultValue: "Related documents"),
                        Binding(get: { entry.includeRelatedDocuments },
-                               set: { entry.includeRelatedDocuments = $0 }))
+                               set: { entry.includeRelatedDocuments = $0 }),
+                       subtitle: rd.map { defaultResolves($0.related) })
         Text(String(localized: "collection.inspector.override.related.caption",
                     defaultValue: "Adds a \u{201C}See also\u{201D} line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section."))
             .font(.caption2)
@@ -561,8 +654,15 @@ struct CollectionEntryInspector: View {
                         defaultValue: "Default")).tag(String?.none)
             ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
         } label: {
-            Text(String(localized: "collection.entry.bodyDepth.label",
-                        defaultValue: "Body depth"))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "collection.entry.bodyDepth.label",
+                            defaultValue: "Body depth"))
+                if entry.bodyDepthOverride == nil, let rd = resolvedEntryDefaults {
+                    Text(defaultResolves(to: rd.bodyDepth.displayName))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .pickerStyle(.menu)
     }
