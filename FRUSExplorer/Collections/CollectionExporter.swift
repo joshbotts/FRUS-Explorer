@@ -69,6 +69,19 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// A short label for the compact override chip on a document row (Composer redesign 3):
+    /// "Full" / "Summary" / "Index" — briefer than `displayName`, which labels full controls.
+    var chipLabel: String {
+        switch self {
+        case .full:        return String(localized: "collection.entry.chip.bodyDepth.full",
+                                         defaultValue: "Full")
+        case .summaryOnly: return String(localized: "collection.entry.chip.bodyDepth.summary",
+                                         defaultValue: "Summary")
+        case .index:       return String(localized: "collection.entry.chip.bodyDepth.index",
+                                         defaultValue: "Index")
+        }
+    }
+
     /// The body depths a user can choose given the device / AI configuration.
     /// `.summaryOnly` is gated on Apple Intelligence being available.
     @MainActor

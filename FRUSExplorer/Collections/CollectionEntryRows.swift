@@ -733,12 +733,23 @@ struct EntryStatusChip: View {
             Image(systemName: systemImage)
         }
         .font(.caption2)
-        .foregroundStyle(.secondary)
+        // Accent-tinted labeled pill (Composer redesign 3): the row reports a document's resolved
+        // export configuration at a glance, in the app accent rather than an undifferentiated grey.
+        .foregroundStyle(FRUSTheme.overrideChipForeground)
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
-        .background(.quaternary.opacity(0.5), in: Capsule())
+        .background(FRUSTheme.overrideChipBackground, in: RoundedRectangle(cornerRadius: 5))
         .accessibilityElement(children: .combine)
     }
+}
+
+/// Whether a document entry's headnote is **resolved on** — its own explicit `includeHeadnote`
+/// override if set, else the owning collection's `defaultIncludeHeadnote` (Composer redesign 3).
+/// Mirrors the resolver's two-tier headnote cascade (there is no section-level headnote override),
+/// so the row's Headnote chip reflects what will actually export, including an inherited default.
+@MainActor
+func collectionEntryHeadnoteIsResolvedOn(_ entry: CollectionEntry) -> Bool {
+    entry.includeHeadnote ?? entry.collection?.defaultIncludeHeadnote ?? false
 }
 
 /// The read-only status chips for one **document** entry — body depth (when overridden),
@@ -754,10 +765,11 @@ struct EntryStatusChip: View {
 ///     note-count chip in the empty-`selectedNoteIds` (= all) case (D5).
 @MainActor @ViewBuilder
 func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some View {
-    // Body depth — only when the entry overrides the collection/section default.
+    // Body depth — only when the entry overrides the collection/section default. The chip uses the
+    // short label ("Summary", not "Summary only"), which reads cleanly in a wrapping pill row.
     if let raw = entry.bodyDepthOverride,
        let depth = CollectionBodyDepth(rawValue: raw) {
-        EntryStatusChip(systemImage: "doc.text", text: depth.displayName)
+        EntryStatusChip(systemImage: "doc.text", text: depth.chipLabel)
     }
 
     // Research notes: when the entry has turned notes off (D5 uncheck-last end state, or
@@ -793,9 +805,10 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
                          defaultValue: "Highlights off"))
     }
 
-    // Headnote explicitly opted in (a Default that inherits an on collection default surfaces as a
-    // resolved chip in a later phase; here we show only the explicit per-entry On).
-    if entry.includeHeadnote == true {
+    // Headnote — resolution-aware (Composer redesign 3): the chip shows whenever a headnote will
+    // actually export for this document, whether opted in explicitly per-entry or inherited from the
+    // collection's `defaultIncludeHeadnote`.
+    if collectionEntryHeadnoteIsResolvedOn(entry) {
         EntryStatusChip(
             systemImage: "text.aligncenter",
             text: String(localized: "collection.entry.chip.headnote",

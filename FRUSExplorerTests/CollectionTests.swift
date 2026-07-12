@@ -2882,6 +2882,42 @@ struct CollectionTests {
         #expect(savedOrdinary.isHeadnoteDraft == false)
     }
 
+    @Test("Body-depth chip label: the compact row pill uses the short form, distinct from the full control name")
+    func bodyDepthChipLabel() {
+        #expect(CollectionBodyDepth.full.chipLabel == "Full")
+        #expect(CollectionBodyDepth.summaryOnly.chipLabel == "Summary")
+        #expect(CollectionBodyDepth.index.chipLabel == "Index")
+        // The chip label is deliberately briefer than the full display name ("Summary only").
+        #expect(CollectionBodyDepth.summaryOnly.chipLabel != CollectionBodyDepth.summaryOnly.displayName)
+    }
+
+    @Test("Headnote chip resolution: an explicit per-entry override wins; a Default (nil) inherits the collection's defaultIncludeHeadnote")
+    @MainActor
+    func headnoteChipResolution() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let collOn = Collection(name: "On")
+        collOn.defaultIncludeHeadnote = true
+        context.insert(collOn)
+        let collOff = Collection(name: "Off")
+        collOff.defaultIncludeHeadnote = false
+        context.insert(collOff)
+
+        func entry(in coll: Collection, includeHeadnote: Bool?) -> CollectionEntry {
+            let e = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+            e.collection = coll   // set the relationship the resolver reads
+            e.includeHeadnote = includeHeadnote
+            context.insert(e)
+            return e
+        }
+        // Explicit per-entry override wins over the collection default (both directions).
+        #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOff, includeHeadnote: true)) == true)
+        #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOn, includeHeadnote: false)) == false)
+        // Default (nil) inherits the collection default — the resolution-aware chip behavior.
+        #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOn, includeHeadnote: nil)) == true)
+        #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOff, includeHeadnote: nil)) == false)
+    }
+
     @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
     func headnoteAcrossFormats() async throws {
         let withHeadnote = CollectionExportDocument(

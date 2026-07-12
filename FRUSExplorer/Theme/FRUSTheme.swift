@@ -293,6 +293,12 @@ enum FRUSTheme {
     static let userTagForeground    = Color.accentColor
     static let userTagBorderColor   = Color.accentColor.opacity(0.3)
 
+    /// Accent-tinted fill/text for the compact override chips on collection document rows
+    /// (Composer redesign 3): a labeled pill (e.g. "Summary", "7 notes", "Headnote") that reports
+    /// a document's resolved export configuration at a glance. Replaces the earlier grey capsule.
+    static let overrideChipBackground = Color.accentColor.opacity(0.12)
+    static let overrideChipForeground = Color.accentColor
+
     // MARK: Semantic Colors
 
     static let editorialNoteBackground = Color.purple.opacity(0.12)
