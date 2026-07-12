@@ -3122,7 +3122,10 @@ struct CollectionTests {
         #expect(importedEntry.includeHeadnote == true)
         #expect(importedEntry.headnoteSummaryId == pickedSummaryId)
 
-        // A v1 file (no Phase 5 keys) leaves the defaults: nil pair, headnote off.
+        // A v1 file (no Phase 5 keys) leaves the defaults: nil pair, headnote at Default (nil).
+        // Composer redesign widened includeHeadnote to optional, so an absent key now imports as
+        // nil (Default → inherits the collection default, false here) rather than an explicit false —
+        // the same "no headnote" behavior, a different sentinel.
         let v1JSON = Data(#"{"format":"fruscollection","formatVersion":1,"name":"Old","composition":{"defaultBodyDepth":"full","footnoteStyle":"sourceNoteOnly","tocStyle":"citation","applyHighlights":false,"includeNotes":true,"includeWordCloud":false},"entries":[{"kind":"document","documentId":"d1","volumeId":"v1"}]}"#.utf8)
         let old = NativeCollectionSerializer.apply(
             try NativeCollectionSerializer.decode(v1JSON), into: destCtx)
@@ -3130,7 +3133,7 @@ struct CollectionTests {
         #expect(old.includeSourceNote == nil)
         #expect(old.effectiveIncludeSourceNote == true)   // derived from the legacy style
         let oldEntry = try #require((old.documentEntries ?? []).first)
-        #expect(oldEntry.includeHeadnote == false)
+        #expect(oldEntry.includeHeadnote == nil)
         #expect(oldEntry.headnoteSummaryId == nil)
     }
 

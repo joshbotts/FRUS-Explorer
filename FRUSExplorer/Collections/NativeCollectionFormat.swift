@@ -416,9 +416,10 @@ enum NativeCollectionSerializer {
                         titleOverride: entry.titleOverride.flatMap { $0.isEmpty ? nil : $0 },
                         text: nil,
                         richText: nil,
-                        // Phase 5 headnote keys — the default (false/nil) is omitted so
-                        // a headnote-free entry carries no v2 key at all.
-                        includeHeadnote: entry.includeHeadnote ? true : nil,
+                        // Phase 5 headnote keys — Default (nil) and Off (false) both omit the key,
+                        // so a headnote-free entry stays byte-identical; only an explicit On (true)
+                        // serializes (Composer redesign widened the field to optional).
+                        includeHeadnote: entry.includeHeadnote == true ? true : nil,
                         headnoteSummaryId: entry.headnoteSummaryId,
                         // Phase 5 override keys — nil (every untouched entry) emits
                         // nothing. selectedHighlightIds NEVER serializes (device-local
@@ -622,8 +623,9 @@ enum NativeCollectionSerializer {
             entry.text = dto.text
             entry.richText = dto.richText
             if kind == .document {
-                // Phase 5 headnote keys (absent in older files → the model defaults).
-                entry.includeHeadnote = dto.includeHeadnote ?? false
+                // Phase 5 headnote keys (absent in older files → nil = Default, which resolves to
+                // the collection default — false for imported collections, so unchanged behavior).
+                entry.includeHeadnote = dto.includeHeadnote
                 entry.headnoteSummaryId = dto.headnoteSummaryId
                 // M3 title override (absent in pre-M3 files → nil → derived title).
                 entry.titleOverride = dto.titleOverride

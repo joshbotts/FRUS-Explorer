@@ -262,6 +262,10 @@ struct CollectionExportOptions: Sendable {
     /// When `true`, a word-cloud overview page/section of the collection's most
     /// frequent terms is included. Supported by the PDF and HTML exporters.
     var includeWordCloud: Bool = false
+    /// The collection-level default a document entry's `includeHeadnote == nil` (Default) resolves
+    /// to (Composer redesign). `false` by default, so collections that never set a headnote default
+    /// resolve exactly as before. Set from `Collection.defaultIncludeHeadnote`.
+    var includeHeadnoteDefault: Bool = false
 }
 
 // MARK: - ExportFormat

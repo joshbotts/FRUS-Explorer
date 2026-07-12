@@ -126,12 +126,18 @@ struct CollectionCompositionRows: View {
                           defaultValue: "Apply highlights to document body"),
                    isOn: $collection.applyHighlights)
                 .disabled(bodyDepth.wrappedValue != .full)
+
+            // The collection-level headnote default (Composer redesign): documents at "Default"
+            // inherit this. A per-document card overrides it (Show a summary above the document).
+            Toggle(String(localized: "composition.defaultHeadnote",
+                          defaultValue: "Headnotes"),
+                   isOn: $collection.defaultIncludeHeadnote)
         } header: {
             Text(String(localized: "composition.group.annotations",
                         defaultValue: "Your annotations"))
         } footer: {
             Text(String(localized: "composition.group.annotations.help",
-                        defaultValue: "Your research notes and highlights, carried into the export. Highlights apply to full-text documents only."))
+                        defaultValue: "Your research notes and highlights, and a headnote summary above each document. Highlights apply to full-text documents only."))
         }
 
         // MARK: Analysis & apparatus — generated overviews and the contents-list style. The five

@@ -484,6 +484,7 @@ struct CollectionEntryInspector: View {
         let footnotes: Bool
         let related: Bool
         let summaryPromptId: UUID?
+        let headnote: Bool
     }
 
     /// The resolved defaults for the focused document entry, or `nil` for headings (whose own
@@ -510,7 +511,10 @@ struct CollectionEntryInspector: View {
             sourceNote: section { $0.includeSourceNoteOverride } ?? collection.effectiveIncludeSourceNote,
             footnotes: section { $0.includeFootnotesOverride } ?? collection.effectiveIncludeFootnotes,
             related: section { $0.includeRelatedDocuments } ?? false,
-            summaryPromptId: section { $0.summaryPromptIdOverride } ?? collection.summaryPromptId
+            summaryPromptId: section { $0.summaryPromptIdOverride } ?? collection.summaryPromptId,
+            // Headnote has no heading-level section default in the Composer model — it resolves
+            // straight to the collection default.
+            headnote: collection.defaultIncludeHeadnote
         )
     }
 
@@ -816,12 +820,17 @@ struct CollectionEntryInspector: View {
     /// "Automatic" = the resolver's fallback pick, preferring the collection's prompt).
     @ViewBuilder private var headnoteSection: some View {
         Section(String(localized: "collection.inspector.headnote", defaultValue: "Headnote")) {
-            Toggle(String(localized: "collection.inspector.headnote.toggle",
-                          defaultValue: "Show a summary above the document"),
-                   isOn: Binding(get: { entry.includeHeadnote },
-                                 set: { entry.includeHeadnote = $0 }))
+            // Now a Default/On/Off override (Composer redesign): Default inherits the collection's
+            // headnote default, shown as "Default → On/Off". The editable "key takeaway" card
+            // replaces this in a following phase.
+            let rd = resolvedEntryDefaults
+            overridePicker(String(localized: "collection.inspector.headnote.toggle",
+                                  defaultValue: "Show a summary above the document"),
+                           Binding(get: { entry.includeHeadnote },
+                                   set: { entry.includeHeadnote = $0 }),
+                           subtitle: rd.map { defaultResolves($0.headnote) })
 
-            if entry.includeHeadnote {
+            if entry.includeHeadnote ?? rd?.headnote ?? false {
                 if summaryChoices.isEmpty {
                     Text(String(localized: "collection.inspector.headnote.none",
                                 defaultValue: "No stored summaries for this document. Exports will show a placeholder until one is generated in the document view."))

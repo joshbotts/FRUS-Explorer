@@ -344,7 +344,8 @@ struct ExportSheetView: View {
             applyHighlights:   collection.applyHighlights,
             includeNotes:      collection.includeNotes,
             summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud: collection.includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html)
+            includeWordCloud: collection.includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html),
+            includeHeadnoteDefault: collection.defaultIncludeHeadnote
         )
     }
 
