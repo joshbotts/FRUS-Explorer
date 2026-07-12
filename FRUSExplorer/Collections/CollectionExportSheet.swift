@@ -169,7 +169,7 @@ struct ExportSheetView: View {
         VStack(spacing: 0) {
 
             // Title
-            Text(String(localized: "export.nav.title", defaultValue: "Export Collection"))
+            Text(String(localized: "export.nav.title", defaultValue: "Export collection"))
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -346,7 +346,7 @@ struct ExportSheetView: View {
                     }
                 }
             }
-            .navigationTitle(String(localized: "export.nav.title", defaultValue: "Export Collection"))
+            .navigationTitle(String(localized: "export.nav.title", defaultValue: "Export collection"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

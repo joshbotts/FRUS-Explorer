@@ -683,10 +683,12 @@ struct CollectionEditorView: View {
     /// iPad sheet) so its presets render as the compact 3-chip row here, matching the §C canvas.
     private var iPhoneCollectionSettingsScreen: some View {
         Form {
+            // Composer v2 §C: lead with the presets + three composition groups (compact 3-chip
+            // presets — see the note above), then title-page front matter, then name / note / smart.
+            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
+            frontMatterSection
             nameSection
             noteSection
-            frontMatterSection
-            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
             smartCollectionSection
         }
         .navigationTitle(String(localized: "collection.editor.settings.title",
@@ -744,10 +746,14 @@ struct CollectionEditorView: View {
     private var iPadCollectionSettingsSheet: some View {
         NavigationStack {
             Form {
+                // Composer v2 §A (03-prototype): the settings sheet leads with the presets +
+                // composition groups ("Start from a template"), then title-page front matter, then the
+                // collection's name / note / smart-link. The canvas edits name via the toolbar title;
+                // the sheet keeps it reachable at the end for rename.
+                compositionSection
+                frontMatterSection
                 nameSection
                 noteSection
-                frontMatterSection
-                compositionSection
                 smartCollectionSection
             }
             .formStyle(.grouped)
@@ -1401,6 +1407,7 @@ struct CollectionEditorView: View {
     private func deleteVisibleRow(_ index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
         collapsedHeadingIds.remove(sortedEntries[index].id)
+        GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
         finishOutlineMutation()
@@ -1512,6 +1519,7 @@ struct CollectionEditorView: View {
         let full = indices.compactMap { visible.indices.contains($0) ? visible[$0] : nil }
         for i in full.sorted(by: >) {
             collapsedHeadingIds.remove(sortedEntries[i].id)
+            GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[i], in: modelContext)
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }
@@ -1535,6 +1543,7 @@ struct CollectionEditorView: View {
     private func deleteHeadingOnly(at index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
         collapsedHeadingIds.remove(sortedEntries[index].id)
+        GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
         finishOutlineMutation()
@@ -1548,6 +1557,7 @@ struct CollectionEditorView: View {
         guard range.upperBound <= sortedEntries.count else { return }
         for i in range.reversed() {
             collapsedHeadingIds.remove(sortedEntries[i].id)
+            GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[i], in: modelContext)
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }

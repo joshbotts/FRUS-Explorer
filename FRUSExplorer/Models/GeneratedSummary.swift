@@ -181,3 +181,30 @@ enum SummaryAuthorship: String, Codable, Sendable, CaseIterable {
     case userWritten
 }
 
+// MARK: - Headnote-draft cleanup
+
+extension GeneratedSummary {
+    /// Deletes the dedicated headnote-draft summary a collection entry owns (Composer redesign): the
+    /// `GeneratedSummary` pointed at by `entry.headnoteSummaryId` **when it carries `isHeadnoteDraft`**.
+    /// Call before deleting the entry (or its collection) so an edited/regenerated headnote draft does
+    /// not linger orphaned — and CloudKit-sync forever — after its only owner is gone. Drafts are
+    /// excluded from every summary query (`isHeadnoteDraft`), so they are inert but would otherwise
+    /// accumulate. The `isHeadnoteDraft` guard means a headnote pointed at a *real* document summary is
+    /// never touched (that summary belongs to the document, not the entry).
+    static func deleteHeadnoteDraft(for entry: CollectionEntry, in context: ModelContext) {
+        guard let sid = entry.headnoteSummaryId else { return }
+        let drafts = (try? context.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.id == sid && $0.isHeadnoteDraft }))) ?? []
+        for draft in drafts { context.delete(draft) }
+    }
+
+    /// Deletes the headnote drafts owned by every entry of `collection` — call before deleting the
+    /// whole collection (its entries are deleted without individually routing through
+    /// `deleteHeadnoteDraft`).
+    static func deleteHeadnoteDrafts(for collection: Collection, in context: ModelContext) {
+        for entry in collection.documentEntries ?? [] {
+            deleteHeadnoteDraft(for: entry, in: context)
+        }
+    }
+}
+
