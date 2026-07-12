@@ -77,17 +77,6 @@ import SwiftData
 ///          previously it showed the source-note header, which `exportHeading` never uses
 struct CollectionEntryInspector: View {
 
-    /// One stored summary choice for the headnote picker: identity, producing-prompt
-    /// label, and a short preview.
-    private struct SummaryChoice: Identifiable {
-        /// The `GeneratedSummary.id`.
-        let id: UUID
-        /// The producing prompt's display name, or a fallback when the prompt is gone.
-        let promptName: String
-        /// The summary text (used for the preview row).
-        let text: String
-    }
-
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
     private struct HighlightChoice: Identifiable {
         /// The source highlight's id — row identity only, never serialized.
@@ -151,7 +140,9 @@ struct CollectionEntryInspector: View {
     @State private var sourceNote: String?
     @State private var summaryPreview: String?
     @State private var summaryPromptName: String?
-    @State private var summaryChoices: [SummaryChoice] = []
+    /// The editable-headnote card's draft buffer + edit mode (Composer redesign).
+    @State private var headnoteDraft: String = ""
+    @State private var isEditingHeadnote = false
     @State private var noteTexts: [String] = []
     /// The document's research notes as include-toggle rows (D5).
     @State private var noteChoices: [NoteChoice] = []
@@ -831,26 +822,151 @@ struct CollectionEntryInspector: View {
                            subtitle: rd.map { defaultResolves($0.headnote) })
 
             if entry.includeHeadnote ?? rd?.headnote ?? false {
-                if summaryChoices.isEmpty {
-                    Text(String(localized: "collection.inspector.headnote.none",
-                                defaultValue: "No stored summaries for this document. Exports will show a placeholder until one is generated in the document view."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Picker(String(localized: "collection.inspector.headnote.pick",
-                                  defaultValue: "Summary"),
-                           selection: Binding(get: { entry.headnoteSummaryId },
-                                              set: { entry.headnoteSummaryId = $0 })) {
-                        Text(String(localized: "collection.inspector.headnote.automatic",
-                                    defaultValue: "Automatic"))
-                            .tag(UUID?.none)
-                        ForEach(summaryChoices) { choice in
-                            Text(choice.promptName).tag(UUID?.some(choice.id))
-                        }
-                    }
-                }
+                headnoteCard
             }
         }
+    }
+
+    /// Reserved `promptId` stamped on a dedicated headnote draft — it has no producing prompt, and
+    /// `isHeadnoteDraft` already excludes it from every prompt-aware query.
+    private static let headnoteDraftPromptId = UUID(uuidString: "0EAD0000-0000-4000-8000-000000000001")!
+
+    /// The `GeneratedSummary` backing this entry's headnote: the explicit pick (including a
+    /// dedicated draft, fetched by id), else the resolver's fallback (the collection prompt's
+    /// summary, else the first non-empty non-draft) — mirroring `CollectionContentResolver`.
+    private var currentHeadnoteSummary: GeneratedSummary? {
+        let vid = entry.volumeId
+        let did = entry.documentId
+        if let sid = entry.headnoteSummaryId,
+           let chosen = try? modelContext.fetch(
+               FetchDescriptor<GeneratedSummary>(predicate: #Predicate { $0.id == sid })).first,
+           !chosen.responseText.isEmpty {
+            return chosen
+        }
+        let stored = ((try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did && !$0.isHeadnoteDraft }))) ?? [])
+            .filter { !$0.responseText.isEmpty }
+        // Mirror the resolver's preferred-prompt precedence (entry override → section default →
+        // collection default) so the card seeds and edits the SAME summary the export will use.
+        let promptId = entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId
+        return promptId.flatMap { pid in stored.first { $0.promptId == pid } } ?? stored.first
+    }
+
+    /// The editable "key takeaway" headnote card (Composer redesign): the resolved abstract that
+    /// renders above the document in exports, presented as a first-class editable takeaway. AI seeds
+    /// it (a stored summary); the user can Edit it into a dedicated draft that never touches the
+    /// document's summaries and, once edited, is not labeled AI. (Regenerate arrives next.)
+    @ViewBuilder private var headnoteCard: some View {
+        let summary = currentHeadnoteSummary
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(String(localized: "collection.inspector.headnote.keyTakeaway",
+                            defaultValue: "Key takeaway"))
+                    .font(.caption2).fontWeight(.semibold)
+                    .textCase(.uppercase)
+                    .foregroundStyle(FRUSTheme.editorialNoteForeground)
+                Spacer()
+                headnoteProvenanceChip(summary?.authorship)
+            }
+
+            if isEditingHeadnote {
+                TextEditor(text: $headnoteDraft)
+                    .font(.callout)
+                    .frame(minHeight: 72)
+                    .scrollContentBackground(.hidden)
+                    .overlay(RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(FRUSTheme.editorialNoteForeground.opacity(0.3)))
+                HStack {
+                    Button(String(localized: "common.cancel", defaultValue: "Cancel")) {
+                        isEditingHeadnote = false
+                    }
+                    .buttonStyle(.borderless)
+                    Spacer()
+                    Button(String(localized: "collection.inspector.headnote.save", defaultValue: "Save")) {
+                        commitHeadnote(seed: summary)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(headnoteDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                .font(.caption)
+            } else {
+                if let text = summary?.responseText, !text.isEmpty {
+                    Text(text).font(.callout).italic()
+                } else {
+                    Text(String(localized: "collection.inspector.headnote.empty",
+                                defaultValue: "No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one."))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Button {
+                    headnoteDraft = summary?.responseText ?? ""
+                    isEditingHeadnote = true
+                } label: {
+                    Label(String(localized: "collection.inspector.headnote.edit", defaultValue: "Edit"),
+                          systemImage: "pencil")
+                }
+                .buttonStyle(.borderless).font(.caption)
+            }
+        }
+        .padding(12)
+        .background(FRUSTheme.editorialNoteBackground, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(FRUSTheme.editorialNoteForeground)
+                .frame(width: 3)
+        }
+    }
+
+    /// The provenance chip in the headnote card header — AI draft / AI · edited / Yours.
+    @ViewBuilder private func headnoteProvenanceChip(_ authorship: SummaryAuthorship?) -> some View {
+        if let authorship {
+            let label: (text: String, icon: String) = {
+                switch authorship {
+                case .aiGenerated:
+                    return (String(localized: "collection.inspector.headnote.chip.ai",
+                                   defaultValue: "AI draft"), "sparkles")
+                case .aiEdited:
+                    return (String(localized: "collection.inspector.headnote.chip.aiEdited",
+                                   defaultValue: "AI \u{00B7} edited"), "pencil")
+                case .userWritten:
+                    return (String(localized: "collection.inspector.headnote.chip.user",
+                                   defaultValue: "Yours"), "person")
+                }
+            }()
+            Label(label.text, systemImage: label.icon)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Commits an edited headnote as a dedicated `GeneratedSummary` draft (Composer redesign): a
+    /// change to an AI seed is `.aiEdited`, otherwise `.userWritten`; either way the draft is marked
+    /// `isHeadnoteDraft` so it never appears among the document's summaries, and the export
+    /// attribution honors its authorship. A prior draft is deleted so the new id changes the
+    /// preview fingerprint (which hashes `headnoteSummaryId`, not the text) and the preview refreshes.
+    private func commitHeadnote(seed: GeneratedSummary?) {
+        isEditingHeadnote = false
+        let trimmed = headnoteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Compare trimmed-to-trimmed so a whitespace-only edit of the seed is a genuine no-op and does
+        // not spuriously mint a new draft (which would also flip attribution).
+        guard !trimmed.isEmpty,
+              seed?.responseText.trimmingCharacters(in: .whitespacesAndNewlines) != trimmed else { return }
+        // AI-derived text — whether a fresh AI draft or one already AI-edited — stays labeled as
+        // AI-assisted across further edits; only a nil seed or the user's own text yields `.userWritten`.
+        let seedIsAIDerived = seed?.authorship == .aiGenerated || seed?.authorship == .aiEdited
+        let authorship: SummaryAuthorship =
+            (seedIsAIDerived && !(seed?.responseText.isEmpty ?? true)) ? .aiEdited : .userWritten
+        if let sid = entry.headnoteSummaryId,
+           let existing = try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
+               predicate: #Predicate { $0.id == sid })).first,
+           existing.isHeadnoteDraft {
+            modelContext.delete(existing)
+        }
+        let draft = GeneratedSummary(documentId: entry.documentId, volumeId: entry.volumeId,
+                                     promptId: Self.headnoteDraftPromptId, responseText: trimmed,
+                                     authorship: authorship, isHeadnoteDraft: true)
+        modelContext.insert(draft)
+        entry.headnoteSummaryId = draft.id
+        try? modelContext.save()
     }
 
     @ViewBuilder private var provenanceSection: some View {
@@ -954,14 +1070,6 @@ struct CollectionEntryInspector: View {
             ?? summaries.first
         summaryPreview = shown?.responseText
         summaryPromptName = shown.flatMap { promptNames[$0.promptId] }
-        summaryChoices = summaries.map { summary in
-            SummaryChoice(
-                id: summary.id,
-                promptName: promptNames[summary.promptId]
-                    ?? String(localized: "collection.inspector.headnote.unknownPrompt",
-                              defaultValue: "Deleted prompt"),
-                text: summary.responseText)
-        }
 
         if let store = appState.crossReferenceStore {
             header = (try? await store.documentHeaders(
