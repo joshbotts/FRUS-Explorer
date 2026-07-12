@@ -644,6 +644,11 @@ struct EntryRow: View {
     /// presenting editor decides the surface: an iPhone `.sheet` or an iPad selection-
     /// driven `.inspector` column.
     var onInspect: () -> Void
+    /// Whether to render the trailing **⚙ Configure** pill (Composer v2 §D). `true` on the iPad
+    /// (regular-width) rows where the pill is the labeled configure trigger; `false` on the iPhone
+    /// (compact) drill-in rows, where the whole-row disclosure is the trigger, so the row shows a
+    /// chevron accessory instead — matching the §C iPhone canvas.
+    var showsConfigurePill: Bool = true
     /// Moves the row one visible position up (UI audit A4); `nil` omits the action.
     var onMoveUp: (() -> Void)? = nil
     /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
@@ -691,17 +696,53 @@ struct EntryRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Labeled Configure trigger (Composer v2 §D) — opens the per-entry inspector. Replaces
-            // the earlier trailing ⓘ glyph; the whole-row tap below still opens it too.
-            ConfigurePill(action: onInspect)
+            // Configure trigger (Composer v2 §D). iPad (regular): the labeled ⚙ Configure pill.
+            // iPhone (compact): the whole-row disclosure is the trigger, so show a chevron accessory
+            // instead of the pill — matching the §C drill-in canvas.
+            if showsConfigurePill {
+                ConfigurePill(action: onInspect)
+            } else {
+                Image(systemName: "chevron.forward")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
         }
         .padding(.vertical, 4)
         // Whole-row tap focuses the inspector on this document (#188-E). `.contentShape` makes the
-        // padding/Spacer regions hit-testable; the Configure Button consumes its own tap first, so
-        // there is no double-fire, and a discrete tap does not swallow the List's swipe-to-delete.
+        // padding/Spacer regions hit-testable; the Configure Button (when shown) consumes its own tap
+        // first, so there is no double-fire, and a discrete tap does not swallow swipe-to-delete.
         .contentShape(Rectangle())
         .onTapGesture { onInspect() }
+        // Without the pill (iPhone) the row itself is the configure control: merge its children into
+        // one focusable button and bridge VoiceOver activation to `onInspect` — a bare
+        // `.onTapGesture` is not exposed to VoiceOver. With the pill (iPad) the `ConfigurePill` is
+        // already the labeled a11y button, so the row's children stay individually navigable.
+        .modifier(EntryRowConfigureAccessibility(enabled: !showsConfigurePill, action: onInspect))
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
+    }
+}
+
+/// Accessibility grouping for the pill-less (iPhone drill-in) `EntryRow`: collapses the row's
+/// identity + status chips into a single focusable **button** and wires VoiceOver activation to the
+/// configure action, since a bare `.onTapGesture` is not surfaced to VoiceOver. Inert on the pill
+/// path — the `ConfigurePill` is already a labeled button and the row stays child-navigable.
+private struct EntryRowConfigureAccessibility: ViewModifier {
+    /// Whether to apply the button grouping (true on the iPhone chevron rows).
+    let enabled: Bool
+    /// The configure action VoiceOver activation invokes.
+    let action: () -> Void
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text(String(localized: "collection.entry.configure.hint",
+                                                defaultValue: "Opens this document's settings")))
+                .accessibilityAction { action() }
+        } else {
+            content
+        }
     }
 }
 
