@@ -492,6 +492,40 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The card title in the Composer v2 export format grid (§ Export): the short, canvas-exact
+    /// label (`.zoteroJSON` reads as "RIS" there — the web-API send is a separate row).
+    var gridLabel: String {
+        switch self {
+        case .pdf:            return "PDF"
+        case .html:           return "HTML"
+        case .docx:           return String(localized: "export.grid.docx.title", defaultValue: "Word")
+        case .bibtex:         return "BibTeX"
+        case .zoteroJSON:     return String(localized: "export.grid.ris.title", defaultValue: "RIS")
+        case .fruscollection: return String(localized: "export.grid.native.title", defaultValue: ".fruscollection")
+        }
+    }
+
+    /// The one-line descriptor under the format card's title (Composer v2 export grid).
+    var gridCaption: String {
+        switch self {
+        case .pdf:            return String(localized: "export.grid.pdf.caption", defaultValue: "Formatted reader")
+        case .html:           return String(localized: "export.grid.html.caption", defaultValue: "Web page + word cloud")
+        case .docx:           return String(localized: "export.grid.docx.caption", defaultValue: "Editable .docx")
+        case .bibtex:         return String(localized: "export.grid.bibtex.caption", defaultValue: "Reference manager")
+        case .zoteroJSON:     return String(localized: "export.grid.ris.caption", defaultValue: "Zotero / EndNote")
+        case .fruscollection: return String(localized: "export.grid.native.caption", defaultValue: "Editable copy for a colleague")
+        }
+    }
+
+    /// The formats offered in the export grid, in canvas order (PDF · HTML · Word · BibTeX · RIS ·
+    /// .fruscollection). The native `.fruscollection` file is dropped for smart (saved-search)
+    /// collections until they're snapshotted (D8/D9b); the web-API Zotero send is a separate row,
+    /// not a grid card.
+    static func gridFormats(smartCollection: Bool) -> [ExportFormat] {
+        let ordered: [ExportFormat] = [.pdf, .html, .docx, .bibtex, .zoteroJSON, .fruscollection]
+        return smartCollection ? ordered.filter { $0 != .fruscollection } : ordered
+    }
+
     var fileExtension: String {
         switch self {
         case .zoteroJSON:     return "ris"

@@ -52,17 +52,94 @@ struct ExportSheetView: View {
     /// Non-nil after a successful "Send to Zotero Library" run (drives the result alert).
     @State private var zoteroResult: ZoteroSendResult? = nil
 
-    /// The document formats offered in the picker. Zotero RIS is excluded — it now lives in the
-    /// unified "Send to Zotero…" menu (D6) — and the native `.fruscollection` file is hidden for
-    /// smart (saved-search) collections until they're snapshotted (D8/D9b).
-    private var availableFormats: [ExportFormat] {
-        ExportFormat.allCases.filter { fmt in
-            switch fmt {
-            case .zoteroJSON:     return false
-            case .fruscollection: return collection.savedSearchId == nil
-            default:              return true
+    /// The formats shown in the grid, in canvas order — the native `.fruscollection` is dropped for
+    /// smart collections (D8/D9b). The web-API Zotero send is the separate `zoteroSendRow`, not a card.
+    private var exportGridFormats: [ExportFormat] {
+        ExportFormat.gridFormats(smartCollection: collection.savedSearchId != nil)
+    }
+
+    /// The "Export {Format}" primary-button title reflecting the selected card (Composer v2 §Export).
+    private var exportButtonTitle: String {
+        String(format: String(localized: "export.button.format %@", defaultValue: "Export %@"),
+               selectedFormat.gridLabel)
+    }
+
+    /// The footer note under the export options (Composer v2 §Export).
+    private var exportFooterNote: String {
+        String(localized: "export.footer.note",
+               defaultValue: "Files download · Zotero sends over the web")
+    }
+
+    /// The 2-column selectable format grid (Composer v2 §Export): each card shows the format label +
+    /// a one-line descriptor and marks itself with an accent border when chosen. Shared by both
+    /// platform bodies.
+    @ViewBuilder
+    private var exportFormatGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                  spacing: 10) {
+            ForEach(exportGridFormats) { fmt in
+                let isSelected = fmt == selectedFormat
+                Button { selectedFormat = fmt } label: {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(fmt.gridLabel)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+                        Text(fmt.gridCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 10)
+                        .fill(isSelected ? Color.accentColor.opacity(0.08) : Color.secondary.opacity(0.06)))
+                    .overlay(RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(isSelected ? Color.accentColor : Color.secondary.opacity(0.25),
+                                      lineWidth: isSelected ? 1.5 : 0.5))
+                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+                .accessibilityLabel(Text("\(fmt.gridLabel), \(fmt.gridCaption)"))
             }
         }
+    }
+
+    /// The separated "Send to Zotero Library" row (Composer v2 §Export): the annotation-preserving
+    /// web-API send when connected, with the RIS-file fallback otherwise — distinct from the RIS
+    /// grid card (a plain file). Shared by both platform bodies.
+    @ViewBuilder
+    private var zoteroSendRow: some View {
+        Button { Task { await sendToZotero() } } label: {
+            HStack(spacing: 12) {
+                // Zotero brand mark (#CC2936, design tokens) — a red rounded "Z".
+                Text(verbatim: "Z")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(RoundedRectangle(cornerRadius: 7)
+                        .fill(Color(red: 0.80, green: 0.16, blue: 0.21)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "export.zotero.send", defaultValue: "Send to Zotero Library"))
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(String(localized: "export.zotero.send.caption",
+                                defaultValue: "Over the Zotero web API — carries your tags & research notes. Falls back to an RIS file with no account."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.forward")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isExporting || (entries.isEmpty && collection.savedSearchId == nil))
     }
 
     var body: some View {
@@ -101,42 +178,30 @@ struct ExportSheetView: View {
 
             Divider()
 
-            // Options
-            VStack(alignment: .leading, spacing: 18) {
+            // Options — the plain-language composition summary (what actually renders, set in the
+            // collection's Composition section), the selectable format grid, the native-file
+            // notes-privacy opt-in when `.fruscollection` is chosen, and the separated "Send to a
+            // Reference Manager" Zotero row (Composer v2 §Export).
+            VStack(alignment: .leading, spacing: 16) {
+                Text(collection.compositionSummarySentence)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                // Format — radio buttons (HIG: mutually exclusive choices in a dialog)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(String(localized: "export.format.header", defaultValue: "Format"))
-                        .font(.callout.weight(.medium))
-                    Picker(
-                        String(localized: "export.format.picker", defaultValue: "Format"),
-                        selection: $selectedFormat
-                    ) {
-                        ForEach(availableFormats) { fmt in
-                            Text(fmt.displayName).tag(fmt)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                }
+                exportFormatGrid
 
                 if selectedFormat == .fruscollection {
-                    nativeShareOptions
-                } else {
-                    // Content composition (body depth, footnotes, notes, highlights, word cloud)
-                    // now lives in the collection manager's Composition section and is persisted
-                    // on the collection — this sheet is purely format + destination. Lead with a
-                    // plain-language summary of what will actually render (Composer redesign 5).
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(collection.compositionSummarySentence)
-                            .font(.callout)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text(String(localized: "export.compositionHint",
-                                    defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    VStack(alignment: .leading, spacing: 6) { nativeShareOptions }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(String(localized: "export.zotero.section",
+                                defaultValue: "Send to a Reference Manager"))
+                        .font(.caption).fontWeight(.semibold).textCase(.uppercase)
+                        .foregroundStyle(.secondary)
+                    zoteroSendRow
+                        .padding(12)
+                        .background(RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.secondary.opacity(0.06)))
                 }
             }
             .padding(.horizontal, 20)
@@ -154,12 +219,17 @@ struct ExportSheetView: View {
 
             Divider()
 
-            // Button bar
+            // Button bar — footer note (left) + Export {Format} (primary, right). Zotero moved into
+            // the content area as its own row (Composer v2 §Export).
             HStack(spacing: 12) {
                 Button(String(localized: "export.close", defaultValue: "Close")) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
+
+                Text(exportFooterNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
@@ -179,15 +249,10 @@ struct ExportSheetView: View {
                     }
                 }
 
-                zoteroMenu
-
                 Button {
                     Task { await runExport() }
                 } label: {
-                    Label(
-                        String(localized: "export.button.label", defaultValue: "Export"),
-                        systemImage: "square.and.arrow.up"
-                    )
+                    Text(exportButtonTitle)
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
@@ -217,27 +282,37 @@ struct ExportSheetView: View {
     private var iOSExportBody: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "export.format.header", defaultValue: "Format")) {
-                    Picker("", selection: $selectedFormat) {
-                        ForEach(availableFormats) { fmt in Text(fmt.displayName).tag(fmt) }
-                    }
-                    .pickerStyle(.menu)
+                // Plain-language summary of what will actually render (set in Composition).
+                Section {
+                    Text(collection.compositionSummarySentence)
+                        .font(.callout)
                 }
 
+                // Selectable format grid (Composer v2 §Export).
+                Section {
+                    exportFormatGrid
+                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                        .listRowBackground(Color.clear)
+                } header: {
+                    Text(String(localized: "export.format.header", defaultValue: "Format"))
+                }
+
+                // Native `.fruscollection` file: research-notes privacy opt-in.
                 if selectedFormat == .fruscollection {
-                    Section {
-                        nativeShareOptions
-                    }
-                } else {
-                    Section {
-                        Text(collection.compositionSummarySentence)
-                            .font(.callout)
-                    } footer: {
-                        Text(String(localized: "export.compositionHint",
-                                    defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
-                    }
+                    Section { nativeShareOptions }
                 }
 
+                // Separated "Send to a Reference Manager" Zotero row.
+                Section {
+                    zoteroSendRow
+                } header: {
+                    Text(String(localized: "export.zotero.section",
+                                defaultValue: "Send to a Reference Manager"))
+                } footer: {
+                    Text(exportFooterNote)
+                }
+
+                // Progress feedback, or the Export {Format} primary button.
                 Section {
                     if let msg = preparingMessage ?? summaryGeneratingMessage {
                         HStack {
@@ -255,13 +330,11 @@ struct ExportSheetView: View {
                         Button {
                             Task { await runExport() }
                         } label: {
-                            Label(
-                                String(localized: "export.button.label", defaultValue: "Export"),
-                                systemImage: "square.and.arrow.up"
-                            )
+                            Text(exportButtonTitle)
+                                .frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(.borderedProminent)
                         .disabled(entries.isEmpty && collection.savedSearchId == nil)
-                        zoteroMenu
                     }
                 }
 
@@ -301,6 +374,13 @@ struct ExportSheetView: View {
         // Native shareable-collection file (D9): serialize the collection's source directly.
         if selectedFormat == .fruscollection {
             runNativeExport()
+            return
+        }
+
+        // The RIS card resolves citations only (no body/summaries/volume downloads), so route it
+        // through the Zotero RIS path rather than the generic render pipeline (Composer v2 §Export).
+        if selectedFormat == .zoteroJSON {
+            await exportZoteroRIS()
             return
         }
 
@@ -434,44 +514,15 @@ struct ExportSheetView: View {
     /// `true` when a Zotero account is connected (Settings → Integrations → Zotero).
     private var isZoteroConnected: Bool { ZoteroAccountStore.shared.isConnected }
 
-    /// A single "Send to Zotero…" menu (D6): one entry point that covers both the
-    /// connected-account Web-API path (annotation-preserving, works on iOS) and the RIS-file
-    /// fallback for Zotero desktop — replacing the former split between a picker format
-    /// ("Zotero RIS") and a separate "Send to Zotero Library" button that behaved differently.
-    @ViewBuilder
-    private var zoteroMenu: some View {
-        Menu {
-            if isZoteroConnected {
-                Button {
-                    Task { await sendToZoteroLibrary() }
-                } label: {
-                    Label(String(localized: "export.zotero.send",
-                                 defaultValue: "Send to Zotero Library"),
-                          systemImage: "books.vertical")
-                }
-                Button {
-                    Task { await exportZoteroRIS() }
-                } label: {
-                    Label(String(localized: "export.zotero.risAlt",
-                                 defaultValue: "Export RIS File Instead"),
-                          systemImage: "doc.text")
-                }
-            } else {
-                Button {
-                    Task { await exportZoteroRIS() }
-                } label: {
-                    Label(String(localized: "export.zotero.risDesktop",
-                                 defaultValue: "Export RIS File (Zotero desktop)"),
-                          systemImage: "doc.text")
-                }
-                Text(String(localized: "export.zotero.connectHint",
-                            defaultValue: "Connect a Zotero account in Settings to send directly."))
-            }
-        } label: {
-            Label(String(localized: "export.zotero.menu", defaultValue: "Send to Zotero…"),
-                  systemImage: "books.vertical")
+    /// The unified "Send to Zotero Library" action (Composer v2 §Export), invoked by `zoteroSendRow`:
+    /// the annotation-preserving Web-API send when a Zotero account is connected, else the RIS-file
+    /// fallback for Zotero desktop (the row's caption states this behavior).
+    private func sendToZotero() async {
+        if isZoteroConnected {
+            await sendToZoteroLibrary()
+        } else {
+            await exportZoteroRIS()
         }
-        .disabled(isExporting || (entries.isEmpty && collection.savedSearchId == nil))
     }
 
     /// Produces the Zotero RIS file (desktop-import fallback) and routes it into the shared

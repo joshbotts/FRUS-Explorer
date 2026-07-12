@@ -1177,9 +1177,13 @@ struct CollectionEditorView: View {
                 Menu {
                     sortByDateScopeItems
                 } label: {
-                    Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
+                    // Composer v2 §Export toolbar: the trigger reads "Sort" (the menu supplies the ⌄);
+                    // the two date-sort scopes live inside. VoiceOver keeps the fuller description.
+                    Label(String(localized: "collection.sort.short", defaultValue: "Sort"),
                           systemImage: "arrow.up.arrow.down")
                 }
+                .accessibilityLabel(String(localized: "collection.sort.date.accessibility",
+                                           defaultValue: "Sort by date"))
                 .disabled(sortedEntries.isEmpty)
             }
             ToolbarItem(placement: .primaryAction) {

@@ -316,7 +316,11 @@ enum CollectionDocumentDiscovery {
     /// The localized "Added N documents" confirmation toast message (Composer redesign 5), shared by
     /// both editors so the wording stays consistent.
     static func addedToastMessage(_ count: Int) -> String {
-        String(format: String(localized: "collection.addDocs.addedToast %lld",
+        if count == 1 {
+            return String(localized: "collection.addDocs.addedToast.one",
+                          defaultValue: "Added 1 document")
+        }
+        return String(format: String(localized: "collection.addDocs.addedToast %lld",
                               defaultValue: "Added %lld documents"), Int64(count))
     }
 

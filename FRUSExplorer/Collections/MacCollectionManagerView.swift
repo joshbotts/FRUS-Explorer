@@ -1253,9 +1253,13 @@ private struct CollectionDetailPane: View {
                     }
                 }
             } label: {
-                Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
+                // Composer v2 §Export: the trigger reads "Sort" (the menu supplies the ⌄); the two
+                // date-sort scopes live inside.
+                Label(String(localized: "collection.sort.short", defaultValue: "Sort"),
                       systemImage: "arrow.up.arrow.down")
             }
+            .accessibilityLabel(String(localized: "collection.sort.date.accessibility",
+                                       defaultValue: "Sort by date"))
             .disabled(sortedEntries.isEmpty)
 
             Button { showCollectionSettingsPopover = true } label: {
