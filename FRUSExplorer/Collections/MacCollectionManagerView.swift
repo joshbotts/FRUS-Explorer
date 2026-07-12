@@ -128,6 +128,9 @@ struct MacCollectionManagerView: View {
     @State private var importError: String? = nil
     /// Non-nil to present a smart-collection snapshot-failure alert.
     @State private var snapshotError: String? = nil
+    /// Composer v2 (§B): the "Manage Collections…" sheet (rename / delete), reached from the toolbar
+    /// collection picker.
+    @State private var showManageCollections = false
 
     private var filteredCollections: [Collection] {
         Collection.visibleCollections(allCollections,
@@ -161,6 +164,53 @@ struct MacCollectionManagerView: View {
         allCollections.first { $0.id == selectedId }
     }
 
+    /// The display name for a collection, with a placeholder for an untitled one.
+    private func collectionDisplayName(_ c: Collection) -> String {
+        c.name.isEmpty
+            ? String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
+            : c.name
+    }
+
+    /// Composer v2 (§B): the toolbar collection PICKER — the everyday switcher that replaces the
+    /// permanent sidebar. Its label shows the current collection + document count; the menu body is
+    /// an inline Picker of collections (a ✓ marks the current) plus New / Import / Manage actions.
+    private var collectionPickerMenu: some View {
+        Menu {
+            Picker(selection: $selectedId) {
+                ForEach(filteredCollections) { c in
+                    Text(verbatim: "\(collectionDisplayName(c))  ·  \(c.documentEntries?.count ?? 0)")
+                        .tag(Optional(c.id))
+                }
+            } label: { EmptyView() }
+            .pickerStyle(.inline)
+
+            Divider()
+            Button { showNewCollection = true } label: {
+                Label(String(localized: "collections.picker.new", defaultValue: "New Collection…"),
+                      systemImage: "plus")
+            }
+            Button { isImporting = true } label: {
+                Label(String(localized: "collections.toolbar.import", defaultValue: "Import Collection…"),
+                      systemImage: "square.and.arrow.down")
+            }
+            Button { showManageCollections = true } label: {
+                Label(String(localized: "collections.picker.manage", defaultValue: "Manage Collections…"),
+                      systemImage: "list.bullet")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "line.3.horizontal")
+                Text(selectedCollection.map(collectionDisplayName)
+                     ?? String(localized: "collections.picker.title", defaultValue: "Collections"))
+                    .fontWeight(.semibold)
+                if let c = selectedCollection {
+                    Text(verbatim: "\(c.documentEntries?.count ?? 0)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
     var body: some View {
         NavigationSplitView {
             sidebarContent
@@ -182,6 +232,20 @@ struct MacCollectionManagerView: View {
         .sheet(isPresented: $showNewCollection) {
             NewCollectionSheet { id in selectedId = id }
                 .environment(appState)
+        }
+        // Composer v2 (§B): the "Manage Collections…" sheet — rename / delete, keeping the current
+        // sort. Reached from the toolbar collection picker (which replaces the sidebar's management
+        // role in Step 3).
+        .sheet(isPresented: $showManageCollections) {
+            MacManageCollectionsSheet(collections: filteredCollections, selectedId: $selectedId)
+                .environment(appState)
+        }
+        // Composer v2 (§B): the toolbar collection PICKER — the everyday switcher. Coexists with the
+        // sidebar until Step 3 removes it; both write `selectedId`.
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                collectionPickerMenu
+            }
         }
         .fileImporter(isPresented: $isImporting,
                       allowedContentTypes: [.fruscollection],
@@ -473,6 +537,75 @@ private struct NewCollectionSheet: View {
     }
 }
 
+// MARK: - MacManageCollectionsSheet (Composer v2 §B)
+
+/// The "Manage Collections…" sheet reached from the toolbar collection picker — the full list of
+/// collections with inline rename and delete (keeping the current sort; no manual reorder). Takes
+/// over the permanent sidebar's management role.
+private struct MacManageCollectionsSheet: View {
+    /// The collections to manage (already project-filtered by the caller).
+    let collections: [Collection]
+    /// The manager's current selection, cleared if the selected collection is deleted here.
+    @Binding var selectedId: UUID?
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "collections.manage.title", defaultValue: "Manage Collections"))
+                    .font(.headline)
+                Spacer()
+                Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(20)
+            Divider()
+            if collections.isEmpty {
+                ContentUnavailableView {
+                    Label(String(localized: "collections.manage.empty", defaultValue: "No Collections"),
+                          systemImage: "tray")
+                }
+                .frame(maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(collections) { c in
+                        ManageCollectionRow(collection: c)
+                    }
+                    .onDelete { offsets in
+                        for i in offsets {
+                            let c = collections[i]
+                            if selectedId == c.id { selectedId = nil }
+                            for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
+                            modelContext.delete(c)
+                        }
+                        try? modelContext.save()
+                    }
+                }
+            }
+        }
+        .frame(minWidth: 440, minHeight: 420)
+    }
+}
+
+/// One editable row in the Manage Collections sheet: an inline rename field + the document count.
+private struct ManageCollectionRow: View {
+    @Bindable var collection: Collection
+
+    var body: some View {
+        HStack {
+            TextField(String(localized: "collection.untitled.name", defaultValue: "Untitled Collection"),
+                      text: $collection.name)
+                .textFieldStyle(.plain)
+            Spacer()
+            Text(verbatim: "\(collection.documentEntries?.count ?? 0)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+    }
+}
+
 // MARK: - CollectionDetailPane
 
 /// Detail pane that lets the user edit a single selected collection.
@@ -511,6 +644,10 @@ private struct CollectionDetailPane: View {
     /// Presents the bulk "Add Highlighted Passages" sheet (Authoring Phase 5).
     @State private var showAddHighlights = false
     @State private var showExport = false
+    /// Composer v2 (§B): the ⚙ Collection settings popover — the metadata / front-matter /
+    /// composition surface that (from Step 4) replaces the fixed header + inline
+    /// Composition/Front-Matter disclosures.
+    @State private var showCollectionSettingsPopover = false
     /// Expansion state of the inline Composition disclosure at the top of the entries list.
     @State private var showComposition = false
     /// Expansion state of the inline Front Matter disclosure (introduction + colophon) —
@@ -858,6 +995,54 @@ private struct CollectionDetailPane: View {
                     }
                 }
         }
+    }
+
+    // MARK: - Collection settings popover (Composer v2 §B)
+
+    /// The ⚙ Collection settings popover content: the collection's metadata (name / subtitle /
+    /// author / note), title-page front matter (rich-text introduction + colophon), and the presets
+    /// + three grouped composition sections. Replaces the fixed header + inline Composition/Front-
+    /// Matter disclosures (removed in Step 4). `presetsCompact: false` renders the 2×2 preset grid —
+    /// a popover is wide enough. Bound to the pane's live `@State`, so `saveMetadata` still fires.
+    private var macCollectionSettingsForm: some View {
+        Form {
+            Section {
+                TextField(String(localized: "collection.editor.name.placeholder",
+                                 defaultValue: "Collection Name"), text: $name)
+                TextField(String(localized: "collection.frontmatter.subtitle.placeholder",
+                                 defaultValue: "Subtitle (title page)"), text: $subtitle)
+                TextField(authorPlaceholder, text: $authorLine)
+            } header: {
+                Text(String(localized: "collection.editor.settings.name", defaultValue: "Name"))
+            }
+
+            Section {
+                TextEditor(text: $note)
+                    .font(.body)
+                    .frame(minHeight: 60, maxHeight: 140)
+            } header: {
+                Text(String(localized: "collection.editor.note", defaultValue: "Note"))
+            }
+
+            Section {
+                RichTextEditor(initialRTF: collection.introductionRichText,
+                               plainFallback: collection.introductionText ?? "") { rtf, plain in
+                    saveIntroduction(rtf: rtf, plain: plain)
+                }
+                .frame(minHeight: 80, maxHeight: 180)
+                Toggle(String(localized: "collection.frontmatter.colophon.toggle",
+                              defaultValue: "Include colophon"), isOn: $includeColophon)
+            } header: {
+                Text(String(localized: "collection.frontmatter.titlePage",
+                            defaultValue: "Title Page & Introduction"))
+            }
+
+            CollectionCompositionRows(collection: collection,
+                                      onApplyPreset: { applyPreset($0) },
+                                      presetsCompact: false)
+        }
+        .formStyle(.grouped)
+        .frame(minWidth: 420, idealWidth: 420, minHeight: 480, idealHeight: 560)
     }
 
     // MARK: - Documents
@@ -1212,10 +1397,23 @@ private struct CollectionDetailPane: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
-            // Collections Manager M1: Add Documents and Preview moved into
-            // `CollectionRibbonView` (the labeled second row of the editor column).
-            // Export stays on the titlebar too as a small, familiar redundancy —
-            // it is the collection's single terminal action.
+            // Composer v2 (§B): the ⚙ Collection settings popover — collection metadata, front
+            // matter, presets, and the three composition groups. Step 1 adds it beside Export while
+            // the inline header/disclosures still exist; Step 4 removes those, leaving this the sole
+            // collection-settings surface.
+            Button {
+                showCollectionSettingsPopover = true
+            } label: {
+                Label(String(localized: "collection.toolbar.settings", defaultValue: "Collection"),
+                      systemImage: "gearshape")
+            }
+            .help(String(localized: "collection.toolbar.settings.help",
+                         defaultValue: "Edit this collection's name, front matter, and composition"))
+            .popover(isPresented: $showCollectionSettingsPopover, arrowEdge: .top) {
+                macCollectionSettingsForm
+            }
+
+            // Export stays on the titlebar — the collection's single terminal action.
             Button {
                 showExport = true
             } label: {
