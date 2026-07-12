@@ -1334,9 +1334,13 @@ class CollectionContentResolver {
             // through to the stored-summary fallback rather than silently dropping
             // the requested headnote.
         }
+        // Exclude headnote drafts from the fallback: a draft is a per-entry private summary reachable
+        // ONLY via its owning entry's explicit `headnoteSummaryId` (handled above). Without this,
+        // a second entry for the same document with no headnote of its own could fall back onto the
+        // first entry's private draft.
         let descriptor = FetchDescriptor<GeneratedSummary>(
             predicate: #Predicate<GeneratedSummary> { s in
-                s.volumeId == vid && s.documentId == did
+                s.volumeId == vid && s.documentId == did && s.isHeadnoteDraft == false
             }
         )
         let stored = ((try? modelContext.fetch(descriptor)) ?? [])
