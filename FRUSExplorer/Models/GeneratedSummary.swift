@@ -91,6 +91,14 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// Who authored this summary's text — the on-device AI (default), the AI then edited by the
+    /// user, or the user from scratch (Composer redesign, editable headnotes). The export
+    /// attribution reads this so a user-written or -edited headnote is never mislabeled
+    /// "AI-generated". Defaults to `.aiGenerated`, so every existing summary is attributed as before.
+    var authorship: SummaryAuthorship = SummaryAuthorship.aiGenerated {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Project Context
 
     /// The project active at generation time. `nil` if generated in global context.
@@ -114,7 +122,8 @@ import SwiftData
         responseText: String,
         responseFormat: ResponseFormat = .general,
         wasChunked: Bool = false,
-        projectId: UUID? = nil
+        projectId: UUID? = nil,
+        authorship: SummaryAuthorship = .aiGenerated
     ) {
         self.id = UUID()
         self.documentId = documentId
@@ -124,6 +133,7 @@ import SwiftData
         self.responseFormat = responseFormat
         self.wasChunked = wasChunked
         self.projectId = projectId
+        self.authorship = authorship
         let now = Date.now
         createdAt = now
         lastModified = now
@@ -132,5 +142,20 @@ import SwiftData
         print("[SwiftData] GeneratedSummary created: \(id) for \(volumeId)/\(documentId)")
         #endif
     }
+}
+
+// MARK: - SummaryAuthorship
+
+/// The provenance of a `GeneratedSummary`'s text (Composer redesign). Lets exports attribute a
+/// user-written or -edited headnote honestly rather than labeling it "AI-generated". Stored as its
+/// raw string for SwiftData / CloudKit; `.aiGenerated` is the default so existing summaries are
+/// unaffected.
+enum SummaryAuthorship: String, Codable, Sendable, CaseIterable {
+    /// Produced by the on-device summarizer (Apple Intelligence) — the default for every summary.
+    case aiGenerated
+    /// AI-seeded, then edited by the user.
+    case aiEdited
+    /// Written by the user from scratch.
+    case userWritten
 }
 

@@ -147,6 +147,9 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         var includeNotes: Bool
         /// Whether a word-cloud overview is prepended to PDF/HTML exports.
         var includeWordCloud: Bool
+        /// The collection-level headnote default (Composer redesign; v2 optional key). `nil` (its
+        /// default `false`) is omitted so collections without a headnote default stay byte-identical.
+        var defaultIncludeHeadnote: Bool?
     }
 
     // MARK: - Entry
@@ -393,7 +396,9 @@ enum NativeCollectionSerializer {
             tocStyle: collection.tocStyle,
             applyHighlights: collection.applyHighlights,
             includeNotes: collection.includeNotes,
-            includeWordCloud: collection.includeWordCloud
+            includeWordCloud: collection.includeWordCloud,
+            // Only a set (true) headnote default serializes; false omits, keeping byte-compat.
+            defaultIncludeHeadnote: collection.defaultIncludeHeadnote ? true : nil
         )
 
         let entries: [FRUSCollectionFile.Entry] = CollectionOutline
@@ -524,6 +529,7 @@ enum NativeCollectionSerializer {
             || entries.contains { $0.level != nil }
             || composition.includeFootnotes != nil
             || composition.includeSourceNote != nil
+            || composition.defaultIncludeHeadnote != nil
             || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
             || entries.contains { $0.kind == CollectionEntryKind.excerpt.rawValue }
             || entries.contains { $0.kind == CollectionEntryKind.generated.rawValue }
@@ -593,6 +599,8 @@ enum NativeCollectionSerializer {
         collection.applyHighlights = file.composition.applyHighlights
         collection.includeNotes = file.composition.includeNotes
         collection.includeWordCloud = file.composition.includeWordCloud
+        // Absent (older files / no headnote default) → false, unchanged behavior.
+        collection.defaultIncludeHeadnote = file.composition.defaultIncludeHeadnote ?? false
         // v2 front matter (all absent in v1 files → the model defaults, i.e. today's behavior).
         collection.subtitle = file.subtitle
         collection.authorLine = file.authorLine
