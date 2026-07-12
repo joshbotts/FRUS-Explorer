@@ -3169,6 +3169,13 @@ struct CollectionTests {
         d.headnoteSummaryId = nil
         #expect(makeFile().formatVersion == 1)
 
+        coll.defaultIncludeHeadnote = true                 // the collection headnote default → v2
+        #expect(makeFile().formatVersion == 2)
+        #expect(makeFile().composition.defaultIncludeHeadnote == true)
+        coll.defaultIncludeHeadnote = false                // cleared → omitted → v1
+        #expect(makeFile().formatVersion == 1)
+        #expect(makeFile().composition.defaultIncludeHeadnote == nil)
+
         d.applyHighlightsOverride = true                   // any override → v2
         #expect(makeFile().formatVersion == 2)
         d.applyHighlightsOverride = nil
