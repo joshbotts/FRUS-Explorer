@@ -288,13 +288,13 @@ struct ExportSheetView: View {
                         .font(.callout)
                 }
 
-                // Selectable format grid (Composer v2 §Export).
+                // Selectable format grid (Composer v2 §Export) — headerless, matching the canvas (the
+                // grid sits directly under the composition summary with no "Format" label) and the
+                // macOS body.
                 Section {
                     exportFormatGrid
                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                         .listRowBackground(Color.clear)
-                } header: {
-                    Text(String(localized: "export.format.header", defaultValue: "Format"))
                 }
 
                 // Native `.fruscollection` file: research-notes privacy opt-in.
