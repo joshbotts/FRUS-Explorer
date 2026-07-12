@@ -586,26 +586,27 @@ Applying a preset overwrites the composition fields but is **non-destructive**: 
 
 While you compose, a **live preview** shows the collection rendered exactly as its HTML export, updating as you edit:
 
-- On **iPad**, the preview opens **side-by-side** with the document list by default; the **eye** button in the toolbar hides or shows it. A focused document's controls and the collection's composition settings appear in a third **inspector** column (10.3), so Contents · Preview · Inspector sit together.
-- On **iPhone**, switch between **Outline** and **Preview** with the segmented control at the top of the editor. In **Outline**, the composition settings sit behind a **Composition** row that opens its own screen, and tapping a document opens its inspector as a pushed screen — so the outline stays uncluttered.
+- On **iPad**, the manager is **two roomy columns** — the **Contents** outline and the **live preview** — side by side. Settings are summoned on demand rather than living in a permanent column: the **⚙ Collection** toolbar button opens a **Collection settings** sheet (the presets, the three composition groups, and the title-page front matter), and each document row's **⚙ Configure** pill opens *that document's* settings as a sheet (10.3).
+- On **iPhone**, switch between **Outline** and **Preview** with the segmented control at the top of the editor. In **Outline**, a **Collection settings** row at the top opens the collection's settings (presets, composition, and front matter) on its own screen, and each document row is a **disclosure** (a chevron, ⌄) that drills into that document's settings — so the outline stays uncluttered.
 
-`[SCREENSHOT: iPad Composer in three columns — Contents, the live Preview, and the document Inspector topped by the Document · Composition segmented control]`
+`[SCREENSHOT: iPad Composer in two columns — the Contents outline (rows with labeled override chips and a ⚙ Configure pill) beside the live Preview]`
 
 The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
 
 ### 10.6 Export
 
-Tap **Export**, choose a format, and share. Because composition is already set, this sheet is just format + destination — and a one-line **summary of how the collection is composed** (for example, "Exports an AI summary of each document, with headnotes, your notes, and a word-cloud overview") sits at the top so you can confirm the settings at a glance before sharing. To change them, return to the manager's **Composition** section.
+Tap **Export** and share. Because composition is already set, this sheet is just format + destination. A one-line **summary of how the collection is composed** (for example, "Exports an AI summary of each document, with headnotes, your notes, and a word-cloud overview") sits at the top so you can confirm the settings at a glance; below it, a **grid of format cards** — each with a short descriptor — lets you pick one, and the primary button reads **Export {Format}** for the card you chose. To change the composition, return to the manager's **Composition** section.
 
 | Format | Best for |
 |--------|----------|
 | **PDF** | Print-ready output with consistent pagination — renders section headings and rich prose |
 | **HTML** | Web-viewable output that preserves rich formatting — renders section headings and prose |
-| **DOCX (Word)** | Editable output for Word, Pages, or Google Docs — section headings become Word headings (they appear in Word's table of contents) and prose keeps its formatting |
+| **Word** | Editable `.docx` for Word, Pages, or Google Docs — section headings become Word headings (they appear in Word's table of contents) and prose keeps its formatting |
 | **BibTeX** | A `.bib` file (one `@incollection` record per document) for LaTeX and reference managers such as JabRef |
-| **FRUS Collection (shareable)** | A native **`.fruscollection`** file — an *editable* copy of the collection you can hand to a colleague (see below) |
+| **RIS** | A `.ris` file for Zotero, EndNote, and other reference managers — a plain file (the **Send to Zotero Library** row below does the account-based Web-API sync) |
+| **.fruscollection** | A native **`.fruscollection`** file — an *editable* copy of the collection you can hand to a colleague (see below) |
 
-**Send to Zotero.** A single **Send to Zotero…** menu handles reference-manager export. If you've connected a Zotero account (Section 16), **Send to Zotero Library** pushes the whole collection into your library over the Web API, carrying tags and research notes; otherwise it produces an **RIS file** for import into Zotero desktop (File → Import).
+**Send to Zotero.** Below the format grid, a separate **Send to Zotero Library** row handles account-based reference-manager export. If you've connected a Zotero account (Section 16), it pushes the whole collection into your library over the Web API, carrying your tags and research notes; with no account it falls back to producing an **RIS file** for import into Zotero desktop (File → Import).
 
 **Sharing an editable collection (`.fruscollection`).** Choosing the FRUS Collection format saves a small file that carries the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on the **Include my research notes** switch (off by default). The file format upgrades itself automatically: a collection that uses no newer features (nested sections, front matter) is written in the original format that **older versions of the app open unchanged**. Once a collection uses newer features, versions of the app older than this one can no longer open the file (they show a clear "file can't be read" error — ask your colleague to update); future versions will always open today's files, degrading gracefully where needed.
 
@@ -613,7 +614,7 @@ Tap **Export**, choose a format, and share. Because composition is already set, 
 
 **Snapshotting a smart collection.** A *smart* collection — one linked to a saved search — resolves its documents from that search at export time, so its contents aren't fixed and can't be hand-edited. Choose **Create Static Snapshot** (from the collection's context menu) to capture the current results as a new, ordinary collection you can then edit, section, annotate, and share as a `.fruscollection`.
 
-`[SCREENSHOT: Export sheet showing the format menu and the "Include my research notes" toggle]`
+`[SCREENSHOT: Export sheet showing the 2×3 format-card grid (PDF selected with an accent border), the separate Send to Zotero Library row, and the Export PDF button]`
 
 Once exported, the system share sheet appears so you can save the file, print it, or send it anywhere your device supports.
 
