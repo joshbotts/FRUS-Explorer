@@ -146,6 +146,12 @@ struct CollectionEntryInspector: View {
     /// embedded composition shows no Presets section.
     var onApplyPreset: ((CollectionPreset) -> Void)?
 
+    /// Whether this is presented as a **drill-in push** onto an existing navigation stack (iPhone,
+    /// Composer redesign 4). When `true` the inspector omits its own `NavigationStack` and Done
+    /// button — the pushing stack's back button dismisses it. Defaults to `false` (sheet / macOS
+    /// inspector column), which keeps the self-contained stack + Done.
+    var isPushed: Bool = false
+
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -238,44 +244,54 @@ struct CollectionEntryInspector: View {
         }
     }
 
-    /// The shared presentation body — a `NavigationStack` hosting the sectioned list,
-    /// used by both the sheet and inspector-column presentations.
-    private var inspectorBody: some View {
-        NavigationStack {
-            List {
-                if showsCompositionSegment && !isHeading {
-                    // Composer redesign 2b (iPad): the top segmented control splits the pinned flat
-                    // layout into this document's surface vs. the whole-collection composition.
-                    segmentPickerRow
-                    switch inspectorTab {
-                    case .document:
-                        documentSections
-                    case .composition:
-                        collectionSection
-                    }
-                } else {
-                    // Flat pinned layout (iPhone sheet, Mac column, heading rows): collection-level
-                    // attributes stay reachable above the per-entry sections (#188-E).
+    /// The shared presentation body. As a sheet or macOS inspector column it hosts the sectioned
+    /// list in its own `NavigationStack` with a Done button; as an iPhone drill-in **push**
+    /// (`isPushed`) it omits both, letting the pushing stack's back button dismiss it.
+    @ViewBuilder private var inspectorBody: some View {
+        if isPushed {
+            inspectorList
+        } else {
+            NavigationStack { inspectorList }
+        }
+    }
+
+    /// The sectioned inspector list + its title, Done button (sheet/column only), and load task.
+    private var inspectorList: some View {
+        List {
+            if showsCompositionSegment && !isHeading {
+                // Composer redesign 2b (iPad): the top segmented control splits the pinned flat
+                // layout into this document's surface vs. the whole-collection composition.
+                segmentPickerRow
+                switch inspectorTab {
+                case .document:
+                    documentSections
+                case .composition:
                     collectionSection
-                    if isHeading {
-                        headingIdentitySection
-                        sectionDefaultsSection
-                    } else {
-                        documentSections
-                    }
+                }
+            } else {
+                // Flat pinned layout (iPhone sheet, Mac column, heading rows): collection-level
+                // attributes stay reachable above the per-entry sections (#188-E).
+                collectionSection
+                if isHeading {
+                    headingIdentitySection
+                    sectionDefaultsSection
+                } else {
+                    documentSections
                 }
             }
-            .navigationTitle(collectionDisplayTitle)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
+        }
+        .navigationTitle(collectionDisplayTitle)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar {
+            if !isPushed {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
                 }
             }
-            .task { await load() }
         }
+        .task { await load() }
     }
 
     /// The `Document | Composition` segmented control pinned at the top of the inspector (Composer
