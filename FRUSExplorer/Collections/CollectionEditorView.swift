@@ -676,11 +676,11 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// The pushed Collection Settings screen (iPhone drill-in): the collection's name / note, title-
-    /// page front matter, presets + the three grouped composition sections, and the smart-collection
-    /// link — the compact-platform equivalent of the iPad ⚙ Collection sheet. `CollectionCompositionRows`
-    /// is placed directly (not via `compositionSection`, which forces the 2×2 preset grid for the wide
-    /// iPad sheet) so its presets render as the compact 3-chip row here, matching the §C canvas.
+    /// The pushed Collection Settings screen (iPhone drill-in): leads with the presets + the three
+    /// grouped composition sections, then title-page front matter, then the collection's name / note
+    /// and the smart-collection link — the compact-platform equivalent of the iPad ⚙ Collection sheet.
+    /// `CollectionCompositionRows` is placed directly (not via `compositionSection`, which forces the
+    /// 2×2 preset grid for the wide iPad sheet) so its presets render as the compact 3-chip row here.
     private var iPhoneCollectionSettingsScreen: some View {
         Form {
             // Composer v2 §C: lead with the presets + three composition groups (compact 3-chip

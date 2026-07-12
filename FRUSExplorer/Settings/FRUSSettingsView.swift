@@ -3476,6 +3476,11 @@ private struct SettingsResetPane: View {
             ReadingHistoryEntry.self,
             SummarizationPrompt.self,
             Collection.self,       // project's SwiftData model is Collection, not DocumentCollection
+            // `Collection.documentEntries` has deleteRule `.nullify`, not cascade, so entries must be
+            // deleted explicitly — otherwise a full reset leaves orphaned `CollectionEntry` rows
+            // (collection=nil) that CloudKit keeps syncing. iOS `SettingsView.performReset` already
+            // deletes both; keep macOS in parity.
+            CollectionEntry.self,
             UserTag.self,
             Project.self,
         ]
