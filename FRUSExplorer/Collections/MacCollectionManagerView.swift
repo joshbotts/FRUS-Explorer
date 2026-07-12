@@ -654,7 +654,8 @@ private struct CollectionDetailPane: View {
                                 entryIndex: idx)
                         }
                     } : nil,
-                    isInspectorColumn: true
+                    isInspectorColumn: true,
+                    onApplyPreset: { applyPreset($0) }
                 )
                 .id(entry.id)
                 .environment(appState)
@@ -888,7 +889,7 @@ private struct CollectionDetailPane: View {
                 // previously forced a popover — Session 2026-07-01 layout fix). The View-menu
                 // "Composition" toggle ($showComposition) shows or hides the whole group.
                 if showComposition {
-                    CollectionCompositionRows(collection: collection)
+                    CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
                 }
 
                 // Front matter (Phase 4) — the introduction editor and colophon toggle,
@@ -1280,6 +1281,20 @@ private struct CollectionDetailPane: View {
         case .backMatter:  sortedEntries.append(entry)
         }
         reindexEntries()
+    }
+
+    /// Applies a one-tap composition preset (Composer redesign 4a): overwrites the collection's
+    /// composition fields, then inserts the preset's not-yet-present apparatus blocks through
+    /// `addGeneratedEntry` so the `sortedEntries` outline mirror and `sortOrder` stay consistent.
+    /// Non-destructive: existing apparatus and document entries are kept.
+    private func applyPreset(_ preset: CollectionPreset) {
+        preset.applyFields(to: collection)
+        let present = Set(sortedEntries.compactMap {
+            $0.entryKind == .generated ? $0.generatedBlockType : nil
+        })
+        for block in preset.apparatusBlocks(notAlreadyIn: present) {
+            addGeneratedEntry(type: block)
+        }
     }
 
     /// Appends document entries at the end of the entry list in the given order.

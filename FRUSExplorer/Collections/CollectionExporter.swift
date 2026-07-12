@@ -37,6 +37,136 @@ enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+// MARK: - CollectionPreset
+
+/// A one-tap starting composition for a `Collection` (Composer redesign 4a). Applying a preset
+/// **overwrites** the collection's export-composition *fields* (body depth, footnotes, source note,
+/// notes, headnotes, highlights, word cloud, ToC style) and **appends** the apparatus blocks the
+/// preset calls for — non-destructively: existing apparatus and all document entries are left
+/// untouched, and everything stays fully editable afterward.
+///
+/// The field mappings are opinionated (they encode the editor's intent for four common shapes) but
+/// not locked. Note: `applyHighlights` only renders over a **full** body, so on the summary-only
+/// Briefing packet it is a deliberate no-op unless a document overrides its depth to full.
+///
+/// Applying a preset has two parts with different owners: `applyFields(to:)` overwrites the
+/// collection's composition fields directly (safe — every host reads them live via `@Bindable`),
+/// while the apparatus blocks (`apparatusBlocks`) must be inserted through the **host's** entry
+/// management (which keeps its `sortedEntries` mirror + `sortOrder` consistent), so the host drives
+/// insertion via `apparatusBlocks(notAlreadyIn:)`.
+enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
+    /// Full text with the researcher's notes, an archival source note, and an opening persons index
+    /// + chronology — a classroom reader.
+    case teachingReader
+    /// AI summaries with key-takeaway headnotes and a thematic word-cloud overview — a policy brief.
+    case briefingPacket
+    /// Index/outline entries with archival source notes and a Sources & Archives appendix.
+    case sourceDossier
+    /// Everything on, full apparatus — a scholarly edition.
+    case scholarlyEdition
+
+    var id: String { rawValue }
+
+    /// The preset's display name.
+    var displayName: String {
+        switch self {
+        case .teachingReader:   return String(localized: "collection.preset.teachingReader",
+                                              defaultValue: "Teaching reader")
+        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket",
+                                              defaultValue: "Briefing packet")
+        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier",
+                                              defaultValue: "Source dossier")
+        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition",
+                                              defaultValue: "Scholarly edition")
+        }
+    }
+
+    /// A one-line summary of what the preset composes.
+    var subtitle: String {
+        switch self {
+        case .teachingReader:   return String(localized: "collection.preset.teachingReader.subtitle",
+                                              defaultValue: "Full text · notes · chronology")
+        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.subtitle",
+                                              defaultValue: "Summaries · headnotes · word cloud")
+        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier.subtitle",
+                                              defaultValue: "Outline · source notes · sources")
+        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition.subtitle",
+                                              defaultValue: "Everything · full apparatus")
+        }
+    }
+
+    /// The row/menu icon (SF Symbol).
+    var systemImage: String {
+        switch self {
+        case .teachingReader:   return "book"
+        case .briefingPacket:   return "doc.text.magnifyingglass"
+        case .sourceDossier:    return "archivebox"
+        case .scholarlyEdition: return "books.vertical"
+        }
+    }
+
+    /// The apparatus blocks the preset composes (each placed front/back per its type by the host).
+    var apparatusBlocks: [CollectionGeneratedBlockType] { recipe.apparatus }
+
+    /// The preset's apparatus blocks that are **not** already present, given the set of
+    /// `generatedBlockType` raw values the collection already carries — the append-only,
+    /// non-destructive filter the host uses to decide which blocks to insert.
+    func apparatusBlocks(notAlreadyIn presentRawValues: Set<String>) -> [CollectionGeneratedBlockType] {
+        recipe.apparatus.filter { !presentRawValues.contains($0.rawValue) }
+    }
+
+    /// Overwrites `collection`'s composition **fields** to the preset's recipe. Apparatus is added
+    /// separately by the host (see `apparatusBlocks(notAlreadyIn:)`); this touches only scalar
+    /// fields, which every host reads live via `@Bindable`, so the preview updates immediately.
+    @MainActor
+    func applyFields(to collection: Collection) {
+        let r = recipe
+        collection.defaultBodyDepth = r.bodyDepth.rawValue
+        collection.effectiveIncludeFootnotes = r.footnotes
+        collection.effectiveIncludeSourceNote = r.sourceNote
+        collection.includeNotes = r.notes
+        collection.defaultIncludeHeadnote = r.headnotes
+        collection.applyHighlights = r.highlights
+        collection.includeWordCloud = r.wordCloud
+        collection.tocStyle = r.toc.rawValue
+    }
+
+    /// The resolved field set for one preset — one place so `apply` and `apparatusBlocks` agree.
+    private struct Recipe {
+        let bodyDepth: CollectionBodyDepth
+        let footnotes: Bool
+        let sourceNote: Bool
+        let notes: Bool
+        let headnotes: Bool
+        let highlights: Bool
+        let wordCloud: Bool
+        let toc: CollectionToCStyle
+        let apparatus: [CollectionGeneratedBlockType]
+    }
+
+    private var recipe: Recipe {
+        switch self {
+        case .teachingReader:
+            return Recipe(bodyDepth: .full, footnotes: false, sourceNote: true, notes: true,
+                          headnotes: false, highlights: false, wordCloud: false,
+                          toc: .headerAndDateline, apparatus: [.personsIndex, .chronology])
+        case .briefingPacket:
+            return Recipe(bodyDepth: .summaryOnly, footnotes: false, sourceNote: false, notes: false,
+                          headnotes: true, highlights: true, wordCloud: true,
+                          toc: .headerAndDateline, apparatus: [])
+        case .sourceDossier:
+            return Recipe(bodyDepth: .index, footnotes: false, sourceNote: true, notes: false,
+                          headnotes: false, highlights: false, wordCloud: false,
+                          toc: .citation, apparatus: [.archivalSources])
+        case .scholarlyEdition:
+            return Recipe(bodyDepth: .full, footnotes: true, sourceNote: true, notes: true,
+                          headnotes: true, highlights: true, wordCloud: true,
+                          toc: .citation,
+                          apparatus: [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex])
+        }
+    }
+}
+
 // MARK: - CollectionExportOptions
 
 // MARK: - CollectionBodyDepth

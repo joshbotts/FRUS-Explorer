@@ -664,7 +664,7 @@ struct CollectionEditorView: View {
     /// Composition, as the three labeled Composer groups. `CollectionCompositionRows` now owns its
     /// own Sections, so this host places it directly (a later phase moves it behind a drill-in row).
     private var compositionDisclosureSection: some View {
-        CollectionCompositionRows(collection: collection)
+        CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
     }
 
     /// iPad (regular width): the entry list fills the screen, with an optional live
@@ -1058,7 +1058,7 @@ struct CollectionEditorView: View {
     /// as the three labeled Composer groups. `CollectionCompositionRows` owns its own Sections, so
     /// this host places it directly rather than wrapping it in one Composition section.
     private var compositionSection: some View {
-        CollectionCompositionRows(collection: collection)
+        CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
     }
 
     // MARK: - Documents Section
@@ -1641,6 +1641,21 @@ struct CollectionEditorView: View {
         reindexEntries()
     }
 
+    /// Applies a one-tap composition preset (Composer redesign 4a): overwrites the collection's
+    /// composition fields, then inserts the preset's not-yet-present apparatus blocks through
+    /// `addGeneratedEntry` — so the `sortedEntries` outline mirror and `sortOrder` stay consistent
+    /// (a model-direct insert would be invisible until reload and could corrupt ordering).
+    /// Non-destructive: existing apparatus and document entries are kept.
+    private func applyPreset(_ preset: CollectionPreset) {
+        preset.applyFields(to: collection)
+        let present = Set(sortedEntries.compactMap {
+            $0.entryKind == .generated ? $0.generatedBlockType : nil
+        })
+        for block in preset.apparatusBlocks(notAlreadyIn: present) {
+            addGeneratedEntry(type: block)
+        }
+    }
+
     private func notes(for entry: CollectionEntry) -> [ResearchNote] {
         allNotes.filter {
             $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
@@ -1697,7 +1712,10 @@ struct CollectionEditorView: View {
             // iPad regular width presents this as the trailing `.inspector` column, where the
             // Document | Composition segmented control belongs (Composer redesign 2b); the iPhone
             // compact `.sheet` keeps the flat pinned layout.
-            showsCompositionSegment: inspectorShowsCompositionSegment
+            showsCompositionSegment: inspectorShowsCompositionSegment,
+            // Presets in the inspector's Composition tab route apparatus through this host's
+            // entry-list management (4a).
+            onApplyPreset: { applyPreset($0) }
         )
         .id(entry.id)
         .environment(appState)

@@ -141,6 +141,11 @@ struct CollectionEntryInspector: View {
     /// pending their own host restructures (Phase 4). Ignored for a heading entry (no document).
     var showsCompositionSegment: Bool = false
 
+    /// Applies a one-tap composition preset (4a), threaded from the host so apparatus insertion goes
+    /// through its entry-list management. Passed on to `CollectionCompositionRows`; when `nil` the
+    /// embedded composition shows no Presets section.
+    var onApplyPreset: ((CollectionPreset) -> Void)?
+
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -214,7 +219,7 @@ struct CollectionEntryInspector: View {
             }
             // `CollectionCompositionRows` owns its three labeled Composer sections, so it is placed
             // directly here rather than wrapped in a single "Export composition" section.
-            CollectionCompositionRows(collection: collection)
+            CollectionCompositionRows(collection: collection, onApplyPreset: onApplyPreset)
         }
     }
 

@@ -2918,6 +2918,62 @@ struct CollectionTests {
         #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOff, includeHeadnote: nil)) == false)
     }
 
+    @Test("Preset composition: applyFields overwrites every field per the recipe; apparatusBlocks(notAlreadyIn:) is append-only")
+    @MainActor
+    func presetApply() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let coll = Collection(name: "Preset")
+        context.insert(coll)
+
+        // Teaching reader: full text, notes + source note on, Header & Dateline ToC, +persons/chronology.
+        CollectionPreset.teachingReader.applyFields(to: coll)
+        #expect(coll.defaultBodyDepth == CollectionBodyDepth.full.rawValue)
+        #expect(coll.includeNotes == true)
+        #expect(coll.effectiveIncludeSourceNote == true)
+        #expect(coll.effectiveIncludeFootnotes == false)
+        #expect(coll.defaultIncludeHeadnote == false)
+        #expect(coll.applyHighlights == false)
+        #expect(coll.tocStyle == CollectionToCStyle.headerAndDateline.rawValue)
+        #expect(CollectionPreset.teachingReader.apparatusBlocks == [.personsIndex, .chronology])
+
+        // Briefing packet: summary-only, headnotes + word cloud on; highlights on (inert with
+        // summary-only body, by design); no apparatus.
+        CollectionPreset.briefingPacket.applyFields(to: coll)
+        #expect(coll.defaultBodyDepth == CollectionBodyDepth.summaryOnly.rawValue)
+        #expect(coll.defaultIncludeHeadnote == true)
+        #expect(coll.includeWordCloud == true)
+        #expect(coll.applyHighlights == true)
+        #expect(coll.tocStyle == CollectionToCStyle.headerAndDateline.rawValue)
+        #expect(CollectionPreset.briefingPacket.apparatusBlocks.isEmpty)
+
+        // Source dossier: index/outline body, footnotes off, source note on, Citation ToC.
+        CollectionPreset.sourceDossier.applyFields(to: coll)
+        #expect(coll.defaultBodyDepth == CollectionBodyDepth.index.rawValue)
+        #expect(coll.effectiveIncludeFootnotes == false)
+        #expect(coll.effectiveIncludeSourceNote == true)
+        #expect(coll.tocStyle == CollectionToCStyle.citation.rawValue)
+        #expect(CollectionPreset.sourceDossier.apparatusBlocks == [.archivalSources])
+
+        // Scholarly edition: everything on; all five apparatus.
+        CollectionPreset.scholarlyEdition.applyFields(to: coll)
+        #expect(coll.effectiveIncludeFootnotes == true)
+        #expect(coll.effectiveIncludeSourceNote == true)
+        #expect(coll.includeNotes == true)
+        #expect(coll.defaultIncludeHeadnote == true)
+        #expect(coll.applyHighlights == true)
+        #expect(coll.includeWordCloud == true)
+        #expect(coll.tocStyle == CollectionToCStyle.citation.rawValue)
+        #expect(Set(CollectionPreset.scholarlyEdition.apparatusBlocks) == Set(CollectionGeneratedBlockType.allCases))
+
+        // Append-only, non-destructive: apparatusBlocks(notAlreadyIn:) drops blocks already present.
+        #expect(CollectionPreset.teachingReader.apparatusBlocks(notAlreadyIn: []) == [.personsIndex, .chronology])
+        #expect(CollectionPreset.teachingReader.apparatusBlocks(
+            notAlreadyIn: [CollectionGeneratedBlockType.personsIndex.rawValue]) == [.chronology])
+        let allPresent = Set(CollectionGeneratedBlockType.allCases.map(\.rawValue))
+        #expect(CollectionPreset.scholarlyEdition.apparatusBlocks(notAlreadyIn: allPresent).isEmpty)
+    }
+
     @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
     func headnoteAcrossFormats() async throws {
         let withHeadnote = CollectionExportDocument(
