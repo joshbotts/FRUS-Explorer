@@ -600,7 +600,9 @@ public final class DocumentViewModel {
         let volId = entry.volumeId
         var descriptor = FetchDescriptor<GeneratedSummary>(
             predicate: #Predicate { s in
-                s.documentId == docId && s.volumeId == volId
+                // Dedicated headnote drafts (Composer redesign) belong to a collection entry's
+                // headnote, not the document's summary carousel.
+                s.documentId == docId && s.volumeId == volId && !s.isHeadnoteDraft
             }
         )
         descriptor.fetchLimit = 20

@@ -526,7 +526,7 @@ final class DocxCollectionExporter: CollectionExporter {
         // requested headnote with no stored summary renders the placeholder note
         // (headnote resolution never generates on demand).
         if doc.includeHeadnote {
-            body += headnoteXML(doc.headnoteText)
+            body += headnoteXML(doc.headnoteText, authorship: doc.headnoteAuthorship)
         }
 
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
@@ -1184,7 +1184,7 @@ final class DocxCollectionExporter: CollectionExporter {
     /// paragraph followed by the abstract in italic runs — or, when `text` is nil/empty
     /// (a requested headnote with no stored summary), the italic placeholder note.
     /// Paragraph breaks in the abstract split into separate paragraphs.
-    private func headnoteXML(_ text: String?) -> String {
+    private func headnoteXML(_ text: String?, authorship: SummaryAuthorship) -> String {
         let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
         var xml = wPara(
             runs: "<w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label))</w:t></w:r>",
@@ -1207,11 +1207,11 @@ final class DocxCollectionExporter: CollectionExporter {
                 runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
                 styleId: "Normal")
         }
-        // AI attribution (v1.14) — a filled headnote is a stored GeneratedSummary, so
-        // it carries the same caption as a summary body (DocURL apparatus style; no
-        // styles.xml change). The placeholder renders no AI text and no attribution.
-        if let text, !text.isEmpty {
-            xml += styledPara(escaped(CollectionAIAttribution.label()), styleId: "DocURL")
+        // Attribution honors the headnote's authorship (Composer redesign): AI keeps the caption,
+        // an AI-edited headnote discloses the edit, a user-written one shows none.
+        if let text, !text.isEmpty,
+           let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
+            xml += styledPara(escaped(attribution), styleId: "DocURL")
         }
         return xml
     }

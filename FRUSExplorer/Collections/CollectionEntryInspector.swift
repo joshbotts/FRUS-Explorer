@@ -941,7 +941,9 @@ struct CollectionEntryInspector: View {
 
         let summaries = ((try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
             predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? [])
-            .filter { !$0.responseText.isEmpty }
+            // Exclude dedicated headnote drafts (Composer redesign) — they belong to a collection
+            // entry's headnote, not the document's summary set.
+            .filter { !$0.responseText.isEmpty && !$0.isHeadnoteDraft }
         // Prompt-aware pick (Phase 5): prefer the summary produced by the collection's
         // configured prompt; else fall back to the first non-empty one (prior behavior).
         let prompts = (try? modelContext.fetch(FetchDescriptor<SummarizationPrompt>())) ?? []

@@ -1073,11 +1073,15 @@ class CollectionContentResolver {
         // Headnote resolves through the two-tier cascade (Composer redesign): the entry's own
         // opt-in, else the collection default. Headings do not carry a headnote section default.
         let effectiveHeadnote = ref.includeHeadnote ?? batch.options.includeHeadnoteDefault
-        let resolvedHeadnote: String? = effectiveHeadnote
+        let resolvedHeadnotePair = effectiveHeadnote
             ? headnoteText(volumeId: ref.volumeId, documentId: ref.documentId,
                            summaryId: ref.headnoteSummaryId,
                            preferredPromptId: promptOverride ?? batch.options.summaryPromptId)
             : nil
+        let resolvedHeadnote = resolvedHeadnotePair?.text
+        // The headnote's provenance drives its export attribution (a user-edited/-written headnote
+        // is not labeled AI). Absent a stored summary, .aiGenerated is inert (no attribution shows).
+        let resolvedHeadnoteAuthorship = resolvedHeadnotePair?.authorship ?? .aiGenerated
 
         // Related documents (A10): outbound cross-reference targets that are also in
         // this collection, rendered as a "See also:" citation line. Off unless the
@@ -1137,6 +1141,7 @@ class CollectionContentResolver {
             sourceNoteText: resolvedSourceNote,
             includeHeadnote: effectiveHeadnote,
             headnoteText: resolvedHeadnote,
+            headnoteAuthorship: resolvedHeadnoteAuthorship,
             applyHighlightsOverride: highlightsOverride,
             includeNotesOverride: notesOverride,
             includeFootnotesOverride: footnotesOverride,
@@ -1313,7 +1318,7 @@ class CollectionContentResolver {
         documentId: String,
         summaryId: UUID?,
         preferredPromptId: UUID?
-    ) -> String? {
+    ) -> (text: String, authorship: SummaryAuthorship)? {
         // Capture scalars — #Predicate can't use struct fields.
         let vid = volumeId
         let did = documentId
@@ -1323,7 +1328,7 @@ class CollectionContentResolver {
             )
             if let chosen = try? modelContext.fetch(descriptor).first,
                !chosen.responseText.isEmpty {
-                return chosen.responseText
+                return (chosen.responseText, chosen.authorship)
             }
             // The chosen summary no longer exists (deleted / not yet synced): fall
             // through to the stored-summary fallback rather than silently dropping
@@ -1337,9 +1342,9 @@ class CollectionContentResolver {
         let stored = ((try? modelContext.fetch(descriptor)) ?? [])
             .filter { !$0.responseText.isEmpty }
         if let pid = preferredPromptId, let preferred = stored.first(where: { $0.promptId == pid }) {
-            return preferred.responseText
+            return (preferred.responseText, preferred.authorship)
         }
-        return stored.first?.responseText
+        return stored.first.map { ($0.responseText, $0.authorship) }
     }
 
     // MARK: - Volume preparation (export only)
