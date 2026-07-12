@@ -105,6 +105,27 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// A one-word name for the compact (iPhone) preset chip, where the full `displayName`
+    /// ("Briefing packet") is too wide (Composer v2 §C preset row).
+    var shortName: String {
+        switch self {
+        case .teachingReader:   return String(localized: "collection.preset.teachingReader.short", defaultValue: "Teaching")
+        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.short", defaultValue: "Briefing")
+        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier.short", defaultValue: "Dossier")
+        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition.short", defaultValue: "Scholarly")
+        }
+    }
+
+    /// A one-word descriptor under the compact preset chip ("full text" / "summaries" / …).
+    var shortTag: String {
+        switch self {
+        case .teachingReader:   return String(localized: "collection.preset.teachingReader.tag", defaultValue: "full text")
+        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.tag", defaultValue: "summaries")
+        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier.tag", defaultValue: "sources")
+        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition.tag", defaultValue: "everything")
+        }
+    }
+
     /// The apparatus blocks the preset composes (each placed front/back per its type by the host).
     var apparatusBlocks: [CollectionGeneratedBlockType] { recipe.apparatus }
 
@@ -129,6 +150,23 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
         collection.applyHighlights = r.highlights
         collection.includeWordCloud = r.wordCloud
         collection.tocStyle = r.toc.rawValue
+    }
+
+    /// Whether `collection`'s current composition scalar fields all equal this preset's recipe —
+    /// i.e. this preset is the collection's active starting composition, so the Composer preset
+    /// grid highlights its card (Composer v2). Apparatus is intentionally NOT compared: preset
+    /// apparatus is append-only/non-destructive, so a collection carrying extra blocks still matches.
+    @MainActor
+    func matches(_ collection: Collection) -> Bool {
+        let r = recipe
+        return collection.defaultBodyDepth == r.bodyDepth.rawValue
+            && collection.effectiveIncludeFootnotes == r.footnotes
+            && collection.effectiveIncludeSourceNote == r.sourceNote
+            && collection.includeNotes == r.notes
+            && collection.defaultIncludeHeadnote == r.headnotes
+            && collection.applyHighlights == r.highlights
+            && collection.includeWordCloud == r.wordCloud
+            && collection.tocStyle == r.toc.rawValue
     }
 
     /// The resolved field set for one preset — one place so `apply` and `apparatusBlocks` agree.

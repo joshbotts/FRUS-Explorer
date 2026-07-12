@@ -44,6 +44,18 @@ struct CollectionCompositionRows: View {
 
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
 
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    #endif
+    /// Whether to render presets as the compact (iPhone) short-chip row rather than the 2×2 grid.
+    private var isCompactPresets: Bool {
+        #if os(iOS)
+        return hSizeClass == .compact
+        #else
+        return false
+        #endif
+    }
+
     private var bodyDepth: Binding<CollectionBodyDepth> {
         Binding(get: { CollectionBodyDepth(rawValue: collection.defaultBodyDepth) ?? .full },
                 set: { collection.defaultBodyDepth = $0.rawValue })
@@ -77,47 +89,28 @@ struct CollectionCompositionRows: View {
     }
 
     var body: some View {
-        // Composer redesign: the flat composition list is regrouped into three labeled sections
-        // mapping 1:1 to the three content sources — document content, the user's annotations, and
-        // generated analysis/apparatus — each with a one-line helper. Every underlying binding is
-        // unchanged; only the grouping is new. Because this view now emits its own `Section`s, every
-        // host places it directly (no wrapping Section/DisclosureGroup of its own).
+        // Composer v2: the three content-source sections carry colored icon-tile headers (blue
+        // document / green annotations / orange analysis) with a one-line caption, and presets
+        // render as a selectable card grid (2×2 regular / short-chip row compact) that marks the
+        // active preset. Every underlying binding is unchanged; only the presentation is new.
+        // Because this view emits its own `Section`s, hosts place it directly.
 
-        // MARK: Presets — a one-tap starting composition (4a). Each row overwrites the composition
+        // MARK: Presets — a one-tap starting composition. Applying one overwrites the composition
         // fields below and appends the preset's apparatus (never removing existing entries). Shown
         // only where a host wires `onApplyPreset` (which routes apparatus through its entry list).
         if let onApplyPreset {
             Section {
-                ForEach(CollectionPreset.allCases) { preset in
-                    Button {
-                        onApplyPreset(preset)
-                    } label: {
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(preset.displayName)
-                                .foregroundStyle(.primary)
-                            Text(preset.subtitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: preset.systemImage)
-                    }
-                }
-                .accessibilityHint(String(localized: "composition.presets.applyHint",
-                                          defaultValue: "Applies this composition. Everything stays editable afterward."))
-            }
-        } header: {
-            Text(String(localized: "composition.presets.header", defaultValue: "Presets"))
-            } footer: {
-                Text(String(localized: "composition.presets.footer",
-                            defaultValue: "Apply a starting composition in one tap. Everything below stays editable; apparatus is added, never removed."))
+                presetPicker(onApplyPreset: onApplyPreset)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+            } header: {
+                Text(String(localized: "composition.presets.header",
+                            defaultValue: "Start from a template — optional"))
             }
         }
 
         // MARK: Document content — how each document's text is carried into the export.
         Section {
-            Picker(String(localized: "composition.bodyDepth", defaultValue: "Document body"),
+            Picker(String(localized: "composition.bodyDepth", defaultValue: "Body depth"),
                    selection: bodyDepth) {
                 ForEach(bodyDepthOptions) { Text($0.displayName).tag($0) }
             }
@@ -139,28 +132,28 @@ struct CollectionCompositionRows: View {
             // Phase 5: the footnote tri-state picker became two independent toggles, so
             // "all footnotes AND the source note" is finally expressible.
             Toggle(String(localized: "composition.includeFootnotes",
-                          defaultValue: "Include footnotes"),
+                          defaultValue: "Footnotes"),
                    isOn: includeFootnotes)
 
             Toggle(String(localized: "composition.includeSourceNote",
-                          defaultValue: "Include archival source note"),
+                          defaultValue: "Archival source note"),
                    isOn: includeSourceNote)
         } header: {
-            Text(String(localized: "composition.group.documentContent",
-                        defaultValue: "Document content"))
-        } footer: {
-            Text(String(localized: "composition.group.documentContent.help",
-                        defaultValue: "How each document's text is included — its depth, footnotes, and the archival source note."))
+            groupHeader(icon: "doc.text", tint: .blue,
+                        title: String(localized: "composition.group.documentContent",
+                                      defaultValue: "Document content"),
+                        caption: String(localized: "composition.group.documentContent.help",
+                                        defaultValue: "How much of each source to include."))
         }
 
         // MARK: Your annotations — the researcher's own notes and highlights.
         Section {
             Toggle(String(localized: "composition.includeNotes",
-                          defaultValue: "Include research notes"),
+                          defaultValue: "Research notes"),
                    isOn: $collection.includeNotes)
 
             Toggle(String(localized: "composition.applyHighlights",
-                          defaultValue: "Apply highlights to document body"),
+                          defaultValue: "Highlights in body"),
                    isOn: $collection.applyHighlights)
                 .disabled(bodyDepth.wrappedValue != .full)
 
@@ -170,11 +163,11 @@ struct CollectionCompositionRows: View {
                           defaultValue: "Headnotes"),
                    isOn: $collection.defaultIncludeHeadnote)
         } header: {
-            Text(String(localized: "composition.group.annotations",
-                        defaultValue: "Your annotations"))
-        } footer: {
-            Text(String(localized: "composition.group.annotations.help",
-                        defaultValue: "Your research notes and highlights, and a headnote summary above each document. Highlights apply to full-text documents only."))
+            groupHeader(icon: "note.text", tint: .green,
+                        title: String(localized: "composition.group.annotations",
+                                      defaultValue: "Your annotations"),
+                        caption: String(localized: "composition.group.annotations.help",
+                                        defaultValue: "Notes, highlights & headnotes — linked to each source."))
         }
 
         // MARK: Analysis & apparatus — generated overviews and the contents-list style. The five
@@ -183,7 +176,7 @@ struct CollectionCompositionRows: View {
         // present/insert controls.
         Section {
             Toggle(String(localized: "composition.includeWordCloud",
-                          defaultValue: "Include word-cloud overview (PDF and HTML)"),
+                          defaultValue: "Word-cloud overview"),
                    isOn: $collection.includeWordCloud)
 
             Picker(String(localized: "composition.tocStyle", defaultValue: "Contents list"),
@@ -191,12 +184,136 @@ struct CollectionCompositionRows: View {
                 ForEach(CollectionToCStyle.allCases) { Text($0.displayName).tag($0) }
             }
         } header: {
-            Text(String(localized: "composition.group.analysis",
-                        defaultValue: "Analysis & apparatus"))
-        } footer: {
-            Text(String(localized: "composition.group.analysis.help",
-                        defaultValue: "Generated overviews and how the contents list is styled. Add chronologies and indexes from the Apparatus menu."))
+            groupHeader(icon: "chart.bar", tint: .orange,
+                        title: String(localized: "composition.group.analysis",
+                                      defaultValue: "Analysis & apparatus"),
+                        caption: String(localized: "composition.group.analysis.help",
+                                        defaultValue: "Generated overviews and the contents-list style."))
         }
+    }
+
+    // MARK: - Group header (Composer v2)
+
+    /// A grouped-composition section header: a tinted icon tile + title + one-line caption,
+    /// replacing the plain uppercase Form header. The three sections map 1:1 to the content
+    /// sources (document content = blue, your annotations = green, analysis & apparatus = orange).
+    @ViewBuilder
+    private func groupHeader(icon: String, tint: Color, title: String, caption: String) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 26, height: 26)
+                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 7))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Text(caption)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        // Override the Form section header's default uppercasing/caption styling.
+        .textCase(nil)
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Presets (Composer v2)
+
+    /// The preset picker — a 2×2 selectable card grid on regular width, a horizontal short-chip
+    /// row on compact (iPhone). The active preset (its recipe == the collection's current
+    /// composition) is marked with the accent border.
+    @ViewBuilder
+    private func presetPicker(onApplyPreset: @escaping (CollectionPreset) -> Void) -> some View {
+        if isCompactPresets {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(compactPresets) { preset in
+                        presetChip(preset, onApplyPreset: onApplyPreset)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        } else {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8),
+                                GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                ForEach(CollectionPreset.allCases) { preset in
+                    presetCard(preset, onApplyPreset: onApplyPreset)
+                }
+            }
+        }
+    }
+
+    /// The compact (iPhone) preset subset — Scholarly is omitted (too dense for the phone chip row).
+    private var compactPresets: [CollectionPreset] {
+        [.teachingReader, .briefingPacket, .sourceDossier]
+    }
+
+    /// One 2×2 preset card (regular width): name + subtitle, accent border/fill when active.
+    @ViewBuilder
+    private func presetCard(_ preset: CollectionPreset,
+                            onApplyPreset: @escaping (CollectionPreset) -> Void) -> some View {
+        let active = preset.matches(collection)
+        Button {
+            onApplyPreset(preset)
+        } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(preset.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(active ? Color.accentColor : .primary)
+                Text(preset.subtitle)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
+            .padding(12)
+            .background(active ? Color.accentColor.opacity(0.07) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(active ? Color.accentColor : Color.secondary.opacity(0.25),
+                              lineWidth: active ? 1.5 : 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(preset.displayName)
+        .accessibilityValue(active
+            ? String(localized: "composition.presets.active", defaultValue: "Active")
+            : preset.subtitle)
+        .accessibilityHint(String(localized: "composition.presets.applyHint",
+                                  defaultValue: "Applies this composition. Everything stays editable afterward."))
+        .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// One compact (iPhone) preset chip: short name + one-word tag, accent border when active.
+    @ViewBuilder
+    private func presetChip(_ preset: CollectionPreset,
+                            onApplyPreset: @escaping (CollectionPreset) -> Void) -> some View {
+        let active = preset.matches(collection)
+        Button {
+            onApplyPreset(preset)
+        } label: {
+            VStack(spacing: 1) {
+                Text(preset.shortName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(active ? Color.accentColor : .primary)
+                Text(preset.shortTag)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(active ? Color.accentColor.opacity(0.10) : Color.secondary.opacity(0.10),
+                        in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(active ? Color.accentColor : Color.clear, lineWidth: 1.5))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(preset.displayName)
+        .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
     }
 }
 

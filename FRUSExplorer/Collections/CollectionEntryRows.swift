@@ -152,18 +152,14 @@ struct CollectionHeadingRow: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
-                // Section-defaults inspector (Authoring Phase 5): the heading variant of
-                // the entry inspector, cascading overrides to the section's documents.
-                // B8: the macOS manager routes it into its inspector column via onInspect.
-                Button {
+                // Section-defaults inspector (Authoring Phase 5): the heading variant of the entry
+                // inspector, cascading overrides to the section's documents. B8: the macOS manager
+                // routes it into its inspector column via onInspect. Composer v2 §D: a labeled
+                // Configure pill, never an info glyph.
+                ConfigurePill(label: String(localized: "collection.section.configure",
+                                            defaultValue: "Section defaults")) {
                     if let onInspect { onInspect() } else { showSectionInspector = true }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.borderless)
-                .accessibilityLabel(String(localized: "collection.section.inspect",
-                                           defaultValue: "Section defaults"))
                 .help(String(localized: "collection.section.inspect.help",
                              defaultValue: "Set export defaults for every document in this section"))
                 structuralDeleteButton(showsInlineDelete ? onDelete : nil)
@@ -275,6 +271,39 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
                                    defaultValue: "Remove entry"))
         .help(String(localized: "collection.entry.delete.help",
                      defaultValue: "Remove this document from the collection"))
+    }
+}
+
+// MARK: - Configure trigger (Composer v2 §D)
+
+/// The labeled **Configure** control that opens a row's per-entry inspector (Composer v2 §D):
+/// an accent-tinted pill with a `slider.horizontal.3` glyph and a visible label — never a bare
+/// `ⓘ` info glyph, which reads as "more information" rather than "you can act here." `ⓘ` /
+/// `FeatureInfoButton` stays reserved for *explanatory* help popovers, not for opening editors.
+///
+/// The trigger is one affordance across platforms; the presenting editor decides the surface
+/// (a sheet on iPad, a trailing `.inspector` on Mac, a pushed screen on iPhone).
+///
+/// Version history:
+///   1.0 — Composer v2 §D: labeled Configure trigger replaces the info-glyph editor openers
+struct ConfigurePill: View {
+    /// The pill's label — "Configure" on a document row, "Section defaults" on a heading row.
+    var label: String = String(localized: "collection.entry.configure", defaultValue: "Configure")
+    /// Opens the per-entry inspector for the row.
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(label, systemImage: "slider.horizontal.3")
+                .font(.system(size: 12, weight: .semibold))
+                .labelStyle(.titleAndIcon)
+                .foregroundStyle(FRUSTheme.overrideChipForeground)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(FRUSTheme.overrideChipBackground, in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }
 
@@ -621,10 +650,10 @@ struct EntryRow: View {
     var onMoveDown: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Document identity + inspector affordance. The indexed header is the primary
-            // line when available; the raw id remains the fallback for unindexed volumes.
-            HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Document identity. The indexed header is the primary line when available; the
+                // raw id remains the fallback for unindexed volumes.
                 Text(documentHeader ?? entry.documentId)
                     .font(.body)
                     .lineLimit(2)
@@ -632,49 +661,44 @@ struct EntryRow: View {
                         String(localized: "collection.entry.document.accessibility",
                                defaultValue: "Document \(documentHeader ?? entry.documentId)")
                     )
-                Spacer(minLength: 8)
-                Button {
-                    onInspect()
-                } label: {
-                    Image(systemName: "info.circle")
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel(String(localized: "collection.entry.inspect",
-                                           defaultValue: "Document details"))
-            }
 
-            // Volume context (+ document id and date when the header is shown above, so
-            // the citation stays checkable at a glance).
-            Text([
-                documentHeader != nil ? entry.documentId : nil,
-                volumeTitle ?? entry.volumeId,
-                documentDate,
-            ].compactMap(\.self).joined(separator: " · "))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-
-            // Duplicate marker (A4): the same document appears on another entry.
-            if isDuplicate {
-                Label(String(localized: "collection.entry.duplicate",
-                             defaultValue: "Also in collection"),
-                      systemImage: "doc.on.doc")
-                    .font(.caption2)
+                // Volume context (+ document id and date when the header is shown above, so
+                // the citation stays checkable at a glance).
+                Text([
+                    documentHeader != nil ? entry.documentId : nil,
+                    volumeTitle ?? entry.volumeId,
+                    documentDate,
+                ].compactMap(\.self).joined(separator: " · "))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-            }
+                    .lineLimit(2)
 
-            // Read-only status chips (Collections Manager M2, D3): body depth, note
-            // count, and override flags project the inspector's state so the list stays
-            // scannable. Editing lives in the ⓘ inspector.
-            BreadcrumbFlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
-                entryStatusChips(entry: entry, availableNoteCount: availableNotes.count)
+                // Duplicate marker (A4): the same document appears on another entry.
+                if isDuplicate {
+                    Label(String(localized: "collection.entry.duplicate",
+                                 defaultValue: "Also in collection"),
+                          systemImage: "doc.on.doc")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                // Labeled override chips (Composer v2 §3): body depth, note count, and override
+                // flags project the inspector's state — text-only pills, shown only when a value
+                // differs from the collection default, so an untouched row stays clean.
+                BreadcrumbFlowLayout(horizontalSpacing: 4, verticalSpacing: 4) {
+                    entryStatusChips(entry: entry, availableNoteCount: availableNotes.count)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Labeled Configure trigger (Composer v2 §D) — opens the per-entry inspector. Replaces
+            // the earlier trailing ⓘ glyph; the whole-row tap below still opens it too.
+            ConfigurePill(action: onInspect)
         }
         .padding(.vertical, 4)
-        // Whole-row tap focuses the inspector on this document (#188-E) — previously only the
-        // ⓘ button did. `.contentShape` makes the padding/Spacer regions hit-testable; the
-        // borderless ⓘ Button still consumes its own tap first, so there is no double-fire, and
-        // a discrete tap does not swallow the List's horizontal swipe-to-delete / reorder.
+        // Whole-row tap focuses the inspector on this document (#188-E). `.contentShape` makes the
+        // padding/Spacer regions hit-testable; the Configure Button consumes its own tap first, so
+        // there is no double-fire, and a discrete tap does not swallow the List's swipe-to-delete.
         .contentShape(Rectangle())
         .onTapGesture { onInspect() }
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
@@ -721,25 +745,20 @@ struct UnrecognizedEntryRow: View {
 /// Version history:
 ///   1.0 — Collections Manager M2 (D3): initial implementation
 struct EntryStatusChip: View {
-    /// The chip's SF Symbol.
-    let systemImage: String
     /// The chip's short localized label.
     let text: String
 
     var body: some View {
-        Label {
-            Text(text)
-        } icon: {
-            Image(systemName: systemImage)
-        }
-        .font(.caption2)
-        // Accent-tinted labeled pill (Composer redesign 3): the row reports a document's resolved
-        // export configuration at a glance, in the app accent rather than an undifferentiated grey.
-        .foregroundStyle(FRUSTheme.overrideChipForeground)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
-        .background(FRUSTheme.overrideChipBackground, in: RoundedRectangle(cornerRadius: 5))
-        .accessibilityElement(children: .combine)
+        // Text-only accent-tinted pill (Composer v2 §3): a *labeled* override chip, never an icon
+        // tile — the word alone ("Summary", "7 notes", "Headnote") carries the meaning, matching the
+        // redesign's managed-disclosure rule that document rows show only labeled chips.
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(FRUSTheme.overrideChipForeground)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(FRUSTheme.overrideChipBackground, in: RoundedRectangle(cornerRadius: 5))
+            .accessibilityElement(children: .combine)
     }
 }
 
@@ -769,7 +788,7 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
     // short label ("Summary", not "Summary only"), which reads cleanly in a wrapping pill row.
     if let raw = entry.bodyDepthOverride,
        let depth = CollectionBodyDepth(rawValue: raw) {
-        EntryStatusChip(systemImage: "doc.text", text: depth.chipLabel)
+        EntryStatusChip(text: depth.chipLabel)
     }
 
     // Research notes: when the entry has turned notes off (D5 uncheck-last end state, or
@@ -779,7 +798,6 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
     // counts as one; else empty = all of the document's notes.
     if entry.includeNotesOverride == false {
         EntryStatusChip(
-            systemImage: "note.text",
             text: String(localized: "collection.entry.chip.notesOff",
                          defaultValue: "Notes off"))
     } else {
@@ -789,9 +807,12 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
             return availableNoteCount
         }()
         if noteCount > 0 {
+            // Proper singular/plural: "1 note" vs "7 notes" (the earlier "%lld notes" printed
+            // "1 notes"; the prototype's "1 documents" is likewise a mock bug not to replicate).
             EntryStatusChip(
-                systemImage: "note.text",
-                text: String(format: String(localized: "collection.entry.chip.notes %lld",
+                text: noteCount == 1
+                    ? String(localized: "collection.entry.chip.notes.one", defaultValue: "1 note")
+                    : String(format: String(localized: "collection.entry.chip.notes.other %lld",
                                             defaultValue: "%lld notes"),
                              Int64(noteCount)))
         }
@@ -800,7 +821,6 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
     // Highlights explicitly turned off for this entry.
     if entry.applyHighlightsOverride == false {
         EntryStatusChip(
-            systemImage: "highlighter",
             text: String(localized: "collection.entry.chip.highlightsOff",
                          defaultValue: "Highlights off"))
     }
@@ -810,7 +830,6 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
     // collection's `defaultIncludeHeadnote`.
     if collectionEntryHeadnoteIsResolvedOn(entry) {
         EntryStatusChip(
-            systemImage: "text.aligncenter",
             text: String(localized: "collection.entry.chip.headnote",
                          defaultValue: "Headnote"))
     }
@@ -818,7 +837,6 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
     // Related-documents "See also" line opted in.
     if entry.includeRelatedDocuments == true {
         EntryStatusChip(
-            systemImage: "arrow.triangle.branch",
             text: String(localized: "collection.entry.chip.seeAlso",
                          defaultValue: "See also"))
     }
