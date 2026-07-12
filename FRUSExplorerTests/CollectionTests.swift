@@ -2859,6 +2859,29 @@ struct CollectionTests {
         #expect(doc.headnoteAuthorship == .userWritten)
     }
 
+    @Test("Headnote draft flag persists: a GeneratedSummary created with isHeadnoteDraft round-trips through SwiftData (guards the draft-isolation contract that keeps drafts out of the document's summary carousel)")
+    func headnoteDraftFlagPersists() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let draft = GeneratedSummary(documentId: "d1", volumeId: "hvol", promptId: UUID(),
+                                     responseText: "Private draft.", authorship: .aiGenerated,
+                                     isHeadnoteDraft: true)
+        context.insert(draft)
+        let ordinary = GeneratedSummary(documentId: "d1", volumeId: "hvol", promptId: UUID(),
+                                        responseText: "Ordinary summary.")
+        context.insert(ordinary)
+        try context.save()
+
+        // Fetch back from a fresh context — the flag must survive persistence, or the entire
+        // draft-isolation mechanism (carousel/picker/resolver-fallback exclusion) silently breaks.
+        let fresh = ModelContext(container)
+        let all = try fresh.fetch(FetchDescriptor<GeneratedSummary>())
+        let savedDraft = try #require(all.first { $0.responseText == "Private draft." })
+        let savedOrdinary = try #require(all.first { $0.responseText == "Ordinary summary." })
+        #expect(savedDraft.isHeadnoteDraft == true)
+        #expect(savedOrdinary.isHeadnoteDraft == false)
+    }
+
     @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
     func headnoteAcrossFormats() async throws {
         let withHeadnote = CollectionExportDocument(

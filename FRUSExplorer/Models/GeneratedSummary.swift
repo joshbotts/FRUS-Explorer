@@ -143,6 +143,7 @@ import SwiftData
         self.wasChunked = wasChunked
         self.projectId = projectId
         self.authorship = authorship
+        self.isHeadnoteDraft = isHeadnoteDraft
         let now = Date.now
         createdAt = now
         lastModified = now

@@ -244,6 +244,79 @@ struct SummarizationServiceTests {
         #expect(!saved.wasChunked)
     }
 
+    // MARK: - GenerateSummaryText (no-persistence path)
+
+    @Test("GenerateSummaryText: returns text WITHOUT persisting a summary (headnote-draft path)")
+    func generateSummaryTextDoesNotPersist() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        let provider = MockSummarizationProvider(responseText: "Headnote takeaway.")
+        let prompt = makePromptSnapshot()
+
+        let (text, wasChunked) = try await service.generateSummaryText(
+            documentText: "A brief diplomatic note.",
+            prompt: prompt,
+            provider: provider,
+            documentId: "d6",
+            volumeId: "vol6"
+        )
+
+        #expect(text == "Headnote takeaway.")
+        #expect(!wasChunked)
+
+        // The whole point of the headnote-draft path: no document summary is written to the
+        // store (and so nothing lands in the document's summary carousel or FTS5 index).
+        let context = ModelContext(container)
+        let fetched = try context.fetch(FetchDescriptor<GeneratedSummary>())
+        #expect(fetched.isEmpty, "generateSummaryText must not persist a GeneratedSummary")
+
+        let calls = await provider.callCount
+        #expect(calls == 1)
+    }
+
+    @Test("GenerateSummaryText: an oversized document is chunked + synthesized, still without persisting")
+    func generateSummaryTextChunksWithoutPersisting() async throws {
+        let tokenLimit = 100
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        let provider = MockSummarizationProvider(tokenLimit: tokenLimit, responseText: "Partial.")
+        let prompt = makePromptSnapshot()
+        let longText = makeOversizedText(tokenLimit: tokenLimit)
+
+        let (_, wasChunked) = try await service.generateSummaryText(
+            documentText: longText,
+            prompt: prompt,
+            provider: provider,
+            documentId: "d7",
+            volumeId: "vol7"
+        )
+
+        #expect(wasChunked, "Oversized text should still chunk on the text-only path")
+        let synthCalls = await provider.synthesisCalls
+        #expect(synthCalls >= 1, "Expected at least one synthesis pass, got \(synthCalls)")
+
+        let context = ModelContext(container)
+        let fetched = try context.fetch(FetchDescriptor<GeneratedSummary>())
+        #expect(fetched.isEmpty, "The chunked text-only path must not persist a GeneratedSummary")
+    }
+
+    @Test("GenerateSummaryText: empty document text throws emptyDocumentText")
+    func generateSummaryTextEmptyThrows() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        let provider = MockSummarizationProvider()
+
+        await #expect(throws: SummarizationError.emptyDocumentText) {
+            _ = try await service.generateSummaryText(
+                documentText: "   \n ",
+                prompt: makePromptSnapshot(),
+                provider: provider,
+                documentId: "d8",
+                volumeId: "vol8"
+            )
+        }
+    }
+
     // MARK: - Context-overflow mitigation
 
     @Test("DocumentBudget: template tokens and structured overhead shrink the budget")
