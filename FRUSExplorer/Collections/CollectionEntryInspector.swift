@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
 import SwiftUI
 import SwiftData
 
@@ -143,6 +144,10 @@ struct CollectionEntryInspector: View {
     /// The editable-headnote card's draft buffer + edit mode (Composer redesign).
     @State private var headnoteDraft: String = ""
     @State private var isEditingHeadnote = false
+    /// Drives the Regenerate control's in-progress spinner + re-entrancy guard, and surfaces a
+    /// user-facing failure inline in the card (Composer redesign 2c-2c Regenerate).
+    @State private var isRegenerating = false
+    @State private var regenError: String?
     @State private var noteTexts: [String] = []
     /// The document's research notes as include-toggle rows (D5).
     @State private var noteChoices: [NoteChoice] = []
@@ -897,14 +902,7 @@ struct CollectionEntryInspector: View {
                                 defaultValue: "No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                Button {
-                    headnoteDraft = summary?.responseText ?? ""
-                    isEditingHeadnote = true
-                } label: {
-                    Label(String(localized: "collection.inspector.headnote.edit", defaultValue: "Edit"),
-                          systemImage: "pencil")
-                }
-                .buttonStyle(.borderless).font(.caption)
+                headnoteActionRow(summary: summary)
             }
         }
         .padding(12)
@@ -938,11 +936,81 @@ struct CollectionEntryInspector: View {
         }
     }
 
+    /// The display-mode action row under the headnote text: **Edit** plus — when the on-device
+    /// summarizer is available — a **Generate/Regenerate** button, with an inline error or a
+    /// "download the volume" hint when the document's text isn't available locally.
+    /// (Composer redesign 2c-2c Regenerate.)
+    @ViewBuilder private func headnoteActionRow(summary: GeneratedSummary?) -> some View {
+        HStack(spacing: 14) {
+            Button {
+                headnoteDraft = summary?.responseText ?? ""
+                isEditingHeadnote = true
+            } label: {
+                Label(String(localized: "collection.inspector.headnote.edit", defaultValue: "Edit"),
+                      systemImage: "pencil")
+            }
+            .buttonStyle(.borderless)
+            .disabled(isRegenerating)
+
+            if aiSummarizationAvailable {
+                Button {
+                    Task { await regenerateHeadnote() }
+                } label: {
+                    if isRegenerating {
+                        HStack(spacing: 5) {
+                            ProgressView().controlSize(.small)
+                            Text(String(localized: "collection.inspector.headnote.regenerating",
+                                        defaultValue: "Generating…"))
+                        }
+                    } else {
+                        Label(summary == nil
+                              ? String(localized: "collection.inspector.headnote.generate",
+                                       defaultValue: "Generate")
+                              : String(localized: "collection.inspector.headnote.regenerate",
+                                       defaultValue: "Regenerate"),
+                              systemImage: "sparkles")
+                    }
+                }
+                .buttonStyle(.borderless)
+                .disabled(isRegenerating || !documentTextAvailableLocally)
+            }
+            Spacer(minLength: 0)
+        }
+        .font(.caption)
+
+        if let regenError {
+            Label(regenError, systemImage: "exclamationmark.triangle")
+                .font(.caption2)
+                .foregroundStyle(.red)
+        } else if aiSummarizationAvailable && !documentTextAvailableLocally {
+            Text(String(localized: "collection.inspector.headnote.regen.needsVolume",
+                        defaultValue: "Download this document's volume to generate a summary."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Whether the on-device summarizer can run at all — the service is wired **and** Apple
+    /// Intelligence reports itself available on this device.
+    private var aiSummarizationAvailable: Bool {
+        appState.summarizationService != nil && AppleIntelligenceProvider.shared.isAvailable
+    }
+
+    /// Whether this document's text is available locally (its volume is indexed, or at least
+    /// downloaded) — the cheap synchronous gate for enabling Regenerate. Regenerate never
+    /// downloads; it only summarizes text already on device.
+    private var documentTextAvailableLocally: Bool {
+        if let pipeline = appState.indexingPipeline,
+           (try? pipeline.isVolumeIndexed(entry.volumeId)) == true {
+            return true
+        }
+        return appState.downloadManager?.isVolumeDownloaded(entry.volumeId) == true
+    }
+
     /// Commits an edited headnote as a dedicated `GeneratedSummary` draft (Composer redesign): a
-    /// change to an AI seed is `.aiEdited`, otherwise `.userWritten`; either way the draft is marked
-    /// `isHeadnoteDraft` so it never appears among the document's summaries, and the export
-    /// attribution honors its authorship. A prior draft is deleted so the new id changes the
-    /// preview fingerprint (which hashes `headnoteSummaryId`, not the text) and the preview refreshes.
+    /// change to an AI seed is `.aiEdited`, otherwise `.userWritten`; the shared `swapHeadnoteDraft`
+    /// marks it `isHeadnoteDraft` so it never appears among the document's summaries, and the export
+    /// attribution honors its authorship.
     private func commitHeadnote(seed: GeneratedSummary?) {
         isEditingHeadnote = false
         let trimmed = headnoteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -955,6 +1023,15 @@ struct CollectionEntryInspector: View {
         let seedIsAIDerived = seed?.authorship == .aiGenerated || seed?.authorship == .aiEdited
         let authorship: SummaryAuthorship =
             (seedIsAIDerived && !(seed?.responseText.isEmpty ?? true)) ? .aiEdited : .userWritten
+        swapHeadnoteDraft(text: trimmed, authorship: authorship)
+    }
+
+    /// Deletes any prior **dedicated** headnote draft (never a real document summary), mints a fresh
+    /// `isHeadnoteDraft` `GeneratedSummary` with `text` + `authorship`, repoints
+    /// `entry.headnoteSummaryId` to it (a new id flips the preview fingerprint, which hashes
+    /// `headnoteSummaryId` not the text, so the preview refreshes), and saves. Shared by Edit
+    /// (`commitHeadnote`) and Regenerate (`regenerateHeadnote`).
+    private func swapHeadnoteDraft(text: String, authorship: SummaryAuthorship) {
         if let sid = entry.headnoteSummaryId,
            let existing = try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
                predicate: #Predicate { $0.id == sid })).first,
@@ -962,11 +1039,101 @@ struct CollectionEntryInspector: View {
             modelContext.delete(existing)
         }
         let draft = GeneratedSummary(documentId: entry.documentId, volumeId: entry.volumeId,
-                                     promptId: Self.headnoteDraftPromptId, responseText: trimmed,
+                                     promptId: Self.headnoteDraftPromptId, responseText: text,
                                      authorship: authorship, isHeadnoteDraft: true)
         modelContext.insert(draft)
         entry.headnoteSummaryId = draft.id
         try? modelContext.save()
+    }
+
+    /// Regenerates the headnote with a fresh on-device AI summary (Composer redesign 2c-2c): runs
+    /// the entry's effective prompt over the document's text, then swaps in a dedicated
+    /// `.aiGenerated` headnote draft — the same collection-private draft mechanism as Edit, so it
+    /// never pollutes the document's summary carousel. Failures surface inline via `regenError`.
+    private func regenerateHeadnote() async {
+        guard !isRegenerating else { return }
+        guard let service = appState.summarizationService,
+              AppleIntelligenceProvider.shared.isAvailable else {
+            regenError = String(localized: "collection.inspector.headnote.regen.unavailable",
+                                defaultValue: "On-device summarization isn't available on this device.")
+            return
+        }
+        guard let prompt = resolveHeadnotePrompt() else {
+            regenError = String(localized: "collection.inspector.headnote.regen.noPrompt",
+                                defaultValue: "No summarization prompt is available.")
+            return
+        }
+        isRegenerating = true
+        regenError = nil
+        defer { isRegenerating = false }
+
+        guard let bodyText = await headnoteDocumentText() else {
+            // The button is only enabled when the volume is present locally, so a nil here means
+            // this particular document has no extractable body text (e.g. an editorial stub) —
+            // not that the volume needs downloading.
+            regenError = String(localized: "collection.inspector.headnote.regen.noText",
+                                defaultValue: "This document has no text available to summarize.")
+            return
+        }
+        // Build the Sendable snapshot on the main actor before crossing the summarizer's actor boundary.
+        let snapshot = SummarizationPromptSnapshot(from: prompt)
+        do {
+            let (text, _) = try await service.generateSummaryText(
+                documentText: bodyText,
+                prompt: snapshot,
+                provider: AppleIntelligenceProvider.shared,
+                documentId: entry.documentId,
+                volumeId: entry.volumeId)
+            guard !Task.isCancelled else { return }
+            let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clean.isEmpty else {
+                regenError = String(localized: "collection.inspector.headnote.regen.empty",
+                                    defaultValue: "The summarizer returned no text. Try again.")
+                return
+            }
+            swapHeadnoteDraft(text: clean, authorship: .aiGenerated)
+        } catch {
+            regenError = error.localizedDescription
+        }
+    }
+
+    /// Resolves the `SummarizationPrompt` a headnote Regenerate should run: the entry's effective
+    /// cascade prompt (entry override → section default → collection default), else the app-shipped
+    /// default (the oldest `isStandard` prompt, i.e. "Standard Summary" — selected by creation
+    /// order rather than its localized name).
+    private func resolveHeadnotePrompt() -> SummarizationPrompt? {
+        let effectiveId = entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId
+        if let id = effectiveId,
+           let prompt = (try? modelContext.fetch(FetchDescriptor<SummarizationPrompt>(
+               predicate: #Predicate { $0.id == id })))?.first {
+            return prompt
+        }
+        let standard = (try? modelContext.fetch(FetchDescriptor<SummarizationPrompt>(
+            predicate: #Predicate { $0.isStandard == true },
+            sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+        return standard.first
+    }
+
+    /// Obtains this document's plain body text for on-device summarization — the cheap indexed path
+    /// first (a single `document_cache` lookup), then an on-disk TEI parse. Returns `nil` when the
+    /// text isn't available locally (the volume is neither indexed nor downloaded); Regenerate then
+    /// reports that rather than downloading.
+    private func headnoteDocumentText() async -> String? {
+        // 1. Indexed body text (space-joined) — the cheapest correct source.
+        if let pipeline = appState.indexingPipeline,
+           let fetched = try? await pipeline.fetchDocumentBodyText(
+               volumeId: entry.volumeId, documentId: entry.documentId),
+           !fetched.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return fetched
+        }
+        // 2. Fallback: parse the on-disk TEI (paragraph-joined, matching the document view).
+        guard let dm = appState.downloadManager else { return nil }
+        let volumeURL = dm.volumeURL(for: entry.volumeId)
+        guard FileManager.default.fileExists(atPath: volumeURL.path) else { return nil }
+        guard let ast = try? await FRUSDocumentParser().parseDocument(
+            documentId: entry.documentId, volumeURL: volumeURL) else { return nil }
+        let text = ast.nodes.map(\.plainText).joined(separator: "\n\n")
+        return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text
     }
 
     @ViewBuilder private var provenanceSection: some View {

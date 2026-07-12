@@ -85,55 +85,13 @@ actor SummarizationService {
         print("[SummarizationService] Starting summarization for \(volumeId)/\(documentId)")
         #endif
 
-        guard !documentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw SummarizationError.emptyDocumentText
-        }
-
-        let tokenLimit = await provider.contextWindowTokenLimit
-        // Budget the *content* portion of each call conservatively: subtract the
-        // prompt template's own tokens (so a long structured prompt doesn't push a
-        // chunk over the window) plus a safety margin for token-estimate drift. This
-        // same budget bounds both the per-chunk (map) and synthesis (reduce) calls.
-        let budget = documentBudget(promptText: prompt.promptText,
-                                    responseFormat: prompt.responseFormat,
-                                    limit: tokenLimit)
-        let estimatedTokens = estimateTokens(documentText)
-
-        let resultText: String
-        let wasChunked: Bool
-
-        if estimatedTokens <= budget {
-            let req = SummarizationRequest(
-                documentId: documentId,
-                volumeId: volumeId,
-                chunks: [documentText],
-                isSynthesisPass: false
-            )
-            let result = try await provider.summarize(request: req, prompt: prompt)
-            resultText = result.text
-            wasChunked = false
-        } else {
-            let chunks = chunk(text: documentText, maxTokens: budget)
-            #if DEBUG
-            print("[SummarizationService] Chunked into \(chunks.count) pieces (budget=\(budget))")
-            #endif
-            let partials = try await summarizeChunks(
-                chunks,
-                documentId: documentId,
-                volumeId: volumeId,
-                prompt: prompt,
-                provider: provider
-            )
-            resultText = try await synthesize(
-                partialSummaries: partials,
-                prompt: prompt,
-                provider: provider,
-                documentId: documentId,
-                volumeId: volumeId,
-                budget: budget
-            )
-            wasChunked = true
-        }
+        let (resultText, wasChunked) = try await generateSummaryText(
+            documentText: documentText,
+            prompt: prompt,
+            provider: provider,
+            documentId: documentId,
+            volumeId: volumeId
+        )
 
         let summary = GeneratedSummary(
             documentId: documentId,
@@ -159,6 +117,76 @@ actor SummarizationService {
         print("[SummarizationService] Saved summary \(summary.id) wasChunked=\(wasChunked)")
         #endif
         return summary
+    }
+
+    /// Produces summary text for a document body **without persisting anything** — the full
+    /// token-budget → chunk → synthesize pipeline, returning the text and whether chunking was
+    /// applied.
+    ///
+    /// `summarize(...)` wraps this to persist a document `GeneratedSummary` (and push it into
+    /// FTS5). Callers that own their own storage — e.g. a Collections headnote draft, which must
+    /// stay out of the document's summary carousel — call this directly so no stray document
+    /// summary or search-index row is created.
+    ///
+    /// - Parameters:
+    ///   - documentText: Plain text of the document body, paragraph-separated by `\n\n`.
+    ///   - prompt: A `Sendable` snapshot of the prompt template and response-format.
+    ///   - provider: The AI backend to use for inference calls.
+    ///   - documentId: The FRUS document identifier (passed to the provider request for context).
+    ///   - volumeId: The volume identifier (passed to the provider request for context).
+    /// - Returns: The generated summary text and whether the document was chunked to fit the window.
+    func generateSummaryText(
+        documentText: String,
+        prompt: SummarizationPromptSnapshot,
+        provider: any SummarizationProvider,
+        documentId: String,
+        volumeId: String
+    ) async throws -> (text: String, wasChunked: Bool) {
+        guard !documentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw SummarizationError.emptyDocumentText
+        }
+
+        let tokenLimit = await provider.contextWindowTokenLimit
+        // Budget the *content* portion of each call conservatively: subtract the
+        // prompt template's own tokens (so a long structured prompt doesn't push a
+        // chunk over the window) plus a safety margin for token-estimate drift. This
+        // same budget bounds both the per-chunk (map) and synthesis (reduce) calls.
+        let budget = documentBudget(promptText: prompt.promptText,
+                                    responseFormat: prompt.responseFormat,
+                                    limit: tokenLimit)
+        let estimatedTokens = estimateTokens(documentText)
+
+        if estimatedTokens <= budget {
+            let req = SummarizationRequest(
+                documentId: documentId,
+                volumeId: volumeId,
+                chunks: [documentText],
+                isSynthesisPass: false
+            )
+            let result = try await provider.summarize(request: req, prompt: prompt)
+            return (result.text, false)
+        } else {
+            let chunks = chunk(text: documentText, maxTokens: budget)
+            #if DEBUG
+            print("[SummarizationService] Chunked into \(chunks.count) pieces (budget=\(budget))")
+            #endif
+            let partials = try await summarizeChunks(
+                chunks,
+                documentId: documentId,
+                volumeId: volumeId,
+                prompt: prompt,
+                provider: provider
+            )
+            let resultText = try await synthesize(
+                partialSummaries: partials,
+                prompt: prompt,
+                provider: provider,
+                documentId: documentId,
+                volumeId: volumeId,
+                budget: budget
+            )
+            return (resultText, true)
+        }
     }
 
     // MARK: - Internal (visible for tests)
