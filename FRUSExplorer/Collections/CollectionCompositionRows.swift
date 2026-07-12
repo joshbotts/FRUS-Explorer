@@ -28,6 +28,10 @@ import SwiftData
 ///   1.2 — Authoring Phase 5: the footnote tri-state picker replaced by two toggles bound
 ///          to `effectiveIncludeFootnotes`/`effectiveIncludeSourceNote` — "all footnotes
 ///          AND the source note" becomes expressible; writes keep `footnoteStyle` in sync
+///   1.3 — Composer redesign Phase 1: the flat row list becomes three labeled `Section`s
+///          (Document content / Your annotations / Analysis & apparatus) with a one-line
+///          helper each. The view now OWNS its sections, so hosts place it directly rather
+///          than wrapping it in their own Section/DisclosureGroup. Bindings are unchanged.
 struct CollectionCompositionRows: View {
 
     /// The collection whose persisted composition is being edited.
@@ -68,52 +72,88 @@ struct CollectionCompositionRows: View {
     }
 
     var body: some View {
-        Picker(String(localized: "composition.bodyDepth", defaultValue: "Document body"),
-               selection: bodyDepth) {
-            ForEach(bodyDepthOptions) { Text($0.displayName).tag($0) }
-        }
+        // Composer redesign: the flat composition list is regrouped into three labeled sections
+        // mapping 1:1 to the three content sources — document content, the user's annotations, and
+        // generated analysis/apparatus — each with a one-line helper. Every underlying binding is
+        // unchanged; only the grouping is new. Because this view now emits its own `Section`s, every
+        // host places it directly (no wrapping Section/DisclosureGroup of its own).
 
-        if bodyDepth.wrappedValue == .summaryOnly {
-            Picker(String(localized: "composition.summaryPrompt", defaultValue: "Summary prompt"),
-                   selection: Binding(get: { collection.summaryPromptId },
-                                      set: { collection.summaryPromptId = $0 })) {
-                Text(String(localized: "composition.summaryPrompt.none", defaultValue: "Select…"))
-                    .tag(UUID?.none)
-                ForEach(allPrompts) { Text($0.name).tag(UUID?.some($0.id)) }
+        // MARK: Document content — how each document's text is carried into the export.
+        Section {
+            Picker(String(localized: "composition.bodyDepth", defaultValue: "Document body"),
+                   selection: bodyDepth) {
+                ForEach(bodyDepthOptions) { Text($0.displayName).tag($0) }
             }
-            Text(String(localized: "composition.summaryPrompt.hint",
-                        defaultValue: "Summaries are generated on demand for documents that don't already have one for this prompt. Requires Apple Intelligence."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+
+            if bodyDepth.wrappedValue == .summaryOnly {
+                Picker(String(localized: "composition.summaryPrompt", defaultValue: "Summary prompt"),
+                       selection: Binding(get: { collection.summaryPromptId },
+                                          set: { collection.summaryPromptId = $0 })) {
+                    Text(String(localized: "composition.summaryPrompt.none", defaultValue: "Select…"))
+                        .tag(UUID?.none)
+                    ForEach(allPrompts) { Text($0.name).tag(UUID?.some($0.id)) }
+                }
+                Text(String(localized: "composition.summaryPrompt.hint",
+                            defaultValue: "Summaries are generated on demand for documents that don't already have one for this prompt. Requires Apple Intelligence."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Phase 5: the footnote tri-state picker became two independent toggles, so
+            // "all footnotes AND the source note" is finally expressible.
+            Toggle(String(localized: "composition.includeFootnotes",
+                          defaultValue: "Include footnotes"),
+                   isOn: includeFootnotes)
+
+            Toggle(String(localized: "composition.includeSourceNote",
+                          defaultValue: "Include archival source note"),
+                   isOn: includeSourceNote)
+        } header: {
+            Text(String(localized: "composition.group.documentContent",
+                        defaultValue: "Document content"))
+        } footer: {
+            Text(String(localized: "composition.group.documentContent.help",
+                        defaultValue: "How each document's text is included — its depth, footnotes, and the archival source note."))
         }
 
-        // Phase 5: the footnote tri-state picker became two independent toggles, so
-        // "all footnotes AND the source note" is finally expressible.
-        Toggle(String(localized: "composition.includeFootnotes",
-                      defaultValue: "Include footnotes"),
-               isOn: includeFootnotes)
+        // MARK: Your annotations — the researcher's own notes and highlights.
+        Section {
+            Toggle(String(localized: "composition.includeNotes",
+                          defaultValue: "Include research notes"),
+                   isOn: $collection.includeNotes)
 
-        Toggle(String(localized: "composition.includeSourceNote",
-                      defaultValue: "Include archival source note"),
-               isOn: includeSourceNote)
-
-        Picker(String(localized: "composition.tocStyle", defaultValue: "Contents list"),
-               selection: tocStyle) {
-            ForEach(CollectionToCStyle.allCases) { Text($0.displayName).tag($0) }
+            Toggle(String(localized: "composition.applyHighlights",
+                          defaultValue: "Apply highlights to document body"),
+                   isOn: $collection.applyHighlights)
+                .disabled(bodyDepth.wrappedValue != .full)
+        } header: {
+            Text(String(localized: "composition.group.annotations",
+                        defaultValue: "Your annotations"))
+        } footer: {
+            Text(String(localized: "composition.group.annotations.help",
+                        defaultValue: "Your research notes and highlights, carried into the export. Highlights apply to full-text documents only."))
         }
 
-        Toggle(String(localized: "composition.applyHighlights",
-                      defaultValue: "Apply highlights to document body"),
-               isOn: $collection.applyHighlights)
-            .disabled(bodyDepth.wrappedValue != .full)
+        // MARK: Analysis & apparatus — generated overviews and the contents-list style. The five
+        // generated apparatus blocks (chronology, indexes, bibliography) are per-entry rows managed
+        // from the Apparatus menu / contents outline; a later phase surfaces them here as
+        // present/insert controls.
+        Section {
+            Toggle(String(localized: "composition.includeWordCloud",
+                          defaultValue: "Include word-cloud overview (PDF and HTML)"),
+                   isOn: $collection.includeWordCloud)
 
-        Toggle(String(localized: "composition.includeNotes",
-                      defaultValue: "Include research notes"),
-               isOn: $collection.includeNotes)
-
-        Toggle(String(localized: "composition.includeWordCloud",
-                      defaultValue: "Include word-cloud overview (PDF and HTML)"),
-               isOn: $collection.includeWordCloud)
+            Picker(String(localized: "composition.tocStyle", defaultValue: "Contents list"),
+                   selection: tocStyle) {
+                ForEach(CollectionToCStyle.allCases) { Text($0.displayName).tag($0) }
+            }
+        } header: {
+            Text(String(localized: "composition.group.analysis",
+                        defaultValue: "Analysis & apparatus"))
+        } footer: {
+            Text(String(localized: "composition.group.analysis.help",
+                        defaultValue: "Generated overviews and how the contents list is styled. Add chronologies and indexes from the Apparatus menu."))
+        }
     }
 }
 

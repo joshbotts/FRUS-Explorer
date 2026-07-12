@@ -882,18 +882,13 @@ private struct CollectionDetailPane: View {
             // selection) and with every in-row control (buttons/menus keep
             // receiving their own clicks; the row background click selects).
             List(selection: $selectedEntryId) {
-                // Composition — inline (Authoring Phase 1 shell), inside the scrolling
-                // list rather than the fixed header, so an expanded group can never grow
-                // the header past the window (the constraint that previously forced a
-                // popover — Session 2026-07-01 layout fix).
-                Section {
-                    DisclosureGroup(isExpanded: $showComposition) {
-                        CollectionCompositionRows(collection: collection)
-                    } label: {
-                        Label(String(localized: "composition.header", defaultValue: "Composition"),
-                              systemImage: "slider.horizontal.3")
-                            .font(.callout)
-                    }
+                // Composition — the three labeled Composer groups (`CollectionCompositionRows` owns
+                // its own Sections). Shown inside the scrolling list rather than the fixed header so
+                // an expanded group can never grow the header past the window (the constraint that
+                // previously forced a popover — Session 2026-07-01 layout fix). The View-menu
+                // "Composition" toggle ($showComposition) shows or hides the whole group.
+                if showComposition {
+                    CollectionCompositionRows(collection: collection)
                 }
 
                 // Front matter (Phase 4) — the introduction editor and colophon toggle,

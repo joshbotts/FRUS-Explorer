@@ -198,10 +198,9 @@ struct CollectionEntryInspector: View {
                 Text(String(localized: "collection.inspector.collection.footer",
                             defaultValue: "These settings apply to the whole collection."))
             }
-            Section(String(localized: "collection.inspector.collection.composition",
-                           defaultValue: "Export composition")) {
-                CollectionCompositionRows(collection: collection)
-            }
+            // `CollectionCompositionRows` owns its three labeled Composer sections, so it is placed
+            // directly here rather than wrapped in a single "Export composition" section.
+            CollectionCompositionRows(collection: collection)
         }
     }
 
