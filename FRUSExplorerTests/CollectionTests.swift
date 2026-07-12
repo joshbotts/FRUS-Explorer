@@ -2974,6 +2974,40 @@ struct CollectionTests {
         #expect(CollectionPreset.scholarlyEdition.apparatusBlocks(notAlreadyIn: allPresent).isEmpty)
     }
 
+    @Test("Composition summary sentence: leads with the body-depth phrasing and lists the enabled content")
+    func compositionSummarySentence() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let coll = Collection(name: "Summary")
+        context.insert(coll)
+
+        // Full body, nothing else enabled → just the lead phrase, no "with" clause.
+        coll.defaultBodyDepth = CollectionBodyDepth.full.rawValue
+        coll.includeNotes = false
+        coll.effectiveIncludeFootnotes = false
+        coll.effectiveIncludeSourceNote = false
+        coll.defaultIncludeHeadnote = false
+        coll.applyHighlights = false
+        coll.includeWordCloud = false
+        #expect(coll.compositionSummarySentence == "Exports the full text of each document.")
+
+        // Summary-only + headnotes + notes + footnotes → AI-summary lead + a "with" list.
+        coll.defaultBodyDepth = CollectionBodyDepth.summaryOnly.rawValue
+        coll.defaultIncludeHeadnote = true
+        coll.includeNotes = true
+        coll.effectiveIncludeFootnotes = true
+        let s = coll.compositionSummarySentence
+        #expect(s.contains("AI summary of each document"))
+        #expect(s.contains("headnotes"))
+        #expect(s.contains("your notes"))
+        #expect(s.contains("footnotes"))
+        #expect(s.hasSuffix("."))
+
+        // Index/outline uses the citation-only-index lead.
+        coll.defaultBodyDepth = CollectionBodyDepth.index.rawValue
+        #expect(coll.compositionSummarySentence.contains("citation-only index"))
+    }
+
     @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
     func headnoteAcrossFormats() async throws {
         let withHeadnote = CollectionExportDocument(

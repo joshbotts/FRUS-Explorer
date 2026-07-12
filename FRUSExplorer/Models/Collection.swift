@@ -244,6 +244,48 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// A plain-language, one-sentence description of what this collection will export, shown in the
+    /// export sheet (Composer redesign 5): the resolved body depth plus the content the composition
+    /// turns on — e.g. "Exports an AI summary of each document, with headnotes, your notes, and
+    /// footnotes." Reads the *collection defaults*; a per-document override can still differ.
+    var compositionSummarySentence: String {
+        let lead: String
+        switch CollectionBodyDepth(rawValue: defaultBodyDepth) ?? .full {
+        case .full:
+            lead = String(localized: "collection.export.summary.lead.full",
+                          defaultValue: "Exports the full text of each document")
+        case .summaryOnly:
+            lead = String(localized: "collection.export.summary.lead.summary",
+                          defaultValue: "Exports an AI summary of each document")
+        case .index:
+            lead = String(localized: "collection.export.summary.lead.index",
+                          defaultValue: "Exports a citation-only index")
+        }
+        var included: [String] = []
+        if defaultIncludeHeadnote {
+            included.append(String(localized: "collection.export.summary.headnotes", defaultValue: "headnotes"))
+        }
+        if includeNotes {
+            included.append(String(localized: "collection.export.summary.notes", defaultValue: "your notes"))
+        }
+        if effectiveIncludeFootnotes {
+            included.append(String(localized: "collection.export.summary.footnotes", defaultValue: "footnotes"))
+        }
+        if effectiveIncludeSourceNote {
+            included.append(String(localized: "collection.export.summary.sourceNotes", defaultValue: "source notes"))
+        }
+        if applyHighlights {
+            included.append(String(localized: "collection.export.summary.highlights", defaultValue: "highlights"))
+        }
+        if includeWordCloud {
+            included.append(String(localized: "collection.export.summary.wordCloud", defaultValue: "a word-cloud overview"))
+        }
+        guard !included.isEmpty else { return lead + "." }
+        let list = ListFormatter.localizedString(byJoining: included)
+        return String(format: String(localized: "collection.export.summary.with %1$@ %2$@",
+                                     defaultValue: "%1$@, with %2$@."), lead, list)
+    }
+
     // MARK: - Entries
 
     /// Ordered document entries. Sorted by `CollectionEntry.sortOrder` at display time.

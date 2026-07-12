@@ -125,12 +125,18 @@ struct ExportSheetView: View {
                 } else {
                     // Content composition (body depth, footnotes, notes, highlights, word cloud)
                     // now lives in the collection manager's Composition section and is persisted
-                    // on the collection — this sheet is purely format + destination.
-                    Text(String(localized: "export.compositionHint",
-                                defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    // on the collection — this sheet is purely format + destination. Lead with a
+                    // plain-language summary of what will actually render (Composer redesign 5).
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(collection.compositionSummarySentence)
+                            .font(.callout)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(String(localized: "export.compositionHint",
+                                    defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -224,10 +230,11 @@ struct ExportSheetView: View {
                     }
                 } else {
                     Section {
+                        Text(collection.compositionSummarySentence)
+                            .font(.callout)
+                    } footer: {
                         Text(String(localized: "export.compositionHint",
                                     defaultValue: "Body, footnotes, notes, and other content options are set in the collection's Composition section."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
 
