@@ -7,6 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - AttributedString + Markdown body text
 
@@ -303,6 +308,45 @@ enum FRUSTheme {
 
     static let editorialNoteBackground = Color.purple.opacity(0.12)
     static let editorialNoteForeground = Color.purple
+
+    // MARK: Headnote / editorial accent (Composer v2)
+
+    /// A scheme-adaptive `Color` from explicit light/dark sRGB hex values with optional
+    /// per-scheme opacity. SwiftUI has no cross-platform light/dark `Color` initializer, so this
+    /// bridges through the platform's dynamic `UIColor`/`NSColor` provider (Composer v2).
+    static func adaptiveColor(lightHex: UInt, darkHex: UInt,
+                              lightOpacity: Double = 1, darkOpacity: Double = 1) -> Color {
+        func rgb(_ hex: UInt) -> (Double, Double, Double) {
+            (Double((hex >> 16) & 0xFF) / 255, Double((hex >> 8) & 0xFF) / 255, Double(hex & 0xFF) / 255)
+        }
+        #if canImport(UIKit)
+        return Color(uiColor: UIColor { traits in
+            let dark = traits.userInterfaceStyle == .dark
+            let (r, g, b) = rgb(dark ? darkHex : lightHex)
+            return UIColor(red: r, green: g, blue: b, alpha: dark ? darkOpacity : lightOpacity)
+        })
+        #elseif canImport(AppKit)
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let (r, g, b) = rgb(dark ? darkHex : lightHex)
+            return NSColor(srgbRed: r, green: g, blue: b, alpha: dark ? darkOpacity : lightOpacity)
+        })
+        #else
+        let (r, g, b) = rgb(lightHex)
+        return Color(.sRGB, red: r, green: g, blue: b, opacity: lightOpacity)
+        #endif
+    }
+
+    /// The bespoke "key takeaway" headnote purple — a scheme-aware pair (light `#8A6FD6` /
+    /// dark `#A78BFA`) so the editable headnote card and the exported headnote band read as
+    /// their own editorial accent rather than the app's link-blue (Composer v2).
+    static let headnotePurple = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA)
+    /// Soft fill behind the headnote card / preview band (`.07` light, `.14` dark).
+    static let headnotePurpleFill = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA,
+                                                  lightOpacity: 0.07, darkOpacity: 0.14)
+    /// Hairline border for the headnote card / preview band.
+    static let headnotePurpleBorder = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA,
+                                                     lightOpacity: 0.30, darkOpacity: 0.42)
 
     // MARK: Chrome
 

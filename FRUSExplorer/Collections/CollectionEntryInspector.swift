@@ -942,10 +942,11 @@ struct CollectionEntryInspector: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(String(localized: "collection.inspector.headnote.keyTakeaway",
-                            defaultValue: "Key takeaway"))
+                            defaultValue: "Key takeaway \u{00B7} headnote"))
                     .font(.caption2).fontWeight(.semibold)
                     .textCase(.uppercase)
-                    .foregroundStyle(FRUSTheme.editorialNoteForeground)
+                    .tracking(0.4)
+                    .foregroundStyle(FRUSTheme.headnotePurple)
                 Spacer()
                 headnoteProvenanceChip(summary.map { $0.authorship ?? .aiGenerated })
             }
@@ -956,7 +957,7 @@ struct CollectionEntryInspector: View {
                     .frame(minHeight: 72)
                     .scrollContentBackground(.hidden)
                     .overlay(RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(FRUSTheme.editorialNoteForeground.opacity(0.3)))
+                        .strokeBorder(FRUSTheme.headnotePurpleBorder))
                 HStack {
                     Button(String(localized: "common.cancel", defaultValue: "Cancel")) {
                         isEditingHeadnote = false
@@ -982,12 +983,9 @@ struct CollectionEntryInspector: View {
             }
         }
         .padding(12)
-        .background(FRUSTheme.editorialNoteBackground, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(FRUSTheme.editorialNoteForeground)
-                .frame(width: 3)
-        }
+        .background(FRUSTheme.headnotePurpleFill, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10)
+            .strokeBorder(FRUSTheme.headnotePurpleBorder, lineWidth: 1))
     }
 
     /// The provenance chip in the headnote card header — AI draft / AI · edited / Yours.
@@ -1008,7 +1006,7 @@ struct CollectionEntryInspector: View {
             }()
             Label(label.text, systemImage: label.icon)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(authorship == .userWritten ? Color.secondary : FRUSTheme.headnotePurple)
         }
     }
 
