@@ -516,8 +516,10 @@ private struct CollectionDetailPane: View {
     /// Expansion state of the inline Front Matter disclosure (introduction + colophon) —
     /// inside the scrolling list, like Composition, so expansion never grows the fixed header.
     @State private var showFrontMatter = false
-    /// Live preview pane visibility (Authoring Phase 2b; toolbar-toggled, not persisted).
-    @State private var showPreview = false
+    /// Live preview pane visibility. Defaults **on** so the manager opens with the live
+    /// "exactly what exports" preview beside the outline (Composer redesign 4 — the 4-pane
+    /// intent), and persists the researcher's toolbar/Collection-menu toggle across sessions.
+    @AppStorage("collections.mac.showPreview") private var showPreview = true
     /// The id of the entry shown in the trailing inspector column (UI audit B8), or
     /// `nil` when the column is closed. Selection-driven: each row's ⓘ sets it (a
     /// second click on the same row's ⓘ closes the column), so clicking another ⓘ
