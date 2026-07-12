@@ -501,7 +501,7 @@ Open the **Collections** tab and tap **New Collection**. The editor opens as its
 
 **Which collections you see.** By default the manager lists **every** collection, across all of your projects. When you have an active project, a banner at the top of the list notes this and offers **Scope to “\<project\>”** to narrow the list to just that project's collections; **Show All** brings the rest back. This scope choice is per-session — reopening the manager returns to showing everything.
 
-Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by choosing **Add to Collection** from any open document's toolbar, or — without leaving the editor — tap **Add Documents…** for a picker with four ways in: **Search** the full text of your indexed volumes — each result shows a matched-text **snippet preview** and the archival source note so you can judge it before adding, with a snippet-length control (offering **Follow global** plus 1–10 lines) that this sheet remembers independently of the main Search list; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge.
+Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by choosing **Add to Collection** from any open document's toolbar, or — without leaving the editor — tap **Add Documents…** for a picker with four ways in: **Search** the full text of your indexed volumes — each result shows a matched-text **snippet preview** and the archival source note so you can judge it before adding, with a snippet-length control (offering **Follow global** plus 1–10 lines) that this sheet remembers independently of the main Search list; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge. The **Citations** tab shows a running **"N of M resolved"** count (and how many lines still need review) as it matches your pasted references, and finishing an add briefly confirms with an **"Added N documents"** message so you know it landed.
 
 `[SCREENSHOT: Collection manager showing a mix of documents, a section heading, and a prose block with reorder handles]`
 
@@ -542,7 +542,7 @@ Each **document row** in the collection is now a scannable **report**: its title
 
 - **Body depth** — the per-document body-depth override (Default / Full / Summary only / Index) now lives here, at the top of the export overrides, as the parent setting the others refine.
 - **Research notes** — a checkbox for each of the document's notes selects which travel into the export; leaving them all checked means **all** (including notes you add later), and unchecking every note turns notes off for the document. A **New Note…** action writes one inline. This mirrors the per-highlight selection below.
-- **Headnote** — show a chosen AI summary as an italic abstract *above* the document's full body (labelled by the prompt that produced it; "Automatic" picks the collection prompt's summary). This is different from the "summary only" body depth, which replaces the body.
+- **Headnote** — an editable **Key takeaway** card that prints a short italic abstract *above* the document's full body (different from the *Summary only* body depth, which replaces the body). Tap **Generate** to seed it with an on-device AI summary of the document, **Edit** to rewrite it in your own words, or **Regenerate** for a fresh AI draft. A small chip shows where the text came from — **AI draft**, **AI · edited**, or **Yours** — and exports honour it: an AI-written headnote carries the "AI-generated · Apple Intelligence" attribution, while one you wrote or edited does not. Whether a document shows a headnote at all follows the collection's **Headnotes** default (10.4), which each document can override Default / On / Off. (Generate and Regenerate need the document's volume indexed and Apple Intelligence available; a headnote you type yourself needs neither.)
 - **Export overrides** — per-document **Highlights**, **Research notes**, **Source note**, **Footnotes**, **Summary prompt**, and **Related documents** controls, each **Default / On / Off**. *Default* inherits the section's setting when its heading sets one, else the collection's composition — so overrides are the exception, not a second settings sheet to maintain. Every one of these settings — footnotes included — applies to all three rich export formats (PDF, HTML, Word) and the live preview.
 - **Per-highlight selection** — each highlight row has a checkbox; when highlights apply to this document, only checked passages are annotated. Leaving everything checked means "all, including future highlights"; unchecking every passage turns highlights off for the document.
 - **Excerpts** — every highlight row offers **Insert as Excerpt**, and an "Excerpts in This Collection" list shows the quotations this document already contributes.
@@ -550,7 +550,11 @@ Each **document row** in the collection is now a scannable **report**: its title
 
 **Section defaults.** Long-press a section heading and choose **Section Defaults…** (or tap its ⓘ) for the same controls applied to every document in that section — the effective value for any document is always the most specific one: its own override, else its section's default, else the collection composition.
 
+**Document · Composition (iPad).** On iPad, where the inspector stays open as a side column, a **Document · Composition** segmented control at its top flips the whole panel between *this document's* controls (everything above) and the *collection's* composition settings (10.4) — so you can adjust a collection-wide default and a single document without closing anything. On iPhone the inspector is a pushed screen and on the Mac a trailing column; both keep the collection settings in a pinned **Collection** section instead of the toggle.
+
 Research notes attached to a document still render as trailing **"Research Note"** blocks after the document body in every format — they are your voice, kept typographically separate from the document's own footnotes.
+
+`[SCREENSHOT: A document's Key takeaway headnote card in the inspector — the italic abstract with Edit and Regenerate actions and an "AI draft" provenance chip]`
 
 ### 10.4 Composition Settings
 
@@ -563,6 +567,18 @@ Composition settings are **saved on the collection** and edited in the manager's
 - **Include research notes** — show your attached notes below each document's body. Research notes now export **by default** when notes are enabled; to leave specific notes out, deselect them in the entry inspector (10.3).
 - **Include word cloud** — prepend a frequency overview (PDF and HTML).
 - **Summary prompt** — which summarization prompt to use when the body depth is "summary only".
+- **Headnotes** — the collection-wide default for whether each document shows a **Key takeaway** headnote above its body (10.3). Any document can override it in the inspector.
+
+**Presets.** At the top of the **Composition** section, four **one-tap presets** set all of the fields above at once for a common kind of artifact:
+
+- **Teaching reader** — full document text with each document's source note, a header-and-dateline table of contents, and a **Persons Index** and **Chronology** appended; built for close reading in a classroom.
+- **Briefing packet** — **AI summaries** in place of full document text, with a concept **word cloud** overview, for a fast, skimmable read.
+- **Source dossier** — a compact **index/outline** body with footnotes and highlights off and a citation-style table of contents; an archival finding aid.
+- **Scholarly edition** — full text with a citation-style table of contents and the **complete apparatus** (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index); a publication-quality edition.
+
+Applying a preset overwrites the composition fields but is **non-destructive**: it *adds* any apparatus blocks it calls for without removing ones you've already placed, and never touches your documents, sections, or prose. It's a starting point — adjust any setting afterward.
+
+`[SCREENSHOT: The Composition section's four one-tap presets — Teaching reader, Briefing packet, Source dossier, Scholarly edition]`
 
 **Per-entry and per-section overrides.** The default body depth is exactly that — a default. Any single document can override it (a mostly-summary reader with two documents shown in full), and any **section heading** can set a depth for all the documents beneath it. The effective depth is the most specific one that applies: the document's own override, else its section's, else the collection default. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.3).
 
@@ -570,14 +586,16 @@ Composition settings are **saved on the collection** and edited in the manager's
 
 While you compose, a **live preview** shows the collection rendered exactly as its HTML export, updating as you edit:
 
-- On **iPhone**, switch between **Outline** and **Preview** with the segmented control at the top of the editor.
-- On **iPad**, tap the **eye** button in the toolbar to open the preview side-by-side with the document list.
+- On **iPad**, the preview opens **side-by-side** with the document list by default; the **eye** button in the toolbar hides or shows it. A focused document's controls and the collection's composition settings appear in a third **inspector** column (10.3), so Contents · Preview · Inspector sit together.
+- On **iPhone**, switch between **Outline** and **Preview** with the segmented control at the top of the editor. In **Outline**, the composition settings sit behind a **Composition** row that opens its own screen, and tapping a document opens its inspector as a pushed screen — so the outline stays uncluttered.
+
+`[SCREENSHOT: iPad Composer in three columns — Contents, the live Preview, and the document Inspector topped by the Document · Composition segmented control]`
 
 The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
 
 ### 10.6 Export
 
-Tap **Export**, choose a format, and share. Because composition is already set, this sheet is just format + destination.
+Tap **Export**, choose a format, and share. Because composition is already set, this sheet is just format + destination — and a one-line **summary of how the collection is composed** (for example, "Exports an AI summary of each document, with headnotes, your notes, and a word-cloud overview") sits at the top so you can confirm the settings at a glance before sharing. To change them, return to the manager's **Composition** section.
 
 | Format | Best for |
 |--------|----------|
