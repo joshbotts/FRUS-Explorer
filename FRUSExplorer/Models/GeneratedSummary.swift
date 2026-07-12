@@ -99,6 +99,14 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// `true` for a summary that exists solely as a collection entry's editable headnote draft
+    /// (Composer redesign). Such summaries are excluded from the document's summary carousel and
+    /// the headnote-source picker, so editing a headnote never pollutes the document's summaries.
+    /// `false` for every ordinary summary. Defaults to `false`, so existing summaries are unaffected.
+    var isHeadnoteDraft: Bool = false {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Project Context
 
     /// The project active at generation time. `nil` if generated in global context.
@@ -123,7 +131,8 @@ import SwiftData
         responseFormat: ResponseFormat = .general,
         wasChunked: Bool = false,
         projectId: UUID? = nil,
-        authorship: SummaryAuthorship = .aiGenerated
+        authorship: SummaryAuthorship = .aiGenerated,
+        isHeadnoteDraft: Bool = false
     ) {
         self.id = UUID()
         self.documentId = documentId

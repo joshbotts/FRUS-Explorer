@@ -672,7 +672,7 @@ final class PDFCollectionExporter: CollectionExporter {
         // Prepending shifts the painted highlight attribute ranges with their text, so
         // highlight shading stays aligned.
         let headnotedBody = doc.includeHeadnote
-            ? headnoteAttributedString(doc.headnoteText, thenBody: bodyAttrStr)
+            ? headnoteAttributedString(doc.headnoteText, authorship: doc.headnoteAuthorship, thenBody: bodyAttrStr)
             : bodyAttrStr
 
         // Related documents (A10, Authoring Phase 5): a small trailing "See also:" line
@@ -789,6 +789,7 @@ final class PDFCollectionExporter: CollectionExporter {
     ///   - body: The already-built body attributed string to follow the headnote.
     /// - Returns: The combined attributed string.
     private func headnoteAttributedString(_ text: String?,
+                                          authorship: SummaryAuthorship,
                                           thenBody body: NSAttributedString) -> NSAttributedString {
         let combined = NSMutableAttributedString()
         let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
@@ -799,12 +800,13 @@ final class PDFCollectionExporter: CollectionExporter {
             combined.append(NSAttributedString(
                 string: text + "\n",
                 attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
-            // AI attribution (v1.17) — a filled headnote is a stored GeneratedSummary,
-            // so it carries the same caption as a summary body; the placeholder branch
-            // below renders no AI text and therefore no attribution.
-            combined.append(NSAttributedString(
-                string: CollectionAIAttribution.label() + "\n",
-                attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
+            // Attribution honors the headnote's authorship (Composer redesign): AI keeps the
+            // caption, an AI-edited headnote discloses the edit, a user-written one shows none.
+            if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
+                combined.append(NSAttributedString(
+                    string: attribution + "\n",
+                    attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
+            }
         } else {
             let missing = String(localized: "collection.headnote.missing",
                                  defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")

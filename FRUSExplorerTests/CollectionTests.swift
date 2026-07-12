@@ -2826,6 +2826,39 @@ struct CollectionTests {
         #expect(offDoc.headnoteText == nil)
     }
 
+    @Test("Headnote provenance: the attribution label honors authorship, and the resolver threads it to the export document")
+    @MainActor
+    func headnoteProvenance() async throws {
+        // The attribution caption honors authorship (Composer redesign): AI keeps the label, an
+        // AI-edited headnote discloses the edit, a user-written one carries no AI attribution.
+        #expect(CollectionAIAttribution.headnoteLabel(authorship: .aiGenerated)?.contains("AI-generated") == true)
+        #expect(CollectionAIAttribution.headnoteLabel(authorship: .aiEdited)?.contains("edited by you") == true)
+        #expect(CollectionAIAttribution.headnoteLabel(authorship: .userWritten) == nil)
+
+        // The resolver carries the pointed summary's authorship onto the export document, so the
+        // renderers can suppress the AI attribution for a user-written headnote.
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+        let coll = Collection(name: "Prov")
+        context.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "pvol", sortOrder: 0)
+        entry.includeHeadnote = true
+        context.insert(entry)
+        let userSummary = GeneratedSummary(documentId: "d1", volumeId: "pvol", promptId: UUID(),
+                                           responseText: "A key takeaway I wrote.", authorship: .userWritten)
+        context.insert(userSummary)
+        entry.headnoteSummaryId = userSummary.id
+        try context.save()
+
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: [entry],
+                                               allNotes: [], purpose: .preview)
+        let doc = try #require(docPayload(items[0]))
+        #expect(doc.headnoteText == "A key takeaway I wrote.")
+        #expect(doc.headnoteAuthorship == .userWritten)
+    }
+
     @Test("Headnote rendering: the italic abstract (or its placeholder) appears in HTML, DOCX, and PDF only when the entry requested one")
     func headnoteAcrossFormats() async throws {
         let withHeadnote = CollectionExportDocument(

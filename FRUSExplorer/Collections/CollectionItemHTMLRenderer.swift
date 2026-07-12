@@ -262,7 +262,7 @@ struct CollectionItemHTMLRenderer {
         // every body mode (including the citation-only preview card); a requested
         // headnote with nothing stored renders the placeholder note instead.
         if doc.includeHeadnote {
-            body += headnoteHTML(doc.headnoteText)
+            body += headnoteHTML(doc.headnoteText, authorship: doc.headnoteAuthorship)
         }
 
         if citationOnlyVolumeIds.contains(doc.volumeId) {
@@ -380,7 +380,7 @@ struct CollectionItemHTMLRenderer {
     ///
     /// - Parameter text: The resolved headnote (stored `GeneratedSummary` text), if any.
     /// - Returns: The `<div class="headnote">…</div>` HTML fragment.
-    private func headnoteHTML(_ text: String?) -> String {
+    private func headnoteHTML(_ text: String?, authorship: SummaryAuthorship) -> String {
         let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
         var body = ""
         body += "  <div class=\"headnote\">\n"
@@ -392,10 +392,11 @@ struct CollectionItemHTMLRenderer {
             for para in paragraphs {
                 body += "    <p><em>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</em></p>\n"
             }
-            // AI attribution (v1.9) — a filled headnote is a stored GeneratedSummary,
-            // so it carries the same label as a summary body. The placeholder branch
-            // below renders no AI text and therefore no attribution.
-            body += "    <p class=\"ai-attribution\">\(escaped(CollectionAIAttribution.label()))</p>\n"
+            // Attribution honors the headnote's authorship (Composer redesign): an AI headnote keeps
+            // the AI label, an AI-edited one discloses the edit, a user-written one shows none.
+            if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
+                body += "    <p class=\"ai-attribution\">\(escaped(attribution))</p>\n"
+            }
         } else {
             let missing = String(localized: "collection.headnote.missing",
                                  defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")

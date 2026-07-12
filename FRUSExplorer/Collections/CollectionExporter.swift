@@ -423,6 +423,9 @@ struct CollectionExportDocument: Sendable {
     /// The resolved headnote text — the chosen (or fallback) stored `GeneratedSummary`.
     /// Rendered as an italic abstract above the body when `includeHeadnote` is `true`.
     let headnoteText: String?
+    /// The headnote summary's provenance (Composer redesign) — drives the export attribution so a
+    /// user-edited/-written headnote is not labeled "AI-generated". `.aiGenerated` when no headnote.
+    let headnoteAuthorship: SummaryAuthorship
     /// The entry/section highlight override resolved by the cascade (Authoring Phase 5).
     /// `nil` = inherit — renderers gate inline highlights on
     /// `applyHighlightsOverride ?? options.applyHighlights`, so the default reproduces
@@ -500,6 +503,7 @@ struct CollectionExportDocument: Sendable {
         sourceNoteText: String? = nil,
         includeHeadnote: Bool = false,
         headnoteText: String? = nil,
+        headnoteAuthorship: SummaryAuthorship = .aiGenerated,
         applyHighlightsOverride: Bool? = nil,
         includeNotesOverride: Bool? = nil,
         includeFootnotesOverride: Bool? = nil,
@@ -532,6 +536,7 @@ struct CollectionExportDocument: Sendable {
         self.sourceNoteText = sourceNoteText
         self.includeHeadnote = includeHeadnote
         self.headnoteText = headnoteText
+        self.headnoteAuthorship = headnoteAuthorship
         self.applyHighlightsOverride = applyHighlightsOverride
         self.includeNotesOverride = includeNotesOverride
         self.includeFootnotesOverride = includeFootnotesOverride
@@ -663,6 +668,26 @@ enum CollectionAIAttribution {
         return String(
             localized: "export.aiAttribution.generic",
             defaultValue: "AI-generated summary · Apple Intelligence (on-device)")
+    }
+
+    /// The attribution caption for an exported **headnote**, honoring its authorship (Composer
+    /// redesign). An AI-written headnote keeps the standard "AI-generated summary" label; an
+    /// AI-seeded headnote the user edited is disclosed as such; a headnote the user wrote from
+    /// scratch carries **no** AI attribution (returns `nil`, so renderers emit no caption). This is
+    /// how a user-authored key takeaway is kept out of the app's "label AI-generated content" policy.
+    ///
+    /// - Parameter authorship: The headnote summary's provenance.
+    /// - Returns: The localized caption, or `nil` when no AI attribution should appear.
+    static func headnoteLabel(authorship: SummaryAuthorship) -> String? {
+        switch authorship {
+        case .aiGenerated:
+            return label()
+        case .aiEdited:
+            return String(localized: "export.aiAttribution.edited",
+                          defaultValue: "AI-generated summary, edited by you")
+        case .userWritten:
+            return nil
+        }
     }
 }
 
