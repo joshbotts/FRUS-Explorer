@@ -141,6 +141,13 @@ struct CollectionEntryInspector: View {
     /// pending their own host restructures (Phase 4). Ignored for a heading entry (no document).
     var showsCompositionSegment: Bool = false
 
+    /// Whether the flat pinned layout includes the collection-level **Collection** settings section
+    /// (name / note / front matter / composition). `true` for the iPhone sheet and Mac column (the
+    /// pinned #188-E section); `false` for the Composer v2 iPad **Configure** sheet, which is
+    /// document-only because collection settings live in a separate ⚙ Collection sheet. Ignored when
+    /// the segmented control is shown.
+    var showsCollectionSettings: Bool = true
+
     /// Applies a one-tap composition preset (4a), threaded from the host so apparatus insertion goes
     /// through its entry-list management. Passed on to `CollectionCompositionRows`; when `nil` the
     /// embedded composition shows no Presets section.
@@ -270,8 +277,12 @@ struct CollectionEntryInspector: View {
                 }
             } else {
                 // Flat pinned layout (iPhone sheet, Mac column, heading rows): collection-level
-                // attributes stay reachable above the per-entry sections (#188-E).
-                collectionSection
+                // attributes stay reachable above the per-entry sections (#188-E) — unless the host
+                // owns them elsewhere (Composer v2 iPad: composition is its own ⚙ Collection sheet,
+                // so the per-row Configure sheet is document-only).
+                if showsCollectionSettings {
+                    collectionSection
+                }
                 if isHeading {
                     headingIdentitySection
                     sectionDefaultsSection

@@ -42,13 +42,21 @@ struct CollectionCompositionRows: View {
     /// behind the outline's back). When `nil`, the Presets section is hidden.
     var onApplyPreset: ((CollectionPreset) -> Void)?
 
+    /// Overrides the automatic compact-vs-regular preset layout choice (Composer v2). `nil` = auto
+    /// (from the horizontal size class); `false` forces the 2×2 grid; `true` forces the short-chip
+    /// row. The iPad ⚙ Collection sheet passes `false` because an iPadOS form sheet reports a compact
+    /// size class yet is wide enough for the grid — and the chip row omits Scholarly edition.
+    var presetsCompact: Bool?
+
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
 
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var hSizeClass
     #endif
     /// Whether to render presets as the compact (iPhone) short-chip row rather than the 2×2 grid.
+    /// A host override wins; otherwise the horizontal size class decides.
     private var isCompactPresets: Bool {
+        if let presetsCompact { return presetsCompact }
         #if os(iOS)
         return hSizeClass == .compact
         #else

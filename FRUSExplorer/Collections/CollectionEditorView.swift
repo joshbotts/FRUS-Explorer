@@ -190,8 +190,9 @@ struct CollectionEditorView: View {
     /// collection so the name field is immediately available; collapsed otherwise.
     @State private var detailsExpanded: Bool
     /// iPhone Composition disclosure — collapsed by default.
-    /// iPad metadata/composition inspector visibility.
-    @State private var showDetailsInspector = true
+    /// iPad Collection settings sheet visibility (Composer v2 §A: the ⚙ Collection toolbar sheet
+    /// replaces the persistent metadata/composition inspector column).
+    @State private var showCollectionSettings = false
     /// The document entry whose per-entry inspector is open (Collections Manager M2, D3/
     /// M2.4). On iPad (regular width) this drives the shared trailing `.inspector` column
     /// — set = show the entry inspector, `nil` = show the collection-metadata inspector
@@ -212,11 +213,6 @@ struct CollectionEditorView: View {
     }
     /// iPhone Outline | Preview pane selection (Authoring Phase 2b; view-local).
     @State private var editorPane: EditorPane = .outline
-    /// iPad side-by-side preview pane visibility. Defaults **on** so the editor opens as the
-    /// 3-column Composer (Contents · Live preview · Inspector) intends — the persistent inspector
-    /// is already on by default — and persists the toolbar toggle across sessions (Composer
-    /// redesign 4, mirroring the macOS manager).
-    @AppStorage("collections.ipad.showPreview") private var showPreviewPane = true
     /// The preview's "Render All" cap lift, hoisted here so it survives pane toggles
     /// that recreate `CollectionPreviewView` (one editor session = one lift).
     @State private var previewRenderAll = false
@@ -705,87 +701,72 @@ struct CollectionEditorView: View {
         #endif
     }
 
-    /// iPad (regular width): the entry list fills the screen, with an optional live
-    /// preview pane side-by-side on the right (Authoring Phase 2b, toolbar-toggled);
-    /// metadata + composition live in a system `.inspector` panel (the app's established
-    /// iPad pattern, cf. the document notes panel), toggleable from the toolbar and
-    /// fully independent of the preview pane.
+    /// iPad (regular width) — Composer v2 §A: two roomy permanent columns, **Contents** (the outline)
+    /// and the **live preview**, with all settings summoned on demand as dismissible sheets — the
+    /// ⚙ Collection toolbar button and each row's ⚙ Configure — so the reading surface stays clear.
+    /// Replaces the earlier 3-pane layout (a persistent metadata/composition `.inspector` column plus
+    /// a toggled preview).
     private var iPadCollectionLayout: some View {
         HStack(spacing: 0) {
+            // Contents outline — bounded width so the live preview takes the rest.
             Form {
                 documentsSection
                 addDocumentsSection
-                if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
             }
             .formStyle(.grouped)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 460)
 
-            if showPreviewPane {
-                Divider()
-                CollectionPreviewView(collection: collection,
-                                      entries: sortedEntries,
-                                      allNotes: allNotes,
-                                      renderAll: $previewRenderAll)
-                    .frame(minWidth: 320, maxWidth: .infinity)
+            Divider()
+
+            // Live preview (permanent) — the collection rendered exactly as its HTML export.
+            CollectionPreviewView(collection: collection,
+                                  entries: sortedEntries,
+                                  allNotes: allNotes,
+                                  renderAll: $previewRenderAll)
+                .frame(maxWidth: .infinity)
+        }
+        // Collection-wide settings — from the ⚙ Collection toolbar button.
+        .sheet(isPresented: $showCollectionSettings) {
+            iPadCollectionSettingsSheet
+        }
+        // Per-document settings — from a row's ⚙ Configure. Document-only (composition lives in the
+        // ⚙ Collection sheet). iPhone (compact) drills in instead — see the editor's
+        // per-entry `.navigationDestination`.
+        .sheet(isPresented: Binding(
+            get: { inspectedEntryId != nil && isRegularWidth },
+            set: { if !$0 { inspectedEntryId = nil } }
+        )) {
+            if let entry = inspectedEntry {
+                entryInspectorContent(entry, documentOnly: true)
             }
         }
-        // One trailing inspector surface, either/or (Collections Manager M2, M2.4):
-        // selecting an entry's ⓘ shows the per-entry inspector; toggling the details
-        // button shows collection metadata (and clears the entry selection). This mirrors
-        // the macOS manager's B8 column pattern without stacking two inspectors.
-        .inspector(isPresented: $showDetailsInspector) {
-            Group {
-                if let entry = inspectedEntry {
-                    entryInspectorContent(entry)
-                } else {
-                    Form {
-                        nameSection
-                        noteSection
-                        frontMatterSection
-                        compositionSection
-                        smartCollectionSection
-                    }
-                    .formStyle(.grouped)
-                }
+    }
+
+    /// The iPad ⚙ Collection settings sheet (Composer v2 §A): a dismissible form sheet holding the
+    /// collection's name/note, title-page front matter, presets + the three grouped composition
+    /// sections, and the smart-collection link — everything that lived in the old persistent
+    /// metadata/composition inspector column.
+    private var iPadCollectionSettingsSheet: some View {
+        NavigationStack {
+            Form {
+                nameSection
+                noteSection
+                frontMatterSection
+                compositionSection
+                smartCollectionSection
             }
+            .formStyle(.grouped)
+            .navigationTitle(String(localized: "collection.editor.settings.title",
+                                    defaultValue: "Collection settings"))
             #if os(iOS)
-            .inspectorColumnWidth(min: 320, ideal: 380, max: 460)
+            .navigationBarTitleDisplayMode(.inline)
             #endif
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showPreviewPane.toggle()
-                } label: {
-                    Image(systemName: showPreviewPane ? "eye.fill" : "eye")
-                }
-                // A6: the label flips with state so VoiceOver announces the action
-                // the button will actually perform.
-                .accessibilityLabel(showPreviewPane
-                    ? String(localized: "collection.editor.preview.toggle.hide",
-                             defaultValue: "Hide live preview")
-                    : String(localized: "collection.editor.preview.toggle",
-                             defaultValue: "Show live preview"))
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    // The details button always shows collection metadata: clearing the
-                    // entry selection hands the shared inspector column back to metadata.
-                    if inspectedEntryId != nil {
-                        inspectedEntryId = nil
-                        showDetailsInspector = true
-                    } else {
-                        showDetailsInspector.toggle()
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", defaultValue: "Done")) {
+                        showCollectionSettings = false
                     }
-                } label: {
-                    Image(systemName: "sidebar.trailing")
                 }
-                // A6: stateful label (see the preview toggle above).
-                .accessibilityLabel(showDetailsInspector && inspectedEntryId == nil
-                    ? String(localized: "collection.editor.inspector.toggle.hide",
-                             defaultValue: "Hide collection details")
-                    : String(localized: "collection.editor.inspector.toggle",
-                             defaultValue: "Show collection details"))
             }
         }
     }
@@ -1096,7 +1077,11 @@ struct CollectionEditorView: View {
     /// as the three labeled Composer groups. `CollectionCompositionRows` owns its own Sections, so
     /// this host places it directly rather than wrapping it in one Composition section.
     private var compositionSection: some View {
-        CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
+        // The iPad ⚙ Collection sheet is wide enough for the 2×2 preset grid even though an iPadOS
+        // form sheet reports a compact size class — force the grid so all four presets (including
+        // Scholarly edition) are reachable.
+        CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) },
+                                  presetsCompact: false)
     }
 
     // MARK: - Documents Section
@@ -1180,7 +1165,19 @@ struct CollectionEditorView: View {
     @ToolbarContentBuilder
     private var collectionAuthoringToolbar: some ToolbarContent {
         if sizeClass == .regular {
-            // iPad: each verb as its own labeled toolbar item.
+            // iPad (Composer v2 §A): a consolidated toolbar — ⚙ Collection (opens the settings
+            // sheet), ＋ Add (a menu of the content verbs), Sort by Date, and Export.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showCollectionSettings = true
+                } label: {
+                    Label(String(localized: "collection.editor.settings.button", defaultValue: "Collection"),
+                          systemImage: "gearshape")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                iPadAddMenu
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     sortByDateScopeItems
@@ -1192,51 +1189,10 @@ struct CollectionEditorView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    addStructuralEntry(kind: .heading)
+                    showExport = true
                 } label: {
-                    Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
-                          systemImage: "number")
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    addStructuralEntry(kind: .prose)
-                } label: {
-                    Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
-                          systemImage: "text.alignleft")
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showAddHighlights = true
-                } label: {
-                    Label(String(localized: "collection.add.highlights",
-                                 defaultValue: "Add Highlighted Passages…"),
-                          systemImage: "text.quote")
-                }
-                .disabled(orderedDocumentKeys.isEmpty)
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    ForEach(CollectionGeneratedBlockType.allCases) { blockType in
-                        Button {
-                            addGeneratedEntry(type: blockType)
-                        } label: {
-                            Label(blockType.displayName, systemImage: blockType.systemImage)
-                        }
-                    }
-                } label: {
-                    Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
-                          systemImage: "list.bullet.rectangle")
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showAddDocuments = true
-                } label: {
-                    Label(String(localized: "collection.editor.addDocuments.button",
-                                 defaultValue: "Add Documents…"),
-                          systemImage: "plus.rectangle.on.folder")
+                    Label(String(localized: "collection.editor.actions.export", defaultValue: "Export…"),
+                          systemImage: "square.and.arrow.up")
                 }
             }
         } else {
@@ -1306,6 +1262,56 @@ struct CollectionEditorView: View {
         }
         .accessibilityLabel(String(localized: "collection.add.menu",
                                    defaultValue: "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"))
+    }
+
+    /// iPad (Composer v2 §A): the ＋ Add toolbar menu — the content verbs (Documents plus the
+    /// structural / apparatus items). Sort by Date and Export are their own iPad toolbar items.
+    private var iPadAddMenu: some View {
+        Menu {
+            Button {
+                showAddDocuments = true
+            } label: {
+                Label(String(localized: "collection.editor.addDocuments.button",
+                             defaultValue: "Add Documents…"),
+                      systemImage: "plus.rectangle.on.folder")
+            }
+            Divider()
+            Button {
+                addStructuralEntry(kind: .heading)
+            } label: {
+                Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                      systemImage: "number")
+            }
+            Button {
+                addStructuralEntry(kind: .prose)
+            } label: {
+                Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                      systemImage: "text.alignleft")
+            }
+            Button {
+                showAddHighlights = true
+            } label: {
+                Label(String(localized: "collection.add.highlights",
+                             defaultValue: "Add Highlighted Passages…"),
+                      systemImage: "text.quote")
+            }
+            .disabled(orderedDocumentKeys.isEmpty)
+            Menu {
+                ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                    Button {
+                        addGeneratedEntry(type: blockType)
+                    } label: {
+                        Label(blockType.displayName, systemImage: blockType.systemImage)
+                    }
+                }
+            } label: {
+                Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
+                      systemImage: "list.bullet.rectangle")
+            }
+        } label: {
+            Label(String(localized: "collection.add.menu.label", defaultValue: "Add"),
+                  systemImage: "plus")
+        }
     }
     #endif
 
@@ -1712,22 +1718,10 @@ struct CollectionEditorView: View {
     /// also ensures the inspector is visible and hands the column to the entry (versus
     /// collection metadata); on iPhone (compact) it drives the `.sheet`.
     private func presentEntryInspector(for entryId: UUID) {
+        // Composer v2: iPad (regular) presents the Configure sheet, iPhone (compact) drills in —
+        // both driven purely by `inspectedEntryId` (see `iPadCollectionLayout` and the editor's
+        // per-entry `.navigationDestination`).
         inspectedEntryId = entryId
-        #if os(iOS)
-        if sizeClass == .regular { showDetailsInspector = true }
-        #endif
-    }
-
-    /// Whether the per-entry inspector should show the `Document | Composition` segmented control
-    /// (Composer redesign 2b): only on iPad (regular width), where it presents as the trailing
-    /// `.inspector` column. The iPhone compact `.sheet` keeps the flat pinned layout. Guarded so it
-    /// resolves to `false` on any platform without a horizontal size class.
-    private var inspectorShowsCompositionSegment: Bool {
-        #if os(iOS)
-        return sizeClass == .regular
-        #else
-        return false
-        #endif
     }
 
     /// The shared per-entry inspector content — the same `CollectionEntryInspector` used
@@ -1735,7 +1729,8 @@ struct CollectionEditorView: View {
     /// note-create sheet for the entry's document (D5); `onInsertExcerpt` keeps the entry
     /// list in sync when a highlight is inserted as an excerpt.
     @ViewBuilder
-    private func entryInspectorContent(_ entry: CollectionEntry, isPushed: Bool = false) -> some View {
+    private func entryInspectorContent(_ entry: CollectionEntry, isPushed: Bool = false,
+                                       documentOnly: Bool = false) -> some View {
         CollectionEntryInspector(
             entry: entry,
             onInsertExcerpt: { capture in appendExcerpts([capture]) },
@@ -1747,12 +1742,12 @@ struct CollectionEditorView: View {
                         entryIndex: idx)
                 }
             },
-            // iPad regular width presents this as the trailing `.inspector` column, where the
-            // Document | Composition segmented control belongs (Composer redesign 2b); the iPhone
-            // compact path drills in (a push) and keeps the flat pinned layout.
-            showsCompositionSegment: inspectorShowsCompositionSegment,
-            // Presets in the inspector's Composition tab route apparatus through this host's
-            // entry-list management (4a).
+            // Composer v2 §A: the Document | Composition segment is gone — composition now lives in
+            // the ⚙ Collection sheet. The iPad Configure sheet is `documentOnly`; the iPhone drill-in
+            // keeps the pinned Collection section for now (Phase 4 restructures the compact editor).
+            showsCompositionSegment: false,
+            showsCollectionSettings: !documentOnly,
+            // Presets route apparatus through this host's entry-list management (4a).
             onApplyPreset: { applyPreset($0) },
             // iPhone presents the inspector as a drill-in push (Composer redesign 4), so it omits
             // its own navigation stack + Done button.
