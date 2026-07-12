@@ -641,8 +641,9 @@ class CollectionContentResolver {
         /// The entry's per-document title override (M3, D4; document entries only; `nil`
         /// on smart refs). Drives both the ToC label and the export heading.
         let titleOverride: String?
-        /// Whether this document entry requested a headnote (Authoring Phase 5).
-        let includeHeadnote: Bool
+        /// Per-entry headnote opt-in (`nil` = Default = inherit the collection default). Resolved
+        /// against `CollectionExportOptions.includeHeadnoteDefault` at pack time (Composer redesign).
+        let includeHeadnote: Bool?
         /// The chosen `GeneratedSummary.id` for the headnote; `nil` = fallback pick.
         let headnoteSummaryId: UUID?
         /// The source highlight's colour raw value (`.excerpt` entries only, Phase 5).
@@ -707,7 +708,7 @@ class CollectionContentResolver {
             proseRTF = nil
             bodyDepthOverride = nil
             titleOverride = nil
-            includeHeadnote = false
+            includeHeadnote = nil
             headnoteSummaryId = nil
             excerptColorTag = nil
             generatedBlockType = nil
@@ -907,7 +908,8 @@ class CollectionContentResolver {
             applyHighlights:   collection.applyHighlights,
             includeNotes:      collection.includeNotes,
             summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud:  collection.includeWordCloud
+            includeWordCloud:  collection.includeWordCloud,
+            includeHeadnoteDefault: collection.defaultIncludeHeadnote
         )
     }
 
@@ -1068,7 +1070,10 @@ class CollectionContentResolver {
         // body. Stored summaries only — never generated, in either purpose; renderers
         // show a placeholder when the entry asked for one and none is stored. The
         // fallback pick prefers the entry's effective prompt.
-        let resolvedHeadnote: String? = ref.includeHeadnote
+        // Headnote resolves through the two-tier cascade (Composer redesign): the entry's own
+        // opt-in, else the collection default. Headings do not carry a headnote section default.
+        let effectiveHeadnote = ref.includeHeadnote ?? batch.options.includeHeadnoteDefault
+        let resolvedHeadnote: String? = effectiveHeadnote
             ? headnoteText(volumeId: ref.volumeId, documentId: ref.documentId,
                            summaryId: ref.headnoteSummaryId,
                            preferredPromptId: promptOverride ?? batch.options.summaryPromptId)
@@ -1130,7 +1135,7 @@ class CollectionContentResolver {
             dateline: dateline,
             highlights: resolvedHighlights,
             sourceNoteText: resolvedSourceNote,
-            includeHeadnote: ref.includeHeadnote,
+            includeHeadnote: effectiveHeadnote,
             headnoteText: resolvedHeadnote,
             applyHighlightsOverride: highlightsOverride,
             includeNotesOverride: notesOverride,

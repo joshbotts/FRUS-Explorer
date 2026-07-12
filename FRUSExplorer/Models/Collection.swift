@@ -232,6 +232,13 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// The collection-level default for per-document headnotes (Composer redesign): a document
+    /// entry whose `includeHeadnote` is `nil` (Default) inherits this. `false` by default, so
+    /// existing collections render exactly as before. Set from the composition "Headnotes" control.
+    var defaultIncludeHeadnote: Bool = false {
+        didSet { lastModified = .now }
+    }
+
     /// The `SummarizationPrompt.id` used when the body depth is `"summaryOnly"`.
     var summaryPromptId: UUID? {
         didSet { lastModified = .now }
@@ -558,13 +565,14 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     // MARK: - Headnote (Authoring Phase 5)
 
-    /// When `true` on a document entry, exports and the live preview render an italic
-    /// abstract (a `GeneratedSummary`) **above** the document body — a headnote, versus
-    /// the body-depth `summaryOnly` summary-*instead-of*-body. Defaults to `false`, so
-    /// every existing entry renders exactly as before. Headnote resolution never
-    /// generates a summary on demand (out of scope for Authoring Phase 5 step 1; the
-    /// renderers show a placeholder note when no stored summary exists).
-    var includeHeadnote: Bool = false {
+    /// Per-document headnote opt-in (Composer redesign: `nil` = Default = inherit the collection's
+    /// `defaultIncludeHeadnote`; `true` = on; `false` = off). When effectively on, exports and the
+    /// live preview render an italic abstract (a `GeneratedSummary`) **above** the document body —
+    /// a headnote, versus the body-depth `summaryOnly` summary-*instead-of*-body. Was a non-optional
+    /// `Bool` (default `false`) through Authoring Phase 5; widened to optional so a collection-level
+    /// default can cascade like the other overrides. Existing entries migrate to their stored value
+    /// (explicit on/off), so nothing renders differently.
+    var includeHeadnote: Bool? {
         didSet { lastModified = .now }
     }
 

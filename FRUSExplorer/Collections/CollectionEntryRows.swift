@@ -793,8 +793,9 @@ func entryStatusChips(entry: CollectionEntry, availableNoteCount: Int) -> some V
                          defaultValue: "Highlights off"))
     }
 
-    // Headnote opted in.
-    if entry.includeHeadnote {
+    // Headnote explicitly opted in (a Default that inherits an on collection default surfaces as a
+    // resolved chip in a later phase; here we show only the explicit per-entry On).
+    if entry.includeHeadnote == true {
         EntryStatusChip(
             systemImage: "text.aligncenter",
             text: String(localized: "collection.entry.chip.headnote",
