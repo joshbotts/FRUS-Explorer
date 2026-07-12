@@ -106,6 +106,13 @@ struct CollectionEntryInspector: View {
         let preview: String
     }
 
+    /// The inspector's top-level segment (Composer redesign 2b): the per-document surface or the
+    /// whole-collection composition. Selected by the `Document | Composition` segmented control.
+    private enum InspectorTab: Hashable {
+        case document
+        case composition
+    }
+
     /// The entry whose document is being inspected.
     let entry: CollectionEntry
 
@@ -126,6 +133,13 @@ struct CollectionEntryInspector: View {
     /// button stays (its `dismiss` closes the inspector column). Defaults to `false`
     /// — the iOS/iPad sheets and the shared heading-row sheet are unaffected.
     var isInspectorColumn: Bool = false
+
+    /// Whether to show the **Document | Composition** segmented control at the top of the inspector
+    /// (Composer redesign 2b). The iPad `.inspector` host passes `true` (regular width) so the
+    /// researcher can flip between this document's surface and the whole-collection composition; the
+    /// iPhone sheet, the Mac column, and the heading-row sheet keep the flat pinned layout (`false`),
+    /// pending their own host restructures (Phase 4). Ignored for a heading entry (no document).
+    var showsCompositionSegment: Bool = false
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -148,6 +162,10 @@ struct CollectionEntryInspector: View {
     /// user-facing failure inline in the card (Composer redesign 2c-2c Regenerate).
     @State private var isRegenerating = false
     @State private var regenError: String?
+    /// The inspector's top-level segment when `showsCompositionSegment` (Composer redesign 2b):
+    /// this document's surface, or the whole-collection composition. View-state only, never
+    /// persisted; reset per entry because the inspector is recreated via `.id(entry.id)`.
+    @State private var inspectorTab: InspectorTab = .document
     @State private var noteTexts: [String] = []
     /// The document's research notes as include-toggle rows (D5).
     @State private var noteChoices: [NoteChoice] = []
@@ -220,29 +238,25 @@ struct CollectionEntryInspector: View {
     private var inspectorBody: some View {
         NavigationStack {
             List {
-                // Collection-level attributes, pinned above the per-entry sections so they stay
-                // reachable after the researcher focuses a document (#188-E).
-                collectionSection
-                if isHeading {
-                    headingIdentitySection
-                    sectionDefaultsSection
+                if showsCompositionSegment && !isHeading {
+                    // Composer redesign 2b (iPad): the top segmented control splits the pinned flat
+                    // layout into this document's surface vs. the whole-collection composition.
+                    segmentPickerRow
+                    switch inspectorTab {
+                    case .document:
+                        documentSections
+                    case .composition:
+                        collectionSection
+                    }
                 } else {
-                    identitySection
-                    if isLoading {
-                        Section {
-                            HStack {
-                                ProgressView()
-                                Text(String(localized: "collection.inspector.loading",
-                                            defaultValue: "Loading document details…"))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                    // Flat pinned layout (iPhone sheet, Mac column, heading rows): collection-level
+                    // attributes stay reachable above the per-entry sections (#188-E).
+                    collectionSection
+                    if isHeading {
+                        headingIdentitySection
+                        sectionDefaultsSection
                     } else {
-                        annotationsSection
-                        overridesSection
-                        headnoteSection
-                        excerptsSection
-                        provenanceSection
+                        documentSections
                     }
                 }
             }
@@ -256,6 +270,47 @@ struct CollectionEntryInspector: View {
                 }
             }
             .task { await load() }
+        }
+    }
+
+    /// The `Document | Composition` segmented control pinned at the top of the inspector (Composer
+    /// redesign 2b). Styled as a clear-backed row so it reads as a top-level switch rather than a
+    /// boxed list cell.
+    @ViewBuilder private var segmentPickerRow: some View {
+        Picker(selection: $inspectorTab) {
+            Text(String(localized: "collection.inspector.tab.document", defaultValue: "Document"))
+                .tag(InspectorTab.document)
+            Text(String(localized: "collection.inspector.tab.composition", defaultValue: "Composition"))
+                .tag(InspectorTab.composition)
+        } label: {
+            Text(String(localized: "collection.inspector.tab.label", defaultValue: "Inspector view"))
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    /// The per-document sections (identity → provenance), shared by the flat pinned layout and the
+    /// segmented `Document` tab. The loading placeholder stands in until `load()` resolves.
+    @ViewBuilder private var documentSections: some View {
+        identitySection
+        if isLoading {
+            Section {
+                HStack {
+                    ProgressView()
+                    Text(String(localized: "collection.inspector.loading",
+                                defaultValue: "Loading document details…"))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } else {
+            annotationsSection
+            overridesSection
+            headnoteSection
+            excerptsSection
+            provenanceSection
         }
     }
 
