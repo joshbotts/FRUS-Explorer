@@ -1328,7 +1328,7 @@ class CollectionContentResolver {
             )
             if let chosen = try? modelContext.fetch(descriptor).first,
                !chosen.responseText.isEmpty {
-                return (chosen.responseText, chosen.authorship)
+                return (chosen.responseText, chosen.authorship ?? .aiGenerated)
             }
             // The chosen summary no longer exists (deleted / not yet synced): fall
             // through to the stored-summary fallback rather than silently dropping
@@ -1346,9 +1346,9 @@ class CollectionContentResolver {
         let stored = ((try? modelContext.fetch(descriptor)) ?? [])
             .filter { !$0.responseText.isEmpty }
         if let pid = preferredPromptId, let preferred = stored.first(where: { $0.promptId == pid }) {
-            return (preferred.responseText, preferred.authorship)
+            return (preferred.responseText, preferred.authorship ?? .aiGenerated)
         }
-        return stored.first.map { ($0.responseText, $0.authorship) }
+        return stored.first.map { ($0.responseText, $0.authorship ?? .aiGenerated) }
     }
 
     // MARK: - Volume preparation (export only)
