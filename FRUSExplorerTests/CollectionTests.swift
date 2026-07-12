@@ -2859,6 +2859,38 @@ struct CollectionTests {
         #expect(doc.headnoteAuthorship == .userWritten)
     }
 
+    @Test("Legacy summary with a NULL authorship column (a row persisted before the field existed, or CloudKit-synced) reads back as .aiGenerated instead of trapping — guards the SwiftData optional-enum migration fix")
+    @MainActor
+    func legacyNilAuthorshipResolvesToAIGenerated() async throws {
+        // Reproduces the crash a user hit on iPad: `Could not cast Optional<Any> to SummaryAuthorship`
+        // at `GeneratedSummary.authorship.getter`. A non-optional enum property force-casts the NULL
+        // that SwiftData reads for a pre-migration row. `authorship` is now optional, and every read
+        // site coerces `nil` to `.aiGenerated`, so a legacy summary is attributed exactly as before.
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+        let coll = Collection(name: "Legacy")
+        context.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "lvol", sortOrder: 0)
+        entry.includeHeadnote = true
+        context.insert(entry)
+        let legacy = GeneratedSummary(documentId: "d1", volumeId: "lvol", promptId: UUID(),
+                                      responseText: "A pre-migration summary.")
+        // Simulate a row whose `authorship` column is NULL (only possible now that the field is optional).
+        legacy.authorship = nil
+        context.insert(legacy)
+        entry.headnoteSummaryId = legacy.id
+        try context.save()
+
+        // Reading `.authorship` on the NULL row must not trap; the resolver coerces it to the default.
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        let items = try await resolver.resolve(collection: coll, entries: [entry],
+                                               allNotes: [], purpose: .preview)
+        let doc = try #require(docPayload(items[0]))
+        #expect(doc.headnoteText == "A pre-migration summary.")
+        #expect(doc.headnoteAuthorship == .aiGenerated)
+    }
+
     @Test("Headnote draft flag persists: a GeneratedSummary created with isHeadnoteDraft round-trips through SwiftData (guards the draft-isolation contract that keeps drafts out of the document's summary carousel)")
     func headnoteDraftFlagPersists() async throws {
         let container = try ModelContainer.makeTestContainer()

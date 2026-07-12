@@ -947,7 +947,7 @@ struct CollectionEntryInspector: View {
                     .textCase(.uppercase)
                     .foregroundStyle(FRUSTheme.editorialNoteForeground)
                 Spacer()
-                headnoteProvenanceChip(summary?.authorship)
+                headnoteProvenanceChip(summary.map { $0.authorship ?? .aiGenerated })
             }
 
             if isEditingHeadnote {
@@ -1096,7 +1096,8 @@ struct CollectionEntryInspector: View {
               seed?.responseText.trimmingCharacters(in: .whitespacesAndNewlines) != trimmed else { return }
         // AI-derived text — whether a fresh AI draft or one already AI-edited — stays labeled as
         // AI-assisted across further edits; only a nil seed or the user's own text yields `.userWritten`.
-        let seedIsAIDerived = seed?.authorship == .aiGenerated || seed?.authorship == .aiEdited
+        let seedAuthorship = seed.map { $0.authorship ?? .aiGenerated }
+        let seedIsAIDerived = seedAuthorship == .aiGenerated || seedAuthorship == .aiEdited
         let authorship: SummaryAuthorship =
             (seedIsAIDerived && !(seed?.responseText.isEmpty ?? true)) ? .aiEdited : .userWritten
         swapHeadnoteDraft(text: trimmed, authorship: authorship)

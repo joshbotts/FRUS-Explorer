@@ -94,8 +94,20 @@ import SwiftData
     /// Who authored this summary's text — the on-device AI (default), the AI then edited by the
     /// user, or the user from scratch (Composer redesign, editable headnotes). The export
     /// attribution reads this so a user-written or -edited headnote is never mislabeled
-    /// "AI-generated". Defaults to `.aiGenerated`, so every existing summary is attributed as before.
-    var authorship: SummaryAuthorship = SummaryAuthorship.aiGenerated {
+    /// "AI-generated".
+    ///
+    /// **Optional on purpose.** SwiftData does not backfill a stored default onto rows persisted
+    /// before this field was added (including CloudKit-synced records), so the column reads back
+    /// NULL for them. A *non-optional* enum property force-casts that NULL and traps at the getter
+    /// (`Could not cast value of type 'Swift.Optional<Any>' to 'SummaryAuthorship'`). Declaring it
+    /// optional lets a legacy NULL surface as `nil`; every read site coerces `nil` to `.aiGenerated`,
+    /// so legacy summaries are attributed exactly as before while new rows still default to
+    /// `.aiGenerated`. (Primitive fields like `isHeadnoteDraft` don't need this — SwiftData coerces a
+    /// NULL primitive to its zero value. A non-optional *custom* type added to an already-persisted
+    /// model traps the same way whether it is an enum or a `Codable` value, so any such field added
+    /// later should be optional. Fields present since the model's first commit — e.g. `responseFormat`
+    /// — have no legacy NULL rows and are safe as-is.)
+    var authorship: SummaryAuthorship? = SummaryAuthorship.aiGenerated {
         didSet { lastModified = .now }
     }
 
