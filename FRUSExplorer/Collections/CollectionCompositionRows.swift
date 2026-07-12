@@ -37,6 +37,11 @@ struct CollectionCompositionRows: View {
     /// The collection whose persisted composition is being edited.
     @Bindable var collection: Collection
 
+    /// Applies a one-tap preset (4a). Supplied by hosts that own the collection's entry list, so
+    /// apparatus insertion goes through their `sortedEntries` management (never a model-direct write
+    /// behind the outline's back). When `nil`, the Presets section is hidden.
+    var onApplyPreset: ((CollectionPreset) -> Void)?
+
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
 
     private var bodyDepth: Binding<CollectionBodyDepth> {
@@ -77,6 +82,38 @@ struct CollectionCompositionRows: View {
         // generated analysis/apparatus — each with a one-line helper. Every underlying binding is
         // unchanged; only the grouping is new. Because this view now emits its own `Section`s, every
         // host places it directly (no wrapping Section/DisclosureGroup of its own).
+
+        // MARK: Presets — a one-tap starting composition (4a). Each row overwrites the composition
+        // fields below and appends the preset's apparatus (never removing existing entries). Shown
+        // only where a host wires `onApplyPreset` (which routes apparatus through its entry list).
+        if let onApplyPreset {
+            Section {
+                ForEach(CollectionPreset.allCases) { preset in
+                    Button {
+                        onApplyPreset(preset)
+                    } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(preset.displayName)
+                                .foregroundStyle(.primary)
+                            Text(preset.subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: preset.systemImage)
+                    }
+                }
+                .accessibilityHint(String(localized: "composition.presets.applyHint",
+                                          defaultValue: "Applies this composition. Everything stays editable afterward."))
+            }
+        } header: {
+            Text(String(localized: "composition.presets.header", defaultValue: "Presets"))
+            } footer: {
+                Text(String(localized: "composition.presets.footer",
+                            defaultValue: "Apply a starting composition in one tap. Everything below stays editable; apparatus is added, never removed."))
+            }
+        }
 
         // MARK: Document content — how each document's text is carried into the export.
         Section {
