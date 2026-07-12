@@ -322,7 +322,7 @@ struct CommandFocusedValueTests {
             hasDocuments: hasDocuments,
             addDocuments: {}, addHeading: {}, addProse: {},
             addHighlights: {}, addApparatus: { _ in }, sortByDate: {},
-            togglePreview: {}, toggleComposition: {}, toggleFrontMatter: {},
+            togglePreview: {}, toggleSettings: {},
             exportCollection: {}
         )
     }
@@ -365,8 +365,8 @@ struct CommandFocusedValueTests {
             addDocuments: { sideEffect += 1 }, addHeading: { sideEffect += 1 },
             addProse: { sideEffect += 1 }, addHighlights: { sideEffect += 1 },
             addApparatus: { _ in sideEffect += 1 }, sortByDate: { sideEffect += 1 },
-            togglePreview: { sideEffect += 1 }, toggleComposition: { sideEffect += 1 },
-            toggleFrontMatter: { sideEffect += 1 }, exportCollection: { sideEffect += 1 }
+            togglePreview: { sideEffect += 1 }, toggleSettings: { sideEffect += 1 },
+            exportCollection: { sideEffect += 1 }
         )
         #expect(a == b)
         #expect(sideEffect == 0)
