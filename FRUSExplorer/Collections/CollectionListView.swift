@@ -376,6 +376,7 @@ struct CollectionListView: View {
     private func deleteCollections(at indexSet: IndexSet) {
         for index in indexSet {
             let c = filteredCollections[index]
+            GeneratedSummary.deleteHeadnoteDrafts(for: c, in: modelContext)
             for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
             modelContext.delete(c)
         }

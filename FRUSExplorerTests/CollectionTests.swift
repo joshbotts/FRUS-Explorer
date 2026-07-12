@@ -491,6 +491,52 @@ struct CollectionTests {
         #expect(fetched.first?.researchNoteId == note.id)
     }
 
+    // MARK: - HeadnoteDraftCleanup
+
+    @Test("HeadnoteDraftCleanup: deleting an entry removes its isHeadnoteDraft summary; a real summary pointed at by headnoteSummaryId is left intact")
+    func headnoteDraftCleanup() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let collection = Collection(name: "Test Collection")
+        context.insert(collection)
+
+        // Entry A owns an edited headnote draft.
+        let draft = GeneratedSummary(documentId: "d1", volumeId: "vol1",
+                                     promptId: UUID(), responseText: "Key takeaway.",
+                                     authorship: .userWritten, isHeadnoteDraft: true)
+        context.insert(draft)
+        let entryA = CollectionEntry(collectionId: collection.id, documentId: "d1",
+                                     volumeId: "vol1", sortOrder: 0)
+        entryA.collection = collection
+        entryA.headnoteSummaryId = draft.id
+        context.insert(entryA)
+
+        // Entry B points its headnote at a REAL (non-draft) document summary.
+        let realSummary = GeneratedSummary(documentId: "d2", volumeId: "vol1",
+                                           promptId: UUID(), responseText: "Doc summary.")
+        context.insert(realSummary)
+        let entryB = CollectionEntry(collectionId: collection.id, documentId: "d2",
+                                     volumeId: "vol1", sortOrder: 1)
+        entryB.collection = collection
+        entryB.headnoteSummaryId = realSummary.id
+        context.insert(entryB)
+        try context.save()
+
+        // Deleting entry A removes its draft only.
+        GeneratedSummary.deleteHeadnoteDraft(for: entryA, in: context)
+        try context.save()
+        var all = try context.fetch(FetchDescriptor<GeneratedSummary>())
+        #expect(!all.contains { $0.id == draft.id })
+        #expect(all.contains { $0.id == realSummary.id })
+
+        // Deleting entry B leaves the real summary intact (the isHeadnoteDraft guard).
+        GeneratedSummary.deleteHeadnoteDraft(for: entryB, in: context)
+        try context.save()
+        all = try context.fetch(FetchDescriptor<GeneratedSummary>())
+        #expect(all.contains { $0.id == realSummary.id })
+    }
+
     // MARK: - AddByTagTest
 
     @Test("AddByTagTest: documents from notes with a given tag map correctly to (documentId, volumeId) pairs")

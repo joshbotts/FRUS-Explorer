@@ -543,9 +543,9 @@ A **collection** is a curated, authored set of documents — a source packet, a 
 
 Open the Collections window with **⇧⌘K**.
 
-Above the selected collection's document list sits a compact **ribbon** of four labeled controls — **Add ▾**, **Sort by Date ▾**, **View ▾**, and **Export…** — the manager's whole toolbar (Section 10.2).
+Collections are switched from a **toolbar collection picker** — the pop-up menu at the left of the window's toolbar, listing your collections with document counts (a checkmark marks the current one) and offering **New Collection…**, **Import Collection…**, and **Manage Collections…**. The rest of the toolbar carries the authoring verbs — **＋ Add**, **Sort**, **⚙ Collection** (the collection-settings popover), **Export…**, and a **Document-inspector** toggle (Section 10.2).
 
-![Collections window on macOS — the collection list on the left and the selected collection on the right: its name, an "Add a note" affordance, the four-control ribbon (Add ▾ · Sort by Date ▾ · View ▾ · Export…), and the documents it contains (each with a source note, inspector, and remove control).](screenshots/macos/collections.png)
+`[SCREENSHOT: Collections window on macOS — the toolbar collection picker at the left, the Contents outline (rows with labeled override chips and a ⚙ Configure pill) beside the live preview, and the toolbar's ＋ Add · Sort · ⚙ Collection · Export · inspector-toggle]`
 
 ### 10.1 Creating a Collection
 
@@ -553,22 +553,23 @@ Above the selected collection's document list sits a compact **ribbon** of four 
 2. Enter a name.
 3. Click **Create**.
 
-**The collection note is now optional and out of the way.** A collection can carry a free-text note about its purpose, but the note field is no longer always shown. Instead, an **"Add a note"** affordance sits under the collection's name; click it to expand an editor and write a collection-level note, and it stays collapsed until you use it. (The same collapsed "Add a note" affordance appears in the iOS/iPad collection editor.)
+**Collection name, note, and front matter live in the ⚙ Collection popover.** A collection's name, an optional free-text **note**, its title-page **front matter**, and its whole **composition** are all edited in one place — the **⚙ Collection** popover in the toolbar (Section 10.3) — so the outline column stays devoted to the contents. (On iPad the same settings live behind the ⚙ Collection *sheet*; on iPhone, behind a **Collection settings** row.)
 
 **Which collections the window lists.** By default the Collections window lists **every** collection, across all of your projects. When you have an active project, a banner above the collection list notes this and offers **Scope to “\<project\>”** to narrow the list to just that project's collections; **Show All** brings the rest back. This scope choice is per-session — reopening the window returns to showing everything. (This matches the iOS/iPad Collection Manager.)
 
-### 10.2 The macOS ribbon
+### 10.2 The macOS toolbar and collection picker
 
-Everything you do to compose a collection is reached from a compact **ribbon** above the document list — four always-labeled controls, replacing the older row of separate buttons and group headers:
+The Collections window has **no permanent sidebar**. You switch collections from the **collection picker** at the left of the toolbar — a pop-up menu showing every collection with its document count (a checkmark on the current one), plus **New Collection…**, **Import Collection…**, and **Manage Collections…** (a sheet for renaming or deleting collections). The single middle column is the **Contents** outline; the **live preview** sits beside it. Everything you do to compose a collection is reached from the toolbar:
 
 | Control | What it does |
 |---------|--------------|
-| **Add ▾** | Insert content: **Add Documents…** (the bulk picker, ⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlighted-passage excerpts), and — below a divider — an **Apparatus ▸** submenu of the five generated blocks (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index) |
-| **Sort by Date ▾** | Re-order documents chronologically in one of two modes (Section 10.2b) |
-| **View ▾** | Three independent show/hide toggles — **Composition**, **Front Matter**, and **Preview** — each revealing its panel (Sections 10.3, 10.2a, and 10.5) |
+| **＋ Add** | Insert content: **Add Documents…** (the bulk picker, ⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlighted-passage excerpts), and — below a divider — an **Apparatus ▸** submenu of the five generated blocks (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index) |
+| **Sort** | Re-order documents chronologically in one of two modes (Section 10.2b) |
+| **⚙ Collection** | Open the **Collection settings** popover — the collection's name, note, title-page front matter, the composition **presets**, and the three composition groups (Sections 10.1, 10.3) |
 | **Export…** | Open the export sheet (format + destination; Section 10.6) |
+| **Document inspector** | Show or hide the trailing **inspector** column for the selected document (Section 10.2a) |
 
-`[SCREENSHOT: The macOS Collections ribbon — the four controls Add ▾ · Sort by Date ▾ · View ▾ · Export…, with the Add ▾ menu expanded showing Add Documents…, Add Section Heading, Add Note Block, Add Passages…, and the Apparatus submenu]`
+`[SCREENSHOT: The macOS Collections toolbar — the collection picker expanded (collections with counts + New/Import/Manage) and the ＋ Add · Sort · ⚙ Collection · Export · inspector-toggle controls]`
 
 ### 10.2a Composing: Documents, Section Headings, Prose, and Excerpts
 
@@ -597,15 +598,15 @@ A chronology is inserted at the top (front matter), the rest at the end (back ma
 
 **Nested sections.** Sections can nest up to **three levels** — a part containing chapters containing sub-sections. Right-click a heading for its context menu: **Indent** and **Outdent** change its level (with **Rename**, **Delete Heading Only** — its contents stay and any sub-headings move up a level — and **Delete Section**, which removes the heading *and* everything in it, after confirming). Rows indent to show the structure, and each heading has a **chevron** that collapses or expands its section while you work (a display convenience only — never saved to the collection). Dragging a heading moves its **entire section as one block**; documents still move one row at a time. Exports mirror the nesting with stepped heading sizes and an indented, nested table of contents in every format.
 
-**Front matter.** Under the collection's name sit compact **subtitle** and **author line** fields for the exported title page (the author field suggests your active project's name as a placeholder — used only if you type it). Reveal the **Front Matter** panel with **View ▾ → Front Matter**: it holds an **introduction** — written in the same rich-text editor as prose blocks and rendered as the opening prose of the body, after the table of contents and before the first document — and an optional **colophon**, a closing line noting the collection was compiled with FRUS Explorer, with its document and volume counts. All are optional; left blank, exports look exactly as before.
+**Front matter.** The **⚙ Collection** popover's **Title Page & Introduction** section holds compact **subtitle** and **author line** fields for the exported title page (the author field suggests your active project's name as a placeholder — used only if you type it), an **introduction** — written in the same rich-text editor as prose blocks and rendered as the opening prose of the body, after the table of contents and before the first document — and an optional **colophon**, a closing line noting the collection was compiled with FRUS Explorer, with its document and volume counts. All are optional; left blank, exports look exactly as before.
 
 Reorder any entry by dragging rows within the collection list.
 
 `[SCREENSHOT: Collection detail with documents, a section heading, and a prose block, drag handles visible]`
 
-Each **document row** is a scannable **report**: its title, volume, date, and small status chips (body depth, note count, "Highlights off", "Headnote", "See also") that reflect how it's configured. Everything editable — body depth and note selection included — now lives in the inspector, so the list reads at a glance and the row's only buttons are ⓘ (inspect), open-on-history.state.gov, and remove.
+Each **document row** is a scannable **report**: its title, volume, date, and small **labeled override chips** (body depth, note count, "Highlights off", "Headnote", "See also") — a chip appears only when a value differs from the collection default, so an untouched row stays clean. Everything editable lives in the inspector, so the list reads at a glance and the row's only controls are a labeled **⚙ Configure** pill (opens the inspector), open-on-history.state.gov, and remove.
 
-**The inspector: per-document control surface.** Open a document row's inspector with a **double-click**, the **Return** key, or its **ⓘ** button — on the Mac it opens as a trailing panel beside the list, so the outline stays visible while you edit. Once the inspector is open, a **single click on any other document row moves the inspector to that row** (a single click with the inspector closed still just selects the row, preserving ordinary list navigation). The inspector is titled with the **collection's own name**, and a **Collection** section pinned at its top keeps the collection-wide settings — description, subtitle, author line, colophon, and the export-composition defaults — reachable while a single document is focused. Below that, it gathers everything the app knows about that document — your notes and highlights, its tags, its AI summaries, its archival source note, and its cross-reference count — and it is where you **shape what that one document contributes to the export**:
+**The inspector: per-document control surface.** Open a document row's inspector with its **⚙ Configure** pill, a **double-click**, or the **Return** key — on the Mac it opens as a trailing panel beside the list, so the outline stays visible while you edit. Once the inspector is open, a **single click on any other document row moves the inspector to that row** (a single click with the inspector closed still just selects the row, preserving ordinary list navigation). The inspector is now **document-only** — the collection-wide settings live in the ⚙ Collection popover (10.1, 10.3), not repeated here. It gathers everything the app knows about that document — your notes and highlights, its tags, its AI summaries, its archival source note, and its cross-reference count — and it is where you **shape what that one document contributes to the export**:
 
 - **Body depth** — the per-document body-depth override (Default / Full / Summary only / Index) now lives here, at the top of the export overrides, as the parent setting the others refine.
 - **Research notes** — a checkbox for each of the document's notes selects which travel into the export; leaving them all checked means **all** (including notes you add later), and unchecking every note turns notes off for the document. A **New Note…** action writes one inline.
@@ -615,24 +616,24 @@ Each **document row** is a scannable **report**: its title, volume, date, and sm
 - **Excerpts** — every highlight row offers **Insert as Excerpt**, and an "Excerpts in This Collection" list shows the quotations this document already contributes.
 - **Related documents** — when turned on, exports append a small **"See also:"** line after the document, citing the documents it cross-references *that are also in this collection* (never the full cross-reference fan-out, so the line stays meaningful inside your artifact).
 
-**Section defaults.** Right-click a section heading and choose **Section Defaults…** (or click its ⓘ) for the same controls applied to every document in that section — the effective value for any document is always the most specific one: its own override, else its section's default, else the collection composition.
+**Section defaults.** Right-click a section heading and choose **Section Defaults…** (or use its **⚙ Configure** pill) for the same controls applied to every document in that section — the effective value for any document is always the most specific one: its own override, else its section's default, else the collection composition.
 
 Research notes attached to a document still render as trailing **"Research Note"** blocks after the document body in every format — they are your voice, kept typographically separate from the document's own footnotes.
 
 ### 10.2b Sorting by Date
 
-The **Sort by Date ▾** ribbon control re-orders the documents in the collection chronologically. It offers two modes:
+The toolbar's **Sort** menu re-orders the documents in the collection chronologically. It offers two modes:
 
 - **Across the Whole Collection** — sorts every document by its date into one continuous chronology, regardless of which section it sits in. Documents may move past your section headings.
 - **Within Each Section** — sorts documents by date *inside* each heading's section only, so no document ever crosses a heading. The sections stay in the order you arranged them; the documents within each are put in date order.
 
 Both modes leave your section headings, note blocks, and excerpts where they are. The same two modes are available on the iPad and iPhone from the collection editor's toolbar.
 
-`[SCREENSHOT: The macOS Sort by Date ▾ menu open, showing the two modes — Across the Whole Collection and Within Each Section]`
+`[SCREENSHOT: The macOS toolbar Sort menu open, showing the two modes — Across the Whole Collection and Within Each Section]`
 
 ### 10.3 Composition Settings
 
-Reveal the **Composition** panel with **View ▾ → Composition** on the ribbon. These settings are **saved on the collection**, so it always exports the same way in any format:
+The **Composition** settings live in the **⚙ Collection** popover — its three grouped sections (Document content, Your annotations, Analysis & apparatus). They are **saved on the collection**, so it always exports the same way in any format:
 
 | Setting | Options |
 |---------|---------|
@@ -647,9 +648,9 @@ Reveal the **Composition** panel with **View ▾ → Composition** on the ribbon
 
 Every generated summary in an exported collection — a summary-only body or a headnote — is labelled as AI-generated content attributed to Apple Intelligence (in HTML, PDF, DOCX, and the live preview alike), so readers of the artifact always know which passages a model wrote.
 
-**Presets.** At the top of the Composition panel, four **one-tap presets** set every field above at once for a common kind of artifact — **Teaching reader** (full text with source notes, a header-and-dateline table of contents, and a Persons Index and Chronology, for close classroom reading), **Briefing packet** (AI summaries in place of full text with a concept word-cloud overview, for a fast skimmable read), **Source dossier** (a compact index/outline body with footnotes and highlights off and a citation table of contents, an archival finding aid), and **Scholarly edition** (full text with a citation table of contents and the complete apparatus — Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index). Applying a preset overwrites the composition fields but is **non-destructive**: it adds any apparatus it calls for without removing blocks you've already placed, and never touches your documents, sections, or prose. Adjust any setting afterward — a preset is a starting point.
+**Presets.** At the top of the ⚙ Collection popover, four **one-tap presets** set every field above at once for a common kind of artifact — **Teaching reader** (full text with source notes, a header-and-dateline table of contents, and a Persons Index and Chronology, for close classroom reading), **Briefing packet** (AI summaries in place of full text with a concept word-cloud overview, for a fast skimmable read), **Source dossier** (a compact index/outline body with footnotes and highlights off and a citation table of contents, an archival finding aid), and **Scholarly edition** (full text with a citation table of contents and the complete apparatus — Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index). Applying a preset overwrites the composition fields but is **non-destructive**: it adds any apparatus it calls for without removing blocks you've already placed, and never touches your documents, sections, or prose. Adjust any setting afterward — a preset is a starting point.
 
-`[SCREENSHOT: The macOS Composition panel — the one-tap presets row, the Headnotes default toggle, and a document's Key takeaway headnote card with Edit/Regenerate]`
+`[SCREENSHOT: The macOS ⚙ Collection popover — the one-tap presets grid and the three composition groups (Document content · Your annotations · Analysis & apparatus)]`
 
 **Per-entry and per-section overrides.** The body depth above is a *default*. Any single document can override it, and any **section heading** can set a depth for the documents beneath it. The effective depth is the most specific that applies — the document's own override, else its section's, else the collection default — so one collection can mix full documents, summaries, and citation-only entries. Highlights, research notes, source notes, footnotes, and the summary prompt override the same way — from the document inspector and the heading's **Section Defaults** (see 10.2a).
 
@@ -663,21 +664,22 @@ Because a smart collection's membership is resolved dynamically, it can't be han
 
 ### 10.5 Live Preview
 
-A **live preview** sits side-by-side with the collection detail pane **by default** — the collection rendered exactly as its HTML export, updating as you edit; toggle it with **View ▾ → Preview** on the ribbon (⌥⌘P). The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
+A **live preview** sits side-by-side with the Contents outline **by default** — the collection rendered exactly as its HTML export, updating as you edit; toggle it from the **Collection** menu (⌥⌘P). The preview shows the **HTML export**; PDF and Word exports carry the same content, but their pagination differs. To keep editing responsive, large collections initially render only the **first 20 documents** — a bar above the preview says how many there are in total and offers **Render All** when you want everything. A document whose volume isn't downloaded appears as a **citation card** in the preview; a bar above the page counts the missing volumes and offers a **Download** button, and the preview swaps the cards for the full documents automatically once the volumes arrive.
 
 ### 10.6 Export
 
-Click **Export** in the Collections window. Because composition is already set, this sheet is just format + destination — with a one-line **summary of how the collection is composed** (for example, "Exports an AI summary of each document, with headnotes, your notes, and a word-cloud overview") at the top so you can confirm the settings at a glance before sharing. Change them from **View ▾ → Composition**.
+Click **Export** in the Collections window. Because composition is already set, this sheet is just format + destination. A one-line **summary of how the collection is composed** (for example, "Exports an AI summary of each document, with headnotes, your notes, and a word-cloud overview") sits at the top; below it a **grid of format cards** — each with a short descriptor — lets you pick one, and the button reads **Export {Format}** for the card you chose. Change the composition in the **⚙ Collection** popover.
 
 | Format | Best for |
 |--------|---------|
 | **PDF** | Printing, archiving, sharing with colleagues who don't have FRUS Explorer — renders section headings and rich prose |
 | **HTML** | Web-based viewing, browser printing with custom CSS, embedding links — renders section headings and prose |
-| **DOCX** | Microsoft Word format with styles, footnotes, and internal links; section headings become Word headings and prose keeps its formatting |
+| **Word** | Editable `.docx` for Word, Pages, or Google Docs; section headings become Word headings and prose keeps its formatting |
 | **BibTeX** | A `.bib` file (one `@incollection` record per document) for LaTeX and reference managers such as JabRef |
-| **FRUS Collection (shareable)** | A native **`.fruscollection`** file — an *editable* copy of the collection you can hand to a colleague (see below) |
+| **RIS** | A `.ris` file for Zotero, EndNote, and other reference managers — a plain file (the **Send to Zotero Library** row does the account-based Web-API sync) |
+| **.fruscollection** | A native **`.fruscollection`** file — an *editable* copy of the collection you can hand to a colleague (see below) |
 
-**Send to Zotero.** A single **Send to Zotero…** menu handles reference-manager export. With a Zotero account connected (Section 16), **Send to Zotero Library** pushes the whole collection into your library over the Web API, carrying tags and research notes; otherwise it writes an **RIS file** you open straight into Zotero desktop (File → Import). RIS is used rather than a Zotero-specific envelope because standard Zotero imports it everywhere, including iOS.
+**Send to Zotero.** Below the format grid, a separate **Send to Zotero Library** row handles account-based reference-manager export. With a Zotero account connected (Section 16), it pushes the whole collection into your library over the Web API, carrying your tags and research notes; with no account it falls back to writing an **RIS file** you open straight into Zotero desktop (File → Import).
 
 **Sharing an editable collection (`.fruscollection`).** The FRUS Collection format saves a small file carrying the collection's *source* — its document references, composition, section headings, and prose — not a rendered document. A colleague opens it right back into their own FRUS Explorer as a live, editable collection; because documents travel as references, the app offers to download any volumes they don't already have. Your research notes are **not** included unless you turn on **Include my research notes** (off by default). The file format upgrades itself automatically: a collection that uses no newer features (nested sections, front matter) is written in the original format that **older versions of the app open unchanged**. Once a collection uses newer features, versions of the app older than this one can no longer open the file (they show a clear "file can't be read" error — ask your colleague to update); future versions will always open today's files, degrading gracefully where needed.
 
@@ -685,7 +687,7 @@ Click **Export** in the Collections window. Because composition is already set, 
 
 The export always includes the collection title and a linked table of contents. After exporting, a Finder reveal button opens the enclosing folder.
 
-`[SCREENSHOT: Export sheet showing the format list and the "Include my research notes" toggle]`
+`[SCREENSHOT: Export sheet showing the format-card grid (PDF selected), the separate Send to Zotero Library row, and the Export PDF button]`
 
 ---
 

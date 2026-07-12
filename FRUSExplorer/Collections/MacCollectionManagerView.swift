@@ -519,6 +519,7 @@ private struct MacManageCollectionsSheet: View {
                         for i in offsets {
                             let c = collections[i]
                             if selectedId == c.id { selectedId = nil }
+                            GeneratedSummary.deleteHeadnoteDrafts(for: c, in: modelContext)
                             for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
                             modelContext.delete(c)
                         }
@@ -1144,6 +1145,7 @@ private struct CollectionDetailPane: View {
         collapsedHeadingIds.remove(sortedEntries[index].id)
         if inspectedEntryId == sortedEntries[index].id { inspectedEntryId = nil }
         if selectedEntryId == sortedEntries[index].id { selectedEntryId = nil }
+        GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
         finishOutlineMutation()
@@ -1159,6 +1161,7 @@ private struct CollectionDetailPane: View {
             collapsedHeadingIds.remove(sortedEntries[i].id)
             if inspectedEntryId == sortedEntries[i].id { inspectedEntryId = nil }
             if selectedEntryId == sortedEntries[i].id { selectedEntryId = nil }
+            GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[i], in: modelContext)
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }
