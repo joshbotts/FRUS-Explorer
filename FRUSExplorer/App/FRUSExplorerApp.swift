@@ -750,7 +750,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
         }
-        .defaultSize(width: 760, height: 600)
+        // Composer v2 (§B): wide enough for Contents (372) + live preview + the optional Document
+        // inspector (320) on a 13-inch screen.
+        .defaultSize(width: 1180, height: 760)
         .keyboardShortcut("k", modifiers: [.command, .shift])
 
         // MARK: - Research Note Composer Window (UI audit C1)
@@ -1908,11 +1910,9 @@ struct CollectionDetailCommandActions: Equatable {
     /// Toggles the live preview pane (the Preview toolbar button).
     let togglePreview: @MainActor () -> Void
 
-    /// Toggles the inline Composition disclosure (M1 — the ribbon's VIEW group).
-    let toggleComposition: @MainActor () -> Void
-
-    /// Toggles the inline Front Matter disclosure (M1 — the ribbon's VIEW group).
-    let toggleFrontMatter: @MainActor () -> Void
+    /// Opens the ⚙ Collection settings popover (Composer v2 §B — replaces the old inline
+    /// Composition / Front-Matter disclosure toggles, which are gone).
+    let toggleSettings: @MainActor () -> Void
 
     /// Opens the Export sheet (the Export… toolbar button).
     let exportCollection: @MainActor () -> Void
@@ -2141,15 +2141,9 @@ struct CollectionMenuContent: View {
         .keyboardShortcut("p", modifiers: [.command, .option])
         .disabled(detail == nil)
 
-        Button(String(localized: "menu.collection.composition",
-                      defaultValue: "Toggle Composition Panel")) {
-            detail?.toggleComposition()
-        }
-        .disabled(detail == nil)
-
-        Button(String(localized: "menu.collection.frontMatter",
-                      defaultValue: "Toggle Front Matter Panel")) {
-            detail?.toggleFrontMatter()
+        Button(String(localized: "menu.collection.settings",
+                      defaultValue: "Collection Settings…")) {
+            detail?.toggleSettings()
         }
         .disabled(detail == nil)
 

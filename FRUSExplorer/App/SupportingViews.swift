@@ -833,16 +833,18 @@ private struct CollectionPickerSheet: View {
 /// A labeled glyph+text button styled for the macOS control strips — a subtle
 /// tinted capsule that dims to `.tertiary` when disabled.
 ///
-/// Shared (Collections Manager M1) between `ResearchStripView` (the document
-/// research strip) and `CollectionRibbonView` (the Collections manager ribbon)
-/// so both surfaces render sibling actions identically. It was `private` to this
-/// file when the research strip was its only client; the M1 ribbon reuses the
-/// exact chrome rather than cloning it, so it is now `internal`.
+/// Used by `ResearchStripView` (the document research strip). It was briefly
+/// shared with the Collections manager ribbon (Collections Manager M1), which is
+/// why it is `internal` rather than `private`; the Composer v2 rebuild removed
+/// that ribbon (its verbs moved into the pane toolbar), so the research strip is
+/// once again its only client, but the `internal` access is kept.
 ///
 /// Version history:
 ///   1.0 — Research strip control button
 ///   1.1 — Collections Manager M1: promoted `private` → `internal` for reuse by
-///          `CollectionRibbonView`
+///          the (since-removed) `CollectionRibbonView`
+///   1.2 — Composer v2 (§B): the Collections ribbon that shared this chrome was
+///          removed; `ResearchStripView` is again the sole client
 struct ResearchStripButton: View {
     /// The button's visible label text (also its accessibility label).
     let title: String

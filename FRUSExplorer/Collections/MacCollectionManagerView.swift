@@ -212,21 +212,28 @@ struct MacCollectionManagerView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            sidebarContent
-        } detail: {
+        VStack(spacing: 0) {
+            // #213 project-scope banner, rehomed from the removed sidebar (Composer v2 §B) — a slim
+            // strip above the detail so the all-projects default and "Scope to project" survive.
+            projectFilterBanner
             if let c = selectedCollection {
                 CollectionDetailPane(collection: c, allNotes: allNotes, allTags: allTags)
                     .id(c.id)
             } else {
                 ContentUnavailableView {
-                    Label("No Collection Selected", systemImage: "folder.badge.person.crop")
+                    Label(String(localized: "collections.empty.title",
+                                 defaultValue: "No Collection Selected"),
+                          systemImage: "folder.badge.person.crop")
                 } description: {
-                    Text("Select a collection from the sidebar, or create a new one.")
+                    Text(String(localized: "collections.empty.description.picker",
+                                defaultValue: "Choose a collection from the picker in the toolbar, or create a new one."))
                 } actions: {
-                    Button("New Collection") { showNewCollection = true }
-                        .buttonStyle(.borderedProminent)
+                    Button(String(localized: "collections.new.button", defaultValue: "New Collection")) {
+                        showNewCollection = true
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .sheet(isPresented: $showNewCollection) {
@@ -237,8 +244,13 @@ struct MacCollectionManagerView: View {
         // sort. Reached from the toolbar collection picker (which replaces the sidebar's management
         // role in Step 3).
         .sheet(isPresented: $showManageCollections) {
-            MacManageCollectionsSheet(collections: filteredCollections, selectedId: $selectedId)
-                .environment(appState)
+            MacManageCollectionsSheet(
+                collections: filteredCollections,
+                selectedId: $selectedId,
+                onWordCloud: { appState.pendingWordCloud = .collection(id: $0.id) },
+                onSnapshot: { c in Task { await snapshotSmartCollection(c) } }
+            )
+            .environment(appState)
         }
         // Composer v2 (§B): the toolbar collection PICKER — the everyday switcher. Coexists with the
         // sidebar until Step 3 removes it; both write `selectedId`.
@@ -351,32 +363,7 @@ struct MacCollectionManagerView: View {
         }
     }
 
-    // MARK: - Sidebar
-
-    private var sidebarContent: some View {
-        VStack(spacing: 0) {
-            projectFilterBanner
-            collectionSidebarList
-        }
-        .navigationTitle("Collections")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showNewCollection = true } label: {
-                    Label("New Collection", systemImage: "plus")
-                }
-                .help("Create a new collection")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button { isImporting = true } label: {
-                    Label(String(localized: "collections.toolbar.import",
-                                 defaultValue: "Import Collection…"),
-                          systemImage: "square.and.arrow.down")
-                }
-                .help(String(localized: "collections.toolbar.import.help",
-                             defaultValue: "Import a shared .fruscollection file"))
-            }
-        }
-    }
+    // MARK: - Project scope banner (rehomed from the removed sidebar, Composer v2 §B)
 
     /// Informs the user when the window is scoped to the active project and lets them
     /// override that scoping (and back again) — the macOS parity of the iOS
@@ -425,57 +412,6 @@ struct MacCollectionManagerView: View {
         }
     }
 
-    private var collectionSidebarList: some View {
-        List(selection: $selectedId) {
-            ForEach(filteredCollections) { c in
-                CollectionSidebarRow(collection: c)
-                    .tag(c.id)
-                    .contextMenu {
-                        Button {
-                            appState.pendingWordCloud = .collection(id: c.id)
-                        } label: {
-                            Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
-                                icon: { Image(systemName: WordCloudGlyph.symbol) }
-                        }
-                        if c.savedSearchId != nil {
-                            Button {
-                                Task { await snapshotSmartCollection(c) }
-                            } label: {
-                                Label(String(localized: "collection.snapshot.action",
-                                             defaultValue: "Create Static Snapshot"),
-                                      systemImage: "camera")
-                            }
-                        }
-                        Divider()
-                        Button(role: .destructive) {
-                            if selectedId == c.id { selectedId = nil }
-                            for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
-                            modelContext.delete(c)
-                        } label: {
-                            Label("Delete Collection", systemImage: "trash")
-                        }
-                    }
-            }
-        }
-    }
-}
-
-// MARK: - CollectionSidebarRow
-
-private struct CollectionSidebarRow: View {
-    let collection: Collection
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(collection.name.isEmpty ? "Untitled Collection" : collection.name)
-                .font(.body)
-            let count = collection.documentEntries?.count ?? 0
-            Text("\(count) document\(count == 1 ? "" : "s")")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 2)
-    }
 }
 
 // MARK: - NewCollectionSheet
@@ -547,6 +483,10 @@ private struct MacManageCollectionsSheet: View {
     let collections: [Collection]
     /// The manager's current selection, cleared if the selected collection is deleted here.
     @Binding var selectedId: UUID?
+    /// Opens a word cloud for a collection (rehomed from the removed sidebar context menu).
+    let onWordCloud: (Collection) -> Void
+    /// Snapshots a smart collection into a static one (rehomed from the removed sidebar).
+    let onSnapshot: (Collection) -> Void
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
@@ -570,7 +510,10 @@ private struct MacManageCollectionsSheet: View {
             } else {
                 List {
                     ForEach(collections) { c in
-                        ManageCollectionRow(collection: c)
+                        ManageCollectionRow(
+                            collection: c,
+                            onWordCloud: { onWordCloud(c) },
+                            onSnapshot: c.savedSearchId != nil ? { onSnapshot(c) } : nil)
                     }
                     .onDelete { offsets in
                         for i in offsets {
@@ -591,6 +534,10 @@ private struct MacManageCollectionsSheet: View {
 /// One editable row in the Manage Collections sheet: an inline rename field + the document count.
 private struct ManageCollectionRow: View {
     @Bindable var collection: Collection
+    /// Opens a word cloud for this collection (rehomed from the removed sidebar context menu).
+    let onWordCloud: () -> Void
+    /// Snapshots this smart collection into a static one; `nil` for a non-smart collection.
+    let onSnapshot: (() -> Void)?
 
     var body: some View {
         HStack {
@@ -603,6 +550,19 @@ private struct ManageCollectionRow: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+        .contextMenu {
+            Button(action: onWordCloud) {
+                Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
+                    icon: { Image(systemName: WordCloudGlyph.symbol) }
+            }
+            if let onSnapshot {
+                Button(action: onSnapshot) {
+                    Label(String(localized: "collection.snapshot.action",
+                                 defaultValue: "Create Static Snapshot"),
+                          systemImage: "camera")
+                }
+            }
+        }
     }
 }
 
@@ -624,10 +584,6 @@ private struct CollectionDetailPane: View {
 
     @State private var name: String
     @State private var note: String
-    /// Reveals the collection-note editor. The note collapses to a compact
-    /// "Add a note" button until it holds text or the user taps to add one, so
-    /// the optional note no longer occupies a tall editor by default.
-    @State private var isAddingNote = false
     @State private var sortedEntries: [CollectionEntry]
     /// Front matter (Authoring Phase 4): title-page subtitle, live-autosaved like name.
     @State private var subtitle: String
@@ -645,14 +601,9 @@ private struct CollectionDetailPane: View {
     @State private var showAddHighlights = false
     @State private var showExport = false
     /// Composer v2 (§B): the ⚙ Collection settings popover — the metadata / front-matter /
-    /// composition surface that (from Step 4) replaces the fixed header + inline
-    /// Composition/Front-Matter disclosures.
+    /// composition surface that replaces the fixed header + inline Composition/Front-Matter
+    /// disclosures (which are gone).
     @State private var showCollectionSettingsPopover = false
-    /// Expansion state of the inline Composition disclosure at the top of the entries list.
-    @State private var showComposition = false
-    /// Expansion state of the inline Front Matter disclosure (introduction + colophon) —
-    /// inside the scrolling list, like Composition, so expansion never grows the fixed header.
-    @State private var showFrontMatter = false
     /// Live preview pane visibility. Defaults **on** so the manager opens with the live
     /// "exactly what exports" preview beside the outline (Composer redesign 4 — the 4-pane
     /// intent), and persists the researcher's toolbar/Collection-menu toggle across sessions.
@@ -702,8 +653,13 @@ private struct CollectionDetailPane: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            editorColumn
-                .frame(maxWidth: .infinity)
+            // Composer v2 (§B): the single middle column is the Contents outline (bounded ~372 so the
+            // live preview takes the rest). Name / note / front matter / composition all moved to the
+            // ⚙ Collection popover; the editor column and control ribbon are gone.
+            documentsSection
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(minWidth: 340, idealWidth: 372, maxWidth: showPreview ? 460 : .infinity)
 
             // Live preview pane (Authoring Phase 2b) — side-by-side, toolbar-toggled.
             if showPreview {
@@ -712,7 +668,7 @@ private struct CollectionDetailPane: View {
                                       entries: sortedEntries,
                                       allNotes: allNotes,
                                       renderAll: $previewRenderAll)
-                    .frame(minWidth: 360, maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
             }
         }
         .navigationTitle(name.isEmpty ? "Untitled Collection" : name)
@@ -722,6 +678,15 @@ private struct CollectionDetailPane: View {
         .onChange(of: subtitle) { _, _ in saveMetadata() }
         .onChange(of: authorLine) { _, _ in saveMetadata() }
         .onChange(of: includeColophon) { _, _ in saveMetadata() }
+        // Composer v2 (§B): the Manage Collections sheet renames the model directly
+        // (`$collection.name`), a second writer of `collection.name` besides this pane's one-time
+        // `@State name` snapshot. Follow that external rename so the title / settings-popover field
+        // stay in sync AND the next `saveMetadata()` writes the new name — otherwise editing any
+        // other field would clobber the rename back to the stale snapshot. The guard stops a
+        // feedback loop when our own `saveMetadata()` trims and rewrites `collection.name`.
+        .onChange(of: collection.name) { _, newValue in
+            if newValue != name { name = newValue }
+        }
         // Reload document headers and per-document dates whenever the entry list changes.
         .task(id: sortedEntries.map(\.id)) {
             (documentHeaders, documentDates) =
@@ -798,7 +763,11 @@ private struct CollectionDetailPane: View {
                         }
                     } : nil,
                     isInspectorColumn: true,
-                    onApplyPreset: { applyPreset($0) }
+                    // Composer v2 (§B): document-only. The whole-collection settings and
+                    // composition (name / front matter / preset grid) live in the ⚙ Collection
+                    // popover now, so the per-entry Configure inspector omits the collection
+                    // section to avoid rendering — and letting the user edit — the same recipe twice.
+                    showsCollectionSettings: false
                 )
                 .id(entry.id)
                 .environment(appState)
@@ -835,8 +804,7 @@ private struct CollectionDetailPane: View {
             addApparatus: { addGeneratedEntry(type: $0) },
             sortByDate: { sortByDate() },
             togglePreview: { showPreview.toggle() },
-            toggleComposition: { showComposition.toggle() },
-            toggleFrontMatter: { showFrontMatter.toggle() },
+            toggleSettings: { showCollectionSettingsPopover.toggle() },
             exportCollection: { showExport = true }
         )
     }
@@ -861,82 +829,10 @@ private struct CollectionDetailPane: View {
         if inspectedEntryId != nil { inspectedEntryId = entryId }
     }
 
-    /// The editing column (name, note, entries list) — the pre-Phase-2b pane body,
-    /// hoisted so the live preview can sit beside it.
-    private var editorColumn: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Fixed-height header: name field + collection note.
-            // Padded on all sides except the bottom (the divider provides separation).
-            VStack(alignment: .leading, spacing: 0) {
-                nameSection
-                Divider().padding(.vertical, 16)
-                noteSection
-            }
-            .padding([.horizontal, .top], 24)
-            .padding(.bottom, 16)
-
-            // Collections Manager M1: the labeled control ribbon (second row of the
-            // editor column) — a faithful `ResearchStripView` clone. It gathers every
-            // list-level authoring verb that was previously scattered across the
-            // Contents-header "+" glyph and the titlebar toolbar into one labeled
-            // `.bar` strip, killing the context-less "+" and the three-register split.
-            collectionRibbon
-
-            // Content list fills the rest of the available window height.
-            documentsSection
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-        }
-    }
-
-    /// The Collections Manager M1 control ribbon, bound directly to this pane's
-    /// per-collection `@State` (the pane is re-created per collection via
-    /// `.id(c.id)`), so no focused-value round-trip is needed.
-    private var collectionRibbon: some View {
-        CollectionRibbonView(
-            hasEntries: !sortedEntries.isEmpty,
-            hasDocuments: !orderedDocumentKeys.isEmpty,
-            canExport: !sortedEntries.isEmpty || collection.savedSearchId != nil,
-            showComposition: $showComposition,
-            showFrontMatter: $showFrontMatter,
-            showPreview: $showPreview,
-            addDocuments: { showAddDocuments = true },
-            addHeading: { addStructuralEntry(kind: .heading) },
-            addProse: { addStructuralEntry(kind: .prose) },
-            addHighlights: { showAddHighlights = true },
-            addApparatus: { addGeneratedEntry(type: $0) },
-            sortByDate: { scope in sortByDate(scope) },
-            export: { showExport = true }
-        )
-    }
-
-    // MARK: - Name
-
-    private var nameSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Name")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-            TextField("Collection Name", text: $name)
-                .font(.title3.bold())
-                .textFieldStyle(.plain)
-            // Front matter (Phase 4), compactly: one fixed-height row of subtitle +
-            // author-line fields — the header must never grow with content.
-            HStack(spacing: 12) {
-                TextField(String(localized: "collection.frontmatter.subtitle.placeholder",
-                                 defaultValue: "Subtitle (title page)"),
-                          text: $subtitle)
-                    .textFieldStyle(.plain)
-                    .font(.callout)
-                TextField(authorPlaceholder, text: $authorLine)
-                    .textFieldStyle(.plain)
-                    .font(.callout)
-                    .frame(maxWidth: 220)
-            }
-            .foregroundStyle(.secondary)
-        }
-    }
+    // Composer v2 (§B): the editor column and the CollectionRibbonView control ribbon are gone —
+    // the middle column is the Contents outline only (see `body`), and every authoring verb moved to
+    // the pane toolbar (`toolbarContent`). Name/note/front-matter/composition live in the
+    // ⚙ Collection popover (`macCollectionSettingsForm`).
 
     /// The active project's name as the author-line placeholder (suggestion only —
     /// never written to the model unless the user types it).
@@ -948,53 +844,6 @@ private struct CollectionDetailPane: View {
         }
         return String(localized: "collection.frontmatter.author.placeholder",
                       defaultValue: "Author")
-    }
-
-    // MARK: - Note
-
-    @ViewBuilder private var noteSection: some View {
-        if isAddingNote || !note.isEmpty {
-            noteEditorSection
-        } else {
-            Button {
-                isAddingNote = true
-            } label: {
-                Label(String(localized: "collection.editor.note.add",
-                             defaultValue: "Add a note"),
-                      systemImage: "note.text")
-            }
-            .accessibilityLabel(String(localized: "collection.editor.note.add.accessibility",
-                                       defaultValue: "Add a collection note"))
-        }
-    }
-
-    private var noteEditorSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Collection Note")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-            TextEditor(text: $note)
-                .font(.body)
-                .frame(minHeight: 80, maxHeight: 200)
-                .scrollContentBackground(.hidden)
-                .background(Color(nsColor: .textBackgroundColor).opacity(0.6))
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
-                )
-                .overlay(alignment: .topLeading) {
-                    if note.isEmpty {
-                        Text("Optional note about this collection…")
-                            .font(.body)
-                            .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 8)
-                            .allowsHitTesting(false)
-                    }
-                }
-        }
     }
 
     // MARK: - Collection settings popover (Composer v2 §B)
@@ -1074,47 +923,9 @@ private struct CollectionDetailPane: View {
             // selection) and with every in-row control (buttons/menus keep
             // receiving their own clicks; the row background click selects).
             List(selection: $selectedEntryId) {
-                // Composition — the three labeled Composer groups (`CollectionCompositionRows` owns
-                // its own Sections). Shown inside the scrolling list rather than the fixed header so
-                // an expanded group can never grow the header past the window (the constraint that
-                // previously forced a popover — Session 2026-07-01 layout fix). The View-menu
-                // "Composition" toggle ($showComposition) shows or hides the whole group.
-                if showComposition {
-                    CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
-                }
-
-                // Front matter (Phase 4) — the introduction editor and colophon toggle,
-                // inside the scrolling list like Composition so expansion never grows
-                // the fixed header (subtitle/author live compactly in the header above).
-                Section {
-                    DisclosureGroup(isExpanded: $showFrontMatter) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "collection.frontmatter.introduction.label",
-                                        defaultValue: "Introduction"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            RichTextEditor(initialRTF: collection.introductionRichText,
-                                           plainFallback: collection.introductionText ?? "") { rtf, plain in
-                                saveIntroduction(rtf: rtf, plain: plain)
-                            }
-                            .frame(minHeight: 80, maxHeight: 220)
-                        }
-                        Toggle(isOn: $includeColophon) {
-                            Text(String(localized: "collection.frontmatter.colophon.toggle",
-                                        defaultValue: "Include colophon"))
-                        }
-                        .toggleStyle(.checkbox)
-                    } label: {
-                        Label(String(localized: "collection.frontmatter.disclosure",
-                                     defaultValue: "Front Matter"),
-                              systemImage: "text.book.closed")
-                            .font(.callout)
-                    }
-                }
-
                 if sortedEntries.isEmpty {
                     Text(String(localized: "collection.documents.empty",
-                                defaultValue: "No content yet. Use Add Documents in the ribbon above to add documents, headings, notes, and apparatus."))
+                                defaultValue: "No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
@@ -1397,13 +1208,57 @@ private struct CollectionDetailPane: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup {
-            // Composer v2 (§B): the ⚙ Collection settings popover — collection metadata, front
-            // matter, presets, and the three composition groups. Step 1 adds it beside Export while
-            // the inline header/disclosures still exist; Step 4 removes those, leaving this the sole
-            // collection-settings surface.
-            Button {
-                showCollectionSettingsPopover = true
+            // Composer v2 (§B): the unified pane toolbar — ＋ Add · Sort · ⚙ Collection · Export ·
+            // inspector toggle. (The everyday collection picker is a leading `.navigation` item on
+            // the root view.) Lifts the authoring verbs from the deleted CollectionRibbonView.
+            Menu {
+                Button { showAddDocuments = true } label: {
+                    Label(String(localized: "collection.ribbon.addDocuments", defaultValue: "Add Documents…"),
+                          systemImage: "plus.rectangle.on.folder")
+                }
+                Button { addStructuralEntry(kind: .heading) } label: {
+                    Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
+                          systemImage: "number")
+                }
+                Button { addStructuralEntry(kind: .prose) } label: {
+                    Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
+                          systemImage: "text.alignleft")
+                }
+                Button { showAddHighlights = true } label: {
+                    Label(String(localized: "collection.ribbon.addPassages", defaultValue: "Add Passages…"),
+                          systemImage: "text.quote")
+                }
+                .disabled(orderedDocumentKeys.isEmpty)
+                Divider()
+                Menu {
+                    ForEach(CollectionGeneratedBlockType.allCases) { blockType in
+                        Button { addGeneratedEntry(type: blockType) } label: {
+                            Label(blockType.displayName, systemImage: blockType.systemImage)
+                        }
+                    }
+                } label: {
+                    Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
+                          systemImage: "list.bullet.rectangle")
+                }
             } label: {
+                Label(String(localized: "collection.ribbon.add", defaultValue: "Add"), systemImage: "plus")
+            }
+            .help(String(localized: "collection.ribbon.add.help",
+                         defaultValue: "Add documents, a section heading, a note block, passages, or a generated apparatus block"))
+
+            Menu {
+                ForEach(CollectionDateSortScope.allCases, id: \.self) { scope in
+                    Button { sortByDate(scope) } label: {
+                        Label(scope.displayLabel, systemImage: scope.systemImage)
+                    }
+                }
+            } label: {
+                Label(String(localized: "collection.sort.date", defaultValue: "Sort by Date"),
+                      systemImage: "arrow.up.arrow.down")
+            }
+            .disabled(sortedEntries.isEmpty)
+
+            Button { showCollectionSettingsPopover = true } label: {
                 Label(String(localized: "collection.toolbar.settings", defaultValue: "Collection"),
                       systemImage: "gearshape")
             }
@@ -1413,20 +1268,41 @@ private struct CollectionDetailPane: View {
                 macCollectionSettingsForm
             }
 
-            // Export stays on the titlebar — the collection's single terminal action.
-            Button {
-                showExport = true
-            } label: {
-                Label(String(localized: "collection.toolbar.export",
-                             defaultValue: "Export…"),
+            Button { showExport = true } label: {
+                Label(String(localized: "collection.toolbar.export", defaultValue: "Export…"),
                       systemImage: "square.and.arrow.up")
             }
             .help(String(localized: "collection.toolbar.export.help",
                          defaultValue: "Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes"))
-            // A smart collection (savedSearchId set) has no static entries — its
-            // documents are resolved from the linked saved search at export time —
-            // so allow export when it is smart even though sortedEntries is empty.
+            // A smart collection (savedSearchId set) exports with zero static entries.
             .disabled(sortedEntries.isEmpty && collection.savedSearchId == nil)
+
+            // Document inspector toggle — opens/closes the trailing inspector on the selected (or
+            // first) document/heading entry.
+            Button {
+                if inspectedEntryId != nil {
+                    inspectedEntryId = nil
+                } else {
+                    // Gate the target to the kinds the inspector supports (document/heading),
+                    // exactly like the ↩ handler and the per-row ⓘ. `selectedEntryId` can be any
+                    // kind (every outline row is `.tag`-selectable), so a prose/apparatus selection
+                    // would otherwise open a blank document-shaped inspector; fall back to the first
+                    // inspectable entry when the selection isn't one.
+                    let selectedInspectable = selectedEntryId.flatMap { id in
+                        sortedEntries.first {
+                            $0.id == id && ($0.entryKind == .document || $0.entryKind == .heading)
+                        }?.id
+                    }
+                    inspectedEntryId = selectedInspectable
+                        ?? sortedEntries.first { $0.entryKind == .document || $0.entryKind == .heading }?.id
+                }
+            } label: {
+                Label(String(localized: "collection.toolbar.inspector", defaultValue: "Document Inspector"),
+                      systemImage: "sidebar.trailing")
+            }
+            // Enabled only when there is an inspectable entry — otherwise the button would be a
+            // silent no-op (a collection of only prose/apparatus rows has nothing to inspect).
+            .disabled(!sortedEntries.contains { $0.entryKind == .document || $0.entryKind == .heading })
         }
     }
 
@@ -1655,16 +1531,11 @@ private struct MacEntryRow: View {
 
             // Action controls
             HStack(spacing: 6) {
-                // Document details inspector (B8: trailing inspector column, not a sheet)
-                Button {
-                    onInspect()
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help(String(localized: "collection.entry.inspect.help",
-                             defaultValue: "Show this document's notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
+                // Document Configure (Composer v2 §D) — a labeled pill, not a bare ⓘ glyph; opens
+                // (or retargets/closes) the trailing Document inspector column (B8).
+                ConfigurePill(action: onInspect)
+                    .help(String(localized: "collection.entry.inspect.help",
+                                 defaultValue: "Show this document's notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
 
                 // Open on history.state.gov
                 Button {
@@ -1715,280 +1586,4 @@ private struct MacEntryRow: View {
     }
 }
 
-// MARK: - CollectionRibbonView
-
-/// The Collections manager control ribbon (Collections Manager M1, D2 lean A) —
-/// a compact labeled `.bar` strip hosted as the second row of
-/// `CollectionDetailPane.editorColumn`.
-///
-/// It gathers every list-level authoring verb — previously scattered across the
-/// Contents-header "+" glyph (F1) and the titlebar toolbar (F2) — into **four**
-/// always-labeled top-level controls, separated by thin vertical `Divider`s:
-///
-///   1. `Add ▾` — a labeled `Menu` bundling Add Documents… / Add Section Heading /
-///      Add Note Block / Add Passages… and (below a divider) the Apparatus ▸
-///      submenu of the five `CollectionGeneratedBlockType`s.
-///   2. `Sort by Date` — a standalone `ResearchStripButton` (gated on `hasEntries`).
-///   3. `View ▾` — a labeled `Menu` of three **independent** checkmark toggles
-///      (Composition / Front Matter / Preview), each bound to its own binding.
-///   4. `Export…` — a standalone `ResearchStripButton`, pinned trailing (gated on
-///      `canExport`).
-///
-/// Consolidating ten labeled controls under three uppercase group headers into
-/// four labeled controls removes the crowding that dropped labels and clipped
-/// actions as the window narrowed: four controls always fit fully labeled, so the
-/// horizontal scroll region and the group headers are both gone. Every action keeps
-/// its exact prior behavior, disabled condition, and help text; the keyboard
-/// shortcuts (⌘⇧A Add Documents, ⌥⌘P Preview, ⌘E Export) live on the
-/// `CollectionDetailCommandActions` command-menu items, not the ribbon, so this
-/// presentation change leaves them untouched.
-///
-/// All state is owned by `CollectionDetailPane` and passed in as bindings/closures;
-/// the pane is per-collection (`.id(c.id)`), so the ribbon needs no focused-value
-/// round-trip.
-///
-/// Version history:
-///   1.0 — Collections Manager M1: initial ribbon (CONTENT / ARRANGE / VIEW +
-///          pinned Export), reusing `ResearchStripButton`
-///   1.1 — Collections Manager M1 review: the Apparatus `Menu` label wears the
-///          `ResearchStripButton` capsule chrome so the cluster reads uniformly
-///   2.0 — De-crowd: consolidate the ten labeled controls / three group headers
-///          into four always-labeled controls (Add ▾ · Sort by Date · View ▾ ·
-///          Export…) separated by dividers; drop the horizontal scroll region and
-///          the CONTENT / ARRANGE / VIEW headers. Presentation only — same
-///          closures, bindings, disabled conditions, and help text
-///   2.1 — Sort modes: the standalone "Sort by Date" button becomes a labeled
-///          "Sort by Date ▾" `Menu` offering the two `CollectionDateSortScope`s
-///          (Across the Whole Collection / Within Each Section); the `sortByDate`
-///          closure becomes `(CollectionDateSortScope) -> Void`. Same `hasEntries`
-///          gate and capsule chrome as the Add ▾ / View ▾ menus
-struct CollectionRibbonView: View {
-
-    /// Whether the collection has any entries — gates Sort by Date.
-    let hasEntries: Bool
-    /// Whether the collection has any document entries — gates Add Passages.
-    let hasDocuments: Bool
-    /// Whether Export is available (entries exist, or the collection is smart).
-    let canExport: Bool
-
-    /// Reveals the inline Composition disclosure (VIEW group toggle).
-    @Binding var showComposition: Bool
-    /// Reveals the inline Front Matter disclosure (VIEW group toggle).
-    @Binding var showFrontMatter: Bool
-    /// Shows the live preview pane (VIEW group toggle).
-    @Binding var showPreview: Bool
-
-    /// Opens the Add Documents sheet.
-    let addDocuments: () -> Void
-    /// Appends a section heading to the outline.
-    let addHeading: () -> Void
-    /// Appends a prose note block to the outline.
-    let addProse: () -> Void
-    /// Opens the bulk Add Highlighted Passages sheet.
-    let addHighlights: () -> Void
-    /// Inserts a generated apparatus block of the given type.
-    let addApparatus: (CollectionGeneratedBlockType) -> Void
-    /// Re-orders the collection's entries chronologically at the given scope — globally
-    /// (documents may cross headings) or within each heading-delimited section.
-    let sortByDate: (CollectionDateSortScope) -> Void
-    /// Opens the Export sheet.
-    let export: () -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            // 1. Add ▾ — every content-authoring verb, bundled into one labeled Menu.
-            addMenu
-                .padding(.leading, 16)
-
-            clusterDivider
-
-            // 2. Sort by Date ▾ — labeled Menu offering the two scopes (gated on entries).
-            sortMenu
-
-            clusterDivider
-
-            // 3. View ▾ — three independent checkmark toggles in one labeled Menu.
-            viewMenu
-
-            Spacer(minLength: 6)
-
-            // 4. Export — standalone labeled button, pinned trailing.
-            ResearchStripButton(
-                title: String(localized: "collection.ribbon.export",
-                              defaultValue: "Export…"),
-                systemImage: "square.and.arrow.up",
-                isDisabled: !canExport,
-                action: export
-            )
-            .help(String(localized: "collection.ribbon.export.help",
-                         defaultValue: "Export this collection as a PDF, HTML page, or Word document"))
-            .padding(.trailing, 12)
-        }
-        .frame(minHeight: 32)
-        .background(.bar)
-        .overlay(alignment: .bottom) { Divider() }
-    }
-
-    /// The **Sort by Date ▾** menu — two chronological-sort scopes sharing the
-    /// `CollectionDateSortScope` enum with the iPad/iOS toolbar. "Across the Whole
-    /// Collection" is today's behavior (documents thread into one chronology, possibly
-    /// crossing headings); "Within Each Section" keeps documents under their heading.
-    /// Gated on `hasEntries`, and wears the same capsule chrome as Add ▾ / View ▾.
-    private var sortMenu: some View {
-        Menu {
-            ForEach(CollectionDateSortScope.allCases, id: \.self) { scope in
-                Button {
-                    sortByDate(scope)
-                } label: {
-                    Label(scope.displayLabel, systemImage: scope.systemImage)
-                }
-                .help(scope.helpText)
-            }
-        } label: {
-            menuLabel(String(localized: "collection.sort.date",
-                             defaultValue: "Sort by Date"),
-                      systemImage: "arrow.up.arrow.down")
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .disabled(!hasEntries)
-        .accessibilityLabel(String(localized: "collection.sort.date.accessibility",
-                                    defaultValue: "Sort by date"))
-        .help(String(localized: "collection.sort.date.help",
-                     defaultValue: "Re-order documents chronologically — across the whole collection, or within each section"))
-    }
-
-    /// The consolidated **Add ▾** menu — every content-authoring verb the ribbon
-    /// used to spread across five CONTENT-group controls, in the same order, with
-    /// the Apparatus five-type submenu preserved verbatim below a divider. Each
-    /// item keeps its exact closure, disabled condition, and help text.
-    private var addMenu: some View {
-        Menu {
-            Button(action: addDocuments) {
-                Label(String(localized: "collection.ribbon.addDocuments",
-                             defaultValue: "Add Documents…"),
-                      systemImage: "plus.rectangle.on.folder")
-            }
-            .help(String(localized: "collection.toolbar.addDocuments.help",
-                         defaultValue: "Add documents to this collection (⇧⌘A) — search the index, browse volumes, paste citations or history.state.gov links, or gather a tag"))
-
-            Button(action: addHeading) {
-                Label(String(localized: "collection.add.heading",
-                             defaultValue: "Add Section Heading"),
-                      systemImage: "number")
-            }
-            .help(String(localized: "collection.add.heading.help",
-                         defaultValue: "Insert a section heading into the outline"))
-
-            Button(action: addProse) {
-                Label(String(localized: "collection.add.prose",
-                             defaultValue: "Add Note Block"),
-                      systemImage: "text.alignleft")
-            }
-            .help(String(localized: "collection.add.prose.help",
-                         defaultValue: "Insert an editorial note block into the outline"))
-
-            Button(action: addHighlights) {
-                Label(String(localized: "collection.ribbon.addPassages",
-                             defaultValue: "Add Passages…"),
-                      systemImage: "text.quote")
-            }
-            .disabled(!hasDocuments)
-            .help(String(localized: "collection.add.highlights.help",
-                         defaultValue: "Add highlighted passages from this collection's documents as quoted excerpts"))
-
-            Divider()
-
-            // Apparatus ▸ — the five generated block types, exactly the prior menu.
-            Menu {
-                ForEach(CollectionGeneratedBlockType.allCases) { blockType in
-                    Button {
-                        addApparatus(blockType)
-                    } label: {
-                        Label(blockType.displayName, systemImage: blockType.systemImage)
-                    }
-                }
-            } label: {
-                Label(String(localized: "collection.add.apparatus", defaultValue: "Apparatus"),
-                      systemImage: "list.bullet.rectangle")
-            }
-            .help(String(localized: "collection.add.apparatus.help",
-                         defaultValue: "Insert a generated apparatus block — bibliography, chronology, sources, persons, or thematic index"))
-        } label: {
-            menuLabel(String(localized: "collection.ribbon.add", defaultValue: "Add"),
-                      systemImage: "plus")
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .accessibilityLabel(String(localized: "collection.ribbon.add.accessibility",
-                                    defaultValue: "Add to collection"))
-        .help(String(localized: "collection.ribbon.add.help",
-                     defaultValue: "Add documents, a section heading, a note block, passages, or a generated apparatus block"))
-    }
-
-    /// The consolidated **View ▾** menu — three **independent** show/hide toggles
-    /// (Composition / Front Matter / Preview). Each is a checkmark item (`Toggle`)
-    /// bound to its own binding, not a segmented single-select `Picker`, because the
-    /// three panels reveal independently.
-    private var viewMenu: some View {
-        Menu {
-            Toggle(isOn: $showComposition) {
-                Label(String(localized: "composition.header", defaultValue: "Composition"),
-                      systemImage: "slider.horizontal.3")
-            }
-            .help(String(localized: "collection.ribbon.composition.help",
-                         defaultValue: "Show the Composition panel — choose what an export contains"))
-
-            Toggle(isOn: $showFrontMatter) {
-                Label(String(localized: "collection.frontmatter.disclosure",
-                             defaultValue: "Front Matter"),
-                      systemImage: "text.book.closed")
-            }
-            .help(String(localized: "collection.ribbon.frontMatter.help",
-                         defaultValue: "Show the Front Matter panel — introduction and colophon"))
-
-            Toggle(isOn: $showPreview) {
-                Label(String(localized: "collection.toolbar.preview", defaultValue: "Preview"),
-                      systemImage: showPreview ? "eye.fill" : "eye")
-            }
-            .help(String(localized: "collection.toolbar.preview.help",
-                         defaultValue: "Show a live preview of this collection as it will export — updates as you edit"))
-        } label: {
-            menuLabel(String(localized: "collection.ribbon.view", defaultValue: "View"),
-                      systemImage: "sidebar.right")
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .accessibilityLabel(String(localized: "collection.ribbon.view.accessibility",
-                                    defaultValue: "Toggle collection panels"))
-        .help(String(localized: "collection.ribbon.view.help",
-                     defaultValue: "Show or hide the Composition, Front Matter, and Preview panels"))
-    }
-
-    /// The `ResearchStripButton` capsule chrome applied to a `Menu`'s label, so the
-    /// two pulldowns read as the same control family as the Sort/Export buttons.
-    /// A `Menu` is not a `Button`, so it cannot literally reuse `ResearchStripButton`;
-    /// this mirrors its font/padding/tint instead.
-    private func menuLabel(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.system(size: 11))
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 5))
-            .overlay(
-                RoundedRectangle(cornerRadius: 5)
-                    .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 0.5)
-            )
-    }
-
-    /// A thin vertical rule between the four top-level controls.
-    private var clusterDivider: some View {
-        Divider().frame(height: 20)
-    }
-}
 #endif
