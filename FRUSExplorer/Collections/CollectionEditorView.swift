@@ -567,15 +567,16 @@ struct CollectionEditorView: View {
         } message: { msg in
             Text(msg)
         }
-        // Per-entry inspector (Collections Manager M2, D3): iPhone (compact) opens it as
-        // a `.sheet`; iPad (regular) hosts it in the shared trailing `.inspector` column
-        // instead (see `iPadCollectionLayout`), so the outline stays visible while it edits.
-        .sheet(isPresented: Binding(
+        // Per-entry inspector (Collections Manager M2, D3): iPhone (compact) drills IN — a push onto
+        // the editor's navigation stack (Composer redesign 4); iPad (regular) hosts it in the shared
+        // trailing `.inspector` column instead (see `iPadCollectionLayout`), so the outline stays
+        // visible while it edits.
+        .navigationDestination(isPresented: Binding(
             get: { inspectedEntryId != nil && !isRegularWidth },
             set: { if !$0 { inspectedEntryId = nil } }
         )) {
             if let entry = inspectedEntry {
-                entryInspectorContent(entry)
+                entryInspectorContent(entry, isPushed: true)
             }
         }
         // Inline note-create (Collections Manager M2, D5): the entry inspector's
@@ -641,7 +642,7 @@ struct CollectionEditorView: View {
             detailsSection
             documentsSection
             addDocumentsSection
-            compositionDisclosureSection
+            compositionDrillInSection
             if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
         }
     }
@@ -666,10 +667,39 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// Composition, as the three labeled Composer groups. `CollectionCompositionRows` now owns its
-    /// own Sections, so this host places it directly (a later phase moves it behind a drill-in row).
-    private var compositionDisclosureSection: some View {
-        CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
+    /// Composition as a **drill-in** summary row (iPhone, Composer redesign 4): a "Composition" row
+    /// showing the plain-language export summary that pushes the full composition screen — replacing
+    /// the earlier inline groups so the outline stays the compact screen's primary surface.
+    private var compositionDrillInSection: some View {
+        Section {
+            NavigationLink {
+                iPhoneCompositionScreen
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(localized: "collection.editor.composition", defaultValue: "Composition"))
+                        Text(collection.compositionSummarySentence)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                } icon: {
+                    Image(systemName: "slider.horizontal.3")
+                }
+            }
+        }
+    }
+
+    /// The pushed Composition screen (iPhone drill-in): the three grouped composition cards + the
+    /// presets, on their own screen.
+    private var iPhoneCompositionScreen: some View {
+        Form {
+            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
+        }
+        .navigationTitle(String(localized: "collection.editor.composition", defaultValue: "Composition"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     /// iPad (regular width): the entry list fills the screen, with an optional live
@@ -1702,7 +1732,7 @@ struct CollectionEditorView: View {
     /// note-create sheet for the entry's document (D5); `onInsertExcerpt` keeps the entry
     /// list in sync when a highlight is inserted as an excerpt.
     @ViewBuilder
-    private func entryInspectorContent(_ entry: CollectionEntry) -> some View {
+    private func entryInspectorContent(_ entry: CollectionEntry, isPushed: Bool = false) -> some View {
         CollectionEntryInspector(
             entry: entry,
             onInsertExcerpt: { capture in appendExcerpts([capture]) },
@@ -1716,11 +1746,14 @@ struct CollectionEditorView: View {
             },
             // iPad regular width presents this as the trailing `.inspector` column, where the
             // Document | Composition segmented control belongs (Composer redesign 2b); the iPhone
-            // compact `.sheet` keeps the flat pinned layout.
+            // compact path drills in (a push) and keeps the flat pinned layout.
             showsCompositionSegment: inspectorShowsCompositionSegment,
             // Presets in the inspector's Composition tab route apparatus through this host's
             // entry-list management (4a).
-            onApplyPreset: { applyPreset($0) }
+            onApplyPreset: { applyPreset($0) },
+            // iPhone presents the inspector as a drill-in push (Composer redesign 4), so it omits
+            // its own navigation stack + Done button.
+            isPushed: isPushed
         )
         .id(entry.id)
         .environment(appState)
