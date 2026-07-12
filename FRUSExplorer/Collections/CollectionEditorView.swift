@@ -188,7 +188,6 @@ struct CollectionEditorView: View {
     /// collection so the name field is immediately available; collapsed otherwise.
     @State private var detailsExpanded: Bool
     /// iPhone Composition disclosure — collapsed by default.
-    @State private var compositionExpanded = false
     /// iPad metadata/composition inspector visibility.
     @State private var showDetailsInspector = true
     /// The document entry whose per-entry inspector is open (Collections Manager M2, D3/
@@ -662,19 +661,10 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// Collapsed-by-default Composition disclosure (iPhone).
+    /// Composition, as the three labeled Composer groups. `CollectionCompositionRows` now owns its
+    /// own Sections, so this host places it directly (a later phase moves it behind a drill-in row).
     private var compositionDisclosureSection: some View {
-        Section {
-            DisclosureGroup(isExpanded: $compositionExpanded) {
-                CollectionCompositionRows(collection: collection)
-            } label: {
-                Label(String(localized: "composition.header", defaultValue: "Composition"),
-                      systemImage: "slider.horizontal.3")
-            }
-        } footer: {
-            Text(String(localized: "composition.footer",
-                        defaultValue: "Determines what an export of this collection contains. Applied to every format."))
-        }
+        CollectionCompositionRows(collection: collection)
     }
 
     /// iPad (regular width): the entry list fills the screen, with an optional live
@@ -1064,17 +1054,11 @@ struct CollectionEditorView: View {
 
     // MARK: - Composition Section
 
-    /// The persisted export-content settings (body depth, footnotes, notes, highlights, etc.).
-    /// These determine *what an export of this collection contains*, independent of format.
+    /// The persisted export-content settings (body depth, footnotes, notes, highlights, etc.),
+    /// as the three labeled Composer groups. `CollectionCompositionRows` owns its own Sections, so
+    /// this host places it directly rather than wrapping it in one Composition section.
     private var compositionSection: some View {
-        Section {
-            CollectionCompositionRows(collection: collection)
-        } header: {
-            Text(String(localized: "composition.header", defaultValue: "Composition"))
-        } footer: {
-            Text(String(localized: "composition.footer",
-                        defaultValue: "Determines what an export of this collection contains. Applied to every format."))
-        }
+        CollectionCompositionRows(collection: collection)
     }
 
     // MARK: - Documents Section
