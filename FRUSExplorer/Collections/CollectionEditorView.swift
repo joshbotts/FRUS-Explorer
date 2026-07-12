@@ -212,8 +212,11 @@ struct CollectionEditorView: View {
     }
     /// iPhone Outline | Preview pane selection (Authoring Phase 2b; view-local).
     @State private var editorPane: EditorPane = .outline
-    /// iPad side-by-side preview pane visibility (Authoring Phase 2b).
-    @State private var showPreviewPane = false
+    /// iPad side-by-side preview pane visibility. Defaults **on** so the editor opens as the
+    /// 3-column Composer (Contents · Live preview · Inspector) intends — the persistent inspector
+    /// is already on by default — and persists the toolbar toggle across sessions (Composer
+    /// redesign 4, mirroring the macOS manager).
+    @AppStorage("collections.ipad.showPreview") private var showPreviewPane = true
     /// The preview's "Render All" cap lift, hoisted here so it survives pane toggles
     /// that recreate `CollectionPreviewView` (one editor session = one lift).
     @State private var previewRenderAll = false
