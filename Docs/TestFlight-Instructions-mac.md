@@ -1,6 +1,15 @@
 # What's New in Build 32 (Mac)
 
-Build 32 is a feature wave: broken cross-references are labeled instead of dead-ending, people can be merged by hand, volumes get Top subjects profiles, Citation Lookup results open in their own window, and the series dashboards gain scoping. **One-time re-index** — first launch rebuilds the cross-reference index (v22) in the background; it may take a while on a large library, but the app stays usable. It also fixes some cross-volume page references that pointed at the wrong document in graphs and analytics.
+Build 32 is a big feature wave: **Collections is rebuilt from the ground up** ("Composer"), broken cross-references are labeled instead of dead-ending, people can be merged by hand, volumes get Top subjects profiles, Citation Lookup results open in their own window, and the series dashboards gain scoping. **One-time re-index** — first launch rebuilds the cross-reference index (v22) in the background; it may take a while on a large library, but the app stays usable. It also fixes some cross-volume page references that pointed at the wrong document in graphs and analytics.
+
+## Collections, redesigned ("Composer")
+Assembling and exporting document sets is rebuilt, and the Collections window (**⇧⌘K**) is now a true Mac layout that fits a 13″ screen.
+- **No sidebar** — switch collections from a **toolbar collection picker** (each with its document count, plus **New**, **Import**, and **Manage Collections…**); the single middle column is the **Contents** outline, with a **live preview** beside it.
+- **⚙ Collection popover** — the collection's name, note, title-page front matter, the **presets**, and the three grouped composition sections all live in one popover; a single document's settings open in a **dismissible inspector** column from a **⚙ Configure** pill on the row (replacing the old ⓘ glyph).
+- **Presets + grouped composition** — three labeled sections (Document content · Your annotations · Analysis & apparatus) and **four one-tap presets** — Teaching reader · Briefing packet · Source dossier · Scholarly edition — that set the whole composition at once.
+- **Editable "Key takeaway" headnote** — **Generate** an on-device AI draft, **Edit** it in your own words, or **Regenerate**; a chip marks whether the text is AI or yours, and exports attribute it honestly.
+- **Cleaner rows** — a document row shows **labeled override chips** only when it differs from the collection default.
+- **Export** — a **grid of format cards** (PDF · HTML · Word · BibTeX · RIS · .fruscollection) led by a one-line composition summary, plus a separate **Send to Zotero Library** row.
 
 ## Cross-References
 - **Unresolvable links are labeled** — cross-references that corpus-wide validation confirms can't be followed (the print edition cites a page, document, or volume absent from the digital corpus) now render in muted grey with a dotted underline and a small dagger, instead of looking like working links. Clicking one opens an **Unresolved Reference** sheet explaining why and the apparent destination. Valid references and the printed text are unchanged.
@@ -29,4 +38,4 @@ Build 32 is a feature wave: broken cross-references are labeled instead of dead-
 - **Faster launch, smaller app** — a 9 MB synchronous parse was removed from launch; the app bundle is ~8.5 MB smaller.
 
 ## Feedback
-Report anything unexpected — especially a working link shown as unresolvable (or vice versa), a merge/undo that misbehaves, wrong-looking Top subjects, or analytics that shift oddly after scoping. Include your macOS version, volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!
+Report anything unexpected — especially anything off in the redesigned **Collections** (the toolbar picker and ⚙ Collection popover; building, previewing, or exporting a collection; the Key-takeaway headnote card), a working link shown as unresolvable (or vice versa), a merge/undo that misbehaves, wrong-looking Top subjects, or analytics that shift oddly after scoping. Include your macOS version, volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!
