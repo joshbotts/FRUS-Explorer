@@ -1665,6 +1665,18 @@ struct CollectionEditorView: View {
         #endif
     }
 
+    /// Whether the per-entry inspector should show the `Document | Composition` segmented control
+    /// (Composer redesign 2b): only on iPad (regular width), where it presents as the trailing
+    /// `.inspector` column. The iPhone compact `.sheet` keeps the flat pinned layout. Guarded so it
+    /// resolves to `false` on any platform without a horizontal size class.
+    private var inspectorShowsCompositionSegment: Bool {
+        #if os(iOS)
+        return sizeClass == .regular
+        #else
+        return false
+        #endif
+    }
+
     /// The shared per-entry inspector content — the same `CollectionEntryInspector` used
     /// as an iPhone `.sheet` and an iPad `.inspector` column. `onNewNote` opens the inline
     /// note-create sheet for the entry's document (D5); `onInsertExcerpt` keeps the entry
@@ -1681,7 +1693,11 @@ struct CollectionEditorView: View {
                         volumeId: entry.volumeId,
                         entryIndex: idx)
                 }
-            }
+            },
+            // iPad regular width presents this as the trailing `.inspector` column, where the
+            // Document | Composition segmented control belongs (Composer redesign 2b); the iPhone
+            // compact `.sheet` keeps the flat pinned layout.
+            showsCompositionSegment: inspectorShowsCompositionSegment
         )
         .id(entry.id)
         .environment(appState)
