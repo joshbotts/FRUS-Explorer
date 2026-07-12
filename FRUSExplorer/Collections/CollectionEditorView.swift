@@ -186,10 +186,6 @@ struct CollectionEditorView: View {
     @State private var documentHeaders: [String: String] = [:]
     @State private var documentDates: [String: String] = [:]
 
-    /// iPhone Details disclosure (name/note/smart-collection). Expanded for a new
-    /// collection so the name field is immediately available; collapsed otherwise.
-    @State private var detailsExpanded: Bool
-    /// iPhone Composition disclosure — collapsed by default.
     /// iPad Collection settings sheet visibility (Composer v2 §A: the ⚙ Collection toolbar sheet
     /// replaces the persistent metadata/composition inspector column).
     @State private var showCollectionSettings = false
@@ -252,7 +248,6 @@ struct CollectionEditorView: View {
             _collectionAuthorLine = State(initialValue: c.authorLine ?? "")
             _includeColophon = State(initialValue: c.includeColophon)
             isNewCollection = false
-            _detailsExpanded = State(initialValue: false)
         } else {
             let c = Collection(name: "")
             _collection = State(initialValue: c)
@@ -264,7 +259,6 @@ struct CollectionEditorView: View {
             _collectionAuthorLine = State(initialValue: "")
             _includeColophon = State(initialValue: false)
             isNewCollection = true
-            _detailsExpanded = State(initialValue: true)
         }
     }
 
@@ -638,64 +632,57 @@ struct CollectionEditorView: View {
     /// a collapsed disclosure below.
     private var iPhoneCollectionForm: some View {
         Form {
-            detailsSection
+            // Composer v2 §C: one Collection Settings drill-in pinned at the top (front matter +
+            // presets + the three composition groups + smart link), then the Contents outline as the
+            // primary surface. Replaces the old inline Details disclosure + bottom composition row.
+            collectionSettingsDrillInSection
             documentsSection
             addDocumentsSection
-            compositionDrillInSection
             if !sortedEntries.isEmpty || linkedSavedSearchId != nil { actionsSection }
         }
     }
 
-    /// Collapsible name / note / front-matter / smart-collection group (iPhone).
-    private var detailsSection: some View {
-        Section {
-            DisclosureGroup(isExpanded: $detailsExpanded) {
-                nameField
-                noteField
-                frontMatterRows
-                smartCollectionRows
-            } label: {
-                Label {
-                    Text(collectionName.isEmpty
-                        ? String(localized: "collection.editor.details", defaultValue: "Details")
-                        : collectionName)
-                } icon: {
-                    Image(systemName: linkedSavedSearchId != nil ? "bolt.fill" : "info.circle")
-                }
-            }
-        }
-    }
-
-    /// Composition as a **drill-in** summary row (iPhone, Composer redesign 4): a "Composition" row
-    /// showing the plain-language export summary that pushes the full composition screen — replacing
-    /// the earlier inline groups so the outline stays the compact screen's primary surface.
-    private var compositionDrillInSection: some View {
+    /// The single **Collection Settings** drill-in row (Composer v2 §C, iPhone): the top entry on the
+    /// Outline screen, captioned with the plain-language composition summary. Tapping pushes the full
+    /// settings screen. Replaces the old inline Details disclosure (which carried an info.circle glyph)
+    /// and the composition-only drill-in — one clearly labeled collection-scope entry, the compact
+    /// equivalent of the iPad ⚙ Collection sheet.
+    private var collectionSettingsDrillInSection: some View {
         Section {
             NavigationLink {
-                iPhoneCompositionScreen
+                iPhoneCollectionSettingsScreen
             } label: {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(String(localized: "collection.editor.composition", defaultValue: "Composition"))
+                        Text(String(localized: "collection.editor.settings.title",
+                                    defaultValue: "Collection settings"))
                         Text(collection.compositionSummarySentence)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                 } icon: {
-                    Image(systemName: "slider.horizontal.3")
+                    Image(systemName: "gearshape")
                 }
             }
         }
     }
 
-    /// The pushed Composition screen (iPhone drill-in): the three grouped composition cards + the
-    /// presets, on their own screen.
-    private var iPhoneCompositionScreen: some View {
+    /// The pushed Collection Settings screen (iPhone drill-in): the collection's name / note, title-
+    /// page front matter, presets + the three grouped composition sections, and the smart-collection
+    /// link — the compact-platform equivalent of the iPad ⚙ Collection sheet. `CollectionCompositionRows`
+    /// is placed directly (not via `compositionSection`, which forces the 2×2 preset grid for the wide
+    /// iPad sheet) so its presets render as the compact 3-chip row here, matching the §C canvas.
+    private var iPhoneCollectionSettingsScreen: some View {
         Form {
+            nameSection
+            noteSection
+            frontMatterSection
             CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
+            smartCollectionSection
         }
-        .navigationTitle(String(localized: "collection.editor.composition", defaultValue: "Composition"))
+        .navigationTitle(String(localized: "collection.editor.settings.title",
+                                defaultValue: "Collection settings"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -1346,6 +1333,9 @@ struct CollectionEditorView: View {
                      documentDate: documentDates[key],
                      isDuplicate: duplicateKeys.contains(key),
                      onInspect: { presentEntryInspector(for: entry.id) },
+                     // iPad (regular) shows the ⚙ Configure pill; iPhone (compact) drills in via the
+                     // whole-row chevron disclosure (Composer v2 §D).
+                     showsConfigurePill: isRegularWidth,
                      onMoveUp: moveUp,
                      onMoveDown: moveDown)
         case .heading:
