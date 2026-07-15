@@ -423,7 +423,7 @@ public actor NARACatalogClient {
     /// compact (`63D135`), spaced (`63 D 135`), and mixed (`63 D135`) forms.
     nonisolated static func lotNumberVariants(from raw: String) -> [String] {
         // 1. Strip leading "Lot " prefix (case insensitive), dashes, collapse spaces.
-        var stripped = raw
+        let stripped = raw
             .replacingOccurrences(of: "Lot ", with: "", options: [.caseInsensitive, .anchored])
             .trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: "-", with: "")

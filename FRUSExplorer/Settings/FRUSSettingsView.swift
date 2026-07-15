@@ -2644,7 +2644,7 @@ private struct SettingsAddVolumesPane: View {
     }
 
     private func enqueueSelected() async {
-        guard let dm = appState.downloadManager else { return }
+        guard appState.downloadManager != nil else { return }
         isEnqueuing = true
         defer { isEnqueuing = false }
 

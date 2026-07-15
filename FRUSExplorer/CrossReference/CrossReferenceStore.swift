@@ -802,7 +802,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
@@ -831,7 +831,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
@@ -860,7 +860,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
@@ -905,7 +905,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [(source: DocumentNodeKey, target: DocumentNodeKey)] = []
         while sqlite3_step(stmt) == SQLITE_ROW {

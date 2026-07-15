@@ -970,7 +970,7 @@ private struct DownloadsSettingsView: View {
     }
 
     private func enqueue() {
-        guard let dm = appState.downloadManager else { return }
+        guard appState.downloadManager != nil else { return }
         enqueuedMessage = nil
         let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
         let toEnqueue: [VolumeManifestEntry]
@@ -3069,7 +3069,7 @@ private struct NARAKeyView: View {
         #endif
         .task {
             hasExistingKey = await keychainStore.hasAPIKey()
-            callCount = await NARAAPIKeyStore.shared.callCountLast30Days
+            callCount = NARAAPIKeyStore.shared.callCountLast30Days
         }
     }
 
