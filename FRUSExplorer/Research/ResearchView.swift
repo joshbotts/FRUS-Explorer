@@ -89,6 +89,13 @@ struct ResearchDocumentEntry: Identifiable {
 ///   1.4 — Dynamic Type (UI-Audit A1): sidebar count badges + tag/collection glyphs moved
 ///          off fixed points onto scalable caption tokens so this shared iOS-tab / macOS-window
 ///          surface tracks the reader's text-size setting.
+///   1.5 — #272: iOS flattens to a `NavigationStack` (macOS keeps the split) — a split nested in
+///          the `.sidebarAdaptable` TabView is unsupported on iPadOS 26. Adds `navigationContainer`,
+///          `sidebarRow`, and `researchNavigationPath`.
+///   1.6 — #272 follow-up: `selectedItem` defaults to `nil` on iOS, since 1.5 projects it into
+///          the stack path and a non-nil default asks the stack to launch auto-pushed. Defensive
+///          only — measured on iPad, the `.allNotes` default did NOT auto-push (SwiftUI drops the
+///          initial path element); the claim that it did, recorded in a8b20ca, does not reproduce.
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -107,7 +114,30 @@ struct ResearchView: View {
     /// Saved highlights — the fourth annotation source; newest-first for display ordering.
     @Query(sort: \DocumentHighlight.createdAt, order: .reverse) private var allHighlights: [DocumentHighlight]
 
+    /// The selected category. **The default is platform-specific — do not unify it.**
+    ///
+    /// macOS defaults to `.allNotes` so the `NavigationSplitView` detail column opens populated
+    /// rather than on the "Select a category" placeholder.
+    ///
+    /// iOS defaults to `nil` because `researchNavigationPath` projects this value straight into
+    /// the `NavigationStack` path: a non-nil default asks the stack to launch one level deep,
+    /// auto-pushed into the document list with the category list stranded behind a Back button.
+    ///
+    /// This is a **latent hazard, not an observed bug** — stated precisely because the repo has
+    /// twice recorded the stronger claim without checking it. Measured on iPad Pro 13-inch (M5)
+    /// at dd16bd7: with `.allNotes` on iOS the tab still launches at its category root (no Back
+    /// button, category rows present) — behaviour identical to `nil`. SwiftUI evidently discards
+    /// the initial path element rather than honouring it, so the default is inert today. That
+    /// inertness is an implementation detail of the stack's first render, not a guarantee: it is
+    /// exactly the kind of thing a SwiftUI release or a refactor of where `navigationDestination`
+    /// is attached could change silently. `nil` states the intent directly instead of depending
+    /// on it. `UIObstructionTests.assertResearchLaunchedAtCategoryRoot` is the gate if it ever
+    /// does activate.
+    #if os(macOS)
     @State private var selectedItem: ResearchSidebarItem? = .allNotes
+    #else
+    @State private var selectedItem: ResearchSidebarItem?
+    #endif
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
     @State private var documentHeaders: [String: String] = [:]
 
