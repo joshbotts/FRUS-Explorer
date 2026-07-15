@@ -48,9 +48,30 @@ public struct CatalogRecord: Sendable, Equatable {
     /// silently keeping the first.
     public let hmsMlrEntryNumbers: [String]
 
+    /// NAID of the record's enclosing **series**, from its ancestor chain (#315).
+    ///
+    /// Only meaningful for records below series level: NARA's hierarchy is
+    /// `recordGroup > series > fileUnit`, so a file unit's distance-1 ancestor is its series.
+    /// Verified live 2026-07-15 across three differently-shaped file units — every one
+    /// carried a `series` ancestor with its title, in the same response, at no extra cost.
+    /// `nil` on a record that *is* the series (its ancestors are the record group / collection).
+    public let seriesAncestorNaId: String?
+    /// Title of the enclosing series — the **"file series name"** #315 asks to display for
+    /// records that are not themselves series. Free: it rides in the same response.
+    public let seriesAncestorTitle: String?
+    /// The levels of the record's ancestors, outermost value included (e.g.
+    /// `["recordGroup", "series"]`, or `["collection", "series"]` for a presidential-library
+    /// record). Captured for a data-quality check the ancestor spike surfaced: a lot filed
+    /// under RG 59/84 whose chain contains **no** `recordGroup` is a candidate
+    /// mis-resolution, because `resolveLotFile`'s last-resort `firstAccepted` fallback
+    /// accepts a record with no exposed record group.
+    public let ancestorLevels: [String]
+
     /// The exact `variantControlNumbers.type` that denotes a current HMS/MLR entry number.
     /// Not a prefix and not a pattern — see `hmsMlrEntryNumbers`.
     public static let hmsMlrEntryType = "HMS/MLR Entry Number"
+    /// The `levelOfDescription` value denoting a series record.
+    public static let seriesLevel = "series"
 
     public init(
         naId: String,
@@ -59,7 +80,10 @@ public struct CatalogRecord: Sendable, Equatable {
         parentFileUnitNaId: String? = nil,
         parentFileUnitTitle: String? = nil,
         recordGroupNumber: String? = nil,
-        hmsMlrEntryNumbers: [String] = []
+        hmsMlrEntryNumbers: [String] = [],
+        seriesAncestorNaId: String? = nil,
+        seriesAncestorTitle: String? = nil,
+        ancestorLevels: [String] = []
     ) {
         self.naId = naId
         self.title = title
@@ -68,15 +92,47 @@ public struct CatalogRecord: Sendable, Equatable {
         self.parentFileUnitTitle = parentFileUnitTitle
         self.recordGroupNumber = recordGroupNumber
         self.hmsMlrEntryNumbers = hmsMlrEntryNumbers
+        self.seriesAncestorNaId = seriesAncestorNaId
+        self.seriesAncestorTitle = seriesAncestorTitle
+        self.ancestorLevels = ancestorLevels
     }
 
     /// Extracts the current HMS/MLR entry numbers from a decoded `variantControlNumbers`
     /// list. Factored out so it is unit-testable without a network round trip.
+    ///
+    /// The result is **naturally sorted** — see `sortedNaturally(_:)`. NARA returns these in
+    /// an arbitrary order (measured over the real corpus: 50 of the 61 multi-entry records
+    /// come back unsorted), so sorting is what makes the bundled artifact deterministic
+    /// rather than a transcript of one response's whims.
     static func hmsMlrEntries(from variants: [(number: String?, type: String?)]) -> [String] {
-        variants
-            .filter { $0.type == hmsMlrEntryType }
-            .compactMap { $0.number?.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        sortedNaturally(
+            variants
+                .filter { $0.type == hmsMlrEntryType }
+                .compactMap { $0.number?.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        )
+    }
+
+    /// Sorts entry numbers in **natural** (digit-aware) order, deterministically.
+    ///
+    /// Plain lexicographic sorting is deterministic but reads as broken to the researcher who
+    /// has to scan the list: lot `78D237` carries 30 entry numbers, and lexicographic order
+    /// puts `UD-WX 1152` first while burying `UD-WX 54-A` at position 27. Numeric-aware
+    /// comparison gives `UD-WX 54-A, UD-WX 253, … UD-WX 1502`, which is the order the numbers
+    /// actually mean.
+    ///
+    /// `locale: nil` is deliberate: locale-aware collation (`localizedStandardCompare`) would
+    /// make the bundled artifact depend on the machine that generated it. The `.orderedSame`
+    /// tiebreak on the raw string guarantees a total order, so the sort can never be unstable
+    /// for values the numeric comparison considers equal (e.g. `UD 007` vs `UD 7`).
+    static func sortedNaturally(_ entries: [String]) -> [String] {
+        entries.sorted { a, b in
+            switch a.compare(b, options: [.numeric], range: nil, locale: nil) {
+            case .orderedAscending:  return true
+            case .orderedDescending: return false
+            case .orderedSame:       return a < b
+            }
+        }
     }
 }
 
@@ -551,6 +607,11 @@ public actor NARACatalogHarvestClient {
             let rg = record.ancestors?.first {
                 $0.levelOfDescription == "recordGroup"
             }?.recordGroupNumber?.stringValue
+            // The enclosing series (#315): for a record below series level this is the
+            // "file series name" to display. Free — it is already in this response.
+            let seriesAncestor = record.ancestors?.first {
+                $0.levelOfDescription == CatalogRecord.seriesLevel
+            }
             return CatalogRecord(
                 naId: naId,
                 title: title,
@@ -559,7 +620,10 @@ public actor NARACatalogHarvestClient {
                 parentFileUnitTitle: parent?.title,
                 recordGroupNumber: rg,
                 hmsMlrEntryNumbers: CatalogRecord.hmsMlrEntries(
-                    from: (record.variantControlNumbers ?? []).map { ($0.number, $0.type) }))
+                    from: (record.variantControlNumbers ?? []).map { ($0.number, $0.type) }),
+                seriesAncestorNaId: seriesAncestor?.naId?.stringValue,
+                seriesAncestorTitle: seriesAncestor?.title,
+                ancestorLevels: (record.ancestors ?? []).compactMap(\.levelOfDescription))
         }
         let nextCursor = hits.last?.sort?.first?.stringValue
         return DecodedPage(records: records, nextCursor: nextCursor)

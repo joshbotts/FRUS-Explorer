@@ -99,12 +99,38 @@ struct LotFileEntry: Codable, Sendable, Equatable {
     /// record-group match without requiring series level, so a minority of entries describe a
     /// file unit. `isSeriesLevel` is the intended read.
     var levelOfDescription: String?
+    /// NAID of the enclosing file series, when this record is a file unit rather than a
+    /// series (#315).
+    var seriesNaId: String?
+    /// Title of the enclosing file series, for records whose own `title` names a file unit.
+    var seriesTitle: String?
+    /// The **enclosing series'** HMS/MLR entry numbers — the parent's identifiers, not this
+    /// record's.
+    ///
+    /// Deliberately separate from `hmsMlrEntryNumbers`: a series-level record's own entry
+    /// number pinpoints the records being cited, whereas a parent series may carry many
+    /// (the live "Central Decimal Files" series has 23), which narrows nothing for an
+    /// archivist. Present these only with their imprecision made explicit — never merged
+    /// into, or presented as, the record's own entry number.
+    var seriesHmsMlrEntryNumbers: [String]?
+    /// `true` when the resolved record's ancestry contains no record group — a candidate
+    /// mis-resolution flagged by the enrichment pass for review (#315).
+    var ancestryLacksRecordGroup: Bool?
 
     /// Whether the resolved record is described at the series level — i.e. whether `title`
-    /// can honestly be shown as the "file series name" (#315).
+    /// is itself the file series name (#315).
     ///
     /// `nil` level (an un-enriched bundle) reads as `false`: absent evidence, do not claim it.
     var isSeriesLevel: Bool { levelOfDescription == "series" }
+
+    /// The **file series name** to display — the single accessor the UI should use, so the
+    /// series/file-unit distinction cannot be got wrong at a call site (#315).
+    ///
+    /// A series-level record's own `title` is the series name. A file unit's is not — its
+    /// series name is the enclosing series' title, resolved by the enrichment pass. `nil`
+    /// when neither is known (an un-enriched bundle, or a record whose series never
+    /// resolved), in which case no series should be named at all.
+    var displaySeriesTitle: String? { isSeriesLevel ? title : seriesTitle }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -117,6 +143,12 @@ struct LotFileEntry: Codable, Sendable, Equatable {
         // decodeIfPresent, so a bundle written before #315's enrichment still decodes.
         hmsMlrEntryNumbers = try c.decodeIfPresent([String].self, forKey: .hmsMlrEntryNumbers)
         levelOfDescription = try c.decodeIfPresent(String.self, forKey: .levelOfDescription)
+        seriesNaId = try c.decodeIfPresent(String.self, forKey: .seriesNaId)
+        seriesTitle = try c.decodeIfPresent(String.self, forKey: .seriesTitle)
+        seriesHmsMlrEntryNumbers = try c.decodeIfPresent([String].self,
+                                                         forKey: .seriesHmsMlrEntryNumbers)
+        ancestryLacksRecordGroup = try c.decodeIfPresent(Bool.self,
+                                                         forKey: .ancestryLacksRecordGroup)
     }
 }
 

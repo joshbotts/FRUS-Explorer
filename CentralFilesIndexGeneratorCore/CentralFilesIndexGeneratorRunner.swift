@@ -130,6 +130,13 @@ public struct CentralFilesIndexGeneratorRunner {
         """)
 
         var enriched = 0, misses = 0, withEntries = 0, nonSeries = 0
+        var noRecordGroup: [String] = []
+        // Enclosing-series records, memoized by series NAID: file units share series (both
+        // Numerical File units resolve to the same "Numerical Files" series), so this collapses
+        // the follow-up queries to one per DISTINCT series. `nil` marks a series that missed,
+        // so it is not retried per file unit.
+        var seriesCache: [String: CatalogRecord?] = [:]
+
         for naId in byNaId.keys.sorted() {          // sorted: deterministic logs
             guard let indices = byNaId[naId] else { continue }
             guard let record = try? await client.fetchRecord(naId: naId), !record.naId.isEmpty else {
@@ -138,10 +145,46 @@ public struct CentralFilesIndexGeneratorRunner {
             }
             let entries = record.hmsMlrEntryNumbers
             if !entries.isEmpty { withEntries += 1 }
-            if let level = record.levelOfDescription, level != "series" { nonSeries += 1 }
+
+            let isSeries = record.levelOfDescription == CatalogRecord.seriesLevel
+            if record.levelOfDescription != nil && !isSeries { nonSeries += 1 }
+
+            // Data-quality flag: an RG-59/84 lot whose chain contains no record group at all
+            // (e.g. `collection > series` — a presidential-library record) is a candidate
+            // mis-resolution. Reported, never silently dropped: the call is the owner's.
+            let lacksRG = !record.ancestorLevels.isEmpty
+                && !record.ancestorLevels.contains("recordGroup")
+            if lacksRG {
+                // Every affected lot, not just the first: one bad NAID is typically shared by
+                // several lot numbers (three distinct lots resolve to NAID 323153965), and
+                // reporting one of them understates the blast radius.
+                let lots = indices.map { lotFiles[$0].lotNumber }.sorted().joined(separator: "/")
+                noRecordGroup.append("\(lots) → naId \(naId) “\(record.title.prefix(40))”")
+            }
+
+            // The enclosing series — only for records that are not themselves series (#315).
+            var seriesRecord: CatalogRecord? = nil
+            if !isSeries, let seriesNaId = record.seriesAncestorNaId {
+                if let cached = seriesCache[seriesNaId] {
+                    seriesRecord = cached
+                } else {
+                    seriesRecord = try? await client.fetchRecord(naId: seriesNaId)
+                    seriesCache[seriesNaId] = seriesRecord
+                }
+            }
+
             for i in indices {
                 lotFiles[i].hmsMlrEntryNumbers = entries.isEmpty ? nil : entries
                 lotFiles[i].levelOfDescription = record.levelOfDescription
+                lotFiles[i].ancestryLacksRecordGroup = lacksRG ? true : nil
+                if !isSeries {
+                    // Prefer the fetched series record's own title over the ancestor stub's;
+                    // fall back to the stub, which is what makes the title free.
+                    lotFiles[i].seriesNaId = record.seriesAncestorNaId
+                    lotFiles[i].seriesTitle = seriesRecord?.title ?? record.seriesAncestorTitle
+                    let se = seriesRecord?.hmsMlrEntryNumbers ?? []
+                    lotFiles[i].seriesHmsMlrEntryNumbers = se.isEmpty ? nil : se
+                }
             }
             enriched += 1
         }
@@ -158,13 +201,42 @@ public struct CentralFilesIndexGeneratorRunner {
             exit(1)
         }
         let entryCount = lotFiles.filter { !($0.hmsMlrEntryNumbers ?? []).isEmpty }.count
+        let withSeriesTitle = lotFiles.filter { $0.seriesTitle != nil }.count
+        // NB: the generator's LotFileEntry is a distinct type from the app's and has no
+        // isSeriesLevel helper — compare the level directly.
+        let namedSeries = lotFiles.filter {
+            $0.levelOfDescription == CatalogRecord.seriesLevel || $0.seriesTitle != nil
+        }.count
+        let seriesEntryCounts = lotFiles.compactMap { $0.seriesHmsMlrEntryNumbers?.count }
         print("""
         [CentralFilesIndexGenerator] ✓ ENRICH_LOTS wrote \(outputPath)
           NAIDs enriched:        \(enriched)   (query misses: \(misses))
           NAIDs with an entry #: \(withEntries) / \(enriched)
           lot entries carrying an entry #: \(entryCount) / \(lotFiles.count)
-          NAIDs NOT at series level: \(nonSeries)  \(nonSeries > 0 ? "← their titles are not series titles; see #315" : "")
+          NAIDs NOT at series level: \(nonSeries)   (+\(seriesCache.count) series follow-up queries)
+          lot entries given an enclosing-series title: \(withSeriesTitle)
+          lot entries that can now name a file series: \(namedSeries) / \(lotFiles.count)
         """)
+        if !seriesEntryCounts.isEmpty {
+            let sorted = seriesEntryCounts.sorted()
+            print("""
+              enclosing-series entry-number counts (the #315-B presentation call):
+                min \(sorted.first!)  median \(sorted[sorted.count / 2])  max \(sorted.last!)
+                a large max means the parent's identifiers do NOT pinpoint the file unit
+            """)
+        }
+        if !noRecordGroup.isEmpty {
+            let affected = lotFiles.filter { $0.ancestryLacksRecordGroup == true }.count
+            print("""
+              ⚠︎ MIS-RESOLUTION CANDIDATES — \(noRecordGroup.count) NAID(s), \(affected) lot entr(ies)
+                resolve to a record whose ancestry contains NO recordGroup. A State Department
+                lot file is by definition RG 59/84, so a record parented by a `collection`
+                (i.e. a presidential library) is not one. Measured 2026-07-15: every flagged
+                record was a presidential-library staff file, and several distinct lots
+                collapsed onto a single NAID — see #321.
+                \(noRecordGroup.sorted().joined(separator: "\n                "))
+            """)
+        }
     }
 
     public static func run() async {
