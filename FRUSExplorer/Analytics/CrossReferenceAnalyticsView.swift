@@ -20,6 +20,9 @@ private struct InDegreeRow: Identifiable, Equatable {
     let documentId: String
     let inDegree: Int
     let header: String?
+    /// Whether the target is indexed locally (present in `document_cache`), independent of whether
+    /// it has a `<head>` — editorial notes are indexed but headerless (#278).
+    let isIndexed: Bool
 
     var id: String { "\(volumeId)/\(documentId)" }
 
@@ -36,6 +39,9 @@ private struct LandmarkRow: Identifiable, Equatable {
     let documentId: String
     let score: Double
     let header: String?
+    /// Whether the target is indexed locally (present in `document_cache`), independent of whether
+    /// it has a `<head>` — editorial notes are indexed but headerless (#278).
+    let isIndexed: Bool
 
     var id: String { "\(volumeId)/\(documentId)" }
 
@@ -469,7 +475,7 @@ struct CrossReferenceAnalyticsView: View {
                                 .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
                                 .font(.caption2).foregroundStyle(.secondary)
-                            if isTargetUnindexed(header: row.header) {
+                            if !row.isIndexed {
                                 Text(String(localized: "crossRefAnalytics.row.notDownloaded",
                                             defaultValue: "In a volume you haven't downloaded"))
                                     .font(.caption2).foregroundStyle(.tertiary)
@@ -697,7 +703,7 @@ struct CrossReferenceAnalyticsView: View {
                                 .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
                                 .font(.caption2).foregroundStyle(.secondary)
-                            if isTargetUnindexed(header: row.header) {
+                            if !row.isIndexed {
                                 Text(String(localized: "crossRefAnalytics.row.notDownloaded",
                                             defaultValue: "In a volume you haven't downloaded"))
                                     .font(.caption2).foregroundStyle(.tertiary)
@@ -734,12 +740,6 @@ struct CrossReferenceAnalyticsView: View {
         let number = documentId.hasPrefix("d") ? String(documentId.dropFirst()) : documentId
         let prefix = String(localized: "crossRefAnalytics.row.documentPrefix", defaultValue: "Document")
         return "\(prefix) \(number) — \(volumeTitle(volumeId))"
-    }
-
-    /// Whether a target row's volume is not yet indexed (its header couldn't be resolved), used to
-    /// show a subtle "not downloaded" hint (#209).
-    private func isTargetUnindexed(header: String?) -> Bool {
-        header == nil || header?.isEmpty == true
     }
 
     private var loadingRow: some View {
@@ -834,9 +834,12 @@ struct CrossReferenceAnalyticsView: View {
 
         // In-degree ranking.
         let topDocs = (try? await store.topDocumentsByInDegree(limit: Self.rankingLimit, yearRange: range, volumeIds: scope)) ?? []
+        let rankingIndexed = (try? await store.indexedDocumentKeys(
+            for: topDocs.map { (volumeId: $0.volumeId, documentId: $0.documentId) })) ?? []
         ranking = topDocs.map {
             InDegreeRow(volumeId: $0.volumeId, documentId: $0.documentId,
-                        inDegree: $0.inDegree, header: $0.header)
+                        inDegree: $0.inDegree, header: $0.header,
+                        isIndexed: rankingIndexed.contains("\($0.volumeId)/\($0.documentId)"))
         }
 
         // Degree distributions.
@@ -865,10 +868,12 @@ struct CrossReferenceAnalyticsView: View {
         // Join headers for the landmark set.
         let headerKeys = topScored.map { (volumeId: $0.key.volumeId, documentId: $0.key.documentId) }
         let headers = (try? await store.documentHeaders(for: headerKeys)) ?? [:]
+        let landmarkIndexed = (try? await store.indexedDocumentKeys(for: headerKeys)) ?? []
         landmarks = topScored.map {
             LandmarkRow(volumeId: $0.key.volumeId, documentId: $0.key.documentId,
                         score: $0.score,
-                        header: headers["\($0.key.volumeId)/\($0.key.documentId)"])
+                        header: headers["\($0.key.volumeId)/\($0.key.documentId)"],
+                        isIndexed: landmarkIndexed.contains("\($0.key.volumeId)/\($0.key.documentId)"))
         }
 
         isLoading = false

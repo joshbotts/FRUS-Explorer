@@ -12,21 +12,7 @@ import Foundation
 import Observation
 import SwiftData
 
-// MARK: - SearchSortOrder
-
-enum SearchSortOrder: CaseIterable {
-    case relevance
-    case dateAscending
-    case dateDescending
-
-    var label: String {
-        switch self {
-        case .relevance:      return "Relevance"
-        case .dateAscending:  return "Date ↑"
-        case .dateDescending: return "Date ↓"
-        }
-    }
-}
+// `SearchSortOrder` now lives in SearchModels.swift (shared with the iOS SearchView, #305).
 
 // MARK: - MacSearchViewModel
 

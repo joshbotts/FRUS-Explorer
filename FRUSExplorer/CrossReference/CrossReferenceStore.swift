@@ -307,6 +307,23 @@ public actor CrossReferenceStore {
         return result
     }
 
+    /// Returns the subset of `keys` present in `document_cache` — the documents actually indexed
+    /// locally, regardless of whether they carry a `<head>`. Editorial notes are indexed but
+    /// headerless, so their header is nil even when downloaded; membership here is the true
+    /// "is this document indexed?" signal, distinct from a citation into an un-downloaded volume
+    /// (#278). Keyed `"volumeId/documentId"`.
+    public func indexedDocumentKeys(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> Set<String> {
+        var result: Set<String> = []
+        for (vol, doc) in keys {
+            if try fetchMetadata(volumeId: vol, documentId: doc) != nil {
+                result.insert("\(vol)/\(doc)")
+            }
+        }
+        return result
+    }
+
     /// Returns every `(volumeId, documentId, userTagIds)` tuple where `document_cache`
     /// has at least one user tag stored in the `user_tag_ids` column.
     ///

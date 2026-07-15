@@ -206,5 +206,31 @@ extension GeneratedSummary {
             deleteHeadnoteDraft(for: entry, in: context)
         }
     }
+
+    /// Duplicates the headnote-draft summary that `sourceEntry` owns (if any) into a new independent
+    /// draft and points `copyEntry` at it — so a duplicated collection's headnotes are fully editable
+    /// without touching the original's drafts (#300). If `sourceEntry.headnoteSummaryId` points at a
+    /// *real* document summary (not a draft), it is left shared: that summary belongs to the document,
+    /// so the entry-field copy's identical id is correct.
+    static func duplicateHeadnoteDraft(from sourceEntry: CollectionEntry,
+                                       to copyEntry: CollectionEntry,
+                                       in context: ModelContext) {
+        guard let sid = sourceEntry.headnoteSummaryId else { return }
+        let drafts = (try? context.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.id == sid && $0.isHeadnoteDraft }))) ?? []
+        guard let draft = drafts.first else { return }
+        let copyDraft = GeneratedSummary(
+            documentId: draft.documentId,
+            volumeId: draft.volumeId,
+            promptId: draft.promptId,
+            responseText: draft.responseText,
+            responseFormat: draft.responseFormat,
+            wasChunked: draft.wasChunked,
+            projectId: draft.projectId,
+            authorship: draft.authorship ?? .aiGenerated,
+            isHeadnoteDraft: true)
+        context.insert(copyDraft)
+        copyEntry.headnoteSummaryId = copyDraft.id
+    }
 }
 

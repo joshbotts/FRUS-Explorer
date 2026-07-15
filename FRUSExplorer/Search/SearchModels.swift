@@ -27,6 +27,27 @@ public enum DocumentTypeFilter: Sendable, Equatable {
     case editorialNotesOnly
 }
 
+// MARK: - SearchSortOrder
+
+/// Ordering applied to search results, shared by the iOS `SearchView` and the macOS Search window
+/// (#305). `relevance` keeps the FTS5 BM25 order as returned; the date orders use the structured
+/// `dateISO` value (undated rows last, BM25 tie-break) — see `SearchViewModel.sortedResults` and
+/// `MacSearchViewModel.allSortedResults`.
+enum SearchSortOrder: CaseIterable {
+    case relevance
+    case dateAscending
+    case dateDescending
+
+    /// Short control label.
+    var label: String {
+        switch self {
+        case .relevance:      return String(localized: "search.sort.relevance", defaultValue: "Relevance")
+        case .dateAscending:  return String(localized: "search.sort.dateAscending", defaultValue: "Date ↑")
+        case .dateDescending: return String(localized: "search.sort.dateDescending", defaultValue: "Date ↓")
+        }
+    }
+}
+
 // MARK: - SearchParameters
 
 /// Full set of parameters for a `SearchService` query.

@@ -896,7 +896,7 @@ private struct DownloadsSettingsView: View {
                         Spacer(minLength: 8)
                         Button(String(localized: "settings.volumes.available.download",
                                       defaultValue: "Download")) {
-                            let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+                            let url = entry.downloadUrl
                             Task {
                                 await appState.downloadManager?.enqueueDownload(
                                     volumeId: entry.volumeId,
@@ -990,7 +990,7 @@ private struct DownloadsSettingsView: View {
     private func performEnqueueiOS(_ volumes: [VolumeManifestEntry]) async {
         guard let dm = appState.downloadManager else { return }
         for entry in volumes {
-            let url = "https://raw.githubusercontent.com/HistoryAtState/frus/master/volumes/\(entry.filename)"
+            let url = entry.downloadUrl
             await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: url)
         }
         await MainActor.run {
