@@ -875,11 +875,23 @@ struct SearchView: View {
                         }
                     }
                     Button {
-                        archivalNeighborsTarget = ArchivalNeighborsDocKey(
-                            volumeId:     result.volumeId,
-                            documentId:   result.documentId,
-                            documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
-                        )
+                        // #241: on a Stage-Manager iPad the neighbor list opens as its own
+                        // window, so it survives opening result after result from this list
+                        // — the same reason `openResult` prefers a document window above.
+                        // Elsewhere (iPhone, iPads without Stage Manager) it stays a sheet.
+                        if supportsMultipleWindows {
+                            openWindow(value: ArchivalNeighborsRequest.document(
+                                volumeId:     result.volumeId,
+                                documentId:   result.documentId,
+                                documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
+                            ))
+                        } else {
+                            archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                                volumeId:     result.volumeId,
+                                documentId:   result.documentId,
+                                documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
+                            )
+                        }
                     } label: {
                         Label(
                             String(localized: "search.result.archivalNeighbors",

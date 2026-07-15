@@ -1451,3 +1451,45 @@ adversarial review pass (Fable) on its own branch off v2, self-merged.
   unresolvable-reference explanation + report export, volume subject profiles; POCOM/
   Wikidata-VIAF explicitly excluded as not shipped) + **build 31 → 32** (project.yml +
   project.pbxproj, no xcodegen; MARKETING_VERSION 0.2 unchanged).
+
+### Session 2026-07-14/15 — Clear-the-decks P0 batch + Session R part 1 (dev-week plan)
+Executed per the 2026-07-14 week plan (prioritization board + Week Execution Plan artifacts;
+Opus implementation single-threaded, Fable plan review Wed noon).
+- **Clear-the-decks (11 P0 items)** — PR #310: #271 downloadUrl consolidation; #277 distinct
+  Cross-Reference Analytics glyph; #278 editorial-note "not indexed" mislabel fixed via
+  header-independent `indexedDocumentKeys` membership; #309 iOS collection-settings ordering
+  mirrors macOS (iPhone drill-in + iPad gear sheet); #305 iOS search date sort
+  (`SearchSortOrder` promoted to shared SearchModels); #300 Duplicate Collection (deep copy
+  incl. per-entry headnote drafts); dead `mark.hl-orange` CSS removed; zero-mention People
+  caption; #272 ResearchView flattened to NavigationStack on iOS (#238 class); #273 corpus-
+  browser cluster extracted to `MacCorpusBrowserWindow.swift` (4,044→2,691 lines); #246
+  warnings cleared (iOS ~125→74, macOS ~41→25; residue = SwiftData macro + AppIntents only).
+  Nine issues closed on the tracker with PR-referencing comments.
+- **Post-merge audit + follow-up** — PR #314: a 13-agent adversarial audit of the merge found
+  the #238 compliance ledger naming a SettingsView follow-up that never existed (corrected in
+  MainTabView 1.11 + the BigPicture-iPadMacParity duplicate), #272's scenario-5 test gating
+  the wrong column (drill-in restored with the sound `navigationBars` oracle — ordering, not
+  Cell-tap-inertness, was the defeater), and a claimed iPad auto-push regression that **does
+  not reproduce** (A/B-measured; `NavigationStack(path:)` fed a computed Binding discards the
+  initial path element). #311 (dead 5s guard let both iPad scenarios XCTSkip green) and #313
+  (CLAUDE.md over-claimed CodingStandardsAuditTests enforcement) fixed and auto-closed by the
+  PR; #312 (detail-column seeded-data fixture) filed and open.
+- **Fable plan review (Wed 7/15 noon, Rev 2/Rev 3)** — four read-only lenses re-planned the
+  remaining week: dropped the redundant #278/#272 review; exposed Zotero's "macOS entry" as
+  phantom scope (merged 2026-06-27; `BigPicture-ZoteroExport.md` Phase-2 status is stale —
+  fix scheduled with Friday's session); slotted new **#315** (Source Explorer NARA
+  enrichment) as harvest half (Fri, owner-run live NARA re-query — HMS/MLR numbers were
+  dropped at decode time, no offline recovery) + dual-platform UI half (Sat); owner fold-ins:
+  #258 design slice (sketch Sat eve + pre-cliff Fable design review Sun) and #306 as
+  Sat-slack. Next-week queue: #258 implementation (lead), #308 rec-doc (opener), #235.
+- **Session R part 1 (#241)** — `Planning/241-iPad-Windowing-Investigation.md`. Verdict: NOT
+  window-based-by-default (XL; blocked by the forked reading surface, the two pending-state
+  iOS scenes, and process-global window state); incremental value-based `WindowGroup` ports
+  instead. Code-derived census: **21 macOS aux scenes vs 3 iOS** (supersedes "~17" and the
+  stale `FRUSExplorerApp.swift:56-72` table). SDK-verified: `SwiftUI.Window` is
+  `@available(iOS, unavailable)` → every port becomes a WindowGroup; `navigationSubtitle` is
+  iOS 26+ → ArchivalNeighbors chrome compiles as-is. Latent bugs found, deferred to issues:
+  `activeTab` mirrors across iPad main windows (process-global; zero `@SceneStorage`;
+  user-reachable today) and both pending-state scenes restore empty. **Part 2 (2026-07-16):**
+  ArchivalNeighbors conversion prototype PR + `.defaultSize` on the 3 iOS scenes + follow-up
+  issue filing, then the full Fable review (doc first — 3pm hard gate).

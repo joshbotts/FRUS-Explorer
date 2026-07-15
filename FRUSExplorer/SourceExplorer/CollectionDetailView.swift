@@ -49,9 +49,13 @@ struct CollectionDetailView: View {
     let record: AuthorityCollectionRecord
 
     @Environment(AppState.self) private var appState
-    #if os(macOS)
-    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
+    /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
+    #if os(iOS)
+    /// Gates the neighbors window on iOS: true on Stage-Manager iPads, false on iPhone and
+    /// iPads without it, where the sheet remains the presentation (#241).
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
     /// The S5 local counts, loaded from the user's index on appear.
@@ -186,13 +190,16 @@ struct CollectionDetailView: View {
                         Int64(stats.documentCount), Int64(stats.volumeCount)))
                         .font(.callout)
                     Button {
-                        // S6: window on macOS (the neighbor list is a work list —
-                        // it must survive row navigation); sheet on iOS.
-                        #if os(macOS)
-                        openWindow(value: ArchivalNeighborsRequest(collectionRecord: record))
-                        #else
-                        neighborsTarget = CollectionNeighborsTarget(decimalClass: nil)
+                        // S6/#241: window wherever windows exist (macOS; iPad with Stage
+                        // Manager) — the neighbor list is a work list and must survive row
+                        // navigation; sheet only where they do not.
+                        #if os(iOS)
+                        guard supportsMultipleWindows else {
+                            neighborsTarget = CollectionNeighborsTarget(decimalClass: nil)
+                            return
+                        }
                         #endif
+                        openWindow(value: ArchivalNeighborsRequest(collectionRecord: record))
                     } label: {
                         Label(String(localized: "collection.detail.neighbors",
                                      defaultValue: "Show Archival Neighbors"),
@@ -270,11 +277,14 @@ struct CollectionDetailView: View {
                     Spacer(minLength: 8)
                     if let cls = child.decimalClass {
                         Button {
-                            #if os(macOS)
-                            openWindow(value: ArchivalNeighborsRequest.decimalClass(cls))
-                            #else
-                            neighborsTarget = CollectionNeighborsTarget(decimalClass: cls)
+                            // Same gate as the record-level action above (#241).
+                            #if os(iOS)
+                            guard supportsMultipleWindows else {
+                                neighborsTarget = CollectionNeighborsTarget(decimalClass: cls)
+                                return
+                            }
                             #endif
+                            openWindow(value: ArchivalNeighborsRequest.decimalClass(cls))
                         } label: {
                             Image(systemName: "archivebox")
                         }

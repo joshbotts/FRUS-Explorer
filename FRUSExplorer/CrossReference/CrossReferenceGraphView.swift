@@ -102,9 +102,13 @@ struct CrossReferenceGraphView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
-    #if os(macOS)
-    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
+    /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
+    #if os(iOS)
+    /// Gates the neighbors window on iOS: true on Stage-Manager iPads, false on iPhone and
+    /// iPads without it, where the sheet remains the presentation (#241).
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
     @State private var vm: CrossReferenceGraphViewModel
@@ -782,21 +786,24 @@ struct CrossReferenceGraphView: View {
 
             Button {
                 guard let meta = vm.graph?.nodeMetadata[node.id] else { return }
-                // S6: window on macOS (survives row navigation, sits beside the
-                // graph); sheet on iOS.
-                #if os(macOS)
+                // S6/#241: a window wherever windows exist (macOS; iPad with Stage
+                // Manager) — it survives row navigation and sits beside the graph, which
+                // is the point. Sheet only where windows are unavailable.
+                #if os(iOS)
+                guard supportsMultipleWindows else {
+                    archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                        volumeId:     meta.volumeId,
+                        documentId:   meta.documentId,
+                        documentYear: meta.dateISO.flatMap { Int($0.prefix(4)) }
+                    )
+                    return
+                }
+                #endif
                 openWindow(value: ArchivalNeighborsRequest.document(
                     volumeId:     meta.volumeId,
                     documentId:   meta.documentId,
                     documentYear: meta.dateISO.flatMap { Int($0.prefix(4)) }
                 ))
-                #else
-                archivalNeighborsTarget = ArchivalNeighborsDocKey(
-                    volumeId:     meta.volumeId,
-                    documentId:   meta.documentId,
-                    documentYear: meta.dateISO.flatMap { Int($0.prefix(4)) }
-                )
-                #endif
             } label: {
                 Label(
                     String(localized: "graph.contextMenu.archivalNeighbors",
