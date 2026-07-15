@@ -122,4 +122,80 @@ struct CentralFilesIndexTests {
         #expect(index.numericalFile.rolls(forFileNumber: "7187").contains { $0.naId == "19779414" })
         #expect(index.numericalFile.rolls(forFileNumber: "697/43").contains { $0.naId == "19174810" })
     }
+
+    // MARK: - #315 HMS/MLR enrichment (contract on the shipped artifact)
+    //
+    // These assert against the REAL bundled resource, not a fixture: the enrichment is
+    // produced by an owner-run harvest against a live API, so the artifact — not the code
+    // that made it — is what ships. A bad harvest is invisible to the generator's own unit
+    // tests and would surface only as wrong identifiers in front of a researcher at NARA.
+    // Verified numbers are from the 2026-07-15 run (639/639 NAIDs, 0 misses).
+
+    @Test("The bundled lot files carry HMS/MLR entry numbers")
+    func bundledLotFilesAreEnriched() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let lots = index.lotFiles
+        #expect(lots.count > 900, "expected ~979 lot entries")
+
+        let withEntries = lots.filter { !($0.hmsMlrEntryNumbers ?? []).isEmpty }
+        // 946/979 at the verified run; the floor guards against an un-enriched or
+        // half-failed harvest being committed, without pinning an exact count.
+        #expect(withEntries.count > 900,
+                "expected ~946 lot entries with an HMS/MLR entry number — a much lower "
+                    + "count means the harvest did not run or largely failed")
+    }
+
+    /// The discrimination that matters: no internal `HMS Record Entry ID` (`HS1-…`) and no
+    /// declassification project number (`NND …` / `RC …`) may ever reach a researcher as if
+    /// it were a citable entry number. This checks the shipped values, not the filter.
+    @Test("No internal or declassification identifiers leaked into the entry numbers")
+    func bundledEntryNumbersHaveNoLeakage() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let values = Set(index.lotFiles.flatMap { $0.hmsMlrEntryNumbers ?? [] })
+        #expect(!values.isEmpty)
+        let leaked = values.filter {
+            $0.hasPrefix("HS1-") || $0.hasPrefix("NND ") || $0.hasPrefix("RC ")
+        }
+        #expect(leaked.isEmpty, "internal/declassification identifiers leaked: \(leaked.sorted())")
+    }
+
+    /// The artifact must be deterministic: NARA returns entry numbers in an arbitrary order
+    /// (50 of 61 multi-entry records came back unsorted), so the generator sorts them. If a
+    /// future harvest ships unsorted arrays, the sort regressed.
+    @Test("Bundled entry numbers are naturally sorted")
+    func bundledEntryNumbersAreSorted() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        for lot in index.lotFiles {
+            guard let entries = lot.hmsMlrEntryNumbers, entries.count > 1 else { continue }
+            let sorted = entries.sorted {
+                switch $0.compare($1, options: [.numeric], range: nil, locale: nil) {
+                case .orderedAscending:  return true
+                case .orderedDescending: return false
+                case .orderedSame:       return $0 < $1
+                }
+            }
+            #expect(entries == sorted, "lot \(lot.lotNumber) ships unsorted: \(entries)")
+        }
+    }
+
+    /// The file-unit records are the reason `isSeriesLevel` exists: their `title` is a file-unit
+    /// title, so #315-B must not present it as a "file series name". They also carry no entry
+    /// number — entry numbers describe series — which this pins as an observed property of the
+    /// corpus rather than an assumption.
+    @Test("Non-series lot records carry no entry number and are flagged")
+    func bundledNonSeriesRecordsAreFlagged() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let nonSeries = index.lotFiles.filter {
+            $0.levelOfDescription != nil && !$0.isSeriesLevel
+        }
+        #expect(!nonSeries.isEmpty, "expected ~32 fileUnit-level lot entries")
+        for lot in nonSeries {
+            #expect((lot.hmsMlrEntryNumbers ?? []).isEmpty,
+                    "lot \(lot.lotNumber) is \(lot.levelOfDescription ?? "?")-level yet carries "
+                        + "an entry number — the series/entry-number correlation broke")
+        }
+        // And the golden series-level case from the verifying spike.
+        let known = index.lotFile(forRawLot: "64 D 171")
+        #expect(known?.isSeriesLevel == true)
+    }
 }
