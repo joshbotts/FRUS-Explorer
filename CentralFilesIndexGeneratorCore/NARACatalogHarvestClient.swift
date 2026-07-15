@@ -72,11 +72,40 @@ public struct CatalogRecord: Sendable, Equatable {
 
     /// Extracts the current HMS/MLR entry numbers from a decoded `variantControlNumbers`
     /// list. Factored out so it is unit-testable without a network round trip.
+    ///
+    /// The result is **naturally sorted** — see `sortedNaturally(_:)`. NARA returns these in
+    /// an arbitrary order (measured over the real corpus: 50 of the 61 multi-entry records
+    /// come back unsorted), so sorting is what makes the bundled artifact deterministic
+    /// rather than a transcript of one response's whims.
     static func hmsMlrEntries(from variants: [(number: String?, type: String?)]) -> [String] {
-        variants
-            .filter { $0.type == hmsMlrEntryType }
-            .compactMap { $0.number?.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        sortedNaturally(
+            variants
+                .filter { $0.type == hmsMlrEntryType }
+                .compactMap { $0.number?.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        )
+    }
+
+    /// Sorts entry numbers in **natural** (digit-aware) order, deterministically.
+    ///
+    /// Plain lexicographic sorting is deterministic but reads as broken to the researcher who
+    /// has to scan the list: lot `78D237` carries 30 entry numbers, and lexicographic order
+    /// puts `UD-WX 1152` first while burying `UD-WX 54-A` at position 27. Numeric-aware
+    /// comparison gives `UD-WX 54-A, UD-WX 253, … UD-WX 1502`, which is the order the numbers
+    /// actually mean.
+    ///
+    /// `locale: nil` is deliberate: locale-aware collation (`localizedStandardCompare`) would
+    /// make the bundled artifact depend on the machine that generated it. The `.orderedSame`
+    /// tiebreak on the raw string guarantees a total order, so the sort can never be unstable
+    /// for values the numeric comparison considers equal (e.g. `UD 007` vs `UD 7`).
+    static func sortedNaturally(_ entries: [String]) -> [String] {
+        entries.sorted { a, b in
+            switch a.compare(b, options: [.numeric], range: nil, locale: nil) {
+            case .orderedAscending:  return true
+            case .orderedDescending: return false
+            case .orderedSame:       return a < b
+            }
+        }
     }
 }
 

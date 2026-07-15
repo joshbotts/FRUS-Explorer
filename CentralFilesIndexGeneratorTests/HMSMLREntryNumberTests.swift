@@ -96,6 +96,80 @@ struct HMSMLREntryNumberTests {
         #expect(CatalogRecord.hmsMlrEntries(from: multi) == ["P 312", "P 313"])
     }
 
+    // MARK: - Ordering
+    //
+    // NARA returns entry numbers in an arbitrary order — measured over the real corpus,
+    // 50 of the 61 multi-entry records come back unsorted. Sorting is therefore what makes
+    // the bundled artifact deterministic instead of a snapshot of one response's order.
+    // The fixtures below are real values from the 2026-07-15 harvest.
+
+    @Test("Sorts arbitrary response order deterministically")
+    func sortsResponseOrder() {
+        // Lot 56D679, exactly as the catalog returned it.
+        let asReturned: [(number: String?, type: String?)] = [
+            ("UD 28", "HMS/MLR Entry Number"),
+            ("UD 32", "HMS/MLR Entry Number"),
+            ("UD 30", "HMS/MLR Entry Number"),
+            ("UD 29", "HMS/MLR Entry Number"),
+            ("UD 31", "HMS/MLR Entry Number"),
+        ]
+        #expect(CatalogRecord.hmsMlrEntries(from: asReturned)
+                == ["UD 28", "UD 29", "UD 30", "UD 31", "UD 32"])
+    }
+
+    /// The case that makes lexicographic sorting unacceptable rather than merely untidy:
+    /// lot 78D237 carries 30 entry numbers, and plain sorting puts `UD-WX 1152` first while
+    /// burying `UD-WX 54-A` at position 27.
+    @Test("Natural order: a 2-digit number precedes 3- and 4-digit ones")
+    func sortsNumericallyNotLexicographically() {
+        #expect(CatalogRecord.sortedNaturally(
+            ["UD-WX 1152", "UD-WX 253", "UD-WX 54-A", "UD-WX 1502", "UD-WX 491"])
+                == ["UD-WX 54-A", "UD-WX 253", "UD-WX 491", "UD-WX 1152", "UD-WX 1502"])
+    }
+
+    /// Real values from lot 83D276 — lexicographic order would list the 6-digit numbers
+    /// before the 4-digit one.
+    @Test("Natural order across widely different magnitudes")
+    func sortsAcrossMagnitudes() {
+        #expect(CatalogRecord.sortedNaturally(
+            ["UD-WX 100021", "UD-WX 100022-C", "UD-WX 1510-D"])
+                == ["UD-WX 1510-D", "UD-WX 100021", "UD-WX 100022-C"])
+    }
+
+    /// Real values from lot 83D135 — mixed prefixes must still group by prefix first.
+    @Test("Natural order sorts within a prefix, then across prefixes")
+    func sortsWithinAndAcrossPrefixes() {
+        #expect(CatalogRecord.sortedNaturally(
+            ["UD-09D 1", "UD-09D 10", "UD-09D 7", "UD-13W 37", "UD-15D 31"])
+                == ["UD-09D 1", "UD-09D 7", "UD-09D 10", "UD-13W 37", "UD-15D 31"])
+    }
+
+    /// A suffixed number sorts adjacent to its base rather than being scattered
+    /// (real: lot 57F139).
+    @Test("A lettered suffix sorts beside its base number")
+    func sortsSuffixedBesideBase() {
+        #expect(CatalogRecord.sortedNaturally(["UD 3269A", "UD 3269", "UD 3269B"])
+                == ["UD 3269", "UD 3269A", "UD 3269B"])
+    }
+
+    /// The sort must be a *total* order: values the numeric comparison calls equal still
+    /// need a stable tiebreak, or the artifact could differ between runs.
+    @Test("Numerically-equal but textually-different values order deterministically")
+    func totalOrderOnNumericTies() {
+        let once  = CatalogRecord.sortedNaturally(["UD 007", "UD 7"])
+        let twice = CatalogRecord.sortedNaturally(["UD 7", "UD 007"])
+        #expect(once == twice, "the same set must sort identically regardless of input order")
+    }
+
+    /// Sorting the output of a sort changes nothing — the property the artifact's stability
+    /// actually rests on.
+    @Test("Sorting is idempotent")
+    func sortIsIdempotent() {
+        let input = ["UD-WX 1152", "UD-WX 253", "UD-WX 54-A"]
+        let once = CatalogRecord.sortedNaturally(input)
+        #expect(CatalogRecord.sortedNaturally(once) == once)
+    }
+
     @Test("A record with no variant control numbers yields none")
     func emptyInputYieldsEmpty() {
         #expect(CatalogRecord.hmsMlrEntries(from: []).isEmpty)
