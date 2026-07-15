@@ -582,7 +582,7 @@ public actor DownloadManager {
                 // Linear backoff: 5 s, 10 s. Modest by design — the background
                 // session already retried transport-level hiccups internally.
                 try? await Task.sleep(for: .seconds(5 * attempt))
-                await self.retryDownload(volumeId: volumeId, downloadUrl: urlString)
+                self.retryDownload(volumeId: volumeId, downloadUrl: urlString)
             }
         } else {
             pendingUrls.removeValue(forKey: volumeId)

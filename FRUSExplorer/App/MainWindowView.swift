@@ -307,7 +307,7 @@ struct MainWindowView: View {
             } label: {
                 Label(String(localized: "mainwindow.tools.crossRefAnalytics",
                              defaultValue: "Cross-Reference Analytics"),
-                      systemImage: "point.3.connected.trianglepath.dotted")
+                      systemImage: "square.grid.3x3")
             }
             .help(String(
                 localized: "mainwindow.tools.crossRefAnalytics.help",

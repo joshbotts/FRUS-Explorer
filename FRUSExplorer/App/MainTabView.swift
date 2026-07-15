@@ -54,6 +54,9 @@ import SwiftData
 ///          (its `stackLayout`) on all size classes; `ResearchView`/`SettingsView` still
 ///          nest splits and are tracked as a follow-up. Rule going forward: tabs under
 ///          `.sidebarAdaptable` host a `NavigationStack`, not a `NavigationSplitView`.
+///   1.10 — #272: `ResearchView` now complies too — iOS flattens it to a `NavigationStack`
+///          (macOS keeps its `NavigationSplitView`). `SettingsView` is the last tab still
+///          nesting a split under `.sidebarAdaptable`.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -115,7 +118,8 @@ struct MainTabView: View {
         // content must host a NavigationStack, NOT a NavigationSplitView — a nested split
         // mis-computes its top safe area under the floating top tab bar and overlays
         // content. BrowserView complies (stackLayout on all size classes); ResearchView
-        // and SettingsView still nest splits and are tracked as a follow-up.
+        // complies as of #272 (iOS flattens to a NavigationStack; macOS keeps the split).
+        // SettingsView still nests a split and is tracked as a follow-up.
         // (BigPicture-iPadMacParity Phase 1 + #238 correction.)
         .tabViewStyle(.sidebarAdaptable)
         // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the

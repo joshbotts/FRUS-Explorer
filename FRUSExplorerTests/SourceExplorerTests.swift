@@ -157,7 +157,7 @@ struct SourceExplorerTests {
     func centralFilesURLContainsIdentifier() async {
         let client = NARACatalogClient()
         let identifier = "862S.01/10-1646"
-        let url = await client.resolveRG59CentralFiles(fileIdentifier: identifier)
+        let url = client.resolveRG59CentralFiles(fileIdentifier: identifier)
 
         let urlString = url.absoluteString
         #expect(urlString.contains("catalog.archives.gov"))
@@ -171,7 +171,7 @@ struct SourceExplorerTests {
     @Test("CentralFilesURLTest: resolveRG59CentralFiles includes RG-59 parent description filter")
     func centralFilesURLIncludesRG59Filter() async {
         let client = NARACatalogClient()
-        let url = await client.resolveRG59CentralFiles(fileIdentifier: "711.94/3-251")
+        let url = client.resolveRG59CentralFiles(fileIdentifier: "711.94/3-251")
         #expect(url.absoluteString.contains("parentDescriptionNaId"))
     }
 

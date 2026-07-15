@@ -676,19 +676,21 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// The pushed Collection Settings screen (iPhone drill-in): leads with the presets + the three
-    /// grouped composition sections, then title-page front matter, then the collection's name / note
-    /// and the smart-collection link — the compact-platform equivalent of the iPad ⚙ Collection sheet.
+    /// The pushed Collection Settings screen (iPhone drill-in): leads with the collection's name /
+    /// note and title-page front matter, then the default-template presets + the three grouped
+    /// composition sections, then the smart-collection link (#309 — matches the macOS manager and
+    /// the iPad ⚙ Collection sheet, both realigned to name-first ordering in the same change).
     /// `CollectionCompositionRows` is placed directly (not via `compositionSection`, which forces the
     /// 2×2 preset grid for the wide iPad sheet) so its presets render as the compact 3-chip row here.
     private var iPhoneCollectionSettingsScreen: some View {
         Form {
-            // Composer v2 §C: lead with the presets + three composition groups (compact 3-chip
-            // presets — see the note above), then title-page front matter, then name / note / smart.
-            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
-            frontMatterSection
+            // #309: name + collection-wide metadata first, then the default-template presets and the
+            // three composition groups (Document content / Your annotations / Analysis & apparatus),
+            // then the smart-collection link — matching the macOS manager and iPad ⚙ sheet ordering.
             nameSection
             noteSection
+            frontMatterSection
+            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
             smartCollectionSection
         }
         .navigationTitle(String(localized: "collection.editor.settings.title",
@@ -746,14 +748,13 @@ struct CollectionEditorView: View {
     private var iPadCollectionSettingsSheet: some View {
         NavigationStack {
             Form {
-                // Composer v2 §A (03-prototype): the settings sheet leads with the presets +
-                // composition groups ("Start from a template"), then title-page front matter, then the
-                // collection's name / note / smart-link. The canvas edits name via the toolbar title;
-                // the sheet keeps it reachable at the end for rename.
-                compositionSection
-                frontMatterSection
+                // #309: mirror the macOS manager's order — collection name + metadata first, then
+                // the default-template presets + the three composition groups, then the smart link.
+                // (The canvas also edits the name via the toolbar title; the sheet now leads with it.)
                 nameSection
                 noteSection
+                frontMatterSection
+                compositionSection
                 smartCollectionSection
             }
             .formStyle(.grouped)

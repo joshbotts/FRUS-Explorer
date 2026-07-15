@@ -320,7 +320,7 @@ struct CrossReferenceGraphTests {
         let centralKey = "vol1/d0"
 
         // Build a graph that already has extendedEdges (simulating what expandedGraph returns).
-        var baseGraph = makeTestGraph(inboundCount: 2, outboundCount: 2)
+        let baseGraph = makeTestGraph(inboundCount: 2, outboundCount: 2)
 
         // Manually add an extended edge connecting an inbound node to a new 2nd-degree node.
         let extEdge = CrossReferenceEdge(

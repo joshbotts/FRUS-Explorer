@@ -233,6 +233,14 @@ struct CollectionListView: View {
                     .onTapGesture { collectionToEdit = collection }
                     .contextMenu {
                         Button {
+                            _ = collection.duplicate(in: modelContext)
+                            try? modelContext.save()
+                        } label: {
+                            Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
+                                  systemImage: "plus.square.on.square")
+                        }
+                        Divider()
+                        Button {
                             appState.pendingWordCloud = .collection(id: collection.id)
                         } label: {
                             Label { Text(String(localized: "collection.wordCloud",

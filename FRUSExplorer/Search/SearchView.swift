@@ -423,6 +423,7 @@ struct SearchView: View {
             filterButton
             timelineButton
             checklistButton
+            sortMenu
             Spacer()
             moreMenu
         }
@@ -431,6 +432,29 @@ struct SearchView: View {
         .padding(.vertical, 8)
         .background(.bar)
         .overlay(alignment: .bottom) { Divider() }
+    }
+
+    /// Sort control (#305): a compact menu to reorder results by relevance or document date, ported
+    /// from the macOS sort bar. The icon fills when a non-default order is active.
+    private var sortMenu: some View {
+        Menu {
+            Picker(String(localized: "search.sort.title", defaultValue: "Sort results"),
+                   selection: Binding(get: { vm.sortOrder }, set: { vm.sortOrder = $0 })) {
+                ForEach(SearchSortOrder.allCases, id: \.self) { order in
+                    Text(order.label).tag(order)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label(String(localized: "search.sort.title", defaultValue: "Sort results"),
+                  systemImage: vm.sortOrder == .relevance
+                      ? "arrow.up.arrow.down"
+                      : "arrow.up.arrow.down.circle.fill")
+                .labelStyle(.iconOnly)
+        }
+        .disabled(vm.results.isEmpty)
+        .accessibilityLabel(String(localized: "search.sort.a11y", defaultValue: "Sort results"))
+        .accessibilityValue(vm.sortOrder.label)
     }
     #endif
 

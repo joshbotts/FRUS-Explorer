@@ -2082,7 +2082,10 @@ struct CollectionTests {
 
         // Rich introduction wins over the plain projection.
         let richNS = NSAttributedString(string: "Rich introduction.")
-        coll.introductionRichText = try #require(ProseRichText.rtfData(from: richNS))
+        // Bind through an explicit `Data` so #require actually unwraps: assigning straight
+        // into the `Data?` property let T infer as `Data?`, so the macro asserted nothing.
+        let richRTF: Data = try #require(ProseRichText.rtfData(from: richNS))
+        coll.introductionRichText = richRTF
         let rich = try await resolver.resolve(
             collection: coll, entries: [heading], allNotes: [], purpose: .preview)
         if case .prose(let rtf) = rich[0] {

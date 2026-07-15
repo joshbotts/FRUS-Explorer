@@ -315,7 +315,7 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         guard let json = try? JSONEncoder().encode(dtos),
               let jsonStr = String(data: json, encoding: .utf8) else { return }
         let script = "if(window.FRUSHighlights){window.FRUSHighlights.render(\(jsonStr))}"
-        try? await webView.evaluateJavaScript(script)
+        _ = try? await webView.evaluateJavaScript(script)
 
         #if DEBUG
         let staleCount = dtos.filter { $0.isStale }.count

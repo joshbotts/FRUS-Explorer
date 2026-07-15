@@ -405,7 +405,6 @@ public struct FRUSRenderNodeHTMLSerializer {
     mark.hl-green    { background: rgba( 80,200, 80,0.35); color: inherit; }
     mark.hl-blue     { background: rgba( 80,150,240,0.35); color: inherit; }
     mark.hl-pink     { background: rgba(240, 80,160,0.30); color: inherit; }
-    mark.hl-orange   { background: rgba(255,160, 30,0.40); color: inherit; }
     """
 
     /// Renders a traditional numbered footnote section for visible display below

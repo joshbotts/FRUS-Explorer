@@ -307,6 +307,23 @@ public actor CrossReferenceStore {
         return result
     }
 
+    /// Returns the subset of `keys` present in `document_cache` — the documents actually indexed
+    /// locally, regardless of whether they carry a `<head>`. Editorial notes are indexed but
+    /// headerless, so their header is nil even when downloaded; membership here is the true
+    /// "is this document indexed?" signal, distinct from a citation into an un-downloaded volume
+    /// (#278). Keyed `"volumeId/documentId"`.
+    public func indexedDocumentKeys(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> Set<String> {
+        var result: Set<String> = []
+        for (vol, doc) in keys {
+            if try fetchMetadata(volumeId: vol, documentId: doc) != nil {
+                result.insert("\(vol)/\(doc)")
+            }
+        }
+        return result
+    }
+
     /// Returns every `(volumeId, documentId, userTagIds)` tuple where `document_cache`
     /// has at least one user tag stored in the `user_tag_ids` column.
     ///
@@ -785,7 +802,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
@@ -814,7 +831,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
@@ -843,7 +860,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [Int] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
@@ -888,7 +905,7 @@ public actor CrossReferenceStore {
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var col = Self.bindDateRange(yearRange, to: stmt, from: 1)
+        let col = Self.bindDateRange(yearRange, to: stmt, from: 1)
         _ = Self.bindVolumeScope(scope, to: stmt, from: col)
         var result: [(source: DocumentNodeKey, target: DocumentNodeKey)] = []
         while sqlite3_step(stmt) == SQLITE_ROW {

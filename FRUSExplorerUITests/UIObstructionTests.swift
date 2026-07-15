@@ -13,13 +13,19 @@ import UIKit
 
 /// UI tests verifying that composed views do not obstruct interactive content.
 ///
-/// Four obstruction scenarios are exercised:
+/// Five obstruction scenarios are exercised:
 ///   1. Tab bar (bottom) — does not cover the last row in a browser list
 ///   2. Breadcrumb bar (top safeAreaInset) — does not cover the first row of a pushed view
 ///   3. Software keyboard — does not cover the citation lookup field in CitationLookupView
 ///   4. iPad `.sidebarAdaptable` representations — Browse content stays reachable in BOTH
 ///      the leading-sidebar and floating-top-tab-bar representations, asserted before and
 ///      after a live toggle (#238)
+///   5. The same for Research content (#272)
+///
+/// Scenarios 4 and 5 cover each tab's ROOT list only. Neither covers the pushed level: both
+/// drill-ins were found to assert nothing and were removed — see the notes in each. Restoring
+/// that coverage needs its own investigation (a Cell tap does not activate a SwiftUI List row
+/// here), and a false-green is worse than a documented gap.
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
@@ -49,6 +55,29 @@ import UIKit
 ///          trivially hittable). A single blind toggle could otherwise assert only the
 ///          never-broken sidebar mode when a prior aborted run leaked the persisted
 ///          representation.
+///   1.4 — #272: added scenario 5 (Research counterpart to scenario 4); `selectBrowseSection`
+///          generalised to `selectSection(_:)`, which also fixes scenario 3 on iPad (it
+///          hardcoded `app.tabBars`, matching only the iPhone bottom bar, so it failed on
+///          every iPad destination).
+///   1.5 — Adversarial review of scenario 5: it was green for the wrong reasons twice over.
+///          (a) It re-selected the tab after the toggle; in the sidebar representation
+///          `app.buttons["Research"]` does not exist, so `selectSection` fell through to the
+///          sidebar's tab CELL, and tapping that collapsed the sidebar — both blocks then
+///          asserted the floating-top-tab-bar representation and the sidebar was never tested.
+///          Removed (the tab selection survives the switch, which is why scenario 4 never
+///          re-selected). (b) Its drill-in oracle, `app.staticTexts["All Research Documents"]`,
+///          also matches the stack root's own row, so it passed with no push having happened;
+///          with a sound oracle the step proved unreliable in-suite, so the drill-in was
+///          removed rather than left as a false-green. The root-content assertions now genuinely
+///          run in BOTH representations.
+///   1.6 — The same audit applied to scenario 4's drill-in, which had the identical defect and
+///          predates scenario 5: it asserted `app.cells.firstMatch` — the naked query
+///          `corpusContentCell` exists to avoid — which matches the un-pushed list, so it passed
+///          without navigating. Measured on iPad: after the tap `backButton=false` and the nav
+///          bar stayed "FRUS Corpus" (no push), yet the assertion reported true; repeated taps
+///          did not push either. Root cause (shared with scenario 5): an XCUITest tap on a
+///          SwiftUI List row's Cell element does not activate the Button inside it. Removed;
+///          the pushed level is now an explicit, documented gap in both scenarios.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -84,35 +113,41 @@ final class UIObstructionTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Selects the Browse section, resolving the control across the iPhone bottom tab bar
+    /// Selects a tab section by label, resolving the control across the iPhone bottom tab bar
     /// and the iPad `.sidebarAdaptable` sidebar / floating-top-tab-bar representations
     /// (where the tab items surface as buttons, sidebar cells, or plain labelled elements
     /// depending on the representation). Fails the test (rather than silently skipping, as
-    /// the earlier `if browseTab.exists` guards did on iPad) when no Browse control can be
+    /// the earlier `if browseTab.exists` guards did on iPad) when no control can be
     /// found — and dumps the element tree so the failure describes what it actually saw.
+    ///
+    /// - Parameter label: The tab's label, e.g. "Browse", "Search", "Research".
     @discardableResult
-    private func selectBrowseSection() -> Bool {
+    private func selectSection(_ label: String) -> Bool {
         // Every candidate is resolved with .firstMatch: some representations expose more
-        // than one element labelled "Browse" (e.g. the collapsed top bar plus the sidebar
+        // than one element with the tab's label (e.g. the collapsed top bar plus the sidebar
         // row mid-transition), and tapping an ambiguous element fails with
         // "multiple matching elements found".
         let candidates = [
-            app.tabBars.firstMatch.buttons["Browse"].firstMatch,
-            app.buttons["Browse"].firstMatch,
-            app.cells["Browse"].firstMatch,
-            app.cells.containing(NSPredicate(format: "label CONTAINS[c] 'Browse'")).firstMatch,
+            app.tabBars.firstMatch.buttons[label].firstMatch,
+            app.buttons[label].firstMatch,
+            app.cells[label].firstMatch,
+            app.cells.containing(NSPredicate(format: "label CONTAINS[c] %@", label)).firstMatch,
             app.descendants(matching: .any).matching(
-                NSPredicate(format: "label == 'Browse'")).firstMatch,
+                NSPredicate(format: "label == %@", label)).firstMatch,
         ]
         for control in candidates where control.waitForExistence(timeout: 3) {
             control.tap()
             return true
         }
-        print("[UIObstructionTests] Browse control not found; element tree:\n\(app.debugDescription)")
-        XCTFail("Could not find a 'Browse' control in any tab-bar / sidebar representation "
+        print("[UIObstructionTests] \(label) control not found; element tree:\n\(app.debugDescription)")
+        XCTFail("Could not find a '\(label)' control in any tab-bar / sidebar representation "
                 + "(element tree printed to the test log)")
         return false
     }
+
+    /// Selects the Browse section. Thin wrapper over `selectSection(_:)`.
+    @discardableResult
+    private func selectBrowseSection() -> Bool { selectSection("Browse") }
 
     /// The OS-provided control that toggles the `.sidebarAdaptable` TabView between its
     /// leading-sidebar and floating-top-tab-bar representations. On iPadOS 26 it carries the
@@ -226,13 +261,11 @@ final class UIObstructionTests: XCTestCase {
     /// (`SettingsProjectsPane`). Citation Lookup exercises the same `Form`-based
     /// keyboard-avoidance mechanism and is reachable with no preconditions.
     func testKeyboardDoesNotCoverCitationLookupField() throws {
-        // Navigate to the Search tab.
-        let searchTab = app.tabBars.firstMatch.buttons["Search"]
-        XCTAssertTrue(
-            searchTab.waitForExistence(timeout: 5),
-            "Search tab bar item not found"
-        )
-        searchTab.tap()
+        // Navigate to the Search tab. Resolved through selectSection so this works on iPad
+        // too: `app.tabBars` only matches the iPhone bottom tab bar, so hardcoding it failed
+        // on every iPad destination with "Search tab bar item not found" — the
+        // .sidebarAdaptable representations surface tabs as sidebar cells / top-bar buttons.
+        selectSection("Search")
 
         // "Find by citation" lives in the "More search actions" overflow menu.
         let moreActions = app.buttons["More search actions"]
@@ -345,19 +378,130 @@ final class UIObstructionTests: XCTestCase {
                 + "chrome may be overlaying content (#238)"
         )
 
-        // Drill one level in (still representation B); the pushed level's content must also
-        // be reachable. The subseries row label is "Subseries <id>, N volumes"; the pushed
-        // SubseriesView lists volume rows.
-        corpusContentCell.tap()
-        let pushedFirstCell = app.cells.firstMatch
+        // NOTE — the drill-in that used to live here was REMOVED: it asserted nothing.
+        // It did `corpusContentCell.tap()` and then asserted `app.cells.firstMatch` — the exact
+        // naked query `corpusContentCell` above exists to avoid. That query matches the
+        // *un-pushed* corpus list (and, in the sidebar representation, the tab rows themselves),
+        // so it passed whether or not the tap navigated. Instrumented on iPad Pro 13-inch (M5):
+        // after the tap, `backButton=false` and the nav bar stayed "FRUS Corpus" — i.e. NO push
+        // ever happened — while the old assertion still reported true. Repeated taps (2nd, 3rd)
+        // did not push either.
+        //
+        // Do not restore it naively. `corpusContentCell.tap()` does not activate the row: an
+        // XCUITest tap on a SwiftUI List row's Cell element does not trigger the Button inside
+        // it here (the same behaviour was measured independently for Research in scenario 5).
+        // Covering the pushed level needs its own investigation into the right tap target and a
+        // sound oracle (the pushed SubseriesView sets `.navigationTitle(group.subseries)`, so a
+        // navigationBars title change or a BackButton is the signal — never `app.cells`).
+        // The four assertions above are the real #238 regression gate and are unaffected.
+    }
+
+    // MARK: - 5. iPad tab-bar representations do not obstruct Research content
+
+    /// A Research **content** row — the synthetic "All Research Documents" entry, which
+    /// `ResearchView`'s sidebar always emits regardless of how much user data exists, so this
+    /// asserts on real content on a fresh install.
+    ///
+    /// As with `corpusContentCell`, this deliberately does NOT use `app.cells.firstMatch`: the
+    /// `.sidebarAdaptable` sidebar representation exposes the tab rows themselves as cells, and
+    /// those are trivially hittable — an obstruction assertion against them would pass without
+    /// testing content at all.
+    private var researchContentCell: XCUIElement {
+        app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+    }
+
+    /// Pops the Research tab's `NavigationStack` back to its category-list root if it is not
+    /// already there.
+    ///
+    /// Needed because `selectedItem` defaults to `.allNotes` and #272's `researchNavigationPath`
+    /// projects `selectedItem` into the stack path — so the tab launches with a non-empty path
+    /// and auto-pushes into the "All Research Documents" list, leaving the category root behind a
+    /// Back button. Tolerating both shapes keeps this test valid whichever way that lands.
+    private func popToResearchRoot() {
+        let back = app.buttons["BackButton"]
+        if back.waitForExistence(timeout: 3) {
+            back.tap()
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+    }
+
+    /// Scenario 4's counterpart for the Research tab (#272 — the #238 class of bug).
+    ///
+    /// `ResearchView` nested a `NavigationSplitView` inside the `.sidebarAdaptable` TabView, so
+    /// in the collapsed floating-top-tab-bar representation the detail column mis-computed its
+    /// top safe area and overlaid content that could not be scrolled into view. iOS now
+    /// flattens Research to a `NavigationStack` (category list as the stack root, document list
+    /// pushed on selection), mirroring BrowserView's fix.
+    ///
+    /// Same rationale as scenario 4: the representation is system-persisted and the OS toggle is
+    /// direction-blind, so this asserts in the launch representation, toggles, and asserts again
+    /// — both modes are exercised whichever one the install launched in. iPad-only; restores the
+    /// representation in `tearDown`.
+    func testBothTabBarRepresentationsDoNotObstructResearchContent() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: exercises the .sidebarAdaptable representations"
+        )
+        #else
+        throw XCTSkip("iPad-only test")
+        #endif
+
+        guard let toggle = sidebarToggleButton(), toggle.waitForExistence(timeout: 5) else {
+            throw XCTSkip("Could not locate the system sidebar/tab-bar toggle on this iPadOS version")
+        }
+
+        // Representation A — whatever the install launched in.
+        selectSection("Research")
+        popToResearchRoot()
         XCTAssertTrue(
-            pushedFirstCell.waitForExistence(timeout: 5),
-            "Pushed browser level cells did not appear after the representation toggle"
+            researchContentCell.waitForExistence(timeout: 10),
+            "Research category rows did not appear in the launch representation"
+        )
+        app.swipeDown(velocity: .fast) // ensure we are scrolled to the top
+        XCTAssertTrue(
+            researchContentCell.isHittable,
+            "'All Research Documents' row is not hittable in the launch tab-bar representation — "
+                + "chrome may be overlaying content (#272)"
+        )
+
+        // Representation B — toggle and re-assert. The bug is transition-sensitive: the size
+        // class stays .regular, so the tab's content never re-evaluates its layout on the switch.
+        print("[UIObstructionTests] Tapping representation toggle: label='\(toggle.label)' id='\(toggle.identifier)'")
+        toggle.tap()
+        didToggleSidebar = true
+        Thread.sleep(forTimeInterval: 0.7)
+
+        // Do NOT re-select the tab here. The tab selection survives the representation switch
+        // (Research stays `Selected`), and in the sidebar representation `app.buttons["Research"]`
+        // does not exist — so selectSection would fall through to the sidebar's "Research" tab
+        // CELL, and tapping that collapses the sidebar straight back to the floating top tab bar.
+        // Both blocks would then assert the SAME representation and the sidebar would never be
+        // tested. Scenario 4 does not re-select for exactly this reason.
+        XCTAssertTrue(
+            researchContentCell.waitForExistence(timeout: 10),
+            "Research category rows did not appear after toggling the tab-bar representation"
         )
         app.swipeDown(velocity: .fast)
         XCTAssertTrue(
-            app.cells.firstMatch.isHittable,
-            "First row of the pushed Browse level is not hittable after the representation toggle (#238)"
+            researchContentCell.isHittable,
+            "'All Research Documents' row is not hittable after toggling the tab-bar "
+                + "representation — chrome may be overlaying content (#272)"
         )
+
+        // NOTE — no drill-in step here, deliberately. The pushed detail is NOT covered, and a
+        // check for it must not be added back naively:
+        //   * The original oracle, `app.staticTexts["All Research Documents"]`, was VACUOUS: the
+        //     stack root's own row renders that identical string, so the query matched before the
+        //     tap — waitForExistence returned instantly and the step passed without any push.
+        //   * With a sound oracle (`app.navigationBars["All Research Documents"]`, which exists
+        //     only once the detail is pushed) the step proved unreliable in-suite: the tap does
+        //     not consistently drive the push after the preceding swipe, in either a Cell tap or
+        //     a row-button tap, with or without a settle delay.
+        //   * The app itself is fine — an instrumented probe (tap row -> assert navigationBar,
+        //     no preceding swipe) pushes reliably. This is a harness problem, not a #272 bug.
+        // Covering the pushed detail needs its own investigation; a false-green is worse than a
+        // documented gap, so the root-content assertions above stand alone for now.
     }
 }

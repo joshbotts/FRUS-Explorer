@@ -113,7 +113,7 @@ struct DownloadManagerTests {
             await dm.enqueueDownload(volumeId: "frus1969-76v01", downloadUrl: "https://example.com/frus1969-76v01.xml")
 
             // Poll until the file appears (download is async).
-            let dest = await dm.volumeURL(for: "frus1969-76v01")
+            let dest = dm.volumeURL(for: "frus1969-76v01")
             var attempts = 0
             while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
                 try await Task.sleep(for: .milliseconds(20))
@@ -157,17 +157,17 @@ struct DownloadManagerTests {
                 downloadTask: makeMockDownloadTask(),
                 onStateChanged: { _ in }
             )
-            #expect(await dm.isVolumeDownloaded("frus1969-76v01") == false)
+            #expect(dm.isVolumeDownloaded("frus1969-76v01") == false)
             await dm.resumeQueuedDownloads()
             await dm.enqueueDownload(volumeId: "frus1969-76v01", downloadUrl: "https://example.com/frus1969-76v01.xml")
 
-            let dest = await dm.volumeURL(for: "frus1969-76v01")
+            let dest = dm.volumeURL(for: "frus1969-76v01")
             var attempts = 0
             while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
                 try await Task.sleep(for: .milliseconds(20))
                 attempts += 1
             }
-            #expect(await dm.isVolumeDownloaded("frus1969-76v01") == true)
+            #expect(dm.isVolumeDownloaded("frus1969-76v01") == true)
         }
     }
 
@@ -206,7 +206,7 @@ struct DownloadManagerTests {
             await dm.enqueueDownload(volumeId: "frus1969-76v01", downloadUrl: "https://example.com/frus1969-76v01.xml")
             await dm.resumeQueuedDownloads()
 
-            let dest = await dm.volumeURL(for: "frus1969-76v01")
+            let dest = dm.volumeURL(for: "frus1969-76v01")
             var attempts = 0
             while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
                 try await Task.sleep(for: .milliseconds(20))
@@ -308,9 +308,9 @@ struct DownloadManagerTests {
                 downloadTask: makeMockDownloadTask(),
                 onStateChanged: { _ in }
             )
-            #expect(await dm.isVolumeDownloaded("frus1969-76v01") == true)
+            #expect(dm.isVolumeDownloaded("frus1969-76v01") == true)
             try await dm.deleteVolume(volumeId: "frus1969-76v01")
-            #expect(await dm.isVolumeDownloaded("frus1969-76v01") == false)
+            #expect(dm.isVolumeDownloaded("frus1969-76v01") == false)
         }
     }
 
@@ -412,7 +412,7 @@ struct DownloadManagerTests {
             await dm.resumeQueuedDownloads()
             await dm.enqueueDownload(volumeId: "frus1969-76v01", downloadUrl: "https://example.com/frus1969-76v01.xml")
 
-            let dest = await dm.volumeURL(for: "frus1969-76v01")
+            let dest = dm.volumeURL(for: "frus1969-76v01")
             var attempts = 0
             while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
                 try await Task.sleep(for: .milliseconds(20))
@@ -529,7 +529,7 @@ struct DownloadManagerTests {
             await dm.resumeQueuedDownloads()
             await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
 
-            let dest = await dm.volumeURL(for: volumeId)
+            let dest = dm.volumeURL(for: volumeId)
             var attempts = 0
             while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
                 try await Task.sleep(for: .milliseconds(20))
@@ -572,7 +572,7 @@ struct DownloadManagerTests {
             await dm.resumeQueuedDownloads()
             await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
 
-            let dest = await dm.volumeURL(for: volumeId)
+            let dest = dm.volumeURL(for: volumeId)
             var attempts = 0
             while !FileManager.default.fileExists(atPath: dest.path), attempts < 50 {
                 try await Task.sleep(for: .milliseconds(20))

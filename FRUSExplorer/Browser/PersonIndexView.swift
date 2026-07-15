@@ -505,6 +505,14 @@ struct PersonIndexDetailSheet: View {
                     .help(String(localized: "people.detail.findMentions.help",
                                  defaultValue: "Open Search filtered to documents that mention this person"))
 
+                    if displayCount == 0
+                        && !(indexEntry.rollupId == nil && resolvedMentionCount == nil && indexEntry.mentionCount == 0) {
+                        Text(String(localized: "people.detail.findMentions.noMentions",
+                                    defaultValue: "This person has no indexed document mentions to open — they appear only in a volume's front-matter person list."))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
                     if let viaf = effectiveViafId, !viaf.isEmpty,
                        let url = URL(string: "https://viaf.org/viaf/\(viaf)") {
                         Link(destination: url) {

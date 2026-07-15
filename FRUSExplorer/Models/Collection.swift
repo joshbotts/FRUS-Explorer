@@ -782,3 +782,89 @@ extension Collection {
         return all.filter { $0.projectIds.contains(projectId) }
     }
 }
+
+// MARK: - Duplication (#300)
+
+extension Collection {
+    /// Creates an independent, fully-editable deep copy of this collection and inserts it — with a
+    /// copy of every entry and each entry's own headnote draft — into `context`. All composition,
+    /// front-matter, headnote, and smart-link settings are copied; ids are new throughout, so the
+    /// original is untouched and the two share no state (#300). Returns the new collection; the caller
+    /// saves the context.
+    @discardableResult
+    func duplicate(in context: ModelContext) -> Collection {
+        let base = name.isEmpty
+            ? String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
+            : name
+        let copy = Collection(
+            name: String(format: String(localized: "collection.duplicate.name %@",
+                                        defaultValue: "%@ copy"), base),
+            note: note,
+            projectIds: projectIds)
+
+        // Front matter (Authoring Phase 4)
+        copy.subtitle = subtitle
+        copy.authorLine = authorLine
+        copy.introductionText = introductionText
+        copy.introductionRichText = introductionRichText
+        copy.includeColophon = includeColophon
+
+        // Smart-collection link
+        copy.savedSearchId = savedSearchId
+
+        // Composition (persisted export-content settings)
+        copy.defaultBodyDepth = defaultBodyDepth
+        copy.footnoteStyle = footnoteStyle
+        copy.includeFootnotes = includeFootnotes
+        copy.includeSourceNote = includeSourceNote
+        copy.tocStyle = tocStyle
+        copy.applyHighlights = applyHighlights
+        copy.includeNotes = includeNotes
+        copy.includeWordCloud = includeWordCloud
+        copy.defaultIncludeHeadnote = defaultIncludeHeadnote
+        copy.summaryPromptId = summaryPromptId
+
+        context.insert(copy)
+
+        // Deep-copy every entry in order, preserving all per-entry overrides.
+        for entry in (documentEntries ?? []).sorted(by: { $0.sortOrder < $1.sortOrder }) {
+            let e = CollectionEntry(
+                collectionId: copy.id,
+                documentId: entry.documentId,
+                volumeId: entry.volumeId,
+                sortOrder: entry.sortOrder,
+                researchNoteId: entry.researchNoteId,
+                selectedNoteIds: entry.selectedNoteIds)
+            e.collection = copy
+            e.titleOverride = entry.titleOverride
+            e.level = entry.level
+            e.kind = entry.kind
+            e.text = entry.text
+            e.richText = entry.richText
+            e.bodyDepthOverride = entry.bodyDepthOverride
+            e.applyHighlightsOverride = entry.applyHighlightsOverride
+            e.includeNotesOverride = entry.includeNotesOverride
+            e.includeSourceNoteOverride = entry.includeSourceNoteOverride
+            e.includeFootnotesOverride = entry.includeFootnotesOverride
+            e.summaryPromptIdOverride = entry.summaryPromptIdOverride
+            e.selectedHighlightIds = entry.selectedHighlightIds
+            e.includeRelatedDocuments = entry.includeRelatedDocuments
+            e.includeHeadnote = entry.includeHeadnote
+            e.headnoteSummaryId = entry.headnoteSummaryId
+            e.generatedBlockType = entry.generatedBlockType
+            e.excerptStart = entry.excerptStart
+            e.excerptEnd = entry.excerptEnd
+            e.excerptRenderingVersion = entry.excerptRenderingVersion
+            e.excerptColorTag = entry.excerptColorTag
+            context.insert(e)
+            // Give the copy its own headnote draft (remaps headnoteSummaryId when the source's is a
+            // draft; a real document summary stays shared). #300 full-independence.
+            GeneratedSummary.duplicateHeadnoteDraft(from: entry, to: e, in: context)
+        }
+
+        #if DEBUG
+        print("[Collection] Duplicated \(id) → \(copy.id) with \(documentEntries?.count ?? 0) entries")
+        #endif
+        return copy
+    }
+}

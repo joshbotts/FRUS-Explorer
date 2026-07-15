@@ -160,7 +160,7 @@ struct SummarizationUITests {
     func seederInsertsStandardPromptsOnce() async throws {
         let container = try ModelContainer.makeTestContainer()
 
-        await SummarizationPromptSeeder.seed(in: container)
+        SummarizationPromptSeeder.seed(in: container)
 
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<SummarizationPrompt>(
@@ -170,7 +170,7 @@ struct SummarizationUITests {
         #expect(afterFirst.count == SummarizationPromptSeeder.standardTemplates.count)
 
         // Second call must not duplicate
-        await SummarizationPromptSeeder.seed(in: container)
+        SummarizationPromptSeeder.seed(in: container)
         let afterSecond = try context.fetch(descriptor)
         #expect(afterSecond.count == afterFirst.count)
     }

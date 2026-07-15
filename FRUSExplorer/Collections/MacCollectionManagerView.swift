@@ -535,6 +535,7 @@ private struct MacManageCollectionsSheet: View {
 /// One editable row in the Manage Collections sheet: an inline rename field + the document count.
 private struct ManageCollectionRow: View {
     @Bindable var collection: Collection
+    @Environment(\.modelContext) private var modelContext
     /// Opens a word cloud for this collection (rehomed from the removed sidebar context menu).
     let onWordCloud: () -> Void
     /// Snapshots this smart collection into a static one; `nil` for a non-smart collection.
@@ -552,6 +553,14 @@ private struct ManageCollectionRow: View {
         }
         .padding(.vertical, 2)
         .contextMenu {
+            Button {
+                _ = collection.duplicate(in: modelContext)
+                try? modelContext.save()
+            } label: {
+                Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
+                      systemImage: "plus.square.on.square")
+            }
+            Divider()
             Button(action: onWordCloud) {
                 Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
                     icon: { Image(systemName: WordCloudGlyph.symbol) }

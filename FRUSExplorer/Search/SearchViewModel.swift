@@ -216,6 +216,38 @@ final class SearchViewModel {
     var searchError: String? = nil
     var hasSearched: Bool = false
 
+    // MARK: - Sorting (#305)
+
+    /// Result ordering. `relevance` = FTS5 BM25 (as returned); the date orders use `dateISO`.
+    /// Changing it resets to the first page so the user sees the top of the re-sorted list.
+    var sortOrder: SearchSortOrder = .relevance {
+        didSet { if sortOrder != oldValue { currentPage = 0 } }
+    }
+
+    /// `results` ordered by `sortOrder`. Date sorting uses the structured `dateISO` value
+    /// (`yyyy-MM-dd`); undated rows go last in both directions and ISO-date ties break by BM25
+    /// (more relevant first). Mirrors `MacSearchViewModel.allSortedResults`.
+    var sortedResults: [SearchResult] {
+        switch sortOrder {
+        case .relevance:      return results
+        case .dateAscending:  return results.sorted { Self.dateOrder($0, $1, ascending: true) }
+        case .dateDescending: return results.sorted { Self.dateOrder($0, $1, ascending: false) }
+        }
+    }
+
+    /// Tuple comparator for date-asc / date-desc: undated rows always last; ISO-date ties break by
+    /// BM25 (lower = more relevant first).
+    private static func dateOrder(_ lhs: SearchResult, _ rhs: SearchResult, ascending: Bool) -> Bool {
+        switch (lhs.dateISO, rhs.dateISO) {
+        case let (a?, b?):
+            if a == b { return lhs.bm25Score < rhs.bm25Score }
+            return ascending ? a < b : a > b
+        case (.some, .none): return true
+        case (.none, .some): return false
+        case (.none, .none): return lhs.bm25Score < rhs.bm25Score
+        }
+    }
+
     // MARK: - Checklist Mode (#189-D)
 
     /// True when checklist mode is active. Session-scoped; not persisted (resets on relaunch).
@@ -250,12 +282,12 @@ final class SearchViewModel {
         checklistMode ? readSinceEnabledKeys.union(markedReviewedKeys) : []
     }
 
-    /// `results` minus reviewed docs when checklist mode is on. All display-time page math pages
-    /// over this array, so the slice, count, and page index stay in sync.
+    /// `sortedResults` minus reviewed docs when checklist mode is on. All display-time page math
+    /// pages over this array, so the slice, count, and page index stay in sync.
     var displayedResults: [SearchResult] {
         let hidden = hiddenReviewedKeys
-        guard !hidden.isEmpty else { return results }
-        return results.filter { !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)) }
+        guard !hidden.isEmpty else { return sortedResults }
+        return sortedResults.filter { !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)) }
     }
 
     /// Enables/disables checklist mode. Enabling stamps the anchor time and clears prior marks;
