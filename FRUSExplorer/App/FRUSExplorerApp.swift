@@ -52,24 +52,51 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///    c. If online, `resumeQueuedDownloads()` is called to continue any persisted queue.
 /// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
-/// ## Window Architecture (macOS)
+/// ## Window Architecture
+/// Counted from this file's scene body, 2026-07-15 (#241). **Keep this table in sync when
+/// adding a scene** — it drifted before (six scenes missing, and planning docs quoted "~17"
+/// macOS scenes against an actual 21), and `Planning/241-iPad-Windowing-Investigation.md`
+/// depends on it being true.
+///
+/// **Shared:** the default `WindowGroup` main window (onboarding → `MainTabView` on iOS,
+/// `MainWindowView` on macOS), plus `archivalNeighborsScene`, declared once and referenced
+/// from both platform regions.
+///
+/// **iOS auxiliary scenes (4)** — all `WindowGroup`; iPad Stage Manager only (`openWindow`
+/// is a no-op elsewhere, so every caller keeps a sheet/inline fallback):
+/// | Scene                           | Type          | State source                                     |
+/// |---------------------------------|---------------|--------------------------------------------------|
+/// | (`DocumentWindowID`)            | WindowGroup   | Value-based — restores correctly                 |
+/// | `"frus.sourceExplorer.ios"`     | WindowGroup   | Pending state (`currentSourceNote` + 5 siblings) — restores EMPTY |
+/// | `"frus.crossReferenceGraph.ios"`| WindowGroup   | Pending state (`currentGraphEntry`) — restores EMPTY |
+/// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Value-based — restores correctly (#241 port)     |
+///
+/// **macOS auxiliary scenes (21)** — 17 singleton `Window`, 3 `WindowGroup`, 1 `Settings`.
+/// `SwiftUI.Window` is `@available(iOS, unavailable)`, which is why no singleton scene below
+/// can port to iPad as-is; each would become a `WindowGroup` (#241 §3):
 /// | Scene ID                        | Type          | Purpose                                          |
 /// |---------------------------------|---------------|--------------------------------------------------|
-/// | (default `WindowGroup`)         | WindowGroup   | Main document window (onboarding → main UI)      |
+/// | (`DocumentWindowID`)            | WindowGroup   | Document windows — native tabbing                |
 /// | `"frus.search"`                 | Window        | Full-text search — persists while reading docs   |
 /// | `"frus.citationLookup"`         | Window        | Citation lookup (⌘⇧F) — the other find flow      |
 /// | `"frus.corpusBrowser"`          | Window        | Corpus browser — independent browsable window    |
 /// | `"frus.people"`                 | Window        | Cross-volume person index (B5)                   |
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
-/// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
+/// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
+/// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
 /// | `"frus.crossRefAnalytics"`      | Window        | Cross-reference analytics — in-degree, distribution, heat matrix, PageRank |
+/// | `"frus.wordcloud"`              | Window        | Word cloud (note the lowercase `c`)              |
+/// | `"frus.chronology"`             | Window        | Chronology                                       |
+/// | `"frus.research"`               | Window        | Research — notes, tags, collections, highlights  |
+/// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
+/// | `"frus.noteComposer"`           | Window        | Note composer                                    |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
+/// | (`Settings`)                    | Settings      | Settings scene (`FRUSSettingsView`)              |
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
-/// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
-/// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
+/// | `"frus.researchGuide"`          | Window        | FRUS Research Guide                              |
 ///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
@@ -441,6 +468,7 @@ struct FRUSExplorerApp: App {
             .environment(appState)
             .modelContainer(modelContainer)
         }
+        .defaultSize(width: 820, height: 680)
 
         // MARK: - Source Explorer Window (iPadOS Stage Manager)
         //
@@ -482,6 +510,7 @@ struct FRUSExplorerApp: App {
             .environment(appState)
             .modelContainer(modelContainer)
         }
+        .defaultSize(width: 700, height: 560)
 
         // MARK: - Cross-Reference Graph Window (iPadOS Stage Manager)
         //
@@ -521,6 +550,15 @@ struct FRUSExplorerApp: App {
             .environment(appState)
             .modelContainer(modelContainer)
         }
+        .defaultSize(width: 900, height: 640)
+
+        // MARK: - Archival Neighbors Window (iPadOS Stage Manager, #241)
+        //
+        // The first macOS aux window ported to iPad (#241 Session R). Shares the exact
+        // scene declaration with macOS — see `archivalNeighborsScene` for why this one
+        // ports cleanly (value-based, restores by construction) while the two
+        // pending-state scenes above do not.
+        archivalNeighborsScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -623,38 +661,7 @@ struct FRUSExplorerApp: App {
         // MARK: - Archival Neighbors Window (Source Explorer Phase 5, S6)
         //
         // Owner decision S6 (Source-Explorer-Provenance-Scope.md / UI audit B1):
-        // Archival Neighbors is a WINDOW on macOS, not a sheet — the result is a
-        // work list the researcher steps through, and a sheet dies on the first
-        // navigation. Value-based `WindowGroup(for:)`: the Codable+Hashable
-        // `ArchivalNeighborsRequest` fully describes the query (all four shapes
-        // resolve through appState.indexingPipeline), so the fetch is reconstructed
-        // from the value inside the window — no pending-state hand-off — and SwiftUI
-        // restores the window across relaunches by re-running the cheap local query.
-        // Reuse semantics: `openWindow(value:)` focuses the existing window for an
-        // equal request and opens a new one otherwise — one window per distinct
-        // archival source, browsable side by side next to the reading window. Row
-        // taps hand the document to the main window via `pendingBrowseDocument`;
-        // this window stays open. iOS keeps its `.sheet` presentations.
-        WindowGroup(for: ArchivalNeighborsRequest.self) { $request in
-            Group {
-                if let request {
-                    ArchivalNeighborsWindowView(request: request)
-                } else {
-                    ContentUnavailableView(
-                        String(localized: "archivalNeighbors.window.empty.title",
-                               defaultValue: "No Archival Source"),
-                        systemImage: "archivebox",
-                        description: Text(
-                            String(localized: "archivalNeighbors.window.empty.detail",
-                                   defaultValue: "Open Archival Neighbors from a document, search result, or a volume's Sources list.")
-                        )
-                    )
-                }
-            }
-            .environment(appState)
-            .modelContainer(modelContainer)
-        }
-        .defaultSize(width: 520, height: 560)
+        archivalNeighborsScene
 
         // MARK: - Cross-Volume Provenance Window (UI audit B2)
         //
@@ -819,6 +826,54 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 880, height: 620)
         #endif
+    }
+
+    /// The **Archival Neighbors** scene — macOS since Source Explorer Phase 5 (S6), iPad
+    /// with Stage Manager since #241.
+    ///
+    /// Archival Neighbors is a WINDOW, not a sheet: the result is a work list the
+    /// researcher steps through, and a sheet dies on the first navigation. Row taps hand
+    /// the document to the main window via `pendingBrowseDocument` and this window stays
+    /// open beside it.
+    ///
+    /// Value-based `WindowGroup(for:)`: the `Codable + Hashable` `ArchivalNeighborsRequest`
+    /// fully describes the query (all four shapes resolve through
+    /// `appState.indexingPipeline`), so the fetch is reconstructed from the value inside
+    /// the window — no pending-state hand-off — and SwiftUI restores the window across
+    /// relaunches by re-running the cheap local query. That self-sufficiency is exactly
+    /// why #241 ported this scene to iPad first: unlike the `frus.sourceExplorer.ios` /
+    /// `frus.crossReferenceGraph.ios` scenes, which read process-global pending state and
+    /// therefore restore empty, this one restores correctly by construction.
+    ///
+    /// Reuse semantics: `openWindow(value:)` focuses the existing window for an equal
+    /// request and opens a new one otherwise — one window per distinct archival source,
+    /// browsable side by side.
+    ///
+    /// Declared once and referenced from **both** platform regions of `body` (rather than
+    /// hoisted above them) so the macOS Window-menu ordering is unchanged. Callers gate on
+    /// `supportsMultipleWindows` and fall back to the sheet where windows are unavailable
+    /// (iPhone, iPads without Stage Manager).
+    private var archivalNeighborsScene: some Scene {
+        WindowGroup(for: ArchivalNeighborsRequest.self) { $request in
+            Group {
+                if let request {
+                    ArchivalNeighborsWindowView(request: request)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "archivalNeighbors.window.empty.title",
+                               defaultValue: "No Archival Source"),
+                        systemImage: "archivebox",
+                        description: Text(
+                            String(localized: "archivalNeighbors.window.empty.detail",
+                                   defaultValue: "Open Archival Neighbors from a document, search result, or a volume's Sources list.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 520, height: 560)
     }
 
     /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.

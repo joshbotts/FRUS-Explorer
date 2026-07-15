@@ -591,19 +591,29 @@ struct ArchivalNeighborsSheet: View {
     }
 }
 
-#if os(macOS)
-
 // MARK: - ArchivalNeighborsWindowView
 
-/// Content for the macOS **Archival Neighbors window** (Source Explorer Phase 5,
-/// owner decision S6): the shared `ArchivalNeighborsContent` under window chrome —
-/// the title names the surface, the subtitle names the archival basis once loaded.
+/// Content for the **Archival Neighbors window** — macOS since Source Explorer Phase 5
+/// (owner decision S6), and iPad with Stage Manager since #241: the shared
+/// `ArchivalNeighborsContent` under window chrome, the title naming the surface and the
+/// subtitle naming the archival basis once loaded.
 ///
 /// A window, not a sheet, because the result is a work list: researchers step
 /// through cross-volume neighbors one by one, and a sheet dies on the first
 /// navigation (the UI audit's B1). Here a row tap hands the document to the main
 /// window (`pendingBrowseDocument`, the established cross-window hand-off) and this
-/// window **stays open** beside it.
+/// window **stays open** beside it. That argument was never macOS-specific — it is why
+/// #241 chose this scene as the first iPad window port.
+///
+/// ## Platform chrome
+/// macOS takes the window's own title bar, so the content renders bare with a min frame.
+/// iPad has no title bar: the content needs a `NavigationStack` to render
+/// `.navigationTitle`/`.navigationSubtitle` in a nav bar (the same wrapper the
+/// `DocumentWindowID` iOS scene applies), and window sizing belongs to the scene's
+/// `.defaultSize`, not to a min frame that would fight Stage Manager's resizing.
+/// `.navigationSubtitle` is iOS 26.0+ — verified against the iPhoneOS 26.5 SDK
+/// swiftinterface, and the app's deployment target clears it — so the chrome needs no
+/// per-platform fork beyond the container.
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-04 (Source Explorer Phase 5 S6): initial implementation
@@ -611,6 +621,9 @@ struct ArchivalNeighborsSheet: View {
 ///          relaunch no longer race app boot — the shared content core now waits on
 ///          `appState.indexingPipeline` (placeholder + `.task(id:)` re-fire) instead
 ///          of rendering a false, permanent "No Archival Neighbors" verdict.
+///   1.2 — #241 Session R: lifted out of `#if os(macOS)` — the same view now backs the
+///          iPad Stage-Manager window scene. iOS wraps it in a `NavigationStack` for
+///          nav-bar chrome; the macOS min frame stays macOS-only.
 struct ArchivalNeighborsWindowView: View {
 
     /// The restorable query description this window presents.
@@ -621,6 +634,16 @@ struct ArchivalNeighborsWindowView: View {
     @State private var basis: String? = nil
 
     var body: some View {
+        #if os(iOS)
+        // iPad windows have no title bar of their own — the nav bar is the chrome.
+        NavigationStack { neighborsContent }
+        #else
+        neighborsContent
+        #endif
+    }
+
+    /// The shared content core under its title/subtitle chrome, container-agnostic.
+    private var neighborsContent: some View {
         ArchivalNeighborsContent(
             appState: appState,
             defaultScope: request.defaultScope,
@@ -634,8 +657,8 @@ struct ArchivalNeighborsWindowView: View {
         .navigationTitle(String(localized: "archivalNeighbors.title",
                                 defaultValue: "Archival Neighbors"))
         .navigationSubtitle(basis ?? "")
+        #if os(macOS)
         .frame(minWidth: 460, minHeight: 380)
+        #endif
     }
 }
-
-#endif // os(macOS)

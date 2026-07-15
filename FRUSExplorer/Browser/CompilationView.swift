@@ -73,9 +73,13 @@ struct CompilationView: View {
     let section: VolumeSection
 
     @Environment(AppState.self) private var appState
-    #if os(macOS)
-    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
+    /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
+    #if os(iOS)
+    /// Gates the neighbors window on iOS: true on Stage-Manager iPads, false on iPhone and
+    /// iPads without it, where the sheet remains the presentation (#241).
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
     /// When set, presents the Archival Neighbors sheet for a document row (iOS only —
@@ -334,21 +338,24 @@ struct CompilationView: View {
                     .buttonStyle(.plain)
                     .contextMenu {
                         Button {
-                            // S6: window on macOS (browsable beside the document);
-                            // sheet on iOS.
-                            #if os(macOS)
+                            // S6/#241: window wherever windows exist (macOS; iPad with
+                            // Stage Manager) so it stays browsable beside the document;
+                            // sheet only where they do not.
+                            #if os(iOS)
+                            guard supportsMultipleWindows else {
+                                archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                                    volumeId:     doc.volumeId,
+                                    documentId:   doc.documentId,
+                                    documentYear: nil
+                                )
+                                return
+                            }
+                            #endif
                             openWindow(value: ArchivalNeighborsRequest.document(
                                 volumeId:     doc.volumeId,
                                 documentId:   doc.documentId,
                                 documentYear: nil
                             ))
-                            #else
-                            archivalNeighborsTarget = ArchivalNeighborsDocKey(
-                                volumeId:     doc.volumeId,
-                                documentId:   doc.documentId,
-                                documentYear: nil
-                            )
-                            #endif
                         } label: {
                             Label(String(localized: "browser.compilation.archivalNeighbors",
                                          defaultValue: "Archival Neighbors…"),

@@ -2,7 +2,12 @@
 
 **Session:** R (deferred from the 233–243 wave; carried forward per the 2026-07-11 issue comment)
 **Date:** 2026-07-15
-**Status:** Investigation complete. Prototype PR (ArchivalNeighbors conversion) follows 2026-07-16.
+**Status:** Investigation complete; the ArchivalNeighbors prototype landed the same day (§5.1's
+recipe, executed — the scene is shared via `archivalNeighborsScene`, the 4 call sites are gated, the
+3 iOS scenes have `.defaultSize`, and the §2 census replaced the stale in-file table). Follow-ups
+filed: #316 (`activeTab` mirroring), #317 (pending-state scenes restore empty). Verified: both
+schemes build, iPad launch smoke check passes. **Not yet verified — the review's job (§7):** the
+window-open interaction end-to-end, which needs indexed data to reach a neighbors action.
 **Method note:** Every scene count, availability claim, and state-flow claim in this document was
 derived from the code or the installed SDK at `v2` tip `e2d970b` — not from planning docs or commit
 messages. Where a prior document disagrees with the code, the code-derived number is given and the
@@ -206,6 +211,8 @@ census issue (§6.3).
 ---
 
 ## 6. Latent findings — file as issues, keep out of the PR
+
+*(Both filed 2026-07-15: §6.1 → **#316**, §6.2 → **#317**.)*
 
 ### 6.1 `activeTab` mirroring across iPad main windows (bug, user-reachable today)
 With `UIApplicationSupportsMultipleScenes = YES`, a second main window (App Exposé / Stage Manager)
