@@ -20,8 +20,12 @@ import UIKit
 ///   4. iPad `.sidebarAdaptable` representations — Browse content stays reachable in BOTH
 ///      the leading-sidebar and floating-top-tab-bar representations, asserted before and
 ///      after a live toggle (#238)
-///   5. The same for Research content, at the category-list root (#272). The pushed detail is
-///      NOT covered — see the note in scenario 5.
+///   5. The same for Research content (#272)
+///
+/// Scenarios 4 and 5 cover each tab's ROOT list only. Neither covers the pushed level: both
+/// drill-ins were found to assert nothing and were removed — see the notes in each. Restoring
+/// that coverage needs its own investigation (a Cell tap does not activate a SwiftUI List row
+/// here), and a false-green is worse than a documented gap.
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
@@ -66,6 +70,14 @@ import UIKit
 ///          with a sound oracle the step proved unreliable in-suite, so the drill-in was
 ///          removed rather than left as a false-green. The root-content assertions now genuinely
 ///          run in BOTH representations.
+///   1.6 — The same audit applied to scenario 4's drill-in, which had the identical defect and
+///          predates scenario 5: it asserted `app.cells.firstMatch` — the naked query
+///          `corpusContentCell` exists to avoid — which matches the un-pushed list, so it passed
+///          without navigating. Measured on iPad: after the tap `backButton=false` and the nav
+///          bar stayed "FRUS Corpus" (no push), yet the assertion reported true; repeated taps
+///          did not push either. Root cause (shared with scenario 5): an XCUITest tap on a
+///          SwiftUI List row's Cell element does not activate the Button inside it. Removed;
+///          the pushed level is now an explicit, documented gap in both scenarios.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -366,20 +378,22 @@ final class UIObstructionTests: XCTestCase {
                 + "chrome may be overlaying content (#238)"
         )
 
-        // Drill one level in (still representation B); the pushed level's content must also
-        // be reachable. The subseries row label is "Subseries <id>, N volumes"; the pushed
-        // SubseriesView lists volume rows.
-        corpusContentCell.tap()
-        let pushedFirstCell = app.cells.firstMatch
-        XCTAssertTrue(
-            pushedFirstCell.waitForExistence(timeout: 5),
-            "Pushed browser level cells did not appear after the representation toggle"
-        )
-        app.swipeDown(velocity: .fast)
-        XCTAssertTrue(
-            app.cells.firstMatch.isHittable,
-            "First row of the pushed Browse level is not hittable after the representation toggle (#238)"
-        )
+        // NOTE — the drill-in that used to live here was REMOVED: it asserted nothing.
+        // It did `corpusContentCell.tap()` and then asserted `app.cells.firstMatch` — the exact
+        // naked query `corpusContentCell` above exists to avoid. That query matches the
+        // *un-pushed* corpus list (and, in the sidebar representation, the tab rows themselves),
+        // so it passed whether or not the tap navigated. Instrumented on iPad Pro 13-inch (M5):
+        // after the tap, `backButton=false` and the nav bar stayed "FRUS Corpus" — i.e. NO push
+        // ever happened — while the old assertion still reported true. Repeated taps (2nd, 3rd)
+        // did not push either.
+        //
+        // Do not restore it naively. `corpusContentCell.tap()` does not activate the row: an
+        // XCUITest tap on a SwiftUI List row's Cell element does not trigger the Button inside
+        // it here (the same behaviour was measured independently for Research in scenario 5).
+        // Covering the pushed level needs its own investigation into the right tap target and a
+        // sound oracle (the pushed SubseriesView sets `.navigationTitle(group.subseries)`, so a
+        // navigationBars title change or a BackButton is the signal — never `app.cells`).
+        // The four assertions above are the real #238 regression gate and are unaffected.
     }
 
     // MARK: - 5. iPad tab-bar representations do not obstruct Research content
