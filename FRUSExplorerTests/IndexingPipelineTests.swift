@@ -2273,7 +2273,7 @@ struct IndexingProgressStreamTests {
 
             let box = UpdateBox()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }
@@ -2304,7 +2304,7 @@ struct IndexingProgressStreamTests {
 
             let box = UpdateBox()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }
@@ -2338,7 +2338,7 @@ struct IndexingProgressStreamTests {
 
             let box = UpdateBox()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }

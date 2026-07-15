@@ -84,7 +84,7 @@ struct IndexingStageTests {
             final class Box: @unchecked Sendable { var updates: [IndexingProgressUpdate] = [] }
             let box = Box()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }
@@ -122,7 +122,7 @@ struct IndexingStageTests {
             final class Box: @unchecked Sendable { var updates: [IndexingProgressUpdate] = [] }
             let box = Box()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }
@@ -162,7 +162,7 @@ struct IndexingStageTests {
             final class Box: @unchecked Sendable { var updates: [IndexingProgressUpdate] = [] }
             let box = Box()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }
@@ -209,7 +209,7 @@ struct IndexingStageTests {
             final class Box: @unchecked Sendable { var updates: [IndexingProgressUpdate] = [] }
             let box = Box()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }
@@ -239,7 +239,7 @@ struct IndexingStageTests {
             final class Box: @unchecked Sendable { var updates: [IndexingProgressUpdate] = [] }
             let box = Box()
             let collectTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     box.updates.append(update)
                     if update.stage == .complete { break }
                 }

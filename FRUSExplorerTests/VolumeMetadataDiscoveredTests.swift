@@ -84,7 +84,7 @@ struct VolumeMetadataDiscoveredTests {
             final class Box: @unchecked Sendable { var events: [VolumeMetadataDiscovered] = [] }
             let box = Box()
             let collectTask = Task {
-                for await meta in await pipeline.metadataStream {
+                for await meta in pipeline.metadataStream {
                     box.events.append(meta)
                 }
             }
@@ -116,7 +116,7 @@ struct VolumeMetadataDiscoveredTests {
             final class Box: @unchecked Sendable { var meta: VolumeMetadataDiscovered? }
             let box = Box()
             let collectTask = Task {
-                for await m in await pipeline.metadataStream {
+                for await m in pipeline.metadataStream {
                     box.meta = m
                 }
             }
@@ -145,7 +145,7 @@ struct VolumeMetadataDiscoveredTests {
             final class Box: @unchecked Sendable { var meta: VolumeMetadataDiscovered? }
             let box = Box()
             let collectTask = Task {
-                for await m in await pipeline.metadataStream {
+                for await m in pipeline.metadataStream {
                     box.meta = m
                 }
             }
@@ -192,19 +192,19 @@ struct VolumeMetadataDiscoveredTests {
             let box = Box()
 
             let metaTask = Task {
-                for await _ in await pipeline.metadataStream {
+                for await _ in pipeline.metadataStream {
                     box.metaTime = .now
                     break
                 }
             }
             let progressTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     if update.stage == .complete { break }
                 }
             }
             // Collect storingBatch updates to find the first one.
             let batchTask = Task {
-                for await update in await pipeline.progressStream {
+                for await update in pipeline.progressStream {
                     if case .storingBatch = update.stage {
                         if box.firstBatchTime == nil { box.firstBatchTime = .now }
                     }
@@ -246,7 +246,7 @@ struct VolumeMetadataDiscoveredTests {
             final class Box: @unchecked Sendable { var meta: VolumeMetadataDiscovered? }
             let box = Box()
             let collectTask = Task {
-                for await m in await pipeline.metadataStream { box.meta = m }
+                for await m in pipeline.metadataStream { box.meta = m }
             }
 
             try await pipeline.indexVolume("frus1969-76v01")

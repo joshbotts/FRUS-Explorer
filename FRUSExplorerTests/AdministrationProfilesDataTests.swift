@@ -353,7 +353,9 @@ struct AdministrationProfilesDataTests {
     /// are disambiguated by appending the term start year. This guards the fix for
     /// the SA-2b review finding where both charts collapsed Grover Cleveland's two
     /// terms into one stacked bar.
-    @Test
+    // @MainActor: axisLabels is a static helper on the dashboard `View`, so it is
+    // main-actor-isolated; this is the only caller that reaches it from off-main.
+    @Test @MainActor
     func axisLabelsDisambiguateSameLastName() {
         let profiles = AdministrationProfilesData(index: fixtureWithClevelandLikeTerms(),
                                                   includeEditorialNotes: false).profiles
