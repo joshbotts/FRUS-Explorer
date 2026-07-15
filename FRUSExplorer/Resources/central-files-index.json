@@ -74908,30 +74908,39 @@
   "generated" : "2026-07-15",
   "lotFiles" : [
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/20813090",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "32D66",
       "matchType" : "control",
       "naId" : "20813090",
       "recordGroup" : "59",
+      "seriesNaId" : "570828",
+      "seriesTitle" : "Vernon Loen's and Charles Leppert's General Subject Files",
       "title" : "Grant Notification (6)"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153965",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "49D19",
       "matchType" : "control",
       "naId" : "323153965",
       "recordGroup" : "59",
+      "seriesNaId" : "579003",
+      "seriesTitle" : "Speech Backup Chronological Files",
       "title" : "Budget Deadline Research 3\/20\/92 [OA 7570] [2]"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/55031616",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "50D95",
       "matchType" : "control",
       "naId" : "55031616",
       "recordGroup" : "59",
+      "seriesNaId" : "2068127",
+      "seriesTitle" : "Melanne Verveer's Subject Files",
       "title" : "D.C. (More) [Folder 2] [1]"
     },
     {
@@ -75043,12 +75052,15 @@
       "title" : "Records Relating to Meetings and Visits of Foreign Dignitaries"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153965",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "53D46",
       "matchType" : "control",
       "naId" : "323153965",
       "recordGroup" : "59",
+      "seriesNaId" : "579003",
+      "seriesTitle" : "Speech Backup Chronological Files",
       "title" : "Budget Deadline Research 3\/20\/92 [OA 7570] [2]"
     },
     {
@@ -75592,6 +75604,15 @@
       "matchType" : "control",
       "naId" : "19129101",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 192",
+        "A1 193",
+        "A1 193-A",
+        "A1 193-B",
+        "A1 194"
+      ],
+      "seriesNaId" : "654171",
+      "seriesTitle" : "Numerical Files",
       "title" : "Numerical File: 295\/271-295\/341"
     },
     {
@@ -75808,6 +75829,11 @@
       "matchType" : "control",
       "naId" : "2595565",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 1494A"
+      ],
+      "seriesNaId" : "2504761",
+      "seriesTitle" : "General Records",
       "title" : "RG 59, Miscellaneous Lot Files, 1944-1959 [Lots 53D223, 54D294, 54D304, 57D289, 58D528, 59D27, 60D68, 61D78, 62D205, 62D421, and 64D358]"
     },
     {
@@ -75943,21 +75969,27 @@
       "title" : "Subject Files Relating to Economic Aid"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323154473",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "58D95",
       "matchType" : "control",
       "naId" : "323154473",
       "recordGroup" : "59",
+      "seriesNaId" : "284337240",
+      "seriesTitle" : "Carol Aarhus Alpha Files",
       "title" : "Regulatory Reform [OA 6902] [1]"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27578789",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "58F33",
       "matchType" : "control",
       "naId" : "27578789",
       "recordGroup" : "84",
+      "seriesNaId" : "578525",
+      "seriesTitle" : "Military Files",
       "title" : "MR404(2) Sec. 6 Composition of Task Forces - April 1943"
     },
     {
@@ -75967,6 +75999,12 @@
       "matchType" : "control",
       "naId" : "26155867",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5667",
+        "ZZ 1004"
+      ],
+      "seriesNaId" : "593953",
+      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
       "title" : "DE 2 of 3"
     },
     {
@@ -76063,6 +76101,11 @@
       "matchType" : "control",
       "naId" : "2595565",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 1494A"
+      ],
+      "seriesNaId" : "2504761",
+      "seriesTitle" : "General Records",
       "title" : "RG 59, Miscellaneous Lot Files, 1944-1959 [Lots 53D223, 54D294, 54D304, 57D289, 58D528, 59D27, 60D68, 61D78, 62D205, 62D421, and 64D358]"
     },
     {
@@ -76114,12 +76157,15 @@
       "title" : "Subject Files Relating to Greece and Cyprus"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/285791007",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "59D38",
       "matchType" : "control",
       "naId" : "285791007",
       "recordGroup" : "59",
+      "seriesNaId" : "2595246",
+      "seriesTitle" : "Allan D. Bromley Files",
       "title" : "D. Allan Bromley Correspondence - Presidential - A-Z [1 of 3] [1991]"
     },
     {
@@ -76743,6 +76789,11 @@
       "matchType" : "control",
       "naId" : "609235170",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "UD-UP 293-B"
+      ],
+      "seriesNaId" : "648748",
+      "seriesTitle" : "Files Pertaining to Operation Mongoose",
       "title" : "Lot File 660501, Cuba - 1963"
     },
     {
@@ -77048,12 +77099,15 @@
       "title" : "Records Relating to Venezuela"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153965",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "61D32",
       "matchType" : "control",
       "naId" : "323153965",
       "recordGroup" : "59",
+      "seriesNaId" : "579003",
+      "seriesTitle" : "Speech Backup Chronological Files",
       "title" : "Budget Deadline Research 3\/20\/92 [OA 7570] [2]"
     },
     {
@@ -77297,12 +77351,15 @@
       "title" : "Top Secret Subject Files"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/16619095",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "61F30",
       "matchType" : "control",
       "naId" : "16619095",
       "recordGroup" : "84",
+      "seriesNaId" : "579094",
+      "seriesTitle" : "Departmental Correspondence",
       "title" : "Navy - Estimates of Potential Military Strength - Documents E. Naval Attache Berlin - Vol. I, March 30, 1937 - October 7, 1941"
     },
     {
@@ -77758,15 +77815,24 @@
       "matchType" : "control",
       "naId" : "26166341",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5667",
+        "ZZ 1004"
+      ],
+      "seriesNaId" : "593953",
+      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
       "title" : "JY 1 of 1"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40488233",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "63D1",
       "matchType" : "control",
       "naId" : "40488233",
       "recordGroup" : "59",
+      "seriesNaId" : "18546099",
+      "seriesTitle" : "Laura Schiller's Files",
       "title" : "[Women's Conference in Bulgaria, Oct. 11, 1998] [1]"
     },
     {
@@ -77782,12 +77848,15 @@
       "title" : "Records of the Director"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/231536111",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "63D123",
       "matchType" : "control",
       "naId" : "231536111",
       "recordGroup" : "59",
+      "seriesNaId" : "7452065",
+      "seriesTitle" : "Jack F. Matlock, Jr.'s Union of Soviet Socialist Republics (U.S.S.R.) Subject Files",
       "title" : "Important History Pre-1987 [Material Left for Fritz Ermarth] (1)"
     },
     {
@@ -77942,6 +78011,11 @@
       "matchType" : "control",
       "naId" : "207648782",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 544"
+      ],
+      "seriesNaId" : "1244183",
+      "seriesTitle" : "Emergency Passport Applications",
       "title" : "Romania, Volume 3 (Application Numbers 1-131, 1-123)"
     },
     {
@@ -78143,6 +78217,33 @@
       "matchType" : "control",
       "naId" : "207262477",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 205A",
+        "A1 205B",
+        "A1 205C",
+        "A1 205D",
+        "A1 205E",
+        "A1 205F",
+        "A1 205G",
+        "A1 205H",
+        "A1 205HA",
+        "A1 205I",
+        "A1 205J",
+        "A1 205K",
+        "A1 205KA",
+        "A1 205L",
+        "A1 205M",
+        "A1 205MA",
+        "A1 205N",
+        "A1 205O",
+        "A1 205P",
+        "A1 205Q",
+        "A1 205R",
+        "A1 205S",
+        "A1 1611"
+      ],
+      "seriesNaId" : "302021",
+      "seriesTitle" : "Central Decimal Files",
       "title" : "Yugoslavia: 268.113\/1-1360 - 268.1141\/3-1160"
     },
     {
@@ -78453,6 +78554,33 @@
       "matchType" : "control",
       "naId" : "207269288",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 205A",
+        "A1 205B",
+        "A1 205C",
+        "A1 205D",
+        "A1 205E",
+        "A1 205F",
+        "A1 205G",
+        "A1 205H",
+        "A1 205HA",
+        "A1 205I",
+        "A1 205J",
+        "A1 205K",
+        "A1 205KA",
+        "A1 205L",
+        "A1 205M",
+        "A1 205MA",
+        "A1 205N",
+        "A1 205O",
+        "A1 205P",
+        "A1 205Q",
+        "A1 205R",
+        "A1 205S",
+        "A1 1611"
+      ],
+      "seriesNaId" : "302021",
+      "seriesTitle" : "Central Decimal Files",
       "title" : "Japan: 294.1122 Bailey, C. E.\/10-2560 - 294.113 Tadakoma Shigeki\/1-961"
     },
     {
@@ -78469,21 +78597,27 @@
       "title" : "Economic Affairs Files Relating to Indonesia, Malaya, and Singapore"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/231536111",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "64D559",
       "matchType" : "control",
       "naId" : "231536111",
       "recordGroup" : "59",
+      "seriesNaId" : "7452065",
+      "seriesTitle" : "Jack F. Matlock, Jr.'s Union of Soviet Socialist Republics (U.S.S.R.) Subject Files",
       "title" : "Important History Pre-1987 [Material Left for Fritz Ermarth] (1)"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/231536111",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "64D560",
       "matchType" : "control",
       "naId" : "231536111",
       "recordGroup" : "59",
+      "seriesNaId" : "7452065",
+      "seriesTitle" : "Jack F. Matlock, Jr.'s Union of Soviet Socialist Republics (U.S.S.R.) Subject Files",
       "title" : "Important History Pre-1987 [Material Left for Fritz Ermarth] (1)"
     },
     {
@@ -78893,6 +79027,11 @@
       "matchType" : "control",
       "naId" : "2523057",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 3177"
+      ],
+      "seriesNaId" : "2321377",
+      "seriesTitle" : "Country and Subject Files",
       "title" : "(65D285) PER 9 - Personnel Training & Development FAST"
     },
     {
@@ -81959,6 +82098,12 @@
       "matchType" : "control",
       "naId" : "20883218",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5697",
+        "ZZ 1005"
+      ],
+      "seriesNaId" : "593954",
+      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating To Japanese War Crimes",
       "title" : "DA 1 of 1"
     },
     {
@@ -82587,6 +82732,12 @@
       "matchType" : "control",
       "naId" : "2564454",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5037",
+        "UD-15D 16"
+      ],
+      "seriesNaId" : "604773",
+      "seriesTitle" : "Briefing Books",
       "title" : "LOT 72D220 [Lot 72D170]"
     },
     {
@@ -83740,6 +83891,11 @@
       "matchType" : "control",
       "naId" : "2321296",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5408"
+      ],
+      "seriesNaId" : "2131132",
+      "seriesTitle" : "Subject Files",
       "title" : "Untitled [Lot File 74D471]"
     },
     {
@@ -86199,12 +86355,15 @@
       "title" : "Political Files of Under Secretary Lawrence Eagleburger"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323152753",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "83D212",
       "matchType" : "control",
       "naId" : "323152753",
       "recordGroup" : "59",
+      "seriesNaId" : "579003",
+      "seriesTitle" : "Speech Backup Chronological Files",
       "title" : "Hank Brown Fundraiser 12\/8\/89 [OA 6342]"
     },
     {
@@ -86534,6 +86693,11 @@
       "matchType" : "control",
       "naId" : "609414708",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 1577"
+      ],
+      "seriesNaId" : "2255746",
+      "seriesTitle" : "Records of the Polish Ministry of Foreign Affairs",
       "title" : "Folder 149 THRU Folder 155"
     },
     {
@@ -86585,12 +86749,15 @@
       "title" : "Paris Peace Conference Telegrams and Special Caption Messages"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/350437699",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "90D36",
       "matchType" : "control",
       "naId" : "350437699",
       "recordGroup" : "59",
+      "seriesNaId" : "7422575",
+      "seriesTitle" : "Mary Smith's Files",
       "title" : "Native American State of the Union [SOTU] [1]"
     },
     {
@@ -86600,6 +86767,12 @@
       "matchType" : "control",
       "naId" : "26152057",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5667",
+        "ZZ 1004"
+      ],
+      "seriesNaId" : "593953",
+      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
       "title" : "CJ 1 of 1"
     },
     {
@@ -86681,6 +86854,12 @@
       "matchType" : "control",
       "naId" : "26159679",
       "recordGroup" : "59",
+      "seriesHmsMlrEntryNumbers" : [
+        "A1 5667",
+        "ZZ 1004"
+      ],
+      "seriesNaId" : "593953",
+      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
       "title" : "ER 1 of 2"
     },
     {
@@ -86720,12 +86899,15 @@
       "title" : "Vietnam Special Caption Messages"
     },
     {
+      "ancestryLacksRecordGroup" : true,
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153864",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "96D234",
       "matchType" : "control",
       "naId" : "323153864",
       "recordGroup" : "59",
+      "seriesNaId" : "579003",
+      "seriesTitle" : "Speech Backup Chronological Files",
       "title" : "Small Business Council 2\/5\/92 [OA 7567] [2]"
     },
     {

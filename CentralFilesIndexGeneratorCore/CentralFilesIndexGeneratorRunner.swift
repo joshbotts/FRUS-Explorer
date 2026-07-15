@@ -154,7 +154,13 @@ public struct CentralFilesIndexGeneratorRunner {
             // mis-resolution. Reported, never silently dropped: the call is the owner's.
             let lacksRG = !record.ancestorLevels.isEmpty
                 && !record.ancestorLevels.contains("recordGroup")
-            if lacksRG { noRecordGroup.append("\(lotFiles[indices[0]].lotNumber) (naId \(naId))") }
+            if lacksRG {
+                // Every affected lot, not just the first: one bad NAID is typically shared by
+                // several lot numbers (three distinct lots resolve to NAID 323153965), and
+                // reporting one of them understates the blast radius.
+                let lots = indices.map { lotFiles[$0].lotNumber }.sorted().joined(separator: "/")
+                noRecordGroup.append("\(lots) → naId \(naId) “\(record.title.prefix(40))”")
+            }
 
             // The enclosing series — only for records that are not themselves series (#315).
             var seriesRecord: CatalogRecord? = nil
@@ -220,10 +226,15 @@ public struct CentralFilesIndexGeneratorRunner {
             """)
         }
         if !noRecordGroup.isEmpty {
+            let affected = lotFiles.filter { $0.ancestryLacksRecordGroup == true }.count
             print("""
-              ⚠︎ \(noRecordGroup.count) lot(s) resolve to a record with NO recordGroup ancestor —
-                candidate mis-resolutions (see LotFileEntry.ancestryLacksRecordGroup):
-                \(noRecordGroup.sorted().joined(separator: ", "))
+              ⚠︎ MIS-RESOLUTION CANDIDATES — \(noRecordGroup.count) NAID(s), \(affected) lot entr(ies)
+                resolve to a record whose ancestry contains NO recordGroup. A State Department
+                lot file is by definition RG 59/84, so a record parented by a `collection`
+                (i.e. a presidential library) is not one. Measured 2026-07-15: every flagged
+                record was a presidential-library staff file, and several distinct lots
+                collapsed onto a single NAID — see #321.
+                \(noRecordGroup.sorted().joined(separator: "\n                "))
             """)
         }
     }
