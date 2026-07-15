@@ -22,10 +22,12 @@ import UIKit
 ///      after a live toggle (#238)
 ///   5. The same for Research content (#272)
 ///
-/// Scenarios 4 and 5 cover each tab's ROOT list only. Neither covers the pushed level: both
-/// drill-ins were found to assert nothing and were removed — see the notes in each. Restoring
-/// that coverage needs its own investigation (a Cell tap does not activate a SwiftUI List row
-/// here), and a false-green is worse than a documented gap.
+/// Scenario 4 covers the Browse tab's ROOT list only; its drill-in asserted nothing and was
+/// removed (see 1.6). Scenario 5 now covers Research's root list AND the pushed detail level in
+/// the launch representation (see 1.7) — the pushed level is where #272's bug actually lives, so
+/// root-only coverage was gating the wrong column entirely. Its remaining gaps are enumerated in
+/// the coverage ledger at the end of that scenario. A false-green is worse than a documented gap;
+/// so is a documented gap that was never re-measured.
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
@@ -78,6 +80,27 @@ import UIKit
 ///          did not push either. Root cause (shared with scenario 5): an XCUITest tap on a
 ///          SwiftUI List row's Cell element does not activate the Button inside it. Removed;
 ///          the pushed level is now an explicit, documented gap in both scenarios.
+///   1.7 — #272 follow-up, all of it measured on iPad Pro 13-inch (M5); two claims above do not
+///          survive re-measurement. (a) 1.6's shared root cause does NOT hold for Research: a tap
+///          on `researchContentCell` DOES push (nav bar becomes "All Research Documents",
+///          `BackButton` appears). What actually defeated it was ORDER — a preceding `swipeDown`
+///          stops the tap driving the push. Drilling in BEFORE the swipe works, so scenario 5's
+///          drill-in is restored with 1.5's own suggested sound oracle (`app.navigationBars[...]`),
+///          covering the DETAIL column that root-only assertions never reached. It stays scoped to
+///          the launch representation, where it is reliable; a run with it after the toggle fails
+///          on the same ordering quirk. (Whether 1.6's claim holds for scenario 4's Corpus row is
+///          untested here.) (b) `popToResearchRoot()` is retired: it presumed an auto-push that an
+///          A/B run shows does not happen, so it was a silent no-op that also navigated every
+///          assertion away from the detail column. Replaced by `assertResearchLaunchedAtCategoryRoot`,
+///          a sound-oracle guard on that hazard — explicitly NOT a reproduction of it.
+///   1.8 — #311: scenarios 4 and 5 could report GREEN having asserted nothing. `sidebarToggleButton()`
+///          returns an element only once it exists, so each scenario's
+///          `toggle.waitForExistence(timeout: 5)` was dead code — the intended tolerance for a slow
+///          launch never ran, and the `guard let` hit nil first and threw `XCTSkip` (a skip passes).
+///          The wait moved inside the helper, which now polls to a `timeout:` (0 in `tearDown`,
+///          where the control's absence is not a failure), and both guards `XCTFail` instead of
+///          skipping — past the idiom check the destination IS an iPad, so a missing toggle is a
+///          real fault. Mirrors the same correction 1.2 made to the Browse-tab guards.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -104,7 +127,9 @@ final class UIObstructionTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        if didToggleSidebar, let toggle = sidebarToggleButton(), toggle.exists {
+        // timeout: 0 — restoring the representation is best-effort; if the control is already
+        // gone there is nothing to restore and tearDown should not stall polling for it.
+        if didToggleSidebar, let toggle = sidebarToggleButton(timeout: 0), toggle.exists {
             toggle.tap()
             didToggleSidebar = false
         }
@@ -153,14 +178,36 @@ final class UIObstructionTests: XCTestCase {
     /// leading-sidebar and floating-top-tab-bar representations. On iPadOS 26 it carries the
     /// stable accessibility identifier `ToggleSideBar` (label "Toggle sidebar" — confirmed by
     /// a live simulator run); the fuzzy label predicate remains as a fallback for OS versions
-    /// that rename the identifier. Callers must treat a `nil` result as "skip".
-    private func sidebarToggleButton() -> XCUIElement? {
-        let byIdentifier = app.buttons["ToggleSideBar"]
-        if byIdentifier.exists { return byIdentifier }
-        let predicate = NSPredicate(format:
-            "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
-        let matches = app.buttons.matching(predicate)
-        return matches.count > 0 ? matches.firstMatch : nil
+    /// that rename the identifier.
+    ///
+    /// **Polls until `timeout`** (#311). It must: this returns an element only once it exists, so
+    /// a caller's `toggle.waitForExistence(timeout:)` is dead code — it can only ever be true, and
+    /// callers who wrote one got no wait at all. A slow launch therefore returned nil immediately
+    /// and the caller's `guard` threw `XCTSkip`, so both iPad obstruction scenarios reported GREEN
+    /// having asserted nothing. The wait has to live here, before the nil.
+    ///
+    /// - Parameter timeout: How long to keep polling before giving up. Pass `0` for a single
+    ///   immediate probe (`tearDown` does, where the control's absence is not a failure).
+    /// - Returns: The toggle, or `nil` if it never appeared. On an iPad destination `nil` means
+    ///   something is genuinely wrong — prefer failing over skipping.
+    private func sidebarToggleButton(timeout: TimeInterval = 5) -> XCUIElement? {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            let byIdentifier = app.buttons["ToggleSideBar"]
+            if byIdentifier.exists { return byIdentifier }
+            // Built fresh each iteration, deliberately: NSPredicate is not Sendable, and the iOS 26
+            // SDK isolates XCUI APIs to the main actor, so `matching(_:)` sends it out of this
+            // nonisolated context. A predicate hoisted above the loop would be sent on the first
+            // pass and used again on the second — "sending 'predicate' risks causing data races",
+            // a hard error under Swift 6. Re-creating it keeps each send a fresh transfer.
+            let predicate = NSPredicate(format:
+                "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
+            let matches = app.buttons.matching(predicate)
+            if matches.count > 0 { return matches.firstMatch }
+            if timeout <= 0 { break }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        return nil
     }
 
     // MARK: - 1. Tab bar does not obstruct the last browser row
@@ -342,8 +389,15 @@ final class UIObstructionTests: XCTestCase {
         throw XCTSkip("iPad-only test")
         #endif
 
-        guard let toggle = sidebarToggleButton(), toggle.waitForExistence(timeout: 5) else {
-            throw XCTSkip("Could not locate the system sidebar/tab-bar toggle on this iPadOS version")
+        // Fails rather than skips (#311). Execution only reaches here on an iPad destination, so
+        // the toggle is required to exist — and this used to XCTSkip, which reports GREEN. The
+        // wait now lives inside the helper; the `waitForExistence` that stood here was dead code
+        // against an element the helper only returns once it exists.
+        guard let toggle = sidebarToggleButton() else {
+            XCTFail("Could not locate the system sidebar/tab-bar toggle on this iPad destination "
+                    + "after polling 5s — this scenario cannot exercise both .sidebarAdaptable "
+                    + "representations without it (#238/#272 regression net is not running)")
+            return
         }
 
         // Representation A — whatever the install launched in.
@@ -411,14 +465,67 @@ final class UIObstructionTests: XCTestCase {
             NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
     }
 
-    /// Pops the Research tab's `NavigationStack` back to its category-list root if it is not
-    /// already there.
+    /// Asserts the Research tab launched at its category-list root rather than auto-pushed one
+    /// level deep into a document list.
     ///
-    /// Needed because `selectedItem` defaults to `.allNotes` and #272's `researchNavigationPath`
-    /// projects `selectedItem` into the stack path — so the tab launches with a non-empty path
-    /// and auto-pushes into the "All Research Documents" list, leaving the category root behind a
-    /// Back button. Tolerating both shapes keeps this test valid whichever way that lands.
-    private func popToResearchRoot() {
+    /// The oracle is verified; the hazard it guards is latent. That distinction is deliberate.
+    ///
+    /// #272 flattened iOS Research to a `NavigationStack` whose path *projects* `selectedItem`,
+    /// so a non-nil default asks the stack to launch already pushed, stranding the category list
+    /// behind a Back button. `ResearchView` defaults to `nil` on iOS to foreclose that.
+    ///
+    /// What this does NOT do is fail when that default is re-unified: measured on iPad Pro
+    /// 13-inch (M5) at dd16bd7, `.allNotes` on iOS still launches at the root, because SwiftUI
+    /// discards the initial path element. So this gates a latent hazard activating — it does not
+    /// reproduce a live bug. Do NOT upgrade this comment to "catches the regression" without
+    /// re-measuring: a8b20ca recorded that stronger claim and it does not reproduce.
+    ///
+    /// The oracle itself IS sound, probed in both states: at the category root there is no
+    /// back-ish button at all; pushed, one surfaces as `[BackButton|Research]`. If the hazard
+    /// ever activates, this fails.
+    ///
+    /// Replaces the former `popToResearchRoot()`, which tapped Back to work around the auto-push
+    /// it presumed — and in doing so navigated away from the detail column before every
+    /// assertion, leaving scenario 5 asserting only on the stack root. Since there is no
+    /// auto-push, that helper was also a silent no-op: its `waitForExistence` never matched.
+    private func assertResearchLaunchedAtCategoryRoot(_ context: String) {
+        XCTAssertFalse(
+            app.buttons["BackButton"].waitForExistence(timeout: 2),
+            "Research launched auto-pushed into a document list instead of at its category root "
+                + "(\(context)) — ResearchView.selectedItem must default to nil on iOS, since "
+                + "researchNavigationPath projects it into the NavigationStack path (#272)"
+        )
+    }
+
+    /// Drills into "All Research Documents" and asserts the **pushed detail level** — the column
+    /// #272 is actually about — appears and is not overlaid by the floating tab bar.
+    ///
+    /// Oracle: `app.navigationBars["All Research Documents"]`, which exists only once the detail
+    /// is pushed. This is the sound oracle e403faf identified but did not adopt; the oracle it
+    /// removed (`app.staticTexts["All Research Documents"]`) was vacuous because the stack root's
+    /// own row renders that identical string, so it matched before any tap.
+    ///
+    /// Call this BEFORE any swipe on the root list. An immediately-preceding swipe stops the row
+    /// tap from driving the push (a harness quirk e403faf measured; an instrumented probe without
+    /// the swipe pushes reliably). Ordering is therefore load-bearing, not incidental.
+    ///
+    /// SCOPE — read before trusting this as full #272 coverage: it gates the push and the detail's
+    /// top chrome, NOT the obstruction of detail *content*. On a fresh install the document list
+    /// is legitimately empty and renders a *centered* `ContentUnavailableView`, so there is no
+    /// top-anchored content for the mis-computed safe area to hide. Closing that gap needs seeded
+    /// research data (tracked separately) — do not claim content-level coverage until it exists.
+    private func assertResearchDetailPushesUnobstructed(_ context: String) {
+        researchContentCell.tap()
+        let detailBar = app.navigationBars["All Research Documents"]
+        guard detailBar.waitForExistence(timeout: 10) else {
+            XCTFail("Tapping 'All Research Documents' did not push the document list (\(context))")
+            return
+        }
+        XCTAssertTrue(
+            detailBar.isHittable,
+            "The pushed document list's navigation bar is not hittable (\(context)) — the "
+                + "floating top tab bar may be overlaying the detail column's top safe area (#272)"
+        )
         let back = app.buttons["BackButton"]
         if back.waitForExistence(timeout: 3) {
             back.tap()
@@ -448,17 +555,26 @@ final class UIObstructionTests: XCTestCase {
         throw XCTSkip("iPad-only test")
         #endif
 
-        guard let toggle = sidebarToggleButton(), toggle.waitForExistence(timeout: 5) else {
-            throw XCTSkip("Could not locate the system sidebar/tab-bar toggle on this iPadOS version")
+        // Fails rather than skips (#311). Execution only reaches here on an iPad destination, so
+        // the toggle is required to exist — and this used to XCTSkip, which reports GREEN. The
+        // wait now lives inside the helper; the `waitForExistence` that stood here was dead code
+        // against an element the helper only returns once it exists.
+        guard let toggle = sidebarToggleButton() else {
+            XCTFail("Could not locate the system sidebar/tab-bar toggle on this iPad destination "
+                    + "after polling 5s — this scenario cannot exercise both .sidebarAdaptable "
+                    + "representations without it (#238/#272 regression net is not running)")
+            return
         }
 
         // Representation A — whatever the install launched in.
         selectSection("Research")
-        popToResearchRoot()
         XCTAssertTrue(
             researchContentCell.waitForExistence(timeout: 10),
             "Research category rows did not appear in the launch representation"
         )
+        assertResearchLaunchedAtCategoryRoot("launch representation")
+        // Detail level BEFORE the swipe — the swipe would stop the tap driving the push.
+        assertResearchDetailPushesUnobstructed("launch representation")
         app.swipeDown(velocity: .fast) // ensure we are scrolled to the top
         XCTAssertTrue(
             researchContentCell.isHittable,
@@ -483,6 +599,10 @@ final class UIObstructionTests: XCTestCase {
             researchContentCell.waitForExistence(timeout: 10),
             "Research category rows did not appear after toggling the tab-bar representation"
         )
+        // No drill-in here — MEASURED, not assumed. The row tap will not drive the push once a
+        // swipe has preceded it (representation A's swipeDown, above), which is exactly the quirk
+        // e403faf hit; a run with the drill-in here fails on "did not push the document list".
+        // Ordering it first works in representation A only, so that is where it lives.
         app.swipeDown(velocity: .fast)
         XCTAssertTrue(
             researchContentCell.isHittable,
@@ -490,18 +610,31 @@ final class UIObstructionTests: XCTestCase {
                 + "representation — chrome may be overlaying content (#272)"
         )
 
-        // NOTE — no drill-in step here, deliberately. The pushed detail is NOT covered, and a
-        // check for it must not be added back naively:
-        //   * The original oracle, `app.staticTexts["All Research Documents"]`, was VACUOUS: the
-        //     stack root's own row renders that identical string, so the query matched before the
-        //     tap — waitForExistence returned instantly and the step passed without any push.
-        //   * With a sound oracle (`app.navigationBars["All Research Documents"]`, which exists
-        //     only once the detail is pushed) the step proved unreliable in-suite: the tap does
-        //     not consistently drive the push after the preceding swipe, in either a Cell tap or
-        //     a row-button tap, with or without a settle delay.
-        //   * The app itself is fine — an instrumented probe (tap row -> assert navigationBar,
-        //     no preceding swipe) pushes reliably. This is a harness problem, not a #272 bug.
-        // Covering the pushed detail needs its own investigation; a false-green is worse than a
-        // documented gap, so the root-content assertions above stand alone for now.
+        // COVERAGE LEDGER for #272 — what this scenario proves, and what it still does not.
+        // Every line below was measured on iPad Pro 13-inch (M5), not reasoned about.
+        //
+        // GATED: the root list is unobstructed in BOTH representations; tapping a category
+        // actually pushes the detail, and the pushed detail's top chrome is hittable — in the
+        // LAUNCH representation. Plus the tab launches at its category root, which guards a
+        // latent hazard (see assertResearchLaunchedAtCategoryRoot) rather than a live bug: an
+        // A/B run proved `.allNotes` vs nil on iOS are indistinguishable at launch, so that
+        // assertion does NOT discriminate the ResearchView default. Claim it as nothing more.
+        //
+        // NOT GATED, two distinct gaps, neither of which should be claimed as covered:
+        //   1. The detail push in the TOGGLED representation — blocked by the harness quirk noted
+        //      above (a preceding swipe defeats the tap), not by any app defect.
+        //   2. Obstruction of detail *content*, in either representation. On a fresh install the
+        //      document list is legitimately empty and renders a CENTERED ContentUnavailableView,
+        //      so the detail column holds no top-anchored content for a mis-computed safe area to
+        //      hide. No assertion over an empty list can tell the fix from the bug. Closing this
+        //      needs seeded research data (a note/tag fixture) before drilling in.
+        //
+        // History worth keeping: e403faf removed the original drill-in because its oracle
+        // (`app.staticTexts["All Research Documents"]`) was vacuous — the stack root's own row
+        // renders that same string, so it matched before the tap. That removal was locally right,
+        // but it left the scenario asserting only on the root: the pre-fix SIDEBAR column, while
+        // #272's bug lives in the DETAIL column. The repair above adopts e403faf's own suggested
+        // oracle (`app.navigationBars[...]`) and adds the ordering its notes implied — drill in
+        // BEFORE the swipe — which is what makes the launch-representation push reliable.
     }
 }

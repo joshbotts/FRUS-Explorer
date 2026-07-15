@@ -55,8 +55,16 @@ import SwiftData
 ///          nest splits and are tracked as a follow-up. Rule going forward: tabs under
 ///          `.sidebarAdaptable` host a `NavigationStack`, not a `NavigationSplitView`.
 ///   1.10 — #272: `ResearchView` now complies too — iOS flattens it to a `NavigationStack`
-///          (macOS keeps its `NavigationSplitView`). `SettingsView` is the last tab still
-///          nesting a split under `.sidebarAdaptable`.
+///          (macOS keeps its `NavigationSplitView`).
+///   1.11 — #272 follow-up: **the ledger is closed — every tab complies.** 1.9 and 1.10 both
+///          named `SettingsView` as still nesting a split; that was never true. The iOS
+///          Settings tab has hosted a `NavigationStack` (SettingsView.swift:87) since
+///          97eeb76 (2026-05-18), which moved the split into the macOS-only
+///          `FRUSSettingsView`. The claim was written seven weeks later and simply never
+///          checked against the file. Verify before re-adding an entry here: the only
+///          `NavigationSplitView`s left in the module are `#if os(macOS)`-guarded
+///          (`FRUSSettingsView`, `ResearchView`, `MacCorpusBrowserWindow`) or unreferenced
+///          (`BrowserView.splitLayout`), and none can render under `.sidebarAdaptable`.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -117,10 +125,13 @@ struct MainTabView: View {
         // experience is unchanged. GUARD RULE (#238, see version history 1.9): a tab's
         // content must host a NavigationStack, NOT a NavigationSplitView — a nested split
         // mis-computes its top safe area under the floating top tab bar and overlays
-        // content. BrowserView complies (stackLayout on all size classes); ResearchView
-        // complies as of #272 (iOS flattens to a NavigationStack; macOS keeps the split).
-        // SettingsView still nests a split and is tracked as a follow-up.
-        // (BigPicture-iPadMacParity Phase 1 + #238 correction.)
+        // content. ALL FIVE TABS COMPLY: BrowserView (stackLayout on all size classes),
+        // ResearchView (iOS flattens to a NavigationStack as of #272; macOS keeps the
+        // split), and SettingsView (NavigationStack since 97eeb76 — the "SettingsView
+        // still nests a split" follow-up this comment used to name never existed; see
+        // version history 1.11). No open conversion work remains; the rule is now purely
+        // forward-looking. (BigPicture-iPadMacParity Phase 1 + #238 correction — note that
+        // doc carries its own stale copy of this ledger; this comment is authoritative.)
         .tabViewStyle(.sidebarAdaptable)
         // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
         // sheet presents over whichever tab is active and clears it on dismiss.

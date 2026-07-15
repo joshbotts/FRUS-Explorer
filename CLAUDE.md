@@ -131,13 +131,21 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
 - `ManifestGenerator`, `TaxonomyGenerator`, `FTS5Store` (reusable SQLite FTS5 actor)
 - Test targets: `ManifestGeneratorTests`, `TaxonomyGeneratorTests`, `FTS5StoreTests`
 
-## Coding Standards (enforced by `CodingStandardsAuditTests`)
+## Coding Standards
 
-- **Swift 6 strict concurrency**: zero warnings under `SWIFT_STRICT_CONCURRENCY=complete`.
+**Only three of these have a mechanical gate. Check the rest by hand — do not assume a test will catch you.** (The heading used to read "enforced by `CodingStandardsAuditTests`", which was true of half the list and let several stale doc comments ship unnoticed.)
+
+Enforced by `CodingStandardsAuditTests` — these fail the test suite:
+
+- **License header**: Apache 2.0 header required on every source file *and* every test file.
+- **OpenAPI spec** (`FRUS-API.openapi.yaml`): must remain valid OpenAPI 3.1.0, declare no deprecated `nullable: true`, and define the `/citation-lookup` endpoint + `CitationMatch` schema. Update whenever the API surface changes.
+- **Version history**: required on an **allowlist** of key session-output files (not all files).
+
+Conventions with **no** automated check — reviewer's responsibility:
+
+- **Swift 6 strict concurrency**: zero warnings under `SWIFT_STRICT_CONCURRENCY=complete`. This is a build setting, not part of the audit suite. The app targets do currently build with zero *source* warnings; the residue is a SwiftData `@Model` macro-expansion `Sendable` warning plus AppIntents tool notices.
 - **Localization**: all user-facing strings use `String(localized:)` — no raw string literals in views.
-- **Doc comments**: every `public`/`internal` type, function, and property requires a doc comment.
-- **License header**: Apache 2.0 header required on every source file.
-- **OpenAPI spec** (`FRUS-API.openapi.yaml`): update whenever the API surface changes; must remain valid OpenAPI 3.1.0.
+- **Doc comments**: every `public`/`internal` type, function, and property requires a doc comment. Nothing verifies that they are *accurate*, either — verify doc claims about runtime behaviour by running the app, not by reading neighbouring comments or commit messages.
 - **Debug logging**: use `#if DEBUG` blocks with `print("[TypeName] ...")` prefix.
 
 ## Planning & Specification

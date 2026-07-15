@@ -51,9 +51,17 @@ top safe area and overlays content that cannot be scrolled into view. The fix:
 `BrowserView` now uses a `NavigationStack` (its `stackLayout`) on iPad too, so
 the subseries list becomes the stack root and the TabView's adaptive sidebar is
 the only rail. **Guard rule going forward: a tab under `.sidebarAdaptable`
-hosts a `NavigationStack`, not a `NavigationSplitView`.** `ResearchView` and
-`SettingsView` still nest splits and are tracked as a follow-up issue (verify
-reproduction, then flatten the same way).
+hosts a `NavigationStack`, not a `NavigationSplitView`.**
+
+> **Update (#272, 2026-07-15) — this ledger is closed; every tab complies.** The
+> sentence that stood here ("`ResearchView` and `SettingsView` still nest splits
+> and are tracked as a follow-up issue") is retired: `ResearchView` was flattened
+> on iOS in #272 (macOS keeps its split), and `SettingsView` never nested one —
+> the iOS Settings tab has hosted a `NavigationStack` since 97eeb76 (2026-05-18),
+> so that half of the claim was wrong the day it was written. The guard rule
+> above remains correct and forward-looking; only the follow-up directive was
+> stale. **`MainTabView`'s comment is the authoritative copy** — it is the one the
+> code cites and the one to update first.
 
 ---
 
