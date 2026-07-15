@@ -61,13 +61,18 @@ struct ResearchDocumentEntry: Identifiable {
 /// On iOS it fills the Research tab (replacing the former Activity tab).
 ///
 /// ## Layout
-/// `NavigationSplitView` with two columns:
-/// - **Sidebar**: "All Annotated Documents" synthetic entry, then per-tag rows sorted by
-///   distinct-document count descending (most-used tags first).
-/// - **Detail**: Document list for the selected sidebar item. Each row shows the document
-///   header, volume title, latest note preview, tag chips, and relative note date.
-///   Tapping a row opens the document in the main window; right-click (macOS) / long-press
-///   (iOS) exposes a context menu for cross-reference graph and further actions.
+/// Two levels, composed per platform by `navigationContainer` (#272): macOS keeps a
+/// two-column `NavigationSplitView`; iOS uses a `NavigationStack` whose root is the category
+/// list, pushing the document list on selection (a split nested in the `.sidebarAdaptable`
+/// TabView overlays content on iPadOS — see MainTabView's #238 guard rule).
+/// - **Category list** (macOS sidebar column / iOS stack root): "All Research Documents"
+///   synthetic entry, then per-tag rows sorted by distinct-document count descending
+///   (most-used tags first).
+/// - **Document list** (macOS detail column / iOS pushed level): documents for the selected
+///   category. Each row shows the document header, volume title, latest note preview, tag
+///   chips, and relative note date. Tapping a row opens the document in the main window;
+///   right-click (macOS) / long-press (iOS) exposes a context menu for cross-reference graph
+///   and further actions.
 ///
 /// ## Data
 /// `@Query` for all `ResearchNote` and `UserTag` records. Document headers are loaded
