@@ -106,8 +106,10 @@ struct CrossReferenceGraphView: View {
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
     #if os(iOS)
-    /// Gates the neighbors window on iOS: true on Stage-Manager iPads, false on iPhone and
-    /// iPads without it, where the sheet remains the presentation (#241).
+    /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
+    /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
+    /// a Full Screen Apps-mode iPad may still report true, giving a full-screen window
+    /// (#241 review finding; runtime probe still owed).
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
