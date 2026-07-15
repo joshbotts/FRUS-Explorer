@@ -65,7 +65,11 @@ struct AdministrationPresetMenu: View {
 
     /// The corpus floor year (the first FRUS volume, 1861) — the hosts' shared lower
     /// bound and reset target for the year range's start.
-    static let floorYear = 1861
+    ///
+    /// `nonisolated` so the pure, off-main-actor `presets(from:corpusMaxYear:currentYear:)`
+    /// can read it: `View` conformance would otherwise isolate this constant to the main
+    /// actor. Safe — an immutable `Int`.
+    nonisolated static let floorYear = 1861
 
     /// The offerable presets: administrations whose term intersects
     /// `floorYear...corpusMaxYear`, with term years clamped into that span,

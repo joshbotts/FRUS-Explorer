@@ -21,7 +21,11 @@ import CryptoKit      // SHA-256 content digest for open-with collection de-dupl
 import TipKit
 import os              // Logger — CloudKit sync telemetry (both platforms, #188-C.1)
 #if os(iOS)
-import BackgroundTasks
+// @preconcurrency: BGProcessingTask is not Sendable, but the BGTaskScheduler contract
+// requires capturing the task in both the expiration handler and the work closure. The
+// capture below is guarded by an OSAllocatedUnfairLock so setTaskCompleted runs at most
+// once whichever side wins the race — the framework simply predates Sendable annotation.
+@preconcurrency import BackgroundTasks
 #endif
 
 /// os.Logger for CloudKit sync events (#188-C.1), shared by the app boot code and `AppState`'s
@@ -1337,7 +1341,7 @@ struct FRUSExplorerApp: App {
                 { @Sendable [appState] volumeId in
                     try? await pipeline.removeVolume(volumeId)
                     await MainActor.run {
-                        appState.indexedVolumeIds.remove(volumeId)
+                        _ = appState.indexedVolumeIds.remove(volumeId)
                     }
                     // Drop any cached document ASTs so a re-download can never
                     // serve stale content from the deleted file.
@@ -1690,7 +1694,7 @@ struct FRUSExplorerApp: App {
         let histogram: [SubErrorBucket]?
     }
 
-    static func cloudKitDiagnostic(_ error: NSError) -> CloudKitDiagnosticResult {
+    nonisolated static func cloudKitDiagnostic(_ error: NSError) -> CloudKitDiagnosticResult {
         // Human-readable labels for the CloudKit error codes most likely to appear
         // in a SwiftData+CloudKit app during normal operation and schema migration.
         let codeNames: [Int: String] = [
