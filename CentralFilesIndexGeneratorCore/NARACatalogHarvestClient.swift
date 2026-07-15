@@ -48,9 +48,30 @@ public struct CatalogRecord: Sendable, Equatable {
     /// silently keeping the first.
     public let hmsMlrEntryNumbers: [String]
 
+    /// NAID of the record's enclosing **series**, from its ancestor chain (#315).
+    ///
+    /// Only meaningful for records below series level: NARA's hierarchy is
+    /// `recordGroup > series > fileUnit`, so a file unit's distance-1 ancestor is its series.
+    /// Verified live 2026-07-15 across three differently-shaped file units — every one
+    /// carried a `series` ancestor with its title, in the same response, at no extra cost.
+    /// `nil` on a record that *is* the series (its ancestors are the record group / collection).
+    public let seriesAncestorNaId: String?
+    /// Title of the enclosing series — the **"file series name"** #315 asks to display for
+    /// records that are not themselves series. Free: it rides in the same response.
+    public let seriesAncestorTitle: String?
+    /// The levels of the record's ancestors, outermost value included (e.g.
+    /// `["recordGroup", "series"]`, or `["collection", "series"]` for a presidential-library
+    /// record). Captured for a data-quality check the ancestor spike surfaced: a lot filed
+    /// under RG 59/84 whose chain contains **no** `recordGroup` is a candidate
+    /// mis-resolution, because `resolveLotFile`'s last-resort `firstAccepted` fallback
+    /// accepts a record with no exposed record group.
+    public let ancestorLevels: [String]
+
     /// The exact `variantControlNumbers.type` that denotes a current HMS/MLR entry number.
     /// Not a prefix and not a pattern — see `hmsMlrEntryNumbers`.
     public static let hmsMlrEntryType = "HMS/MLR Entry Number"
+    /// The `levelOfDescription` value denoting a series record.
+    public static let seriesLevel = "series"
 
     public init(
         naId: String,
@@ -59,7 +80,10 @@ public struct CatalogRecord: Sendable, Equatable {
         parentFileUnitNaId: String? = nil,
         parentFileUnitTitle: String? = nil,
         recordGroupNumber: String? = nil,
-        hmsMlrEntryNumbers: [String] = []
+        hmsMlrEntryNumbers: [String] = [],
+        seriesAncestorNaId: String? = nil,
+        seriesAncestorTitle: String? = nil,
+        ancestorLevels: [String] = []
     ) {
         self.naId = naId
         self.title = title
@@ -68,6 +92,9 @@ public struct CatalogRecord: Sendable, Equatable {
         self.parentFileUnitTitle = parentFileUnitTitle
         self.recordGroupNumber = recordGroupNumber
         self.hmsMlrEntryNumbers = hmsMlrEntryNumbers
+        self.seriesAncestorNaId = seriesAncestorNaId
+        self.seriesAncestorTitle = seriesAncestorTitle
+        self.ancestorLevels = ancestorLevels
     }
 
     /// Extracts the current HMS/MLR entry numbers from a decoded `variantControlNumbers`
@@ -580,6 +607,11 @@ public actor NARACatalogHarvestClient {
             let rg = record.ancestors?.first {
                 $0.levelOfDescription == "recordGroup"
             }?.recordGroupNumber?.stringValue
+            // The enclosing series (#315): for a record below series level this is the
+            // "file series name" to display. Free — it is already in this response.
+            let seriesAncestor = record.ancestors?.first {
+                $0.levelOfDescription == CatalogRecord.seriesLevel
+            }
             return CatalogRecord(
                 naId: naId,
                 title: title,
@@ -588,7 +620,10 @@ public actor NARACatalogHarvestClient {
                 parentFileUnitTitle: parent?.title,
                 recordGroupNumber: rg,
                 hmsMlrEntryNumbers: CatalogRecord.hmsMlrEntries(
-                    from: (record.variantControlNumbers ?? []).map { ($0.number, $0.type) }))
+                    from: (record.variantControlNumbers ?? []).map { ($0.number, $0.type) }),
+                seriesAncestorNaId: seriesAncestor?.naId?.stringValue,
+                seriesAncestorTitle: seriesAncestor?.title,
+                ancestorLevels: (record.ancestors ?? []).compactMap(\.levelOfDescription))
         }
         let nextCursor = hits.last?.sort?.first?.stringValue
         return DecodedPage(records: records, nextCursor: nextCursor)

@@ -100,10 +100,39 @@ public struct LotFileEntry: Codable, Sendable, Equatable {
     /// first record-group match without requiring `series` level, so a minority of entries
     /// may be file-unit titles — this field is what makes that visible rather than assumed.
     public var levelOfDescription: String?
+    /// NAID of the enclosing **file series**, when this record is not itself a series (#315).
+    public var seriesNaId: String?
+    /// Title of the enclosing file series — the "file series name" #315 asks to show for the
+    /// ~32 file-unit records whose own `title` names a file unit, not a series.
+    public var seriesTitle: String?
+    /// The enclosing series' HMS/MLR entry numbers — **the parent's identifiers, not this
+    /// record's**, and the distinction is the point.
+    ///
+    /// Kept in a separate field from `hmsMlrEntryNumbers` rather than merged into it, because
+    /// they answer different questions and only one of them is precise. A series-level
+    /// record's own entry number identifies exactly the records being cited. A file unit's
+    /// parent-series entry numbers identify the *whole* parent: measured on the live catalog,
+    /// the "Central Decimal Files" series carries **23** of them, so handing all 23 to an
+    /// archivist alongside one Yugoslavia file unit narrows nothing. Merging the two would
+    /// make an imprecise answer indistinguishable from a precise one, which is exactly the
+    /// failure #315 exists to prevent. The UI decides what, if anything, to do with these.
+    public var seriesHmsMlrEntryNumbers: [String]?
+    /// `true` when the record's ancestor chain contains **no** `recordGroup` — a candidate
+    /// mis-resolution flagged for review, not a verdict.
+    ///
+    /// Surfaced by the #315 ancestor spike: lot `61F30` (an F-designator, i.e. RG 84 post
+    /// records) resolves to a record whose chain is `collection > series` — FDR Library's
+    /// "President's Secretary's File" — with no record group at all. `resolveLotFile`'s
+    /// last-resort `firstAccepted` fallback accepts `results.first { recordGroupNumber == nil }`,
+    /// which is precisely how such a record gets in.
+    public var ancestryLacksRecordGroup: Bool?
 
     public init(lotNumber: String, recordGroup: String, naId: String, title: String,
                 catalogURL: String, matchType: String = "control",
-                hmsMlrEntryNumbers: [String]? = nil, levelOfDescription: String? = nil) {
+                hmsMlrEntryNumbers: [String]? = nil, levelOfDescription: String? = nil,
+                seriesNaId: String? = nil, seriesTitle: String? = nil,
+                seriesHmsMlrEntryNumbers: [String]? = nil,
+                ancestryLacksRecordGroup: Bool? = nil) {
         self.lotNumber = lotNumber
         self.recordGroup = recordGroup
         self.naId = naId
@@ -112,6 +141,10 @@ public struct LotFileEntry: Codable, Sendable, Equatable {
         self.matchType = matchType
         self.hmsMlrEntryNumbers = hmsMlrEntryNumbers
         self.levelOfDescription = levelOfDescription
+        self.seriesNaId = seriesNaId
+        self.seriesTitle = seriesTitle
+        self.seriesHmsMlrEntryNumbers = seriesHmsMlrEntryNumbers
+        self.ancestryLacksRecordGroup = ancestryLacksRecordGroup
     }
 }
 

@@ -243,4 +243,106 @@ struct HMSMLREntryNumberTests {
         let record = try #require(page.records.first)
         #expect(record.hmsMlrEntryNumbers.isEmpty)
     }
+
+    // MARK: - Enclosing series (#315)
+    //
+    // Fixtures are the real ancestor chains observed on 2026-07-15 for three of the 27
+    // file-unit lot records. The premise these pin: a file unit's enclosing series — the
+    // "file series name" #315 asks to display — already rides in the response we fetch, so
+    // the title costs nothing extra.
+
+    @Test("A file unit's enclosing series is extracted from its ancestors")
+    func extractsSeriesAncestorFromFileUnit() throws {
+        // Real: naId 19129101, lot 57M44.
+        let json = """
+        {
+          "body": { "hits": { "hits": [
+            { "_source": { "record": {
+                "naId": 19129101,
+                "title": "Numerical File: 295/271-295/341",
+                "levelOfDescription": "fileUnit",
+                "ancestors": [
+                  { "distance": 2, "levelOfDescription": "recordGroup", "naId": 388,
+                    "recordGroupNumber": 59, "title": "General Records of the Department of State" },
+                  { "distance": 1, "levelOfDescription": "series", "naId": 654171,
+                    "title": "Numerical Files" }
+                ]
+            } }, "sort": [19129101] }
+          ] } }
+        }
+        """.data(using: .utf8)!
+
+        let record = try #require(try NARACatalogHarvestClient.decodePage(json).records.first)
+        #expect(record.levelOfDescription == "fileUnit")
+        #expect(record.seriesAncestorNaId == "654171")
+        #expect(record.seriesAncestorTitle == "Numerical Files")
+        #expect(record.recordGroupNumber == "59")
+        #expect(record.ancestorLevels == ["recordGroup", "series"])
+        // The file unit carries no entry number of its own — the observed rule.
+        #expect(record.hmsMlrEntryNumbers.isEmpty)
+    }
+
+    /// A series record's own ancestors stop at the record group, so it has no series ancestor
+    /// — the guard against attributing a series to itself.
+    @Test("A series record has no series ancestor")
+    func seriesRecordHasNoSeriesAncestor() throws {
+        // Real: naId 40967113, the verifying spike's record.
+        let json = """
+        {
+          "body": { "hits": { "hits": [
+            { "_source": { "record": {
+                "naId": 40967113,
+                "title": "Chronological Files",
+                "levelOfDescription": "series",
+                "ancestors": [
+                  { "distance": 1, "levelOfDescription": "recordGroup", "naId": 622,
+                    "recordGroupNumber": 306, "title": "Records of the U.S. Information Agency" }
+                ],
+                "variantControlNumbers": [
+                  { "number": "P 312", "type": "HMS/MLR Entry Number" }
+                ]
+            } }, "sort": [40967113] }
+          ] } }
+        }
+        """.data(using: .utf8)!
+
+        let record = try #require(try NARACatalogHarvestClient.decodePage(json).records.first)
+        #expect(record.seriesAncestorNaId == nil)
+        #expect(record.seriesAncestorTitle == nil)
+        #expect(record.hmsMlrEntryNumbers == ["P 312"])
+        #expect(record.ancestorLevels == ["recordGroup"])
+    }
+
+    /// The mis-resolution candidate the ancestor spike surfaced: lot `61F30` is an
+    /// F-designator (RG 84 post records), yet resolves to a record whose ancestry is
+    /// `collection > series` — FDR Library's President's Secretary's File — with **no**
+    /// record group. `ancestorLevels` is what lets the enrichment pass flag it.
+    @Test("A collection-parented record exposes an ancestry with no record group")
+    func flagsAncestryWithoutRecordGroup() throws {
+        // Real: naId 16619095, lot 61F30.
+        let json = """
+        {
+          "body": { "hits": { "hits": [
+            { "_source": { "record": {
+                "naId": 16619095,
+                "title": "Navy - Estimates of Potential Military Strength",
+                "levelOfDescription": "fileUnit",
+                "ancestors": [
+                  { "distance": 2, "levelOfDescription": "collection", "naId": 567623,
+                    "title": "President's Secretary's File (Franklin D. Roosevelt)" },
+                  { "distance": 1, "levelOfDescription": "series", "naId": 579094,
+                    "title": "Departmental Correspondence" }
+                ]
+            } }, "sort": [16619095] }
+          ] } }
+        }
+        """.data(using: .utf8)!
+
+        let record = try #require(try NARACatalogHarvestClient.decodePage(json).records.first)
+        #expect(record.seriesAncestorTitle == "Departmental Correspondence")
+        #expect(record.recordGroupNumber == nil, "no recordGroup ancestor exists to read")
+        #expect(!record.ancestorLevels.contains("recordGroup"),
+                "this is the signal the enrichment pass flags as a candidate mis-resolution")
+        #expect(record.ancestorLevels == ["collection", "series"])
+    }
 }
