@@ -93,6 +93,14 @@ import UIKit
 ///          A/B run shows does not happen, so it was a silent no-op that also navigated every
 ///          assertion away from the detail column. Replaced by `assertResearchLaunchedAtCategoryRoot`,
 ///          a sound-oracle guard on that hazard — explicitly NOT a reproduction of it.
+///   1.8 — #311: scenarios 4 and 5 could report GREEN having asserted nothing. `sidebarToggleButton()`
+///          returns an element only once it exists, so each scenario's
+///          `toggle.waitForExistence(timeout: 5)` was dead code — the intended tolerance for a slow
+///          launch never ran, and the `guard let` hit nil first and threw `XCTSkip` (a skip passes).
+///          The wait moved inside the helper, which now polls to a `timeout:` (0 in `tearDown`,
+///          where the control's absence is not a failure), and both guards `XCTFail` instead of
+///          skipping — past the idiom check the destination IS an iPad, so a missing toggle is a
+///          real fault. Mirrors the same correction 1.2 made to the Browse-tab guards.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -119,7 +127,9 @@ final class UIObstructionTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        if didToggleSidebar, let toggle = sidebarToggleButton(), toggle.exists {
+        // timeout: 0 — restoring the representation is best-effort; if the control is already
+        // gone there is nothing to restore and tearDown should not stall polling for it.
+        if didToggleSidebar, let toggle = sidebarToggleButton(timeout: 0), toggle.exists {
             toggle.tap()
             didToggleSidebar = false
         }
@@ -168,14 +178,36 @@ final class UIObstructionTests: XCTestCase {
     /// leading-sidebar and floating-top-tab-bar representations. On iPadOS 26 it carries the
     /// stable accessibility identifier `ToggleSideBar` (label "Toggle sidebar" — confirmed by
     /// a live simulator run); the fuzzy label predicate remains as a fallback for OS versions
-    /// that rename the identifier. Callers must treat a `nil` result as "skip".
-    private func sidebarToggleButton() -> XCUIElement? {
-        let byIdentifier = app.buttons["ToggleSideBar"]
-        if byIdentifier.exists { return byIdentifier }
-        let predicate = NSPredicate(format:
-            "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
-        let matches = app.buttons.matching(predicate)
-        return matches.count > 0 ? matches.firstMatch : nil
+    /// that rename the identifier.
+    ///
+    /// **Polls until `timeout`** (#311). It must: this returns an element only once it exists, so
+    /// a caller's `toggle.waitForExistence(timeout:)` is dead code — it can only ever be true, and
+    /// callers who wrote one got no wait at all. A slow launch therefore returned nil immediately
+    /// and the caller's `guard` threw `XCTSkip`, so both iPad obstruction scenarios reported GREEN
+    /// having asserted nothing. The wait has to live here, before the nil.
+    ///
+    /// - Parameter timeout: How long to keep polling before giving up. Pass `0` for a single
+    ///   immediate probe (`tearDown` does, where the control's absence is not a failure).
+    /// - Returns: The toggle, or `nil` if it never appeared. On an iPad destination `nil` means
+    ///   something is genuinely wrong — prefer failing over skipping.
+    private func sidebarToggleButton(timeout: TimeInterval = 5) -> XCUIElement? {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            let byIdentifier = app.buttons["ToggleSideBar"]
+            if byIdentifier.exists { return byIdentifier }
+            // Built fresh each iteration, deliberately: NSPredicate is not Sendable, and the iOS 26
+            // SDK isolates XCUI APIs to the main actor, so `matching(_:)` sends it out of this
+            // nonisolated context. A predicate hoisted above the loop would be sent on the first
+            // pass and used again on the second — "sending 'predicate' risks causing data races",
+            // a hard error under Swift 6. Re-creating it keeps each send a fresh transfer.
+            let predicate = NSPredicate(format:
+                "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
+            let matches = app.buttons.matching(predicate)
+            if matches.count > 0 { return matches.firstMatch }
+            if timeout <= 0 { break }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        return nil
     }
 
     // MARK: - 1. Tab bar does not obstruct the last browser row
@@ -357,8 +389,15 @@ final class UIObstructionTests: XCTestCase {
         throw XCTSkip("iPad-only test")
         #endif
 
-        guard let toggle = sidebarToggleButton(), toggle.waitForExistence(timeout: 5) else {
-            throw XCTSkip("Could not locate the system sidebar/tab-bar toggle on this iPadOS version")
+        // Fails rather than skips (#311). Execution only reaches here on an iPad destination, so
+        // the toggle is required to exist — and this used to XCTSkip, which reports GREEN. The
+        // wait now lives inside the helper; the `waitForExistence` that stood here was dead code
+        // against an element the helper only returns once it exists.
+        guard let toggle = sidebarToggleButton() else {
+            XCTFail("Could not locate the system sidebar/tab-bar toggle on this iPad destination "
+                    + "after polling 5s — this scenario cannot exercise both .sidebarAdaptable "
+                    + "representations without it (#238/#272 regression net is not running)")
+            return
         }
 
         // Representation A — whatever the install launched in.
@@ -516,8 +555,15 @@ final class UIObstructionTests: XCTestCase {
         throw XCTSkip("iPad-only test")
         #endif
 
-        guard let toggle = sidebarToggleButton(), toggle.waitForExistence(timeout: 5) else {
-            throw XCTSkip("Could not locate the system sidebar/tab-bar toggle on this iPadOS version")
+        // Fails rather than skips (#311). Execution only reaches here on an iPad destination, so
+        // the toggle is required to exist — and this used to XCTSkip, which reports GREEN. The
+        // wait now lives inside the helper; the `waitForExistence` that stood here was dead code
+        // against an element the helper only returns once it exists.
+        guard let toggle = sidebarToggleButton() else {
+            XCTFail("Could not locate the system sidebar/tab-bar toggle on this iPad destination "
+                    + "after polling 5s — this scenario cannot exercise both .sidebarAdaptable "
+                    + "representations without it (#238/#272 regression net is not running)")
+            return
         }
 
         // Representation A — whatever the install launched in.
