@@ -109,6 +109,27 @@ struct ResearchView: View {
     // MARK: - Body
 
     var body: some View {
+        navigationContainer
+            // Reload headers when the selected item or the visible document set changes.
+            .task(id: selectedItemDocumentIds) { await loadHeaders() }
+            // Reload note-sourced headers when any note changes.
+            .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
+            .onChange(of: allNotes.first?.lastModified){ _, _ in Task { await loadHeaders() } }
+            // directlyTaggedDocs is now derived from @Query allTagAssignments which is
+            // reactive natively — no explicit reload needed.
+    }
+
+    /// The navigation container. macOS keeps the two-column `NavigationSplitView`; iOS flattens to a
+    /// `NavigationStack` (#272 / #238 Fix B): a `NavigationSplitView` nested inside the
+    /// `.sidebarAdaptable` TabView is an unsupported composition on iPadOS 26 — the collapsed
+    /// floating-top-tab-bar representation mis-computes the detail column's top safe area and overlays
+    /// content that can't be scrolled into view. NavigationStack-per-tab is the shape Apple documents
+    /// for `.sidebarAdaptable`: the category list is the stack root and the document list is pushed on
+    /// selection. The path projects `selectedItem`, so a push sets it (header loading keys on it) and a
+    /// pop clears it. Mirrors BrowserView's Fix B.
+    @ViewBuilder
+    private var navigationContainer: some View {
+        #if os(macOS)
         NavigationSplitView {
             sidebar
         } detail: {
@@ -124,17 +145,37 @@ struct ResearchView: View {
                 )
             }
         }
-        #if os(macOS)
         .frame(minWidth: 640, minHeight: 480)
+        #else
+        NavigationStack(path: researchNavigationPath) {
+            sidebar
+                .navigationDestination(for: ResearchSidebarItem.self) { item in
+                    documentList(for: item)
+                }
+        }
         #endif
-        // Reload headers when the selected item or the visible document set changes.
-        .task(id: selectedItemDocumentIds) { await loadHeaders() }
-        // Reload note-sourced headers when any note changes.
-        .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
-        .onChange(of: allNotes.first?.lastModified){ _, _ in Task { await loadHeaders() } }
-        // directlyTaggedDocs is now derived from @Query allTagAssignments which is
-        // reactive natively — no explicit reload needed.
     }
+
+    /// A sidebar row that navigates correctly per platform: a `NavigationLink` push in the iOS
+    /// `NavigationStack` (#272), a selection `.tag` in the macOS `NavigationSplitView` sidebar.
+    @ViewBuilder
+    private func sidebarRow<Content: View>(_ item: ResearchSidebarItem,
+                                           @ViewBuilder content: () -> Content) -> some View {
+        #if os(iOS)
+        NavigationLink(value: item) { content() }
+        #else
+        content().tag(item)
+        #endif
+    }
+
+    #if os(iOS)
+    /// One-deep navigation path projecting `selectedItem` (#272): a push appends the tapped category
+    /// (setting `selectedItem`, which drives header loading); a pop empties the path (clearing it).
+    private var researchNavigationPath: Binding<[ResearchSidebarItem]> {
+        Binding(get: { selectedItem.map { [$0] } ?? [] },
+                set: { selectedItem = $0.last })
+    }
+    #endif
 
     // MARK: - Sidebar
 
@@ -142,41 +183,43 @@ struct ResearchView: View {
         List(selection: $selectedItem) {
             // Synthetic "all notes" entry
             Section {
-                Label {
-                    HStack {
-                        Text(String(localized: "research.sidebar.allNotes",
-                                    defaultValue: "All Research Documents"))
-                        Spacer()
-                        Text("\(allAnnotatedDocumentCount)")
-                            .font(FRUSTheme.captionFont)
-                            .foregroundStyle(.secondary)
+                sidebarRow(.allNotes) {
+                    Label {
+                        HStack {
+                            Text(String(localized: "research.sidebar.allNotes",
+                                        defaultValue: "All Research Documents"))
+                            Spacer()
+                            Text("\(allAnnotatedDocumentCount)")
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "note.text")
                     }
-                } icon: {
-                    Image(systemName: "note.text")
                 }
-                .tag(ResearchSidebarItem.allNotes)
             }
 
             // Collections sorted alphabetically by name
             if !sortedCollectionsWithCounts.isEmpty {
                 Section(String(localized: "research.sidebar.collections", defaultValue: "By Collection")) {
                     ForEach(sortedCollectionsWithCounts, id: \.collection.id) { item in
-                        Label {
-                            HStack {
-                                Text(item.collection.name.isEmpty
-                                     ? String(localized: "research.sidebar.collections.untitled",
-                                              defaultValue: "Untitled Collection")
-                                     : item.collection.name)
-                                Spacer()
-                                Text("\(item.count)")
-                                    .font(FRUSTheme.captionFont)
-                                    .foregroundStyle(.secondary)
+                        sidebarRow(.collection(item.collection.id)) {
+                            Label {
+                                HStack {
+                                    Text(item.collection.name.isEmpty
+                                         ? String(localized: "research.sidebar.collections.untitled",
+                                                  defaultValue: "Untitled Collection")
+                                         : item.collection.name)
+                                    Spacer()
+                                    Text("\(item.count)")
+                                        .font(FRUSTheme.captionFont)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: "tray.2")
+                                    .foregroundStyle(Color.accentColor)
                             }
-                        } icon: {
-                            Image(systemName: "tray.2")
-                                .foregroundStyle(Color.accentColor)
                         }
-                        .tag(ResearchSidebarItem.collection(item.collection.id))
                         .contextMenu {
                             wordCloudButton(.collection(id: item.collection.id))
                         }
@@ -188,20 +231,21 @@ struct ResearchView: View {
             if !sortedTagsWithCounts.isEmpty {
                 Section(String(localized: "research.sidebar.tags", defaultValue: "By Tag")) {
                     ForEach(sortedTagsWithCounts, id: \.tag.id) { item in
-                        Label {
-                            HStack {
-                                Text(item.tag.name)
-                                Spacer()
-                                Text("\(item.count)")
-                                    .font(FRUSTheme.captionFont)
-                                    .foregroundStyle(.secondary)
+                        sidebarRow(.tag(item.tag.id)) {
+                            Label {
+                                HStack {
+                                    Text(item.tag.name)
+                                    Spacer()
+                                    Text("\(item.count)")
+                                        .font(FRUSTheme.captionFont)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Text("◆")
+                                    .font(FRUSTheme.captionSmallFont)
+                                    .foregroundStyle(Color.accentColor)
                             }
-                        } icon: {
-                            Text("◆")
-                                .font(FRUSTheme.captionSmallFont)
-                                .foregroundStyle(Color.accentColor)
                         }
-                        .tag(ResearchSidebarItem.tag(item.tag.id))
                         .contextMenu {
                             wordCloudButton(.userTag(id: item.tag.id))
                         }
@@ -214,20 +258,21 @@ struct ResearchView: View {
                 Section(String(localized: "research.sidebar.highlights",
                                defaultValue: "By Highlight")) {
                     ForEach(sortedHighlightColorsWithCounts, id: \.color) { item in
-                        Label {
-                            HStack {
-                                Text(item.color.displayName)
-                                Spacer()
-                                Text("\(item.count)")
-                                    .font(FRUSTheme.captionFont)
-                                    .foregroundStyle(.secondary)
+                        sidebarRow(.highlightColor(item.color)) {
+                            Label {
+                                HStack {
+                                    Text(item.color.displayName)
+                                    Spacer()
+                                    Text("\(item.count)")
+                                        .font(FRUSTheme.captionFont)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Circle()
+                                    .fill(item.color.swiftUIColor.opacity(0.75))
+                                    .frame(width: 10, height: 10)
                             }
-                        } icon: {
-                            Circle()
-                                .fill(item.color.swiftUIColor.opacity(0.75))
-                                .frame(width: 10, height: 10)
                         }
-                        .tag(ResearchSidebarItem.highlightColor(item.color))
                     }
                 }
             }
