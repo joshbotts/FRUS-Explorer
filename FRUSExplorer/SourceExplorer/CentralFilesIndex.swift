@@ -88,6 +88,23 @@ struct LotFileEntry: Codable, Sendable, Equatable {
     var title: String
     var catalogURL: String
     var matchType: String
+    /// The series' HMS/MLR Entry Number(s) — the identifier NARA staff ask researchers to
+    /// quote when requesting the original records (#315). `nil` when the bundled index
+    /// predates the enrichment pass **or** when the record genuinely carries none; both
+    /// render the same way (nothing), so the UI need not distinguish them.
+    var hmsMlrEntryNumbers: [String]?
+    /// The resolved record's catalog level (`series`, `fileUnit`, …), when known (#315).
+    ///
+    /// Check this before presenting `title` as a *series* title: the resolver takes the first
+    /// record-group match without requiring series level, so a minority of entries describe a
+    /// file unit. `isSeriesLevel` is the intended read.
+    var levelOfDescription: String?
+
+    /// Whether the resolved record is described at the series level — i.e. whether `title`
+    /// can honestly be shown as the "file series name" (#315).
+    ///
+    /// `nil` level (an un-enriched bundle) reads as `false`: absent evidence, do not claim it.
+    var isSeriesLevel: Bool { levelOfDescription == "series" }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -97,6 +114,9 @@ struct LotFileEntry: Codable, Sendable, Equatable {
         title = try c.decode(String.self, forKey: .title)
         catalogURL = try c.decode(String.self, forKey: .catalogURL)
         matchType = try c.decodeIfPresent(String.self, forKey: .matchType) ?? "control"
+        // decodeIfPresent, so a bundle written before #315's enrichment still decodes.
+        hmsMlrEntryNumbers = try c.decodeIfPresent([String].self, forKey: .hmsMlrEntryNumbers)
+        levelOfDescription = try c.decodeIfPresent(String.self, forKey: .levelOfDescription)
     }
 }
 

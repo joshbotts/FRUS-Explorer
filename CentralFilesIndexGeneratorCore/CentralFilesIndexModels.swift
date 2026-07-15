@@ -88,15 +88,30 @@ public struct LotFileEntry: Codable, Sendable, Equatable {
     /// How the lot resolved: `control` (exact control-number match, high confidence) or
     /// `phrase` (free-text fallback, lower confidence — still record-group-verified).
     public var matchType: String
+    /// The series' **HMS/MLR Entry Number(s)** — what NARA staff ask researchers to cite when
+    /// requesting the original records (#315). `nil` until the enrichment pass has run for
+    /// this record, and also when the record genuinely carries none; the two are not
+    /// distinguished, because the UI treats both the same way (show nothing).
+    public var hmsMlrEntryNumbers: [String]?
+    /// The resolved record's level (`series`, `fileUnit`, …), captured by the enrichment pass.
+    ///
+    /// Present so a consumer can tell whether `title` really is a **series** title before
+    /// presenting it as the "file series name" #315 asks for. `resolveLotFile` accepts the
+    /// first record-group match without requiring `series` level, so a minority of entries
+    /// may be file-unit titles — this field is what makes that visible rather than assumed.
+    public var levelOfDescription: String?
 
     public init(lotNumber: String, recordGroup: String, naId: String, title: String,
-                catalogURL: String, matchType: String = "control") {
+                catalogURL: String, matchType: String = "control",
+                hmsMlrEntryNumbers: [String]? = nil, levelOfDescription: String? = nil) {
         self.lotNumber = lotNumber
         self.recordGroup = recordGroup
         self.naId = naId
         self.title = title
         self.catalogURL = catalogURL
         self.matchType = matchType
+        self.hmsMlrEntryNumbers = hmsMlrEntryNumbers
+        self.levelOfDescription = levelOfDescription
     }
 }
 

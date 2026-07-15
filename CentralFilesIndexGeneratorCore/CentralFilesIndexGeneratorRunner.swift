@@ -91,6 +91,82 @@ public struct CentralFilesIndexGeneratorRunner {
     private init() {}
 
     /// Runs the Phase 1 harvest. Calls `exit(1)` on a fatal error or golden-check failure.
+    /// Attaches HMS/MLR entry numbers + `levelOfDescription` to the already-resolved lot
+    /// files in the bundled index, in place (#315).
+    ///
+    /// Reads the existing index rather than re-harvesting: the NAIDs are already there and
+    /// are the stable key (the control-number index has drifted since the June harvest — see
+    /// `NARACatalogHarvestClient.fetchRecord(naId:)`). Every other section of the index is
+    /// round-tripped untouched.
+    ///
+    /// **Queries are keyed by distinct NAID, not by lot.** One catalog series is indexed
+    /// under many lot numbers — the verifying spike's record carried four — so grouping cuts
+    /// the request count well below the entry count and makes the reverse mapping explicit:
+    /// every lot sharing a NAID gets that record's entry numbers, by construction rather
+    /// than by a second lookup.
+    ///
+    /// Failures are per-NAID and non-fatal: a miss leaves that record's entries `nil`
+    /// (indistinguishable from "genuinely has none", which is what the UI wants anyway) and
+    /// the pass continues. Re-running is safe and cheap — it is idempotent, and the client's
+    /// throttle/backoff already governs the request rate.
+    static func enrichLotFiles(outputPath: String, client: NARACatalogHarvestClient) async {
+        guard let existing = try? CentralFilesIndexWriter.read(from: outputPath) else {
+            print("[CentralFilesIndexGenerator] ✗ ENRICH_LOTS: cannot read \(outputPath) — "
+                  + "run the full harvest first.")
+            exit(1)
+        }
+        var lotFiles = existing.lotFiles
+        guard !lotFiles.isEmpty else {
+            print("[CentralFilesIndexGenerator] ✗ ENRICH_LOTS: the index has no lot files to enrich.")
+            exit(1)
+        }
+
+        // NAID -> every lot entry resolving to it.
+        let byNaId = Dictionary(grouping: lotFiles.indices) { lotFiles[$0].naId }
+        print("""
+        [CentralFilesIndexGenerator] #315 lot enrichment
+          lot entries:   \(lotFiles.count)
+          distinct NAIDs:\(byNaId.count)   (one query each)
+        """)
+
+        var enriched = 0, misses = 0, withEntries = 0, nonSeries = 0
+        for naId in byNaId.keys.sorted() {          // sorted: deterministic logs
+            guard let indices = byNaId[naId] else { continue }
+            guard let record = try? await client.fetchRecord(naId: naId), !record.naId.isEmpty else {
+                misses += 1
+                continue
+            }
+            let entries = record.hmsMlrEntryNumbers
+            if !entries.isEmpty { withEntries += 1 }
+            if let level = record.levelOfDescription, level != "series" { nonSeries += 1 }
+            for i in indices {
+                lotFiles[i].hmsMlrEntryNumbers = entries.isEmpty ? nil : entries
+                lotFiles[i].levelOfDescription = record.levelOfDescription
+            }
+            enriched += 1
+        }
+
+        let updated = CentralFilesIndex(
+            generated: isoToday(),
+            numericalFile: existing.numericalFile,
+            countrySeries: existing.countrySeries,
+            lotFiles: lotFiles)
+        do {
+            try CentralFilesIndexWriter.write(updated, to: outputPath)
+        } catch {
+            print("[CentralFilesIndexGenerator] ✗ ENRICH_LOTS: failed to write index: \(error)")
+            exit(1)
+        }
+        let entryCount = lotFiles.filter { !($0.hmsMlrEntryNumbers ?? []).isEmpty }.count
+        print("""
+        [CentralFilesIndexGenerator] ✓ ENRICH_LOTS wrote \(outputPath)
+          NAIDs enriched:        \(enriched)   (query misses: \(misses))
+          NAIDs with an entry #: \(withEntries) / \(enriched)
+          lot entries carrying an entry #: \(entryCount) / \(lotFiles.count)
+          NAIDs NOT at series level: \(nonSeries)  \(nonSeries > 0 ? "← their titles are not series titles; see #315" : "")
+        """)
+    }
+
     public static func run() async {
         let env = ProcessInfo.processInfo.environment
 
@@ -115,6 +191,19 @@ public struct CentralFilesIndexGeneratorRunner {
             await CentralFilesSurveyRunner.run(
                 seriesNaId: surveySeries, apiKey: apiKey,
                 pageSize: pageSize, cacheDirectory: cacheDir, refresh: refresh)
+            return
+        }
+
+        // Lot enrichment mode (#315): re-query only the already-resolved lot records to
+        // attach their HMS/MLR entry numbers, then exit. A mode rather than a phase because
+        // enrichment must NOT drag the Phase 1/2 enumerations (thousands of requests) along
+        // behind it — it needs one cheap query per distinct NAID and nothing else.
+        if ["1", "true", "yes"].contains((env["ENRICH_LOTS"] ?? "").lowercased()) {
+            await enrichLotFiles(
+                outputPath: outputPath,
+                client: NARACatalogHarvestClient(apiKey: apiKey,
+                                                 cacheDirectory: cacheDir,
+                                                 refresh: refresh))
             return
         }
 

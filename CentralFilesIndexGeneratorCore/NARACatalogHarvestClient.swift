@@ -33,6 +33,24 @@ public struct CatalogRecord: Sendable, Equatable {
     /// to verify a lot-file match really belongs to RG 59/84 rather than a coincidental
     /// free-text hit in another record group (census, military, court records).
     public let recordGroupNumber: String?
+    /// The record's **HMS/MLR Entry Number(s)** — the citation identifier NARA staff ask
+    /// researchers to quote when requesting original records (#315).
+    ///
+    /// Filtered from the response's `variantControlNumbers` by an **exact** match on
+    /// `type == "HMS/MLR Entry Number"` (`Self.hmsMlrEntryType`). Exactness is the point:
+    /// a real record carries several control-number types, and the neighbours of this one
+    /// are precisely the values a researcher must NOT be handed — `"Former HMS/MLR Entry
+    /// Number"` (superseded, which this issue calls out by name) and `"HMS Record Entry
+    /// ID"` (an internal identifier, e.g. `HS1-301519541`). A substring or prefix test
+    /// would sweep both in. Verified against a live record 2026-07-15 (see #315).
+    ///
+    /// Usually empty or one element; the array admits the multi-entry case rather than
+    /// silently keeping the first.
+    public let hmsMlrEntryNumbers: [String]
+
+    /// The exact `variantControlNumbers.type` that denotes a current HMS/MLR entry number.
+    /// Not a prefix and not a pattern — see `hmsMlrEntryNumbers`.
+    public static let hmsMlrEntryType = "HMS/MLR Entry Number"
 
     public init(
         naId: String,
@@ -40,7 +58,8 @@ public struct CatalogRecord: Sendable, Equatable {
         levelOfDescription: String? = nil,
         parentFileUnitNaId: String? = nil,
         parentFileUnitTitle: String? = nil,
-        recordGroupNumber: String? = nil
+        recordGroupNumber: String? = nil,
+        hmsMlrEntryNumbers: [String] = []
     ) {
         self.naId = naId
         self.title = title
@@ -48,6 +67,16 @@ public struct CatalogRecord: Sendable, Equatable {
         self.parentFileUnitNaId = parentFileUnitNaId
         self.parentFileUnitTitle = parentFileUnitTitle
         self.recordGroupNumber = recordGroupNumber
+        self.hmsMlrEntryNumbers = hmsMlrEntryNumbers
+    }
+
+    /// Extracts the current HMS/MLR entry numbers from a decoded `variantControlNumbers`
+    /// list. Factored out so it is unit-testable without a network round trip.
+    static func hmsMlrEntries(from variants: [(number: String?, type: String?)]) -> [String] {
+        variants
+            .filter { $0.type == hmsMlrEntryType }
+            .compactMap { $0.number?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 
@@ -215,6 +244,26 @@ public actor NARACatalogHarvestClient {
 
     /// One cached lot resolution. `naId` empty marks a confirmed miss (so it isn't re-queried).
     private struct LotResolution: Codable { let naId: String; let title: String; let matchType: String? }
+
+    /// Fetches one record **by NAID** — the enrichment route (#315).
+    ///
+    /// Why NAID rather than the control-number spellings `resolveLotFile` uses: the NAIDs are
+    /// already in the bundled indexes and are stable, whereas the control-number index is not.
+    /// A 2026-07-15 spike found that lot `64D171` now matches only its *compact* spelling —
+    /// the spaced and mixed forms return zero hits, though they resolved during the June
+    /// harvest. Re-running control-number queries to enrich would therefore silently lose
+    /// records that are perfectly reachable by the NAID we already hold.
+    ///
+    /// The plain `records/search?naId=` route returns the full description — including
+    /// `variantControlNumbers` — so no record-level endpoint is needed. Verified live against
+    /// NAID 40967113 (see #315); the query shape here is exactly the one that spike proved.
+    ///
+    /// - Returns: the record, or `nil` if the NAID returned no hit. The result is checked to
+    ///   have the requested NAID, so a fuzzy or shifted match can never be silently accepted.
+    public func fetchRecord(naId: String) async throws -> CatalogRecord? {
+        let results = try await search(queryItems: [URLQueryItem(name: "naId", value: naId)])
+        return results.first { $0.naId == naId }
+    }
 
     /// Resolves a normalized lot number to its NARA Catalog series record by matching
     /// `variantControlNumber_is` against NARA's indexed lot identifiers — the same approach
@@ -508,7 +557,9 @@ public actor NARACatalogHarvestClient {
                 levelOfDescription: record.levelOfDescription,
                 parentFileUnitNaId: parent?.naId?.stringValue,
                 parentFileUnitTitle: parent?.title,
-                recordGroupNumber: rg)
+                recordGroupNumber: rg,
+                hmsMlrEntryNumbers: CatalogRecord.hmsMlrEntries(
+                    from: (record.variantControlNumbers ?? []).map { ($0.number, $0.type) }))
         }
         let nextCursor = hits.last?.sort?.first?.stringValue
         return DecodedPage(records: records, nextCursor: nextCursor)
@@ -531,6 +582,18 @@ public actor NARACatalogHarvestClient {
             let title: String?
             let levelOfDescription: String?
             let ancestors: [Ancestor]?
+            /// Every control number NARA indexes for this record — lot-file numbers,
+            /// declassification project numbers, HMS/MLR entry numbers, and more. Decoded
+            /// as of #315; before that this mirror dropped the field, which is why the
+            /// entry numbers could not be recovered offline and a re-query was required.
+            let variantControlNumbers: [VariantControlNumber]?
+        }
+        /// One entry of `variantControlNumbers`. `type` is the discriminator that decides
+        /// whether `number` is a current HMS/MLR entry number — see
+        /// `CatalogRecord.hmsMlrEntryNumbers`.
+        struct VariantControlNumber: Decodable {
+            let number: String?
+            let type: String?
         }
         struct Ancestor: Decodable {
             let naId: CatalogScalar?
