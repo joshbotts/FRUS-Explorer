@@ -34,6 +34,7 @@
 		0B202FBACFE72F6ADE672D7D /* FTS5InlineQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F026464A582483E73619623 /* FTS5InlineQueryParser.swift */; };
 		0BAA185CAEA88839CFFE430D /* FTS5Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */; };
 		0C08DC37FC97EA45E4C6580F /* broken-refs-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 8738FC0CC480434D7E92E5CD /* broken-refs-index.json */; };
+		0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */; };
 		0D347250EA4A69C21E4A3F35 /* WordCloudLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81468F37DEEF01DF5BC14F13 /* WordCloudLayout.swift */; };
 		0E410D22F78C0B8D005E5317 /* IndexingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */; };
 		0E7D2137040CFFD2A6F1BDC6 /* HistoryWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60908891C1CCD378F1735444 /* HistoryWindowView.swift */; };
@@ -178,6 +179,7 @@
 		4DBD6F40DAE69A8C0313AB86 /* ResearchNoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EE3C7C01FFEA08B1D1483F /* ResearchNoteEditorView.swift */; };
 		4DDA832EA75D016663B0E19D /* AdministrationProfilesDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38D4270D7AB300395C5D7F0 /* AdministrationProfilesDashboard.swift */; };
 		4E06931EE3EFF2BBB19DB50F /* SummarizationPromptSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C74F148CD75B5EF5C5335E9 /* SummarizationPromptSeeder.swift */; };
+		4E3992CD09A928945B2AC08C /* MacCorpusBrowserWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */; };
 		4E3A62CA21D3DDFB89010FE6 /* DocumentASTCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */; };
 		4E3FF75F67EEA5A64BE23BFC /* ZoteroJSONExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B198234CB42E88D3372AD2 /* ZoteroJSONExporter.swift */; };
 		4EE09496617BE5D6C8D90403 /* SummarizationBackgroundProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4098809B135A742E73742AF2 /* SummarizationBackgroundProbe.swift */; };
@@ -923,6 +925,7 @@
 		AA0ADA1D9C2433D796F840F4 /* SavedSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSearch.swift; sourceTree = "<group>"; };
 		AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedSummary.swift; sourceTree = "<group>"; };
 		AC8EF6A6AA20275212262AF9 /* ResearchNoteEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorViewModel.swift; sourceTree = "<group>"; };
+		ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCorpusBrowserWindow.swift; sourceTree = "<group>"; };
 		AEB436C7A2D56045B99705DF /* DiscoveryTips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryTips.swift; sourceTree = "<group>"; };
 		B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModelContainer+FRUS.swift"; sourceTree = "<group>"; };
 		B16CD969BCF6F9E6B4C4720D /* CollectionEntryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionEntryData.swift; sourceTree = "<group>"; };
@@ -1259,6 +1262,7 @@
 				C9B92FF355B906D07F1DE187 /* IndexingContextCard.swift */,
 				551104A534CC0A4670AD011D /* IndexingQueueBannerView.swift */,
 				E62D6B16BC80A92DB71B8F3D /* IndexingSummaryCard.swift */,
+				ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */,
 				5CC526B60C0D44514FDFC572 /* MacDocumentView.swift */,
 				4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */,
 				4F7C1F384F2AAF05C44D3D70 /* MainTabView.swift */,
@@ -2066,6 +2070,7 @@
 				D6AB6B5AF5D52A42A0F13363 /* IndexingSummaryCard.swift in Sources */,
 				0632CD0D0FBEF87470942131 /* KeychainStore.swift in Sources */,
 				BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */,
+				0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */,
 				3A0E32C338CA487E86C9D86B /* MacDocumentView.swift in Sources */,
 				97064198F213D857786F7DE5 /* MacSearchViewModel.swift in Sources */,
 				368F4C3BA10A1324CF19BB0E /* MacSourceExplorerView.swift in Sources */,
@@ -2323,6 +2328,7 @@
 				EA77F5267057C90A63A29C6E /* IndexingSummaryCard.swift in Sources */,
 				CB6AD2656E288EE5C8DA8A18 /* KeychainStore.swift in Sources */,
 				19A2E99993AE1FB57687B79B /* MacCollectionManagerView.swift in Sources */,
+				4E3992CD09A928945B2AC08C /* MacCorpusBrowserWindow.swift in Sources */,
 				3F3F38656DA23D95673B117D /* MacDocumentView.swift in Sources */,
 				1F9934683E4ACA22BE6F146E /* MacSearchViewModel.swift in Sources */,
 				B5F3041184E73E4AB21A22EE /* MacSourceExplorerView.swift in Sources */,
