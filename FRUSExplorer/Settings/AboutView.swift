@@ -246,8 +246,7 @@ contemporary challenges and the United States's role in the world.
                         .foregroundStyle(.secondary)
                 }
             }
-            .accessibilityLabel(Text(verbatim: title) + Text(verbatim: " — ")
-                + Text(String(localized: "about.resources.opensInBrowser", defaultValue: "opens in browser")))
+            .accessibilityLabel(Text(verbatim: "\(title) — \(String(localized: "about.resources.opensInBrowser", defaultValue: "opens in browser"))"))
             .accessibilityAddTraits(.isLink)
         }
     }
