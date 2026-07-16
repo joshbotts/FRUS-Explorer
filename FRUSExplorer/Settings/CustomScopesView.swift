@@ -26,6 +26,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #258 Phase 1: initial implementation
+///   1.1 — #258 Phase 4: the editor gains the four rich selection facets ("Add Volumes
+///          By…" — subject / person / manifest tag / coverage-years+editor), each a
+///          picker whose matches UNION into the selection; the person facet reuses
+///          PersonMergePickerSheet with a facet title
 struct CustomScopesView: View {
 
     @Environment(AppState.self) private var appState
@@ -152,6 +156,16 @@ struct CustomScopeEditorView: View {
     @State private var selection: Set<String> = []
     @State private var filterText: String = ""
 
+    /// Which rich-facet picker is presented (#258 Phase 4), or `nil`.
+    @State private var facetSheet: FacetSheet?
+
+    /// The four rich selection facets (sketch §5). Each presents a picker whose result
+    /// is UNIONED into `selection` — facets add, they never replace.
+    private enum FacetSheet: String, Identifiable {
+        case subject, person, tag, coverage
+        var id: String { rawValue }
+    }
+
     /// The whole manifest (known entries, falling back to the bundled manifest before the
     /// first live fetch), grouped by subseries in chronological order.
     private var subseriesGroups: [(subseries: String, volumes: [VolumeManifestEntry])] {
@@ -207,6 +221,62 @@ struct CustomScopeEditorView: View {
         selection = Set(scope.volumeIds)
     }
 
+    /// The "Add Volumes By…" facet menu (#258 Phase 4): the four rich facets, each
+    /// opening a picker that UNIONS matches into the selection. Shared by both bodies.
+    private var addByFacetMenu: some View {
+        Menu {
+            Button {
+                facetSheet = .subject
+            } label: {
+                Label(String(localized: "settings.scopes.facet.subject",
+                             defaultValue: "Subject…"), systemImage: "text.book.closed")
+            }
+            .disabled(VolumeSubjectProfilesStore.shared == nil)
+            Button {
+                facetSheet = .person
+            } label: {
+                Label(String(localized: "settings.scopes.facet.person",
+                             defaultValue: "Person…"), systemImage: "person")
+            }
+            .disabled(appState.personMentionStore == nil)
+            Button {
+                facetSheet = .tag
+            } label: {
+                Label(String(localized: "settings.scopes.facet.tag",
+                             defaultValue: "Manifest Tag…"), systemImage: "tag")
+            }
+            Button {
+                facetSheet = .coverage
+            } label: {
+                Label(String(localized: "settings.scopes.facet.coverage",
+                             defaultValue: "Coverage Years / Editor…"), systemImage: "calendar")
+            }
+        } label: {
+            Label(String(localized: "settings.scopes.facet.menu",
+                         defaultValue: "Add Volumes By…"), systemImage: "plus.circle")
+        }
+        .accessibilityHint(String(localized: "settings.scopes.facet.menu.hint",
+                                  defaultValue: "Adds matching volumes to the scope — additions never remove volumes already selected"))
+    }
+
+
+    /// All manifest entries (the facet pickers' universe — whole manifest, §8-Q1(a)).
+    private var allManifestEntries: [VolumeManifestEntry] {
+        appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+    }
+
+    /// Handles a person facet pick: resolves the person's mention volumes via the #264
+    /// primitive and unions them (only indexed volumes have mention rows — that subset
+    /// is inherent to the facet and disclosed in the picker's hint).
+    private func addVolumes(forPerson entry: PersonIndexEntry) {
+        guard let store = appState.personMentionStore,
+              let rollupId = entry.rollupId else { return }
+        Task {
+            guard let counts = try? await store.volumeMentionCounts(forRollupId: rollupId) else { return }
+            selection.formUnion(counts.map(\.volumeId))
+        }
+    }
+
     /// The subseries-grouped selection list, shared by both platform bodies.
     private var groupList: some View {
         ForEach(subseriesGroups, id: \.subseries) { group in
@@ -233,10 +303,14 @@ struct CustomScopeEditorView: View {
                     TextField(String(localized: "settings.scopes.editor.name",
                                      defaultValue: "Scope name"),
                               text: $name)
+                    addByFacetMenu
                 } footer: {
                     Text(footerText)
                 }
                 groupList
+            }
+            .sheet(item: $facetSheet) { facet in
+                facetPicker(facet)
             }
             .searchable(text: $filterText,
                         prompt: String(localized: "settings.scopes.editor.search",
@@ -286,9 +360,15 @@ struct CustomScopeEditorView: View {
                                  defaultValue: "Filter volumes by title"),
                           text: $filterText)
                     .textFieldStyle(.roundedBorder)
+                addByFacetMenu
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
+            .sheet(item: $facetSheet) { facet in
+                facetPicker(facet)
+            }
 
             List {
                 groupList
@@ -363,6 +443,33 @@ struct CustomScopeEditorView: View {
         .textCase(nil)
     }
 
+    /// Builds the picker for a facet (#258 Phase 4). Every picker UNIONS into
+    /// `selection`; the person facet reuses the corrections flow's searchable picker
+    /// with a facet title.
+    @ViewBuilder
+    private func facetPicker(_ facet: FacetSheet) -> some View {
+        switch facet {
+        case .subject:
+            SubjectFacetPicker(currentSelection: selection) { ids in
+                selection.formUnion(ids)
+            }
+        case .person:
+            PersonMergePickerSheet(excludingRollupId: nil,
+                                   onPick: { addVolumes(forPerson: $0) },
+                                   title: String(localized: "settings.scopes.facet.person.title",
+                                                 defaultValue: "Add Volumes by Person"))
+                .environment(appState)
+        case .tag:
+            TagFacetPicker(entries: allManifestEntries, currentSelection: selection) { ids in
+                selection.formUnion(ids)
+            }
+        case .coverage:
+            CoverageFacetSheet(entries: allManifestEntries) { ids in
+                selection.formUnion(ids)
+            }
+        }
+    }
+
     /// Commits the edit: wholesale membership replacement (deduped, sorted), name trim,
     /// `lastModified` stamp; inserts the record when it is a draft.
     private func save() {
@@ -372,5 +479,235 @@ struct CustomScopeEditorView: View {
         if isDraft { modelContext.insert(scope) }
         try? modelContext.save()
         dismiss()
+    }
+}
+
+// MARK: - SubjectFacetPicker (#258 Phase 4)
+
+/// Searchable list of the frus-subjects catalog; tapping a subject UNIONS its volumes
+/// into the scope. Rows show reach and a checkmark once every covered volume is already
+/// selected. Volume-grain by construction (the profiles are volume-grain).
+private struct SubjectFacetPicker: View {
+
+    /// The editor's current selection, for the already-added checkmarks.
+    let currentSelection: Set<String>
+    /// Unions the subject's volumes into the editor's selection.
+    let onAdd: (Set<String>) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    /// Live view of what has been added THIS presentation (checkmarks update as taps land).
+    @State private var addedThisSession: Set<String> = []
+
+    private var catalog: [ScopeFacets.SubjectEntry] {
+        guard let profiles = VolumeSubjectProfilesStore.shared else { return [] }
+        let all = ScopeFacets.subjectCatalog(resolvedByVolume: profiles.resolvedByVolume,
+                                             volumesBySubjectRef: profiles.volumesBySubjectRef)
+        guard !searchText.isEmpty else { return all }
+        return all.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+                || $0.category.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List(catalog) { entry in
+                let volumes = VolumeSubjectProfilesStore.shared.map {
+                    ScopeFacets.volumeIds(forSubjectRef: entry.ref,
+                                          volumesBySubjectRef: $0.volumesBySubjectRef)
+                } ?? []
+                let fullyAdded = volumes.isSubset(of: currentSelection.union(addedThisSession))
+                Button {
+                    onAdd(volumes)
+                    addedThisSession.formUnion(volumes)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.name)
+                            Text(String(format: String(
+                                localized: "settings.scopes.facet.subject.row %@ %lld",
+                                defaultValue: "%@ · %lld volumes"),
+                                entry.category, Int64(entry.volumeCount)))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: fullyAdded ? "checkmark.circle.fill" : "plus.circle")
+                            .foregroundStyle(fullyAdded ? Color.secondary : Color.accentColor)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(fullyAdded)
+                .accessibilityLabel(entry.name)
+                .accessibilityHint(String(localized: "settings.scopes.facet.add.hint",
+                                          defaultValue: "Adds this facet's volumes to the scope"))
+            }
+            .searchable(text: $searchText,
+                        prompt: String(localized: "settings.scopes.facet.subject.prompt",
+                                       defaultValue: "Search subjects"))
+            .navigationTitle(String(localized: "settings.scopes.facet.subject.title",
+                                    defaultValue: "Add Volumes by Subject"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 480)
+        #endif
+    }
+}
+
+// MARK: - TagFacetPicker (#258 Phase 4)
+
+/// Searchable list of the manifest's OH tag slugs; tapping a tag UNIONS its volumes into
+/// the scope. Same interaction contract as `SubjectFacetPicker`.
+private struct TagFacetPicker: View {
+
+    /// The facet universe (whole manifest).
+    let entries: [VolumeManifestEntry]
+    /// The editor's current selection, for the already-added checkmarks.
+    let currentSelection: Set<String>
+    /// Unions the tag's volumes into the editor's selection.
+    let onAdd: (Set<String>) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    @State private var addedThisSession: Set<String> = []
+
+    private var catalog: [ScopeFacets.TagEntry] {
+        let all = ScopeFacets.tagCatalog(entries)
+        guard !searchText.isEmpty else { return all }
+        return all.filter { $0.slug.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List(catalog) { tag in
+                let volumes = ScopeFacets.volumeIds(taggedWith: tag.slug, entries: entries)
+                let fullyAdded = volumes.isSubset(of: currentSelection.union(addedThisSession))
+                Button {
+                    onAdd(volumes)
+                    addedThisSession.formUnion(volumes)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(tag.slug)
+                            Text(String(format: String(
+                                localized: "settings.scopes.facet.tag.row %lld",
+                                defaultValue: "%lld volumes"), Int64(tag.volumeCount)))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: fullyAdded ? "checkmark.circle.fill" : "plus.circle")
+                            .foregroundStyle(fullyAdded ? Color.secondary : Color.accentColor)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(fullyAdded)
+                .accessibilityLabel(tag.slug)
+                .accessibilityHint(String(localized: "settings.scopes.facet.add.hint",
+                                          defaultValue: "Adds this facet's volumes to the scope"))
+            }
+            .searchable(text: $searchText,
+                        prompt: String(localized: "settings.scopes.facet.tag.prompt",
+                                       defaultValue: "Search tags"))
+            .navigationTitle(String(localized: "settings.scopes.facet.tag.title",
+                                    defaultValue: "Add Volumes by Tag"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 460)
+        #endif
+    }
+}
+
+// MARK: - CoverageFacetSheet (#258 Phase 4)
+
+/// The coverage facet: adds every volume whose coverage years intersect a range,
+/// optionally narrowed by an editor-name substring. Volumes without parseable coverage
+/// are excluded (absent evidence, no claim) — the live match count makes that visible.
+private struct CoverageFacetSheet: View {
+
+    /// The facet universe (whole manifest).
+    let entries: [VolumeManifestEntry]
+    /// Unions the matching volumes into the editor's selection.
+    let onAdd: (Set<String>) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var fromYearText = ""
+    @State private var toYearText = ""
+    @State private var editorFilter = ""
+
+    /// The live match for the current inputs, or `nil` when the years don't parse.
+    private var matches: Set<String>? {
+        guard let from = Int(fromYearText), let to = Int(toYearText), from <= to else { return nil }
+        return ScopeFacets.volumeIds(coverageIntersecting: from, toYear: to,
+                                     editorContains: editorFilter.isEmpty ? nil : editorFilter,
+                                     entries: entries)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(String(localized: "settings.scopes.facet.coverage.from",
+                                     defaultValue: "From year (e.g. 1961)"),
+                              text: $fromYearText)
+                    TextField(String(localized: "settings.scopes.facet.coverage.to",
+                                     defaultValue: "To year (e.g. 1968)"),
+                              text: $toYearText)
+                    TextField(String(localized: "settings.scopes.facet.coverage.editor",
+                                     defaultValue: "Editor name contains (optional)"),
+                              text: $editorFilter)
+                } footer: {
+                    Text(String(localized: "settings.scopes.facet.coverage.footer",
+                                defaultValue: "Adds volumes whose document coverage intersects the years. Volumes without coverage dates in the manifest are not matched."))
+                }
+                Section {
+                    Button {
+                        if let matches { onAdd(matches); dismiss() }
+                    } label: {
+                        if let matches {
+                            Text(String(format: String(
+                                localized: "settings.scopes.facet.coverage.add %lld",
+                                defaultValue: "Add %lld matching volumes"), Int64(matches.count)))
+                        } else {
+                            Text(String(localized: "settings.scopes.facet.coverage.invalid",
+                                        defaultValue: "Enter a valid year range"))
+                        }
+                    }
+                    .disabled((matches?.isEmpty ?? true))
+                }
+            }
+            .navigationTitle(String(localized: "settings.scopes.facet.coverage.title",
+                                    defaultValue: "Add Volumes by Coverage"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common.cancel", defaultValue: "Cancel")) { dismiss() }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 380, minHeight: 340)
+        #endif
     }
 }

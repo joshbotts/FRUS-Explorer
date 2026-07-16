@@ -108,3 +108,126 @@ struct CustomVolumeScopeTests {
         #expect(scope.volumeIds == ["a", "b", "c"])
     }
 }
+
+// MARK: - ScopeFacets (#258 Phase 4)
+
+/// Tests for the pure facet→volume-set helpers behind the scope editor's rich facets.
+/// All fixtures are memberwise-constructed — no bundle, no store, no container.
+struct ScopeFacetsTests {
+
+    /// A minimal manifest entry for facet fixtures.
+    private func entry(_ id: String, subseries: String = "s", tags: [String] = [],
+                       earliest: String? = nil, latest: String? = nil,
+                       editors: [String] = []) -> VolumeManifestEntry {
+        VolumeManifestEntry(
+            volumeId: id, filename: "\(id).xml", subseries: subseries, title: "T\(id)",
+            dateRange: DateRange(earliest: earliest, latest: latest),
+            publicationDate: nil, status: .published, editors: editors, generalEditor: nil,
+            documentCount: 0, sizeBytes: 0, tags: tags
+        )
+    }
+
+    // MARK: Coverage facet
+
+    @Test("Coverage intersection: overlap in, disjoint out, missing dates excluded")
+    func coverageIntersection() {
+        let entries = [
+            entry("in-overlap",  earliest: "1960-01-01", latest: "1965-12-31"),
+            entry("in-contained", earliest: "1962-01-01", latest: "1963-01-01"),
+            entry("in-spanning", earliest: "1950-01-01", latest: "1980-01-01"),
+            entry("out-before",  earliest: "1940-01-01", latest: "1959-12-31"),
+            entry("out-after",   earliest: "1969-01-01", latest: "1975-01-01"),
+            entry("no-dates"),
+        ]
+        let ids = ScopeFacets.volumeIds(coverageIntersecting: 1961, toYear: 1968,
+                                        entries: entries)
+        #expect(ids == ["in-overlap", "in-contained", "in-spanning"])
+    }
+
+    @Test("Coverage boundary years are inclusive")
+    func coverageBoundaries() {
+        let entries = [
+            entry("ends-at-from",   earliest: "1950-01-01", latest: "1961-06-01"),
+            entry("starts-at-to",   earliest: "1968-11-01", latest: "1970-01-01"),
+        ]
+        #expect(ScopeFacets.volumeIds(coverageIntersecting: 1961, toYear: 1968,
+                                      entries: entries)
+                == ["ends-at-from", "starts-at-to"])
+    }
+
+    @Test("Single-dated coverage falls back to the present endpoint")
+    func coverageSingleEndpoint() {
+        let entries = [
+            entry("only-earliest-in",  earliest: "1965-01-01", latest: nil),
+            entry("only-latest-out",   earliest: nil, latest: "1950-01-01"),
+        ]
+        #expect(ScopeFacets.volumeIds(coverageIntersecting: 1961, toYear: 1968,
+                                      entries: entries)
+                == ["only-earliest-in"])
+    }
+
+    @Test("Editor filter folds case and diacritics")
+    func coverageEditorFilter() {
+        let entries = [
+            entry("match",   earliest: "1962-01-01", latest: "1963-01-01",
+                  editors: ["Adrián Sánchez"]),
+            entry("nomatch", earliest: "1962-01-01", latest: "1963-01-01",
+                  editors: ["Louis J. Smith"]),
+        ]
+        #expect(ScopeFacets.volumeIds(coverageIntersecting: 1960, toYear: 1965,
+                                      editorContains: "adrian sanchez",
+                                      entries: entries)
+                == ["match"])
+    }
+
+    @Test("ISO year parsing: 4-digit prefix or nil")
+    func yearParsing() {
+        #expect(ScopeFacets.year(from: "1961-05-06") == 1961)
+        #expect(ScopeFacets.year(from: "1961") == 1961)
+        #expect(ScopeFacets.year(from: "19") == nil)
+        #expect(ScopeFacets.year(from: nil) == nil)
+    }
+
+    // MARK: Tag facet
+
+    @Test("Tag catalog counts and orders by reach; taggedWith matches exactly")
+    func tagFacet() {
+        let entries = [
+            entry("a", tags: ["cold-war", "asia"]),
+            entry("b", tags: ["cold-war"]),
+            entry("c", tags: ["asia", "cold-war"]),
+            entry("d", tags: []),
+        ]
+        let catalog = ScopeFacets.tagCatalog(entries)
+        #expect(catalog.map(\.slug) == ["cold-war", "asia"])
+        #expect(catalog.first?.volumeCount == 3)
+        #expect(ScopeFacets.volumeIds(taggedWith: "asia", entries: entries) == ["a", "c"])
+        #expect(ScopeFacets.volumeIds(taggedWith: "absent", entries: entries).isEmpty)
+    }
+
+    // MARK: Subject facet
+
+    @Test("Subject catalog derives names once and counts reach from the reverse index")
+    func subjectFacet() {
+        let vietnamization = VolumeSubjectProfiles.ResolvedSubject(
+            ref: "s1", name: "Vietnamization", category: "Warfare",
+            subcategory: "Strategy", score: 0.9)
+        let detente = VolumeSubjectProfiles.ResolvedSubject(
+            ref: "s2", name: "Détente", category: "Diplomacy",
+            subcategory: "East-West", score: 0.8)
+        let resolvedByVolume = [
+            "v1": [vietnamization, detente],
+            "v2": [vietnamization],
+        ]
+        let reverse = ["s1": ["v1", "v2"], "s2": ["v1"]]
+
+        let catalog = ScopeFacets.subjectCatalog(resolvedByVolume: resolvedByVolume,
+                                                 volumesBySubjectRef: reverse)
+        #expect(catalog.map(\.ref) == ["s1", "s2"])
+        #expect(catalog.first?.name == "Vietnamization")
+        #expect(catalog.first?.volumeCount == 2)
+        #expect(ScopeFacets.volumeIds(forSubjectRef: "s2", volumesBySubjectRef: reverse)
+                == ["v1"])
+    }
+}
+

@@ -146,3 +146,122 @@ enum CustomScopeResolver {
         return indexedResolution(memberVolumeIds: scope.volumeIds, indexed: indexed)
     }
 }
+
+// MARK: - ScopeFacets
+
+/// Pure facet→volume-set resolution for the scope editor's rich selection facets
+/// (#258 Phase 4, sketch §5): given the bundled data sources, each facet answers
+/// "which manifest volumes match?" as plain set math — no stores, no async — so every
+/// facet is unit-testable and the editor only performs the union.
+///
+/// The one facet that genuinely needs the database — people-mentions — resolves through
+/// `PersonMentionStore.volumeMentionCounts(forRollupId:)` (the #264 primitive) at the
+/// call site; everything here is in-memory.
+enum ScopeFacets {
+
+    /// One entry of the subject catalog: a frus-subjects subject with its volume reach.
+    struct SubjectEntry: Identifiable, Equatable {
+        /// The stable subject ref (dataset-scoped).
+        let ref: String
+        /// Display name (e.g. `"Vietnamization"`).
+        let name: String
+        /// Top-level category (e.g. `"Warfare"`).
+        let category: String
+        /// How many volumes' profiles carry the subject.
+        let volumeCount: Int
+        var id: String { ref }
+    }
+
+    /// The searchable subject catalog, derived from the bundled profiles' two indexes:
+    /// every subject any volume profile carries, with display name, category, and
+    /// volume reach, sorted by reach (ties by name). Takes the dictionaries rather than
+    /// `VolumeSubjectProfiles` so the function is constructible-fixture testable (the
+    /// profiles struct has only a wire-format decoder, no memberwise init).
+    static func subjectCatalog(
+        resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]],
+        volumesBySubjectRef: [String: [String]]
+    ) -> [SubjectEntry] {
+        var byRef: [String: (name: String, category: String)] = [:]
+        for subjects in resolvedByVolume.values {
+            for subject in subjects where byRef[subject.ref] == nil {
+                byRef[subject.ref] = (subject.name, subject.category)
+            }
+        }
+        return byRef.map { ref, info in
+            SubjectEntry(ref: ref, name: info.name, category: info.category,
+                         volumeCount: volumesBySubjectRef[ref]?.count ?? 0)
+        }
+        .sorted { $0.volumeCount != $1.volumeCount ? $0.volumeCount > $1.volumeCount
+                                                   : $0.name < $1.name }
+    }
+
+    /// The volumes whose profile carries a subject (the frus-subjects facet).
+    static func volumeIds(forSubjectRef ref: String,
+                          volumesBySubjectRef: [String: [String]]) -> Set<String> {
+        Set(volumesBySubjectRef[ref] ?? [])
+    }
+
+    /// One entry of the manifest-tag catalog: an OH slug with its volume reach.
+    struct TagEntry: Identifiable, Equatable {
+        /// The manifest tag slug (e.g. `"cold-war"`).
+        let slug: String
+        /// How many manifest volumes carry the tag.
+        let volumeCount: Int
+        var id: String { slug }
+    }
+
+    /// The manifest-tag catalog: every distinct `VolumeManifestEntry.tags` slug with its
+    /// reach, sorted by reach (ties by slug) — the OH-slug facet (sketch §5 row a).
+    static func tagCatalog(_ entries: [VolumeManifestEntry]) -> [TagEntry] {
+        var counts: [String: Int] = [:]
+        for entry in entries {
+            for slug in entry.tags { counts[slug, default: 0] += 1 }
+        }
+        return counts.map { TagEntry(slug: $0.key, volumeCount: $0.value) }
+            .sorted { $0.volumeCount != $1.volumeCount ? $0.volumeCount > $1.volumeCount
+                                                       : $0.slug < $1.slug }
+    }
+
+    /// The volumes carrying a manifest tag slug.
+    static func volumeIds(taggedWith slug: String,
+                          entries: [VolumeManifestEntry]) -> Set<String> {
+        Set(entries.filter { $0.tags.contains(slug) }.map(\.volumeId))
+    }
+
+    /// The coverage facet (sketch §5 "other indexed metadata"): volumes whose coverage
+    /// `dateRange` INTERSECTS `[fromYear, toYear]`, optionally further filtered by an
+    /// editor-name substring. A volume with no parseable coverage years is EXCLUDED —
+    /// absent evidence, do not claim coverage (the repo's standing posture).
+    ///
+    /// Year semantics: a volume intersects when `earliestYear ≤ toYear` and
+    /// `latestYear ≥ fromYear`, where a missing `latest` falls back to `earliest`
+    /// (single-year coverage) and vice versa.
+    static func volumeIds(coverageIntersecting fromYear: Int, toYear: Int,
+                          editorContains editorFilter: String? = nil,
+                          entries: [VolumeManifestEntry]) -> Set<String> {
+        let folded = editorFilter?
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .trimmingCharacters(in: .whitespaces)
+        return Set(entries.compactMap { entry -> String? in
+            guard let earliest = year(from: entry.dateRange.earliest)
+                    ?? year(from: entry.dateRange.latest),
+                  let latest = year(from: entry.dateRange.latest)
+                    ?? year(from: entry.dateRange.earliest),
+                  earliest <= toYear, latest >= fromYear else { return nil }
+            if let folded, !folded.isEmpty {
+                let match = entry.editors.contains {
+                    $0.folding(options: [.caseInsensitive, .diacriticInsensitive],
+                               locale: .current).contains(folded)
+                }
+                guard match else { return nil }
+            }
+            return entry.volumeId
+        })
+    }
+
+    /// The leading year of an ISO 8601 date string, or `nil`.
+    static func year(from iso: String?) -> Int? {
+        guard let iso, iso.count >= 4 else { return nil }
+        return Int(iso.prefix(4))
+    }
+}

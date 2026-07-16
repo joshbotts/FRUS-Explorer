@@ -34,6 +34,15 @@ struct PersonMergePickerSheet: View {
     let excludingRollupId: Int?
     /// Invoked with the chosen person just before the sheet dismisses.
     let onPick: (PersonIndexEntry) -> Void
+    /// Optional title override (#258 Phase 4): the scope editor reuses this picker as its
+    /// people facet, where "Merge With…" would be wrong. `nil` keeps the merge title, so
+    /// the corrections flow is unchanged.
+    var title: String? = nil
+
+    /// The effective chrome title: the override, or the merge flow's default.
+    private var effectiveTitle: String {
+        title ?? String(localized: "people.mergePicker.title", defaultValue: "Merge With…")
+    }
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -63,7 +72,7 @@ struct PersonMergePickerSheet: View {
         #if os(macOS)
         VStack(spacing: 0) {
             HStack {
-                Text(String(localized: "people.mergePicker.title", defaultValue: "Merge With…"))
+                Text(effectiveTitle)
                     .font(.headline)
                 Spacer()
             }
@@ -87,7 +96,7 @@ struct PersonMergePickerSheet: View {
         #else
         NavigationStack {
             content
-                .navigationTitle(String(localized: "people.mergePicker.title", defaultValue: "Merge With…"))
+                .navigationTitle(effectiveTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .searchable(text: $searchText,
                             prompt: String(localized: "people.mergePicker.prompt",
