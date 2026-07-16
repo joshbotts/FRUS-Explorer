@@ -130,6 +130,11 @@ struct CustomScopesView: View {
 ///
 /// Saving replaces `volumeIds` **wholesale** (deduped, sorted) — never an in-place
 /// mutation (the `Project.swift` sync-hazard warning) — and stamps `lastModified`.
+///
+/// > Phase-2 caution (pre-merge review): this editor compiles on macOS but is unreached
+/// > there in Phase 1. It uses `.searchable` inside a sheet-hosted `NavigationStack` plus
+/// > a macOS min-frame — verify that layout renders sanely (or restyle for the settings
+/// > pane idiom) before wiring it into `FRUSSettingsView`; do not adopt it naively.
 struct CustomScopeEditorView: View {
 
     /// The record being edited. For a draft (create), it is not yet in the context and

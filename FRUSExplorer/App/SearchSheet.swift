@@ -373,6 +373,17 @@ struct MacSearchWindowView: View {
                         .lineLimit(3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+
+                // #258 Q4(a): SavedSearch persists no volume scope; disclose instead of
+                // dropping silently. Required on BOTH save sheets by the reviewed design
+                // (SS8-Q4) — the pre-merge review caught this one missing.
+                if !(searchVM.filterVM?.effectiveVolumeIds.isEmpty ?? true) {
+                    Label(String(localized: "search.saveSearch.scopeNotSaved",
+                                 defaultValue: "The volume scope is not saved with the search — re-apply it after running the saved search."),
+                          systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(20)
 

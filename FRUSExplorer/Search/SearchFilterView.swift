@@ -420,6 +420,10 @@ struct SearchFilterView: View {
                 Text(String(localized: "search.scope.custom.footer",
                             defaultValue: "Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings."))
             }
+            // Review fix: the no-indexed warning must not outlive a manual picker edit —
+            // once the user builds a valid selection by hand, the warning is stale.
+            .onChange(of: vm.selectedVolumeIds) { _, _ in scopeWarningName = nil }
+            .onChange(of: vm.selectedSubseriesIds) { _, _ in scopeWarningName = nil }
         }
     }
 
