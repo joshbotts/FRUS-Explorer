@@ -117,30 +117,28 @@ struct AppTabTests {
         #expect(AppTab.allCases.count == 5)
     }
 
-    @Test("AppState.activeTab defaults to .browse when nothing is persisted")
-    func activeTabDefaultsToBrowse() {
+    // #316: the shared `activeTab` was replaced by a per-window @SceneStorage selection; the
+    // persisted last tab is now the `AppState.seedActiveTab` static + `persistTabSeed(_:)`.
+    @Test("AppState.seedActiveTab defaults to .browse when nothing is persisted")
+    func seedActiveTabDefaultsToBrowse() {
         clearPersistedTab()
-        let state = AppState()
-        #expect(state.activeTab == .browse)
-        clearPersistedTab()
-    }
-
-    @Test("Setting activeTab persists rawValue to UserDefaults")
-    func settingActiveTabPersists() {
-        clearPersistedTab()
-        let state = AppState()
-        state.activeTab = .search
-        let stored = UserDefaults.standard.string(forKey: key)
-        #expect(stored == AppTab.search.rawValue)
+        #expect(AppState.seedActiveTab == .browse)
         clearPersistedTab()
     }
 
-    @Test("AppState restores activeTab from UserDefaults on next launch")
-    func activeTabRestoredFromUserDefaults() {
+    @Test("persistTabSeed persists the tab rawValue to UserDefaults")
+    func persistTabSeedPersists() {
+        clearPersistedTab()
+        AppState.persistTabSeed(.search)
+        #expect(UserDefaults.standard.string(forKey: key) == AppTab.search.rawValue)
+        clearPersistedTab()
+    }
+
+    @Test("seedActiveTab restores the persisted tab on next launch")
+    func seedActiveTabRestoredFromUserDefaults() {
         clearPersistedTab()
         UserDefaults.standard.set(AppTab.collections.rawValue, forKey: key)
-        let state = AppState()
-        #expect(state.activeTab == .collections)
+        #expect(AppState.seedActiveTab == .collections)
         clearPersistedTab()
     }
 }

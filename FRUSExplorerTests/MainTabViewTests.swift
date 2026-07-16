@@ -27,62 +27,59 @@ struct MainTabViewTests {
         UserDefaults.standard.removeObject(forKey: tabKey)
     }
 
-    // MARK: - Active Tab
+    // MARK: - Tab seed + hand-off (#316: per-window @SceneStorage selection replaced the shared
+    // `activeTab`; the persisted last tab is now `AppState.seedActiveTab` / `persistTabSeed`, and
+    // cross-view hand-offs go through the consume-once `pendingTab`.)
 
     #if os(iOS)
-    @Test("activeTabDefaultIsBrowse — AppState.activeTab defaults to .browse")
-    func activeTabDefaultIsBrowse() {
+    @Test("seedActiveTabDefaultsToBrowse — AppState.seedActiveTab defaults to .browse")
+    func seedActiveTabDefaultsToBrowse() {
         clearTabDefault()
-        let state = AppState()
-        #expect(state.activeTab == .browse)
-        clearTabDefault()
-    }
-
-    @Test("settingActiveTabUpdatesUserDefaults — writing activeTab persists rawValue")
-    func settingActiveTabUpdatesUserDefaults() {
-        clearTabDefault()
-        let state = AppState()
-        state.activeTab = .settings
-        let stored = UserDefaults.standard.string(forKey: tabKey)
-        #expect(stored == AppTab.settings.rawValue)
+        #expect(AppState.seedActiveTab == .browse)
         clearTabDefault()
     }
 
-    @Test("projectPickerClosureSwitchesToResearchTabOnIOS — closure writes .research (formerly .activity)")
-    func projectPickerClosureSwitchesToResearchTabOnIOS() {
+    @Test("persistTabSeedWritesUserDefaults — persistTabSeed persists the tab rawValue")
+    func persistTabSeedWritesUserDefaults() {
         clearTabDefault()
-        let state = AppState()
-        state.activeTab = .research
-        #expect(state.activeTab == .research)
+        AppState.persistTabSeed(.settings)
+        #expect(UserDefaults.standard.string(forKey: tabKey) == AppTab.settings.rawValue)
         clearTabDefault()
     }
 
-    @Test("activeTabPersistenceRoundTrip — cycling all five tabs persists and restores each")
-    func activeTabPersistenceRoundTrip() {
+    @Test("handoffRequestsResearchViaPendingTab — a hand-off sets the consume-once pendingTab")
+    func handoffRequestsResearchViaPendingTab() {
+        let state = AppState()
+        #expect(state.pendingTab == nil)
+        state.pendingTab = .research
+        #expect(state.pendingTab == .research)
+    }
+
+    @Test("seedActiveTabRoundTrip — seedActiveTab restores each persisted tab")
+    func seedActiveTabRoundTrip() {
         clearTabDefault()
         for tab in AppTab.allCases {
             UserDefaults.standard.set(tab.rawValue, forKey: tabKey)
-            let restored = AppState()
-            #expect(restored.activeTab == tab,
-                    "Expected \(tab) to restore from UserDefaults but got \(restored.activeTab)")
+            #expect(AppState.seedActiveTab == tab,
+                    "Expected \(tab) to restore from UserDefaults but got \(AppState.seedActiveTab)")
         }
         clearTabDefault()
     }
 
-    @Test("lastActivityTabVisitNotAutoStamped — tab switches no longer auto-stamp lastActivityTabVisit")
-    func lastActivityTabVisitNotAutoStamped() {
-        // Activity tab was replaced by Research in Session 130.
-        // lastActivityTabVisit is retained in AppState but is no longer
-        // automatically stamped on any tab switch.
+    @Test("persistTabSeedDoesNotStampLastActivityVisit — the seed writer never stamps lastActivityTabVisit")
+    func persistTabSeedDoesNotStampLastActivityVisit() {
+        // Activity tab was replaced by Research in Session 130; lastActivityTabVisit is retained
+        // in AppState but is no longer stamped by any tab write (persistTabSeed only writes the
+        // seed key).
         clearTabDefault()
         UserDefaults.standard.removeObject(forKey: "frus.lastActivityTabVisit")
         let state = AppState()
         state.lastActivityTabVisit = .distantPast
 
         for tab in AppTab.allCases {
-            state.activeTab = tab
+            AppState.persistTabSeed(tab)
             #expect(state.lastActivityTabVisit == .distantPast,
-                    "lastActivityTabVisit must not change on tab switch to .\(tab.rawValue)")
+                    "lastActivityTabVisit must not change when the seed is written for .\(tab.rawValue)")
         }
 
         clearTabDefault()
