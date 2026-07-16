@@ -1154,7 +1154,7 @@ struct ChronologyView: View {
         print("[ChronologyView] Handoff to Search — dateRange: \(String(describing: range))")
         #endif
         #if os(iOS)
-        appState.activeTab = .search
+        appState.pendingTab = .search
         dismiss()
         #endif
     }

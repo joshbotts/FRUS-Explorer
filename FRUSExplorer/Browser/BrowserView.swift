@@ -281,7 +281,7 @@ struct BrowserView: View {
                     // tabs, so only the project picker and download filter appear here.
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
-                            appState.activeTab = .research
+                            appState.pendingTab = .research
                         }
                     }
                     ToolbarItem(placement: .primaryAction) {
@@ -334,7 +334,7 @@ struct BrowserView: View {
                     // Only the ProjectPickerMenu and download filter remain in the Browse toolbar.
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
-                            appState.activeTab = .research
+                            appState.pendingTab = .research
                         }
                     }
                     ToolbarItem(placement: .primaryAction) {

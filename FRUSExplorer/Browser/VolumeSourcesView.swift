@@ -681,7 +681,7 @@ struct CrossVolumeProvenanceContent: View {
         openWindow(id: "frus.corpusBrowser")
         bringMacWindowToFront(id: "frus.corpusBrowser")
         #else
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         onNavigate?()
     }

@@ -69,8 +69,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | Scene                           | Type          | State source                                     |
 /// |---------------------------------|---------------|--------------------------------------------------|
 /// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; CONTENT dead-ends in a permanent spinner when the volume is gone or boot loses the race (#323) |
-/// | `"frus.sourceExplorer.ios"`     | WindowGroup   | Pending state (`currentSourceNote` + 5 siblings) — restores EMPTY (#317) |
-/// | `"frus.crossReferenceGraph.ios"`| WindowGroup   | Pending state (`currentGraphEntry`) — restores EMPTY (#317) |
+/// | (`SourceExplorerRequest`)       | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentSourceNote`-reading id scene) |
+/// | (`GraphWindowRequest`)          | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentGraphEntry`-reading id scene) |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Value-based — restores correctly (#241 port): boot-race guard + honest empty state verified by the #241 review |
 ///
 /// **macOS auxiliary scenes (21)** — 17 singleton `Window`, 3 `WindowGroup`, 1 `Settings`.
@@ -129,7 +129,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   3.3 — Session 99: Analytics Window scene added (frus.analytics); AnalyticsView wired
 ///   3.4 — Session 108: iPadOS Stage Manager — UIApplicationSupportsMultipleScenes YES;
 ///          WindowGroup(for: DocumentWindowID.self) for document windows;
-///          WindowGroup id:"frus.sourceExplorer.ios" for source explorer windows
+///          value-based WindowGroup(for: SourceExplorerRequest/GraphWindowRequest) for the
+///          Source Explorer + cross-reference-graph windows (#317; formerly id-based scenes
+///          reading process-global pending state that restored empty)
 ///   3.5 — Session 115: IndexingStateTracker created at boot; interruptedVolumeIds seeded from
 ///          sentinel store; tracker passed to IndexingPipeline for interrupted-state detection
 ///   3.6 — Session 130: Research window added (frus.research, ⌘⌥R); iOS Activity tab replaced
@@ -474,15 +476,18 @@ struct FRUSExplorerApp: App {
 
         // MARK: - Source Explorer Window (iPadOS Stage Manager)
         //
-        // Mirrors the macOS "frus.sourceExplorer" Window scene. Reads
-        // appState.currentSourceNote — set by the caller before openWindow(id:).
-        WindowGroup("Source Explorer", id: "frus.sourceExplorer.ios") {
+        // Value-based (#317): the restorable SourceExplorerRequest fully describes the content,
+        // so a backgrounded/relaunched window rebuilds correctly instead of restoring blank the
+        // way the old id-based scene did (it read process-global currentSourceNote, which died
+        // with the process). Mirrors the macOS "frus.sourceExplorer" Window scene, which keeps
+        // the AppState fields because SwiftUI.Window is iOS-unavailable.
+        WindowGroup(for: SourceExplorerRequest.self) { $request in
             Group {
-                if let sourceNote = appState.currentSourceNote {
+                if let request {
                     NavigationStack {
                         SourceExplorerView(
-                            rawSourceNote: sourceNote,
-                            documentYear: appState.currentSourceNoteYear,
+                            rawSourceNote: request.rawSourceNote,
+                            documentYear: request.documentYear,
                             indexingPipeline: appState.indexingPipeline,
                             onRelatedDocumentTapped: { vid, did in
                                 let entry = DocumentBrowserEntry(
@@ -491,10 +496,10 @@ struct FRUSExplorerApp: App {
                                 )
                                 appState.pendingBrowseDocument = entry
                             },
-                            documentHeader: appState.currentSourceNoteHeader,
-                            documentDateline: appState.currentSourceNoteDateline,
-                            documentVolumeId: appState.currentSourceNoteVolumeId,
-                            documentId: appState.currentSourceNoteDocumentId
+                            documentHeader: request.documentHeader,
+                            documentDateline: request.documentDateline,
+                            documentVolumeId: request.documentVolumeId,
+                            documentId: request.documentId
                         )
                     }
                 } else {
@@ -516,13 +521,15 @@ struct FRUSExplorerApp: App {
 
         // MARK: - Cross-Reference Graph Window (iPadOS Stage Manager)
         //
-        // Mirrors the macOS "frus.crossReferenceGraph" Window scene. Reads
-        // appState.currentGraphEntry — set by the caller before openWindow(id:).
-        // Single-instance: opening the same id focuses the existing window, and
-        // `.id(entry.id)` retargets the graph when reopened for another document.
-        WindowGroup("Cross-Reference Graph", id: "frus.crossReferenceGraph.ios") {
+        // Value-based (#317): the restorable GraphWindowRequest carries the document's display
+        // fields, so a restored window rebuilds the graph instead of restoring blank (the old
+        // id-based scene read process-global currentGraphEntry). GraphWindowRequest identity is
+        // (volumeId, documentId), preserving the former `.id(entry.id)` retarget. The store,
+        // manifest, and download state stay read from AppState (live services). Mirrors the macOS
+        // "frus.crossReferenceGraph" Window scene, which keeps the AppState field.
+        WindowGroup(for: GraphWindowRequest.self) { $request in
             Group {
-                if let entry = appState.currentGraphEntry,
+                if let request,
                    let store = appState.crossReferenceStore {
                     let downloaded: Set<String> = {
                         guard let dm = appState.downloadManager else { return [] }
@@ -532,11 +539,11 @@ struct FRUSExplorerApp: App {
                         })
                     }()
                     CrossReferenceGraphView(
-                        entry: entry,
+                        entry: request.entry,
                         crossReferenceStore: store,
                         downloadedVolumeIds: downloaded
                     )
-                    .id(entry.id)
+                    .id(request.entry.id)
                 } else {
                     ContentUnavailableView(
                         String(localized: "graphWindow.empty.title",
@@ -859,9 +866,10 @@ struct FRUSExplorerApp: App {
     /// `appState.indexingPipeline`), so the fetch is reconstructed from the value inside
     /// the window — no pending-state hand-off — and SwiftUI restores the window across
     /// relaunches by re-running the cheap local query. That self-sufficiency is exactly
-    /// why #241 ported this scene to iPad first: unlike the `frus.sourceExplorer.ios` /
-    /// `frus.crossReferenceGraph.ios` scenes, which read process-global pending state and
-    /// therefore restore empty, this one restores correctly by construction.
+    /// why #241 ported this scene to iPad first — and why #317 then applied the same
+    /// value-based pattern to the Source Explorer (`SourceExplorerRequest`) and cross-reference
+    /// graph (`GraphWindowRequest`) scenes, which formerly read process-global pending state and
+    /// restored empty. All three iPad aux windows now restore correctly by construction.
     ///
     /// Reuse semantics: `openWindow(value:)` focuses the existing window for an equal
     /// request and opens a new one otherwise — one window per distinct archival source,
@@ -1080,7 +1088,7 @@ struct FRUSExplorerApp: App {
     @MainActor
     private func surfaceOpenedCollection(_ id: UUID) {
         #if os(iOS)
-        appState.activeTab = .collections
+        appState.pendingTab = .collections
         #else
         appState.pendingCollectionSelection = id
         openWindow(id: "frus.collections")
@@ -1620,7 +1628,7 @@ struct FRUSExplorerApp: App {
         )
         appState.pendingBrowseDocument = entry
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
     }
 

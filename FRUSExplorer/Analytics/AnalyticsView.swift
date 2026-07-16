@@ -469,7 +469,7 @@ struct AnalyticsView: View {
     /// parameters, and the analytics window stays open for side-by-side comparison.
     private func navigateToSearch() {
         #if os(iOS)
-        appState.activeTab = .search
+        appState.pendingTab = .search
         dismiss()
         #endif
     }

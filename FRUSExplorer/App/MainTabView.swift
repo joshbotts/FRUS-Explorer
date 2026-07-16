@@ -14,9 +14,10 @@ import SwiftData
 
 /// Root tab bar view for FRUS Explorer on iOS.
 ///
-/// Uses the iOS 18+ `Tab` API with `value:` parameter so `appState.activeTab`
-/// drives selection and persists across launches. All five tabs are fully wired
-/// as of Session 44.
+/// Uses the iOS 18+ `Tab` API with a `value:` parameter. Selection is a per-window
+/// `@SceneStorage` value seeded from the persisted last tab (#316, version history 1.12);
+/// cross-view hand-offs arrive via the consume-once `appState.pendingTab`. All five tabs are
+/// fully wired as of Session 44.
 ///
 /// ## Badges
 /// - **Activity** tab: count of `ResearchNote`s with `createdAt` newer than
@@ -65,13 +66,33 @@ import SwiftData
 ///          `NavigationSplitView`s left in the module are `#if os(macOS)`-guarded
 ///          (`FRUSSettingsView`, `ResearchView`, `MacCorpusBrowserWindow`) or unreferenced
 ///          (`BrowserView.splitLayout`), and none can render under `.sidebarAdaptable`.
+///   1.12 — #316: the tab selection is now per-window `@SceneStorage`, not a shared `appState`
+///          property, so multiple iPad main windows (Stage Manager) no longer mirror each
+///          other's tab — a user tap changes only the per-scene value, which nothing else
+///          observes. Cross-view hand-offs arrive through the separate consume-once
+///          `appState.pendingTab` (drained on change + on appear, so a cold-launch open-with /
+///          Spotlight request is not dropped); the fresh-window seed is persisted straight to
+///          UserDefaults. Deliberately NOT `scenePhase`-gated: the first design gated adoption
+///          on `scenePhase == .active`, but iPadOS reports every *visible* window `.active`, so
+///          that reintroduced mirroring for co-visible windows and stranded launch hand-offs
+///          (#337 review). Hand-offs adopt in every open window (as before this change); only
+///          idle tab taps are now per-window.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
 
+    /// Per-window tab selection (#316). Backing the selection with `@SceneStorage` instead of
+    /// the shared `appState` gives every iPad main window (Stage Manager / multiple windows) its
+    /// own tab, so switching tabs in one window never mirrors into another — a user tap changes
+    /// only this per-scene value, which nothing else observes. A fresh window seeds from the
+    /// persisted last-selected tab (`AppState.seedActiveTab`); a state-restored window keeps its
+    /// own. Cross-view hand-offs arrive through the separate consume-once `appState.pendingTab`,
+    /// drained below.
+    @SceneStorage("frus.selectedTab") private var selectedTab: AppTab = AppState.seedActiveTab
+
     var body: some View {
         @Bindable var appState = appState
-        TabView(selection: $appState.activeTab) {
+        TabView(selection: $selectedTab) {
             Tab(
                 String(localized: "tab.browse", defaultValue: "Browse"),
                 systemImage: "books.vertical",
@@ -133,6 +154,33 @@ struct MainTabView: View {
         // forward-looking. (BigPicture-iPadMacParity Phase 1 + #238 correction — note that
         // doc carries its own stale copy of this ledger; this comment is authoritative.)
         .tabViewStyle(.sidebarAdaptable)
+        // #316 — persist THIS window's selection as the fresh-window seed. Written straight to
+        // UserDefaults (not a shared @Observable property), so a user tap here is never observed
+        // by another window and cannot mirror. Any window may update the seed; it is just "the
+        // last tab shown", used only to open brand-new windows.
+        .onChange(of: selectedTab) { _, newValue in
+            AppState.persistTabSeed(newValue)
+        }
+        // #316 — drain the consume-once cross-view hand-off request into this window's selection.
+        // The ~22 hand-off sites set `appState.pendingTab` alongside their `pendingX` content
+        // field; every open MainTabView adopts it and clears it (the standard pendingX pattern),
+        // so the hand-off's tab comes forward wherever the user is. Cleared so a later unrelated
+        // change does not re-trigger it, and so a fresh window (nil) falls through to its seed.
+        .onChange(of: appState.pendingTab) { _, pending in
+            guard let pending else { return }
+            selectedTab = pending
+            appState.pendingTab = nil
+        }
+        // #316 — catch a request delivered during a cold launch (open-with, Spotlight, Handoff)
+        // BEFORE this observer existed: `onChange` never fires for state set before the view
+        // appeared, so drain any already-pending request here. A window opened later sees `nil`
+        // (a prior window consumed it) and keeps its seeded tab.
+        .onAppear {
+            if let pending = appState.pendingTab {
+                selectedTab = pending
+                appState.pendingTab = nil
+            }
+        }
         // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
         // sheet presents over whichever tab is active and clears it on dismiss.
         // Mirrors the `pendingAnalytics` pattern but presented at the tab root so
@@ -162,7 +210,7 @@ struct MainTabView: View {
                 volumeTitle: title,
                 onSearchVolume: { volumeId in
                     appState.pendingSearch = SearchParameters(volumeIds: [volumeId])
-                    appState.activeTab = .search
+                    appState.pendingTab = .search
                     appState.completedIndexingMetadata = nil
                 },
                 onDismiss: {
@@ -188,7 +236,7 @@ struct MainTabView: View {
                 volume: appState.manifestStore.entry(forVolumeId: update.volumeId),
                 onPersonSearch: { name in
                     appState.pendingSearch = SearchParameters(keywords: name)
-                    appState.activeTab = .search
+                    appState.pendingTab = .search
                 }
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))

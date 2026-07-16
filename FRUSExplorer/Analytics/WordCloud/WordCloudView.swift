@@ -835,7 +835,7 @@ struct WordCloudView: View {
         #if os(iOS)
         // Corpus Analytics is presented from the Browse tab on iOS; bring it forward
         // so the analytics sheet (opened by `BrowserView` on `pendingAnalytics`) is visible.
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         dismiss()
     }
@@ -952,7 +952,7 @@ struct WordCloudView: View {
         #else
         // Chronology is presented from the Browse tab on iOS; surface it and dismiss
         // this sheet so `BrowserView` can present it on the `pendingChronology` change.
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         dismiss()
         #endif
     }

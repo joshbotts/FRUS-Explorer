@@ -1118,29 +1118,46 @@ final class AppState {
     #endif
 
     #if os(iOS)
-    /// The currently selected tab on iOS.
+    /// A one-shot request to bring a tab forward, set by cross-view hand-offs (#316).
     ///
-    /// Persisted via `UserDefaults` key `"frus.activeTab"` so the active tab
-    /// survives app relaunch. Defaults to `.browse`.
-    var activeTab: AppTab = {
+    /// The ~22 cross-view hand-offs (search-from-person, browse-from-research, cross-ref tap,
+    /// Spotlight, open-with, …) write `pendingTab = .browse/.search/…` alongside their `pendingX`
+    /// content field. Each `MainTabView` consumes it into its own per-scene `@SceneStorage`
+    /// selection and clears it, exactly like the other `pendingX` hand-offs.
+    ///
+    /// This is deliberately a **consume-once optional**, not a persistent "current tab": the tab
+    /// selection lives per-window in `@SceneStorage` (so multiple iPad windows don't mirror each
+    /// other), and a user tab tap never touches this channel — so a tap in one window cannot
+    /// propagate to another. `nil` means no pending request. `MainTabView` also drains a
+    /// non-`nil` value on appear, so a request delivered during a cold launch (open-with,
+    /// Spotlight) before any `onChange` observer exists is not dropped.
+    var pendingTab: AppTab? = nil
+
+    /// The persisted last-selected tab (or `.browse`), used to seed a fresh window's per-scene
+    /// selection (#316). `MainTabView` writes it via ``persistTabSeed(_:)`` whenever its
+    /// selection changes, so a brand-new window opens where the user last was.
+    static var seedActiveTab: AppTab {
         guard let raw = UserDefaults.standard.string(forKey: Keys.activeTab),
               let tab = AppTab(rawValue: raw) else { return .browse }
         return tab
-    }() {
-        didSet {
-            UserDefaults.standard.set(activeTab.rawValue, forKey: Keys.activeTab)
-            // lastActivityTabVisit is retained for potential future Research-tab badge use.
-            #if DEBUG
-            print("[FRUSExplorer] Active tab: \(activeTab.rawValue)")
-            #endif
-        }
+    }
+
+    /// Persists the current tab as the fresh-window seed (#316). Writing `UserDefaults` directly
+    /// (rather than a shared `@Observable` property) is what keeps a user tab tap in one window
+    /// from being observed — and mirrored — by another.
+    static func persistTabSeed(_ tab: AppTab) {
+        UserDefaults.standard.set(tab.rawValue, forKey: Keys.activeTab)
+        #if DEBUG
+        print("[FRUSExplorer] Tab seed: \(tab.rawValue)")
+        #endif
     }
 
     /// The timestamp of the most recent visit to the Activity tab.
     ///
     /// Persisted via `UserDefaults` so the badge count ("notes since last visit")
-    /// survives app relaunch. `MainTabView` stamps `.now` whenever `activeTab` changes
-    /// to `.activity`. Defaults to `.distantPast` so all existing notes appear as new
+    /// survives app relaunch. Retained for a potential future Research-tab badge; the
+    /// Activity tab it was stamped for was replaced by Research in Session 130, so nothing
+    /// currently writes it. Defaults to `.distantPast` so all existing notes appear as new
     /// on first launch.
     ///
     /// Version history:
