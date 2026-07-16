@@ -230,7 +230,9 @@ struct WordCloudScopeTests {
             .collection(id: id),
             .userTag(id: id),
             .savedSearch(id: id),
-            .customScope(id: id)
+            .customScope(id: id),
+            .subjectCategory(category: "Warfare", subcategory: nil),
+            .subjectCategory(category: "Warfare", subcategory: "Vietnam Conflict")
         ]
         // The UUID-backed cases share one id on purpose: distinctness must come
         // from the signature PREFIX, so a collection and a custom scope with the
@@ -258,7 +260,12 @@ struct WordCloudScopeTests {
             .userTag(id: id),
             .savedSearch(id: id),
             .customScope(id: id),
-            .dateRange(startISO: "1969-01-01", endISO: "1969-12-31")
+            .dateRange(startISO: "1969-01-01", endISO: "1969-12-31"),
+            .subjectCategory(category: "Warfare", subcategory: nil),
+            .subjectCategory(category: "Warfare", subcategory: "Vietnam Conflict"),
+            // A category label containing a colon must survive: init splits on the FIRST
+            // ":" (the prefix), so the value can carry any subsequent ":" or "/".
+            .subjectCategory(category: "Politico-Military: Arms", subcategory: "SALT/ABM")
         ]
         for scope in scopes {
             #expect(WordCloudScope(signature: scope.signature) == scope)
@@ -284,6 +291,27 @@ struct WordCloudScopeTests {
         let scope = WordCloudScope.customScope(id: id)
         #expect(scope.signature == "scope:\(id.uuidString)")
         #expect(WordCloudScope(signature: scope.signature) == scope)
+    }
+
+    /// #308 Phase 1 (F6): the subject-category signature carries the category and, when
+    /// present, the sub-category joined by U+001F (a delimiter absent from taxonomy labels).
+    /// A whole-category scope carries no delimiter; both round-trip.
+    @Test("WordCloudScope: subject-category signature encodes category and optional sub-category")
+    func subjectCategorySignature() {
+        let whole = WordCloudScope.subjectCategory(category: "Warfare", subcategory: nil)
+        #expect(whole.signature == "subject:Warfare")
+        #expect(WordCloudScope(signature: whole.signature) == whole)
+
+        let pair = WordCloudScope.subjectCategory(category: "Warfare", subcategory: "Vietnam Conflict")
+        #expect(pair.signature == "subject:Warfare\u{1f}Vietnam Conflict")
+        #expect(WordCloudScope(signature: pair.signature) == pair)
+
+        // An empty trailing sub-category segment ("subject:Cat␟") decodes to the whole
+        // category, never a subcategory of "".
+        #expect(WordCloudScope(signature: "subject:Warfare\u{1f}")
+                == .subjectCategory(category: "Warfare", subcategory: nil))
+        // An empty category is rejected.
+        #expect(WordCloudScope(signature: "subject:") == nil)
     }
 
     @Test("WordCloudScope: date-range signature encodes both ISO bounds")

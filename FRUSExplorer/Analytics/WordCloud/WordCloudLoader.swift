@@ -95,7 +95,15 @@ enum WordCloudLoader {
         let extras = hiddenWords.union(WordCloudSettings.extraStopwords(for: lens))
         let tuning = WordCloudSettings.tuning
 
-        let isSubseries: Bool = { if case .subseries = scope { return true } else { return false } }()
+        // Subseries and subject-category clouds span many volumes and are drawn from a
+        // small, shared, stable set of signatures — worth the persistent disk cache and a
+        // progress readout. Custom scopes are user-specific and unbounded, so they stay
+        // transient (Phase 5).
+        let isPersistentScope: Bool = {
+            if case .subseries = scope { return true }
+            if case .subjectCategory = scope { return true }
+            return false
+        }()
         let result: WordCloudResult
         if resolved.isCorpus {
             result = try await service.corpusTopTerms(
@@ -107,7 +115,7 @@ enum WordCloudLoader {
                 signature: scope.signature, keys: resolved.keys,
                 limit: limit, includeDiplomaticStopwords: excludeBoilerplate,
                 extraStopwords: extras, lens: lens, tuning: tuning,
-                persistent: isSubseries, progress: isSubseries ? progress : nil
+                persistent: isPersistentScope, progress: isPersistentScope ? progress : nil
             )
         }
         return (result, resolved.title)

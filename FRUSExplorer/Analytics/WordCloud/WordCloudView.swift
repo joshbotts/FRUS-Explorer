@@ -860,6 +860,11 @@ struct WordCloudView: View {
             guard customScopeAnalyticsIds() != nil else { return nil }
             return String(localized: "wordcloud.word.analyze.customScope",
                           defaultValue: "Analyze within this scope")
+        case .subjectCategory:
+            // Volume-aligned like the others (#308 F6); same #258 empty-set guard.
+            guard subjectCategoryAnalyticsIds() != nil else { return nil }
+            return String(localized: "wordcloud.word.analyze.subject",
+                          defaultValue: "Analyze within this topic")
         case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return nil
         }
@@ -879,6 +884,23 @@ struct WordCloudView: View {
             memberVolumeIds: record.volumeIds, indexed: appState.indexedVolumeIds)
         else { return nil }
         return ids.sorted()
+    }
+
+    /// The subject-category cloud's volume ids for the scoped Analytics handoff, or `nil`
+    /// when the cloud isn't a subject cloud or the resolved volume set is empty (the
+    /// profiles index is unavailable, or the category/sub-category tags no volume). Never
+    /// returns a bare empty set — Analytics reads that as "no filter" (#258 invariant).
+    private func subjectCategoryAnalyticsIds() -> [String]? {
+        guard case let .subjectCategory(category, subcategory) = scope else { return nil }
+        let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+        let ids: Set<String>
+        if let subcategory {
+            ids = ScopeFacets.volumeIds(forCategory: category, subcategory: subcategory,
+                                        resolvedByVolume: resolved)
+        } else {
+            ids = ScopeFacets.volumeIds(forCategory: category, resolvedByVolume: resolved)
+        }
+        return ids.isEmpty ? nil : ids.sorted()
     }
 
     /// Translates `scope` into the volume-ID scope Corpus Analytics understands, for
@@ -910,6 +932,12 @@ struct WordCloudView: View {
             return (ids, title.isEmpty
                     ? String(localized: "wordcloud.scope.customScope",
                              defaultValue: "Volume Scope")
+                    : title)
+        case .subjectCategory:
+            guard let ids = subjectCategoryAnalyticsIds() else { return (nil, nil) }
+            return (ids, title.isEmpty
+                    ? String(localized: "wordcloud.scope.subject",
+                             defaultValue: "Detected Topic")
                     : title)
         case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return (nil, nil)
@@ -1098,6 +1126,44 @@ private struct WordCloudScopeBar: View {
         entries.filter { $0.subseries == subseries }
     }
 
+    /// The bundled volume-subject profiles, `volumeId → [ResolvedSubject]`, or empty when
+    /// the index isn't present in the bundle (the "By Detected Topic" menu then hides).
+    private var resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
+        VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+    }
+
+    /// The "By Detected Topic" scope menu (#308 F6): a two-level drill-down over the bundled
+    /// detected-topic taxonomy. The whole-category item scopes the coarse level; sub-categories
+    /// discriminate (`subCategoryCatalog` hides the folded "General" bucket, still reachable via
+    /// the whole-category item). Framed "experimental" — these are automatically detected topics,
+    /// not editorial subject headings, and may include mistags.
+    @ViewBuilder
+    private func subjectScopeMenu(
+        _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> some View {
+        Menu(String(localized: "wordcloud.scope.bySubject", defaultValue: "By Detected Topic")) {
+          Section(String(localized: "wordcloud.scope.subject.experimental",
+                         defaultValue: "Detected topics — experimental")) {
+            ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
+                Menu(category.label) {
+                    Button(String(format: String(
+                        localized: "wordcloud.scope.subject.wholeCategory %@",
+                        defaultValue: "All of %@"), category.label)) {
+                        scope = .subjectCategory(category: category.label, subcategory: nil)
+                    }
+                    ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
+                                                          resolvedByVolume: resolved)) { sub in
+                        Button(sub.subcategory) {
+                            scope = .subjectCategory(category: sub.category,
+                                                     subcategory: sub.subcategory)
+                        }
+                    }
+                }
+            }
+          }
+        }
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             Text(String(localized: "wordcloud.scopeBar.label", defaultValue: "Scope"))
@@ -1159,6 +1225,10 @@ private struct WordCloudScopeBar: View {
                             customScopeItem(record)
                         }
                     }
+                }
+                let resolved = resolvedByVolume
+                if !resolved.isEmpty {
+                    subjectScopeMenu(resolved)
                 }
                 Divider()
                 Button(String(localized: "wordcloud.scope.dateRange", defaultValue: "Date Range")) {
@@ -1261,6 +1331,8 @@ private struct WordCloudScopeBar: View {
         case let .customScope(id):
             return customScopes.first { $0.id == id }?.name
                 ?? String(localized: "wordcloud.scope.customScope", defaultValue: "Volume Scope")
+        case let .subjectCategory(category, subcategory):
+            return subcategory.map { "\(category) · \($0)" } ?? category
         case let .dateRange(startISO, endISO):
             return WordCloudScope.dateRangeTitle(startISO: startISO, endISO: endISO)
         }
