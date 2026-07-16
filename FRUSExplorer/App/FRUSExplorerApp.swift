@@ -700,6 +700,10 @@ struct FRUSExplorerApp: App {
         Window("Corpus Analytics", id: "frus.analytics") {
             AnalyticsView()
                 .environment(appState)
+                // #258 Phase 3: AnalyticsScopeBar now hosts a @Query (custom scopes), so
+                // this window needs the shared container — without it the query has no
+                // store (the Phase-2 review's unreachable-pane class, container edition).
+                .modelContainer(modelContainer)
         }
         .defaultSize(width: 760, height: 560)
 
@@ -713,6 +717,10 @@ struct FRUSExplorerApp: App {
                id: "frus.personAnalytics") {
             PersonAnalyticsView()
                 .environment(appState)
+                // #258 Phase 3: AnalyticsScopeBar now hosts a @Query (custom scopes), so
+                // this window needs the shared container — without it the query has no
+                // store (the Phase-2 review's unreachable-pane class, container edition).
+                .modelContainer(modelContainer)
         }
         .defaultSize(width: 780, height: 620)
 
@@ -726,6 +734,10 @@ struct FRUSExplorerApp: App {
                id: "frus.crossRefAnalytics") {
             CrossReferenceAnalyticsView()
                 .environment(appState)
+                // #258 Phase 3: AnalyticsScopeBar now hosts a @Query (custom scopes), so
+                // this window needs the shared container — without it the query has no
+                // store (the Phase-2 review's unreachable-pane class, container edition).
+                .modelContainer(modelContainer)
         }
         .defaultSize(width: 820, height: 660)
 

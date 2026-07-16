@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - AnalyticsYearRangeBar
 
@@ -200,6 +201,10 @@ struct AnalyticsScopeBar: View {
     let volumeTitle: (String) -> String
     /// The active volume scope; `nil` means the whole corpus.
     @Binding var scopeVolumeIds: [String]?
+    /// User-defined volume scopes (#258 Phase 3), live via `@Query` — the menu re-renders
+    /// as scopes are created/synced. Requires the hosting scene to inject the model
+    /// container (the three macOS analytics windows gained it in the same commit).
+    @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
     /// Human-readable label for the active scope; `nil` when whole-corpus.
     @Binding var scopeLabel: String?
     /// Invoked after the scope changes so the host can re-run its queries.
@@ -231,6 +236,36 @@ struct AnalyticsScopeBar: View {
         scopeVolumeIds = cleaned
         scopeLabel = cleaned == nil ? nil : label
         onChange()
+    }
+
+    /// One custom-scope menu item (#258 Phase 3): enabled with "N of M" when the scope has
+    /// indexed members (applying seeds the resolved, non-empty set — snapshot semantics);
+    /// disabled with an honest "none indexed" when it does not, so the `IndexedResolution`
+    /// invariant holds by construction in this menu — an empty set can never reach
+    /// `setScope`'s empty→nil (whole-corpus) fallback.
+    @ViewBuilder
+    private func customScopeItem(_ scope: CustomVolumeScope) -> some View {
+        switch CustomScopeResolver.indexedResolution(memberVolumeIds: scope.volumeIds,
+                                                     indexed: indexedVolumeIds) {
+        case .resolved(let ids):
+            Button {
+                setScope(ids.sorted(), label: scope.name)
+            } label: {
+                Text(String(format: String(
+                    localized: "analytics.scope.customScope %@ %lld %lld",
+                    defaultValue: "%@ (%lld of %lld indexed)"),
+                    scope.name, Int64(ids.count), Int64(scope.volumeIds.count)))
+            }
+        case .noIndexedMembers, .scopeUnavailable:
+            Button {
+                // Unreachable: disabled below. Present for the shared Button shape.
+            } label: {
+                Text(String(format: String(
+                    localized: "analytics.scope.customScope.none %@",
+                    defaultValue: "%@ — none indexed yet"), scope.name))
+            }
+            .disabled(true)
+        }
     }
 
     var body: some View {
@@ -265,6 +300,19 @@ struct AnalyticsScopeBar: View {
                         }
                     }
                 }
+                // #258 Phase 3 — user-defined scopes as a third section. The invariant:
+                // only a NON-EMPTY resolved set may reach setScope (whose empty→nil guard
+                // would otherwise invert an empty scope into whole-corpus). Zero-indexed
+                // scopes render disabled with an honest count — they cannot seed anything.
+                if !customScopes.isEmpty {
+                    Divider()
+                    Menu(String(localized: "analytics.scope.customScopes",
+                                defaultValue: "My Volume Scopes")) {
+                        ForEach(customScopes) { scope in
+                            customScopeItem(scope)
+                        }
+                    }
+                }
             } label: {
                 HStack(spacing: 4) {
                     Text(String(format: String(localized: "analytics.scope.label %@",
@@ -276,6 +324,12 @@ struct AnalyticsScopeBar: View {
                         .font(.caption2)
                 }
             }
+            .controlHelp(
+                String(localized: "analytics.scope.menu.a11y", defaultValue: "Analysis scope"),
+                detail: String(localized: "analytics.scope.menu.help",
+                               defaultValue: "Restrict the analysis to a subseries or a single volume, or chart the whole corpus."),
+                systemImage: "scope"
+            )
             Spacer()
             if scopeVolumeIds != nil {
                 Button {
