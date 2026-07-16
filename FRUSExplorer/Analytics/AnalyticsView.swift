@@ -497,107 +497,28 @@ struct AnalyticsView: View {
     /// (hidden by corpus-wide totals) become visible. Reuses the `scopeVolumeIds` plumbing
     /// that every `CorpusAnalyticsService` query already honors, plus the same
     /// `WordCloud → Analytics` handoff scope (#189-B).
-    @ViewBuilder
-    private var scopeBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "scope")
-                .foregroundStyle(.secondary)
-                .font(.caption)
-            Menu {
-                scopeMenuContent
-            } label: {
-                HStack(spacing: 4) {
-                    Text(String(format: String(localized: "analytics.scope.label %@",
-                                                defaultValue: "Scope: %@"), currentScopeLabel))
-                        .font(.caption)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                }
-            }
-            .controlHelp(
-                String(localized: "analytics.scope.menu.a11y", defaultValue: "Analysis scope"),
-                detail: String(localized: "analytics.scope.menu.help",
-                               defaultValue: "Restrict the analysis to a subseries or a single volume, or chart the whole corpus."),
-                systemImage: "scope"
-            )
-            Spacer()
-            if scopeVolumeIds != nil {
-                Button {
-                    setScope(nil, label: nil)
-                } label: {
-                    Text(String(localized: "analytics.scope.clear", defaultValue: "Whole corpus"))
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
-    }
-
-    /// Human-readable name of the active scope, for the scope menu's label.
-    private var currentScopeLabel: String {
-        scopeVolumeIds == nil
-            ? String(localized: "analytics.scope.wholeCorpus", defaultValue: "Whole corpus")
-            : (scopeLabel ?? String(localized: "analytics.scope.custom", defaultValue: "Selected volumes"))
-    }
-
-    /// The distinct subseries spanned by the indexed corpus, sorted, for the scope menu.
-    private var indexedSubseries: [String] {
-        Set(appState.indexedVolumeIds.compactMap { CorpusAnalyticsService.subseries(fromVolumeId: $0) })
-            .sorted()
-    }
-
-    /// Menu items for the scope selector: whole corpus, then a subseries picker and a
-    /// volume picker (volumes nested under their subseries so the list stays navigable).
-    @ViewBuilder
-    private var scopeMenuContent: some View {
-        Button {
-            setScope(nil, label: nil)
-        } label: {
-            Label(String(localized: "analytics.scope.wholeCorpus", defaultValue: "Whole corpus"),
-                  systemImage: scopeVolumeIds == nil ? "checkmark" : "globe")
-        }
-
-        let subseries = indexedSubseries
-        if !subseries.isEmpty {
-            Divider()
-            Menu(String(localized: "analytics.scope.bySubseries", defaultValue: "By Subseries")) {
-                ForEach(subseries, id: \.self) { sub in
-                    Button(sub) {
-                        setScope(indexedVolumeIds(forSubseries: sub), label: sub)
-                    }
-                }
-            }
-            Menu(String(localized: "analytics.scope.byVolume", defaultValue: "By Volume")) {
-                ForEach(subseries, id: \.self) { sub in
-                    Menu(sub) {
-                        ForEach(indexedVolumeIds(forSubseries: sub), id: \.self) { volumeId in
-                            Button(volumeTitle(volumeId)) {
-                                setScope([volumeId], label: volumeTitle(volumeId))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Applies a new volume scope (or clears it when `volumeIds` is nil/empty) and re-runs
-    /// the query. `label` names the scope in the scope bar.
     ///
-    /// Re-runs against the **committed** term — the one whose results are on screen — rather
-    /// than the live text field. The scope bar is only shown while a term is committed, but the
-    /// field may have been cleared or edited since without pressing Search; keying the re-run on
-    /// `committedTerm` keeps the scope bar honest and never silently commits an unsubmitted edit.
-    private func setScope(_ volumeIds: [String]?, label: String?) {
-        guard !committedTerm.isEmpty else { return }
-        let cleaned = (volumeIds?.isEmpty == true) ? nil : volumeIds
-        scopeVolumeIds = cleaned
-        scopeLabel = cleaned == nil ? nil : label
-        runSearch(term: committedTerm)
+    /// #258 Phase 3: the hand-rolled inline duplicate of `AnalyticsScopeBar` is FOLDED onto
+    /// the shared component (the census's de-dup win — the two were near-verbatim copies
+    /// with identical localization keys). The inline `setScope`'s committed-term guard
+    /// moves into `onChange`: the shared bar sets the binding first, so an early scope pick
+    /// now sticks and applies on the next search instead of the tap being silently ignored
+    /// (the bar is only shown while a term is committed, so the path is a stale-edit edge).
+    /// The inline bar's `.controlHelp` — the one divergence the #327 review found — now
+    /// lives on the shared bar, so all three hosts gain it.
+    private var scopeBar: some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: appState.indexedVolumeIds,
+            volumeTitle: volumeTitle,
+            scopeVolumeIds: $scopeVolumeIds,
+            scopeLabel: $scopeLabel,
+            onChange: {
+                // Re-run against the COMMITTED term only — never silently commit an
+                // unsubmitted field edit (the inline setScope's documented rule).
+                guard !committedTerm.isEmpty else { return }
+                runSearch(term: committedTerm)
+            }
+        )
     }
 
     /// Subtle one-line hint, shown only in iPhone portrait, that rotating the device
