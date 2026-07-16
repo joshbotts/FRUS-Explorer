@@ -758,6 +758,111 @@ struct CrossReferenceStoreTests {
         #expect(try await store.excludedBrokenCount() == 2)
         #expect(try await store.excludedBrokenCount(volumeIds: ["vol1"]) == 1)
     }
+
+    // MARK: - relatedByCitation (#308 Phase 2b find-related generator)
+
+    @Test("relatedByCitation unions both ego directions, ranks by citation multiplicity, filters non-document and unindexed targets")
+    func relatedByCitationBasic() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Candidates need a document_cache row (INNER JOIN → indexed/navigable only).
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dA", header: "Doc A")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dB", header: "Doc B")
+        // dC deliberately has NO document_cache row.
+
+        // Anchor v1/d0 cites dA twice (multiplicity 2, outbound); dB cites the anchor once (inbound);
+        // anchor cites dC once (unindexed → dropped) and a page anchor pg_5 (non-document → filtered).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dA")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dA")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "dB", targetVolumeId: "v1", targetDocumentId: "d0")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dC")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "pg_5")
+
+        let results = try await store.relatedByCitation(forDocumentId: "d0", volumeId: "v1", limit: 30)
+        let byId = Dictionary(uniqueKeysWithValues: results.map { ($0.documentId, $0) })
+        #expect(results.map(\.documentId) == ["dA", "dB"])  // dA (count 2) ranks above dB (count 1)
+        #expect(byId["dA"]?.citationCount == 2)
+        #expect(byId["dB"]?.citationCount == 1)
+        #expect(byId["dA"]?.header == "Doc A")
+        #expect(byId["dC"] == nil)    // unindexed (no document_cache) → excluded by the INNER JOIN
+        #expect(byId["pg_5"] == nil)  // page anchor → dropped by documentTargetPredicate
+        #expect(byId["d0"] == nil)    // the anchor is never its own candidate
+    }
+
+    @Test("relatedByCitation restricts candidates to the scope volume set")
+    func relatedByCitationScoped() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dA", header: "A")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v2", documentId: "dB", header: "B")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dA")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v2", targetDocumentId: "dB")
+
+        let unscoped = try await store.relatedByCitation(forDocumentId: "d0", volumeId: "v1", limit: 30)
+        #expect(Set(unscoped.map(\.documentId)) == ["dA", "dB"])
+
+        let scoped = try await store.relatedByCitation(
+            forDocumentId: "d0", volumeId: "v1", scopeVolumeIds: ["v2"], limit: 30)
+        #expect(scoped.map(\.documentId) == ["dB"])   // only the v2 candidate survives the scope
+    }
+
+    @Test("relatedByCitation excludes broken edges")
+    func relatedByCitationExcludesBroken() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dA", header: "A")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dB", header: "B")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dA")
+        try setBroken(dbURL: dbURL, sourceVolumeId: "v1", targetDocumentId: "dA")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dB")
+
+        let results = try await store.relatedByCitation(forDocumentId: "d0", volumeId: "v1", limit: 30)
+        #expect(results.map(\.documentId) == ["dB"])   // the broken dA edge is excluded
+    }
+
+    @Test("relatedByCitation resolves same-volume (NULL target_volume_id) edges on both arms")
+    func relatedByCitationSameVolumeNullTarget() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dA", header: "A")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dB", header: "B")
+        // The dominant corpus shape: a same-volume ref stores NULL target_volume_id.
+        // Outbound: anchor cites dA (NULL target volume → COALESCE to source v1).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: nil, targetDocumentId: "dA")
+        // Inbound: dB cites the anchor (NULL target volume → COALESCE to source v1 == anchor volume).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "dB", targetVolumeId: nil, targetDocumentId: "d0")
+
+        let results = try await store.relatedByCitation(forDocumentId: "d0", volumeId: "v1", limit: 30)
+        let byId = Dictionary(uniqueKeysWithValues: results.map { ($0.documentId, $0) })
+        #expect(Set(results.map(\.documentId)) == ["dA", "dB"])
+        #expect(byId["dA"]?.volumeId == "v1")       // outbound candidate attributed to the resolved volume
+        #expect(byId["dB"]?.volumeId == "v1")       // inbound candidate is the citing source
+        #expect(byId["dA"]?.citationCount == 1)
+        #expect(byId["dB"]?.citationCount == 1)
+    }
+
+    @Test("relatedByCitation counts a bidirectional pair by multiplicity and excludes self-loops")
+    func relatedByCitationBidirectionalAndSelfLoop() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "d0", header: "Anchor")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "dC", header: "C")
+        // Bidirectional: anchor cites dC and dC cites anchor → multiplicity 2.
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "dC")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "dC", targetVolumeId: "v1", targetDocumentId: "d0")
+        // Self-loop: anchor cites itself (d0 has a document_cache row, so only the exclusion clause
+        // — not the INNER JOIN — can drop it).
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "v1", sourceDocumentId: "d0", targetVolumeId: "v1", targetDocumentId: "d0")
+
+        let results = try await store.relatedByCitation(forDocumentId: "d0", volumeId: "v1", limit: 30)
+        #expect(results.map(\.documentId) == ["dC"])   // the self-loop anchor is excluded
+        #expect(results.first?.citationCount == 2)      // cite + cited counted once each
+    }
 }
 
 // MARK: - Broken-flag helper
