@@ -94,9 +94,33 @@ struct ArchivalResolution: Decodable, Sendable, Equatable {
     let recordGroup: String?
     /// How the match was made: `lot` (bundled index), `api` (NARA Catalog query), or `manual`.
     let matchType: String
+    /// The series' **HMS/MLR Entry Number(s)** — what NARA staff ask researchers to quote when
+    /// requesting the records (#315/#322). Carried through from the enriched central-files index
+    /// so this surface shows the same detail as Source Explorer. `nil` for record-group / API
+    /// resolutions and un-enriched bundles (both render as nothing). Synthesized `Decodable`
+    /// treats the missing key as `nil`, so older bundles still decode.
+    let hmsMlrEntryNumbers: [String]?
+    /// The resolved record's catalog level (`series`, `fileUnit`, …), when known (#315/#322).
+    let levelOfDescription: String?
+    /// NAID of the enclosing file series, when this record is a file unit rather than a series.
+    let seriesNaId: String?
+    /// Title of the enclosing file series, for records whose own `title` names a file unit.
+    let seriesTitle: String?
+    /// The **enclosing series'** HMS/MLR entry numbers — the parent's identifiers, not this
+    /// record's; kept separate because a parent series may carry many (#315/#322).
+    let seriesHmsMlrEntryNumbers: [String]?
 
     /// The catalog record's URL, parsed once for `Link`/`openURL`.
     var url: URL? { URL(string: catalogURL) }
+
+    /// Whether the resolved record is described at the series level — i.e. whether `title` is
+    /// itself the file series name. `nil` level (an un-enriched bundle) reads as `false`.
+    var isSeriesLevel: Bool { levelOfDescription == "series" }
+
+    /// The **file series name** to display — the single accessor the UI should use, so the
+    /// series/file-unit distinction cannot be got wrong at a call site (#315/#322). Mirrors
+    /// `CentralFilesIndex.LotFileEntry.displaySeriesTitle`.
+    var displaySeriesTitle: String? { isSeriesLevel ? title : seriesTitle }
 }
 
 // MARK: - MajorCollectionRecord
