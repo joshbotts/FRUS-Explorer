@@ -60,9 +60,20 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Returns the pre-resolved lot file for a raw lot number from a source note, or `nil`.
     /// The raw form (`"63 D 135"`, `"61-D 146"`) is normalized to the bundle's compact key.
+    ///
+    /// **Entries flagged `ancestryLacksRecordGroup` are treated as unresolved** (#321): the
+    /// 2026-07-15 harvest measured the resolver's null-record-group fallback at **0/16
+    /// precision** — every flagged record was a presidential-library staff file (Ford,
+    /// Reagan, Clinton, Bush, FDR), not a State Department lot, so surfacing them would hand
+    /// researchers confidently wrong NARA links. Returning `nil` here routes both platforms'
+    /// Source Explorers to their live-lookup fallback, which is exactly the honest behavior
+    /// for a lot the bundle cannot vouch for. The durable resolver fix (drop the fallback,
+    /// re-harvest) is #321; this guard makes the shipped data safe in the meantime.
     func lotFile(forRawLot raw: String) -> LotFileEntry? {
         let key = CentralFilesIndex.normalizeLot(raw)
-        return lotFiles.first { $0.lotNumber == key }
+        guard let entry = lotFiles.first(where: { $0.lotNumber == key }),
+              entry.ancestryLacksRecordGroup != true else { return nil }
+        return entry
     }
 
     /// Compact upper-cased lot key (`61–D 146` → `61D146`), matching the generator's form.

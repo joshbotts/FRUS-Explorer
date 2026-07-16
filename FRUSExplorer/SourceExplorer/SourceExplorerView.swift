@@ -55,6 +55,13 @@ import SwiftUI
 ///          the shared Collection detail (aliases, NAID, S5 local counts, citing
 ///          volumes); "Browse Archival Collections" pushes the searchable
 ///          browse-by-collection list
+///   1.6 — #315: `bundledLotSection` shows the HMS/MLR entry number(s) and, for
+///          file-unit records, the enclosing File Series (`displaySeriesTitle`) with the
+///          series' entry numbers labeled as the series'; citation-guidance captions on
+///          the lot, central-files, and CFPF panels name what to hand a NARA archivist.
+///          Flagged mis-resolutions (#321, `ancestryLacksRecordGroup` — measured 0/16
+///          precision) are treated as unresolved by `lotFile(forRawLot:)` and fall back
+///          to the live lookup. Mirrors MacSourceExplorerView 1.6.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -392,6 +399,12 @@ struct SourceExplorerView: View {
                     value: fileIdentifier
                 )
             }
+            // #315: the CFPF variant of the central-files citation guidance — telegram
+            // channel/serial numbers are the primary locator in this era's files.
+            Text(String(localized: "source.explorer.cfpf.cite.note",
+                        defaultValue: "When requesting the original record from NARA, provide the file identifier above together with any telegram channel and serial numbers, the from/to information, and the document's date from the source note."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         Section(String(localized: "source.explorer.cfpf.resources.header",
                        defaultValue: "Research Resources")) {
@@ -438,6 +451,15 @@ struct SourceExplorerView: View {
                     value: fileIdentifier
                 )
             }
+            // #315: what to hand a NARA archivist. Central-files records are located
+            // within the decimal file by their full citation details, so the guidance
+            // names each element a request should carry. Guidance text only — the
+            // discrete serial/from-to fields are deliberately NOT parsed (that would
+            // touch the shared SourceNoteKit grammar and force a corpus re-index).
+            Text(String(localized: "source.explorer.centralFiles.cite.note",
+                        defaultValue: "When requesting the original record from NARA, provide the decimal file number above together with any telegram serial number, the from/to information, and the document's date from the source note — archivists use these to locate the record within the file."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
 
         // 1906–1910 Numerical File: resolve the exact digitized roll(s) for this
@@ -818,19 +840,60 @@ struct SourceExplorerView: View {
         naraResultSection(requiresKey: true, fallbackURL: fb)
     }
 
-    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record.
+    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record —
+    /// enriched (#315) with the identifiers NARA staff ask researchers to cite.
+    ///
+    /// Row logic (mirrored by `MacSourceExplorerView.bundledLotBox` — keep in sync):
+    /// - A **series-level** record's own `title` is the file series name, and its own
+    ///   `hmsMlrEntryNumbers` identify exactly the records being cited.
+    /// - A **file-unit** record's title names only the file unit; its series name comes from
+    ///   `displaySeriesTitle` (the enclosing series, resolved by the enrichment pass), and any
+    ///   entry numbers shown are the *series'* — labeled as such, because the parent's
+    ///   identifiers locate the series, not the specific unit (a parent can carry up to 23).
     @ViewBuilder
     private func bundledLotSection(_ entry: LotFileEntry) -> some View {
         Section(String(localized: "source.explorer.lotFile.bundled.header",
                        defaultValue: "NARA Catalog Record")) {
             Text(entry.title)
                 .font(.callout)
+            // File-unit records: name the enclosing series explicitly (#315's
+            // "file series name/title"); for series records the title above IS the series.
+            if !entry.isSeriesLevel, let seriesTitle = entry.displaySeriesTitle {
+                LabeledContent(
+                    String(localized: "source.explorer.lotFile.series",
+                           defaultValue: "File Series"),
+                    value: seriesTitle
+                )
+            }
+            if let entries = entry.hmsMlrEntryNumbers, !entries.isEmpty {
+                LabeledContent(
+                    String(localized: "source.explorer.lotFile.hmsMlr",
+                           defaultValue: "HMS/MLR Entry"),
+                    value: entries.joined(separator: ", ")
+                )
+            } else if let seriesEntries = entry.seriesHmsMlrEntryNumbers, !seriesEntries.isEmpty {
+                LabeledContent(
+                    String(localized: "source.explorer.lotFile.hmsMlr.series",
+                           defaultValue: "HMS/MLR Entry (series)"),
+                    value: seriesEntries.joined(separator: ", ")
+                )
+                Text(String(localized: "source.explorer.lotFile.hmsMlr.series.note",
+                            defaultValue: "These entry numbers identify the enclosing file series, not this specific file unit."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Button {
                 if let url = URL(string: entry.catalogURL) { openURL(url) }
             } label: {
                 Label(String(localized: "source.explorer.lotFile.bundled.open",
                              defaultValue: "Open Series in NARA Catalog"),
                       systemImage: "arrow.up.right.square")
+            }
+            if entry.hmsMlrEntryNumbers?.isEmpty == false || entry.seriesHmsMlrEntryNumbers?.isEmpty == false {
+                Text(String(localized: "source.explorer.lotFile.cite.note",
+                            defaultValue: "When requesting the original records from NARA, cite the HMS/MLR entry number together with the lot number — it is the identifier archives staff use to locate the series."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Text(String(localized: "source.explorer.lotFile.bundled.note",
                         defaultValue: "Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page."))
