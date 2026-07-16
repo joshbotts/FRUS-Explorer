@@ -238,6 +238,37 @@ struct VolumeSourcesView: View {
         }
     }
 
+    /// The #315 archival identifiers for a resolved lot — the enclosing file series (for a
+    /// file-unit record) and the HMS/MLR entry number(s) — shown compactly beneath the row so
+    /// this surface matches Source Explorer's `bundledLotSection` (#322). Renders nothing for
+    /// record-group / API resolutions, un-enriched bundles, or records carrying no entry number.
+    /// The series/file-unit distinction goes through `displaySeriesTitle`, so the two surfaces
+    /// cannot diverge in labelling.
+    @ViewBuilder
+    private func resolutionEnrichment(_ resolution: ArchivalResolution?) -> some View {
+        if let resolution {
+            if !resolution.isSeriesLevel, let seriesTitle = resolution.displaySeriesTitle {
+                Text(String(format: String(localized: "browser.sources.lotFile.series %@",
+                                           defaultValue: "File Series: %@"), seriesTitle))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let entries = resolution.hmsMlrEntryNumbers, !entries.isEmpty {
+                Text(String(format: String(localized: "browser.sources.lotFile.hmsMlr %@",
+                                           defaultValue: "HMS/MLR Entry: %@"),
+                            entries.joined(separator: ", ")))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let seriesEntries = resolution.seriesHmsMlrEntryNumbers, !seriesEntries.isEmpty {
+                Text(String(format: String(localized: "browser.sources.lotFile.hmsMlr.series %@",
+                                           defaultValue: "HMS/MLR Entry (series): %@"),
+                            seriesEntries.joined(separator: ", ")))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     /// One archival-collection outline row: its own text (bold for a major named collection —
     /// a `<hi rend="strong">` heading), a link to the resolved NARA Catalog record where the
     /// collection resolved, an Archival Neighbors affordance where the node carries a
@@ -316,6 +347,9 @@ struct VolumeSourcesView: View {
                     .accessibilityLabel(neighborsAccessibilityLabel(count: count))
                 }
             }
+            // #322: the #315 archival identifiers (file series + HMS/MLR entry number) for a
+            // resolved lot, so this surface shows the same detail as Source Explorer.
+            resolutionEnrichment(resolution)
             if let authority {
                 // The upgraded cross-volume affordance: the full Collection detail
                 // (aliases, catalog link, S5 local counts, citing volumes, sub-series).

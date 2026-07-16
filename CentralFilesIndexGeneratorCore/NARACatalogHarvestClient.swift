@@ -346,11 +346,17 @@ public actor NARACatalogHarvestClient {
         // Pick the first result whose own record group matches the expected one. NARA's
         // RG query filter does not constrain free-text results, and the top hit for a lot
         // string is often a giant wrong-RG series (census/military/court) — so we scan the
-        // page and take the first RG-59/84 record, not blindly the #1 result. A result with
-        // no exposed RG is trusted only as a last resort.
+        // page and take the first RG-59/84 record, not blindly the #1 result.
+        //
+        // #321: the former last-resort fallback — accept the first record with NO exposed RG —
+        // is REMOVED. A record parented by a `collection` rather than a `recordGroup` exposes no
+        // RG number, so that fallback let presidential-library staff files (FDR/Ford/Reagan/…)
+        // resolve as if they were RG-59/84 lots. Measured precision was 0/16 (every flagged
+        // record was wrong), so an unmatched lot now stays honestly UNRESOLVED rather than
+        // wrongly resolved. The enrichment pass's `ancestryLacksRecordGroup` flag remains a
+        // secondary guard for any bundle harvested before this change.
         func firstAccepted(_ results: [CatalogRecord]) -> CatalogRecord? {
             results.first { $0.recordGroupNumber == recordGroup }
-                ?? results.first { $0.recordGroupNumber == nil }
         }
         func cache(_ record: CatalogRecord, _ matchType: String) -> ResolvedLot {
             writeLotCache(LotResolution(naId: record.naId, title: record.title, matchType: matchType),
