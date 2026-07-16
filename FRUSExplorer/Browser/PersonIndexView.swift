@@ -314,6 +314,11 @@ private struct PersonIndexRow: View {
 ///          awaits; in-progress + completion VoiceOver announcements; the correction tail
 ///          delegates to `PersonClusterOverrideStore.saveAndReconsolidate` and bumps the
 ///          app-wide corrections generation; `openMergePickerOnAppear` context-menu entry
+///   1.4 — #264: volume-level person↔subject affinity chips — the person's per-volume
+///          mention counts (new `volumeMentionCounts(forRollupId:)`) joined against the
+///          bundled volume subject profiles; chips reuse the Session-9 styling and pivot
+///          to the shared `VolumeSubjectVolumesSheet`; the caption states the volume
+///          grain explicitly (doc-level tags stay retired until #261 clears)
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
@@ -348,6 +353,27 @@ struct PersonIndexDetailSheet: View {
     /// True while a correction (merge or separate) is being applied + the rollup re-consolidated.
     @State private var isMerging = false
 
+    /// Volume-level subject affinities (#264): subjects characteristic of the volumes where
+    /// this person is mentioned, weighted by the person's footprint in each volume. Empty when
+    /// the person has no indexed mentions or the bundled profiles are absent.
+    @State private var subjectAffinities: [SubjectAffinity] = []
+    /// The affinity chip whose cross-volume pivot sheet is open, or `nil`.
+    @State private var selectedAffinitySubject: VolumeSubjectProfiles.ResolvedSubject?
+
+    /// One person↔subject affinity (#264): a subject from the bundled volume profiles plus how
+    /// broadly and how strongly it co-occurs with this person's mentions. Volume-grain by
+    /// deliberate decision — document-level subject tags were retired for noise (the gate is
+    /// #261), so the affinity NEVER claims a per-document link.
+    private struct SubjectAffinity: Identifiable {
+        /// The resolved subject (name, category, per-volume distinctiveness score).
+        let subject: VolumeSubjectProfiles.ResolvedSubject
+        /// How many of the person's mention volumes carry this subject in their profile.
+        let volumeCount: Int
+        /// Σ over those volumes of (person's distinct-document count × the subject's score).
+        let weight: Double
+        var id: String { subject.id }
+    }
+
     private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
     private var effectiveRollupId: Int? { indexEntry.rollupId ?? resolvedRollupId }
     private var effectiveAuthorityId: Int? { indexEntry.authorityId ?? resolvedAuthorityId }
@@ -377,6 +403,7 @@ struct PersonIndexDetailSheet: View {
                 }
             }
             await loadCorrectionContext()
+            await loadSubjectAffinities()
             // Context-menu shortcut: jump straight into the merge picker once the rollup
             // id is known (immediate for People-browser rows; resolved above for
             // front-matter entries).
@@ -483,6 +510,33 @@ struct PersonIndexDetailSheet: View {
                             String(localized: "people.detail.active", defaultValue: "Active"),
                             value: era
                         )
+                    }
+                }
+
+                // #264: person↔subject affinity chips — volume-level, mirroring the volume
+                // detail's "Top subjects" chips (Session 9) including the cross-volume pivot.
+                if !subjectAffinities.isEmpty {
+                    Section {
+                        #if os(macOS)
+                        let showsIndicators = true
+                        #else
+                        let showsIndicators = false
+                        #endif
+                        ScrollView(.horizontal, showsIndicators: showsIndicators) {
+                            HStack(spacing: 6) {
+                                ForEach(subjectAffinities) { affinity in
+                                    affinityChip(affinity)
+                                }
+                            }
+                            .padding(.vertical, 1)
+                        }
+                        Text(String(localized: "people.detail.subjects.note",
+                                    defaultValue: "Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags."))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    } header: {
+                        Text(String(localized: "people.detail.subjects.header",
+                                    defaultValue: "Subjects"))
                     }
                 }
 
@@ -615,6 +669,11 @@ struct PersonIndexDetailSheet: View {
                 pendingMergeTarget = picked
             }
         }
+        // #264 chip pivot: the same cross-volume sheet the volume detail's subject chips
+        // open. `excluding: ""` excludes nothing — every covering volume is relevant here.
+        .sheet(item: $selectedAffinitySubject) { subject in
+            VolumeSubjectVolumesSheet(subject: subject, currentVolumeId: "")
+        }
         .alert(
             String(localized: "people.detail.mergeConfirm.title", defaultValue: "Merge these identities?"),
             isPresented: Binding(get: { pendingMergeTarget != nil },
@@ -632,6 +691,63 @@ struct PersonIndexDetailSheet: View {
     }
 
     // MARK: - Corrections (Phase 3 merge / Phase 4 split)
+
+    /// One affinity chip (#264) — the volume-detail chip styling (Session 9), pivoting to the
+    /// shared cross-volume subject sheet on tap.
+    @ViewBuilder
+    private func affinityChip(_ affinity: SubjectAffinity) -> some View {
+        Button {
+            selectedAffinitySubject = affinity.subject
+        } label: {
+            Text(affinity.subject.name)
+                .font(.caption)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.accentColor.opacity(0.12))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(affinity.subject.name)
+        .accessibilityValue(String(
+            localized: "people.detail.subjectChip.a11yValue",
+            defaultValue: "\(affinity.subject.category), in \(affinity.volumeCount) volume\(affinity.volumeCount == 1 ? "" : "s") mentioning this person"))
+        .accessibilityHint(String(localized: "browser.volume.subjectChip.hint",
+                                  defaultValue: "Shows other volumes covering this subject"))
+        .help(String(localized: "people.detail.subjectChip.help",
+                     defaultValue: "Subject of volumes where this person is mentioned — click to see all volumes covering it"))
+    }
+
+    /// Computes the volume-level person↔subject affinities (#264).
+    ///
+    /// Join: the person's per-volume distinct-document mention counts
+    /// (`PersonMentionStore.volumeMentionCounts(forRollupId:)`, one GROUP-BY query) × the
+    /// bundled volume subject profiles (`topSubjects(forVolumeId:)`, an in-memory dict hit per
+    /// volume). Affinity weight = Σ (person's doc count in volume × subject's score in that
+    /// volume), so a subject scores high when it characterizes the volumes where the person
+    /// appears MOST — not merely any volume they brush. Top 8 by weight; name-tiebroken for
+    /// determinism.
+    private func loadSubjectAffinities() async {
+        guard let rollupId = effectiveRollupId,
+              let store = appState.personMentionStore,
+              let profiles = VolumeSubjectProfilesStore.shared,
+              let counts = try? await store.volumeMentionCounts(forRollupId: rollupId),
+              !counts.isEmpty else { return }
+        var aggregate: [String: (subject: VolumeSubjectProfiles.ResolvedSubject, volumes: Int, weight: Double)] = [:]
+        for (volumeId, documentCount) in counts {
+            guard let subjects = profiles.topSubjects(forVolumeId: volumeId) else { continue }
+            for subject in subjects {
+                var entry = aggregate[subject.ref] ?? (subject, 0, 0)
+                entry.volumes += 1
+                entry.weight += Double(documentCount) * subject.score
+                aggregate[subject.ref] = entry
+            }
+        }
+        subjectAffinities = aggregate.values
+            .sorted { $0.weight != $1.weight ? $0.weight > $1.weight
+                                             : $0.subject.name < $1.subject.name }
+            .prefix(8)
+            .map { SubjectAffinity(subject: $0.subject, volumeCount: $0.volumes, weight: $0.weight) }
+    }
 
     private func loadCorrectionContext() async {
         guard let rollupId = effectiveRollupId, let store = appState.personMentionStore else { return }
