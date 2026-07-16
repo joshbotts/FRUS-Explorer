@@ -66,6 +66,10 @@ import AppKit
 ///          compact scope cards); the NARA API-key reveal eye (the audit called
 ///          it the Zotero eye — the Zotero pane has no reveal control) flips its
 ///          accessibility label with state
+///   1.5 — #258 Phase 2: Volume Scopes pane (SettingsScopesPane, the mac twin of the
+///          iOS CustomScopesView row; tags-pane idiom). The shared CustomScopeEditorView
+///          gains an explicit macOS sheet body — header / inline filter / bottom-right
+///          Cancel–Save — resolving Phase 1's .searchable-in-sheet caution.
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -120,6 +124,7 @@ struct FRUSSettingsView: View {
                 case .search:         SettingsSearchPane()
                 case .projects:       SettingsProjectsPane()
                 case .tags:           SettingsTagsPane()
+                case .scopes:         SettingsScopesPane()
                 case .notes:          SettingsNotesPane()
                 case .wordCloud:      WordCloudSettingsView()
                 case .storage:        SettingsStoragePane()
@@ -141,7 +146,7 @@ struct FRUSSettingsView: View {
 
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
     case sync, syncDiagnostics, about, display, search
-    case projects, tags, notes, wordCloud
+    case projects, tags, scopes, notes, wordCloud
     case storage, downloads
     case naraAPI, zotero, summarization, data
     case reset
@@ -157,6 +162,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .search:        return "Search"
         case .projects:      return "Projects"
         case .tags:          return "Tags"
+        case .scopes:        return "Volume Scopes"
         case .notes:         return "Notes"
         case .wordCloud:     return "Word Cloud"
         case .storage:       return "Storage"
@@ -178,6 +184,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         case .search:        return "magnifyingglass"
         case .projects:      return "folder"
         case .tags:          return "tag"
+        case .scopes:        return "square.stack.3d.up"
         case .notes:         return "note.text"
         case .wordCloud:     return "text.word.spacing"
         case .storage:       return "internaldrive"
@@ -696,6 +703,150 @@ private struct SettingsProjectsPane: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
+    }
+}
+
+// MARK: - Volume Scopes Pane (#258 Phase 2)
+
+/// macOS management pane for user-defined volume scopes — the platform twin of the iOS
+/// `CustomScopesView` (Settings → Research → Volume Scopes). Mac-native pane idiom
+/// (`SettingsTagsPane` pattern); the create/edit sheet is the shared
+/// `CustomScopeEditorView`, which carries a mac-specific body (#258 Phase 2 resolved its
+/// own Phase-2 caution: explicit chrome instead of `.searchable`-in-sheet).
+///
+/// Records sync via CloudKit, so scopes created here appear on iOS and vice versa; the
+/// shared `SearchFilterView` scope section already consumes them on both platforms.
+private struct SettingsScopesPane: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
+
+    /// The scope open in the editor sheet, or `nil` (a fresh uninserted draft for create).
+    @State private var editorTarget: CustomVolumeScope?
+    /// Whether `editorTarget` is an uninserted draft (create) vs a live record (edit).
+    @State private var editorIsDraft = false
+    /// The scope pending delete confirmation, or `nil`.
+    @State private var scopeToDelete: CustomVolumeScope?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                PaneHeader(
+                    title: String(localized: "settings.scopes.title",
+                                  defaultValue: "Volume Scopes"),
+                    subtitle: String(localized: "settings.scopes.pane.subtitle",
+                                     defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed.")
+                )
+
+                Button {
+                    editorIsDraft = true
+                    editorTarget = CustomVolumeScope(name: "")
+                } label: {
+                    Label(String(localized: "settings.scopes.add", defaultValue: "New Scope"),
+                          systemImage: "plus")
+                }
+                .buttonStyle(.bordered)
+                .padding(.bottom, 16)
+
+                PaneSectionHeader(title: String(format: String(
+                    localized: "settings.scopes.pane.count %lld",
+                    defaultValue: "%lld scope(s)"), Int64(scopes.count)))
+
+                if scopes.isEmpty {
+                    Text(String(localized: "settings.scopes.empty.detail",
+                                defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 8)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(scopes) { scope in
+                            scopeRow(scope)
+                            if scope.id != scopes.last?.id {
+                                Divider().padding(.leading, 12)
+                            }
+                        }
+                    }
+                    .background(Color.secondary.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 0.5)
+                    )
+                }
+            }
+            .padding(24)
+        }
+        .sheet(item: $editorTarget) { target in
+            CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
+                .environment(appState)
+        }
+        .confirmationDialog(
+            String(localized: "settings.scopes.delete.title", defaultValue: "Delete Scope?"),
+            isPresented: Binding(get: { scopeToDelete != nil },
+                                 set: { if !$0 { scopeToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "common.delete", defaultValue: "Delete"),
+                   role: .destructive) {
+                if let scope = scopeToDelete {
+                    modelContext.delete(scope)
+                    try? modelContext.save()
+                }
+                scopeToDelete = nil
+            }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"),
+                   role: .cancel) { scopeToDelete = nil }
+        } message: {
+            Text(String(localized: "settings.scopes.delete.message",
+                        defaultValue: "Searches already run with this scope are unaffected."))
+        }
+    }
+
+    /// One scope row: name + live indexed coverage, with Edit / Delete actions.
+    private func scopeRow(_ scope: CustomVolumeScope) -> some View {
+        let resolution = CustomScopeResolver.indexedResolution(
+            memberVolumeIds: scope.volumeIds, indexed: appState.indexedVolumeIds)
+        return HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(scope.name.isEmpty
+                     ? String(localized: "settings.scopes.unnamed", defaultValue: "Untitled Scope")
+                     : scope.name)
+                    .font(.system(size: 13))
+                Group {
+                    if case .resolved(let ids) = resolution {
+                        Text(String(format: String(
+                            localized: "settings.scopes.row.indexed %lld %lld",
+                            defaultValue: "%lld of %lld volumes indexed"),
+                            Int64(ids.count), Int64(scope.volumeIds.count)))
+                    } else {
+                        Text(String(format: String(
+                            localized: "settings.scopes.row.noneIndexed %lld",
+                            defaultValue: "%lld volumes — none indexed yet"),
+                            Int64(scope.volumeIds.count)))
+                    }
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(String(localized: "common.edit", defaultValue: "Edit")) {
+                editorIsDraft = false
+                editorTarget = scope
+            }
+            .buttonStyle(.borderless)
+            Button(role: .destructive) {
+                scopeToDelete = scope
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(String(format: String(
+                localized: "settings.scopes.delete.a11y %@",
+                defaultValue: "Delete %@"), scope.name))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 }
 

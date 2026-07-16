@@ -131,10 +131,11 @@ struct CustomScopesView: View {
 /// Saving replaces `volumeIds` **wholesale** (deduped, sorted) — never an in-place
 /// mutation (the `Project.swift` sync-hazard warning) — and stamps `lastModified`.
 ///
-/// > Phase-2 caution (pre-merge review): this editor compiles on macOS but is unreached
-/// > there in Phase 1. It uses `.searchable` inside a sheet-hosted `NavigationStack` plus
-/// > a macOS min-frame — verify that layout renders sanely (or restyle for the settings
-/// > pane idiom) before wiring it into `FRUSSettingsView`; do not adopt it naively.
+/// ## Platform bodies (#258 Phase 2)
+/// iOS keeps the `NavigationStack` + `.searchable` sheet. macOS gets its own explicit
+/// chrome — header / inline filter field / list / bottom-right Cancel–Save — the repo's
+/// established mac-sheet idiom, resolving Phase 1's caution against `.searchable` inside
+/// a sheet-hosted stack on macOS. The list content and save logic are shared.
 struct CustomScopeEditorView: View {
 
     /// The record being edited. For a draft (create), it is not yet in the context and
@@ -173,6 +174,59 @@ struct CustomScopeEditorView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iosBody
+        #endif
+    }
+
+    /// The editor's title, shared by both chromes.
+    private var editorTitle: String {
+        isDraft
+            ? String(localized: "settings.scopes.editor.title.new", defaultValue: "New Scope")
+            : String(localized: "settings.scopes.editor.title.edit", defaultValue: "Edit Scope")
+    }
+
+    /// The shared footer line: selection + indexed counts.
+    private var footerText: String {
+        String(format: String(
+            localized: "settings.scopes.editor.footer %lld %lld",
+            defaultValue: "%lld volumes selected · %lld indexed. Volumes you haven't downloaded stay in the scope and take effect once indexed."),
+            Int64(selection.count), Int64(indexedSelectedCount))
+    }
+
+    /// Whether Save is allowed: a non-blank name and at least one member.
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && !selection.isEmpty
+    }
+
+    /// Seeds editor state from the record (both chromes' onAppear).
+    private func seed() {
+        name = scope.name
+        selection = Set(scope.volumeIds)
+    }
+
+    /// The subseries-grouped selection list, shared by both platform bodies.
+    private var groupList: some View {
+        ForEach(subseriesGroups, id: \.subseries) { group in
+            Section {
+                ForEach(group.volumes, id: \.volumeId) { entry in
+                    volumeRow(entry)
+                }
+            } header: {
+                HStack {
+                    Text(group.subseries)
+                    Spacer()
+                    subseriesToggle(group)
+                }
+            }
+        }
+    }
+
+    #if os(iOS)
+    /// iOS chrome: NavigationStack sheet with `.searchable` and nav-bar actions.
+    private var iosBody: some View {
         NavigationStack {
             List {
                 Section {
@@ -180,35 +234,15 @@ struct CustomScopeEditorView: View {
                                      defaultValue: "Scope name"),
                               text: $name)
                 } footer: {
-                    Text(String(format: String(
-                        localized: "settings.scopes.editor.footer %lld %lld",
-                        defaultValue: "%lld volumes selected · %lld indexed. Volumes you haven't downloaded stay in the scope and take effect once indexed."),
-                        Int64(selection.count), Int64(indexedSelectedCount)))
+                    Text(footerText)
                 }
-
-                ForEach(subseriesGroups, id: \.subseries) { group in
-                    Section {
-                        ForEach(group.volumes, id: \.volumeId) { entry in
-                            volumeRow(entry)
-                        }
-                    } header: {
-                        HStack {
-                            Text(group.subseries)
-                            Spacer()
-                            subseriesToggle(group)
-                        }
-                    }
-                }
+                groupList
             }
             .searchable(text: $filterText,
                         prompt: String(localized: "settings.scopes.editor.search",
                                        defaultValue: "Filter volumes by title"))
-            .navigationTitle(isDraft
-                ? String(localized: "settings.scopes.editor.title.new", defaultValue: "New Scope")
-                : String(localized: "settings.scopes.editor.title.edit", defaultValue: "Edit Scope"))
-            #if os(iOS)
+            .navigationTitle(editorTitle)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common.cancel", defaultValue: "Cancel")) {
@@ -219,19 +253,70 @@ struct CustomScopeEditorView: View {
                     Button(String(localized: "common.save", defaultValue: "Save")) {
                         save()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty
-                              || selection.isEmpty)
+                    .disabled(!canSave)
                 }
             }
-            .onAppear {
-                name = scope.name
-                selection = Set(scope.volumeIds)
-            }
+            .onAppear(perform: seed)
         }
-        #if os(macOS)
-        .frame(minWidth: 480, minHeight: 520)
-        #endif
     }
+    #endif
+
+    #if os(macOS)
+    /// macOS chrome (Phase 2): explicit header / inline filter / list / bottom-right
+    /// Cancel–Save — the repo's mac-sheet idiom; no `.searchable`-in-sheet.
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(editorTitle).font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            HStack(spacing: 8) {
+                TextField(String(localized: "settings.scopes.editor.name",
+                                 defaultValue: "Scope name"),
+                          text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 220)
+                TextField(String(localized: "settings.scopes.editor.search",
+                                 defaultValue: "Filter volumes by title"),
+                          text: $filterText)
+                    .textFieldStyle(.roundedBorder)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+
+            List {
+                groupList
+            }
+
+            Divider()
+
+            HStack {
+                Text(footerText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(String(localized: "common.cancel", defaultValue: "Cancel")) {
+                    dismiss()
+                }
+                Button(String(localized: "common.save", defaultValue: "Save")) {
+                    save()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canSave)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 520, minHeight: 560)
+        .onAppear(perform: seed)
+    }
+    #endif
 
     /// One selectable volume row: title, id, and an indexed marker.
     @ViewBuilder
