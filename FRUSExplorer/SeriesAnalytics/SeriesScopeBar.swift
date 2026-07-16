@@ -155,6 +155,10 @@ struct SeriesScopeBar: View {
             }
             .disabled(true)
         } else {
+            // #332 review: scope names are non-unique by design, so the checkmark keys on
+            // the resolved SET as well as the label — two same-named scopes (or a scope
+            // named after a subseries) no longer both render selected.
+            let isActive = scope.label == customScope.name && scope.volumeIds == resolved
             Button {
                 setScope(SeriesScope(volumeIds: resolved, label: customScope.name))
             } label: {
@@ -162,13 +166,13 @@ struct SeriesScopeBar: View {
                     localized: "series.scope.customScope %@ %lld",
                     defaultValue: "%@ (%lld volumes)"),
                     customScope.name, Int64(resolved.count))
-                if scope.label == customScope.name {
+                if isActive {
                     Label(title, systemImage: "checkmark")
                 } else {
                     Text(title)
                 }
             }
-            .accessibilityAddTraits(scope.label == customScope.name ? .isSelected : [])
+            .accessibilityAddTraits(isActive ? .isSelected : [])
         }
     }
 

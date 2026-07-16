@@ -37,6 +37,9 @@ import SwiftData
 /// Version history:
 ///   1.0 — #258 Phase 1: initial implementation (model + resolver + editor + iOS Search
 ///          + iOS management pane)
+///   1.1 — #258 Phase 4: `ScopeFacets` pure facet→volume-set helpers (subject / manifest
+///          tag / coverage+editor); #332 review: subject-catalog name derivation made
+///          order-deterministic
 @Model final class CustomVolumeScope {
 
     // MARK: - Identity
@@ -181,9 +184,13 @@ enum ScopeFacets {
         resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]],
         volumesBySubjectRef: [String: [String]]
     ) -> [SubjectEntry] {
+        // First-wins name derivation over SORTED volume keys (#332 review): dictionary
+        // iteration order is unspecified, so if a ref ever carried different names across
+        // volumes, the displayed name (and its tie-break sort slot) could flip between
+        // launches. Sorting pins it. The volume SET is unaffected either way.
         var byRef: [String: (name: String, category: String)] = [:]
-        for subjects in resolvedByVolume.values {
-            for subject in subjects where byRef[subject.ref] == nil {
+        for volumeId in resolvedByVolume.keys.sorted() {
+            for subject in resolvedByVolume[volumeId] ?? [] where byRef[subject.ref] == nil {
                 byRef[subject.ref] = (subject.name, subject.category)
             }
         }

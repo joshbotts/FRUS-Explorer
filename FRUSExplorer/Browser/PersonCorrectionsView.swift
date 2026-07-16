@@ -28,6 +28,9 @@ import SwiftData
 ///   1.1 — Session 4 review: current rollup excluded at load; case/diacritic-folded name
 ///          precompute + ~150 ms debounced off-keystroke filtering (plan item 1); row a11y
 ///          labels carry the role/era subtitle with the action phrasing as a hint
+///   1.2 — #258 Phase 4: optional `title` override so the scope editor can reuse this
+///          picker as its people facet; `nil` (all pre-existing callers) keeps the merge
+///          title and chrome byte-identical
 struct PersonMergePickerSheet: View {
 
     /// The current person's rollup id, excluded from the results.
