@@ -170,6 +170,9 @@ enum ScopeFacets {
         let name: String
         /// Top-level category (e.g. `"Warfare"`).
         let category: String
+        /// Second-level sub-category (e.g. `"Vietnam Conflict"`). Added for #308's two-level
+        /// facets — the decoded `ResolvedSubject` already carries it.
+        let subcategory: String
         /// How many volumes' profiles carry the subject.
         let volumeCount: Int
         var id: String { ref }
@@ -188,14 +191,15 @@ enum ScopeFacets {
         // iteration order is unspecified, so if a ref ever carried different names across
         // volumes, the displayed name (and its tie-break sort slot) could flip between
         // launches. Sorting pins it. The volume SET is unaffected either way.
-        var byRef: [String: (name: String, category: String)] = [:]
+        var byRef: [String: (name: String, category: String, subcategory: String)] = [:]
         for volumeId in resolvedByVolume.keys.sorted() {
             for subject in resolvedByVolume[volumeId] ?? [] where byRef[subject.ref] == nil {
-                byRef[subject.ref] = (subject.name, subject.category)
+                byRef[subject.ref] = (subject.name, subject.category, subject.subcategory)
             }
         }
         return byRef.map { ref, info in
             SubjectEntry(ref: ref, name: info.name, category: info.category,
+                         subcategory: info.subcategory,
                          volumeCount: volumesBySubjectRef[ref]?.count ?? 0)
         }
         .sorted { $0.volumeCount != $1.volumeCount ? $0.volumeCount > $1.volumeCount
@@ -206,6 +210,109 @@ enum ScopeFacets {
     static func volumeIds(forSubjectRef ref: String,
                           volumesBySubjectRef: [String: [String]]) -> Set<String> {
         Set(volumesBySubjectRef[ref] ?? [])
+    }
+
+    // MARK: Subject category / sub-category facets (#308 Phase 1)
+
+    /// The taxonomy's catch-all second-level label, folded into its parent category rather
+    /// than shown as a drill-down child (#308 review F4): 105/371 bundled subjects sit in a
+    /// `"General"` sub-category, and for some categories (Information Programs is entirely
+    /// General) the drill-down would otherwise dead-end there. Matched exactly — "General
+    /// Agreement on Tariffs and Trade" is a real, distinct sub-category and is NOT folded.
+    static let generalSubcategory = "General"
+
+    /// A taxonomy **category** (top level) with its volume reach.
+    struct CategoryEntry: Identifiable, Equatable {
+        /// Category label (e.g. `"Warfare"`).
+        let label: String
+        /// Volumes whose profile carries any subject in this category.
+        let volumeCount: Int
+        var id: String { label }
+    }
+
+    /// A taxonomy **sub-category** (second level) with its parent category and volume reach.
+    struct SubCategoryEntry: Identifiable, Equatable {
+        /// Parent category label.
+        let category: String
+        /// Sub-category label (e.g. `"Vietnam Conflict"`).
+        let subcategory: String
+        /// Volumes whose profile carries any subject in this (category, sub-category).
+        let volumeCount: Int
+        // Sub-category labels repeat across categories (e.g. "Foreign Protest against U.S.
+        // Activity" under two categories), so identity is the PAIR.
+        var id: String { category + "\u{001f}" + subcategory }
+    }
+
+    /// The **category catalog**: every category any volume profile touches, with its volume
+    /// reach, sorted by reach (ties by label).
+    ///
+    /// Semantics (#308 review F3): a volume is counted when the category appears among its
+    /// TOP-15 *characteristic* subjects — "characteristic," not "about." A broad category
+    /// (Foreign Economic Policy reaches ~90% of volumes) is therefore a coarse grouping, not
+    /// a discriminating filter; surface the reach so that is visible, and lean on the
+    /// sub-category drill-down (which discriminates) for real narrowing.
+    static func categoryCatalog(
+        resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> [CategoryEntry] {
+        var volumesByCategory: [String: Set<String>] = [:]
+        for (volumeId, subjects) in resolvedByVolume {
+            for subject in subjects {
+                volumesByCategory[subject.category, default: []].insert(volumeId)
+            }
+        }
+        return volumesByCategory.map { CategoryEntry(label: $0.key, volumeCount: $0.value.count) }
+            .sorted { $0.volumeCount != $1.volumeCount ? $0.volumeCount > $1.volumeCount
+                                                       : $0.label < $1.label }
+    }
+
+    /// The **sub-category catalog** for one category (the drill-down), **excluding** the
+    /// folded `"General"` bucket (#308 review F4), sorted by reach. Sub-category grain is
+    /// where the facet discriminates (median reach ~4% of volumes). A volume reachable only
+    /// via a General subject is still covered by `volumeIds(forCategory:)`.
+    static func subCategoryCatalog(
+        forCategory category: String,
+        resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> [SubCategoryEntry] {
+        var volumesBySub: [String: Set<String>] = [:]
+        for (volumeId, subjects) in resolvedByVolume {
+            for subject in subjects
+            where subject.category == category && subject.subcategory != generalSubcategory {
+                volumesBySub[subject.subcategory, default: []].insert(volumeId)
+            }
+        }
+        return volumesBySub.map {
+            SubCategoryEntry(category: category, subcategory: $0.key, volumeCount: $0.value.count)
+        }
+        .sorted { $0.volumeCount != $1.volumeCount ? $0.volumeCount > $1.volumeCount
+                                                   : $0.subcategory < $1.subcategory }
+    }
+
+    /// The volumes whose profile carries any subject in a **category** (#308 Phase 1).
+    static func volumeIds(
+        forCategory category: String,
+        resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> Set<String> {
+        var ids: Set<String> = []
+        for (volumeId, subjects) in resolvedByVolume
+        where subjects.contains(where: { $0.category == category }) {
+            ids.insert(volumeId)
+        }
+        return ids
+    }
+
+    /// The volumes whose profile carries any subject in a **(category, sub-category)** (#308
+    /// Phase 1). Resolves the folded `"General"` sub-category too if asked, so the resolver
+    /// is complete even though the catalog hides it.
+    static func volumeIds(
+        forCategory category: String, subcategory: String,
+        resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> Set<String> {
+        var ids: Set<String> = []
+        for (volumeId, subjects) in resolvedByVolume
+        where subjects.contains(where: { $0.category == category && $0.subcategory == subcategory }) {
+            ids.insert(volumeId)
+        }
+        return ids
     }
 
     /// One entry of the manifest-tag catalog: an OH slug with its volume reach.

@@ -225,9 +225,59 @@ struct ScopeFacetsTests {
                                                  volumesBySubjectRef: reverse)
         #expect(catalog.map(\.ref) == ["s1", "s2"])
         #expect(catalog.first?.name == "Vietnamization")
+        #expect(catalog.first?.subcategory == "Strategy")
         #expect(catalog.first?.volumeCount == 2)
         #expect(ScopeFacets.volumeIds(forSubjectRef: "s2", volumesBySubjectRef: reverse)
                 == ["v1"])
+    }
+
+    // MARK: Category / sub-category facets (#308 Phase 1)
+
+    /// A `ResolvedSubject` fixture.
+    private func rs(_ ref: String, _ name: String, _ cat: String, _ sub: String)
+        -> VolumeSubjectProfiles.ResolvedSubject {
+        VolumeSubjectProfiles.ResolvedSubject(ref: ref, name: name, category: cat,
+                                              subcategory: sub, score: 0.5)
+    }
+
+    @Test("Category catalog counts distinct volume reach; forCategory resolves the volume set")
+    func categoryFacet() {
+        let byVol = [
+            "v1": [rs("w1", "Vietnamization", "Warfare", "Vietnam Conflict"),
+                   rs("e1", "Export control", "Foreign Economic Policy", "Trade")],
+            "v2": [rs("w2", "Deterrence", "Warfare", "Strategy")],
+            "v3": [rs("e1", "Export control", "Foreign Economic Policy", "Trade")],
+        ]
+        let cats = ScopeFacets.categoryCatalog(resolvedByVolume: byVol)
+        // Warfare = {v1,v2} = 2; Foreign Economic Policy = {v1,v3} = 2 — tie broken by label.
+        #expect(cats.map(\.label) == ["Foreign Economic Policy", "Warfare"])
+        #expect(cats.first(where: { $0.label == "Warfare" })?.volumeCount == 2)
+        #expect(ScopeFacets.volumeIds(forCategory: "Warfare", resolvedByVolume: byVol)
+                == ["v1", "v2"])
+    }
+
+    @Test("Sub-category catalog folds out General; category still covers General volumes")
+    func subCategoryFacetFoldsGeneral() {
+        let byVol = [
+            "v1": [rs("a1", "Vietnamization", "Warfare", "Vietnam Conflict")],
+            "v2": [rs("g1", "Misc War", "Warfare", "General")],
+            "v3": [rs("b1", "Deterrence", "Warfare", "Strategy")],
+            "v4": [rs("a1", "Vietnamization", "Warfare", "Vietnam Conflict"),
+                   rs("b1", "Deterrence", "Warfare", "Strategy")],
+        ]
+        let subs = ScopeFacets.subCategoryCatalog(forCategory: "Warfare", resolvedByVolume: byVol)
+        // "General" is folded out of the drill-down.
+        #expect(subs.allSatisfy { $0.subcategory != ScopeFacets.generalSubcategory })
+        #expect(Set(subs.map(\.subcategory)) == ["Vietnam Conflict", "Strategy"])
+        // …but the General-only volume is still reachable via the category.
+        #expect(ScopeFacets.volumeIds(forCategory: "Warfare", resolvedByVolume: byVol)
+                == ["v1", "v2", "v3", "v4"])
+        // Pair resolution is exact.
+        #expect(ScopeFacets.volumeIds(forCategory: "Warfare", subcategory: "Vietnam Conflict",
+                                      resolvedByVolume: byVol) == ["v1", "v4"])
+        // The complete resolver can still resolve General even though the catalog hides it.
+        #expect(ScopeFacets.volumeIds(forCategory: "Warfare", subcategory: "General",
+                                      resolvedByVolume: byVol) == ["v2"])
     }
 }
 
