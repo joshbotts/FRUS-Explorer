@@ -78,7 +78,8 @@ struct FRUSSettingsView: View {
     @State private var selection: SettingsPane = .display
 
     var body: some View {
-        NavigationSplitView {
+        SettingsPane.assertSidebarCoverage()
+        return NavigationSplitView {
             List(selection: $selection) {
                 Section("General") {
                     ForEach(SettingsPane.general) { pane in
@@ -197,8 +198,23 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         }
     }
 
+    /// Every pane case must appear in exactly one sidebar section array below — the sidebar
+    /// is built from THESE, not from `allCases`, so a case added to the enum + label + icon +
+    /// detail switch but not to a section array compiles cleanly and ships UNREACHABLE (the
+    /// #258 Phase 2 pre-merge review caught exactly that with `.scopes`). Asserted in DEBUG
+    /// at sidebar construction because the alternative — a unit test — cannot execute: this
+    /// file is macOS-only and the FRUSExplorerMac scheme has no test action.
+    static func assertSidebarCoverage() {
+        #if DEBUG
+        let listed = Set(general + research + corpus + advanced + resetSection)
+        let missing = Set(SettingsPane.allCases).subtracting(listed)
+        assert(missing.isEmpty,
+               "SettingsPane case(s) unreachable — missing from the sidebar section arrays: \(missing)")
+        #endif
+    }
+
     static let general:  [SettingsPane] = [.sync, .syncDiagnostics, .display, .search]
-    static let research: [SettingsPane] = [.projects, .tags, .notes, .wordCloud]
+    static let research: [SettingsPane] = [.projects, .tags, .scopes, .notes, .wordCloud]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
     static let advanced: [SettingsPane] = [.naraAPI, .zotero, .summarization, .data]
     static let resetSection: [SettingsPane] = [.reset]
