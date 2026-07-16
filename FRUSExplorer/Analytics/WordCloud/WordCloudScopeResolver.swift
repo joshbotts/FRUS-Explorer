@@ -12,14 +12,19 @@ import SwiftData
 /// Resolves a `WordCloudScope` into the concrete set of document keys (and a
 /// human-readable title) that `WordFrequencyService` needs.
 ///
-/// Resolution runs on the main actor because three of the scopes
-/// (`.collection`, `.userTag`, `.savedSearch`) read SwiftData and/or re-run a
-/// search. The FTS-backed scopes (`.document`, `.volume`, `.subseries`) read the
-/// index; `.corpus` is left for the service to enumerate so its (potentially
-/// enormous) key list is never materialised on the main actor.
+/// Resolution runs on the main actor because four of the scopes
+/// (`.collection`, `.userTag`, `.savedSearch`, `.customScope`) read SwiftData
+/// and/or re-run a search. The FTS-backed scopes (`.document`, `.volume`,
+/// `.subseries`) read the index; `.corpus` is left for the service to enumerate so
+/// its (potentially enormous) key list is never materialised on the main actor.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — #258 Phase 5: `.customScope` — per-member-volume key enumeration (the
+///          indexed grain by construction: un-indexed members contribute no rows,
+///          so the cloud's existing "no indexed text in this scope yet" empty state
+///          is the honest `.noIndexedMembers` rendering, never an inversion);
+///          a dangling id keeps the generic-title + empty-keys pattern
 @MainActor
 struct WordCloudScopeResolver {
 
@@ -111,6 +116,25 @@ struct WordCloudScopeResolver {
                     limit: SearchViewModel.searchHardLimit
                 )
                 keys = results.map { WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId) }
+            }
+            return Resolved(scope: scope, title: title, keys: keys, isCorpus: false)
+
+        case let .customScope(id):
+            // #258 Phase 5. Dereference the record (never copy the member list into the
+            // scope value — sketch §8-Q3); a dangling id (deleted on another device)
+            // yields the generic title + empty keys, matching `.collection`'s pattern —
+            // an explicitly empty cloud, never a fallback to `.corpus`. Members are raw
+            // manifest ids, so key enumeration per volume IS the indexed-grain
+            // intersection: `keys(forVolume:)` returns nothing for un-indexed volumes.
+            var descriptor = FetchDescriptor<CustomVolumeScope>(
+                predicate: #Predicate { $0.id == id })
+            descriptor.fetchLimit = 1
+            let record = try modelContext.fetch(descriptor).first
+            let title = record?.name ?? String(localized: "wordcloud.scope.customScope",
+                                               defaultValue: "Volume Scope")
+            var keys: [WordCloudDocumentKey] = []
+            for volumeId in record?.volumeIds ?? [] {
+                keys.append(contentsOf: try await self.keys(forVolume: volumeId))
             }
             return Resolved(scope: scope, title: title, keys: keys, isCorpus: false)
 

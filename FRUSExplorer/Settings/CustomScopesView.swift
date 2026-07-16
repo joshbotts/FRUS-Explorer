@@ -35,6 +35,9 @@ import SwiftData
 ///          `PersonMergePickerSheet` idiom; no `NavigationStack`-in-sheet on macOS);
 ///          Save is disabled while a person-facet union is still resolving, so a fast
 ///          Save can no longer snapshot the selection before the volumes land
+///   1.3 — #258 Phase 5: scope rows gain a "Word Cloud" context-menu launch
+///          (`pendingWordCloud` hand-off, the SavedSearchesView row idiom; disabled
+///          while no member volume is indexed)
 struct CustomScopesView: View {
 
     @Environment(AppState.self) private var appState
@@ -68,6 +71,9 @@ struct CustomScopesView: View {
                             scopeRow(scope)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            wordCloudAction(scope)
+                        }
                     }
                     .onDelete { offsets in
                         for index in offsets { modelContext.delete(scopes[index]) }
@@ -96,6 +102,24 @@ struct CustomScopesView: View {
             CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
                 .environment(appState)
         }
+    }
+
+    /// The row context menu's word-cloud launch (#258 Phase 5): hands the scope to
+    /// the shared `pendingWordCloud` sheet (the `SavedSearchesView` row idiom).
+    /// Disabled when nothing is indexed — the cloud reads indexed text, so a
+    /// zero-indexed scope could only ever render an empty cloud.
+    @ViewBuilder
+    private func wordCloudAction(_ scope: CustomVolumeScope) -> some View {
+        let resolution = CustomScopeResolver.indexedResolution(
+            memberVolumeIds: scope.volumeIds, indexed: appState.indexedVolumeIds)
+        Button {
+            appState.pendingWordCloud = .customScope(id: scope.id)
+        } label: {
+            Label { Text(String(localized: "settings.scopes.row.wordCloud",
+                                defaultValue: "Word Cloud")) }
+                icon: { Image(systemName: WordCloudGlyph.symbol) }
+        }
+        .disabled(resolution == .noIndexedMembers)
     }
 
     /// One scope row: name, member count, and the indexed-coverage state.

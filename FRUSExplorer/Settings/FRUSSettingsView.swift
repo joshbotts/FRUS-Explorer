@@ -70,6 +70,8 @@ import AppKit
 ///          iOS CustomScopesView row; tags-pane idiom). The shared CustomScopeEditorView
 ///          gains an explicit macOS sheet body — header / inline filter / bottom-right
 ///          Cancel–Save — resolving Phase 1's .searchable-in-sheet caution.
+///   1.6 — #258 Phase 5: scope rows gain a word-cloud launch button (pendingWordCloud
+///          hand-off; disabled while the scope has no indexed member)
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -846,6 +848,22 @@ private struct SettingsScopesPane: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
+            // #258 Phase 5: word-cloud launch — the `pendingWordCloud` hand-off opens
+            // the frus.wordcloud window via MainWindowView (the MacCollectionManager
+            // precedent). Disabled when nothing is indexed: the cloud reads indexed
+            // text, so a zero-indexed scope could only ever render an empty cloud.
+            Button {
+                appState.pendingWordCloud = .customScope(id: scope.id)
+            } label: {
+                Image(systemName: WordCloudGlyph.symbol)
+            }
+            .buttonStyle(.borderless)
+            .disabled(resolution == .noIndexedMembers)
+            .help(String(localized: "settings.scopes.row.wordCloud.help",
+                         defaultValue: "Open a word cloud of this scope's indexed volumes"))
+            .accessibilityLabel(String(format: String(
+                localized: "settings.scopes.row.wordCloud.a11y %@",
+                defaultValue: "Word cloud of %@"), scope.name))
             Button(String(localized: "common.edit", defaultValue: "Edit")) {
                 editorIsDraft = false
                 editorTarget = scope
