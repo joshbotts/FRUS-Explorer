@@ -59,6 +59,9 @@ enum DocumentSheet: Identifiable {
     case naraLookup(text: String)
     /// An unresolvable cross-reference was tapped — explains why it can't be followed (#240).
     case brokenRefExplanation(BrokenRefInfo)
+    /// The #308 find-related list, on surfaces without multiple windows (iPhone / non-Stage-Manager
+    /// iPad). Where windows exist the caller opens the `RelatedDocumentsRequest` window instead.
+    case relatedDocuments(RelatedDocumentsRequest)
 
     var id: String {
         switch self {
@@ -78,6 +81,7 @@ enum DocumentSheet: Identifiable {
         case .personNotFound:                  return "personNotFound"
         case .glossNotFound:                   return "glossNotFound"
         case .naraLookup:                      return "naraLookup"
+        case .relatedDocuments(let r):         return "relatedDocs-\(r.anchor.compositeString)"
         }
     }
 }
@@ -261,6 +265,8 @@ struct DocumentView: View {
     @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
+    /// The user's persisted find-related weight tuning (#308), captured into the request on open.
+    @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
     /// Whether the Read-mode edge-tap "page-turn" zones are active (Session 154).
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
@@ -599,6 +605,8 @@ struct DocumentView: View {
             case .brokenRefExplanation(let info):
                 BrokenRefExplanationSheet(info: info)
                     .presentationDetents([.medium])
+            case .relatedDocuments(let request):
+                RelatedDocumentsSheet(appState: appState, request: request)
             }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
@@ -735,6 +743,23 @@ struct DocumentView: View {
             ))
         } else {
             activeSheet = .sourceExplorer(vm.sourceNote ?? "")
+        }
+    }
+
+    /// Opens this document's #308 find-related list. When multi-window is available (Stage Manager on
+    /// iPad), it opens the value-based `RelatedDocumentsRequest` window (self-describing, so a restored
+    /// window rebuilds correctly with its tuning); otherwise the in-place sheet. The request captures
+    /// the user's persisted weight tuning and the document's coverage year.
+    private func openRelatedDocuments() {
+        let request = RelatedDocumentsRequest(
+            anchor: DocumentKey(volumeId: entry.volumeId, documentId: entry.documentId),
+            anchorYear: Self.extractYear(from: entry.dateline),
+            weights: relatedWeights,
+            scope: .allIndexed)
+        if supportsMultipleWindows {
+            openWindow(value: request)
+        } else {
+            activeSheet = .relatedDocuments(request)
         }
     }
 
@@ -1139,6 +1164,23 @@ struct DocumentView: View {
                 systemImage: "arrow.triangle.branch"
             )
             .popoverTip(ExploreCrossReferencesTip())
+
+            // 8b. Related documents (#308) — the multi-axis find-related list. Opens as a
+            // Stage Manager window when multi-window is available, otherwise an in-place sheet.
+            Button {
+                openRelatedDocuments()
+            } label: {
+                Label(
+                    String(localized: "document.toolbar.related", defaultValue: "Related Documents"),
+                    systemImage: "doc.on.doc"
+                )
+            }
+            .controlHelp(
+                String(localized: "document.toolbar.related", defaultValue: "Related Documents"),
+                detail: String(localized: "document.toolbar.related.help",
+                               defaultValue: "Find documents related to this one by archival provenance, cross-references, date, and shared people"),
+                systemImage: "doc.on.doc"
+            )
 
             // 9. NARA Catalog Lookup moved to the text-selection edit menu
             // (see .onEditMenuNARALookup on the web view) — the conditional

@@ -92,6 +92,13 @@ struct AxisWeightsTests {
         let data = try JSONEncoder().encode(weights)
         #expect(try JSONDecoder().decode(AxisWeights.self, from: data) == weights)
     }
+
+    @Test("AxisWeights RawRepresentable round-trips for @AppStorage persistence")
+    func rawRepresentable() {
+        let weights = AxisWeights(weights: [.archivalProvenance: 0.9, .sharedPersons: 0.3])
+        #expect(AxisWeights(rawValue: weights.rawValue) == weights)
+        #expect(AxisWeights(rawValue: "not valid json") == nil)   // malformed → nil (falls back to default)
+    }
 }
 
 // MARK: - RelatedDocumentsRankerTests
