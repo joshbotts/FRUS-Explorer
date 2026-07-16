@@ -63,11 +63,47 @@ struct VolumeSubjectProfilesGeneratorTests {
     /// `0.5` threshold is used: it isolates the 100%-frequency `generic` subject while
     /// leaving the 18–22%-frequency characteristic subjects to rank. The genericity
     /// *mechanism* is what these tests exercise, not the production constant.
-    private func build(_ params: ProfileAggregator.Parameters = .init(genericityThreshold: 0.5))
+    private func build(_ params: ProfileAggregator.Parameters = .init(genericityThreshold: 0.5),
+                       coverageEndYear: [String: Int] = [:])
         -> (index: VolumeSubjectProfilesIndex, stats: ProfileAggregator.Stats) {
         ProfileAggregator.aggregate(
             input: fixture(), parameters: params,
+            volumeCoverageEndYear: coverageEndYear,
             schemaVersion: 1, generated: "2026-07-09", provenance: "test")
+    }
+
+    // MARK: Era-sanity (#308 F2)
+
+    @Test("era-sanity drops an anachronistic subject from a volume that predates it, keeps it otherwise")
+    func eraSanityDropsAnachronism() {
+        // "AIDS" (earliest-plausible 1981) tagged on two volumes: one ending 1969, one ending 1985.
+        let subjectsIndex: [String: DocumentSubjectsInput.SubjectMeta] = [
+            "aids": .init(name: "AIDS", category: "Human Rights", subcategory: "General"),
+            "war":  .init(name: "War", category: "Warfare", subcategory: "General"),
+        ]
+        let subjects: [String: [String: String]] = [
+            "aids": ["frus_old": "d1, d2, d3", "frus_new": "d1, d2, d3"],
+            "war":  ["frus_old": "d4, d5, d6", "frus_new": "d4, d5, d6"],
+        ]
+        let input = DocumentSubjectsInput(generated: "2026-06-16",
+                                          subjectsIndex: subjectsIndex, subjects: subjects)
+        // High genericity threshold so the tiny fixture doesn't drop either subject as generic.
+        let (index, stats) = ProfileAggregator.aggregate(
+            input: input, parameters: .init(genericityThreshold: 0.9),
+            volumeCoverageEndYear: ["frus_old": 1969, "frus_new": 1985],
+            schemaVersion: 1, generated: "t", provenance: "t")
+        let refByIndex = index.vocab.map(\.ref)
+        func refs(_ volumeId: String) -> Set<String> {
+            Set(index.profiles.first { $0.volumeId == volumeId }?
+                .entries.map { refByIndex[$0.vocabIndex] } ?? [])
+        }
+        #expect(!refs("frus_old").contains("aids"))   // 1981 > 1969 → dropped
+        #expect(refs("frus_new").contains("aids"))     // 1981 ≤ 1985 → kept
+        #expect(refs("frus_old").contains("war"))      // untabled subject unaffected
+        #expect(stats.eraSanityDropped == 1)
+        // The fixture carries only "AIDS" from the table, so the other rows are reported unmatched.
+        #expect(stats.eraSanityUnmatched.contains("World War I"))
+        #expect(!stats.eraSanityUnmatched.contains("AIDS"))
     }
 
     // MARK: Genericity + floor
