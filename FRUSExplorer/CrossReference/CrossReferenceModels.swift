@@ -55,6 +55,45 @@ public struct CrossReferenceEdge: Sendable {
     }
 }
 
+// MARK: - RelatedCitationCandidate
+
+/// A document directly cited by, or citing, an anchor document — the cross-reference generator's
+/// candidate row for the #308 find-related feature.
+///
+/// Carries the display fields (from `document_cache`, so only indexed/navigable candidates surface)
+/// plus `citationCount`, the number of citation edges between the anchor and this candidate (the raw
+/// strength the find-related engine normalises per axis).
+///
+/// Version history:
+///   1.0 — #308 Phase 2b: initial implementation
+public struct RelatedCitationCandidate: Sendable {
+    /// The candidate document's volume.
+    public let volumeId: String
+    /// The candidate document's id.
+    public let documentId: String
+    /// The candidate's header (title); may be empty.
+    public let header: String
+    /// The candidate's dateline display string, if any.
+    public let dateline: String?
+    /// The candidate's document number within its volume, if any.
+    public let documentNumber: String?
+    /// Whether the candidate is an editorial note.
+    public let isEditorialNote: Bool
+    /// The number of citation edges between the anchor and this candidate (both directions).
+    public let citationCount: Int
+
+    public init(volumeId: String, documentId: String, header: String, dateline: String?,
+                documentNumber: String?, isEditorialNote: Bool, citationCount: Int) {
+        self.volumeId = volumeId
+        self.documentId = documentId
+        self.header = header
+        self.dateline = dateline
+        self.documentNumber = documentNumber
+        self.isEditorialNote = isEditorialNote
+        self.citationCount = citationCount
+    }
+}
+
 // MARK: - CrossReferenceNodeMetadata
 
 /// Display-ready metadata for a single node (document) in the cross-reference graph.

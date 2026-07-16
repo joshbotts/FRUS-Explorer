@@ -103,15 +103,16 @@ enum RelatedDocumentsRanker {
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: archival generator + date/subseries/persons scorers; the shared-subjects
-///          scorer is inert until the Phase 3 data drop, and the cross-reference generator lands in
-///          Phase 2b (this list is intentionally the extension seam)
+///          scorer is inert until the Phase 3 data drop
+///   1.1 — #308 Phase 2b: cross-reference generator (direct citation) added to the generator set
 enum RelatedDocumentsEngine {
 
-    /// The bounded candidate producers. Cross-references join in Phase 2b; the ranker is
-    /// generator-set-agnostic, so adding one is a pure extension. `@MainActor` because the
-    /// generators conform to the main-actor-isolated `SimilarityGenerator`.
+    /// The bounded candidate producers. Archival is listed first, so on a key a candidate is produced
+    /// by both, its (equivalent, `document_cache`-sourced) record wins the engine's first-generator
+    /// merge. `@MainActor` because the generators conform to the main-actor-isolated `SimilarityGenerator`.
     @MainActor static let generators: [any SimilarityGenerator] = [
         ArchivalProvenanceGenerator(),
+        CrossReferenceGenerator(),
     ]
 
     /// The rankers over the generated candidates.

@@ -21,8 +21,8 @@ import Foundation
 /// prominent anchor; scorers dodge that by batch-scoring the bounded candidate set instead.
 ///
 /// Version history:
-///   1.0 — #308 Phase 2: initial six-axis model (cross-reference generator lands in Phase 2b;
-///          shared-subjects scorer is inert until the Phase 3 document-grain data drop)
+///   1.0 — #308 Phase 2: initial six-axis model (the shared-subjects scorer is inert until the
+///          Phase 3 document-grain data drop; the cross-reference generator landed in Phase 2b)
 enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifiable {
     /// Same original archival provenance — lot file, central decimal file, record-group series,
     /// or presidential-library collection (`IndexingPipeline.archivalNeighbors`). A generator.

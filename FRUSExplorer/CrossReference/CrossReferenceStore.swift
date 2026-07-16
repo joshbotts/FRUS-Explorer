@@ -396,6 +396,87 @@ public actor CrossReferenceStore {
         return try collectEdges(stmt)
     }
 
+    /// Returns the documents directly cited by, or citing, the anchor — the cross-reference
+    /// generator's bounded candidate set for the #308 find-related feature.
+    ///
+    /// Unions both directions of the anchor's ego edges and groups by the *other* endpoint with its
+    /// citation multiplicity. The outbound direction applies the shared `documentTargetPredicate`
+    /// (drops page / footnote / index / chapter / appendix / bare-volume / URL anchors that also live
+    /// in `target_document_id`); the inbound direction needs no such filter because a citation's
+    /// *source* is always a real document. The `JOIN document_cache` is an INNER join — like the
+    /// archival-neighbour paths — so only indexed (navigable) candidates surface. `is_broken = 0`
+    /// throughout. Cost is `O(ego edges)`: two index-keyed ego scans (`source`/`target_document_id`),
+    /// never a corpus scan.
+    ///
+    /// - Parameters:
+    ///   - documentId: The anchor document id.
+    ///   - volumeId: The anchor volume id.
+    ///   - scopeVolumeIds: Restrict candidates to these volumes (`nil` / empty = all indexed).
+    ///   - limit: Maximum candidates, ordered by citation multiplicity (descending) then key.
+    /// - Returns: The candidate documents with their citation counts, the anchor itself excluded.
+    public func relatedByCitation(
+        forDocumentId documentId: String,
+        volumeId: String,
+        scopeVolumeIds: Set<String>? = nil,
+        limit: Int
+    ) throws -> [RelatedCitationCandidate] {
+        // Sort the scope ids for a deterministic bind order.
+        let scopeIds = scopeVolumeIds.map { Array($0).sorted() } ?? []
+        let scopeClause = scopeIds.isEmpty
+            ? ""
+            : "AND i.cand_vol IN (\(scopeIds.map { _ in "?" }.joined(separator: ", ")))"
+        let sql = """
+            WITH incident(cand_vol, cand_doc) AS (
+                SELECT COALESCE(cr.target_volume_id, cr.source_volume_id), cr.target_document_id
+                FROM cross_references cr
+                WHERE cr.source_document_id = ? AND cr.source_volume_id = ?
+                  AND cr.is_broken = 0
+                  AND \(Self.documentTargetPredicate)
+                UNION ALL
+                SELECT cr.source_volume_id, cr.source_document_id
+                FROM cross_references cr
+                WHERE cr.target_document_id = ?
+                  AND COALESCE(cr.target_volume_id, cr.source_volume_id) = ?
+                  AND cr.is_broken = 0
+            )
+            SELECT i.cand_vol, i.cand_doc, COUNT(*) AS citation_count,
+                   dc.header, dc.dateline, dc.document_number, dc.is_editorial_note
+            FROM incident i
+            JOIN document_cache dc ON dc.volume_id = i.cand_vol AND dc.document_id = i.cand_doc
+            WHERE NOT (i.cand_vol = ? AND i.cand_doc = ?)
+              \(scopeClause)
+            GROUP BY i.cand_vol, i.cand_doc
+            ORDER BY citation_count DESC, i.cand_vol, i.cand_doc
+            LIMIT ?
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var col: Int32 = 1
+        sqlite3_bind_text(stmt, col, documentId, -1, SQLITE_TRANSIENT_CR); col += 1 // outbound source_document_id
+        sqlite3_bind_text(stmt, col, volumeId,   -1, SQLITE_TRANSIENT_CR); col += 1 // outbound source_volume_id
+        sqlite3_bind_text(stmt, col, documentId, -1, SQLITE_TRANSIENT_CR); col += 1 // inbound target_document_id
+        sqlite3_bind_text(stmt, col, volumeId,   -1, SQLITE_TRANSIENT_CR); col += 1 // inbound resolved target volume
+        sqlite3_bind_text(stmt, col, volumeId,   -1, SQLITE_TRANSIENT_CR); col += 1 // exclude anchor volume
+        sqlite3_bind_text(stmt, col, documentId, -1, SQLITE_TRANSIENT_CR); col += 1 // exclude anchor document
+        for vid in scopeIds {
+            sqlite3_bind_text(stmt, col, vid, -1, SQLITE_TRANSIENT_CR); col += 1
+        }
+        sqlite3_bind_int(stmt, col, Int32(max(0, limit)))
+
+        var results: [RelatedCitationCandidate] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            results.append(RelatedCitationCandidate(
+                volumeId:        columnString(stmt, 0) ?? "",
+                documentId:      columnString(stmt, 1) ?? "",
+                header:          columnString(stmt, 3) ?? "",
+                dateline:        columnString(stmt, 4),
+                documentNumber:  columnString(stmt, 5),
+                isEditorialNote: sqlite3_column_int(stmt, 6) != 0,
+                citationCount:   Int(sqlite3_column_int(stmt, 2))))
+        }
+        return results
+    }
+
     // MARK: - Archival provenance queries
 
     /// Returns the lot file citation for a document, if one was recorded during indexing.

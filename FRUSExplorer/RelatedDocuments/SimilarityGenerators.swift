@@ -54,3 +54,51 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
         }
     }
 }
+
+// MARK: - CrossReferenceGenerator
+
+/// Generates candidates that the anchor directly cites or that directly cite the anchor.
+///
+/// Wraps the bounded `CrossReferenceStore.relatedByCitation` ego query (document-target-filtered,
+/// both directions, indexed candidates only) — `O(ego edges)`, never a corpus scan (design §6.2).
+/// Strength is the citation multiplicity (how many edges connect the pair), so a document the anchor
+/// cites repeatedly ranks above one it cites once; the engine normalises the axis to `[0, 1]`.
+///
+/// Co-citation (documents citing the same sources as the anchor) is a deliberate fast-follow — it
+/// needs a landmark cap so a heavily-cited shared target doesn't blow the bound — and is not included
+/// here; direct citation is the primary, cheapest cross-reference relatedness signal.
+///
+/// Version history:
+///   1.0 — #308 Phase 2b: initial implementation (direct citation)
+struct CrossReferenceGenerator: SimilarityGenerator {
+
+    var axis: SimilarityAxis { .crossReference }
+
+    /// Creates the generator.
+    init() {}
+
+    func candidates(
+        for anchor: DocumentKey,
+        anchorYear: Int?,
+        limit: Int,
+        scopeVolumeIds: Set<String>?,
+        appState: AppState
+    ) async throws -> [GeneratedCandidate] {
+        guard let store = appState.crossReferenceStore else { return [] }
+        let candidates = try await store.relatedByCitation(
+            forDocumentId: anchor.documentId,
+            volumeId: anchor.volumeId,
+            scopeVolumeIds: scopeVolumeIds,
+            limit: limit)
+        return candidates.map { candidate in
+            GeneratedCandidate(
+                key: DocumentKey(volumeId: candidate.volumeId, documentId: candidate.documentId),
+                record: CandidateRecord(
+                    header: candidate.header,
+                    dateline: candidate.dateline,
+                    documentNumber: candidate.documentNumber,
+                    isEditorialNote: candidate.isEditorialNote),
+                strength: Double(candidate.citationCount))
+        }
+    }
+}
