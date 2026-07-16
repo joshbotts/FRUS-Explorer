@@ -147,6 +147,10 @@ struct SettingsView: View {
 
                 Section(String(localized: "settings.section.research",
                                defaultValue: "Research")) {
+                    NavigationLink(String(localized: "settings.row.scopes",
+                                         defaultValue: "Volume Scopes")) {
+                        CustomScopesView()
+                    }
                     NavigationLink(String(localized: "settings.row.tags",
                                          defaultValue: "User Tags")) {
                         UserTagsView()

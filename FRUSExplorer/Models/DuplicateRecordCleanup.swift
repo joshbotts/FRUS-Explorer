@@ -19,6 +19,7 @@ fileprivate protocol DeduplicableRecord: PersistentModel {
 extension UserTag: DeduplicableRecord {}
 extension Project: DeduplicableRecord {}
 extension CollectionEntry: DeduplicableRecord {}
+extension CustomVolumeScope: DeduplicableRecord {}   // #258 — flat record, dedupeSimple suffices
 
 /// Collapses duplicate user-data records that share the same `id`.
 ///
@@ -59,6 +60,7 @@ enum DuplicateRecordCleanup {
             + dedupeSimple(Project.self, context: context)
             + dedupeCollections(context: context)
             + dedupeSimple(CollectionEntry.self, context: context)
+            + dedupeSimple(CustomVolumeScope.self, context: context)
         guard removed > 0 else { return }
         try? context.save()
         #if DEBUG

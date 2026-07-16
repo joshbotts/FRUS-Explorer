@@ -60,6 +60,14 @@ struct SearchFilterView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
+    /// User-defined volume scopes (#258), live via @Query so newly created/synced scopes
+    /// appear in the picker without plumbing. (Per the sketch's corrected §4 contract this
+    /// re-renders the MENU only — an applied scope is a seeded snapshot.)
+    @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
+    /// Name of the scope whose apply attempt found no indexed members (the inline warning),
+    /// or `nil`. Cleared on a successful apply.
+    @State private var scopeWarningName: String?
+
     /// Live text typed in the person-name search field.
     @State private var personSearchText: String = ""
     /// Person entries matching `personSearchText`, shown as a suggestion list.
@@ -105,6 +113,7 @@ struct SearchFilterView: View {
 
             Form {
                 dateRangeSection
+                if !vm.availableVolumes.isEmpty     { customScopeSection }
                 if !vm.availableVolumes.isEmpty     { volumeScopeSectionMac }
                 documentTypeSection
                 personSection
@@ -136,6 +145,7 @@ struct SearchFilterView: View {
         NavigationStack {
             Form {
                 dateRangeSection
+                if !vm.availableVolumes.isEmpty     { customScopeSection }
                 if !vm.availableVolumes.isEmpty     { volumeScopeSectioniOS }
                 documentTypeSection
                 personSection
@@ -375,6 +385,91 @@ struct SearchFilterView: View {
             Text(String(localized: "search.section.usertags",
                         defaultValue: "My Tags"))
         }
+    }
+
+    // MARK: - Custom Scopes (#258 Phase 1)
+
+    /// User-defined named volume scopes, applied by SEEDING the two pickers below —
+    /// snapshot semantics by design (the reviewed sketch's §4 v1 contract): picking a
+    /// scope copies its currently-indexed members into `selectedVolumeIds`; later edits
+    /// to the scope do not retroactively change this search until it is re-picked.
+    ///
+    /// The `IndexedResolution` invariant is enforced here: a scope with no indexed
+    /// members shows a warning and seeds NOTHING — it must never fall through to an
+    /// unscoped (whole-corpus) search under the scope's label.
+    @ViewBuilder
+    private var customScopeSection: some View {
+        if !customScopes.isEmpty {
+            Section {
+                ForEach(customScopes) { scope in
+                    customScopeRow(scope)
+                }
+                if let warning = scopeWarningName {
+                    Label(String(format: String(
+                        localized: "search.scope.custom.noneIndexed %@",
+                        defaultValue: "No volumes of “%@” are indexed yet — download and index its volumes first."),
+                        warning),
+                          systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            } header: {
+                Text(String(localized: "search.section.customScopes",
+                            defaultValue: "My Volume Scopes"))
+            } footer: {
+                Text(String(localized: "search.scope.custom.footer",
+                            defaultValue: "Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings."))
+            }
+            // Review fix: the no-indexed warning must not outlive a manual picker edit —
+            // once the user builds a valid selection by hand, the warning is stale.
+            .onChange(of: vm.selectedVolumeIds) { _, _ in scopeWarningName = nil }
+            .onChange(of: vm.selectedSubseriesIds) { _, _ in scopeWarningName = nil }
+        }
+    }
+
+    /// One scope row: name + "N of M indexed", applying on tap per the invariant above.
+    @ViewBuilder
+    private func customScopeRow(_ scope: CustomVolumeScope) -> some View {
+        let indexedSet = Set(vm.availableVolumes.map(\.volumeId))
+        let resolution = CustomScopeResolver.indexedResolution(
+            memberVolumeIds: scope.volumeIds, indexed: indexedSet)
+        Button {
+            switch resolution {
+            case .resolved(let ids):
+                vm.selectedVolumeIds = ids.sorted()
+                vm.selectedSubseriesIds = []
+                scopeWarningName = nil
+            case .noIndexedMembers, .scopeUnavailable:
+                scopeWarningName = scope.name
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(scope.name)
+                    Group {
+                        if case .resolved(let ids) = resolution {
+                            Text(String(format: String(
+                                localized: "search.scope.custom.indexed %lld %lld",
+                                defaultValue: "%lld of %lld volumes indexed"),
+                                Int64(ids.count), Int64(scope.volumeIds.count)))
+                        } else {
+                            Text(String(localized: "search.scope.custom.none",
+                                        defaultValue: "No indexed volumes"))
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "arrow.down.circle")
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(String(localized: "search.scope.custom.hint",
+                                  defaultValue: "Fills the volume picker with this scope's indexed volumes"))
     }
 
     // MARK: - Volume & Subseries Scope
