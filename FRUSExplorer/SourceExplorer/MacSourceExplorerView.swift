@@ -47,6 +47,12 @@ import AppKit
 ///          box — when the parsed note's keys land in the bundled cross-volume
 ///          authority, opens the shared Collection detail sheet (aliases, NAID, S5
 ///          local counts, citing volumes, sub-series)
+///   1.6 — #315: `bundledLotBox` shows the HMS/MLR entry number(s) and, for file-unit
+///          records, the enclosing File Series with the series' entry numbers labeled as
+///          the series'; citation-guidance captions on the central-files and CFPF
+///          provenance cases. Flagged mis-resolutions (#321) fall back to the live
+///          lookup via the shared `lotFile(forRawLot:)` guard. Mirrors
+///          SourceExplorerView 1.6 — keep the two row logics in sync.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -347,6 +353,12 @@ struct MacSourceExplorerView: View {
                                                    defaultValue: "File Identifier"),
                                       value: fileId)
                     }
+                    // #315: citation guidance — mirrors the iOS centralFilesPanel note.
+                    Text(String(localized: "source.explorer.centralFiles.cite.note",
+                                defaultValue: "When requesting the original record from NARA, provide the decimal file number above together with any telegram serial number, the from/to information, and the document's date from the source note — archivists use these to locate the record within the file."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
                 case .naraCollection(let rg, let series, let lotFile, let box):
                     provenanceRow(label: "Repository", value: "National Archives (RG \(rg))")
@@ -431,6 +443,12 @@ struct MacSourceExplorerView: View {
                                                    defaultValue: "File Identifier"),
                                       value: fid)
                     }
+                    // #315: CFPF citation guidance — mirrors the iOS cfpfPanel note.
+                    Text(String(localized: "source.explorer.cfpf.cite.note",
+                                defaultValue: "When requesting the original record from NARA, provide the file identifier above together with any telegram channel and serial numbers, the from/to information, and the document's date from the source note."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
                 case .namedFileSeries(let series, let fileId):
                     provenanceRow(label: String(localized: "source.explorer.namedSeries.type",
@@ -601,13 +619,47 @@ struct MacSourceExplorerView: View {
 
     // MARK: - Bundled Lot File Box
 
-    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record.
+    /// A bundled, key-less link to a lot file's resolved NARA Catalog series record —
+    /// enriched (#315) with the identifiers NARA staff ask researchers to cite.
+    ///
+    /// Row logic mirrors the iOS `SourceExplorerView.bundledLotSection` — keep in sync:
+    /// a series-level record's own title/entry numbers are shown directly; a file-unit
+    /// record additionally names its enclosing series (`displaySeriesTitle`), and any
+    /// entry numbers shown for it are the *series'*, labeled as such (the parent's
+    /// identifiers locate the series, not the specific unit).
     @ViewBuilder
     private func bundledLotBox(_ entry: LotFileEntry) -> some View {
         GroupBox(String(localized: "source.explorer.lotFile.bundled.header",
                         defaultValue: "NARA Catalog Record")) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(entry.title).font(.callout)
+                if !entry.isSeriesLevel, let seriesTitle = entry.displaySeriesTitle {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.series",
+                               defaultValue: "File Series"),
+                        value: seriesTitle
+                    )
+                    .font(.callout)
+                }
+                if let entries = entry.hmsMlrEntryNumbers, !entries.isEmpty {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.hmsMlr",
+                               defaultValue: "HMS/MLR Entry"),
+                        value: entries.joined(separator: ", ")
+                    )
+                    .font(.callout)
+                } else if let seriesEntries = entry.seriesHmsMlrEntryNumbers, !seriesEntries.isEmpty {
+                    LabeledContent(
+                        String(localized: "source.explorer.lotFile.hmsMlr.series",
+                               defaultValue: "HMS/MLR Entry (series)"),
+                        value: seriesEntries.joined(separator: ", ")
+                    )
+                    .font(.callout)
+                    Text(String(localized: "source.explorer.lotFile.hmsMlr.series.note",
+                                defaultValue: "These entry numbers identify the enclosing file series, not this specific file unit."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Button {
                     if let url = URL(string: entry.catalogURL) { openURL(url) }
                 } label: {
@@ -616,6 +668,12 @@ struct MacSourceExplorerView: View {
                           systemImage: "arrow.up.right.square")
                 }
                 .buttonStyle(.link)
+                if entry.hmsMlrEntryNumbers?.isEmpty == false || entry.seriesHmsMlrEntryNumbers?.isEmpty == false {
+                    Text(String(localized: "source.explorer.lotFile.cite.note",
+                                defaultValue: "When requesting the original records from NARA, cite the HMS/MLR entry number together with the lot number — it is the identifier archives staff use to locate the series."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Text(String(localized: "source.explorer.lotFile.bundled.note",
                             defaultValue: "Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page."))
                     .font(.caption)

@@ -205,4 +205,28 @@ struct CentralFilesIndexTests {
         #expect(known?.hmsMlrEntryNumbers == ["UD-06D 30"])
         #expect(known?.displaySeriesTitle == "Human Rights Country Files")
     }
+
+    /// The #321 app-side guard: entries whose resolved record has no record-group ancestry —
+    /// measured 0/16 precision, every one a presidential-library staff file — must be
+    /// invisible through the accessor, so the Source Explorers fall back to the live lookup
+    /// instead of shipping a confidently wrong NARA link.
+    @Test("Flagged mis-resolutions are treated as unresolved by the accessor")
+    func flaggedEntriesAreUnresolvedThroughAccessor() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let flagged = index.lotFiles.filter { $0.ancestryLacksRecordGroup == true }
+        // 16 at the 2026-07-15 harvest. If a future resolver fix (#321) re-harvests cleanly,
+        // this set may legitimately empty — the guard then simply has nothing to do, and the
+        // loop below is vacuously satisfied. The count expectation documents today's reality
+        // without blocking that future: it asserts only when any flags exist at all.
+        if !flagged.isEmpty {
+            for lot in flagged {
+                #expect(index.lotFile(forRawLot: lot.lotNumber) == nil,
+                        "flagged lot \(lot.lotNumber) leaked through the #321 guard")
+            }
+            // The known Ford-library case from the measurement, pinned explicitly.
+            #expect(index.lotFile(forRawLot: "32 D 66") == nil)
+        }
+        // Unflagged entries must be unaffected by the guard.
+        #expect(index.lotFile(forRawLot: "81 D 208") != nil)
+    }
 }
