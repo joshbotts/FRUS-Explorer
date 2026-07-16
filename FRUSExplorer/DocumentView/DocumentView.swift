@@ -516,7 +516,7 @@ struct DocumentView: View {
                         #if os(iOS)
                         // Switch to the Search tab so the handoff is visible — without this the
                         // sheet dismissed and nothing happened (people-eval finding F).
-                        appState.activeTab = .search
+                        appState.pendingTab = .search
                         #endif
                     }
                 )
@@ -801,7 +801,7 @@ struct DocumentView: View {
     ///
     /// If the target volume is not downloaded, falls back to the cross-reference
     /// graph sheet (`showGraph = true`). Otherwise:
-    /// - **iOS**: sets `appState.activeTab = .browse` so the Browse tab comes to
+    /// - **iOS**: sets `appState.pendingTab = .browse` so the Browse tab comes to
     ///   the foreground, then writes `appState.pendingBrowseDocument`.
     /// - **macOS**: writes `appState.pendingBrowseDocument` directly.
     ///
@@ -861,7 +861,7 @@ struct DocumentView: View {
             sourceNote: nil
         )
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         appState.pendingBrowseDocument = crossEntry
 
@@ -1566,7 +1566,7 @@ struct DocumentView: View {
     /// keeps behaviour predictable and consistent with existing in-document navigation.
     private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry) {
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         appState.pendingBrowseDocument = adjacent
         #if DEBUG

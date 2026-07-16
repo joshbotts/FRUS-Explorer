@@ -566,7 +566,7 @@ struct ResearchView: View {
         )
         appState.pendingBrowseDocument = browsEntry
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
     }
 

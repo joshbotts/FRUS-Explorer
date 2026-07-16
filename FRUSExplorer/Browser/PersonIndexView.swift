@@ -179,7 +179,7 @@ struct PersonIndexView: View {
             appState.pendingSearch = SearchParameters(personRollupId: indexEntry.rollupId,
                                                       personLabel: indexEntry.entry.name)
             #if os(iOS)
-            appState.activeTab = .search
+            appState.pendingTab = .search
             #endif
         } label: {
             Label(String(localized: "people.row.findMentions", defaultValue: "Find all mentions"),
@@ -545,7 +545,7 @@ struct PersonIndexDetailSheet: View {
                         appState.pendingSearch = SearchParameters(personRollupId: effectiveRollupId,
                                                                   personLabel: indexEntry.entry.name)
                         #if os(iOS)
-                        appState.activeTab = .search
+                        appState.pendingTab = .search
                         #endif
                         dismiss()
                     } label: {

@@ -1088,7 +1088,7 @@ struct FRUSExplorerApp: App {
     @MainActor
     private func surfaceOpenedCollection(_ id: UUID) {
         #if os(iOS)
-        appState.activeTab = .collections
+        appState.pendingTab = .collections
         #else
         appState.pendingCollectionSelection = id
         openWindow(id: "frus.collections")
@@ -1628,7 +1628,7 @@ struct FRUSExplorerApp: App {
         )
         appState.pendingBrowseDocument = entry
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
     }
 

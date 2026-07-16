@@ -799,7 +799,7 @@ struct CrossReferenceAnalyticsView: View {
         appState.pendingBrowseDocument = DocumentBrowserEntry(
             documentId: documentId, volumeId: volumeId, header: header)
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         #if DEBUG
         print("[CrossReferenceAnalyticsView] Open document \(volumeId)/\(documentId)")
@@ -811,7 +811,7 @@ struct CrossReferenceAnalyticsView: View {
     private func openVolume(_ volumeId: String) {
         appState.pendingBrowseVolume = volumeId
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         #if DEBUG
         print("[CrossReferenceAnalyticsView] Open volume \(volumeId)")

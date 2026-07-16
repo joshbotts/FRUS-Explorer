@@ -84,9 +84,13 @@ struct SourceExplorerRequest: Codable, Hashable, Sendable {
 ///
 /// ## Identity
 /// Like `DocumentWindowID`, equality/hashing key on `(volumeId, documentId)` ONLY — the display
-/// fields are not identity. This preserves the old scene's `.id(entry.id)` retarget behaviour:
-/// reopening the same document's graph focuses the existing window instead of spawning a duplicate
-/// when a different entry-source supplies a different header/sourceNote.
+/// fields are not identity, so reopening the *same* document's graph focuses its existing window
+/// rather than spawning a duplicate when a different entry-source supplies a different
+/// header/sourceNote. Note this is a deliberate behaviour change from the old id-based scene,
+/// which was a *single* window that retargeted via `.id(entry.id)`: value-based windows are
+/// one-per-document, so graphs for different documents now open side by side (the
+/// `DocumentWindowID` document-window model). The scene's `.id(request.entry.id)` is therefore
+/// redundant now — identity is frozen per window — but harmless.
 struct GraphWindowRequest: Codable, Hashable, Sendable {
     /// The document's `xml:id`.
     var documentId: String

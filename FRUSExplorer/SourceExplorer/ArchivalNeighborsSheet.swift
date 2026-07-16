@@ -468,7 +468,7 @@ struct ArchivalNeighborsContent: View {
             header:     doc.header.isEmpty ? doc.documentId : doc.header
         )
         #if os(iOS)
-        appState.activeTab = .browse
+        appState.pendingTab = .browse
         #endif
         onNavigate?()
     }

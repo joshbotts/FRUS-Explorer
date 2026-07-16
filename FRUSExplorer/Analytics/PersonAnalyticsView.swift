@@ -1087,7 +1087,7 @@ struct PersonAnalyticsView: View {
         appState.pendingSearch = SearchParameters(personRollupId: person.rollupId,
                                                   personLabel: person.canonicalName)
         #if os(iOS)
-        appState.activeTab = .search
+        appState.pendingTab = .search
         #endif
         #if DEBUG
         print("[PersonAnalyticsView] Open mentions for rollup \(person.rollupId) (\(person.canonicalName))")
