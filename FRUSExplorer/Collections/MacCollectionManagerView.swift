@@ -107,6 +107,7 @@ struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
 
     @Query(sort: \Collection.lastModified, order: .reverse) private var allCollections: [Collection]
     @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
@@ -247,7 +248,11 @@ struct MacCollectionManagerView: View {
             MacManageCollectionsSheet(
                 collections: filteredCollections,
                 selectedId: $selectedId,
-                onWordCloud: { appState.pendingWordCloud = .collection(id: $0.id) },
+                onWordCloud: {
+                    appState.pendingWordCloud = .collection(id: $0.id)
+                    openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
+                    bringMacWindowToFront(id: "frus.wordcloud")
+                },
                 onSnapshot: { c in Task { await snapshotSmartCollection(c) } }
             )
             .environment(appState)

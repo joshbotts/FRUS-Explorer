@@ -223,6 +223,8 @@ struct CorpusBrowserWindowView: View {
             Spacer()
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
+                openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
+                bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
                 Image(systemName: WordCloudGlyph.symbol)
                     .font(.system(size: 11))
@@ -239,6 +241,8 @@ struct CorpusBrowserWindowView: View {
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
+                openWindow(id: "frus.wordcloud")            // #334
+                bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
                 Label { Text(String(localized: "corpus.subseries.wordCloud", defaultValue: "Word Cloud")) }
                     icon: { Image(systemName: WordCloudGlyph.symbol) }
@@ -358,6 +362,8 @@ private struct SubseriesVolumeListView: View {
                                       defaultValue: "Opens the volume's contents"))
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+                openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
+                bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
                 Image(systemName: WordCloudGlyph.symbol)
                     .font(.system(size: 11))
@@ -394,6 +400,8 @@ private struct SubseriesVolumeListView: View {
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+                openWindow(id: "frus.wordcloud")            // #334
+                bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
                 Label { Text(String(localized: "corpus.volume.wordCloud", defaultValue: "Word Cloud")) }
                     icon: { Image(systemName: WordCloudGlyph.symbol) }

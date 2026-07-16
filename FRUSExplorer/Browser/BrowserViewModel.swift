@@ -140,7 +140,10 @@ public final class BrowserViewModel {
 
     public let manifestStore: ManifestStore
     public let tagStore: VolumeLevelTagStore
-    public let downloadManager: DownloadManager?
+    /// The download manager. Settable only through ``attachDownloadManagerIfNeeded(_:)``
+    /// because it can legitimately be `nil` when the view model boots (#324) and must be
+    /// back-filled once `AppState` finishes booting it.
+    public private(set) var downloadManager: DownloadManager?
     public let indexingPipeline: IndexingPipeline?
     let parser: FRUSDocumentParser
 
@@ -157,6 +160,19 @@ public final class BrowserViewModel {
         self.downloadManager = downloadManager
         self.indexingPipeline = indexingPipeline
         self.parser = FRUSDocumentParser()
+    }
+
+    /// Back-fills the download manager when it wasn't ready at boot (#324).
+    ///
+    /// Under `FRUS_UI_TEST_MODE` the browse stack can render before `AppState`
+    /// finishes booting the download manager, so the view model would otherwise
+    /// capture `nil` for the whole session and report every volume as
+    /// not-downloaded. `BrowserView` calls this when the manager appears. It is a
+    /// no-op once a manager is attached, so it can never clobber a live one — and a
+    /// no-op in production, where the manager already exists at boot.
+    public func attachDownloadManagerIfNeeded(_ manager: DownloadManager?) {
+        guard downloadManager == nil, let manager else { return }
+        downloadManager = manager
     }
 
     // MARK: - Corpus Statistics
