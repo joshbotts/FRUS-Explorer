@@ -69,6 +69,10 @@ enum ProfileAggregator {
         let usedSubjectCount: Int
         /// Volumes that produced a non-empty profile.
         let volumeCount: Int
+        /// (subject, volume) entries dropped by the #308 era-sanity pass (anachronistic tags).
+        let eraSanityDropped: Int
+        /// Era-sanity table subject names absent from this drop (rename/typo) — a warning signal.
+        let eraSanityUnmatched: [String]
     }
 
     /// Builds the index plus its stats from the decoded input.
@@ -83,10 +87,17 @@ enum ProfileAggregator {
     static func aggregate(
         input: DocumentSubjectsInput,
         parameters: Parameters,
+        volumeCoverageEndYear: [String: Int],
         schemaVersion: Int,
         generated: String,
         provenance: String
     ) -> (index: VolumeSubjectProfilesIndex, stats: Stats) {
+
+        // #308 era-sanity (review F2): resolve the name-keyed anachronism table to this drop's
+        // refs, so the per-(subject, volume) filter below is an O(1) lookup.
+        let (emergenceByRef, eraSanityUnmatched) = EraSanity.refYearMap(
+            namesByRef: input.subjectsIndex.mapValues(\.name))
+        var eraSanityDropped = 0
 
         // Per-subject, per-volume distinct document ids.
         // subjectVolumeDocs[ref][volumeId] = Set<docId>
@@ -131,6 +142,14 @@ enum ProfileAggregator {
             for (ref, volMap) in subjectVolumeDocs {
                 if genericRefs.contains(ref) { continue }
                 guard let docs = volMap[volumeId], docs.count >= parameters.minDocCount else { continue }
+                // #308 era-sanity: drop an anachronistic (subject, volume) tag — the subject's
+                // earliest-plausible year is later than the volume's coverage end, so the whole
+                // volume predates the subject. Conservative (named events only; see EraSanity).
+                if let emergence = emergenceByRef[ref],
+                   let coverageEnd = volumeCoverageEndYear[volumeId], emergence > coverageEnd {
+                    eraSanityDropped += 1
+                    continue
+                }
                 let corpusFreq = subjectCorpusDocFreq[ref] ?? docs.count
                 guard corpusFreq > 0 else { continue }
                 let tf = Double(docs.count) / Double(distinctDocsInVolume)
@@ -182,7 +201,9 @@ enum ProfileAggregator {
             corpusDistinctDocs: corpusDistinctDocs,
             genericSubjectCount: genericRefs.count,
             usedSubjectCount: vocab.count,
-            volumeCount: profiles.count
+            volumeCount: profiles.count,
+            eraSanityDropped: eraSanityDropped,
+            eraSanityUnmatched: eraSanityUnmatched
         )
         return (index, stats)
     }

@@ -63,18 +63,27 @@ public enum VolumeSubjectProfilesRunner {
         let input = try DocumentSubjectsInput.load(from: inputData)
         log("Loaded \(input.subjects.count) subjects from \(inputPath) (source generated \(input.generated), md5 \(inputMD5))")
 
+        // #308 era-sanity (review F2): the manifest supplies each volume's coverage-end year,
+        // used to drop anachronistic subject tags (a subject whose earliest-plausible year is
+        // later than the volume's entire coverage span).
+        let manifestPath = env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json"
+        let volumeCoverageEndYear = try loadCoverageEndYears(from: manifestPath)
+        log("Loaded coverage years for \(volumeCoverageEndYear.count) volumes from \(manifestPath)")
+
         let provenance = """
         Derived from the Office of the Historian public-domain frus-subjects handoff \
         (document_subjects.json, source generated \(input.generated), \
         md5 \(inputMD5)) by VolumeSubjectProfilesGenerator. \
         Per-volume TF-IDF-style top-\(parameters.topN) subjects; \
         genericity threshold \(parameters.genericityThreshold) of tagged corpus documents; \
-        minimum \(parameters.minDocCount) documents per subject per volume.
+        minimum \(parameters.minDocCount) documents per subject per volume; \
+        anachronistic subject tags removed by the #308 era-sanity table.
         """
 
         let (index, stats) = ProfileAggregator.aggregate(
             input: input,
             parameters: parameters,
+            volumeCoverageEndYear: volumeCoverageEndYear,
             schemaVersion: schemaVersion,
             generated: generated,
             provenance: provenance)
@@ -101,12 +110,42 @@ public enum VolumeSubjectProfilesRunner {
         volume-subject-profiles-index.json written to \(outputPath)
           corpus tagged documents:  \(stats.corpusDistinctDocs)
           generic subjects dropped: \(stats.genericSubjectCount)
+          era-sanity tags dropped:  \(stats.eraSanityDropped)
           vocabulary subjects used: \(stats.usedSubjectCount)
           volumes with a profile:   \(stats.volumeCount)
         """)
+        // Warn (do not silently disable) when a table subject name is absent from this drop —
+        // a rename or typo would otherwise quietly stop filtering that anachronism.
+        if !stats.eraSanityUnmatched.isEmpty {
+            log("  ⚠️ era-sanity table subjects NOT found in this drop (rename/typo?): "
+                + stats.eraSanityUnmatched.joined(separator: ", "))
+        }
     }
 
     // MARK: - Helpers
+
+    /// Loads `volumeId → coverage-end year` from the bundled manifest (a bare array of volumes,
+    /// each with a `dateRange.latest` ISO datetime). A volume without a parseable latest date is
+    /// omitted (its entries are then never era-dropped — absent evidence, keep the tag).
+    private static func loadCoverageEndYears(from path: String) throws -> [String: Int] {
+        struct ManifestVolume: Decodable {
+            let volumeId: String
+            let dateRange: DateRange?
+            struct DateRange: Decodable { let latest: String? }
+        }
+        let url = URL(fileURLWithPath: path)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw RunError.missingInput(path)
+        }
+        let volumes = try JSONDecoder().decode([ManifestVolume].self, from: try Data(contentsOf: url))
+        var map: [String: Int] = [:]
+        for volume in volumes {
+            if let latest = volume.dateRange?.latest, let year = Int(latest.prefix(4)) {
+                map[volume.volumeId] = year
+            }
+        }
+        return map
+    }
 
     /// Parses an optional env var with `transform`, throwing when the variable is
     /// present but unparseable (a typo must fail the run, not silently regenerate the
