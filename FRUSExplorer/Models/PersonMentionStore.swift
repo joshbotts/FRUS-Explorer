@@ -322,6 +322,32 @@ public actor PersonMentionStore {
         return results
     }
 
+    /// Per-volume distinct-document mention counts for a rollup, heaviest volume first (#264).
+    ///
+    /// One `GROUP BY volume_id` over the rollup-member join — O(#volumes) result rows, not the
+    /// per-document tuple materialization `documentKeys(forRollupId:)` performs (thousands of
+    /// rows for a prolific figure). This is the primitive the person↔subject affinity join
+    /// needs, and the shape the #258 review recommends for any "volumes for a person" lookup.
+    public func volumeMentionCounts(forRollupId rollupId: Int) throws -> [(volumeId: String, documentCount: Int)] {
+        let sql = """
+            SELECT pm.volume_id, COUNT(DISTINCT pm.document_id) AS doc_count
+            FROM person_rollup_member m
+            JOIN person_mentions pm ON pm.volume_id = m.volume_id AND pm.person_ref = m.ref
+            WHERE m.rollup_id = ?
+            GROUP BY pm.volume_id
+            ORDER BY doc_count DESC, pm.volume_id
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, Int64(rollupId))
+        var results: [(volumeId: String, documentCount: Int)] = []
+        while step(stmt) {
+            results.append((volumeId: columnString(stmt, 0) ?? "",
+                            documentCount: Int(sqlite3_column_int64(stmt, 1))))
+        }
+        return results
+    }
+
     /// Person mentions within a document set, resolved through the materialised
     /// People-browser rollup (Authoring Phase 6 — the collections Persons Index block).
     ///

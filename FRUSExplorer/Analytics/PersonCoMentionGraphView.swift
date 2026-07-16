@@ -62,6 +62,8 @@ struct PersonCoMentionEdge: Equatable {
 ///
 /// Version history:
 ///   1.0 — CA-8 (analytics CA-track): initial implementation
+///   1.1 — #307: `zoom(by:)` — the multiplicative scroll-wheel zoom path, mirroring
+///          `CrossReferenceGraphViewModel.zoom(by:)` for cross-graph parity
 @Observable
 @MainActor
 final class PersonCoMentionGraphViewModel {
@@ -162,6 +164,15 @@ final class PersonCoMentionGraphViewModel {
 
     /// Commits the current zoom level so the next pinch starts from it.
     func magnificationEnded() { steadyScale = scale }
+
+    /// Applies a multiplicative zoom factor (> 1 zooms in) — the macOS scroll-wheel path (#307),
+    /// mirroring `CrossReferenceGraphViewModel.zoom(by:)` so the two graphs feel identical.
+    /// Commits immediately: wheel deltas arrive as a stream of small factors, not a gesture
+    /// with a distinct end.
+    func zoom(by factor: CGFloat) {
+        steadyScale = max(0.25, min(4.0, steadyScale * factor))
+        scale = steadyScale
+    }
 
     /// Applies an in-flight drag translation on top of the committed pan offset.
     func panChanged(_ translation: CGSize) {
@@ -427,6 +438,10 @@ final class PersonCoMentionGraphViewModel {
 ///
 /// Version history:
 ///   1.0 — CA-8 (analytics CA-track): initial implementation
+///   1.1 — #307 (parity with the cross-reference graph): macOS scroll-wheel/trackpad zoom
+///          via the shared `ScrollWheelZoomCatcher` (now internal in
+///          CrossReferenceGraphView.swift), and a node context menu (Explore Connections /
+///          Open in Search) mirroring the tap-selected info card's actions
 struct PersonCoMentionGraphView: View {
 
     @State private var vm: PersonCoMentionGraphViewModel
@@ -504,6 +519,18 @@ struct PersonCoMentionGraphView: View {
                 .onChange(of: geo.size, initial: true) { _, size in
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
+                #if os(macOS)
+                .background {
+                    // Scroll-wheel / trackpad-scroll zoom (#307) — the same event-monitor
+                    // catcher the cross-reference graph uses (shared from
+                    // CrossReferenceGraphView.swift), so it never intercepts clicks,
+                    // drags, or hover.
+                    ScrollWheelZoomCatcher { factor in
+                        vm.zoom(by: factor)
+                    }
+                    .allowsHitTesting(false)
+                }
+                #endif
             }
             overlayControls
                 .padding()
@@ -596,14 +623,33 @@ struct PersonCoMentionGraphView: View {
                 #if os(macOS)
                 .onHover { hovering in if hovering { vm.selectedPartnerId = node.rollupId } }
                 #endif
+                // Right-click / long-press parity with the cross-reference graph's node
+                // context menu (#307): the same two actions the tap-selected info card
+                // offers, reachable without first pinning the card.
+                .contextMenu {
+                    Button {
+                        vm.recenterOn(rollupId: node.rollupId)
+                    } label: {
+                        Label(String(localized: "personCoMention.contextMenu.recenter",
+                                     defaultValue: "Explore Connections"),
+                              systemImage: "point.3.connected.trianglepath.dotted")
+                    }
+                    Button {
+                        onOpenPerson(node.rollupId, node.name)
+                    } label: {
+                        Label(String(localized: "personCoMention.contextMenu.openSearch",
+                                     defaultValue: "Open in Search"),
+                              systemImage: "magnifyingglass")
+                    }
+                }
                 .accessibilityLabel(node.name)
                 .accessibilityValue(String(
                     localized: "personCoMention.node.a11yValue",
                     defaultValue: "\(node.sharedWithFocus) shared documents with \(vm.focusName)"))
                 .accessibilityHint(String(localized: "personCoMention.node.hint",
-                                          defaultValue: "Tap to see the connection and re-centre the network on this person"))
+                                          defaultValue: "Tap to see the connection and re-centre the network on this person; right-click or long-press for actions"))
                 .help(String(localized: "personCoMention.node.help",
-                             defaultValue: "Co-mention count with the focus person — click for details and to explore this person's own network"))
+                             defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
             }
         }
     }

@@ -1903,7 +1903,11 @@ struct TimelineBrushView: View {
 /// `scrollWheel(with:)` so the view never has to win hit-testing: clicks,
 /// drags, and hover continue to reach the SwiftUI layer beneath. Scroll events
 /// outside this view's bounds (or in other windows) pass through untouched.
-private struct ScrollWheelZoomCatcher: NSViewRepresentable {
+///
+/// Internal (not `private`) as of #307: `PersonCoMentionGraphView` shares this catcher for
+/// its own macOS scroll-wheel zoom, so the two graphs keep identical zoom mechanics. Kept in
+/// this file rather than extracted — a new file would need the xcodegen + scheme-restore dance.
+struct ScrollWheelZoomCatcher: NSViewRepresentable {
 
     /// Receives a multiplicative zoom factor (> 1 zooms in).
     let onZoom: (CGFloat) -> Void
