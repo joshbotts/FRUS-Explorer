@@ -44,8 +44,7 @@ struct DateProximityScorer: SimilarityScorer {
         var scores: [DocumentKey: Double] = [:]
         for candidate in candidates {
             guard let iso = datesByKey[candidate.compositeString], let candidateYear = year(iso) else { continue }
-            let delta = abs(Double(candidateYear - anchorYear))
-            scores[candidate] = exp(-delta / Self.tau)
+            scores[candidate] = ProximityMath.dateDecay(deltaYears: candidateYear - anchorYear, tau: Self.tau)
         }
         return scores
     }
@@ -141,10 +140,9 @@ struct SharedPersonScorer: SimilarityScorer {
         var scores: [DocumentKey: Double] = [:]
         for candidate in candidates {
             let candidateRollups = rollupsByDocument[candidate.compositeString] ?? []
-            let intersection = anchorRollups.intersection(candidateRollups).count
-            guard intersection > 0 else { continue }
-            let union = anchorRollups.union(candidateRollups).count
-            scores[candidate] = Double(intersection) / Double(union)
+            let score = ProximityMath.jaccard(anchorRollups, candidateRollups)
+            guard score > 0 else { continue }
+            scores[candidate] = score
         }
         return scores
     }
@@ -180,10 +178,9 @@ struct SharedSubjectScorer: SimilarityScorer {
         var scores: [DocumentKey: Double] = [:]
         for candidate in candidates {
             let candidateRefs = Set(index.subjects(forDocument: candidate).map(\.ref))
-            let intersection = anchorRefs.intersection(candidateRefs).count
-            guard intersection > 0 else { continue }
-            let union = anchorRefs.union(candidateRefs).count
-            scores[candidate] = Double(intersection) / Double(union)
+            let score = ProximityMath.jaccard(anchorRefs, candidateRefs)
+            guard score > 0 else { continue }
+            scores[candidate] = score
         }
         return scores
     }

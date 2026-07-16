@@ -31,8 +31,12 @@ enum RelatedDocumentsRanker {
     ///   - records: Display record per candidate; a candidate without one is dropped (it can't render).
     ///   - weights: The user's per-axis weights. Axes at weight 0 contribute nothing.
     ///   - limit: Maximum rows returned.
-    /// - Returns: Rows sorted by total proximity descending, ties broken by composite key ascending
-    ///   (stable), truncated to `limit`. Candidates whose total is 0 are omitted.
+    /// - Returns: `rows` sorted by total proximity descending, ties broken by composite key ascending
+    ///   (a strict total order for real corpus keys — volume/document ids never contain `/` — so the
+    ///   result is fully deterministic regardless of set-iteration order), truncated to `limit`; and
+    ///   `rankableCount`, the number of candidates that scored above 0 *before* the limit (the honest
+    ///   denominator for an "N more" overflow hint — not the raw candidate count, which includes
+    ///   record-less and zero-total drops).
     static func rank(
         anchor: DocumentKey,
         generatorStrengths: [SimilarityAxis: [DocumentKey: Double]],
@@ -40,12 +44,12 @@ enum RelatedDocumentsRanker {
         records: [DocumentKey: CandidateRecord],
         weights: AxisWeights,
         limit: Int
-    ) -> [RelatedDocumentRow] {
+    ) -> (rows: [RelatedDocumentRow], rankableCount: Int) {
         // 1. The candidate universe is the union of the generators' outputs, minus the anchor.
         var universe = Set<DocumentKey>()
         for (_, strengths) in generatorStrengths { universe.formUnion(strengths.keys) }
         universe.remove(anchor)
-        guard !universe.isEmpty else { return [] }
+        guard !universe.isEmpty else { return ([], 0) }
 
         // 2. Normalise each generator axis's raw strengths to [0, 1] by that axis's own max.
         var generatorNormalised: [SimilarityAxis: [DocumentKey: Double]] = [:]
@@ -76,13 +80,13 @@ enum RelatedDocumentsRanker {
             rows.append(RelatedDocumentRow(key: key, record: record, totalScore: total, axisScores: axisScores))
         }
 
-        // 4. Rank (stable tie-break) and limit.
+        // 4. Rank (deterministic total-order tie-break); report the pre-limit rankable count.
         rows.sort { lhs, rhs in
             lhs.totalScore != rhs.totalScore
                 ? lhs.totalScore > rhs.totalScore
                 : lhs.key.compositeString < rhs.key.compositeString
         }
-        return Array(rows.prefix(max(0, limit)))
+        return (Array(rows.prefix(max(0, limit))), rows.count)
     }
 }
 
@@ -118,6 +122,12 @@ enum RelatedDocumentsEngine {
         SharedSubjectScorer(),
     ]
 
+    /// The minimum candidate pool each generator fetches, regardless of the display `limit`. Scoring
+    /// re-ranks the pool, so it must be *larger* than the display limit for the scorers to surface a
+    /// document a generator ranked low — otherwise the top-`limit` after scoring is just the generator's
+    /// own first `limit` reordered. The engine fetches `max(displayLimit, candidatePoolFloor)`.
+    static let candidatePoolFloor = 120
+
     /// Computes the ranked related documents for an anchor.
     ///
     /// - Parameters:
@@ -141,12 +151,17 @@ enum RelatedDocumentsEngine {
     ) async -> RelatedDocumentsResult {
         guard appState.indexingPipeline != nil else { return .empty }
 
+        // Fetch a candidate pool at least as deep as the display limit (and never below the floor),
+        // so the scorers re-rank a pool larger than what's shown rather than just reordering the
+        // generator's own first `limit`.
+        let candidateFetchLimit = max(limit, Self.candidatePoolFloor)
+
         // Generators → per-axis raw strengths + a shared display-record cache.
         var generatorStrengths: [SimilarityAxis: [DocumentKey: Double]] = [:]
         var records: [DocumentKey: CandidateRecord] = [:]
         for generator in generators {
             let produced = (try? await generator.candidates(
-                for: anchor, anchorYear: anchorYear,
+                for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
                 scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? []
             var strengths: [DocumentKey: Double] = [:]
             for candidate in produced where candidate.key != anchor {
@@ -167,13 +182,13 @@ enum RelatedDocumentsEngine {
                 anchor: anchor, candidates: candidateKeys, appState: appState)) ?? [:]
         }
 
-        let rows = RelatedDocumentsRanker.rank(
+        let ranked = RelatedDocumentsRanker.rank(
             anchor: anchor,
             generatorStrengths: generatorStrengths,
             scorerScores: scorerScores,
             records: records,
             weights: weights,
             limit: limit)
-        return RelatedDocumentsResult(rows: rows, totalBeforeLimit: candidateKeys.count)
+        return RelatedDocumentsResult(rows: ranked.rows, totalBeforeLimit: ranked.rankableCount)
     }
 }

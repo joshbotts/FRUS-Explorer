@@ -31,6 +31,7 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
     func candidates(
         for anchor: DocumentKey,
         anchorYear: Int?,
+        limit: Int,
         scopeVolumeIds: Set<String>?,
         appState: AppState
     ) async throws -> [GeneratedCandidate] {
@@ -39,6 +40,7 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
             forVolumeId: anchor.volumeId,
             documentId: anchor.documentId,
             documentYear: anchorYear,
+            limit: limit,
             scopeVolumeIds: scopeVolumeIds)
         return result.documents.map { document in
             GeneratedCandidate(

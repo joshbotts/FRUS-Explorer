@@ -121,7 +121,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [.dateProximity: [a: 1.0, b: 0.5]],
             records: records([a, b]),
             weights: AxisWeights(weights: [.archivalProvenance: 1, .dateProximity: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.map(\.key) == [a, b])                 // a (2.0) before b (1.5)
         #expect(abs(rows[0].totalScore - 2.0) < 1e-9)
         #expect(abs(rows[1].totalScore - 1.5) < 1e-9)
@@ -138,7 +138,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [:],
             records: records([a, b]),
             weights: AxisWeights(weights: [.crossReference: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.map(\.key) == [a, b])
         #expect(rows[0].axisScores[.crossReference] == 1.0)   // 4/4
         #expect(rows[1].axisScores[.crossReference] == 0.5)   // 2/4
@@ -152,7 +152,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [:],
             records: records([anchor, a]),
             weights: AxisWeights(weights: [.archivalProvenance: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.map(\.key) == [a])
     }
 
@@ -164,7 +164,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [:],
             records: records([a]),   // b has no record
             weights: AxisWeights(weights: [.archivalProvenance: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.map(\.key) == [a])
     }
 
@@ -177,7 +177,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [:],
             records: records([a]),
             weights: AxisWeights(weights: [.archivalProvenance: 0, .dateProximity: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.isEmpty)
     }
 
@@ -191,7 +191,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [:],   // no sharedSubjects entries
             records: records([a]),
             weights: AxisWeights(weights: [.archivalProvenance: 1, .sharedSubjects: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.map(\.key) == [a])
         #expect(rows[0].axisScores[.sharedSubjects] == nil)
     }
@@ -205,28 +205,45 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [:],
             records: records([a, b]),
             weights: AxisWeights(weights: [.archivalProvenance: 1]),
-            limit: 30)
+            limit: 30).rows
         #expect(rows.map(\.key) == [a, b])
     }
 
-    @Test("the limit truncates to the top rows")
+    @Test("the limit truncates the rows but rankableCount reports the full pre-limit total")
     func limitTruncates() {
-        let rows = RelatedDocumentsRanker.rank(
+        let ranked = RelatedDocumentsRanker.rank(
             anchor: anchor,
             generatorStrengths: [.archivalProvenance: [a: 1, b: 1, c: 1]],
             scorerScores: [.dateProximity: [a: 1.0, b: 0.5, c: 0.1]],
             records: records([a, b, c]),
             weights: AxisWeights(weights: [.archivalProvenance: 1, .dateProximity: 1]),
             limit: 2)
-        #expect(rows.map(\.key) == [a, b])   // top 2 by total
+        #expect(ranked.rows.map(\.key) == [a, b])   // top 2 by total
+        #expect(ranked.rankableCount == 3)          // all three scored > 0 (the "N more" denominator)
+    }
+
+    @Test("rankableCount excludes record-less and zero-total candidates")
+    func rankableCountExcludesDrops() {
+        // Archival weight is 0, so only a date score gives a nonzero total. Only `a` has one; `b` is
+        // zero-total (produced, has a record, but no scoring signal); `c` has no display record.
+        let ranked = RelatedDocumentsRanker.rank(
+            anchor: anchor,
+            generatorStrengths: [.archivalProvenance: [a: 1, b: 1, c: 1]],
+            scorerScores: [.dateProximity: [a: 1.0]],
+            records: records([a, b]),   // c has no record
+            weights: AxisWeights(weights: [.archivalProvenance: 0, .dateProximity: 1]),
+            limit: 30)
+        #expect(ranked.rows.map(\.key) == [a])   // only a survives
+        #expect(ranked.rankableCount == 1)       // not 3 — record-less c and zero-total b excluded
     }
 
     @Test("an empty candidate universe yields no rows")
     func emptyUniverse() {
-        let rows = RelatedDocumentsRanker.rank(
+        let ranked = RelatedDocumentsRanker.rank(
             anchor: anchor, generatorStrengths: [:], scorerScores: [:],
             records: [:], weights: .default, limit: 30)
-        #expect(rows.isEmpty)
+        #expect(ranked.rows.isEmpty)
+        #expect(ranked.rankableCount == 0)
     }
 
     @Test("all-zero weights yield no rows")
@@ -237,7 +254,7 @@ struct RelatedDocumentsRankerTests {
             scorerScores: [.dateProximity: [a: 1.0]],
             records: records([a, b]),
             weights: AxisWeights(weights: [:]),   // everything 0
-            limit: 30)
+            limit: 30).rows
         #expect(rows.isEmpty)
     }
 }
@@ -262,5 +279,37 @@ struct RelatedDocumentsRequestTests {
         #expect(restored == request)
         #expect(restored.weights[.sharedSubjects] == 0.4)
         #expect(restored.anchorYear == 1971)
+    }
+}
+
+// MARK: - ProximityMathTests
+
+/// Verifies the pure scoring arithmetic the scorers share (date decay + Jaccard).
+struct ProximityMathTests {
+
+    @Test("date decay is 1 at Δ=0, symmetric, and monotonically decreasing")
+    func dateDecay() {
+        #expect(ProximityMath.dateDecay(deltaYears: 0, tau: 8) == 1.0)
+        // Symmetric in the sign of Δ.
+        #expect(ProximityMath.dateDecay(deltaYears: -5, tau: 8)
+                == ProximityMath.dateDecay(deltaYears: 5, tau: 8))
+        // Farther apart → smaller, and always within (0, 1].
+        let near = ProximityMath.dateDecay(deltaYears: 2, tau: 8)
+        let far = ProximityMath.dateDecay(deltaYears: 20, tau: 8)
+        #expect(near > far)
+        #expect(far > 0 && near <= 1)
+        // exp(-8/8) = e^-1 ≈ 0.3679.
+        #expect(abs(ProximityMath.dateDecay(deltaYears: 8, tau: 8) - 0.36787944) < 1e-6)
+    }
+
+    @Test("Jaccard is intersection over union, 0 for disjoint or empty sets, 1 for equal sets")
+    func jaccard() {
+        #expect(ProximityMath.jaccard(Set([1, 2, 3]), Set([1, 2, 3])) == 1.0)
+        #expect(ProximityMath.jaccard(Set([1, 2]), Set([3, 4])) == 0.0)
+        #expect(ProximityMath.jaccard(Set<Int>(), Set<Int>()) == 0.0)  // no divide-by-zero
+        // |{1,2,3} ∩ {2,3,4}| / |{1,2,3,4}| = 2/4 = 0.5.
+        #expect(ProximityMath.jaccard(Set([1, 2, 3]), Set([2, 3, 4])) == 0.5)
+        // Works over string refs too (the subject axis).
+        #expect(ProximityMath.jaccard(Set(["a", "b"]), Set(["b"])) == 0.5)
     }
 }

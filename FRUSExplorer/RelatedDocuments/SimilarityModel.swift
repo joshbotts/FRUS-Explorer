@@ -193,12 +193,13 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     }
 }
 
-/// The payload a find-related load returns: the ranked rows (already limited) and the candidate
-/// count before the limit was applied (drives an "N more" overflow hint).
+/// The payload a find-related load returns: the ranked rows (already limited) and the number of
+/// rankable rows before the limit was applied (drives an "N more" overflow hint).
 struct RelatedDocumentsResult: Sendable {
     /// The ranked, limited rows.
     let rows: [RelatedDocumentRow]
-    /// The candidate count before limiting.
+    /// The count of candidates that scored above 0 *before* the limit — the honest "N more"
+    /// denominator (record-less and zero-total candidates are already excluded, so this is `≥ rows.count`).
     let totalBeforeLimit: Int
 
     /// The empty result — no live index, or no candidates.
@@ -222,7 +223,9 @@ struct RelatedDocumentsResult: Sendable {
     var axis: SimilarityAxis { get }
     /// The bounded candidate set for `anchor`, filtered to `scopeVolumeIds` (`nil` = all indexed).
     /// `anchorYear` feeds date-sensitive keyed queries (e.g. decimal-file chronological segmenting).
-    func candidates(for anchor: DocumentKey, anchorYear: Int?,
+    /// `limit` is the candidate-pool depth to fetch — the engine sizes it above the display limit so
+    /// scoring re-ranks a pool larger than what's shown.
+    func candidates(for anchor: DocumentKey, anchorYear: Int?, limit: Int,
                     scopeVolumeIds: Set<String>?, appState: AppState) async throws -> [GeneratedCandidate]
 }
 
@@ -236,4 +239,25 @@ struct RelatedDocumentsResult: Sendable {
     /// (or scored 0) contributes nothing on this axis.
     func scores(anchor: DocumentKey, candidates: [DocumentKey],
                 appState: AppState) async throws -> [DocumentKey: Double]
+}
+
+// MARK: - ProximityMath
+
+/// The pure scoring arithmetic the scorers share, factored out so the math is unit-testable without a
+/// live index (the batch queries around it need one; the arithmetic does not).
+enum ProximityMath {
+
+    /// Exponential date-proximity decay `exp(-|Δyear| / tau)` — in `(0, 1]`, exactly 1 at `Δ = 0`,
+    /// decreasing with the absolute year gap.
+    static func dateDecay(deltaYears: Int, tau: Double) -> Double {
+        exp(-abs(Double(deltaYears)) / tau)
+    }
+
+    /// The Jaccard index `|A ∩ B| / |A ∪ B|` in `[0, 1]`; `0` when both sets are empty (rather than a
+    /// divide-by-zero).
+    static func jaccard<Element: Hashable>(_ lhs: Set<Element>, _ rhs: Set<Element>) -> Double {
+        let unionCount = lhs.union(rhs).count
+        guard unionCount > 0 else { return 0 }
+        return Double(lhs.intersection(rhs).count) / Double(unionCount)
+    }
 }
