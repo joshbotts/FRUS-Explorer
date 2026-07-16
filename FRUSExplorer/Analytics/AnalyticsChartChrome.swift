@@ -276,7 +276,9 @@ struct AnalyticsScopeBar: View {
     private func subjectScopeMenu(
         _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> some View {
-        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Subject")) {
+        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Detected Topic")) {
+          Section(String(localized: "analytics.scope.subject.experimental",
+                         defaultValue: "Detected topics — experimental")) {
             ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
                 Menu(category.label) {
                     Button(String(format: String(
@@ -297,6 +299,7 @@ struct AnalyticsScopeBar: View {
                     }
                 }
             }
+          }
         }
     }
 

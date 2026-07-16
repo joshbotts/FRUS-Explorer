@@ -185,7 +185,9 @@ struct SeriesScopeBar: View {
         _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> some View {
         let manifestIds = Set(entries.map(\.volumeId))
-        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Subject")) {
+        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Detected Topic")) {
+          Section(String(localized: "analytics.scope.subject.experimental",
+                         defaultValue: "Detected topics — experimental")) {
             ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
                 let catIds = ScopeFacets.volumeIds(forCategory: category.label,
                                                    resolvedByVolume: resolved)
@@ -213,6 +215,7 @@ struct SeriesScopeBar: View {
                     }
                 }
             }
+          }
         }
     }
 

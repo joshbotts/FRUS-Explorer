@@ -503,7 +503,7 @@ struct SearchFilterView: View {
                 } label: {
                     HStack {
                         Label(String(localized: "search.subject.facet.button",
-                                     defaultValue: "Filter by subject…"),
+                                     defaultValue: "Filter by detected topic…"),
                               systemImage: "text.book.closed")
                         Spacer()
                         if let subjectFacetLabel {
@@ -516,10 +516,11 @@ struct SearchFilterView: View {
                     .contentShape(Rectangle())
                 }
             } header: {
-                Text(String(localized: "search.section.subject", defaultValue: "By Subject"))
+                Text(String(localized: "search.section.subject",
+                            defaultValue: "By Subject · Detected Topics"))
             } footer: {
                 Text(String(localized: "search.subject.facet.footer",
-                            defaultValue: "Filters to volumes where a subject category is among their most characteristic topics, filling the volume picker with the indexed matches."))
+                            defaultValue: "Experimental. These are automatically detected topics, not editorial subject headings, and may include mistags. Filters to volumes where a category is among their most characteristic detected topics, filling the volume picker with the indexed matches."))
             }
         }
     }
@@ -855,7 +856,7 @@ private struct SubjectCategoryFacetPicker: View {
     }
 
     private var pickerTitle: String {
-        String(localized: "search.subject.facet.title", defaultValue: "Filter by Subject")
+        String(localized: "search.subject.facet.title", defaultValue: "Filter by Detected Topic")
     }
     private var searchPrompt: String {
         String(localized: "search.subject.facet.prompt", defaultValue: "Search categories")
@@ -930,7 +931,7 @@ private struct SubjectCategoryFacetPicker: View {
                 }
             } footer: {
                 Text(String(localized: "search.subject.facet.picker.footer",
-                            defaultValue: "“Characteristic subjects”: a volume appears where the topic is among its most distinctive, not merely mentioned. Category filters are broad; drill into a sub-category to narrow."))
+                            defaultValue: "Detected topics (experimental) — automatically inferred from the text, not editorial subject headings, so some may be mistagged. A volume appears where a topic is among its most distinctive, not merely mentioned. Category filters are broad; drill into a sub-category to narrow."))
             }
         }
     }
