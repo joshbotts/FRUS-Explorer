@@ -268,6 +268,38 @@ struct AnalyticsScopeBar: View {
         }
     }
 
+    /// The "By Subject" facet sub-menu (#308 Phase 1): a category menu whose first item scopes
+    /// to the whole (coarse) category and whose remaining items scope to each sub-category —
+    /// where the facet actually discriminates (review F3). Volume-grain, from the bundled
+    /// profiles; every set is non-empty (only categories with volumes are listed).
+    @ViewBuilder
+    private func subjectScopeMenu(
+        _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> some View {
+        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Subject")) {
+            ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
+                Menu(category.label) {
+                    Button(String(format: String(
+                        localized: "analytics.scope.subject.wholeCategory %@",
+                        defaultValue: "All of %@"), category.label)) {
+                        setScope(ScopeFacets.volumeIds(forCategory: category.label,
+                                                       resolvedByVolume: resolved).sorted(),
+                                 label: category.label)
+                    }
+                    ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
+                                                          resolvedByVolume: resolved)) { sub in
+                        Button(sub.subcategory) {
+                            setScope(ScopeFacets.volumeIds(forCategory: sub.category,
+                                                           subcategory: sub.subcategory,
+                                                           resolvedByVolume: resolved).sorted(),
+                                     label: "\(sub.category) · \(sub.subcategory)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "scope")
@@ -312,6 +344,16 @@ struct AnalyticsScopeBar: View {
                             customScopeItem(scope)
                         }
                     }
+                }
+                // #308 Phase 1 — subject category / sub-category facet (volume-grain, from the
+                // bundled profiles). `categoryCatalog` lists only categories that have volumes,
+                // so every set reaching `setScope` is non-empty — the empty→nil "no filter"
+                // inversion cannot fire here, so no indexed-resolution guard is needed (unlike
+                // Search). Content is built lazily when the sub-menu opens.
+                if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
+                   !resolved.isEmpty {
+                    Divider()
+                    subjectScopeMenu(resolved)
                 }
             } label: {
                 HStack(spacing: 4) {

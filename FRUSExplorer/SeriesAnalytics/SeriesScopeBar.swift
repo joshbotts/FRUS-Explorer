@@ -176,6 +176,46 @@ struct SeriesScopeBar: View {
         }
     }
 
+    /// The "By Subject" facet sub-menu (#308 Phase 1), manifest grain. Each category/sub-category
+    /// volume set is intersected with the dashboard's `entries`; categories and sub-categories
+    /// with no volumes in this series are omitted (not shown disabled), so the drill-down never
+    /// dead-ends. The whole-category item scopes the coarse level; sub-categories discriminate.
+    @ViewBuilder
+    private func subjectScopeMenu(
+        _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
+    ) -> some View {
+        let manifestIds = Set(entries.map(\.volumeId))
+        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Subject")) {
+            ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
+                let catIds = ScopeFacets.volumeIds(forCategory: category.label,
+                                                   resolvedByVolume: resolved)
+                    .intersection(manifestIds)
+                if !catIds.isEmpty {
+                    Menu(category.label) {
+                        Button(String(format: String(
+                            localized: "analytics.scope.subject.wholeCategory %@",
+                            defaultValue: "All of %@"), category.label)) {
+                            setScope(SeriesScope(volumeIds: catIds, label: category.label))
+                        }
+                        ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
+                                                              resolvedByVolume: resolved)) { sub in
+                            let subIds = ScopeFacets.volumeIds(forCategory: sub.category,
+                                                              subcategory: sub.subcategory,
+                                                              resolvedByVolume: resolved)
+                                .intersection(manifestIds)
+                            if !subIds.isEmpty {
+                                Button(sub.subcategory) {
+                                    setScope(SeriesScope(volumeIds: subIds,
+                                                         label: "\(sub.category) · \(sub.subcategory)"))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "scope")
@@ -225,6 +265,15 @@ struct SeriesScopeBar: View {
                             customScopeItem(customScope)
                         }
                     }
+                }
+                // #308 Phase 1 — subject facet at the MANIFEST grain: each category/sub-category
+                // volume set is intersected with THIS dashboard's entries, and empty
+                // intersections are dropped (the manifest idiom — an empty set would render the
+                // dashboards visibly empty).
+                if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
+                   !resolved.isEmpty {
+                    Divider()
+                    subjectScopeMenu(resolved)
                 }
             } label: {
                 HStack(spacing: 4) {
