@@ -448,13 +448,13 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Person Analytics 
 
 **Word Cloud**
 
-See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.
+See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.
 
 Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don't want to see, or compare two scopes side by side; export the cloud as a PNG, PDF, or CSV. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud's typeface and density in Settings.
 
 Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.
 
-Find it from the Browse tab's Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, and saved searches.
+Find it from the Browse tab's Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, saved searches, and your custom volume scopes (Settings → Volume Scopes).
 
 <!-- section-id: cross-reference-graph -->
 
@@ -887,7 +887,7 @@ References from volumes you haven't indexed yet are not shown at all, because th
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 492–493 | key: wordcloud.info.shows.detail -->
 
-The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, or the whole corpus — each sized by how often it appears.
+The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus — each sized by how often it appears.
 
 <!-- END SOURCE: wordcloud.info.shows.detail -->
 

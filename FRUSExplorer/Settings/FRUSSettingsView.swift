@@ -70,6 +70,9 @@ import AppKit
 ///          iOS CustomScopesView row; tags-pane idiom). The shared CustomScopeEditorView
 ///          gains an explicit macOS sheet body — header / inline filter / bottom-right
 ///          Cancel–Save — resolving Phase 1's .searchable-in-sheet caution.
+///   1.6 — #258 Phase 5: scope rows gain a word-cloud launch button (pendingWordCloud
+///          hand-off + direct openWindow, so the launch works with the main window
+///          closed; disabled while the scope has no indexed member)
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -735,6 +738,7 @@ private struct SettingsProjectsPane: View {
 private struct SettingsScopesPane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
     @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
 
     /// The scope open in the editor sheet, or `nil` (a fresh uninserted draft for create).
@@ -846,6 +850,26 @@ private struct SettingsScopesPane: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
+            // #258 Phase 5: word-cloud launch. Opens the window DIRECTLY rather than
+            // relying on MainWindowView's pendingWordCloud observer (the #333 review's
+            // parked-hand-off note: with the main window closed, the observer never
+            // fires and the value parks). The window consumes `pendingWordCloud` on
+            // appear, or retargets via its own onChange when already open. Disabled
+            // when nothing is indexed: the cloud reads indexed text, so a zero-indexed
+            // scope could only ever render an empty cloud.
+            Button {
+                appState.pendingWordCloud = .customScope(id: scope.id)
+                openWindow(id: "frus.wordcloud")
+            } label: {
+                Image(systemName: WordCloudGlyph.symbol)
+            }
+            .buttonStyle(.borderless)
+            .disabled(resolution == .noIndexedMembers)
+            .help(String(localized: "settings.scopes.row.wordCloud.help",
+                         defaultValue: "Open a word cloud of this scope's indexed volumes"))
+            .accessibilityLabel(String(format: String(
+                localized: "settings.scopes.row.wordCloud.a11y %@",
+                defaultValue: "Word cloud of %@"), scope.name))
             Button(String(localized: "common.edit", defaultValue: "Edit")) {
                 editorIsDraft = false
                 editorTarget = scope

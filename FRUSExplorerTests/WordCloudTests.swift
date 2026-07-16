@@ -229,8 +229,12 @@ struct WordCloudScopeTests {
             .corpus,
             .collection(id: id),
             .userTag(id: id),
-            .savedSearch(id: id)
+            .savedSearch(id: id),
+            .customScope(id: id)
         ]
+        // The UUID-backed cases share one id on purpose: distinctness must come
+        // from the signature PREFIX, so a collection and a custom scope with the
+        // same underlying UUID can never collide in a cache.
         let signatures = Set(scopes.map(\.signature))
         #expect(signatures.count == scopes.count)
     }
@@ -253,6 +257,7 @@ struct WordCloudScopeTests {
             .collection(id: id),
             .userTag(id: id),
             .savedSearch(id: id),
+            .customScope(id: id),
             .dateRange(startISO: "1969-01-01", endISO: "1969-12-31")
         ]
         for scope in scopes {
@@ -264,9 +269,21 @@ struct WordCloudScopeTests {
     func rejectsBadSignatures() {
         #expect(WordCloudScope(signature: "bogus") == nil)
         #expect(WordCloudScope(signature: "col:not-a-uuid") == nil)
+        #expect(WordCloudScope(signature: "scope:not-a-uuid") == nil)
         #expect(WordCloudScope(signature: "") == nil)
         #expect(WordCloudScope(signature: "daterange:1969-01-01") == nil)
         #expect(WordCloudScope(signature: "daterange:") == nil)
+    }
+
+    /// #258 Phase 5: the custom-scope signature encodes the RECORD id (reference,
+    /// never a copied member list), so the precompute queue and result caches key on
+    /// it and a deleted record simply resolves to an explicitly empty cloud.
+    @Test("WordCloudScope: custom-scope signature encodes the record id")
+    func customScopeSignature() {
+        let id = UUID()
+        let scope = WordCloudScope.customScope(id: id)
+        #expect(scope.signature == "scope:\(id.uuidString)")
+        #expect(WordCloudScope(signature: scope.signature) == scope)
     }
 
     @Test("WordCloudScope: date-range signature encodes both ISO bounds")

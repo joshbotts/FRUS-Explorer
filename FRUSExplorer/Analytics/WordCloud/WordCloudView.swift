@@ -78,6 +78,10 @@ enum WordCloudViewMode: String, CaseIterable {
 ///          display layer via `visibleTerms`, so it is instant, backfills from the fetched
 ///          surplus, and evaporates when the cloud closes; "Show N hidden words" now also
 ///          restores it
+///   1.5 — #258 Phase 5: `.customScope` clouds — the scope bar gains a "My Volume
+///          Scopes" section (FTS-grain Menu idiom), and custom-scope clouds join the
+///          volume-aligned scoped-Analytics handoff (offered only when the resolved
+///          indexed set is non-empty — never hand Analytics a bare empty set)
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -528,7 +532,7 @@ struct WordCloudView: View {
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.shows.title", defaultValue: "What you're seeing"),
                         detail: String(localized: "wordcloud.info.shows.detail",
-                                       defaultValue: "The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, or the whole corpus — each sized by how often it appears.")),
+                                       defaultValue: "The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus — each sized by how often it appears.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.lenses.title", defaultValue: "Lenses"),
                         detail: String(localized: "wordcloud.info.lenses.detail",
@@ -837,10 +841,10 @@ struct WordCloudView: View {
     }
 
     /// Label for the optional scoped-analytics context-menu action, or `nil` when the
-    /// cloud's scope only supports a corpus-wide handoff. Only volume- and
-    /// subseries-scoped clouds can meaningfully restrict Analytics to their own
-    /// volumes; corpus, document, collection, tag, and saved-search clouds offer just
-    /// the corpus-wide handoff.
+    /// cloud's scope only supports a corpus-wide handoff. Only the volume-aligned
+    /// scopes — volume, subseries, and custom volume scopes — can meaningfully
+    /// restrict Analytics to their own volumes; corpus, document, collection, tag,
+    /// and saved-search clouds offer just the corpus-wide handoff.
     private var scopedAnalyzeMenuLabel: String? {
         switch scope {
         case .volume:
@@ -849,21 +853,45 @@ struct WordCloudView: View {
         case .subseries:
             return String(localized: "wordcloud.word.analyze.subseries",
                           defaultValue: "Analyze within this subseries")
+        case .customScope:
+            // Offered only when the handoff would be non-empty (#258 invariant:
+            // Analytics reads an empty volume set as "no filter", so handing it a
+            // bare empty set would silently invert to the whole corpus).
+            guard customScopeAnalyticsIds() != nil else { return nil }
+            return String(localized: "wordcloud.word.analyze.customScope",
+                          defaultValue: "Analyze within this scope")
         case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return nil
         }
+    }
+
+    /// The custom scope's indexed volume ids for the scoped Analytics handoff, or
+    /// `nil` when the cloud is not a custom-scope cloud, the record is dangling, or
+    /// no member volume is indexed (`.noIndexedMembers`/`.scopeUnavailable` — never
+    /// pass an empty set through to Analytics).
+    private func customScopeAnalyticsIds() -> [String]? {
+        guard case let .customScope(id) = scope else { return nil }
+        var descriptor = FetchDescriptor<CustomVolumeScope>(
+            predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let record = try? modelContext.fetch(descriptor).first else { return nil }
+        guard case let .resolved(ids) = CustomScopeResolver.indexedResolution(
+            memberVolumeIds: record.volumeIds, indexed: appState.indexedVolumeIds)
+        else { return nil }
+        return ids.sorted()
     }
 
     /// Translates `scope` into the volume-ID scope Corpus Analytics understands, for
     /// the optional scoped context-menu handoff.
     ///
     /// Analytics buckets by whole volumes, so only the volume-aligned scopes carry
-    /// through: `.volume` → that volume, `.subseries` → the subseries' volumes. The
-    /// remaining scopes — `.corpus`, plus the sub-volume / document-set scopes
-    /// `.document`, `.collection`, `.userTag`, and `.savedSearch`, which Analytics
-    /// cannot express at volume granularity — return `(nil, nil)` (corpus-wide); these
-    /// scopes never reach this method because `scopedAnalyzeMenuLabel` hides the
-    /// scoped action for them.
+    /// through: `.volume` → that volume, `.subseries` → the subseries' volumes,
+    /// `.customScope` → the scope's *indexed* members. The remaining scopes —
+    /// `.corpus`, plus the sub-volume / document-set scopes `.document`,
+    /// `.collection`, `.userTag`, and `.savedSearch`, which Analytics cannot express
+    /// at volume granularity — return `(nil, nil)` (corpus-wide); these scopes never
+    /// reach this method because `scopedAnalyzeMenuLabel` hides the scoped action
+    /// for them.
     ///
     /// - Returns: The volume-ID scope and its display label, or `(nil, nil)` for a
     ///   corpus-wide query.
@@ -877,6 +905,12 @@ struct WordCloudView: View {
                 .map(\.volumeId)
             guard !volumeIds.isEmpty else { return (nil, nil) }
             return (volumeIds, title.isEmpty ? subseriesId : title)
+        case .customScope:
+            guard let ids = customScopeAnalyticsIds() else { return (nil, nil) }
+            return (ids, title.isEmpty
+                    ? String(localized: "wordcloud.scope.customScope",
+                             defaultValue: "Volume Scope")
+                    : title)
         case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return (nil, nil)
         }
@@ -965,7 +999,8 @@ struct WordCloudView: View {
 /// Seeds its scope from `appState.pendingWordCloud` (set by whichever surface opened
 /// the window) and tracks subsequent hand-offs, but also hosts a `WordCloudScopeBar`
 /// so the user can retarget the cloud to any available scope — corpus, subseries,
-/// volume, collection, tag, or saved search — directly from this app-level window.
+/// volume, collection, tag, saved search, or custom volume scope — directly from
+/// this app-level window.
 ///
 /// `pendingWordCloud` is cleared here after each consumption (mirroring how
 /// `MacSearchWindowView` consumes `pendingSearch`). Leaving it set would make
@@ -997,7 +1032,7 @@ struct WordCloudWindowContent: View {
                     systemImage: WordCloudGlyph.symbol,
                     description: Text(String(
                         localized: "wordcloud.window.empty.detail",
-                        defaultValue: "Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, or the corpus."
+                        defaultValue: "Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus."
                     ))
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1025,12 +1060,16 @@ struct WordCloudWindowContent: View {
 /// A compact scope selector for the macOS word-cloud window.
 ///
 /// Presents a single menu listing every scope the cloud can target: the whole
-/// corpus, a subseries, a specific volume (grouped under its subseries), or a user
-/// collection / tag / saved search. The button shows a readable label for the
-/// current scope so the window always says what it's analysing.
+/// corpus, a subseries, a specific volume (grouped under its subseries), a user
+/// collection / tag / saved search, or a custom volume scope. The button shows a
+/// readable label for the current scope so the window always says what it's
+/// analysing.
 ///
 /// Version history:
 ///   1.0 — Word Cloud: in-window scope picker
+///   1.1 — #258 Phase 5: "My Volume Scopes" section — the FTS-grain Menu idiom
+///          (enabled with the honest indexed count, disabled when no member is
+///          indexed; a zero-indexed scope could only ever render an empty cloud)
 private struct WordCloudScopeBar: View {
     /// The scope binding shared with `WordCloudWindowContent`.
     @Binding var scope: WordCloudScope?
@@ -1039,6 +1078,7 @@ private struct WordCloudScopeBar: View {
     @Query(sort: \Collection.name) private var collections: [Collection]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
     @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearches: [SavedSearch]
+    @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
 
     /// The known volume manifest entries (diffed if available, else bundled).
     private var entries: [VolumeManifestEntry] {
@@ -1112,6 +1152,14 @@ private struct WordCloudScopeBar: View {
                         }
                     }
                 }
+                if !customScopes.isEmpty {
+                    Menu(String(localized: "analytics.scope.customScopes",
+                                defaultValue: "My Volume Scopes")) {
+                        ForEach(customScopes) { record in
+                            customScopeItem(record)
+                        }
+                    }
+                }
                 Divider()
                 Button(String(localized: "wordcloud.scope.dateRange", defaultValue: "Date Range")) {
                     scope = defaultDateRangeScope()
@@ -1143,6 +1191,35 @@ private struct WordCloudScopeBar: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
+    }
+
+    /// One custom-scope menu item (#258 Phase 5): the FTS-grain Menu idiom shared
+    /// with `AnalyticsScopeBar` — enabled with its honest indexed count, disabled
+    /// when no member volume is indexed (the cloud reads indexed text, so a
+    /// zero-indexed scope could only ever render an empty cloud).
+    @ViewBuilder
+    private func customScopeItem(_ record: CustomVolumeScope) -> some View {
+        switch CustomScopeResolver.indexedResolution(memberVolumeIds: record.volumeIds,
+                                                     indexed: appState.indexedVolumeIds) {
+        case .resolved(let ids):
+            Button {
+                scope = .customScope(id: record.id)
+            } label: {
+                Text(String(format: String(
+                    localized: "analytics.scope.customScope %@ %lld %lld",
+                    defaultValue: "%@ (%lld of %lld indexed)"),
+                    record.name, Int64(ids.count), Int64(record.volumeIds.count)))
+            }
+        case .noIndexedMembers, .scopeUnavailable:
+            Button {
+                // Unreachable: disabled below. Present for the shared Button shape.
+            } label: {
+                Text(String(format: String(
+                    localized: "analytics.scope.customScope.none %@",
+                    defaultValue: "%@ — none indexed yet"), record.name))
+            }
+            .disabled(true)
+        }
     }
 
     /// A sensible default date-range scope when the user first picks "Date Range":
@@ -1181,6 +1258,9 @@ private struct WordCloudScopeBar: View {
         case let .savedSearch(id):
             return savedSearches.first { $0.id == id }?.name
                 ?? String(localized: "wordcloud.scope.savedSearch", defaultValue: "Saved Search")
+        case let .customScope(id):
+            return customScopes.first { $0.id == id }?.name
+                ?? String(localized: "wordcloud.scope.customScope", defaultValue: "Volume Scope")
         case let .dateRange(startISO, endISO):
             return WordCloudScope.dateRangeTitle(startISO: startISO, endISO: endISO)
         }

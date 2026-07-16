@@ -282,15 +282,18 @@ struct WordCloudDocumentKey: Hashable, Sendable {
 /// Every case ultimately resolves to a set of `WordCloudDocumentKey` values (or,
 /// for `.corpus`, the entire index), which `WordFrequencyService` turns into a
 /// ranked list of the most frequent meaningful terms. Resolution of the
-/// SwiftData-backed cases (`.collection`, `.userTag`, `.savedSearch`) happens on
-/// the main actor in `WordCloudScopeResolver`, which has access to the model
-/// context; the FTS-backed cases are resolved inside the service.
+/// SwiftData-backed cases (`.collection`, `.userTag`, `.savedSearch`,
+/// `.customScope`) happens on the main actor in `WordCloudScopeResolver`, which has
+/// access to the model context; the FTS-backed cases are resolved inside the service.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — Word Cloud fixes: `isoDay(from:)` / `day(fromISO:)` convert in the user's
 ///          local timezone (was UTC) so date-range bounds agree with the DatePickers
 ///          and Chronology's local-calendar normalisation on every hand-off
+///   1.2 — #258 Phase 5: `.customScope(id:)` — a user-defined custom volume scope,
+///          referenced by record id (the sketch's §8-Q3 reference-not-copy rule) with
+///          full `signature` round-trip for the precompute queue and result caches
 enum WordCloudScope: Hashable, Sendable, Identifiable {
     /// A single document.
     case document(volumeId: String, documentId: String)
@@ -306,6 +309,11 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
     case userTag(id: UUID)
     /// Every document matching a saved search.
     case savedSearch(id: UUID)
+    /// Every indexed document across the volumes of a user-defined custom volume
+    /// scope (#258 Phase 5). Referenced by record id — never a copied member list —
+    /// so a dangling reference (scope deleted on another device) resolves to an
+    /// explicit not-found outcome, the resolver's established dangling-UUID pattern.
+    case customScope(id: UUID)
     /// Every document whose date falls within an inclusive `yyyy-MM-dd` range —
     /// the bridge between the Chronology browser and the word cloud.
     case dateRange(startISO: String, endISO: String)
@@ -342,6 +350,9 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
         case "search":
             guard let uuid = UUID(uuidString: value) else { return nil }
             self = .savedSearch(id: uuid)
+        case "scope":
+            guard let uuid = UUID(uuidString: value) else { return nil }
+            self = .customScope(id: uuid)
         case "daterange":
             let bounds = value.components(separatedBy: "..")
             guard bounds.count == 2, !bounds[0].isEmpty, !bounds[1].isEmpty else { return nil }
@@ -365,6 +376,7 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
         case let .collection(id):                 return "col:\(id.uuidString)"
         case let .userTag(id):                    return "tag:\(id.uuidString)"
         case let .savedSearch(id):                return "search:\(id.uuidString)"
+        case let .customScope(id):                return "scope:\(id.uuidString)"
         case let .dateRange(startISO, endISO):    return "daterange:\(startISO)..\(endISO)"
         }
     }
