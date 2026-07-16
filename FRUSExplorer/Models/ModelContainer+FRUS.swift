@@ -68,6 +68,9 @@ extension ModelContainer {
             DocumentTagAssignment.self,
             PersonClusterOverride.self,
             SyncedPreferences.self,
+            // #258 Phase 1 — NEW CloudKit record type: deploy the schema to Production
+            // (CloudKit Dashboard -> Schema -> Deploy) before shipping, per the note above.
+            CustomVolumeScope.self,
         ]
     }
 
