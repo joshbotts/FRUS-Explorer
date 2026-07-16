@@ -64,8 +64,9 @@ refresh the in-file table to match (Session R block item 4).
 | Source Explorer `frus.sourceExplorer.ios` (`:449`) | `WindowGroup(id:)` | **Pending-state**: `appState.currentSourceNote` + 5 sibling fields (`AppState.swift:665–675`) | **none** |
 | Cross-Reference Graph `frus.crossReferenceGraph.ios` (`:492`) | `WindowGroup(id:)` | **Pending-state**: `appState.currentGraphEntry` | **none** |
 
-Zero `.defaultSize` in the entire iOS region — every one of the 19 auxiliary `.defaultSize`
-occurrences is in the macOS region. `.defaultSize` **is** honored on iPadOS 26 for new windows in
+Zero `.defaultSize` in the entire iOS region — all 19 code occurrences are inside
+`#if os(macOS)`: 18 on auxiliary scenes plus the main window's macOS-only `.defaultSize(1200×800)`.
+*(Count corrected by the 2026-07-15 review; the original said "19 auxiliary".)* `.defaultSize` **is** honored on iPadOS 26 for new windows in
 Stage Manager; adding sensible defaults to the 3 iOS scenes is a Session R block item and rides in
 the prototype PR.
 
@@ -130,14 +131,28 @@ which no Session R work does.
 
 Three structural facts, in decreasing order of cost:
 
-### 4.1 The reading surface is forked
+### 4.1 The reading surface is forked — but the fork is NOT the gate
+*(Corrected by the 2026-07-15 Fable review, which measured the fork instead of accepting this
+section's original "this is the blocker" claim. The verdict stands; this argument's weighting did
+not.)*
+
 The macOS window world is anchored by `MainWindowView` + `MacDocumentView`; iPad reads through
-`MainTabView` + `DocumentView`. These are **parallel implementations, not one adaptive view** (the
-same fork pattern as Settings and Search — a repo-wide architectural fact). "Window-based by
-default" on iPad means either adopting `MainWindowView` (which does not compile for iOS and leans
-on macOS-only window plumbing throughout) or building a third hybrid — both are re-architectures of
-the app's core reading experience, dwarfing #241 itself. **This is the blocker; everything else is
-detail.**
+`MainTabView` + `DocumentView` — parallel implementations, the same fork pattern as Settings and
+Search. **However, measured:** the fork is ~3.9k lines of *platform chrome* (`DocumentView` 2,819 +
+`MacDocumentView` 1,123 + `MainWindowView` 408; exactly 6 duplicated interaction handlers) over a
+**fully shared ~6.7k-line engine** (`DocumentViewModel`, the TEI parser/AST/converter,
+`FRUSDocumentWebView` — both views render through the same pipeline). And the decisive fact: **the
+iPad already hosts the iOS `DocumentView` inside a window scene today** (the `DocumentWindowID`
+`WindowGroup`), so window-hosted reading on iPad needs zero reading-surface work. The fork blocks
+**Mac-parity window UX** — it does not block window-based-by-default. Do NOT schedule
+DocumentView/MacDocumentView unification as a windowing prerequisite; it is not one.
+
+The honest gate this section originally failed to state is **dual-root retention**:
+`supportsMultipleWindows` is runtime-variable (false on iPhone; plist-derived and mode-dependent on
+iPad — see §5.1's caveat), and `openWindow` is a no-op where it is false, so `MainTabView` must be
+retained as the root *regardless*. "Window-based by default" therefore collapses into the
+incremental path plus a root swap that buys nothing — which, together with §4.2/§4.3, is why the
+verdict holds even with 4.1's original overstatement removed.
 
 ### 4.2 Two aux scenes restore empty by design
 `frus.sourceExplorer.ios` and `frus.crossReferenceGraph.ios` render from **process-global pending
@@ -158,8 +173,12 @@ multiplies every such process-global assumption (`pendingBrowseDocument`, `pendi
 `pendingAnalytics`, …) into a visible bug class. The incremental path meets these one at a time,
 value-based scenes first, which sidesteps most of them by construction.
 
-**Sizing:** full adoption = XL (quarter-scale, gated on unifying the reading surface);
-incremental = L spread across waves, each port S–M. Session R buys the template and the census.
+**Sizing:** full adoption = XL — gated on **state routing (§4.2/§4.3: 13 process-global
+`pendingX`/`currentX` hand-off fields) + dual-root retention (§4.1)**, not on unifying the reading
+surface; incremental = L spread across waves, each port S–M. Session R buys the template and the
+census. *(The 2026-07-15 review's steelman: 2–3 sessions of #316+#317 work make multiple windows
+CORRECT, but cannot make them the DEFAULT — the runtime-variable gate forces the tab root to stay.
+L-vs-XL survives the steelman; the original "gated on unifying the reading surface" did not.)*
 
 ---
 
@@ -176,9 +195,15 @@ For a macOS window view backed by a **Codable request type**:
    `FRUSExplorerApp.swift:638` moves (or is mirrored) outside the macOS region; iPad wraps content
    in `NavigationStack` for nav-bar chrome, exactly as the `DocumentWindowID` iOS scene does at
    `:422`.
-3. Gate call sites on `supportsMultipleWindows`: window on iPad-with-Stage-Manager, existing sheet
-   as fallback. Exactly **4 iOS call-site files** present sheets today: `CrossReferenceGraphView`,
-   `SearchView`, `CompilationView`, `CollectionDetailView` (grep-verified).
+3. Gate call sites on `supportsMultipleWindows`, existing sheet as fallback. **FIVE iOS call-site
+   files, not the four originally claimed** — the 2026-07-15 review caught `VolumeSourcesView`'s
+   volume-source trigger, which the original grep missed because its sheet presentation is hoisted
+   to `CompilationView`, so grepping for sheet *presentations* undercounts *triggers*. (Gated in
+   the review-remediation pass.) Two caveats the review added: `supportsMultipleWindows` is
+   **plist-derived, not strictly "Stage Manager"** — on an iPad in Full Screen Apps mode it may
+   still be true, making the "parked window" a full-screen scene (reasoned, not yet run; probe
+   filed) — and a gate must only be added where the target **scene exists on iOS**: gating the
+   Cross-Volume Provenance trigger before porting its scene would make `openWindow` a silent no-op.
 4. `.defaultSize` on the new scene + the 3 existing iOS scenes.
 5. Refresh the stale scene table in `FRUSExplorerApp.swift:56–72` (§2 census).
 
@@ -195,12 +220,20 @@ with the smallest possible diff — which is what Thursday's Fable review should
 
 ### 5.3 Candidate ranking for future waves (do NOT batch-port)
 
+*(Retiered by the 2026-07-15 Fable review: the original "never" tier contradicted the app's own
+recorded design rationales for two scenes, and this table is declared authoritative — a future wave
+consuming a wrong "never" would permanently skip ports whose value the codebase itself documents.)*
+
 | Tier | Scenes | Rationale |
 |---|---|---|
 | Ride-along next | Cross-Volume Provenance | Identical value-based pattern; sibling window view in the same macOS region; iOS sheet in `VolumeSourcesView`. Stretch goal for the prototype PR only if it lands with zero friction. |
-| High value, needs request-type work | Source Explorer, Cross-Reference Graph (the two pending-state scenes) | Real research value in parked windows; each needs a Codable request refactor first (§6.2). |
-| Questionable | Word Cloud, Chronology, Analytics windows | Sheets/tabs serve these fine on iPad; port only on demonstrated demand. |
-| Never | Search, Collections, Research, People, Corpus Browser, History, Note Composer, About, Research Guide, Citation Lookup, Settings | Tab-owned surfaces on iPad (porting would duplicate the tab UX), or trivial modals. "Window-based by default" would drag all of these along — a further reason the XL path fails cost-benefit. |
+| High value, needs request-type work | Source Explorer, Cross-Reference Graph (the two pending-state scenes); **Citation Lookup**; **Note Composer** | Real research value in parked windows. The first two need Codable request refactors (§6.2). Citation Lookup's own macOS scene comment states §1's port criterion verbatim — "parsed matches stay around while the researcher reads documents" (⌘⇧F sibling of Search). Note Composer's states the window exists because "the modal sheets this replaces covered the passage the user was writing about" — a problem iPad still has today (notes are `DocumentSheet.noteEditor` sheets over the document); `NoteComposerRequest` is `Hashable` but not `Codable`, hence request-type work. |
+| Questionable | Word Cloud, Chronology, Analytics windows; Search | Sheets/tabs serve these fine on iPad; port only on demonstrated demand. Search moved down from "never": post-#316, a second main window on the Search tab supplies a parked search surface without a port, and `SearchView` already spawns per-document windows from results — contestable but defensible either way. |
+| Never | Collections, Research, People, Corpus Browser, History, About, Research Guide, Settings | Tab-owned surfaces on iPad (porting would duplicate the tab UX), or trivial modals. |
+
+The XL-path cost sub-argument this table used to carry ("window-based by default would drag all of
+these along") is **weakened but not needed**: dragging Citation Lookup and Note Composer along
+would be value, not dead cost — the XL path fails on §4's architectural gates independently.
 
 ### 5.4 Verification bar for the prototype
 Cross-platform compile (both schemes) + one window-open smoke check on the iPad simulator.

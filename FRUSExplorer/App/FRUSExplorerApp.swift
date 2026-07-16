@@ -62,14 +62,16 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// `MainWindowView` on macOS), plus `archivalNeighborsScene`, declared once and referenced
 /// from both platform regions.
 ///
-/// **iOS auxiliary scenes (4)** — all `WindowGroup`; iPad Stage Manager only (`openWindow`
-/// is a no-op elsewhere, so every caller keeps a sheet/inline fallback):
+/// **iOS auxiliary scenes (4)** — all `WindowGroup`; windowed multitasking only — and note
+/// `supportsMultipleWindows` is plist-derived, NOT strictly "Stage Manager" (an iPad in Full
+/// Screen Apps mode may still report true — unprobed; #241 review). `openWindow` is a no-op
+/// where it is false, so every caller keeps a sheet/inline fallback:
 /// | Scene                           | Type          | State source                                     |
 /// |---------------------------------|---------------|--------------------------------------------------|
-/// | (`DocumentWindowID`)            | WindowGroup   | Value-based — restores correctly                 |
-/// | `"frus.sourceExplorer.ios"`     | WindowGroup   | Pending state (`currentSourceNote` + 5 siblings) — restores EMPTY |
-/// | `"frus.crossReferenceGraph.ios"`| WindowGroup   | Pending state (`currentGraphEntry`) — restores EMPTY |
-/// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Value-based — restores correctly (#241 port)     |
+/// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; CONTENT dead-ends in a permanent spinner when the volume is gone or boot loses the race (#323) |
+/// | `"frus.sourceExplorer.ios"`     | WindowGroup   | Pending state (`currentSourceNote` + 5 siblings) — restores EMPTY (#317) |
+/// | `"frus.crossReferenceGraph.ios"`| WindowGroup   | Pending state (`currentGraphEntry`) — restores EMPTY (#317) |
+/// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Value-based — restores correctly (#241 port): boot-race guard + honest empty state verified by the #241 review |
 ///
 /// **macOS auxiliary scenes (21)** — 17 singleton `Window`, 3 `WindowGroup`, 1 `Settings`.
 /// `SwiftUI.Window` is `@available(iOS, unavailable)`, which is why no singleton scene below

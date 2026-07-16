@@ -140,9 +140,11 @@ struct CentralFilesIndexTests {
         let withEntries = lots.filter { !($0.hmsMlrEntryNumbers ?? []).isEmpty }
         // 946/979 at the verified run; the floor guards against an un-enriched or
         // half-failed harvest being committed, without pinning an exact count.
+        // NB: a single literal, not `"…" + "…"` — #expect's comment parameter is `Comment?`,
+        // and only a string LITERAL converts implicitly; a concatenation is a String expression
+        // and fails to compile. This exact mistake broke the whole test target at v2 ace0097.
         #expect(withEntries.count > 900,
-                "expected ~946 lot entries with an HMS/MLR entry number — a much lower "
-                    + "count means the harvest did not run or largely failed")
+                "expected ~946 lot entries with an HMS/MLR entry number — a much lower count means the harvest did not run or largely failed")
     }
 
     /// The discrimination that matters: no internal `HMS Record Entry ID` (`HS1-…`) and no
@@ -191,11 +193,16 @@ struct CentralFilesIndexTests {
         #expect(!nonSeries.isEmpty, "expected ~32 fileUnit-level lot entries")
         for lot in nonSeries {
             #expect((lot.hmsMlrEntryNumbers ?? []).isEmpty,
-                    "lot \(lot.lotNumber) is \(lot.levelOfDescription ?? "?")-level yet carries "
-                        + "an entry number — the series/entry-number correlation broke")
+                    "lot \(lot.lotNumber) is \(lot.levelOfDescription ?? "?")-level yet carries an entry number — the series/entry-number correlation broke")
         }
-        // And the golden series-level case from the verifying spike.
-        let known = index.lotFile(forRawLot: "64 D 171")
+        // Golden series-level case. NOT the verifying spike's lot (64 D 171): that is RG 306,
+        // and this index bundles only the RG 59/84 Phase-3 harvest — the first executable run
+        // of this suite caught exactly that wrong assumption here. 81D208 is present, is
+        // series-level, and doubles as the recovered transient miss from the first harvest
+        // (naId 27499754, entry UD-06D 30).
+        let known = index.lotFile(forRawLot: "81 D 208")
         #expect(known?.isSeriesLevel == true)
+        #expect(known?.hmsMlrEntryNumbers == ["UD-06D 30"])
+        #expect(known?.displaySeriesTitle == "Human Rights Country Files")
     }
 }

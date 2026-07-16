@@ -85,11 +85,16 @@ struct VolumeSourcesView: View {
     let volumeId: String
 
     @Environment(AppState.self) private var appState
-    #if os(macOS)
-    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`).
+    /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
+    /// — macOS, and iPad with windowed multitasking as of the #241 review remediation. This
+    /// was the one neighbors trigger #318's call-site census missed: its sheet presentation is
+    /// hoisted to CompilationView, so a grep for sheet sites never surfaced this file.
     /// Calling `openWindow` from row content is safe — unlike presentation modifiers,
     /// it is an action, so the Group/Section-in-List anchoring rule does not apply.
     @Environment(\.openWindow) private var openWindow
+    #if os(iOS)
+    /// Gates the neighbors window on iOS: sheet fallback wherever windows are unavailable.
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
     @State private var sources: [VolumeSourceEntry] = []
@@ -282,13 +287,16 @@ struct VolumeSourcesView: View {
                         if let authority {
                             presented.aliasFallback = .init(record: authority)
                         }
-                        #if os(macOS)
-                        // S6: neighbors open in their own window (browsable beside
-                        // the reading window); iOS keeps the hoisted parent sheet.
-                        openWindow(value: ArchivalNeighborsRequest(volumeSource: presented))
-                        #else
-                        sourceNeighborsTarget = presented
+                        // S6/#241: neighbors open in their own window wherever windows
+                        // exist (macOS; iPad with windowed multitasking) — browsable
+                        // beside the reading window. Hoisted sheet only where they don't.
+                        #if os(iOS)
+                        guard supportsMultipleWindows else {
+                            sourceNeighborsTarget = presented
+                            return
+                        }
                         #endif
+                        openWindow(value: ArchivalNeighborsRequest(volumeSource: presented))
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: "archivebox")
@@ -331,6 +339,12 @@ struct VolumeSourcesView: View {
                     // B2: window on macOS (browsable beside the volumes it names);
                     // hoisted parent sheet on iOS. `openWindow` is an action, so it
                     // is safe inside this section-emitting view (unlike a sheet).
+                    //
+                    // Deliberately NOT gated on supportsMultipleWindows (unlike the
+                    // neighbors trigger above): the CrossVolumeProvenanceRequest scene
+                    // is still macOS-only (#241's stretch goal, not ported), so an iOS
+                    // openWindow(value:) would be a silent no-op and the button would do
+                    // nothing. Convert this branch ONLY together with porting that scene.
                     #if os(macOS)
                     openWindow(value: CrossVolumeProvenanceRequest(
                         title: entry.rawText, volumeIds: crossVolume.volumeIds))
