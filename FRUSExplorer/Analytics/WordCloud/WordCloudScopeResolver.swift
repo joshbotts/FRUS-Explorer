@@ -138,6 +138,28 @@ struct WordCloudScopeResolver {
             }
             return Resolved(scope: scope, title: title, keys: keys, isCorpus: false)
 
+        case let .subjectCategory(category, subcategory):
+            // #308 Phase 1 (F6): the word-cloud arm of the detected-topic facets. The bundled
+            // volume-subject profiles are volume-grain, so this resolves like `.subseries` —
+            // category (optionally + sub-category) → volume set → per-volume keys. An empty
+            // volume set (category absent, e.g. the profiles index is unavailable) yields an
+            // explicitly empty cloud, never a `.corpus` fallback; `keys(forVolume:)` per volume
+            // IS the indexed-grain intersection.
+            let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+            let volumeIds: Set<String>
+            if let subcategory {
+                volumeIds = ScopeFacets.volumeIds(forCategory: category, subcategory: subcategory,
+                                                  resolvedByVolume: resolved)
+            } else {
+                volumeIds = ScopeFacets.volumeIds(forCategory: category, resolvedByVolume: resolved)
+            }
+            var keys: [WordCloudDocumentKey] = []
+            for volumeId in volumeIds.sorted() {
+                keys.append(contentsOf: try await self.keys(forVolume: volumeId))
+            }
+            let title = subcategory.map { "\(category) · \($0)" } ?? category
+            return Resolved(scope: scope, title: title, keys: keys, isCorpus: false)
+
         case let .dateRange(startISO, endISO):
             let range = DateRange(earliest: startISO, latest: endISO)
             let rows = (try await pipeline?.documentsInDateRange(

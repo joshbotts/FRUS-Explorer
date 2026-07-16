@@ -294,6 +294,10 @@ struct WordCloudDocumentKey: Hashable, Sendable {
 ///   1.2 — #258 Phase 5: `.customScope(id:)` — a user-defined custom volume scope,
 ///          referenced by record id (the sketch's §8-Q3 reference-not-copy rule) with
 ///          full `signature` round-trip for the precompute queue and result caches
+///   1.3 — #308 Phase 1 (F6): `.subjectCategory(category:subcategory:)` — the word-cloud
+///          arm of the detected-topic facets; signature `subject:<category>` or
+///          `subject:<category>␟<subcategory>` (U+001F delimiter, absent from taxonomy
+///          labels), resolved volume-grain like `.subseries`
 enum WordCloudScope: Hashable, Sendable, Identifiable {
     /// A single document.
     case document(volumeId: String, documentId: String)
@@ -314,6 +318,12 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
     /// so a dangling reference (scope deleted on another device) resolves to an
     /// explicit not-found outcome, the resolver's established dangling-UUID pattern.
     case customScope(id: UUID)
+    /// Every indexed document across the volumes whose bundled subject profile carries a
+    /// detected-topic **category** (and optionally a **sub-category**) — the word-cloud arm of
+    /// #308's two-level facets. Volume-grain by construction (the profiles are volume-grain);
+    /// resolves like `.subseries` (category → volumes → keys). `subcategory == nil` is the
+    /// whole-category scope.
+    case subjectCategory(category: String, subcategory: String?)
     /// Every document whose date falls within an inclusive `yyyy-MM-dd` range —
     /// the bridge between the Chronology browser and the word cloud.
     case dateRange(startISO: String, endISO: String)
@@ -353,6 +363,13 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
         case "scope":
             guard let uuid = UUID(uuidString: value) else { return nil }
             self = .customScope(id: uuid)
+        case "subject":
+            // "<category>" or "<category>␟<subcategory>" (␟ = U+001F unit separator, absent
+            // from taxonomy labels; the leading ":" already split off the prefix).
+            let parts = value.components(separatedBy: "\u{1f}")
+            guard let category = parts.first, !category.isEmpty else { return nil }
+            let subcategory = parts.count > 1 && !parts[1].isEmpty ? parts[1] : nil
+            self = .subjectCategory(category: category, subcategory: subcategory)
         case "daterange":
             let bounds = value.components(separatedBy: "..")
             guard bounds.count == 2, !bounds[0].isEmpty, !bounds[1].isEmpty else { return nil }
@@ -377,6 +394,8 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
         case let .userTag(id):                    return "tag:\(id.uuidString)"
         case let .savedSearch(id):                return "search:\(id.uuidString)"
         case let .customScope(id):                return "scope:\(id.uuidString)"
+        case let .subjectCategory(category, subcategory):
+            return subcategory.map { "subject:\(category)\u{1f}\($0)" } ?? "subject:\(category)"
         case let .dateRange(startISO, endISO):    return "daterange:\(startISO)..\(endISO)"
         }
     }
