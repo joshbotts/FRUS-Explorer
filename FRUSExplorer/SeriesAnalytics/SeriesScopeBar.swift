@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - SeriesScope
 
@@ -71,6 +72,12 @@ struct SeriesScopeBar: View {
 
     /// The manifest entries the dashboard summarises — the source of the subseries buckets.
     let entries: [VolumeManifestEntry]
+    /// User-defined volume scopes (#258 Phase 4), live via `@Query`. Resolved at the
+    /// MANIFEST grain (`CustomScopeResolver.manifestVolumeIds`) — un-downloaded members
+    /// stay in scope, matching these dashboards' zero-index rendering. Requires the
+    /// hosting scene to carry the model container (the macOS Research Guide window
+    /// gained it in the same commit — the Phase-3 container lesson, applied).
+    @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
     /// The active scope. `nil` volumeIds means the whole series.
     @Binding var scope: SeriesScope
     /// Invoked after the scope changes so the host can rebuild its derived data.
@@ -130,6 +137,45 @@ struct SeriesScopeBar: View {
         onChange()
     }
 
+    /// One custom-scope menu item (#258 Phase 4): manifest-grain resolution — enabled with
+    /// its resolvable volume count, disabled when no member volume exists in this
+    /// dashboard's manifest entries (so an empty `SeriesScope` set is unconstructable here).
+    @ViewBuilder
+    private func customScopeItem(_ customScope: CustomVolumeScope) -> some View {
+        let resolved = CustomScopeResolver.manifestVolumeIds(
+            memberVolumeIds: customScope.volumeIds,
+            manifestIds: Set(entries.map(\.volumeId)))
+        if resolved.isEmpty {
+            Button {
+                // Unreachable: disabled below. Present for the shared Button shape.
+            } label: {
+                Text(String(format: String(
+                    localized: "series.scope.customScope.none %@",
+                    defaultValue: "%@ — no volumes in this series"), customScope.name))
+            }
+            .disabled(true)
+        } else {
+            // #332 review: scope names are non-unique by design, so the checkmark keys on
+            // the resolved SET as well as the label — two same-named scopes (or a scope
+            // named after a subseries) no longer both render selected.
+            let isActive = scope.label == customScope.name && scope.volumeIds == resolved
+            Button {
+                setScope(SeriesScope(volumeIds: resolved, label: customScope.name))
+            } label: {
+                let title = String(format: String(
+                    localized: "series.scope.customScope %@ %lld",
+                    defaultValue: "%@ (%lld volumes)"),
+                    customScope.name, Int64(resolved.count))
+                if isActive {
+                    Label(title, systemImage: "checkmark")
+                } else {
+                    Text(title)
+                }
+            }
+            .accessibilityAddTraits(isActive ? .isSelected : [])
+        }
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "scope")
@@ -164,6 +210,19 @@ struct SeriesScopeBar: View {
                                     .accessibilityAddTraits(scope.label == bucket.subseries ? .isSelected : [])
                                 }
                             }
+                        }
+                    }
+                }
+                // #258 Phase 4 — custom scopes at the MANIFEST grain. The Menu idiom from
+                // Phase 3: a scope that resolves to zero manifest volumes renders disabled
+                // with an honest note (an empty Set here would filter the dashboards to
+                // visible emptiness — honest but useless; disabled is better).
+                if !customScopes.isEmpty {
+                    Divider()
+                    Menu(String(localized: "analytics.scope.customScopes",
+                                defaultValue: "My Volume Scopes")) {
+                        ForEach(customScopes) { customScope in
+                            customScopeItem(customScope)
                         }
                     }
                 }

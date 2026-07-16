@@ -837,6 +837,10 @@ struct FRUSExplorerApp: App {
                id: "frus.researchGuide") {
             ResearchGuideView()
                 .environment(appState)
+                // #258 Phase 4: the Series dashboards' scope bar hosts a @Query (custom
+                // scopes) and this window reaches them via IndexingEducationView — without
+                // the container the query has no store (the Phase-3 container class).
+                .modelContainer(modelContainer)
         }
         .defaultSize(width: 880, height: 620)
         #endif
