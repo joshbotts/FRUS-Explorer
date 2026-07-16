@@ -74905,44 +74905,8 @@
       "seriesNaId" : "302031"
     }
   ],
-  "generated" : "2026-07-15",
+  "generated" : "2026-07-16",
   "lotFiles" : [
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/20813090",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "32D66",
-      "matchType" : "control",
-      "naId" : "20813090",
-      "recordGroup" : "59",
-      "seriesNaId" : "570828",
-      "seriesTitle" : "Vernon Loen's and Charles Leppert's General Subject Files",
-      "title" : "Grant Notification (6)"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153965",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "49D19",
-      "matchType" : "control",
-      "naId" : "323153965",
-      "recordGroup" : "59",
-      "seriesNaId" : "579003",
-      "seriesTitle" : "Speech Backup Chronological Files",
-      "title" : "Budget Deadline Research 3\/20\/92 [OA 7570] [2]"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/55031616",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "50D95",
-      "matchType" : "control",
-      "naId" : "55031616",
-      "recordGroup" : "59",
-      "seriesNaId" : "2068127",
-      "seriesTitle" : "Melanne Verveer's Subject Files",
-      "title" : "D.C. (More) [Folder 2] [1]"
-    },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124668",
       "hmsMlrEntryNumbers" : [
@@ -75050,18 +75014,6 @@
       "naId" : "2168520",
       "recordGroup" : "59",
       "title" : "Records Relating to Meetings and Visits of Foreign Dignitaries"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153965",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "53D46",
-      "matchType" : "control",
-      "naId" : "323153965",
-      "recordGroup" : "59",
-      "seriesNaId" : "579003",
-      "seriesTitle" : "Speech Backup Chronological Files",
-      "title" : "Budget Deadline Research 3\/20\/92 [OA 7570] [2]"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2194824",
@@ -75969,30 +75921,6 @@
       "title" : "Subject Files Relating to Economic Aid"
     },
     {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323154473",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "58D95",
-      "matchType" : "control",
-      "naId" : "323154473",
-      "recordGroup" : "59",
-      "seriesNaId" : "284337240",
-      "seriesTitle" : "Carol Aarhus Alpha Files",
-      "title" : "Regulatory Reform [OA 6902] [1]"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27578789",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "58F33",
-      "matchType" : "control",
-      "naId" : "27578789",
-      "recordGroup" : "84",
-      "seriesNaId" : "578525",
-      "seriesTitle" : "Military Files",
-      "title" : "MR404(2) Sec. 6 Composition of Task Forces - April 1943"
-    },
-    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26155867",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "59A543",
@@ -76155,18 +76083,6 @@
       "naId" : "2212223",
       "recordGroup" : "59",
       "title" : "Subject Files Relating to Greece and Cyprus"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/285791007",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "59D38",
-      "matchType" : "control",
-      "naId" : "285791007",
-      "recordGroup" : "59",
-      "seriesNaId" : "2595246",
-      "seriesTitle" : "Allan D. Bromley Files",
-      "title" : "D. Allan Bromley Correspondence - Presidential - A-Z [1 of 3] [1991]"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124164",
@@ -77099,18 +77015,6 @@
       "title" : "Records Relating to Venezuela"
     },
     {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153965",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "61D32",
-      "matchType" : "control",
-      "naId" : "323153965",
-      "recordGroup" : "59",
-      "seriesNaId" : "579003",
-      "seriesTitle" : "Speech Backup Chronological Files",
-      "title" : "Budget Deadline Research 3\/20\/92 [OA 7570] [2]"
-    },
-    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2113331",
       "hmsMlrEntryNumbers" : [
         "A1 1164"
@@ -77349,18 +77253,6 @@
       "naId" : "1742044",
       "recordGroup" : "84",
       "title" : "Top Secret Subject Files"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/16619095",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "61F30",
-      "matchType" : "control",
-      "naId" : "16619095",
-      "recordGroup" : "84",
-      "seriesNaId" : "579094",
-      "seriesTitle" : "Departmental Correspondence",
-      "title" : "Navy - Estimates of Potential Military Strength - Documents E. Naval Attache Berlin - Vol. I, March 30, 1937 - October 7, 1941"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2838992",
@@ -77824,18 +77716,6 @@
       "title" : "JY 1 of 1"
     },
     {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/40488233",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "63D1",
-      "matchType" : "control",
-      "naId" : "40488233",
-      "recordGroup" : "59",
-      "seriesNaId" : "18546099",
-      "seriesTitle" : "Laura Schiller's Files",
-      "title" : "[Women's Conference in Bulgaria, Oct. 11, 1998] [1]"
-    },
-    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068465",
       "hmsMlrEntryNumbers" : [
         "A1 3139"
@@ -77846,18 +77726,6 @@
       "naId" : "2068465",
       "recordGroup" : "59",
       "title" : "Records of the Director"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/231536111",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "63D123",
-      "matchType" : "control",
-      "naId" : "231536111",
-      "recordGroup" : "59",
-      "seriesNaId" : "7452065",
-      "seriesTitle" : "Jack F. Matlock, Jr.'s Union of Soviet Socialist Republics (U.S.S.R.) Subject Files",
-      "title" : "Important History Pre-1987 [Material Left for Fritz Ermarth] (1)"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2363840",
@@ -78595,30 +78463,6 @@
       "naId" : "2363846",
       "recordGroup" : "59",
       "title" : "Economic Affairs Files Relating to Indonesia, Malaya, and Singapore"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/231536111",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "64D559",
-      "matchType" : "control",
-      "naId" : "231536111",
-      "recordGroup" : "59",
-      "seriesNaId" : "7452065",
-      "seriesTitle" : "Jack F. Matlock, Jr.'s Union of Soviet Socialist Republics (U.S.S.R.) Subject Files",
-      "title" : "Important History Pre-1987 [Material Left for Fritz Ermarth] (1)"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/231536111",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "64D560",
-      "matchType" : "control",
-      "naId" : "231536111",
-      "recordGroup" : "59",
-      "seriesNaId" : "7452065",
-      "seriesTitle" : "Jack F. Matlock, Jr.'s Union of Soviet Socialist Republics (U.S.S.R.) Subject Files",
-      "title" : "Important History Pre-1987 [Material Left for Fritz Ermarth] (1)"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1136548",
@@ -86355,18 +86199,6 @@
       "title" : "Political Files of Under Secretary Lawrence Eagleburger"
     },
     {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323152753",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "83D212",
-      "matchType" : "control",
-      "naId" : "323152753",
-      "recordGroup" : "59",
-      "seriesNaId" : "579003",
-      "seriesTitle" : "Speech Backup Chronological Files",
-      "title" : "Hank Brown Fundraiser 12\/8\/89 [OA 6342]"
-    },
-    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309183",
       "hmsMlrEntryNumbers" : [
         "UD-05D 74"
@@ -86749,18 +86581,6 @@
       "title" : "Paris Peace Conference Telegrams and Special Caption Messages"
     },
     {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/350437699",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "90D36",
-      "matchType" : "control",
-      "naId" : "350437699",
-      "recordGroup" : "59",
-      "seriesNaId" : "7422575",
-      "seriesTitle" : "Mary Smith's Files",
-      "title" : "Native American State of the Union [SOTU] [1]"
-    },
-    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26152057",
       "levelOfDescription" : "fileUnit",
       "lotNumber" : "91D257",
@@ -86897,18 +86717,6 @@
       "naId" : "2225592",
       "recordGroup" : "59",
       "title" : "Vietnam Special Caption Messages"
-    },
-    {
-      "ancestryLacksRecordGroup" : true,
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/323153864",
-      "levelOfDescription" : "fileUnit",
-      "lotNumber" : "96D234",
-      "matchType" : "control",
-      "naId" : "323153864",
-      "recordGroup" : "59",
-      "seriesNaId" : "579003",
-      "seriesTitle" : "Speech Backup Chronological Files",
-      "title" : "Small Business Council 2\/5\/92 [OA 7567] [2]"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1229820",
