@@ -101,6 +101,15 @@ import UIKit
 ///          where the control's absence is not a failure), and both guards `XCTFail` instead of
 ///          skipping — past the idiom check the destination IS an iPad, so a missing toggle is a
 ///          real fault. Mirrors the same correction 1.2 made to the Browse-tab guards.
+///   1.9 — #312 gap 3, measured on iPad Pro 13-inch (M5): 1.7's open question — whether the
+///          ordering fix that revived scenario 5's Research drill-in also revives scenario 4's
+///          Browse drill-in — is answered NO. Two runs (cell-tap, then the row's `Button`
+///          element directly), drilling in before any swipe with a sound oracle: neither pushes.
+///          The cause is structural, not ordering: `CorpusView` rows are
+///          `Button { navigationPath.append… } .buttonStyle(.plain)` (a programmatic push) where
+///          Research's are `NavigationLink(value:)`, and XCUITest drives the link but not the
+///          button's action here. No drill-in is added (a red test is worse than a documented
+///          gap); the measured finding is recorded in scenario 4's NOTE and on #312.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -441,13 +450,18 @@ final class UIObstructionTests: XCTestCase {
         // ever happened — while the old assertion still reported true. Repeated taps (2nd, 3rd)
         // did not push either.
         //
-        // Do not restore it naively. `corpusContentCell.tap()` does not activate the row: an
-        // XCUITest tap on a SwiftUI List row's Cell element does not trigger the Button inside
-        // it here (the same behaviour was measured independently for Research in scenario 5).
-        // Covering the pushed level needs its own investigation into the right tap target and a
-        // sound oracle (the pushed SubseriesView sets `.navigationTitle(group.subseries)`, so a
-        // navigationBars title change or a BackButton is the signal — never `app.cells`).
-        // The four assertions above are the real #238 regression gate and are unaffected.
+        // Do not restore it naively. #312 gap 3 re-tested exactly this, on iPad Pro 13-inch (M5),
+        // to settle 1.7's open question — whether the ordering fix that revived scenario 5's
+        // Research drill-in also revives Browse's. It does NOT. Two measured runs with the sound
+        // oracle (BackButton + the "FRUS Corpus" → subseries title change), drilling in BEFORE any
+        // swipe: neither `corpusContentCell.tap()` nor tapping the row's `Button` element directly
+        // (`app.buttons` matching "Subseries …") pushes — `BackButton` never appears within 10s.
+        // The structural reason the Research fix did not transfer: `CorpusView`'s rows are
+        // `Button { navigationPath.append… } .buttonStyle(.plain)` (a programmatic push), where
+        // `ResearchView`'s are `NavigationLink(value:)` — and XCUITest activates the latter on a
+        // cell/element tap but not the former's action here. So Browse's pushed-level coverage is a
+        // genuine gap that needs a different driving mechanism (not just a tap target), tracked on
+        // #312. The four assertions above are the real #238 regression gate and are unaffected.
     }
 
     // MARK: - 5. iPad tab-bar representations do not obstruct Research content

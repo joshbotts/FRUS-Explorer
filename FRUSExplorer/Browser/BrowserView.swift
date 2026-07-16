@@ -186,6 +186,13 @@ struct BrowserView: View {
             showChronology = true
         }
         .onAppear { bootstrapViewModel() }
+        // #324: under FRUS_UI_TEST_MODE the browse stack can render before AppState
+        // finishes booting the download manager, so the view model would capture nil
+        // for the session and report every volume as not-downloaded. Back-fill it the
+        // moment the manager appears (a no-op in production, where it exists at boot).
+        .onChange(of: appState.downloadManager == nil) { _, isNil in
+            if !isNil { viewModel?.attachDownloadManagerIfNeeded(appState.downloadManager) }
+        }
         // Warm the lazy volume-subject-profiles decode off the main thread while the
         // user is still at the subseries/volume lists, so the first VolumeView push
         // doesn't pay the (small) decode inside its body evaluation. `static let`
