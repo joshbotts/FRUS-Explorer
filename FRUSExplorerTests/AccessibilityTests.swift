@@ -172,17 +172,18 @@ struct TabBarAccessibilityTests {
 
     @Test("researchTabExists — AppTab has .research case replacing former .activity case")
     func researchTabExists() {
-        // The Activity tab was replaced by Research in Session 130.
-        // Verify the new case exists and persists correctly via activeTab.
+        // The Activity tab was replaced by Research in Session 130. Verify the case exists and
+        // round-trips through the persisted seed (#316: the shared `activeTab` is gone; the seed
+        // is `AppState.seedActiveTab` / `persistTabSeed`).
+        AppState.persistTabSeed(.research)
+        #expect(AppState.seedActiveTab == .research)
+        // lastActivityTabVisit is retained in AppState for potential future badge use, but is no
+        // longer stamped by any tab write.
         let state = AppState()
-        state.activeTab = .research
-        #expect(state.activeTab == .research)
-        // lastActivityTabVisit is retained in AppState for potential future badge use,
-        // but is no longer stamped automatically on tab switch.
         let baseline = state.lastActivityTabVisit
-        state.activeTab = .browse
+        AppState.persistTabSeed(.browse)
         #expect(state.lastActivityTabVisit == baseline,
-                "lastActivityTabVisit should not change on tab switch")
+                "lastActivityTabVisit should not change when the tab seed is written")
     }
 
     @Test("settingsTabBadgeReturnsZeroWhenInfrastructureAbsent — no crash on nil pipeline or dm")
