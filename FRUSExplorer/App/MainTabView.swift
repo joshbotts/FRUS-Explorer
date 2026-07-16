@@ -65,13 +65,29 @@ import SwiftData
 ///          `NavigationSplitView`s left in the module are `#if os(macOS)`-guarded
 ///          (`FRUSSettingsView`, `ResearchView`, `MacCorpusBrowserWindow`) or unreferenced
 ///          (`BrowserView.splitLayout`), and none can render under `.sidebarAdaptable`.
+///   1.12 — #316: the tab selection is now per-window `@SceneStorage`, not the shared
+///          `appState.activeTab`, so multiple iPad main windows (Stage Manager) no longer
+///          mirror each other's tab. Two `onChange` bridges keep the focused window's selection
+///          in step with `appState.activeTab`'s seed + hand-off roles; background windows stay
+///          put. Adoption is gated on `scenePhase == .active` — the one documented edge is two
+///          simultaneously-active Stage Manager windows, where a hand-off may reach both.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Per-window tab selection (#316). Backing the selection with `@SceneStorage` instead of
+    /// the shared `appState.activeTab` gives every iPad main window (Stage Manager / multiple
+    /// windows) its own tab, so switching tabs in one window no longer mirrors into the others.
+    /// A fresh window seeds from the persisted last-active tab (`AppState.seedActiveTab`); a
+    /// state-restored window keeps its own. The two `onChange` bridges below reconcile this
+    /// per-scene selection with `appState.activeTab`'s dual role as the persisted seed and the
+    /// cross-view hand-off channel.
+    @SceneStorage("frus.selectedTab") private var selectedTab: AppTab = AppState.seedActiveTab
 
     var body: some View {
         @Bindable var appState = appState
-        TabView(selection: $appState.activeTab) {
+        TabView(selection: $selectedTab) {
             Tab(
                 String(localized: "tab.browse", defaultValue: "Browse"),
                 systemImage: "books.vertical",
@@ -133,6 +149,22 @@ struct MainTabView: View {
         // forward-looking. (BigPicture-iPadMacParity Phase 1 + #238 correction — note that
         // doc carries its own stale copy of this ledger; this comment is authoritative.)
         .tabViewStyle(.sidebarAdaptable)
+        // #316 — keep `appState.activeTab` (the persisted seed + hand-off channel) in step with
+        // THIS window's selection, but only from the FOCUSED window: a background iPad window
+        // must not clobber the shared seed or echo its selection back to its siblings. The
+        // adopt bridge below is the read side; this is the write side.
+        .onChange(of: selectedTab) { _, newValue in
+            if scenePhase == .active { appState.activeTab = newValue }
+        }
+        // #316 — adopt a cross-view hand-off's requested tab. The ~21 hand-off sites still set
+        // `appState.activeTab = .browse/.search/…` alongside their `pendingX` field; the focused
+        // window follows that into its own per-scene selection so the hand-off lands where the
+        // user is, while background windows stay put (no mirroring). The `selectedTab != requested`
+        // guard makes the write-side echo above a no-op, so the two bridges do not loop.
+        .onChange(of: appState.activeTab) { _, requested in
+            guard scenePhase == .active, selectedTab != requested else { return }
+            selectedTab = requested
+        }
         // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
         // sheet presents over whichever tab is active and clears it on dismiss.
         // Mirrors the `pendingAnalytics` pattern but presented at the tab root so

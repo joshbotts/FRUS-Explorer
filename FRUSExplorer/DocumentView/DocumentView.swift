@@ -705,33 +705,34 @@ struct DocumentView: View {
     // MARK: - Tool Windows (iPad Stage Manager) / sheet fallback
 
     /// Shows this document's cross-reference graph. When the platform can open a
-    /// second window (Stage Manager on iPad), it opens the `frus.crossReferenceGraph.ios`
-    /// scene alongside the document via `appState.currentGraphEntry`; otherwise it
-    /// presents the in-place sheet so the graph is reachable on every device.
+    /// second window (Stage Manager on iPad), it opens the value-based graph scene with a
+    /// `GraphWindowRequest` describing this document (#317 — self-describing, so the window
+    /// survives a background/relaunch); otherwise it presents the in-place sheet so the graph
+    /// is reachable on every device.
     private func openCrossReferenceGraph() {
         // The user found the feature — retire its discovery tip.
         ExploreCrossReferencesTip().invalidate(reason: .actionPerformed)
         if supportsMultipleWindows {
-            appState.currentGraphEntry = entry
-            openWindow(id: "frus.crossReferenceGraph.ios")
+            openWindow(value: GraphWindowRequest(entry: entry))
         } else {
             activeSheet = .crossReferenceGraph
         }
     }
 
-    /// Resolves this document's source note in the Source Explorer. Opens the
-    /// `frus.sourceExplorer.ios` window alongside the document when multi-window is
-    /// available (priming `appState.currentSourceNote`/`currentSourceNoteYear`, the
-    /// same state the window scene reads), otherwise the in-place sheet.
+    /// Resolves this document's source note in the Source Explorer. When multi-window is
+    /// available (Stage Manager on iPad), it opens the value-based Source Explorer scene with a
+    /// `SourceExplorerRequest` carrying the note + display fields (#317 — self-describing, so a
+    /// restored window rebuilds correctly); otherwise the in-place sheet.
     private func openSourceExplorer(vm: DocumentViewModel) {
         if supportsMultipleWindows {
-            appState.currentSourceNote = vm.sourceNote ?? ""
-            appState.currentSourceNoteYear = Self.extractYear(from: entry.dateline)
-            appState.currentSourceNoteHeader = entry.header
-            appState.currentSourceNoteDateline = entry.dateline
-            appState.currentSourceNoteVolumeId = entry.volumeId
-            appState.currentSourceNoteDocumentId = entry.documentId
-            openWindow(id: "frus.sourceExplorer.ios")
+            openWindow(value: SourceExplorerRequest(
+                rawSourceNote: vm.sourceNote ?? "",
+                documentYear: Self.extractYear(from: entry.dateline),
+                documentHeader: entry.header,
+                documentDateline: entry.dateline,
+                documentVolumeId: entry.volumeId,
+                documentId: entry.documentId
+            ))
         } else {
             activeSheet = .sourceExplorer(vm.sourceNote ?? "")
         }
@@ -1146,8 +1147,9 @@ struct DocumentView: View {
 
             // 10. Source Explorer — always available for all documents. Opens
             // alongside the document as a Stage Manager window when multi-window is
-            // available (the frus.sourceExplorer.ios scene), otherwise an in-place
-            // sheet — so it works for every iPad regardless of Stage Manager.
+            // available (the value-based SourceExplorerRequest window scene, #317),
+            // otherwise an in-place sheet — so it works for every iPad regardless of
+            // Stage Manager.
             Button {
                 openSourceExplorer(vm: vm)
             } label: {

@@ -1118,15 +1118,21 @@ final class AppState {
     #endif
 
     #if os(iOS)
-    /// The currently selected tab on iOS.
+    /// The last-selected / most-recently-requested tab on iOS.
     ///
-    /// Persisted via `UserDefaults` key `"frus.activeTab"` so the active tab
-    /// survives app relaunch. Defaults to `.browse`.
-    var activeTab: AppTab = {
-        guard let raw = UserDefaults.standard.string(forKey: Keys.activeTab),
-              let tab = AppTab(rawValue: raw) else { return .browse }
-        return tab
-    }() {
+    /// Two roles since #316 gave each iPad window its own per-scene selection:
+    ///   1. **Cross-launch + fresh-window seed.** Persisted to `UserDefaults`
+    ///      (`"frus.activeTab"`); `MainTabView`'s per-scene `@SceneStorage` seeds a brand-new
+    ///      window from ``seedActiveTab`` (which reads this key) and the focused window writes
+    ///      its selection back here, so a new window opens where the user left off.
+    ///   2. **Hand-off request channel.** The ~21 cross-view hand-offs still write
+    ///      `activeTab = .browse/.search/…` alongside their `pendingX` field; the *focused*
+    ///      `MainTabView` adopts the change into its own `@SceneStorage` selection. Background
+    ///      iPad windows do not, so hand-offs land where the user is and idle tab taps no longer
+    ///      mirror across windows.
+    /// It is no longer bound directly by any `TabView` — ``MainTabView`` owns the visible
+    /// selection per scene. Defaults to `.browse`.
+    var activeTab: AppTab = AppState.seedActiveTab {
         didSet {
             UserDefaults.standard.set(activeTab.rawValue, forKey: Keys.activeTab)
             // lastActivityTabVisit is retained for potential future Research-tab badge use.
@@ -1134,6 +1140,15 @@ final class AppState {
             print("[FRUSExplorer] Active tab: \(activeTab.rawValue)")
             #endif
         }
+    }
+
+    /// The persisted last-active tab (or `.browse`), used to seed a fresh window's per-scene
+    /// selection (#316). Shares the `"frus.activeTab"` key with ``activeTab``'s `didSet`, so
+    /// the seed and the persisted value never diverge.
+    static var seedActiveTab: AppTab {
+        guard let raw = UserDefaults.standard.string(forKey: Keys.activeTab),
+              let tab = AppTab(rawValue: raw) else { return .browse }
+        return tab
     }
 
     /// The timestamp of the most recent visit to the Activity tab.
