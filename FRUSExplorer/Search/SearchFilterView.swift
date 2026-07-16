@@ -65,8 +65,15 @@ struct SearchFilterView: View {
     /// re-renders the MENU only — an applied scope is a seeded snapshot.)
     @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
     /// Name of the scope whose apply attempt found no indexed members (the inline warning),
-    /// or `nil`. Cleared on a successful apply.
+    /// or `nil`. Cleared on a successful apply. Shared by the custom-scope and subject-facet
+    /// rows — both seed the volume picker through the same #258 indexed-resolution guard.
     @State private var scopeWarningName: String?
+
+    /// Whether the two-level subject-category facet picker is presented (#308 Phase 1).
+    @State private var showSubjectFacet = false
+    /// The label of the currently-applied subject facet (category or "category · sub-category"),
+    /// or `nil`. Snapshot semantics like custom scopes: a label, not a live query field.
+    @State private var subjectFacetLabel: String?
 
     /// Live text typed in the person-name search field.
     @State private var personSearchText: String = ""
@@ -114,6 +121,7 @@ struct SearchFilterView: View {
             Form {
                 dateRangeSection
                 if !vm.availableVolumes.isEmpty     { customScopeSection }
+                if !vm.availableVolumes.isEmpty     { subjectFacetSection }
                 if !vm.availableVolumes.isEmpty     { volumeScopeSectionMac }
                 documentTypeSection
                 personSection
@@ -122,6 +130,9 @@ struct SearchFilterView: View {
                 resultPreviewSection
             }
             .formStyle(.grouped)
+            .sheet(isPresented: $showSubjectFacet) {
+                SubjectCategoryFacetPicker { ids, label in applySubjectFacet(ids, label: label) }
+            }
 
             Divider()
 
@@ -146,6 +157,7 @@ struct SearchFilterView: View {
             Form {
                 dateRangeSection
                 if !vm.availableVolumes.isEmpty     { customScopeSection }
+                if !vm.availableVolumes.isEmpty     { subjectFacetSection }
                 if !vm.availableVolumes.isEmpty     { volumeScopeSectioniOS }
                 documentTypeSection
                 personSection
@@ -153,6 +165,9 @@ struct SearchFilterView: View {
                 scopeSection
                 resultPreviewSection
                 if vm.hasActiveFilters              { clearSection }
+            }
+            .sheet(isPresented: $showSubjectFacet) {
+                SubjectCategoryFacetPicker { ids, label in applySubjectFacet(ids, label: label) }
             }
             .navigationTitle(
                 String(localized: "search.filters.title", defaultValue: "Filters")
@@ -472,6 +487,62 @@ struct SearchFilterView: View {
                                   defaultValue: "Fills the volume picker with this scope's indexed volumes"))
     }
 
+    // MARK: - Subject Category Facet (#308 Phase 1)
+
+    /// The "By Subject" facet: the top two taxonomy levels (category, sub-category) as a
+    /// volume-scope filter, from the bundled volume-subject profiles. Volume-grain — a
+    /// "characteristic subjects" filter, not a document-level tag (that grain is gated on
+    /// #261). Applies by seeding the volume picker through the same indexed-resolution guard
+    /// as custom scopes. Shown only when the profiles are bundled (visibility-gate).
+    @ViewBuilder
+    private var subjectFacetSection: some View {
+        if VolumeSubjectProfilesStore.shared != nil {
+            Section {
+                Button {
+                    showSubjectFacet = true
+                } label: {
+                    HStack {
+                        Label(String(localized: "search.subject.facet.button",
+                                     defaultValue: "Filter by subject…"),
+                              systemImage: "text.book.closed")
+                        Spacer()
+                        if let subjectFacetLabel {
+                            Text(subjectFacetLabel)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+            } header: {
+                Text(String(localized: "search.section.subject", defaultValue: "By Subject"))
+            } footer: {
+                Text(String(localized: "search.subject.facet.footer",
+                            defaultValue: "Filters to volumes where a subject category is among their most characteristic topics, filling the volume picker with the indexed matches."))
+            }
+        }
+    }
+
+    /// Applies a subject facet's manifest volume set through the #258 indexed-resolution guard
+    /// (review F5): a category with no indexed members warns and seeds nothing (never falls
+    /// through to a whole-corpus search); otherwise it seeds `selectedVolumeIds` and clears the
+    /// subseries selection, exactly like `customScopeRow`.
+    private func applySubjectFacet(_ volumeIds: Set<String>, label: String) {
+        let indexedSet = Set(vm.availableVolumes.map(\.volumeId))
+        switch CustomScopeResolver.indexedResolution(
+            memberVolumeIds: Array(volumeIds), indexed: indexedSet) {
+        case .resolved(let hit):
+            vm.selectedVolumeIds = hit.sorted()
+            vm.selectedSubseriesIds = []
+            subjectFacetLabel = label
+            scopeWarningName = nil
+        case .noIndexedMembers, .scopeUnavailable:
+            scopeWarningName = label
+            subjectFacetLabel = nil
+        }
+    }
+
     // MARK: - Volume & Subseries Scope
 
     /// Indexed volumes grouped by subseries, sorted chronologically (subseries IDs
@@ -746,5 +817,149 @@ struct SearchFilterView: View {
                        defaultValue: "Clear all filters")
             )
         }
+    }
+}
+
+// MARK: - SubjectCategoryFacetPicker (#308 Phase 1)
+
+/// A two-level subject-category picker for the search filter (#308 — the top two taxonomy
+/// levels as facets, subject level reserved for a later drill-down). Categories are the outer
+/// level; each expands to its sub-categories. Applying a category or a (category, sub-category)
+/// hands its manifest-wide volume set back through `onApply`; the caller runs the
+/// indexed-resolution guard. Volume-grain, from the bundled profiles — "characteristic
+/// subjects," not document-level tags.
+///
+/// Platform-split chrome (the #332 rule): a `NavigationStack`/`.searchable` inside a macOS
+/// sheet renders sidebar artifacts, so macOS gets a plain VStack; the list is shared.
+private struct SubjectCategoryFacetPicker: View {
+
+    /// Applies the chosen facet: its manifest volume set + a human-readable label.
+    let onApply: (Set<String>, String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+
+    private var resolvedByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] {
+        VolumeSubjectProfilesStore.shared?.resolvedByVolume ?? [:]
+    }
+
+    /// Categories, filtered by the search text (matches the category or any of its sub-categories).
+    private var categories: [ScopeFacets.CategoryEntry] {
+        let all = ScopeFacets.categoryCatalog(resolvedByVolume: resolvedByVolume)
+        guard !searchText.isEmpty else { return all }
+        return all.filter { cat in
+            cat.label.localizedCaseInsensitiveContains(searchText)
+                || ScopeFacets.subCategoryCatalog(forCategory: cat.label, resolvedByVolume: resolvedByVolume)
+                    .contains { $0.subcategory.localizedCaseInsensitiveContains(searchText) }
+        }
+    }
+
+    private var pickerTitle: String {
+        String(localized: "search.subject.facet.title", defaultValue: "Filter by Subject")
+    }
+    private var searchPrompt: String {
+        String(localized: "search.subject.facet.prompt", defaultValue: "Search categories")
+    }
+
+    var body: some View {
+        #if os(macOS)
+        VStack(spacing: 0) {
+            HStack { Text(pickerTitle).font(.headline); Spacer() }
+                .padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 12)
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField(searchPrompt, text: $searchText).textFieldStyle(.plain)
+            }
+            .padding(.horizontal, 20).padding(.bottom, 12)
+            Divider()
+            catalogList.listStyle(.inset)
+            Divider()
+            HStack {
+                Spacer()
+                Button(String(localized: "common.cancel", defaultValue: "Cancel")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20).padding(.vertical, 14)
+        }
+        .frame(minWidth: 420, minHeight: 500)
+        #else
+        NavigationStack {
+            catalogList
+                .searchable(text: $searchText, prompt: searchPrompt)
+                .navigationTitle(pickerTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(String(localized: "common.cancel", defaultValue: "Cancel")) { dismiss() }
+                    }
+                }
+        }
+        #endif
+    }
+
+    /// The two-level list, shared by both chromes: a `DisclosureGroup` per category whose first
+    /// child applies the whole category and whose remaining children apply each sub-category.
+    private var catalogList: some View {
+        List {
+            Section {
+                ForEach(categories) { category in
+                    DisclosureGroup {
+                        // "All of <category>" — applies the whole (coarse) category.
+                        facetButton(
+                            title: String(format: String(
+                                localized: "search.subject.facet.wholeCategory %@",
+                                defaultValue: "All of %@"), category.label),
+                            reach: category.volumeCount,
+                            volumeIds: ScopeFacets.volumeIds(forCategory: category.label,
+                                                            resolvedByVolume: resolvedByVolume),
+                            label: category.label)
+                        // Sub-categories — where the facet actually discriminates (F3).
+                        ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
+                                                              resolvedByVolume: resolvedByVolume)) { sub in
+                            facetButton(
+                                title: sub.subcategory,
+                                reach: sub.volumeCount,
+                                volumeIds: ScopeFacets.volumeIds(forCategory: sub.category,
+                                                                subcategory: sub.subcategory,
+                                                                resolvedByVolume: resolvedByVolume),
+                                label: "\(sub.category) · \(sub.subcategory)")
+                        }
+                    } label: {
+                        reachRow(category.label, category.volumeCount, emphasize: true)
+                    }
+                }
+            } footer: {
+                Text(String(localized: "search.subject.facet.picker.footer",
+                            defaultValue: "“Characteristic subjects”: a volume appears where the topic is among its most distinctive, not merely mentioned. Category filters are broad; drill into a sub-category to narrow."))
+            }
+        }
+    }
+
+    /// One applying row: title + reach; taps hand the volume set back and dismiss.
+    @ViewBuilder
+    private func facetButton(title: String, reach: Int,
+                             volumeIds: Set<String>, label: String) -> some View {
+        Button {
+            onApply(volumeIds, label)
+            dismiss()
+        } label: {
+            reachRow(title, reach, emphasize: false)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(String(localized: "search.subject.facet.row.hint",
+                                  defaultValue: "Filters the search to this subject's volumes"))
+    }
+
+    /// A label + "in N volumes" reach caption (the honest-reach surfacing, F3).
+    private func reachRow(_ title: String, _ reach: Int, emphasize: Bool) -> some View {
+        HStack {
+            Text(title).font(emphasize ? .body.weight(.medium) : .callout)
+            Spacer()
+            Text(String(format: String(localized: "search.subject.facet.reach %lld",
+                                       defaultValue: "%lld vols"), Int64(reach)))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .contentShape(Rectangle())
     }
 }
