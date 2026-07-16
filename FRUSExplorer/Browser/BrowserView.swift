@@ -78,6 +78,8 @@ import SwiftUI
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
+    /// The shared container, re-injected into the three analytics sheets (#258 P3 review).
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel: BrowserViewModel?
     // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
     // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
@@ -148,14 +150,21 @@ struct BrowserView: View {
         .sheet(isPresented: $showAnalytics) {
             AnalyticsView(initialParameters: analyticsParameters)
                 .environment(appState)
+                // #258 P3 review (INFO, taken): the shared scope bar hosts a @Query;
+                // sheets inherit the WindowGroup's container today, but re-injecting
+                // matches the SearchView convention and survives a future #241-program
+                // move of these views into their own window scenes.
+                .modelContainer(modelContext.container)
         }
         .sheet(isPresented: $showPersonAnalytics) {
             PersonAnalyticsView()
                 .environment(appState)
+                .modelContainer(modelContext.container)
         }
         .sheet(isPresented: $showCrossRefAnalytics) {
             CrossReferenceAnalyticsView()
                 .environment(appState)
+                .modelContainer(modelContext.container)
         }
         .sheet(isPresented: $showChronology) {
             ChronologyView(initialParameters: chronologyParameters)
