@@ -145,6 +145,8 @@ struct ResearchStripView: View {
 
     /// Persisted preference shared with MacDocumentView via AppStorage.
     @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
+    /// The user's persisted find-related weight tuning (#308), captured into the request on open.
+    @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
 
     /// Current tag assignments for the visible document — used to pre-fill the tag
     /// picker so it opens with the correct state instead of an empty list.
@@ -349,6 +351,30 @@ struct ResearchStripView: View {
             .help(String(
                 localized: "researchStrip.sources.help",
                 defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"
+            ))
+
+            // Related — the #308 multi-axis find-related list, in a value-based window
+            // (RelatedDocumentsRequest is self-describing, so it restores with its tuning).
+            ResearchStripButton(
+                title: "Related",
+                systemImage: "doc.on.doc",
+                isDisabled: isDisabled
+            ) {
+                if let entry {
+                    let year = entry.dateline.flatMap { dateline in
+                        dateline.range(of: #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#,
+                                       options: .regularExpression).flatMap { Int(dateline[$0]) }
+                    }
+                    openWindow(value: RelatedDocumentsRequest(
+                        anchor: DocumentKey(volumeId: entry.volumeId, documentId: entry.documentId),
+                        anchorYear: year,
+                        weights: relatedWeights,
+                        scope: .allIndexed))
+                }
+            }
+            .help(String(
+                localized: "researchStrip.related.help",
+                defaultValue: "Find documents related to this one by archival provenance, cross-references, date, and shared people"
             ))
 
             // Highlight — enabled when the user has an active text selection.

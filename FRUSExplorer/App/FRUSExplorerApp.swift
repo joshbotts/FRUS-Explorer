@@ -568,6 +568,12 @@ struct FRUSExplorerApp: App {
         // ports cleanly (value-based, restores by construction) while the two
         // pending-state scenes above do not.
         archivalNeighborsScene
+
+        // MARK: - Related Documents Window (#308 Phase 2b)
+        //
+        // Same value-based pattern: `RelatedDocumentsRequest` fully describes the ranked
+        // find-related query, so the window restores by construction.
+        relatedDocumentsScene
         #endif
         #if os(macOS)
         // MARK: - Document Window (macOS native tabbing)
@@ -671,6 +677,11 @@ struct FRUSExplorerApp: App {
         //
         // Owner decision S6 (Source-Explorer-Provenance-Scope.md / UI audit B1):
         archivalNeighborsScene
+
+        // MARK: - Related Documents Window (#308 Phase 2b)
+        //
+        // The find-related ranked list, value-based like Archival Neighbors above.
+        relatedDocumentsScene
 
         // MARK: - Cross-Volume Provenance Window (UI audit B2)
         //
@@ -900,6 +911,34 @@ struct FRUSExplorerApp: App {
             .modelContainer(modelContainer)
         }
         .defaultSize(width: 520, height: 560)
+    }
+
+    /// Value-based `WindowGroup(for:)` for the #308 find-related list: the `Codable + Hashable`
+    /// `RelatedDocumentsRequest` fully describes the ranked query (anchor + weights + scope + limit),
+    /// so the window reconstructs the fetch from the value alone and SwiftUI restores it — with its
+    /// exact tuning — across relaunches. Declared once and referenced from both platform regions of
+    /// `body` (like `archivalNeighborsScene`) so the macOS Window-menu ordering is unchanged. Callers
+    /// gate on `supportsMultipleWindows` and fall back to `RelatedDocumentsSheet` where windows are
+    /// unavailable (iPhone, iPads without Stage Manager).
+    private var relatedDocumentsScene: some Scene {
+        WindowGroup(for: RelatedDocumentsRequest.self) { $request in
+            Group {
+                if let request {
+                    RelatedDocumentsWindowView(request: request)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "related.window.empty.title",
+                               defaultValue: "No Document Selected"),
+                        systemImage: "doc.on.doc",
+                        description: Text(
+                            String(localized: "related.window.empty.detail",
+                                   defaultValue: "Open Related Documents from a document you're reading.")))
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 520, height: 600)
     }
 
     /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.
