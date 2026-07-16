@@ -48,11 +48,17 @@ public struct GoldenCheck: Sendable, Equatable {
 ///   CACHE_DIR   — raw-page cache directory (default `.cache/central-files`)
 ///   PAGE_SIZE   — rows per request (default 25; try 100 on the first survey run)
 ///   REFRESH     — `1`/`true` to ignore the page cache and re-fetch
+///   PRUNE_FLAGGED_LOTS — `1`/`true`: offline mode (NO API key) — drop lot files flagged
+///                 `ancestryLacksRecordGroup` from an already-harvested index and rewrite it,
+///                 then exit. Applies the #321 policy (drop the candidate mis-resolutions the
+///                 removed null-record-group fallback let in) to the shipped index without a
+///                 full re-harvest.
 ///
 /// Exit code is non-zero if any golden check fails, so the harvest signals correctness.
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 1 — Numerical File
+///   1.1 — #321: PRUNE_FLAGGED_LOTS offline mode
 public struct CentralFilesIndexGeneratorRunner {
 
     /// NARA series NAID for the 1906–1910 Numerical File.
@@ -109,6 +115,38 @@ public struct CentralFilesIndexGeneratorRunner {
     /// (indistinguishable from "genuinely has none", which is what the UI wants anyway) and
     /// the pass continues. Re-running is safe and cheap — it is idempotent, and the client's
     /// throttle/backoff already governs the request rate.
+    /// Offline prune (#321): drops lot files flagged `ancestryLacksRecordGroup` — the candidate
+    /// mis-resolutions the removed null-record-group `firstAccepted` fallback let in
+    /// (presidential-library staff files that carry no record group in their ancestry) — from an
+    /// already-harvested index, then rewrites it through the same writer so the diff stays clean.
+    ///
+    /// This is the offline equivalent of a full re-harvest for the #321 policy: the fix drops
+    /// exactly these entries (they only ever matched via the removed fallback), so pruning them
+    /// here yields the same lot set without the Phase 1/2/3 enumerations — which matters when the
+    /// page cache is cold. Deterministic and idempotent (a second run finds nothing to drop).
+    static func pruneFlaggedLots(outputPath: String, generated: String) {
+        guard var index = try? CentralFilesIndexWriter.read(from: outputPath) else {
+            print("[CentralFilesIndexGenerator] ✗ PRUNE_FLAGGED_LOTS: cannot read \(outputPath)")
+            exit(1)
+        }
+        let dropped = index.lotFiles.filter { $0.ancestryLacksRecordGroup == true }
+        let before = index.lotFiles.count
+        index.lotFiles = index.lotFiles.filter { $0.ancestryLacksRecordGroup != true }
+        index.generated = generated
+        do {
+            try CentralFilesIndexWriter.write(index, to: outputPath)
+            print("[CentralFilesIndexGenerator] ✓ PRUNE_FLAGGED_LOTS: dropped \(dropped.count) "
+                  + "flagged lot(s), \(before) → \(index.lotFiles.count), wrote \(outputPath)")
+            for lf in dropped.sorted(by: { $0.lotNumber < $1.lotNumber }) {
+                print("    dropped \(lf.recordGroup)_\(lf.lotNumber) → naId \(lf.naId) "
+                      + "“\(lf.title.prefix(40))”")
+            }
+        } catch {
+            print("[CentralFilesIndexGenerator] ✗ PRUNE_FLAGGED_LOTS: failed to write: \(error)")
+            exit(1)
+        }
+    }
+
     static func enrichLotFiles(outputPath: String, client: NARACatalogHarvestClient) async {
         guard let existing = try? CentralFilesIndexWriter.read(from: outputPath) else {
             print("[CentralFilesIndexGenerator] ✗ ENRICH_LOTS: cannot read \(outputPath) — "
@@ -241,6 +279,16 @@ public struct CentralFilesIndexGeneratorRunner {
 
     public static func run() async {
         let env = ProcessInfo.processInfo.environment
+
+        // Offline prune mode (#321): drop lot files flagged `ancestryLacksRecordGroup` and exit.
+        // No API key — checked before the key guard because it needs none. A reproducible way to
+        // apply the #321 policy (drop the candidate mis-resolutions the removed null-record-group
+        // fallback let in) to an already-shipped index without a full re-harvest.
+        if ["1", "true", "yes"].contains((env["PRUNE_FLAGGED_LOTS"] ?? "").lowercased()) {
+            pruneFlaggedLots(outputPath: env["OUTPUT_PATH"] ?? defaultOutputPath,
+                             generated: env["GENERATED_DATE"] ?? isoToday())
+            return
+        }
 
         guard let apiKey = env["CATALOG_API_KEY"], !apiKey.isEmpty else {
             print("""
