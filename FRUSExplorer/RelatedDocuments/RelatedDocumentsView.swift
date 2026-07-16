@@ -13,11 +13,27 @@ import SwiftUI
 /// Persists the weight vector as a compact `axis:weight,…` string so it can back an `@AppStorage`
 /// default — the user's preferred tuning, remembered across find-related invocations.
 ///
-/// The encoding is **manual on purpose**: `AxisWeights` is also `Codable`, and a `RawRepresentable`
-/// whose `rawValue` routed through `JSONEncoder().encode(self)` recurses (the value's own `Codable`
-/// re-enters `rawValue`). Encoding each `axis.rawValue:weight` pair directly avoids the type's
-/// `Codable` entirely. An unknown axis token or bad number is skipped; an empty result is `nil`, so a
-/// malformed stored value falls back to `.default` at the read site.
+/// Two things to know about this conformance:
+///
+/// 1. **The encoding is manual, not `JSONEncoder().encode(self)`, on purpose.** Adding
+///    `RawRepresentable` (with `RawValue: Codable`) to a type that already synthesises `Codable`
+///    makes the standard library **re-route `Equatable`, `Hashable`, and `Codable` through
+///    `rawValue`** (verified empirically — `AxisWeights([.a:0.9]) == AxisWeights([.a:0.9, …:0])` is
+///    now `true`, and `JSONEncoder` emits the string, not an object). A `rawValue` that called
+///    `JSONEncoder().encode(self)` would therefore recurse into itself and stack-overflow at runtime.
+///    Encoding each `axis.rawValue:weight` pair directly breaks that cycle.
+///
+/// 2. **The re-routing is intentional and safe here.** `rawValue` iterates all six axes (missing keys
+///    read as 0 through the subscript), so it is a faithful, full-precision, deterministic,
+///    locale-independent encoding — Swift's `"\(Double)"` always uses `.` and never emits `:`/`,`, and
+///    axis raw values are camelCase, so no separator collision. Two vectors with the same *effective*
+///    weights compare equal (a normalisation, arguably more correct than the raw-dictionary compare).
+///    `RelatedDocumentsRequest`'s window payload therefore encodes `weights` as this string and
+///    round-trips cleanly; the scene is new (nothing persisted the pre-`RawRepresentable` object
+///    format), so there is no migration to worry about.
+///
+/// An unknown axis token or bad number is skipped; an empty result is `nil`, so a malformed stored
+/// value falls back to `.default` at the read site.
 extension AxisWeights: RawRepresentable {
     init?(rawValue: String) {
         var parsed: [SimilarityAxis: Double] = [:]
@@ -218,9 +234,14 @@ struct RelatedDocumentsContent: View {
             Slider(
                 value: Binding(
                     get: { weights[axis] },
-                    set: { weights[axis] = $0; persistedWeights = weights }),
+                    set: { weights[axis] = $0 }),   // live @State only; persist + re-rank on release
                 in: 0...1,
-                onEditingChanged: { editing in if !editing { weightReloadToken += 1 } })
+                onEditingChanged: { editing in
+                    if !editing {
+                        persistedWeights = weights   // one UserDefaults write per drag, not per tick
+                        weightReloadToken += 1       // re-rank once the drag settles
+                    }
+                })
             .disabled(subjectsInert)
             if subjectsInert {
                 Text(String(localized: "related.weights.subjects.gated",
