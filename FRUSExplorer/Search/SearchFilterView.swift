@@ -996,6 +996,10 @@ private struct SubjectCategoryFacetPicker: View {
             } footer: {
                 Text(String(localized: "search.subject.facet.picker.footer",
                             defaultValue: "Detected topics (experimental) — automatically inferred from the text, not editorial subject headings, so some may be mistagged. A volume appears where a topic is among its most distinctive, not merely mentioned. Category filters are broad; drill into a sub-category to narrow."))
+                    // Let the long explanation wrap to its full height rather than truncating to
+                    // one clipped line in the macOS inset list footer (#361).
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

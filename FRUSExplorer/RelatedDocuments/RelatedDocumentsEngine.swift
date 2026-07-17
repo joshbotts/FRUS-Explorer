@@ -190,6 +190,16 @@ enum RelatedDocumentsEngine {
             records: records,
             weights: weights,
             limit: limit)
-        return RelatedDocumentsResult(rows: ranked.rows, totalBeforeLimit: ranked.rankableCount)
+
+        // Fetch a context snippet for the SHOWN rows only (already limited — a bounded batch, not
+        // the candidate universe) so the researcher can judge relevance without opening each (#362).
+        var rows = ranked.rows
+        if let pipeline = appState.indexingPipeline, !rows.isEmpty {
+            let keys = rows.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            if let snippets = try? await pipeline.documentSnippets(forKeys: keys) {
+                for i in rows.indices { rows[i].snippet = snippets[rows[i].key.compositeString] }
+            }
+        }
+        return RelatedDocumentsResult(rows: rows, totalBeforeLimit: ranked.rankableCount)
     }
 }

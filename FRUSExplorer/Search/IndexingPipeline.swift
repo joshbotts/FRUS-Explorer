@@ -4855,6 +4855,65 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Returns a short context snippet per document, keyed by `"volumeId/documentId"` — the
+    /// leading text a find-related row shows so a researcher can judge relevance (#362).
+    ///
+    /// Prefers the on-device summary (`summary_text`) when present, else a leading excerpt of the
+    /// body text; both are whitespace-collapsed and truncated at a word boundary to `maxLength`.
+    /// A document with neither (or an unindexed one) is simply absent from the result. Keys are
+    /// point-looked-up through the composite primary key in 400-pair chunks, so this is bounded to
+    /// the (small) set of shown rows — never a scan.
+    ///
+    /// - Parameters:
+    ///   - keys: The document keys to fetch snippets for.
+    ///   - maxLength: Maximum snippet length in characters.
+    /// - Returns: `"volumeId/documentId" → snippet` for the documents that have text.
+    func documentSnippets(forKeys keys: [(volumeId: String, documentId: String)],
+                          maxLength: Int = 240) throws -> [String: String] {
+        guard !keys.isEmpty else { return [:] }
+        var result: [String: String] = [:]
+        let chunkSize = 400
+        var index = 0
+        while index < keys.count {
+            let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
+            index += chunkSize
+            let values = Array(repeating: "(?,?)", count: chunk.count).joined(separator: ",")
+            let sql = """
+                WITH wanted(v, d) AS (VALUES \(values))
+                SELECT dc.volume_id, dc.document_id, dc.summary_text, dc.body_text
+                FROM document_cache dc
+                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var bind: Int32 = 1
+            for key in chunk {
+                sqlite3_bind_text(stmt, bind, key.volumeId, -1, SQLITE_TRANSIENT_IP); bind += 1
+                sqlite3_bind_text(stmt, bind, key.documentId, -1, SQLITE_TRANSIENT_IP); bind += 1
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let volumeId = auxColumnString(stmt, 0),
+                      let documentId = auxColumnString(stmt, 1) else { continue }
+                let summary = auxColumnString(stmt, 2)
+                let body = auxColumnString(stmt, 3)
+                let source = (summary?.isEmpty == false ? summary : body) ?? ""
+                let snippet = Self.snippet(from: source, maxLength: maxLength)
+                if !snippet.isEmpty { result["\(volumeId)/\(documentId)"] = snippet }
+            }
+        }
+        return result
+    }
+
+    /// Whitespace-collapses `text` and truncates it to `maxLength` at the nearest preceding word
+    /// boundary, appending an ellipsis when cut. Returns "" for empty input.
+    nonisolated static func snippet(from text: String, maxLength: Int) -> String {
+        let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        guard collapsed.count > maxLength else { return collapsed }
+        let cut = collapsed.prefix(maxLength)
+        let trimmed = cut.lastIndex(of: " ").map { String(cut[..<$0]) } ?? String(cut)
+        return trimmed + "…"
+    }
+
     /// Returns the `(volumeId, documentId)` key of every indexed document.
     ///
     /// Used to enumerate the corpus scope for a corpus-wide word cloud. The

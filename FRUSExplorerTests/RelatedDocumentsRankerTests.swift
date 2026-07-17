@@ -289,6 +289,29 @@ struct RelatedDocumentsRequestTests {
     }
 }
 
+// MARK: - SnippetTests
+
+/// Verifies the pure snippet helper backing the #362 find-related row context.
+struct SnippetTests {
+
+    @Test("collapses whitespace and returns short text whole")
+    func shortWhole() {
+        #expect(IndexingPipeline.snippet(from: "The   Secretary\n\ttelegraphed.", maxLength: 240)
+                == "The Secretary telegraphed.")
+        #expect(IndexingPipeline.snippet(from: "", maxLength: 240) == "")
+    }
+
+    @Test("truncates at a word boundary with an ellipsis")
+    func truncates() {
+        let text = "Washington telegram reporting on the negotiations concerning the disputed border region."
+        let snippet = IndexingPipeline.snippet(from: text, maxLength: 30)
+        #expect(snippet.count <= 31)                 // ≤ maxLength + the ellipsis
+        #expect(snippet.hasSuffix("…"))
+        #expect(!snippet.dropLast().hasSuffix(" "))  // trimmed to a word boundary, no dangling space
+        #expect(text.hasPrefix(String(snippet.dropLast())))
+    }
+}
+
 // MARK: - ProximityMathTests
 
 /// Verifies the pure scoring arithmetic the scorers share (date decay + Jaccard).

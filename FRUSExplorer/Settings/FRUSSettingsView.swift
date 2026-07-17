@@ -216,7 +216,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
         #endif
     }
 
-    static let general:  [SettingsPane] = [.sync, .syncDiagnostics, .display, .search]
+    static let general:  [SettingsPane] = [.about, .sync, .syncDiagnostics, .display, .search]
     static let research: [SettingsPane] = [.projects, .tags, .scopes, .notes, .wordCloud]
     static let corpus:   [SettingsPane] = [.storage, .downloads]
     static let advanced: [SettingsPane] = [.naraAPI, .zotero, .summarization, .data]
