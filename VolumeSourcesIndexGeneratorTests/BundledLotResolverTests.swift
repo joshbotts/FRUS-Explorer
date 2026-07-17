@@ -40,19 +40,20 @@ struct BundledLotResolverTests {
         #expect(hit?.naId == "111")
     }
 
-    @Test("A file-unit lot carries its enclosing series title + parent entry numbers (#322)")
-    func carriesFileUnitSeries() throws {
+    @Test("A file-unit lot resolves to nil — treated as unresolved (#351)")
+    func fileUnitIsUnresolved() throws {
+        // A State Department lot file is catalogued as a NARA *series*; a control-number query
+        // that lands on a `fileUnit` is a false positive (the #335 audit measured this class as
+        // almost entirely wrong-collection — 60 D 627 → an "Operation Mongoose" file unit). The
+        // resolver treats it as unresolved, mirroring the app's `CentralFilesIndex` guard and the
+        // `ancestryLacksRecordGroup` class, so a wrong NAID never enters volume-sources.
         let r = try resolver(lotFilesJSON: """
         {"lotNumber":"80D212","recordGroup":"59","naId":"333","title":"Yugoslavia File Unit",
          "catalogURL":"https://catalog.archives.gov/id/333","matchType":"control",
          "levelOfDescription":"fileUnit","seriesNaId":"302021","seriesTitle":"Central Decimal Files",
          "seriesHmsMlrEntryNumbers":["A1 205","A1 206"]}
         """)
-        let hit = r.resolve(rawLot: "Lot 80 D 212")
-        #expect(hit?.levelOfDescription == "fileUnit")
-        #expect(hit?.seriesTitle == "Central Decimal Files")
-        #expect(hit?.seriesHmsMlrEntryNumbers == ["A1 205", "A1 206"])
-        #expect(hit?.hmsMlrEntryNumbers == nil)
+        #expect(r.resolve(rawLot: "Lot 80 D 212") == nil)
     }
 
     @Test("A flagged (ancestryLacksRecordGroup) lot resolves to nil — treated as unresolved (#321)")

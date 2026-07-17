@@ -106,14 +106,27 @@ public struct AuthorityLookup: Sendable {
     }
 
     /// The document-source-note entry point: the shared `CollectionKeying.identity` produces
-    /// the level-1 key, then the documented lookup order applies.
+    /// the level-1 key, then the documented lookup order applies. A `.presidentialLibrary` note
+    /// is domain-guarded off `lot:` clusters (#351) — the app's `domainFiltered` twin.
     public func record(forParsed parsed: ParsedSourceNote, note: String) -> AuthorityCollection? {
         guard let identity = CollectionKeying.identity(of: parsed, note: note) else { return nil }
+        let match: AuthorityCollection?
         if let lotNorm = identity.lotFileNorm, !lotNorm.isEmpty {
-            return record(forLotNorm: lotNorm)
+            match = record(forLotNorm: lotNorm)
+        } else if let segment = identity.leadingSegment {
+            match = record(repository: identity.repository, leadingSegment: segment)
+        } else {
+            match = nil
         }
-        guard let segment = identity.leadingSegment else { return nil }
-        return record(repository: identity.repository, leadingSegment: segment)
+        return Self.domainFiltered(match, for: parsed)
+    }
+
+    /// Cross-domain rejection (#351): a presidential-library note must never resolve to a State
+    /// lot-file cluster (`id` `"lot:…"`). Mirrors `CollectionAuthorityIndex.domainFiltered`.
+    public static func domainFiltered(_ match: AuthorityCollection?,
+                                      for parsed: ParsedSourceNote) -> AuthorityCollection? {
+        if case .presidentialLibrary = parsed, match?.id.hasPrefix("lot:") == true { return nil }
+        return match
     }
 
     /// Lookup-order step 4: the single record whose merged alias forms contain `norm`, or

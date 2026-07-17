@@ -72,10 +72,22 @@ struct CollectionDetailView: View {
     /// Maximum alias forms shown in the Overview section.
     private static let aliasDisplayCap = 6
 
+    /// Whether to surface this record's NARA Catalog link (#351). A lot cluster whose baked
+    /// NAID traces to a central-files `fileUnit`/flagged mis-resolution (the 60 D 627 →
+    /// "Operation Mongoose" class the #335 audit flagged) is suppressed here — the downstream
+    /// `collection-authority` bundle still carries the wrong NAID until the keyed re-resolution
+    /// (#352), so the guard is applied at render time against the trusted central-files set. The
+    /// collection identity, citing-volume list, and sub-series still show; only the wrong NARA
+    /// link is withheld.
+    private var showsCatalogLink: Bool {
+        record.url != nil
+            && CentralFilesIndexStore.shared?.isUntrustworthyNAID(record.naId) != true
+    }
+
     var body: some View {
         List {
             overviewSection
-            if record.url != nil {
+            if showsCatalogLink {
                 catalogSection
             }
             localSection

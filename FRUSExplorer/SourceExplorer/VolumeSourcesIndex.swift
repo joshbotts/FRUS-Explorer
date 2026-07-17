@@ -56,7 +56,16 @@ struct VolumeSourcesIndex: Decodable, Sendable {
     /// `applyResolution` (`if lotFile … else if recordGroup …`).
     func resolution(recordGroup: String?, lotFile: String?) -> ArchivalResolution? {
         if let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines), !lot.isEmpty {
-            return lots[CentralFilesIndex.normalizeLot(lot)]
+            // #351: a fileUnit-level lot resolution is a wrong-collection mis-resolution (the
+            // 60 D 627 → "Operation Mongoose" class the #335 audit flagged, baked into this
+            // bundle before the resolver guard). Treat it as unresolved at the source so **every**
+            // consumer is covered — the browser Sources row, and the Collections "Sources &
+            // Archives" block whose PDF/DOCX/HTML export would otherwise print a durable wrong
+            // NARA link. Durable until #352 re-resolves the lot and regenerates the bundle.
+            guard let hit = lots[CentralFilesIndex.normalizeLot(lot)], !hit.isFileUnitLevel else {
+                return nil
+            }
+            return hit
         }
         if let rg = recordGroup?.trimmingCharacters(in: .whitespacesAndNewlines), !rg.isEmpty {
             return recordGroups[rg]
@@ -116,6 +125,12 @@ struct ArchivalResolution: Decodable, Sendable, Equatable {
     /// Whether the resolved record is described at the series level — i.e. whether `title` is
     /// itself the file series name. `nil` level (an un-enriched bundle) reads as `false`.
     var isSeriesLevel: Bool { levelOfDescription == "series" }
+
+    /// Whether this resolution landed on a **file unit** rather than a series (#351). A State
+    /// lot file is catalogued as a series; a `fileUnit` match is the wrong-collection class the
+    /// #335 audit flagged (60 D 627 → "Operation Mongoose"), baked into this bundle before the
+    /// resolver guard. The catalog affordance is withheld for these until #352 re-resolves them.
+    var isFileUnitLevel: Bool { levelOfDescription == "fileUnit" }
 
     /// The **file series name** to display — the single accessor the UI should use, so the
     /// series/file-unit distinction cannot be got wrong at a call site (#315/#322). Mirrors

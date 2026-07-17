@@ -59,7 +59,7 @@ correcting (§6).
 
 | # | Finding | Records | Fix |
 |---|---|---|---|
-| 3.1 | **fileUnit "control" matches are wrong-collection**: 60 D 627 → Operation Mongoose file unit (455); 4 more lots land on "DE 2 of 3"-style Disclosure-Act folders (23). All observed junk is in the 16 fileUnit-level entries; the 947 series-level entries look sane. | 488 | Generator: reject/quarantine fileUnit-level `variantControlNumber` hits; **post-validate that the hit's `variantControlNumbers` actually contain the queried lot** (609235170's list is empty); re-resolve 60D627 to the real Conference Files family (cf. NAID 602875); regenerate volume-sources + collection-authority to purge the propagated NAID. |
+| 3.1 | **fileUnit "control" matches are wrong-collection**: 60 D 627 → Operation Mongoose file unit (455); 4 more lots land on "DE 2 of 3"-style Disclosure-Act folders (23). All observed junk is in the 16 fileUnit-level entries; the 947 series-level entries look sane. | 488 | **App guards shipped #351** (§7a): central-files read guard + downstream render guards suppress the wrong NARA links across all three surfaces, offline & re-harvest-durable; `BundledLotResolver`/`PRUNE_FLAGGED_LOTS` reject fileUnit for future runs. **Remaining #352 (keyed):** post-validate that the hit's `variantControlNumbers` actually contain the queried lot (609235170's list is empty); re-resolve 60D627 to the real Conference Files family (cf. NAID 602875); regenerate volume-sources + collection-authority to purge the propagated NAID. |
 | 3.2 | **Library-keyword-anywhere steals central-files notes**: `tryPresidentialLibrary` matches anywhere and runs before the central-files check, so a decimal-led note with a secondary "(Eisenhower Library…)" copy is classified presidentialLibrary; 379 records carry library="Department of State"; 230 lose decimalClass + the RG-59 resolution. | 456 | Parser: run `strippingParentheticals` before the library keyword scan (the FRC path's existing precedent), or check the decimal grammar first when the note leads with a central-files citation. |
 | 3.3 | **Abstract prefixes absorbed into the library query**: mSupp abstract-style notes yield library fields like "…report. Top Secret. 5 pp. Eisenhower Library" → a 60–150-char junk q-string for the live query. | 367 | Parser: derive `library` from the keyword-bearing segment only (the 1961–63 `tryAbstractCitationTail` precedent doesn't cover the 1958–60 mSupp population). |
 | 3.4 | **Decimal citations misrouted to Numerical rolls**: the (1906…1910) year-only gate lets 1910-dated decimal-class citations ("835.415A/97" → case 835) resolve to the wrong microfilm rolls. | 334 | A format check before the year gate (a `.` before the first `/` = decimal era, never Numerical); best placed in `CentralFilesIndex.caseNumber(fromFileNumber:)` so both platform call sites are covered. |
@@ -127,6 +127,51 @@ ordering-bug probe was **clean** — zero unrecognized notes match the shared lo
    manuscript-repository guidance + 3.4 numerical format gate.
 5. **Curated NAIDs:** 5.2 presidential libraries (after 1's domain tags).
 6. **Docs pass:** §6 corrections.
+
+### 7a. #351 — bundle hygiene shipped (offline, no key)
+
+Step 1's **app-side, re-harvest-durable half** landed in #351 (2026-07-17), fixing the
+user-visible headline everywhere *without* regenerating the three bundles (that keyed
+re-resolution is step 2 / #352):
+
+- **central-files read guard** — `CentralFilesIndex.lotFile(forRawLot:)` now treats a
+  `fileUnit`-level match as unresolved (joining the existing #321 `ancestryLacksRecordGroup`
+  guard), so Source Explorer's own lot card routes 60 D 627 to live lookup instead of the
+  "Operation Mongoose" file unit. `isFileUnitLevel` helper added.
+- **downstream render guards (the propagated-NAID surfaces)** — the wrong 60 D 627 NAID
+  (609235170) was baked into **14 `collection-authority` lot clusters** (incl. Conference
+  Files, 39 volumes) and **18 `volume-sources` outline nodes**, which read their NAID directly
+  rather than re-resolving. `CentralFilesIndex.untrustworthyNAIDs` / `isUntrustworthyNAID(_:)`
+  exposes the fileUnit/flagged NAID set; `CollectionDetailView` (both platforms, via
+  `CollectionDetailSheet`) withholds the NARA link when the record's NAID is in that set.
+  `VolumeSourcesIndex.resolution(recordGroup:lotFile:)` withholds a `fileUnit`-level resolution
+  **at the source** — the single choke point read by both the browser Sources row and the
+  Collections "Sources & Archives" block, so no wrong NARA link reaches a durable PDF/DOCX/HTML
+  export (adversarial-review Finding 1). Collection identity, citing-volume lists, and neighbors
+  are unaffected — only the wrong NARA links are suppressed.
+- **collection-authority domain guard** — `record(forParsed:)` (app + the `AuthorityLookup`
+  export twin) now refuses a `.presidentialLibrary` note → `lot:` cluster cross-domain match
+  (the 3.7 "Presidential Files" alias bridge onto `lot:66D204`).
+- **generator hygiene for the future keyed run** — `BundledLotResolver.resolve` rejects
+  `fileUnit` hits (so a re-harvest never re-propagates them to volume-sources /
+  collection-authority); the central-files enrich pass now *reports* fileUnit resolutions; and
+  the keyless `PRUNE_FLAGGED_LOTS` mode drops fileUnit alongside `ancestryLacksRecordGroup`.
+
+**Still owed to step 2 (#352, keyed):** the *underlying* NAIDs in all three bundles are still
+wrong in the data (only suppressed at render). The keyed top-50 re-resolution replaces them
+with correct Conference-Files-family NAIDs and regenerates the bundles; once re-harvested, the
+`untrustworthyNAIDs` set empties and the render guards become no-ops. Post-validation ("the
+hit's `variantControlNumbers` actually contain the queried lot") remains a #352 generator task.
+
+Two low-severity review findings are deferred to #352 (no live trigger measured, no headline
+harm): (2) `record(forFrontMatterText:)` has no domain guard — a library-repository front-matter
+row whose leading segment folds to "presidential file" *could* alias-bridge to `lot:66D204`, but
+no such corpus row exists today and the bridged NAID is series-level, not the Mongoose link; add
+a one-line repository-based guard during the #352 pass. (3) the offline export tool
+(`SourceExplorerExportRunner`) mislabels a fileUnit lot miss as `notInBundle` and still embeds the
+wrong NAIDs from `volume-sources.lots` — acceptable for a diagnostic that reflects raw bundle
+state, but re-baseline it after the #352 regen so the accuracy table counts no wrong link as a
+resolution.
 
 ## 8. Baseline recommendation
 

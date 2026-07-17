@@ -250,11 +250,27 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
     /// lookup order applies.
     func record(forParsed parsed: ParsedSourceNote, note: String) -> AuthorityCollectionRecord? {
         guard let identity = CollectionKeying.identity(of: parsed, note: note) else { return nil }
+        let match: AuthorityCollectionRecord?
         if let lotNorm = identity.lotFileNorm, !lotNorm.isEmpty {
-            return record(forLotNorm: lotNorm)
+            match = record(forLotNorm: lotNorm)
+        } else if let segment = identity.leadingSegment {
+            match = record(repository: identity.repository, leadingSegment: segment)
+        } else {
+            match = nil
         }
-        guard let segment = identity.leadingSegment else { return nil }
-        return record(repository: identity.repository, leadingSegment: segment)
+        return CollectionAuthorityIndex.domainFiltered(match, for: parsed)
+    }
+
+    /// Rejects a cross-domain resolution (#351): a note parsed as a **presidential-library**
+    /// citation must never resolve to a State Department **lot-file** cluster (an `id` of
+    /// `"lot:…"`). The alias grammar can otherwise bridge a segment two collections happen to
+    /// share — a Carter Library "Presidential Files" note matched `lot:66D204` in the #335 audit —
+    /// producing a confidently-wrong archive link. A library note legitimately resolving to a
+    /// text-keyed (`"txt:…"`) library cluster is untouched; only the lot cross-domain is blocked.
+    static func domainFiltered(_ match: AuthorityCollectionRecord?,
+                               for parsed: ParsedSourceNote) -> AuthorityCollectionRecord? {
+        if case .presidentialLibrary = parsed, match?.id.hasPrefix("lot:") == true { return nil }
+        return match
     }
 
     /// The record for a volume front-matter Sources row (the `VolumeSourcesView`

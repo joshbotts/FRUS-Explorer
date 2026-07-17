@@ -90,6 +90,31 @@ struct AuthorityLookupParityTests {
         let parsed = SourceNoteParser().parse("Printed from a copy that was released by the British Foreign Office.")
         #expect(lookup.record(forParsed: parsed, note: "Printed from a copy…") == nil)
     }
+
+    /// #351 domain guard parity: a presidential-library note must never resolve to a State
+    /// lot-file cluster, matching the app's `CollectionAuthorityIndex.domainFiltered`.
+    @Test("#351 domain guard: a presidential-library note never resolves to a lot cluster")
+    func presidentialLibraryDomainGuard() {
+        let lookup = AuthorityLookup(collections: [
+            AuthorityCollection(id: "lot:66D204", name: "Presidential Correspondence",
+                                lotFileNorm: "66D204", aliases: ["Presidential Files"]),
+        ])
+        // Precondition: the raw alias bridge to the lot exists (keeps the test non-vacuous).
+        #expect(lookup.uniqueRecord(
+            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))?.id == "lot:66D204")
+        let libParse = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        #expect(lookup.record(forParsed: libParse,
+                              note: "Carter Library, Presidential Files, Box 1.")?
+            .id.hasPrefix("lot:") != true,
+            "a library note must never land on a State lot cluster")
+        // domainFiltered isolates the rule: lot record rejected for a library note, kept for a lot note.
+        let lotRec = AuthorityCollection(id: "lot:66D204", name: "x", lotFileNorm: "66D204")
+        #expect(AuthorityLookup.domainFiltered(lotRec, for: libParse) == nil)
+        let lotParse = ParsedSourceNote.lotFile(recordGroup: nil, lotNumber: "66 D 204",
+                                                fileIdentifier: nil)
+        #expect(AuthorityLookup.domainFiltered(lotRec, for: lotParse)?.id == "lot:66D204")
+    }
 }
 
 // MARK: - DocumentYearExtractorTests

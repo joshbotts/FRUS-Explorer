@@ -101,12 +101,16 @@ public struct BundledLotResolver: Sendable {
 
     /// Resolves a raw lot number (`"63 D 135"`, `"Lot 80 D 212"`) to its bundled record, or
     /// `nil` when the bundle has no exact match — or when the match is flagged
-    /// `ancestryLacksRecordGroup` (#321): those are treated as **unresolved**, exactly as the
-    /// app's `CentralFilesIndex` does, so a candidate mis-resolution never propagates into
-    /// volume-sources. The #315 enrichment fields ride through for accepted matches (#322).
+    /// `ancestryLacksRecordGroup` (#321) or resolves to a **`fileUnit`-level** record (#351):
+    /// both are treated as **unresolved**, exactly as the app's `CentralFilesIndex` does, so a
+    /// candidate mis-resolution never propagates into volume-sources. The #335 audit measured the
+    /// fileUnit class as almost entirely wrong-collection (a lot query matching a file unit whose
+    /// own control-number list is empty). The #315 enrichment fields ride through for accepted
+    /// (series-level) matches (#322).
     public func resolve(rawLot: String) -> ResolvedNAID? {
         guard let lf = byLotKey[Self.normalizeLot(rawLot)],
-              lf.ancestryLacksRecordGroup != true else { return nil }
+              lf.ancestryLacksRecordGroup != true,
+              lf.levelOfDescription != "fileUnit" else { return nil }
         return ResolvedNAID(naId: lf.naId, catalogURL: lf.catalogURL, title: lf.title,
                             recordGroup: lf.recordGroup, matchType: "lot",
                             hmsMlrEntryNumbers: lf.hmsMlrEntryNumbers,

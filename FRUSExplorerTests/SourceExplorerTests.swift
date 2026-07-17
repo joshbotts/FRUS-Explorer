@@ -983,3 +983,35 @@ struct CrossVolumeProvenanceRequestTests {
         #expect(a != d)
     }
 }
+
+// MARK: - VolumeSourcesResolutionTests
+
+/// The #351 source guard on `VolumeSourcesIndex.resolution(recordGroup:lotFile:)`: a
+/// fileUnit-level lot resolution is withheld at the single choke point every consumer reads
+/// (the browser Sources row **and** the Collections "Sources & Archives" export), so a
+/// wrong-collection NARA link cannot reach a durable exported document.
+@Suite("VolumeSourcesIndex.resolution — #351 fileUnit source guard")
+struct VolumeSourcesResolutionTests {
+
+    private func index(lotsJSON: String) throws -> VolumeSourcesIndex {
+        let json = "{\"recordGroups\":{},\"lots\":{\(lotsJSON)},\"majorCollections\":[]}"
+        return try JSONDecoder().decode(VolumeSourcesIndex.self, from: Data(json.utf8))
+    }
+
+    @Test("A fileUnit-level lot resolution is withheld; a series-level sibling resolves")
+    func fileUnitResolutionSuppressed() throws {
+        let index = try index(lotsJSON: """
+        "60D627":{"naId":"609235170","catalogURL":"https://catalog.archives.gov/id/609235170",
+                  "title":"Lot File 660501, Cuba - 1963","matchType":"control","levelOfDescription":"fileUnit"},
+        "64D199":{"naId":"602231","catalogURL":"https://catalog.archives.gov/id/602231",
+                  "title":"Conference Files","matchType":"control","levelOfDescription":"series"}
+        """)
+        // The contaminated fileUnit lot is present in the data but withheld through the accessor —
+        // via every raw spelling that normalizes to the same key.
+        #expect(index.lots["60D627"]?.naId == "609235170")
+        #expect(index.resolution(recordGroup: "59", lotFile: "60 D 627") == nil)
+        #expect(index.resolution(recordGroup: "59", lotFile: "Lot 60-D 627") == nil)
+        // The series-level sibling resolves normally.
+        #expect(index.resolution(recordGroup: "59", lotFile: "64 D 199")?.naId == "602231")
+    }
+}
