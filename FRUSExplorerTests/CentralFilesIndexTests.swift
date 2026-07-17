@@ -260,4 +260,48 @@ struct CentralFilesIndexTests {
         // The unflagged sibling resolves normally.
         #expect(index.lotFile(forRawLot: "81 D 208")?.naId == "2")
     }
+
+    /// The #351 guard against a SYNTHETIC fixture: a `fileUnit`-level lot resolution — a
+    /// control-number query that landed on a folder inside another collection (the #335-audited
+    /// 60 D 627 → "Operation Mongoose" class) — must be invisible through the accessor, while a
+    /// `series`-level sibling resolves, and a `nil`-level (un-enriched) entry is still accepted
+    /// (absent evidence is not evidence of a fileUnit).
+    @Test("The #351 guard drops fileUnit-level entries in a synthetic index")
+    func fileUnitGuardSyntheticFixture() throws {
+        let json = """
+        {
+          "numericalFile": { "seriesNaId": "654171", "microfilm": "M862", "rolls": [] },
+          "lotFiles": [
+            { "lotNumber": "60D627", "recordGroup": "RG 59", "naId": "609235170",
+              "title": "Files Pertaining to Operation Mongoose",
+              "catalogURL": "https://catalog.archives.gov/id/609235170", "matchType": "control",
+              "levelOfDescription": "fileUnit" },
+            { "lotNumber": "64D199", "recordGroup": "RG 59", "naId": "602231",
+              "title": "Conference Files", "catalogURL": "https://catalog.archives.gov/id/602231",
+              "matchType": "control", "levelOfDescription": "series" },
+            { "lotNumber": "70D100", "recordGroup": "RG 59", "naId": "3", "title": "Un-enriched lot",
+              "catalogURL": "https://catalog.archives.gov/id/3", "matchType": "control" }
+          ]
+        }
+        """
+        let index = try JSONDecoder().decode(CentralFilesIndex.self, from: Data(json.utf8))
+        // The fileUnit entry is present in the data but invisible through the accessor —
+        // including via every raw spelling the normalizer folds to the same key.
+        #expect(index.lotFiles.contains { $0.lotNumber == "60D627" })
+        #expect(index.lotFile(forRawLot: "60 D 627") == nil)
+        #expect(index.lotFile(forRawLot: "Lot 60-D 627") == nil)
+        #expect(index.lotFiles.first { $0.lotNumber == "60D627" }?.isFileUnitLevel == true)
+        // A series-level sibling resolves normally, and an un-enriched (nil-level) entry is
+        // not swept up by the guard.
+        #expect(index.lotFile(forRawLot: "64 D 199")?.naId == "602231")
+        #expect(index.lotFile(forRawLot: "70 D 100")?.naId == "3")
+        // The fileUnit NAID is exposed as untrustworthy (so the sibling bundles' render-time
+        // guards suppress it); the series and un-enriched NAIDs are not.
+        #expect(index.untrustworthyNAIDs == ["609235170"])
+        #expect(index.isUntrustworthyNAID("609235170"))
+        #expect(!index.isUntrustworthyNAID("602231"))
+        #expect(!index.isUntrustworthyNAID("3"))
+        #expect(!index.isUntrustworthyNAID(nil))
+        #expect(!index.isUntrustworthyNAID(""))
+    }
 }

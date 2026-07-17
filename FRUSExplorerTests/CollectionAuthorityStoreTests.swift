@@ -267,4 +267,50 @@ struct CollectionAuthorityStoreTests {
             decimalClass: nil))
         #expect(record.id == "lot:64D199")
     }
+
+    /// #351 domain guard, end-to-end against the bundled artifact. Lot 66 D 204 carries the
+    /// alias "Presidential Files", so absent the guard a Carter-library note whose leading
+    /// collection segment is "Presidential Files" bridges (order step 4, unique alias) onto that
+    /// State lot record — the wrong-archive match the #335 audit flagged (frus1977-80v27/d137).
+    /// The guard must block the cross-domain resolution while leaving the genuine lot note intact.
+    @Test("#351 domain guard: a presidential-library note never resolves to a lot cluster")
+    func presidentialLibraryDomainGuard() throws {
+        let index = try index()
+        // Precondition (keeps the test non-vacuous): the raw alias bridge to the lot exists.
+        let rawBridge = index.uniqueRecord(
+            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))
+        #expect(rawBridge?.id == "lot:66D204",
+                "guard-test precondition: the alias bridge to the lot cluster must still exist")
+        // A presidential-library note with that leading segment must NOT land on any lot cluster.
+        let note = "Source: Carter Library, Presidential Files, Box 1."
+        let parsed = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        let resolved = index.record(forParsed: parsed, note: note)
+        #expect(resolved?.id.hasPrefix("lot:") != true,
+                "a library note must never land on a State lot cluster; got \(resolved?.id ?? "nil")")
+        // A genuine lot citation still resolves to the same lot record — the guard is domain-scoped.
+        let lotNote = "Source: Department of State, Presidential Correspondence, Lot 66 D 204."
+        let lotParsed = ParsedSourceNote.lotFile(recordGroup: "RG-59",
+                                                 lotNumber: "66 D 204", fileIdentifier: nil)
+        #expect(index.record(forParsed: lotParsed, note: lotNote)?.id == "lot:66D204")
+    }
+
+    /// #351 domain guard, isolated from the artifact: `domainFiltered` rejects exactly the
+    /// presidential-library × lot-cluster cross-domain and nothing else.
+    @Test("#351 domainFiltered rejects only the presidential-library × lot cross-domain")
+    func domainFilteredUnit() {
+        let lotRec = AuthorityCollectionRecord(id: "lot:66D204", name: "Presidential Correspondence")
+        let txtRec = AuthorityCollectionRecord(id: "txt:carter library|presidential file",
+                                               name: "Presidential File")
+        let libParse = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        let lotParse = ParsedSourceNote.lotFile(recordGroup: nil, lotNumber: "66 D 204",
+                                                fileIdentifier: nil)
+        // library note × lot record → rejected; library note × text record → kept.
+        #expect(CollectionAuthorityIndex.domainFiltered(lotRec, for: libParse) == nil)
+        #expect(CollectionAuthorityIndex.domainFiltered(txtRec, for: libParse)?.id == txtRec.id)
+        // lot note × lot record → kept; nil stays nil.
+        #expect(CollectionAuthorityIndex.domainFiltered(lotRec, for: lotParse)?.id == lotRec.id)
+        #expect(CollectionAuthorityIndex.domainFiltered(nil, for: libParse) == nil)
+    }
 }

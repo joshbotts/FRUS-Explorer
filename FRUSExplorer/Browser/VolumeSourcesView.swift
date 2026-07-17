@@ -246,6 +246,9 @@ struct VolumeSourcesView: View {
     /// cannot diverge in labelling.
     @ViewBuilder
     private func resolutionEnrichment(_ resolution: ArchivalResolution?) -> some View {
+        // #351: `resolution(recordGroup:lotFile:)` never returns a fileUnit-level lot (a
+        // wrong-collection mis-resolution), so any resolution reaching here is trustworthy and
+        // its enclosing-series enrichment is safe to show.
         if let resolution {
             if !resolution.isSeriesLevel, let seriesTitle = resolution.displaySeriesTitle {
                 Text(String(format: String(localized: "browser.sources.lotFile.series %@",
@@ -295,6 +298,8 @@ struct VolumeSourcesView: View {
                     .font(entry.isHeading ? .callout.weight(.semibold) : .callout)
                     .textSelection(.enabled)
                 Spacer(minLength: 8)
+                // #351: `resolution(recordGroup:lotFile:)` already withholds fileUnit-level
+                // mis-resolutions at the source, so a surfaced resolution is trustworthy here.
                 if let url = resolution?.url {
                     Link(destination: url) {
                         Image(systemName: "building.columns")

@@ -115,31 +115,42 @@ public struct CentralFilesIndexGeneratorRunner {
     /// (indistinguishable from "genuinely has none", which is what the UI wants anyway) and
     /// the pass continues. Re-running is safe and cheap — it is idempotent, and the client's
     /// throttle/backoff already governs the request rate.
-    /// Offline prune (#321): drops lot files flagged `ancestryLacksRecordGroup` — the candidate
-    /// mis-resolutions the removed null-record-group `firstAccepted` fallback let in
-    /// (presidential-library staff files that carry no record group in their ancestry) — from an
+    /// Offline prune (#321 + #351): drops the two classes of candidate mis-resolution from an
     /// already-harvested index, then rewrites it through the same writer so the diff stays clean.
+    ///   - `ancestryLacksRecordGroup` (#321): the null-record-group `firstAccepted` fallback let
+    ///     presidential-library staff files (no record group in their ancestry) resolve as lots.
+    ///   - `levelOfDescription == "fileUnit"` (#351): a lot query that matched a *file unit* whose
+    ///     own control-number list is empty — the #335 audit measured this class as almost
+    ///     entirely wrong-collection (Conference Files Lot 60 D 627 → an "Operation Mongoose" file
+    ///     unit; others → Nazi-War-Crimes disclosure folders, the Polish Foreign Ministry). A real
+    ///     State lot resolves to a `series`; a `fileUnit` hit is a false positive.
     ///
-    /// This is the offline equivalent of a full re-harvest for the #321 policy: the fix drops
-    /// exactly these entries (they only ever matched via the removed fallback), so pruning them
-    /// here yields the same lot set without the Phase 1/2/3 enumerations — which matters when the
-    /// page cache is cold. Deterministic and idempotent (a second run finds nothing to drop).
+    /// This is the offline equivalent of a full re-harvest for both policies: each class only ever
+    /// entered via a resolver quirk, so pruning here yields the same trustworthy lot set without the
+    /// Phase 1/2/3 enumerations — which matters when the page cache is cold. Both classes are also
+    /// treated as unresolved at read time by the app's `CentralFilesIndex` and the SPM
+    /// `BundledLotResolver`, so this prune only shrinks dead weight; it changes no resolvable link.
+    /// Deterministic and idempotent (a second run finds nothing to drop).
     static func pruneFlaggedLots(outputPath: String, generated: String) {
         guard var index = try? CentralFilesIndexWriter.read(from: outputPath) else {
             print("[CentralFilesIndexGenerator] ✗ PRUNE_FLAGGED_LOTS: cannot read \(outputPath)")
             exit(1)
         }
-        let dropped = index.lotFiles.filter { $0.ancestryLacksRecordGroup == true }
+        func isMisResolution(_ lf: LotFileEntry) -> Bool {
+            lf.ancestryLacksRecordGroup == true || lf.levelOfDescription == "fileUnit"
+        }
+        let dropped = index.lotFiles.filter(isMisResolution)
         let before = index.lotFiles.count
-        index.lotFiles = index.lotFiles.filter { $0.ancestryLacksRecordGroup != true }
+        index.lotFiles = index.lotFiles.filter { !isMisResolution($0) }
         index.generated = generated
         do {
             try CentralFilesIndexWriter.write(index, to: outputPath)
             print("[CentralFilesIndexGenerator] ✓ PRUNE_FLAGGED_LOTS: dropped \(dropped.count) "
                   + "flagged lot(s), \(before) → \(index.lotFiles.count), wrote \(outputPath)")
             for lf in dropped.sorted(by: { $0.lotNumber < $1.lotNumber }) {
+                let reason = lf.ancestryLacksRecordGroup == true ? "null-RG #321" : "fileUnit #351"
                 print("    dropped \(lf.recordGroup)_\(lf.lotNumber) → naId \(lf.naId) "
-                      + "“\(lf.title.prefix(40))”")
+                      + "“\(lf.title.prefix(40))” [\(reason)]")
             }
         } catch {
             print("[CentralFilesIndexGenerator] ✗ PRUNE_FLAGGED_LOTS: failed to write: \(error)")
@@ -169,6 +180,7 @@ public struct CentralFilesIndexGeneratorRunner {
 
         var enriched = 0, misses = 0, withEntries = 0, nonSeries = 0
         var noRecordGroup: [String] = []
+        var fileUnitResolutions: [String] = []
         // Enclosing-series records, memoized by series NAID: file units share series (both
         // Numerical File units resolve to the same "Numerical Files" series), so this collapses
         // the follow-up queries to one per DISTINCT series. `nil` marks a series that missed,
@@ -186,6 +198,14 @@ public struct CentralFilesIndexGeneratorRunner {
 
             let isSeries = record.levelOfDescription == CatalogRecord.seriesLevel
             if record.levelOfDescription != nil && !isSeries { nonSeries += 1 }
+
+            // #351 candidate mis-resolution: a lot query that landed on a `fileUnit` record (a
+            // folder inside another collection), not the series a real lot names. Reported like
+            // the null-RG class — never silently dropped here; the owner runs PRUNE_FLAGGED_LOTS.
+            if record.levelOfDescription == "fileUnit" {
+                let lots = indices.map { lotFiles[$0].lotNumber }.sorted().joined(separator: "/")
+                fileUnitResolutions.append("\(lots) → naId \(naId) “\(record.title.prefix(40))”")
+            }
 
             // Data-quality flag: an RG-59/84 lot whose chain contains no record group at all
             // (e.g. `collection > series` — a presidential-library record) is a candidate
@@ -273,6 +293,18 @@ public struct CentralFilesIndexGeneratorRunner {
                 record was a presidential-library staff file, and several distinct lots
                 collapsed onto a single NAID — see #321.
                 \(noRecordGroup.sorted().joined(separator: "\n                "))
+            """)
+        }
+        if !fileUnitResolutions.isEmpty {
+            let affected = lotFiles.filter { $0.levelOfDescription == "fileUnit" }.count
+            print("""
+              ⚠︎ FILE-UNIT RESOLUTIONS — \(fileUnitResolutions.count) NAID(s), \(affected) lot entr(ies)
+                resolve to a `fileUnit`-level record, not a series. A lot file is catalogued as a
+                series; a fileUnit hit means the control-number query matched a folder inside some
+                other collection whose own control list is empty (#335 audit: 60 D 627 →
+                “Operation Mongoose”). The app and BundledLotResolver already treat these as
+                unresolved (#351); run PRUNE_FLAGGED_LOTS to drop them from the shipped bundle.
+                \(fileUnitResolutions.sorted().joined(separator: "\n                "))
             """)
         }
     }

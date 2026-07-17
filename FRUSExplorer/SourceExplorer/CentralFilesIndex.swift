@@ -69,11 +69,44 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// Source Explorers to their live-lookup fallback, which is exactly the honest behavior
     /// for a lot the bundle cannot vouch for. The durable resolver fix (drop the fallback,
     /// re-harvest) is #321; this guard makes the shipped data safe in the meantime.
+    ///
+    /// **`fileUnit`-level matches are also treated as unresolved** (#351): the corpus-wide
+    /// Source Explorer audit (#335) found the 16 `fileUnit`-level lot resolutions are almost
+    /// entirely wrong-collection — the query matched a *file unit* whose own control-number list
+    /// is empty (e.g. Conference Files Lot 60 D 627, the corpus's 2nd-most-cited lot, resolving
+    /// to an "Operation Mongoose / Cuba – 1963" file unit; others to Nazi-War-Crimes disclosure
+    /// folders and the Polish Foreign Ministry). All 947 `series`-level entries sampled sane, so
+    /// this guard rejects exactly the fileUnit class. Durable across re-harvests, like the #321
+    /// guard; the generator also rejects fileUnit hits at harvest time going forward.
     func lotFile(forRawLot raw: String) -> LotFileEntry? {
         let key = CentralFilesIndex.normalizeLot(raw)
         guard let entry = lotFiles.first(where: { $0.lotNumber == key }),
-              entry.ancestryLacksRecordGroup != true else { return nil }
+              entry.ancestryLacksRecordGroup != true,
+              !entry.isFileUnitLevel else { return nil }
         return entry
+    }
+
+    /// NARA NAIDs the bundle resolved through a **candidate mis-resolution** — a `fileUnit`-level
+    /// or `ancestryLacksRecordGroup` lot match (#351). These are the wrong-collection NAIDs the
+    /// `lotFile(forRawLot:)` guard hides in Source Explorer's own card, but the *same* NAIDs were
+    /// baked into the sibling bundles built from an earlier central-files index — the
+    /// `collection-authority` lot clusters and the `volume-sources` archival outline — which read
+    /// their NAID directly rather than re-resolving. Those surfaces consult this set at render
+    /// time (`isUntrustworthyNAID`) so a lot like Conference Files 60 D 627 stops linking to the
+    /// "Operation Mongoose" file unit everywhere, without regenerating the downstream artifacts
+    /// (that keyed re-resolution is #352). Empty once those bundles are re-harvested.
+    var untrustworthyNAIDs: Set<String> {
+        Set(lotFiles.compactMap {
+            ($0.isFileUnitLevel || $0.ancestryLacksRecordGroup == true) ? $0.naId : nil })
+    }
+
+    /// Whether `naId` was produced by a candidate mis-resolution and must not be surfaced as a
+    /// NARA link from a lot-keyed record in any bundle (#351). `nil`/empty is trustworthy.
+    /// The scan is over the ~16 flagged/fileUnit entries' NAIDs; callers at render frequency can
+    /// hoist `untrustworthyNAIDs` if they test many records.
+    func isUntrustworthyNAID(_ naId: String?) -> Bool {
+        guard let naId, !naId.isEmpty else { return false }
+        return untrustworthyNAIDs.contains(naId)
     }
 
     /// Compact upper-cased lot key (`61–D 146` → `61D146`), matching the generator's form.
@@ -133,6 +166,12 @@ struct LotFileEntry: Codable, Sendable, Equatable {
     ///
     /// `nil` level (an un-enriched bundle) reads as `false`: absent evidence, do not claim it.
     var isSeriesLevel: Bool { levelOfDescription == "series" }
+
+    /// Whether this entry resolved to a **file unit** rather than a series (#351). A real lot
+    /// file is catalogued as a series; a `fileUnit` match is a control-number query that landed
+    /// on a folder inside another collection (the #335-audited 60 D 627 → "Operation Mongoose"
+    /// class), so `lotFile(forRawLot:)` treats it as unresolved. `nil` level reads as `false`.
+    var isFileUnitLevel: Bool { levelOfDescription == "fileUnit" }
 
     /// The **file series name** to display — the single accessor the UI should use, so the
     /// series/file-unit distinction cannot be got wrong at a call site (#315).
