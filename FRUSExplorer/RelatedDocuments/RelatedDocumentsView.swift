@@ -160,9 +160,14 @@ struct RelatedDocumentsContent: View {
             // load must not resume here and overwrite a newer task's results. Release the
             // claim (unless a newer task already re-claimed the guard) so a re-fire for the
             // SAME key — e.g. the window re-appearing — reloads instead of showing the
-            // spinner this task never got to clear.
+            // spinner this task never got to clear; and clear the spinner this task set
+            // (when the claim is still ours, no newer task owns `isLoading` — leaving it
+            // true could strand the spinner if a same-key re-fire raced this resume).
             guard !Task.isCancelled else {
-                if lastLoadedKey == claimedKey { lastLoadedKey = nil }
+                if lastLoadedKey == claimedKey {
+                    lastLoadedKey = nil
+                    isLoading = false
+                }
                 return
             }
             rows = result.rows

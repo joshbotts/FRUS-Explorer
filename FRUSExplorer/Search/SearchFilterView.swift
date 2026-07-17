@@ -111,9 +111,7 @@ struct SearchFilterView: View {
                 if vm.hasActiveFilters {
                     Button(String(localized: "search.filters.clear", defaultValue: "Clear"),
                            role: .destructive) {
-                        vm.clearFilters()
-                        personSearchText  = ""
-                        personSuggestions = []
+                        clearAllFilters()
                     }
                     .foregroundStyle(.red)
                 }
@@ -209,9 +207,7 @@ struct SearchFilterView: View {
                         Button(String(localized: "search.filters.clear",
                                       defaultValue: "Clear"),
                                role: .destructive) {
-                            vm.clearFilters()
-                            personSearchText  = ""
-                            personSuggestions = []
+                            clearAllFilters()
                         }
                     }
                 }
@@ -483,6 +479,11 @@ struct SearchFilterView: View {
                 vm.selectedVolumeIds = ids.sorted()
                 vm.selectedSubseriesIds = []
                 scopeWarningName = nil
+                // A scope apply supersedes any applied subject facet — clear its provenance
+                // explicitly rather than via the selection onChange, which never fires when
+                // the scope resolves to the byte-identical volume set the facet seeded.
+                subjectFacetLabel = nil
+                subjectFacetSeededIds = nil
             case .noIndexedMembers, .scopeUnavailable:
                 scopeWarningName = scope.name
             }
@@ -579,6 +580,20 @@ struct SearchFilterView: View {
             subjectFacetLabel = nil
             subjectFacetSeededIds = nil
         }
+    }
+
+    /// The single Clear Filters action shared by all three clear controls (macOS header, iOS
+    /// toolbar, iOS clear section): resets the view model AND this view's local facet/warning
+    /// state directly — the `onChange` stale-clears alone miss the case where the selection was
+    /// already empty when Clear was pressed (no change event fires), which would leave a facet
+    /// refusal warning or label displayed over a cleared filter set.
+    private func clearAllFilters() {
+        vm.clearFilters()
+        personSearchText  = ""
+        personSuggestions = []
+        scopeWarningName = nil
+        subjectFacetLabel = nil
+        subjectFacetSeededIds = nil
     }
 
     /// The stale-state clears shared by both bodies, attached to the Form so they run
@@ -854,9 +869,7 @@ struct SearchFilterView: View {
     private var clearSection: some View {
         Section {
             Button(role: .destructive) {
-                vm.clearFilters()
-                personSearchText  = ""
-                personSuggestions = []
+                clearAllFilters()
             } label: {
                 Label(
                     String(localized: "search.clearfilters",
