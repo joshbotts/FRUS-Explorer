@@ -27,6 +27,40 @@ struct LotFileCitationExtractorTests {
         #expect(LotFileCitationExtractor.recordGroup(forNormalized: "56F28") == "84")
     }
 
+    @Test("RG 84 for F-designators wherever the F sits; RG 59 for letter-first non-F lots (#352)")
+    func recordGroupsLetterFirstAndSuffix() {
+        // Letter-first F lots were previously mis-classified RG 59 by the digits-required pattern.
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "F96") == "84")
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "F73") == "84")
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "79F80") == "84")
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "59F59") == "84")
+        // Letter-first non-F lots (CFM Files M-, S/S W-) are RG 59.
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "M88") == "59")
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "W130") == "59")
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "52M45") == "59")
+        // A trailing-letter suffix does not change the RG.
+        #expect(LotFileCitationExtractor.recordGroup(forNormalized: "61D282A") == "59")
+    }
+
+    @Test("Extracts letter-first, trailing-suffix, plural, and Lot File forms (#352)")
+    func extractsWidenedForms() {
+        // Letter-first — the class the digits-required pattern silently dropped (M-88 = 697 records).
+        #expect(LotFileCitationExtractor.citations(in: "CFM Files: Lot M–88, Box 12")
+            .map(\.normalizedLot) == ["M88"])
+        #expect(LotFileCitationExtractor.citations(in: "Records of the Bonn Embassy, Lot F 96")
+            .map(\.normalizedLot) == ["F96"])
+        #expect(LotFileCitationExtractor.citations(in: "S/S Files: Lot W-130")
+            .map(\.normalizedLot) == ["W130"])
+        // Trailing-letter suffix must be kept, not truncated to a different lot.
+        #expect(LotFileCitationExtractor.citations(in: "EUR Files: Lot 61 D 282A")
+            .map(\.normalizedLot) == ["61D282A"])
+        // "Lot File(s)" infix and a plural lead (first lot captured).
+        #expect(LotFileCitationExtractor.citations(in: "Lot File 74 D 471")
+            .map(\.normalizedLot) == ["74D471"])
+        #expect(LotFileCitationExtractor.citations(in: "RG 59, Lots 64 D 563 and 65 D 101")
+            .map(\.normalizedLot) == ["64D563"])
+    }
+
     @Test("Extracts lots from inline, narrative, and dashed citation forms")
     func extractsForms() {
         #expect(LotFileCitationExtractor.citations(in: "CU Files: Lot 63D135 (Entry A1-5072)")
@@ -47,7 +81,19 @@ struct LotFileCitationExtractorTests {
 
     @Test("lotVariants produces the compact/spaced/mixed query spellings")
     func variants() {
+        // Digit-letter-digit shape keeps its historical three-form output and order.
         #expect(NARACatalogHarvestClient.lotVariants("63D135") == ["63D135", "63 D 135", "63 D135"])
+    }
+
+    @Test("lotVariants also spaces letter-first and trailing-suffix lots (#352)")
+    func variantsLetterFirstAndSuffix() {
+        // Letter-first: compact leads, spaced fallback (previously only ["M88"]).
+        #expect(NARACatalogHarvestClient.lotVariants("M88") == ["M88", "M 88"])
+        #expect(NARACatalogHarvestClient.lotVariants("F96") == ["F96", "F 96"])
+        // Digit-F-digit keeps the three-form shape.
+        #expect(NARACatalogHarvestClient.lotVariants("79F80") == ["79F80", "79 F 80", "79 F80"])
+        // Trailing suffix: fully-spaced fallback, compact first.
+        #expect(NARACatalogHarvestClient.lotVariants("61D282A") == ["61D282A", "61 D 282 A"])
     }
 
     @Test("Index lot lookup resolves a normalized key")
