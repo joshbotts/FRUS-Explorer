@@ -158,11 +158,30 @@ public struct CentralFilesIndexGeneratorRunner {
         }
     }
 
+    /// Merges a fresh lot harvest with the existing bundle's lots, **preserving valid old NAIDs
+    /// against NARA control-number index drift** (#352). A lot that resolved in an earlier harvest
+    /// but whose `variantControlNumber_is` search now returns nothing still holds a valid, stable
+    /// NAID — the record exists; only NARA's search index moved (the same reason `fetchRecord` uses
+    /// the NAID route, `NARACatalogHarvestClient.fetchRecord`). Seeds with the existing non-fileUnit
+    /// / non-flagged lots, then overlays the harvest (updates + additions); a fileUnit / flagged old
+    /// lot is dropped unless the harvest re-resolves it cleanly. Pure + deterministic (sorted
+    /// output) so it is unit-testable without a network round trip.
+    static func mergeLots(existing: [LotFileEntry], harvested: [LotFileEntry]) -> [LotFileEntry] {
+        var merged: [String: LotFileEntry] = [:]
+        for lf in existing
+            where lf.levelOfDescription != "fileUnit" && lf.ancestryLacksRecordGroup != true {
+            merged[lf.lotNumber] = lf
+        }
+        for lf in harvested { merged[lf.lotNumber] = lf }
+        return merged.values.sorted { $0.lotNumber < $1.lotNumber }
+    }
+
     /// Re-harvests only the lot files (#352 `RESOLVE_LOTS_ONLY`), preserving the existing Numerical
     /// File + country-series sections read from `outputPath`. Runs Phase 3 (`harvestLotFiles`, which
     /// applies the #352 post-validation) and nothing else — no Phase 1/2 enumeration, no golden
-    /// checks — then writes the combined index. Fails loudly if there is no existing index to
-    /// preserve (this mode augments a shipped bundle; it does not build one from scratch).
+    /// checks — then **merges** the harvest with the existing lots (`mergeLots`, preserving valid old
+    /// NAIDs through index drift) and writes the combined index. Fails loudly if there is no existing
+    /// index to preserve (this mode augments a shipped bundle; it does not build one from scratch).
     static func resolveLotsOnly(outputPath: String, csvPath: String,
                                 client: NARACatalogHarvestClient) async {
         guard let existing = try? CentralFilesIndexWriter.read(from: outputPath) else {
@@ -174,7 +193,10 @@ public struct CentralFilesIndexGeneratorRunner {
             """)
             exit(1)
         }
-        let lotFiles = await harvestLotFiles(csvPath: csvPath, client: client)
+        let harvested = await harvestLotFiles(csvPath: csvPath, client: client)
+        let lotFiles = mergeLots(existing: existing.lotFiles, harvested: harvested)
+        let harvestedKeys = Set(harvested.map(\.lotNumber))
+        let preserved = lotFiles.filter { !harvestedKeys.contains($0.lotNumber) }.count
         let index = CentralFilesIndex(
             generated: isoToday(),
             numericalFile: existing.numericalFile,
@@ -183,7 +205,9 @@ public struct CentralFilesIndexGeneratorRunner {
         do {
             try CentralFilesIndexWriter.write(index, to: outputPath)
             print("[CentralFilesIndexGenerator] ✓ RESOLVE_LOTS_ONLY wrote \(lotFiles.count) lot files "
-                  + "(Numerical File + \(existing.countrySeries.count) country series preserved) to \(outputPath)")
+                  + "(\(harvested.count) freshly harvested + \(preserved) preserved from the existing "
+                  + "bundle through control-number drift; Numerical File + "
+                  + "\(existing.countrySeries.count) country series preserved) to \(outputPath)")
             print("  Next: run ENRICH_LOTS to re-attach #315/#351 fields, then PRUNE_FLAGGED_LOTS.")
         } catch {
             print("[CentralFilesIndexGenerator] ✗ RESOLVE_LOTS_ONLY: failed to write index: \(error)")
