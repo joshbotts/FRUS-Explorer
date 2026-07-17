@@ -36,3 +36,7 @@ notarization-*.json
 # SourceNoteEvalGenerator scratch output at the repo root (the committed BEFORE/AFTER
 # snapshots live at SourceNoteKit/eval-baseline.txt and SourceNoteKit/eval-report.txt)
 /eval-report.txt
+
+# #335: the full corpus-wide Source Explorer export is ~182MB — regenerate with
+# SourceExplorerExportGenerator; only the summary + sample are committed.
+Planning/source-explorer-export/source-explorer-export.json
