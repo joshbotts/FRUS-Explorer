@@ -361,13 +361,13 @@ struct ResearchStripView: View {
                 isDisabled: isDisabled
             ) {
                 if let entry {
-                    let year = entry.dateline.flatMap { dateline in
-                        dateline.range(of: #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#,
-                                       options: .regularExpression).flatMap { Int(dateline[$0]) }
-                    }
+                    // Same strict-first extractor as the iOS entry point (MacDocumentView's
+                    // twin of DocumentView.extractYear), so a given document carries the same
+                    // anchorYear — and thus the same window-request identity — regardless of
+                    // which surface opened it (previously a loose inline regex diverged).
                     openWindow(value: RelatedDocumentsRequest(
                         anchor: DocumentKey(volumeId: entry.volumeId, documentId: entry.documentId),
-                        anchorYear: year,
+                        anchorYear: MacDocumentView.extractYear(from: entry.dateline),
                         weights: relatedWeights,
                         scope: .allIndexed))
                 }

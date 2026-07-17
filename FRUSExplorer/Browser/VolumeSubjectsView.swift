@@ -119,8 +119,14 @@ struct VolumeSubjectVolumesSheet: View {
 
     /// The subject being pivoted on.
     let subject: VolumeSubjectProfiles.ResolvedSubject
-    /// The volume currently being viewed (excluded from the list).
+    /// The volume currently being viewed (excluded from the list), or `""` when the pivot
+    /// comes from a non-volume context (the #264 person affinity chips) and nothing is
+    /// excluded — the header wording adapts.
     let currentVolumeId: String
+    /// Invoked after a row-tap navigation, so a presenting sheet ABOVE this one (the person
+    /// detail sheet, #264) can dismiss itself too — otherwise it would keep covering the browse
+    /// surface that just navigated. `nil` (the volume-detail context) dismisses only this sheet.
+    var onNavigate: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -133,10 +139,19 @@ struct VolumeSubjectVolumesSheet: View {
             .otherVolumes(forSubjectRef: subject.ref, excluding: currentVolumeId) ?? []
     }
 
-    /// The pluralized section header ("1 other volume covers…" / "N other volumes
-    /// cover…"). Two keys rather than a format inflection so translators see both forms.
+    /// The pluralized section header. Two keys per context rather than a format inflection so
+    /// translators see every form. "Other" is only truthful when a current volume is excluded;
+    /// the person-affinity pivot (`currentVolumeId == ""`) lists ALL covering volumes.
     private var countHeader: String {
-        otherVolumeIds.count == 1
+        if currentVolumeId.isEmpty {
+            return otherVolumeIds.count == 1
+                ? String(localized: "browser.volume.subjectVolumes.header.all.one",
+                         defaultValue: "1 volume covers this subject")
+                : String(format: String(localized: "browser.volume.subjectVolumes.header.all.many %lld",
+                                        defaultValue: "%lld volumes cover this subject"),
+                         Int64(otherVolumeIds.count))
+        }
+        return otherVolumeIds.count == 1
             ? String(localized: "browser.volume.subjectVolumes.header.one",
                      defaultValue: "1 other volume covers this subject")
             : String(format: String(localized: "browser.volume.subjectVolumes.header.many %lld",
@@ -207,7 +222,8 @@ struct VolumeSubjectVolumesSheet: View {
     }
 
     /// Navigates to the tapped volume (Browse tab on iOS; the Corpus Browser window on
-    /// macOS), mirroring `CrossVolumeProvenanceContent.open`.
+    /// macOS), mirroring `CrossVolumeProvenanceContent.open`, then lets any presenting
+    /// context dismiss itself via `onNavigate`.
     private func open(_ volumeId: String) {
         appState.pendingBrowseVolume = volumeId
         #if os(macOS)
@@ -217,5 +233,6 @@ struct VolumeSubjectVolumesSheet: View {
         appState.pendingTab = .browse
         #endif
         dismiss()
+        onNavigate?()
     }
 }

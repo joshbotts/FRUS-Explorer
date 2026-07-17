@@ -145,8 +145,9 @@ struct RelatedDocumentsContent: View {
             }
         }
         .task(id: reloadKey) {
-            guard pipelineReady, lastLoadedKey != reloadKey else { return }
-            lastLoadedKey = reloadKey
+            let claimedKey = reloadKey
+            guard pipelineReady, lastLoadedKey != claimedKey else { return }
+            lastLoadedKey = claimedKey
             isLoading = true
             let result = await RelatedDocumentsEngine.rank(
                 anchor: request.anchor,
@@ -155,14 +156,26 @@ struct RelatedDocumentsContent: View {
                 scopeVolumeIds: scope.resolveVolumeIds(appState: appState),
                 limit: request.limit,
                 appState: appState)
+            // A scope switch / slider release / window hide cancels this task; a cancelled
+            // load must not resume here and overwrite a newer task's results. Release the
+            // claim (unless a newer task already re-claimed the guard) so a re-fire for the
+            // SAME key — e.g. the window re-appearing — reloads instead of showing the
+            // spinner this task never got to clear.
+            guard !Task.isCancelled else {
+                if lastLoadedKey == claimedKey { lastLoadedKey = nil }
+                return
+            }
             rows = result.rows
             totalBeforeLimit = result.totalBeforeLimit
             isLoading = false
         }
     }
 
-    /// Reload identity: re-runs when the pipeline becomes ready, the scope changes, or a weight
-    /// slider settles (via `weightReloadToken`).
+    /// Reload identity: re-runs when the pipeline becomes ready, the scope changes, a weight
+    /// slider settles (via `weightReloadToken`), or the read-only stores are recreated after an
+    /// in-session reindex (`readOnlyStoresGeneration`, the #275 convention — the engine's
+    /// cross-reference and person axes read those stores, so a ranking computed against the
+    /// pre-refresh connections must re-run once the stores are reopened).
     private var reloadKey: String {
         let scopeKey: String
         switch scope {
@@ -170,7 +183,7 @@ struct RelatedDocumentsContent: View {
         case .volume(let v):       scopeKey = "vol:\(v)"
         case .subseries(let k, _): scopeKey = "sub:\(k)"
         }
-        return "\(pipelineReady)|\(scopeKey)|\(weightReloadToken)"
+        return "\(pipelineReady)|\(scopeKey)|\(weightReloadToken)|\(appState.readOnlyStoresGeneration)"
     }
 
     /// The empty-state detail, scope-aware so a scoped empty invites widening.

@@ -1133,6 +1133,17 @@ final class AppState {
     /// Spotlight) before any `onChange` observer exists is not dropped.
     var pendingTab: AppTab? = nil
 
+    /// Adopts and clears the consume-once tab hand-off (#316): returns the pending tab (the
+    /// caller selects it) and nils the channel in the same step, so exactly one consumer ever
+    /// adopts a given request — a second window (or the post-clear `onChange` re-fire) gets
+    /// `nil` and keeps its own selection. Factored out of `MainTabView`'s `onChange`/`onAppear`
+    /// drains so the adopt-then-clear contract is directly unit-testable.
+    func consumePendingTab() -> AppTab? {
+        guard let pending = pendingTab else { return nil }
+        pendingTab = nil
+        return pending
+    }
+
     /// The persisted last-selected tab (or `.browse`), used to seed a fresh window's per-scene
     /// selection (#316). `MainTabView` writes it via ``persistTabSeed(_:)`` whenever its
     /// selection changes, so a brand-new window opens where the user last was.

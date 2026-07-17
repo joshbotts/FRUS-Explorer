@@ -47,12 +47,20 @@ struct MainTabViewTests {
         clearTabDefault()
     }
 
-    @Test("handoffRequestsResearchViaPendingTab — a hand-off sets the consume-once pendingTab")
-    func handoffRequestsResearchViaPendingTab() {
+    @Test("pendingTabConsumeOnce — the first consumer adopts, the channel clears, later consumers get nil")
+    func pendingTabConsumeOnce() {
         let state = AppState()
-        #expect(state.pendingTab == nil)
+        // No request → nothing to adopt.
+        #expect(state.consumePendingTab() == nil)
+        // A hand-off arrives; the FIRST consumer (a MainTabView drain) adopts it, and the
+        // adopt clears the channel in the same step.
         state.pendingTab = .research
-        #expect(state.pendingTab == .research)
+        #expect(state.consumePendingTab() == .research)
+        #expect(state.pendingTab == nil)
+        // A SECOND consumer — another iPad window's drain, or the post-clear onChange
+        // re-fire — gets nil and keeps its own selection (the #316 multi-window contract:
+        // exactly one window follows a hand-off; the rest never mirror).
+        #expect(state.consumePendingTab() == nil)
     }
 
     @Test("seedActiveTabRoundTrip — seedActiveTab restores each persisted tab")
