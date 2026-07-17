@@ -67,11 +67,23 @@ public struct CatalogRecord: Sendable, Equatable {
     /// accepts a record with no exposed record group.
     public let ancestorLevels: [String]
 
+    /// **Every** control number NARA indexes for this record (all `variantControlNumbers.number`
+    /// values, any type), unfiltered — the lot-file numbers, declassification project numbers,
+    /// HMS/MLR entry numbers, and more. Captured for the #352 lot post-validation: the API's
+    /// `variantControlNumber_is` filter can return a record whose own control-number list does
+    /// **not** contain the queried lot (NAID 609235170 matched "60D627" with an *empty* list —
+    /// the #335 audit's headline mis-resolution), so a match is only trusted when the record
+    /// actually carries the lot number here (`carriesLotControlNumber(_:)`).
+    public let variantControlNumbers: [String]
+
     /// The exact `variantControlNumbers.type` that denotes a current HMS/MLR entry number.
     /// Not a prefix and not a pattern — see `hmsMlrEntryNumbers`.
     public static let hmsMlrEntryType = "HMS/MLR Entry Number"
     /// The `levelOfDescription` value denoting a series record.
     public static let seriesLevel = "series"
+    /// The `levelOfDescription` value denoting a file unit — never a valid lot resolution
+    /// (a State Department lot file is catalogued as a *series*; #335/#351/#352).
+    public static let fileUnitLevel = "fileUnit"
 
     public init(
         naId: String,
@@ -83,7 +95,8 @@ public struct CatalogRecord: Sendable, Equatable {
         hmsMlrEntryNumbers: [String] = [],
         seriesAncestorNaId: String? = nil,
         seriesAncestorTitle: String? = nil,
-        ancestorLevels: [String] = []
+        ancestorLevels: [String] = [],
+        variantControlNumbers: [String] = []
     ) {
         self.naId = naId
         self.title = title
@@ -95,6 +108,53 @@ public struct CatalogRecord: Sendable, Equatable {
         self.seriesAncestorNaId = seriesAncestorNaId
         self.seriesAncestorTitle = seriesAncestorTitle
         self.ancestorLevels = ancestorLevels
+        self.variantControlNumbers = variantControlNumbers
+    }
+
+    /// Whether this record's indexed control numbers actually contain the queried lot (#352
+    /// post-validation). NARA's `variantControlNumber_is` filter can match a record whose own
+    /// `variantControlNumbers` do **not** include the lot (NAID 609235170 for `"60D627"` — an
+    /// empty list), so such an unverifiable match is rejected. Each control number is folded to
+    /// the compact upper form (spaces/dashes dropped, a leading `LOT`/`LOTFILE` token stripped)
+    /// and compared for equality against the already-normalized lot key — equality, not
+    /// substring, so `"160D6270"` never spuriously "contains" `"60D627"`.
+    ///
+    /// Legit lot records *do* carry the lot here: NARA exposes it as a
+    /// `"State Department Lot File Number"` control number (verified live for NAID 40967113,
+    /// which carries `64D171`, `66D102`, `67D147`, `69D299` — see `HMSMLREntryNumberTests`).
+    public func carriesLotControlNumber(_ normalizedLot: String) -> Bool {
+        // Fold both sides so a raw or spaced lot key (a future non-normalized caller, e.g. the
+        // deferred volume-sources fold) still matches; for an already-compact key this is a no-op.
+        let target = CatalogRecord.foldControlNumber(normalizedLot)
+        return variantControlNumbers.contains { CatalogRecord.foldControlNumber($0) == target }
+    }
+
+    /// Whether this record is an acceptable **bundled** lot resolution for `normalizedLot` in
+    /// `recordGroup` (#352). Three conjuncts, each closing a mis-resolution class the #335 audit
+    /// found: (1) the record's own record group matches (the pre-existing check — never a
+    /// coincidental free-text hit in another RG); (2) it is not a file unit — a State Department
+    /// lot file is catalogued as a *series* (#335/#351); (3) it actually carries the queried lot
+    /// in its `variantControlNumbers` (the empty-list guard, #335 headline). Factored out so the
+    /// full acceptance decision is unit-testable without a network round trip.
+    public func isAcceptableLotResolution(recordGroup: String, normalizedLot: String) -> Bool {
+        recordGroupNumber == recordGroup
+            && levelOfDescription != CatalogRecord.fileUnitLevel
+            && carriesLotControlNumber(normalizedLot)
+    }
+
+    /// Folds a raw control-number string to the compact lot key form for `carriesLotControlNumber`:
+    /// uppercase, drop spaces/dashes, then strip a single leading `LOT` or `LOTFILE` token.
+    static func foldControlNumber(_ raw: String) -> String {
+        var s = raw.uppercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "–", with: "")
+            .replacingOccurrences(of: "—", with: "")
+        for prefix in ["LOTFILE", "LOT"] where s.hasPrefix(prefix) {
+            s.removeFirst(prefix.count)
+            break
+        }
+        return s
     }
 
     /// Extracts the current HMS/MLR entry numbers from a decoded `variantControlNumbers`
@@ -192,6 +252,13 @@ public actor NARACatalogHarvestClient {
     private let cacheDirectory: URL?
     private let refresh: Bool
     private let session: URLSession
+
+    /// Lot matches dropped by the #352 post-validation — an RG-matching record existed for the
+    /// lot but was a file unit or did not carry the lot in its own `variantControlNumbers`, so it
+    /// was rejected rather than bundled. One human-readable line each; the caller prints them as a
+    /// review block so the owner can audit for any false rejection (accuracy-over-coverage). Only
+    /// populated on live queries (a cached hit is not re-validated).
+    public private(set) var lotPostValidationRejections: [String] = []
 
     /// Creates a harvest client.
     ///
@@ -355,8 +422,22 @@ public actor NARACatalogHarvestClient {
         // record was wrong), so an unmatched lot now stays honestly UNRESOLVED rather than
         // wrongly resolved. The enrichment pass's `ancestryLacksRecordGroup` flag remains a
         // secondary guard for any bundle harvested before this change.
-        func firstAccepted(_ results: [CatalogRecord]) -> CatalogRecord? {
+        //
+        // #352: two further guards close the two mis-resolution classes the #335 audit found in
+        // the RG-only rule. A State Department lot file is catalogued as a **series**, so (a) a
+        // `fileUnit`-level record is never a valid lot resolution; and (b) NARA's
+        // `variantControlNumber_is` filter can return a record whose own `variantControlNumbers`
+        // do **not** contain the queried lot (NAID 609235170 matched "60D627" with an empty list —
+        // the audit headline), so the record must positively carry the lot to be trusted. An
+        // RG-match that fails either guard is logged (never silently accepted) so the owner can
+        // audit the drop.
+        func firstRGMatch(_ results: [CatalogRecord]) -> CatalogRecord? {
             results.first { $0.recordGroupNumber == recordGroup }
+        }
+        func firstAccepted(_ results: [CatalogRecord]) -> CatalogRecord? {
+            results.first {
+                $0.isAcceptableLotResolution(recordGroup: recordGroup, normalizedLot: normalized)
+            }
         }
         func cache(_ record: CatalogRecord, _ matchType: String) -> ResolvedLot {
             writeLotCache(LotResolution(naId: record.naId, title: record.title, matchType: matchType),
@@ -370,11 +451,26 @@ public actor NARACatalogHarvestClient {
         // contain the lot token), which is unacceptable for a trusted, unattended index.
         // The app keeps its live phrase fallback at runtime for bundle misses, where a
         // human evaluates the result.
+        var rejectionNote: String? = nil
         for form in Self.lotVariants(normalized) {
-            if let record = firstAccepted(try await searchVariant(form, recordGroup: recordGroup)) {
+            let page = try await searchVariant(form, recordGroup: recordGroup)
+            if let record = firstAccepted(page) {
                 return cache(record, "control")
             }
+            // No accepted record under this spelling — capture the first RG-match that failed a
+            // #352 guard (only the first, so one lot yields one audit line even across spellings).
+            if rejectionNote == nil, let dropped = firstRGMatch(page) {
+                let reason = dropped.levelOfDescription == CatalogRecord.fileUnitLevel
+                    ? "fileUnit"
+                    : "no control-number match (record carries: "
+                        + "\(dropped.variantControlNumbers.prefix(6).joined(separator: ", "))\(dropped.variantControlNumbers.count > 6 ? ", …" : ""))"
+                rejectionNote = "\(normalized) [RG \(recordGroup)] → dropped naId \(dropped.naId) "
+                    + "“\(dropped.title.prefix(48))” — \(reason)"
+            }
         }
+        // No spelling produced an accepted record. If some spelling had an RG-match that a #352
+        // guard rejected, log it for the owner's audit; otherwise it is a genuine no-hit miss.
+        if let note = rejectionNote { lotPostValidationRejections.append(note) }
         writeLotCache(LotResolution(naId: "", title: "", matchType: nil),
                       normalized: normalized, recordGroup: recordGroup)
         return nil
@@ -465,21 +561,36 @@ public actor NARACatalogHarvestClient {
         if let data = try? JSONEncoder().encode(resolution) { try? data.write(to: url, options: .atomic) }
     }
 
-    /// Generates compact / spaced / mixed spellings from a compact lot (`63D135`).
+    /// Generates the query spellings for a compact lot key by tokenizing it into maximal
+    /// digit/letter runs and re-joining them with each separator NARA might index. Handles the
+    /// common digit-letter-digit shape (`63D135` → `63D135`, `63 D 135`, `63 D135`) and, since
+    /// #352, **letter-first** (`M88` → `M88`, `M 88`) and **trailing-suffix** (`61D282A` →
+    /// `61D282A`, `61 D 282 A`) shapes — previously those returned only the compact spelling, so a
+    /// lot NARA indexed spaced would silently miss. Real records store the lot compactly
+    /// (`64D171`), so the compact form leads; the spaced forms are the fallback.
     static func lotVariants(_ compact: String) -> [String] {
-        guard let r = compact.range(of: #"^(\d{2,3})([A-Z])(\d+)$"#, options: .regularExpression) else {
-            return [compact]
+        // Split into maximal runs of digits vs. letters.
+        var runs: [String] = []
+        var current = ""
+        var currentIsDigit: Bool? = nil
+        for ch in compact {
+            let isDigit = ch.isNumber
+            if currentIsDigit == nil || currentIsDigit == isDigit {
+                current.append(ch)
+            } else {
+                runs.append(current)
+                current = String(ch)
+            }
+            currentIsDigit = isDigit
         }
-        let s = String(compact[r])
-        // Re-split via the same pattern groups.
-        let scalars = Array(s)
-        guard let letterIdx = scalars.firstIndex(where: { $0.isLetter }) else { return [compact] }
-        let digits1 = String(scalars[..<letterIdx])
-        let letter = String(scalars[letterIdx])
-        let digits2 = String(scalars[(letterIdx + 1)...])
-        return ["\(digits1)\(letter)\(digits2)",
-                "\(digits1) \(letter) \(digits2)",
-                "\(digits1) \(letter)\(digits2)"]
+        if !current.isEmpty { runs.append(current) }
+        guard runs.count >= 2 else { return [compact] }
+        var forms = [runs.joined(), runs.joined(separator: " ")]
+        // Preserve the historical "space before the letter only" mixed form for the common
+        // digit-letter-digit shape (`63 D135`), which some records index.
+        if runs.count == 3 { forms.append(runs[0] + " " + runs[1] + runs[2]) }
+        var seen = Set<String>()
+        return forms.filter { seen.insert($0).inserted }
     }
 
     /// Rows fetched per lot query — enough to scan past wrong-RG free-text hits to the
@@ -629,7 +740,10 @@ public actor NARACatalogHarvestClient {
                     from: (record.variantControlNumbers ?? []).map { ($0.number, $0.type) }),
                 seriesAncestorNaId: seriesAncestor?.naId?.stringValue,
                 seriesAncestorTitle: seriesAncestor?.title,
-                ancestorLevels: (record.ancestors ?? []).compactMap(\.levelOfDescription))
+                ancestorLevels: (record.ancestors ?? []).compactMap(\.levelOfDescription),
+                variantControlNumbers: (record.variantControlNumbers ?? [])
+                    .compactMap { $0.number?.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty })
         }
         let nextCursor = hits.last?.sort?.first?.stringValue
         return DecodedPage(records: records, nextCursor: nextCursor)

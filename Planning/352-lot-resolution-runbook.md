@@ -1,0 +1,175 @@
+# #352 — Keyed lot-resolution run-book (owner run)
+
+**Goal:** resolve the 573 missed lot files (`lotFile | liveRouteOnly`, 5,776 records — top-50 = 78%
+of the gap) and re-resolve the 16 wrong `fileUnit` lots, then regenerate the downstream bundles so
+the corrected NAIDs propagate everywhere. From the #335 audit §5.3 / §7 step 2.
+
+**Owner-keyed.** `CATALOG_API_KEY` stays owner-held; every keyed step below is run by the owner in
+their terminal. The offline steps need no key.
+
+Run every command from the repo root: `/Users/jbotts/Development/FRUS-Explorer`. Prefix the Swift
+commands with `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` if `swift` picks the
+wrong toolchain.
+
+---
+
+## Prerequisite shipped in this PR — the post-validation
+
+The resolver's lot acceptance now closes the two mis-resolution classes the audit found
+(`CatalogRecord.isAcceptableLotResolution`, `NARACatalogHarvestClient.resolveLotFile`):
+
+1. **not a file unit** — a State Department lot file is catalogued as a NARA *series*; a `fileUnit`
+   match is rejected (the 60 D 627 → "Operation Mongoose" class);
+2. **carries the queried lot** — the record's own `variantControlNumbers` must actually contain the
+   lot (NARA's `variantControlNumber_is` filter returned NAID 609235170 for `60D627` with an *empty*
+   list). Legit records expose the lot as a `State Department Lot File Number` control number, so
+   this does **not** over-reject (verified real: NAID 40967113 carries `64D171`, `66D102`, …).
+
+Every dropped candidate is printed in a `⚠︎ #352 POST-VALIDATION` block at the end of the lot survey
+so you can eyeball for any false rejection. **This code must be merged before the keyed run** — a run
+on the old resolver still accepts the first RG match without verifying the lot.
+
+This PR also **widened the lot extractor and query speller** (`LotFileCitationExtractor.lotRegex`,
+`NARACatalogHarvestClient.lotVariants`) to the app's `looseLotRegex` grammar: letter-first lots
+(`Lot M–88`, `Lot F 96`, `Lot W-130`), trailing-letter suffixes (`Lot 61 D 282A`), plural leads, and
+`Lot File(s)` infixes are now harvested and queried. Before this, the digits-required pattern
+silently dropped **21 letter-first lots (881 records, 15% of the gap — including M-88, 697 records,
+the #2 priority) and mis-classified letter-first `F` lots as RG 59**, so the keyed run could not have
+resolved them. F-designators map to RG 84 wherever the `F` sits (`F96`, `79F80`).
+
+---
+
+## Critical gotchas (read before running)
+
+- **Wholesale lot overwrite.** Supplying `CITATIONS_CSV` replaces the *entire* `lotFiles` section
+  with only the lots found in that CSV — it does **not** merge with the currently-bundled lots. Use
+  the **full** FRUS citations export (every lot present), never a trimmed missed-lot subset, or all
+  previously-resolved lots are dropped.
+- **Cache-hit masking.** `RETRY_LOT_MISSES=1` re-queries only cached *misses* (empty naId). A cached
+  *hit* — including the 16 wrong `fileUnit` resolutions — is reused as-is and **not** re-validated.
+  Delete those cache files first (Step 1) so the post-validation actually re-runs on them.
+- **Not a lot-only pass.** The `CITATIONS_CSV` branch re-runs the full Phase 1 (Numerical File) +
+  Phase 2 (country series) enumerations before Phase 3 lots. A warm `.cache/central-files` page cache
+  makes this free; a cold cache turns it into a large keyed harvest. Confirm the page cache is intact.
+- **Enrichment is wiped.** Phase-3 writes bare `LotFileEntry` rows (no #315 entry numbers, no #351
+  `levelOfDescription`). You **must** run `ENRICH_LOTS` afterward, and only then can
+  `PRUNE_FLAGGED_LOTS` drop any residual fileUnit/null-RG lots.
+- **Downstream bundles are stale** until regenerated. `volume-sources-index.json`,
+  `collection-authority.json`, and the #335 export all embed the old NAIDs — regenerate them (Step 4)
+  or the poisoned NAID keeps propagating. Those are offline steps, but easy to forget.
+
+---
+
+## Steps
+
+### Step 0 (offline) — confirm the prerequisite is merged and caches are present
+```bash
+git log --oneline -5                        # confirm the #352 post-validation commit is in
+ls .cache/central-files/lots | wc -l        # the lot cache (re-runs stay cheap)
+ls .cache/central-files | head              # page cache for Phase 1/2 (warm = free enumeration)
+```
+
+### Step 1 (offline) — force re-validation of the 16 wrong `fileUnit` hits
+These are cached HITS; `RETRY_LOT_MISSES` will NOT re-query them. Delete their cache entries so the
+keyed run re-queries them through the new post-validation:
+```bash
+rm -f \
+  .cache/central-files/lots/59_57M44.json  .cache/central-files/lots/59_58D528.json \
+  .cache/central-files/lots/59_59A543.json .cache/central-files/lots/59_59D27.json \
+  .cache/central-files/lots/59_60D627.json .cache/central-files/lots/59_63A190.json \
+  .cache/central-files/lots/59_63D35.json  .cache/central-files/lots/59_64A532.json \
+  .cache/central-files/lots/59_64D50.json  .cache/central-files/lots/59_65D285.json \
+  .cache/central-files/lots/59_71A2420.json .cache/central-files/lots/59_72D170.json \
+  .cache/central-files/lots/59_74D471.json .cache/central-files/lots/59_90D192.json \
+  .cache/central-files/lots/59_91D257.json .cache/central-files/lots/59_92D252.json
+```
+**Accuracy-complete alternative (recommended):** clear the whole lot cache so *every* lot is
+re-queried through post-validation (~3,000 queries — ≈963 resolved lots + ≈600 misses × up to 3
+spellings — within a ~10k/month key budget) — this purges any unverified match, not just the known 16:
+```bash
+rm -rf .cache/central-files/lots
+```
+
+### Step 1.5 (KEYED canary) — confirm post-validation does not over-reject before the full run
+The post-validation assumes the `variantControlNumber_is` search response carries the record's own
+`variantControlNumbers` (the repo's live evidence is from the `naId=` fetch route). Before a full
+cache wipe, prove a few **known-good** lots still resolve through the new resolver:
+```bash
+rm -f .cache/central-files/lots/59_63D135.json \
+      .cache/central-files/lots/59_64D199.json \
+      .cache/central-files/lots/59_72D316.json
+CATALOG_API_KEY=<key> CITATIONS_CSV=/path/to/frus-citations.csv RETRY_LOT_MISSES=1 \
+  swift run CentralFilesIndexGenerator 2>&1 | grep -E "63D135|64D199|72D316|POST-VALIDATION"
+```
+Expect all three back as `control` hits and **not** in the `⚠︎ #352 POST-VALIDATION` block. If a
+known-good lot is dropped, the search response is thinning `variantControlNumbers` — stop and report
+before the full run (the guard would then need to fall back to a per-candidate `naId=` re-fetch).
+
+### Step 2 (KEYED) — the lot-resolution pass
+`CITATIONS_CSV` = the **full** 6-column FRUS citations export (`volume_id, citation_type,
+ancestor_id, xpath, plain_text, tei_xml`); lots are regex-harvested from `plain_text` only.
+```bash
+CATALOG_API_KEY=<key> \
+  CITATIONS_CSV=/path/to/frus-citations.csv \
+  RETRY_LOT_MISSES=1 \
+  swift run CentralFilesIndexGenerator
+```
+Watch the tail for the `⚠︎ #352 POST-VALIDATION` block — each line is a lot whose only RG match was
+a fileUnit or lacked the lot in its control numbers. These are the wrong matches the guard dropped;
+scan for any that look like a *legit* series that should have resolved (report back if so).
+
+### Step 3 (KEYED, then offline) — enrich, then prune
+```bash
+CATALOG_API_KEY=<key> ENRICH_LOTS=1 swift run CentralFilesIndexGenerator   # re-attach #315/#351 fields
+PRUNE_FLAGGED_LOTS=1 swift run CentralFilesIndexGenerator                   # offline; drops any residual fileUnit/null-RG
+```
+
+### Step 4 (offline) — regenerate the downstream bundles
+```bash
+swift run VolumeSourcesIndexGenerator                     # add CATALOG_API_KEY for its optional RG/lot-miss pass
+swift run -c release CollectionAuthorityGenerator         # NAIDs resolve offline against the refreshed central-files
+```
+Once these land, the app's #351 render guards become no-ops automatically (the corrected NAIDs are
+no longer `fileUnit`, so `CentralFilesIndex.untrustworthyNAIDs` empties).
+
+### Step 5 (offline) — re-baseline the audit
+```bash
+swift run -c release SourceExplorerExportGenerator        # re-run the #335 export
+```
+Then re-run the conversion check and compare against the reference list
+(`Planning/source-explorer-export/missed-lots-ranked.tsv`, 573 lots, ranked):
+```bash
+jq -r '.records[] | select(.strategy=="lotFile" and .offlineOutcome=="liveRouteOnly") | .derived.lotFileNorm' \
+  Planning/source-explorer-export/source-explorer-export.json | sort -u | wc -l   # expect << 573
+```
+
+---
+
+## Priority reference — top-10 missed lots (54% of the gap)
+
+Full ranked list: `Planning/source-explorer-export/missed-lots-ranked.tsv` (lot ⇥ count ⇥ RG).
+
+| # | Lot | Records | RG | # | Lot | Records | RG |
+|---|-----|--------:|----|---|-----|--------:|----|
+| 1 | 54D270 (Marshall Mission Files) | 1063 | 59 | 6 | 93D188 | 151 | 59 |
+| 2 | M88 (CFM Files) | 697 | 59 | 7 | 64D559 | 131 | 59 |
+| 3 | 59D95 | 283 | 59 | 8 | 60D137 | 131 | 59 |
+| 4 | 64D560 | 248 | 59 | 9 | 63D123 | 119 | 59 |
+| 5 | 62D181 | 197 | 59 | 10 | 96D262 | 98 | 59 |
+
+All 573 missed lots already carry an identity cluster in `collection-authority.json` (only the NAID
+is missing), and every lot maps to a single record group — 466 RG 59 and **107 RG 84** (the
+F-designator post records; the top-50's RG-84 members are F96, F73, F79, 79F80, 59F59). So the keyed
+pass is pure NAID resolution.
+
+---
+
+## Deferred to a follow-up (item 2 — the volume-sources lot-map fold)
+
+The audit's "fold the volume-sources lot map into central-files" is architectural cleanup worth ~2
+records (the runtime "fallback rescued exactly 2 of 15,340" is an offline *export-diagnostic*
+measurement — `frus1969-76ve10/d568` lot 74D267 → NAID 1257163, and `d574` lot 78D26 → NAID 824653 —
+not an app runtime path). The two bundled lot maps back **disjoint** app surfaces (central-files →
+Source Explorer; volume-sources → Browser Sources row + Collections export), and `VolumeSourcesIndex.
+resolution()` also serves record-group hits that central-files does not carry, so the maps cannot be
+merged wholesale. Tracked separately; not a blocker for the resolution work above.

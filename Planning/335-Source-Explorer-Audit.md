@@ -59,7 +59,7 @@ correcting (§6).
 
 | # | Finding | Records | Fix |
 |---|---|---|---|
-| 3.1 | **fileUnit "control" matches are wrong-collection**: 60 D 627 → Operation Mongoose file unit (455); 4 more lots land on "DE 2 of 3"-style Disclosure-Act folders (23). All observed junk is in the 16 fileUnit-level entries; the 947 series-level entries look sane. | 488 | **App guards shipped #351** (§7a): central-files read guard + downstream render guards suppress the wrong NARA links across all three surfaces, offline & re-harvest-durable; `BundledLotResolver`/`PRUNE_FLAGGED_LOTS` reject fileUnit for future runs. **Remaining #352 (keyed):** post-validate that the hit's `variantControlNumbers` actually contain the queried lot (609235170's list is empty); re-resolve 60D627 to the real Conference Files family (cf. NAID 602875); regenerate volume-sources + collection-authority to purge the propagated NAID. |
+| 3.1 | **fileUnit "control" matches are wrong-collection**: 60 D 627 → Operation Mongoose file unit (455); 4 more lots land on "DE 2 of 3"-style Disclosure-Act folders (23). All observed junk is in the 16 fileUnit-level entries; the 947 series-level entries look sane. | 488 | **App guards shipped #351** (§7a): central-files read guard + downstream render guards suppress the wrong NARA links across all three surfaces, offline & re-harvest-durable; `BundledLotResolver`/`PRUNE_FLAGGED_LOTS` reject fileUnit for future runs. **Resolver post-validation shipped #352** (§7b): `CatalogRecord.isAcceptableLotResolution` now rejects a `fileUnit` match AND a match whose `variantControlNumbers` do not contain the queried lot (609235170's list is empty), with a per-lot audit log. **Remaining #352 (owner-keyed run):** run the keyed CITATIONS_CSV pass per `Planning/352-lot-resolution-runbook.md` to re-resolve 60D627 to the real Conference Files family + the 573 missed lots, then regenerate volume-sources + collection-authority to purge the propagated NAID. |
 | 3.2 | **Library-keyword-anywhere steals central-files notes**: `tryPresidentialLibrary` matches anywhere and runs before the central-files check, so a decimal-led note with a secondary "(Eisenhower Library…)" copy is classified presidentialLibrary; 379 records carry library="Department of State"; 230 lose decimalClass + the RG-59 resolution. | 456 | Parser: run `strippingParentheticals` before the library keyword scan (the FRC path's existing precedent), or check the decimal grammar first when the note leads with a central-files citation. |
 | 3.3 | **Abstract prefixes absorbed into the library query**: mSupp abstract-style notes yield library fields like "…report. Top Secret. 5 pp. Eisenhower Library" → a 60–150-char junk q-string for the live query. | 367 | Parser: derive `library` from the keyword-bearing segment only (the 1961–63 `tryAbstractCitationTail` precedent doesn't cover the 1958–60 mSupp population). |
 | 3.4 | **Decimal citations misrouted to Numerical rolls**: the (1906…1910) year-only gate lets 1910-dated decimal-class citations ("835.415A/97" → case 835) resolve to the wrong microfilm rolls. | 334 | A format check before the year gate (a `.` before the first `/` = decimal era, never Numerical); best placed in `CentralFilesIndex.caseNumber(fromFileNumber:)` so both platform call sites are covered. |
@@ -158,20 +158,45 @@ re-resolution is step 2 / #352):
   the keyless `PRUNE_FLAGGED_LOTS` mode drops fileUnit alongside `ancestryLacksRecordGroup`.
 
 **Still owed to step 2 (#352, keyed):** the *underlying* NAIDs in all three bundles are still
-wrong in the data (only suppressed at render). The keyed top-50 re-resolution replaces them
-with correct Conference-Files-family NAIDs and regenerates the bundles; once re-harvested, the
-`untrustworthyNAIDs` set empties and the render guards become no-ops. Post-validation ("the
-hit's `variantControlNumbers` actually contain the queried lot") remains a #352 generator task.
+wrong in the data (only suppressed at render). The owner-keyed CITATIONS_CSV re-resolution
+replaces them with correct Conference-Files-family NAIDs and regenerates the bundles; once
+re-harvested, the `untrustworthyNAIDs` set empties and the render guards become no-ops.
 
-Two low-severity review findings are deferred to #352 (no live trigger measured, no headline
-harm): (2) `record(forFrontMatterText:)` has no domain guard — a library-repository front-matter
-row whose leading segment folds to "presidential file" *could* alias-bridge to `lot:66D204`, but
-no such corpus row exists today and the bridged NAID is series-level, not the Mongoose link; add
-a one-line repository-based guard during the #352 pass. (3) the offline export tool
-(`SourceExplorerExportRunner`) mislabels a fileUnit lot miss as `notInBundle` and still embeds the
-wrong NAIDs from `volume-sources.lots` — acceptable for a diagnostic that reflects raw bundle
-state, but re-baseline it after the #352 regen so the accuracy table counts no wrong link as a
-resolution.
+### 7b. #352 — resolver post-validation shipped (offline generator, no key)
+
+The generator prerequisite is in (this PR): `CatalogRecord.isAcceptableLotResolution` +
+`carriesLotControlNumber` in `NARACatalogHarvestClient`, wired into `resolveLotFile`'s acceptance.
+The resolver now accepts a lot match only when the record (a) is in the queried record group, (b)
+is **not** a `fileUnit` (a lot is a NARA *series*), and (c) actually carries the queried lot in its
+own `variantControlNumbers` — the empty-list guard that would have rejected NAID 609235170 for
+`60D627`. Legit lots pass: NARA exposes the lot as a `State Department Lot File Number` control
+number (verified real, NAID 40967113 → `64D171`/`66D102`/`67D147`/`69D299`). Every dropped candidate
+is printed in a `⚠︎ #352 POST-VALIDATION` review block for the owner to audit for false rejections.
+
+The same PR **widened the lot extractor + query speller** to the app's `looseLotRegex` grammar
+(adversarial-review Finding 1): the old digits-required pattern silently dropped 21 letter-first lots
+(881 records, 15% of the gap — incl. M-88, 697 records) and mis-classified letter-first `F` lots as
+RG 59, so the keyed pass literally could not have resolved them. Now `Lot M–88` / `Lot F 96` /
+`Lot 61 D 282A` / `Lot File(s)` / plural leads are harvested, F-designators map to RG 84 wherever the
+`F` sits, and `lotVariants` emits spaced spellings for letter-first/suffix lots.
+
+**The keyed harvest itself is the owner's run** — `Planning/352-lot-resolution-runbook.md` has the
+exact command sequence (with the wholesale-overwrite, cache-hit-masking, and enrichment-wipe
+gotchas the recon surfaced), the 16 fileUnit cache files to delete so the wrong hits re-validate,
+and the ranked reference list (`Planning/source-explorer-export/missed-lots-ranked.tsv`, 573 lots).
+
+**Item 2 (fold the volume-sources lot map into central-files)** is deferred to **#372**: worth ~2
+records (the "fallback rescued 2 of 15,340" is an offline export-diagnostic figure, not an app
+runtime path), and `VolumeSourcesIndex.resolution()` also serves record-group hits central-files
+lacks, so the maps cannot be merged wholesale — architectural cleanup, not a resolution blocker.
+
+Two low-severity review findings remain (no live trigger measured, no headline harm): (2) the
+front-matter domain guard — `record(forFrontMatterText:)` *could* alias-bridge a library-repository
+row to `lot:66D204`, but no such corpus row exists today and the bridged NAID is series-level, not
+the Mongoose link — tracked in **#373**. (3) the offline export tool (`SourceExplorerExportRunner`)
+mislabels a fileUnit lot miss as `notInBundle` and still embeds the wrong NAIDs from
+`volume-sources.lots` — acceptable for a diagnostic that reflects raw bundle state; re-baseline it as
+part of the #352 run-book's Step 5 (re-run the export after the keyed regen).
 
 ## 8. Baseline recommendation
 

@@ -518,6 +518,19 @@ public struct CentralFilesIndexGeneratorRunner {
                 .write(to: url, atomically: true, encoding: .utf8)
             print("  unresolved lots written to \(url.path)")
         }
+        // #352 post-validation audit: lots where an RG-matching record existed but was dropped
+        // for being a file unit or for not carrying the queried lot in its own control numbers
+        // (the 60 D 627 → "Operation Mongoose" empty-list class). These are wrong matches the old
+        // RG-only rule would have bundled; printed so the owner can eyeball for any false drop.
+        let rejections = await client.lotPostValidationRejections
+        if !rejections.isEmpty {
+            print("""
+              ⚠︎ #352 POST-VALIDATION — \(rejections.count) lot(s) dropped a candidate RG match
+                (fileUnit, or the record does not carry the queried lot in variantControlNumbers).
+                Review for false rejections; the old RG-only rule would have bundled these:
+                \(rejections.sorted().joined(separator: "\n                "))
+            """)
+        }
         return entries.sorted { $0.lotNumber < $1.lotNumber }
     }
 

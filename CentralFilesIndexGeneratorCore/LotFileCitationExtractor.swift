@@ -30,18 +30,29 @@ public struct LotFileCitation: Sendable, Hashable {
 
 /// Extracts and normalizes State Department lot file numbers from citation text.
 ///
-/// Matches the `Lot <number>` form across inline (`CU Files: Lot 63D135`), narrative
-/// (`…RG 59, … Lot 64 D 199`), and dashed (`Lot 61–D 146`) variants, tolerating spaces and
-/// hyphens between the parts. Normalization (strip spaces/dashes, upper-case) yields the
-/// same key the app derives at runtime.
+/// The grammar mirrors the app's `SourceNoteParser.looseLotRegex` so the harvest queries every
+/// lot the app can key, across: inline (`CU Files: Lot 63D135`), narrative (`…RG 59, … Lot 64 D
+/// 199`), dashed (`Lot 61–D 146`), **letter-first** (`Lot M–88`, `Lot F 96`, `Lot W-130` — the
+/// leading digits are optional), **trailing-letter suffix** (`Lot 61 D 282A`), plural lead
+/// (`Lots 64 D 563 and …`), and `Lot File(s)` infix (`Lot File 57 D 577`). Normalization (strip
+/// spaces/dashes, upper-case) yields the same key the app derives at runtime
+/// (`SourceNoteParser.lotFileNorm`).
+///
+/// > Note: a plural citation's *second* lot (`Lots 64 D 563 and 65 D 101`) is not captured here,
+/// > matching `looseLotRegex`/`firstLotReference`; such a lot is harvested from any other citation
+/// > that names it directly.
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 3 — lot files
+///   1.1 — #352: widened to the app's `looseLotRegex` grammar (letter-first, trailing-letter
+///          suffix, plural, `Lot File` infix) so letter-first lots — M-88 (CFM Files, 697
+///          records) and the F-series RG-84 lots — are actually queried by the keyed pass.
 public enum LotFileCitationExtractor {
 
-    // `Lot` then 2–3 digits, an optional dash, a single letter, optional spaces, digits.
+    // Mirrors SourceNoteParser.looseLotRegex: optional 2–3 leading digits, a single letter
+    // designator, dash/space separators, trailing digits, and an optional single-letter suffix.
     private static let lotRegex = try? NSRegularExpression(
-        pattern: #"\bLot\s+(\d{2,3}\s*[-–]?\s*[A-Za-z]\s*\d+)"#,
+        pattern: #"\bLots?\s+(?:Files?\s+)?((?:\d{2,3}\s*[–—\-]?\s*)?[A-Za-z]\s*[–—\-]?\s*\d+(?:\s?[A-Za-z](?![A-Za-z]))?)"#,
         options: [.caseInsensitive])
 
     /// Returns every distinct lot citation found in `text` (a citation may name several).
@@ -61,21 +72,20 @@ public enum LotFileCitationExtractor {
         return result
     }
 
-    /// Compact upper-cased form: drop spaces and dashes (`61–D 146` → `61D146`).
+    /// Compact upper-cased form: drop all whitespace and dashes (`61–D 146` → `61D146`,
+    /// `M–88` → `M88`, `61 D 282A` → `61D282A`). A trailing letter suffix is preserved.
+    /// Mirrors `SourceNoteParser.lotFileNorm` on the captured lot token.
     public static func normalize(_ raw: String) -> String {
-        raw.uppercased()
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "-", with: "")
-            .replacingOccurrences(of: "–", with: "")
-            .replacingOccurrences(of: "—", with: "")
+        String(raw.uppercased().filter { !$0.isWhitespace && $0 != "-" && $0 != "–" && $0 != "—" })
     }
 
     /// `F`-designator lot files are RG 84 (diplomatic post records); all others RG 59.
+    /// Mirrors `SourceNoteParser.lotFileRecordGroup`: the F may lead the key (`F96`) or follow a
+    /// digit (`79F80`, `57F139`), so both positions map to RG 84 — a letter-first `F` lot was
+    /// previously mis-classified as RG 59 by the digits-required pattern (#352).
     public static func recordGroup(forNormalized lot: String) -> String {
-        // The designator is the single letter between the leading and trailing digits.
-        if let r = lot.range(of: #"^\d{2,3}([A-Z])"#, options: .regularExpression) {
-            let letter = lot[lot.index(before: r.upperBound)]
-            return letter == "F" ? "84" : "59"
+        if lot.range(of: #"(?:^|\d)F\d"#, options: .regularExpression) != nil {
+            return "84"
         }
         return "59"
     }
