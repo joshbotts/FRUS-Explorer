@@ -341,18 +341,21 @@ struct RelatedDocumentsContent: View {
         if !axes.isEmpty {
             HStack(spacing: 8) {
                 ForEach(axes, id: \.key) { axis, score in
+                    // One rounded percent drives both the visible chip and the a11y label (so they
+                    // never disagree); a real but sub-1% contribution reads as "<1%", never "0%".
+                    let pct = Int((score * 100).rounded())
+                    let display = pct == 0
+                        ? String(localized: "related.why.subOnePercent", defaultValue: "<1%")
+                        : String(format: String(localized: "related.why.percent %lld",
+                                                defaultValue: "%lld%%"), Int64(pct))
                     HStack(spacing: 2) {
                         Image(systemName: axis.systemImage)
-                        Text(score, format: .percent.precision(.fractionLength(0)))
-                            .monospacedDigit()
+                        Text(display).monospacedDigit()
                     }
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(String(
-                        format: String(localized: "related.why.axis %@ %lld",
-                                       defaultValue: "%@ %lld percent"),
-                        axis.displayName, Int64((score * 100).rounded()))))
+                    .accessibilityLabel(Text("\(axis.displayName), \(display)"))
                 }
             }
         }
