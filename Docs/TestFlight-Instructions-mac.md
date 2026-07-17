@@ -1,41 +1,52 @@
-# What's New in Build 32 (Mac)
+# What's New in Build 33 (Mac)
 
-Build 32 is a big feature wave: **Collections is rebuilt from the ground up** ("Composer"), broken cross-references are labeled instead of dead-ending, people can be merged by hand, volumes get Top subjects profiles, Citation Lookup results open in their own window, and the series dashboards gain scoping. **One-time re-index** — first launch rebuilds the cross-reference index (v22) in the background; it may take a while on a large library, but the app stays usable. It also fixes some cross-volume page references that pointed at the wrong document in graphs and analytics.
+Build 33 is about finding the *next* document: a new **Related Documents** window ranks what to read next by archival provenance, cross-references, dates, and shared people — with tunable weights; **Custom Volume Scopes** let you name a set of volumes once and reuse it across Search, Analytics, and Word Clouds; the volume subject profiles from build 32 become **detected-topic filters** (experimental); Source Explorer now shows the **HMS/MLR entry numbers** NARA staff actually ask for; the cross-reference graph gains scroll-wheel zoom and node context menus; and window management got a reliability pass. No re-index this build — everything works on your existing library.
 
-## Collections, redesigned ("Composer")
-Assembling and exporting document sets is rebuilt, and the Collections window (**⇧⌘K**) is now a true Mac layout that fits a 13″ screen.
-- **No sidebar** — switch collections from a **toolbar collection picker** (each with its document count, plus **New**, **Import**, and **Manage Collections…**); the single middle column is the **Contents** outline, with a **live preview** beside it.
-- **⚙ Collection popover** — the collection's name, note, title-page front matter, the **presets**, and the three grouped composition sections all live in one popover; a single document's settings open in a **dismissible inspector** column from a **⚙ Configure** pill on the row (replacing the old ⓘ glyph).
-- **Presets + grouped composition** — three labeled sections (Document content · Your annotations · Analysis & apparatus) and **four one-tap presets** — Teaching reader · Briefing packet · Source dossier · Scholarly edition — that set the whole composition at once.
-- **Editable "Key takeaway" headnote** — **Generate** an on-device AI draft, **Edit** it in your own words, or **Regenerate**; a chip marks whether the text is AI or yours, and exports attribute it honestly.
-- **Cleaner rows** — a document row shows **labeled override chips** only when it differs from the collection default.
-- **Export** — a **grid of format cards** (PDF · HTML · Word · BibTeX · RIS · .fruscollection) led by a one-line composition summary, plus a separate **Send to Zotero Library** row.
+## Related Documents
+From any document, the Research strip's **Related** button opens a ranked list of documents related to the one you're reading — in its own window, so it works as a reading list.
+- **Five signals** — **Archival provenance** (same lot file, decimal file, or collection), **Cross-references** (cites / cited by), **Close in date**, **Same volume or subseries**, and **Shared people**. Each row carries small **"why related" icon chips** showing which signals matched, strongest first.
+- **A work list, not a dead end** — clicking a row opens the document in the main window while the Related Documents window stays open beside it, so you can step through the results. The window restores across relaunch, tuning and all.
+- **Scope picker** — **This volume / This subseries / All volumes**; a scoped empty result invites widening rather than pretending there's nothing.
+- **Adjust weights** — a disclosure of per-signal sliders; move one and the list re-ranks when you let go. Your tuning persists for the next document. A sixth slider, **Shared topics**, is visible but disabled — it activates when detected-topic document data ships.
 
-## Cross-References
-- **Unresolvable links are labeled** — cross-references that corpus-wide validation confirms can't be followed (the print edition cites a page, document, or volume absent from the digital corpus) now render in muted grey with a dotted underline and a small dagger, instead of looking like working links. Clicking one opens an **Unresolved Reference** sheet explaining why and the apparent destination. Valid references and the printed text are unchanged.
-- **Analytics disclosure** — when any fall in scope, Cross-Reference Analytics notes "N unresolvable references are excluded from this analysis".
-- **Report export** — the **Settings → Data** pane adds a **Broken Cross-References Report** (CSV or JSON) for reporting to the Office of the Historian.
+## Custom Volume Scopes
+Named, reusable volume sets — build "Cuban Missile Crisis volumes" or "Everything Kennedy" once, use it everywhere. They sync via iCloud, so scopes made on iPhone or iPad appear here too.
+- **Manage** — **Settings → Research → Volume Scopes**: create with **New Scope**, edit or delete from a scope's row. A scope may include volumes you haven't downloaded — each row shows **"N of M volumes indexed"** so that's never a surprise.
+- **The editor** — the whole series grouped by subseries with per-group **Add All / Remove All**, a title filter, and an **Add Volumes By…** menu with four facets: **Subject…** (detected topics), **Person…**, **Manifest Tag…**, and **Coverage Years / Editor…**. Facets always add volumes, never remove them.
+- **Word cloud** — a scope row can launch a **Word Cloud** of everything in the scope (disabled until at least one member is indexed); the window opens directly and comes to the front even when relaunched.
+- **Apply in Search** — the search filters gain a **My Volume Scopes** section: applying a scope fills the volume picker with its *indexed* members ("N of M volumes indexed"). If none are indexed yet, it warns and applies nothing — a scope never silently falls through to a whole-corpus search.
+- **Apply in Analytics** — the Corpus, Person, and Cross-Reference Analytics scope menus add **My Volume Scopes** with honest "N of M indexed" counts (zero-indexed entries are disabled with "none indexed yet"), as does the Word Cloud scope menu. The **About the Series** dashboards can scope to one too — there at manifest grain, so undownloaded members count.
 
-## People
-- **Manual merge** — **Merge with another person…** (in a person's detail sheet, or the row's context menu) merges two people into one identity, for cases the app's deliberately cautious automatic grouping kept apart. The confirmation names both and warns when they look like genuinely different people (distinct Office of the Historian identities). A **Corrections** toolbar button lists every merge and separation you've made, with undo; they sync via iCloud.
+## Detected-Topic Filters (experimental)
+The per-volume "Top subjects" profiles from build 32 become filters. These are **automatically detected topics, not editorial subject headings** — expect the occasional mistag, and tell us about the ones you find.
+- **Search** — a **By Subject · Detected Topics** section with **Filter by detected topic…**: pick a category, optionally drill into a sub-category, and the volume picker fills with the indexed matches (same warn-and-refuse guard as scopes).
+- **Analytics & Word Cloud** — the same scope menus gain a **By Detected Topic** submenu ("Detected topics — experimental"), including the About the Series dashboards.
+- **Subjects (this volume)** — the document research panel gains a **Subjects (this volume)** disclosure: the volume's characteristic detected topics as chips; clicking one lists the other volumes covering that subject. Volume-level, and labeled as such.
+- **Cleaner profiles** — an era-sanity pass removed 14 anachronistic subject-volume pairings (AIDS no longer appears on a 1964–68 volume).
 
-## Corpus Browser
-- **Top subjects** — every volume shows the subjects most characteristic of it (from the Office of the Historian's subject data), grouped by category, visible before downloading. Click one to see the *other* FRUS volumes covering it corpus-wide (even undownloaded) and jump there.
+## Source Explorer
+- **The identifier NARA actually asks for** — resolved archival collections now show the **File Series** name and the **HMS/MLR Entry** number(s) — the identifier archives staff use to locate a series when you request original records. A note explains how to cite it alongside the lot number. Cross-volume provenance rows carry the same.
+- **Honest unresolved** — a class of lot files that used to resolve to *wrong* NARA links (presidential-library staff files caught by an over-eager fallback) is now treated as unresolved and routed to live lookup instead.
 
-## Citation Lookup (⇧⌘F)
-- **Own-window results, Return to run** — the lookup form is now grouped and Return runs it; a result opens the document in its own window (with previous/next navigation), so the match list stays visible.
-- **Document-number lookups** — document-number citations now reliably find their document on indexed volumes.
+## People & Cross-Reference Graph
+- **Scroll-wheel zoom** — the graph zooms under the pointer with the scroll wheel or trackpad, alongside the existing pinch and drag.
+- **Node context menus** — right-click a node for **Recenter Graph**, **Open in Main Window**, and **Archival Neighbors…** (find other documents drawn from the same archival source).
+- **Subject affinity** — a person's detail sheet gains **Subjects** chips: the detected topics characteristic of the volumes where that person is mentioned (volume-level, weighted — not per-document tags). Clicking one pivots to all volumes covering that subject.
 
-## Analytics (windows)
-- **Series dashboard scoping** — each **About the Series** dashboard (Research Guide) gains a **Scope** control: **Whole series** / **By Subseries** (nested by decade). Archival Sourcing Over Time adds a **Categories** filter that re-bases the mix to the shown categories (the last visible one can't be hidden); Administration Production Profiles adds a year-range bar showing administrations overlapping the years. **Reset** clears both scope and year range.
-- **Administration presets** — Corpus and Cross-Reference Analytics add an Administration menu that sets the document-year range to a president's term in one click.
-- **Per-cloud word hiding** — a word's context menu can hide it from just the current cloud (it returns when the cloud regenerates), alongside the persistent global/per-lens lists; **Show N hidden words** restores all.
+## Windows
+- **Focus, don't bury** — launching a tool (Search, Source Explorer, graph, word cloud…) whose window is already open brings that window to the front instead of leaving it buried.
+- **Reliable restore** — Source Explorer, cross-reference graph, Archival Neighbors, and Related Documents windows are self-describing and come back correctly across relaunch.
 
-## Tags
-- **New Tag field on top** — the tag picker's New Tag field moved to the top; tags created in the sheet pin to the top with a **New** badge until it closes, and the title shows the document ("Tags - Doc N").
+## Zotero
+- **Connect** — **Settings → Integrations → Zotero**: click **Create a Zotero API key** (opens zotero.org with the right permissions pre-selected), paste the key, and **Connect**. The key is verified, your library resolved automatically, and stored in the Keychain.
+- **Send documents** — once connected, the Research strip's Share popover gains **Send to Zotero Library**, sending the citation with your tags and research notes attached (Zotero-importable BibTeX/RIS file export remains alongside).
+- **Send collections** — the Collections export screen has a **Send to Zotero Library** row that sends every document in the collection, with editorial notes flagged correctly.
 
-## Performance
-- **Faster launch, smaller app** — a 9 MB synchronous parse was removed from launch; the app bundle is ~8.5 MB smaller.
+## Fixes
+- **Cross-reference toolbar** — the document toolbar's cross-reference controls now use distinct icons instead of near-identical glyphs.
+- **Search** — facet warnings are always visible (they no longer vanished when you had no saved scopes).
+- **Collections** — a collection's context menu gains **Duplicate**.
+- **Browse** — hand-offs into the main browser (from graphs, lists, and windows) are no longer occasionally dropped.
 
 ## Feedback
-Report anything unexpected — especially anything off in the redesigned **Collections** (the toolbar picker and ⚙ Collection popover; building, previewing, or exporting a collection; the Key-takeaway headnote card), a working link shown as unresolvable (or vice versa), a merge/undo that misbehaves, wrong-looking Top subjects, or analytics that shift oddly after scoping. Include your macOS version, volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!
+This build's stress tests: open **Related Documents** on documents you know well — do the top results make archival sense? Play with **Adjust weights** and the scope picker and tell us where the ranking misleads, and whether the window's stay-open-and-step-through flow works for you. Build a **Volume Scope** and apply it in Search and Analytics — is the "N of M indexed" honesty right, and does the refusal-when-nothing-indexed behave? Try the **detected-topic filters** and report useful finds *and* mistags (they're expected — we want examples). And if you request records from NARA, check the **HMS/MLR Entry** numbers against what the archives expect. Include your macOS version, volume/document number, what you clicked, expected, and got. Screenshots and crash reports help. Thanks for testing!

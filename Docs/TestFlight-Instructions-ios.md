@@ -1,41 +1,51 @@
-# What's New in Build 32 (iOS)
+# What's New in Build 33 (iOS)
 
-Build 32 is a big feature wave: **Collections is rebuilt from the ground up** ("Composer"), broken cross-references are labeled instead of dead-ending, people can be merged by hand, every volume gets a Top subjects profile, and the series dashboards gain scoping. **One-time re-index** — first launch rebuilds the cross-reference index (v22) in the background; it may take a while on a large library, but the app stays usable. It also fixes some cross-volume page references that pointed at the wrong document in graphs and analytics.
+Build 33 is about finding the *next* document: a new **Related Documents** list ranks what to read next by archival provenance, cross-references, dates, and shared people — with tunable weights; **Custom Volume Scopes** let you name a set of volumes once and reuse it across Search, Analytics, and Word Clouds; the volume subject profiles from build 32 become **detected-topic filters** (experimental); Source Explorer now shows the **HMS/MLR entry numbers** NARA staff actually ask for; and iPad windows got a reliability pass. No re-index this build — everything works on your existing library.
 
-## Collections, redesigned ("Composer")
-Assembling and exporting document sets is rebuilt, cleanly split into a **manager** (what's in the collection and how it's composed) and **export** (just format + destination).
-- **Presets + grouped composition** — the export settings sit in three labeled sections (Document content · Your annotations · Analysis & apparatus), and **four one-tap presets** — Teaching reader · Briefing packet · Source dossier · Scholarly edition — set the whole composition at once.
-- **Editable "Key takeaway" headnote** — a document can print a short abstract above its body: **Generate** an on-device AI draft, **Edit** it in your own words, or **Regenerate**. A chip marks whether the text is AI or yours, and exports attribute it honestly.
-- **Cleaner document rows** — a row shows **labeled override chips** only when it differs from the collection default, and a **⚙ Configure** control (replacing the old info glyph) opens that document's settings.
-- **Per-platform layout** — on **iPad**, two roomy columns (Contents + a live preview) with settings summoned as sheets (a **⚙ Collection** sheet and per-row **⚙ Configure** sheets); on **iPhone**, the Outline leads with a **Collection settings** row, and each document row is a chevron disclosure that drills into its settings.
-- **Export** — a **grid of format cards** (PDF · HTML · Word · BibTeX · RIS · .fruscollection) led by a one-line composition summary, plus a separate **Send to Zotero Library** row.
+## Related Documents
+From any document, the toolbar's **Related Documents** button opens a ranked list of documents related to the one you're reading.
+- **Five signals** — **Archival provenance** (same lot file, decimal file, or collection), **Cross-references** (cites / cited by), **Close in date**, **Same volume or subseries**, and **Shared people**. Each row carries small **"why related" icon chips** showing which signals matched, strongest first.
+- **Scope picker** — **This volume / This subseries / All volumes**; a scoped empty result invites widening rather than pretending there's nothing.
+- **Adjust weights** — a disclosure of per-signal sliders; move one and the list re-ranks when you let go. Your tuning persists for the next document. A sixth slider, **Shared topics**, is visible but disabled — it activates when detected-topic document data ships.
+- **Presentation** — a sheet on iPhone (and iPads without Stage Manager); on **iPad with Stage Manager** it opens as a real window that stays open beside the document as you jump to results, and restores across relaunch.
 
-## Cross-References
-- **Unresolvable links are labeled** — cross-references that corpus-wide validation confirms can't be followed (the print edition cites a page, document, or volume absent from the digital corpus) now render in muted grey with a dotted underline and a small dagger, instead of looking like working links. Tapping one opens an **Unresolved Reference** sheet explaining why and the apparent destination. Valid references and the printed text are unchanged.
-- **Analytics disclosure** — when any fall in scope, Cross-Reference Analytics notes "N unresolvable references are excluded from this analysis".
-- **Report export** — **Settings → Export Research Data** adds a **Broken Cross-References Report** (CSV or JSON) for reporting to the Office of the Historian.
+## Custom Volume Scopes
+Named, reusable volume sets — build "Cuban Missile Crisis volumes" or "Everything Kennedy" once, use it everywhere. They sync via iCloud.
+- **Manage** — **Settings → Research → Volume Scopes**: create with **New Scope**, tap a scope to edit, swipe to delete. A scope may include volumes you haven't downloaded — each row shows **"N of M volumes indexed"** so that's never a surprise.
+- **The editor** — the whole series grouped by subseries with per-group **Add All / Remove All**, a title filter, and an **Add Volumes By…** menu with four facets: **Subject…** (detected topics), **Person…**, **Manifest Tag…**, and **Coverage Years / Editor…**. Facets always add volumes, never remove them.
+- **Word cloud** — long-press a scope row for a **Word Cloud** of everything in the scope (disabled until at least one member is indexed).
+- **Apply in Search** — the search filters gain a **My Volume Scopes** section: tapping a scope fills the volume picker with its *indexed* members ("N of M volumes indexed"). If none are indexed yet, it warns and applies nothing — a scope never silently falls through to a whole-corpus search.
+- **Apply in Analytics** — the Corpus, Person, and Cross-Reference Analytics scope menus add **My Volume Scopes** with honest "N of M indexed" counts (zero-indexed entries are disabled with "none indexed yet"), as does the Word Cloud scope menu. The **About the Series** dashboards can scope to one too — there at manifest grain, so undownloaded members count.
+
+## Detected-Topic Filters (experimental)
+The per-volume "Top subjects" profiles from build 32 become filters. These are **automatically detected topics, not editorial subject headings** — expect the occasional mistag, and tell us about the ones you find.
+- **Search** — a **By Subject · Detected Topics** section with **Filter by detected topic…**: pick a category, optionally drill into a sub-category, and the volume picker fills with the indexed matches (same warn-and-refuse guard as scopes).
+- **Analytics & Word Cloud** — the same scope menus gain a **By Detected Topic** submenu ("Detected topics — experimental"), including the About the Series dashboards.
+- **Subjects (this volume)** — the research panel below a document gains a **Subjects (this volume)** disclosure: the volume's characteristic detected topics as chips; tapping one lists the other volumes covering that subject. Volume-level, and labeled as such.
+- **Cleaner profiles** — an era-sanity pass removed 14 anachronistic subject-volume pairings (AIDS no longer appears on a 1964–68 volume).
+
+## Source Explorer
+- **The identifier NARA actually asks for** — resolved archival collections now show the **File Series** name and the **HMS/MLR Entry** number(s) — the identifier archives staff use to locate a series when you request original records. A note explains how to cite it alongside the lot number. Cross-volume provenance rows carry the same.
+- **Honest unresolved** — a class of lot files that used to resolve to *wrong* NARA links (presidential-library staff files caught by an over-eager fallback) is now treated as unresolved and routed to live lookup instead.
 
 ## People
-- **Manual merge** — **Merge with another person…** (in a person's detail sheet, or the row's context menu) merges two people into one identity, for cases the app's deliberately cautious automatic grouping kept apart. The confirmation names both and warns when they look like genuinely different people (distinct Office of the Historian identities). A **Corrections** toolbar button lists every merge and separation you've made, with undo; they sync via iCloud.
+- **Subject affinity** — a person's detail sheet gains **Subjects** chips: the detected topics characteristic of the volumes where that person is mentioned (volume-level, weighted — not per-document tags). Tapping one pivots to all volumes covering that subject.
 
-## Browse
-- **Top subjects** — every volume shows the subjects most characteristic of it (from the Office of the Historian's subject data), grouped by category, visible before downloading. Tap one to see the *other* FRUS volumes covering it corpus-wide (even undownloaded) and jump there.
-- **Two-line titles** — long volume titles on volume/chapter screens now wrap to two lines instead of truncating.
-- **iPad navigation** — the breadcrumb bar is gone; the tab sidebar and back button navigate, and Browse uses push navigation on all devices.
+## iPad Windows
+- **Archival Neighbors is a real window** — under Stage Manager it opens beside the document and stays open as you navigate, like the graph and Source Explorer.
+- **Windows keep their own tab** — each window remembers its own tab selection; switching tabs in one window no longer mirrors into another, and hand-offs bring the right tab forward in one window only.
+- **Reliable restore** — Source Explorer, cross-reference graph, Archival Neighbors, and Related Documents windows are self-describing and come back correctly across relaunch.
 
-## Analytics
-- **Series dashboard scoping** — each **About the Series** dashboard (Research Guide) gains a **Scope** control: **Whole series** / **By Subseries** (nested by decade). Archival Sourcing Over Time adds a **Categories** filter that re-bases the mix to the shown categories (the last visible one can't be hidden); Administration Production Profiles adds a year-range bar showing administrations overlapping the years. **Reset** clears both scope and year range.
-- **Administration presets** — Corpus and Cross-Reference Analytics add an Administration menu that sets the document-year range to a president's term in one tap.
-- **Per-cloud word hiding** — a word's context menu can hide it from just the current cloud (it returns when the cloud regenerates), alongside the persistent global/per-lens lists; **Show N hidden words** restores all.
+## Zotero
+- **Connect** — **Settings → Integrations → Zotero**: tap **Create a Zotero API key** (opens zotero.org with the right permissions pre-selected), paste the key, and **Connect**. The key is verified, your library resolved automatically, and stored in the Keychain.
+- **Send documents** — once connected, the document's **Share** menu gains **Send to Zotero Library…**, sending the citation with your tags and research notes attached. This is the only way to get FRUS annotations into Zotero on iPhone and iPad.
+- **Send collections** — the Collections export screen has a **Send to Zotero Library** row that sends every document in the collection, with editorial notes flagged correctly.
 
-## Tags
-- **New Tag field on top** — the tag picker's New Tag field moved to the top; tags created in the sheet pin to the top with a **New** badge until it closes, and the title shows the document ("Tags - Doc N").
-
-## Citations
-- **Document-number lookups** — document-number citations now reliably find their document on indexed volumes.
-
-## Performance
-- **Faster launch, smaller app** — a 9 MB synchronous parse was removed from launch; the app bundle is ~8.5 MB smaller.
+## Fixes
+- **Search** — sorting results by date now orders correctly, and facet warnings are always visible (they no longer vanished when you had no saved scopes).
+- **Collections** — a collection's context menu gains **Duplicate**.
+- **Research tab** — simpler push navigation throughout; no more split-view dead ends.
+- **Browse** — hand-offs into Browse (from graphs, lists, and windows) are no longer occasionally dropped.
 
 ## Feedback
-Report anything unexpected — especially anything off in the redesigned **Collections** (building, previewing, or exporting a collection; the Key-takeaway headnote card; the presets), a working link shown as unresolvable (or vice versa), a merge/undo that misbehaves, wrong-looking Top subjects, or analytics that shift oddly after scoping. Include your device + iOS version, volume/document number, what you tapped, expected, and got. Screenshots help. Thanks for testing!
+This build's stress tests: open **Related Documents** on documents you know well — do the top results make archival sense? Play with **Adjust weights** and the scope picker and tell us where the ranking misleads. Build a **Volume Scope** and apply it in Search and Analytics — is the "N of M indexed" honesty right, and does the refusal-when-nothing-indexed behave? Try the **detected-topic filters** and report useful finds *and* mistags (they're expected — we want examples). And if you request records from NARA, check the **HMS/MLR Entry** numbers against what the archives expect. Include your device + iOS version, volume/document number, what you tapped, expected, and got. Screenshots help. Thanks for testing!
