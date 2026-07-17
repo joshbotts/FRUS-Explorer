@@ -158,6 +158,39 @@ public struct CentralFilesIndexGeneratorRunner {
         }
     }
 
+    /// Re-harvests only the lot files (#352 `RESOLVE_LOTS_ONLY`), preserving the existing Numerical
+    /// File + country-series sections read from `outputPath`. Runs Phase 3 (`harvestLotFiles`, which
+    /// applies the #352 post-validation) and nothing else — no Phase 1/2 enumeration, no golden
+    /// checks — then writes the combined index. Fails loudly if there is no existing index to
+    /// preserve (this mode augments a shipped bundle; it does not build one from scratch).
+    static func resolveLotsOnly(outputPath: String, csvPath: String,
+                                client: NARACatalogHarvestClient) async {
+        guard let existing = try? CentralFilesIndexWriter.read(from: outputPath) else {
+            print("""
+            [CentralFilesIndexGenerator] ✗ RESOLVE_LOTS_ONLY: cannot read \(outputPath).
+              This mode preserves the existing Numerical File / country-series sections and only
+              re-harvests lots — it needs an already-built index. Run the full keyed harvest first,
+              or point OUTPUT_PATH at the shipped central-files-index.json.
+            """)
+            exit(1)
+        }
+        let lotFiles = await harvestLotFiles(csvPath: csvPath, client: client)
+        let index = CentralFilesIndex(
+            generated: isoToday(),
+            numericalFile: existing.numericalFile,
+            countrySeries: existing.countrySeries,
+            lotFiles: lotFiles)
+        do {
+            try CentralFilesIndexWriter.write(index, to: outputPath)
+            print("[CentralFilesIndexGenerator] ✓ RESOLVE_LOTS_ONLY wrote \(lotFiles.count) lot files "
+                  + "(Numerical File + \(existing.countrySeries.count) country series preserved) to \(outputPath)")
+            print("  Next: run ENRICH_LOTS to re-attach #315/#351 fields, then PRUNE_FLAGGED_LOTS.")
+        } catch {
+            print("[CentralFilesIndexGenerator] ✗ RESOLVE_LOTS_ONLY: failed to write index: \(error)")
+            exit(1)
+        }
+    }
+
     static func enrichLotFiles(outputPath: String, client: NARACatalogHarvestClient) async {
         guard let existing = try? CentralFilesIndexWriter.read(from: outputPath) else {
             print("[CentralFilesIndexGenerator] ✗ ENRICH_LOTS: cannot read \(outputPath) — "
@@ -356,6 +389,24 @@ public struct CentralFilesIndexGeneratorRunner {
                 client: NARACatalogHarvestClient(apiKey: apiKey,
                                                  cacheDirectory: cacheDir,
                                                  refresh: refresh))
+            return
+        }
+
+        // Lots-only resolution mode (#352): re-harvest the lot files from CITATIONS_CSV and
+        // **preserve** the existing Numerical File + country-series sections, skipping the Phase 1/2
+        // enumerations (thousands of requests) and their golden checks — the same reason
+        // `ENRICH_LOTS` is a mode. Use this to apply the #352 post-validation to the lot set on a
+        // machine with a cold page cache, without paying for a full re-enumeration of data that is
+        // already correct and shipped. Requires an existing index (to preserve) + CITATIONS_CSV.
+        if ["1", "true", "yes"].contains((env["RESOLVE_LOTS_ONLY"] ?? "").lowercased()) {
+            guard let csvPath = env["CITATIONS_CSV"], !csvPath.isEmpty else {
+                print("[CentralFilesIndexGenerator] ✗ RESOLVE_LOTS_ONLY requires CITATIONS_CSV=<path>.")
+                exit(1)
+            }
+            await resolveLotsOnly(
+                outputPath: outputPath, csvPath: csvPath,
+                client: NARACatalogHarvestClient(apiKey: apiKey, pageSize: pageSize,
+                                                 cacheDirectory: cacheDir, refresh: refresh))
             return
         }
 
