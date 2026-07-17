@@ -108,6 +108,8 @@ struct MacDocumentView: View {
     @AppStorage("frus.document.researchPanel.summary")   private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")     private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")      private var tagsExpanded    = false
+    /// Expansion state of the volume-level Subjects disclosure (#308 F7); shared with iOS.
+    @AppStorage("frus.document.researchPanel.subjects")  private var subjectsExpanded = false
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
 
@@ -576,6 +578,26 @@ struct MacDocumentView: View {
                     .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
                 }
                 .padding(.vertical, 10)
+            }
+
+            // ── Subjects (this volume) — #308 F7 ─────────────────────────────────
+            // The volume's characteristic detected topics (volume-grain profiles, shipped).
+            // Visibility-gated: absent when the volume has no profile. The document-grain
+            // subject hierarchy is a Phase-3 disclosure (DocumentSubjectStore, gated off).
+            if VolumeSubjectsChips.hasContent(forVolumeId: entry.volumeId),
+               let volume = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
+                Divider()
+                panelSectionHeader(
+                    title: String(localized: "panel.subjects.title", defaultValue: "Subjects (this volume)"),
+                    badge: nil,
+                    isExpanded: $subjectsExpanded
+                )
+                if subjectsExpanded {
+                    Divider()
+                    VolumeSubjectsChips(volume: volume)
+                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                        .padding(.vertical, 10)
+                }
             }
         }
     }
