@@ -1493,3 +1493,102 @@ Opus implementation single-threaded, Fable plan review Wed noon).
   user-reachable today) and both pending-state scenes restore empty. **Part 2 (2026-07-16):**
   ArchivalNeighbors conversion prototype PR + `.defaultSize` on the 3 iOS scenes + follow-up
   issue filing, then the full Fable review (doc first — 3pm hard gate).
+
+### Session 2026-07-15 (eve/night) — #241 prototype · #315 shipped same-day · #258 design · People riders
+Two days ahead of the Rev-3 schedule by close.
+- **#241 part 2 + review** — PR #318 (ArchivalNeighbors as the first value-based iPad
+  window port + `.defaultSize` on the iOS scenes); Fable 3-lens review UPHELD-WITH-CAVEATS →
+  remediation PR #325 (reading-surface-fork argument repaired — the real XL gate is state
+  routing + dual-root retention; §5.3 retiered; the VolumeSourcesView neighbors trigger
+  gated). Filed #323 (DocumentWindowID restore spinner) and #324 (test-mode boot race).
+  HIGH process find: a contract-test commit had broken the unit-test target at v2 masked by
+  an incremental build — "run the FULL executed suite" made policy.
+- **#315 filed 09:17, closed same night** — #319+#320 (HMS/MLR enrichment harvest — owner-run
+  keyed re-query; 946/979 lots with naturally-sorted entry numbers; 979/979 able to name a
+  file series via the free ancestors data; 16 flagged `ancestryLacksRecordGroup`) + #326
+  (dual-platform provenance UI + the #321 app-side guard: flagged = unresolved). **#321
+  filed:** the null-RG fallback measured 0/16 precision — every flagged record a
+  presidential-library staff file. #322 filed (propagate enrichment to volume-sources).
+  Merge-check discipline instituted after #319 stranded 2 of 3 commits.
+- **#258 design** — PR #327, authored by an Opus agent from a requirements-only brief to
+  preserve author≠reviewer for the pre-cliff Fable review. Review verdict: shape survives;
+  **the load-bearing invariant discovered: empty-resolution inversion** (an empty scope set
+  reads as "no filter" corpus-wide) → the `IndexedResolution` enum contract.
+- **People riders** — PR #328: #307 macOS graph scroll-wheel zoom (window-scoped event
+  catcher) + node context menus; #264 person subject-affinity chips via the new
+  `volumeMentionCounts(forRollupId:)` GROUP-BY primitive × volume subject profiles.
+  Roles swapped (Fable implemented → Opus reviewed): clean + one a11y string fixed.
+
+### Session 2026-07-16 — #258 implementation · C-batch · #308 architecture + Phase 1 + Phase 2 begun
+- **#258 Custom Volume Scopes, all five phases** — PRs #329–#333: Phase 1 minimal vertical
+  (flat all-defaulted `CustomVolumeScope` @Model, `CustomScopeResolver.indexedResolution`
+  never returning a bare empty set, Settings CRUD both platforms); Phase 2 Search adoption
+  (seed-the-picker snapshot semantics + warn-and-refuse); Phase 3 Analytics scope bars
+  (disabled zero-indexed rows); Phase 4 Series manifest grain + the rich editor facets;
+  Phase 5 word-cloud `.customScope` with signature round-trip + direct window open (#334
+  folded). Owner release gate noted: **CloudKit Production schema deploy before build 33.**
+- **C-batch** — C1 PR #336 (#334 direct openWindow + fronting; #324 test-mode bootstrap;
+  #312 gap 3 re-measured and FALSIFIED — cell/button taps both fail to push on Browse,
+  finding recorded, red test not shipped). C2 PR #337 (#316: `activeTab` removed — per-window
+  `@SceneStorage` + consume-once `pendingTab`, seed persisted via `persistTabSeed`; #317:
+  Source Explorer + Graph scenes converted to value-based restorable requests; first design
+  REJECTED in review — scenePhase ≠ focus on iPadOS — and redesigned; the rename broke the
+  test target, repaired in-branch: full-suite rule now enforced). C3 PR #339 (durable #321
+  resolver policy) + owner keyed regen (350c192) + PR #340 (offline PRUNE_FLAGGED_LOTS
+  remediation mode; 16 flagged lots pruned from the bundle). Issues #316/#317/#321/#322/#258
+  closed; #338 filed (pendingX content fan-out).
+- **#308 architecture + Phase 1** — PR #341 (the reviewed design: grain/data-availability
+  invariant — volume-grain ships now, document-grain behind the `DocumentSubjectStore` seam
+  gated on #261; generators-vs-scorers similarity model per review F1). PR #342 (ScopeFacets
+  category/sub-category catalogs + Search "By Subject · Detected Topics" + Analytics/Series
+  facets, "detected topics — experimental" framing per F2/F3/F4/F5). PR #343 (era-sanity:
+  owner-reviewed earliest-plausible-year table — named events only, Terrorism deliberately
+  excluded; 14 anachronistic entries removed; regen + tests). PR #344 (word-cloud
+  `.subjectCategory` scope, F6). PR #345 (Phase 2a model: shared `DocumentKey`, six-axis
+  SimilarityGenerator/Scorer split, pure ranker + engine, restorable
+  `RelatedDocumentsRequest`, inert subject scorer; review fixes: candidate-pool floor
+  decoupled from display limit, honest overflow count). PR #346 (Phase 2b: bounded
+  `relatedByCitation` ego query reusing the parity-tested document-target predicate;
+  review added the same-volume NULL-target + bidirectional/self-loop fixtures).
+- Model note: main-loop switched to Fable mid-wave; review roles swap accordingly
+  (Fable implements → Opus reviews).
+
+### Session 2026-07-17 — find-related UI · cumulative review + remediation · #335 · build-33 close
+- **#308 Phase 2 UI** — PR #347 (RelatedDocumentsContent/Sheet/WindowView on the
+  ArchivalNeighbors pattern: per-axis weight sliders re-ranking on release, why-related
+  chips, pipeline-ready + duplicate-fire guards; value-based `relatedDocumentsScene`;
+  iOS toolbar + macOS strip entry points. A unit test caught a REAL runtime crash pre-ship:
+  Codable+RawRepresentable rawValue via `JSONEncoder(self)` infinitely recurses — manual
+  field-wise encoding; review then proved the conformance re-routes Equatable/Hashable/
+  Codable through rawValue, docs corrected). PR #348 ("Subjects (this volume)" disclosure —
+  the F7 cheap win, visibility-gated). **#308 Phase 2 complete; the subject axis and
+  document-grain disclosure light up automatically on the #261 data drop.**
+- **Cumulative review of #314–#348** (owner-requested, ultracode workflow: 9 dimensions +
+  full-suite ground truth, 33 agents; every finding adversarially verified): 1413/1413 tests,
+  21 confirmed findings (0 high / 6 medium), 2 refuted. **Remediation PR #349** fixed the
+  five mediums (both #275 store-generation reload gaps incl. the iPad graph scene; the
+  silent facet refusal for no-scope users; Analytics facet indexed-gating; the subject-cloud
+  cache missing a profiles fingerprint) + the cheap lows (BrowserView on-appear drains with
+  adopt-then-clear; `consumePendingTab()` making the #316 contract testable — the vacuous
+  test replaced; the #321 guard re-covered by a synthetic fixture after #340 emptied the
+  bundled one; CLAUDE.md generator-doc drift; assorted). Deferred to owner decisions:
+  #356 (cross-ref multiplicity damping — measured heavy-tailed to 121×), #357 (weights in
+  window identity).
+- **#335** — PR #350: `SourceExplorerExportGenerator` (SPM trio; parity-mirrored
+  AuthorityLookup; 18 tests) + the corpus-wide run (**264,464 records / 552 volumes**) +
+  the adversarial audit (6 lenses, 40 agents, 34/34 findings verified,
+  `Planning/335-Source-Explorer-Audit.md`). Headlines: lot 60 D 627 (455 records)
+  confidently WRONG (Operation Mongoose file unit; empty `variantControlNumbers` — the
+  fileUnit class quarantine is #351); series-level lot accuracy ~93%; 71.6% of the corpus
+  resolves only to the constant RG-59 record-group link (claims must say record-group
+  grain); top-50 missed lots = 78% of the lot gap (#352, owner-keyed); parser session
+  scoped (#353); routing session (#354); curated library NAIDs (#355). Baseline
+  recommendation: re-run post-fixes and supersede citations2.csv for Source Explorer
+  purposes.
+- **Closing session (this branch):** follow-up issues filed (#351–#358, incl. the Zotero
+  iOS URL-share fallback; `BigPicture-ZoteroExport.md` Phase-2 status corrected);
+  consolidated docs pass (both manuals, TestFlight Build-33 notes, README, in-app guides —
+  Related Documents, Custom Volume Scopes, detected-topic facets, provenance enrichment,
+  People additions, iPad windows, Zotero); **build 32 → 33** (project.yml + project.pbxproj
+  direct edit, no xcodegen). Owner release gates: CloudKit Production schema deploy
+  (CustomVolumeScope), two-device LWW sync check, Zotero live E2E verify, upload.

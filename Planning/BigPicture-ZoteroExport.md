@@ -10,9 +10,12 @@
 
 **Status:** Strategy decided 2026-06-26 after on-device testing + reading `zotero/zotero-ios`.
 RIS-to-iOS does **not** work (see Finding); RIS desktop path fixed and rescoped. Web API
-integration specced below (not yet built).
-**Priority:** Medium (near-term backlog)
-**Estimated effort:** Web API ~2–3 sessions; iOS web fallback ~0.5 session.
+integration **shipped on both platforms** — iOS 2026-06-26; the macOS document-level entry
+point, Settings pane, and unified Share/Export control 2026-06-27 (commits `ddde532` /
+`fcf3859` / `dc7f0e8`, sessions 155/157/158).
+**Remaining:** owner-in-loop live end-to-end verification against a real API key, and the
+iOS URL-share fallback (Phase 3, now tracked as issue #358).
+**Estimated effort (remaining):** live E2E verification is owner time; iOS web fallback ~0.5 session.
 
 ---
 
@@ -20,9 +23,9 @@ integration specced below (not yet built).
 
 | Tier | Mechanism | Platforms | Annotations? | Status |
 |---|---|---|---|---|
-| **Primary** | **Zotero Web API v3** — POST items/notes/tags/collection directly to the user's library | iOS + macOS | **Yes** (notes + tags + collection) | Specced (this doc) |
+| **Primary** | **Zotero Web API v3** — POST items/notes/tags/collection directly to the user's library | iOS + macOS | **Yes** (notes + tags + collection) | **Shipped** (both platforms; live E2E verification pending) |
 | **Fallback A** | **RIS file → File → Import** | macOS desktop only | Yes (notes→`N1`, tags→`KW`, doc#→`M2`); collection flattens | **Done** (fixes below) |
-| **Fallback B** | **Share `history.state.gov` URL → Zotero iOS share extension** (web translator) | iOS | **No** (annotations lost; one item) | Specced (this doc) |
+| **Fallback B** | **Share `history.state.gov` URL → Zotero iOS share extension** (web translator) | iOS | **No** (annotations lost; one item) | Open — issue #358 |
 
 The Web API is the only path that carries FRUS **annotations** into Zotero on **iOS**, so it is the
 headline integration. The two fallbacks are for users who won't set up an API key.
@@ -171,18 +174,21 @@ extracted record is rich. Out of scope here.)*
 
 - **Phase 1 — RIS desktop hygiene. ✅ Done.** `M2` doc-number fix; honest copy; format rescoped to
   desktop.
-- **Phase 2 — Web API (primary). 🟢 Built (2026-06-26), pending live verification.** Shipped:
+- **Phase 2 — Web API (primary). ✅ Shipped (iOS 2026-06-26; macOS 2026-06-27).** Shipped:
   `ZoteroAccountStore` (Keychain key + UserDefaults userID/username), `ZoteroAPIModels` (encodable
   items/creators/notes with last-space name split; decodable write/key responses), `ZoteroAPIClient`
   actor (`resolveAccount`, `createCollection`, chunked `createItems` with write-token + 429/`Backoff`
   retry, child-note pass, `send()` orchestration), **Settings → Integrations → Zotero** (paste key →
   verify → connected/disconnect), **"Send to Zotero Library…" in the collection export sheet** (both
   platforms), and **document-level "Send to Zotero Library…"** in the iOS citation sheet (lands a
-  single doc + its notes/tags in My Library). Unit-tested: creator split, item mapping/encoding, note
-  htmlify, response decoding. **Remaining:** live end-to-end verification against a real API key (the
-  network round-trip is untested — only request construction + response decoding are unit-covered);
-  optional macOS document-level entry (macOS already has RIS→desktop). Personal library only.
-- **Phase 3 — iOS web fallback.** "Send to Zotero (web)" URL share on iOS.
+  single doc + its notes/tags in My Library). The macOS document-level entry point — once listed here
+  as optional-remaining — shipped 2026-06-27: the Zotero Settings pane (`ddde532`), single-document
+  "Send to Zotero Library" via the Web API (`fcf3859`), and the unified Share/Export control with a
+  cross-device Zotero connection (`dc7f0e8`) — sessions 155/157/158. Unit-tested: creator split, item
+  mapping/encoding, note htmlify, response decoding. **Remaining:** owner-in-loop live end-to-end
+  verification against a real API key (the network round-trip is untested — only request construction
+  + response decoding are unit-covered). Personal library only.
+- **Phase 3 — iOS web fallback.** "Send to Zotero (web)" URL share on iOS — now tracked as issue #358.
 - **Phase 4 (optional).** Group libraries (`/groups/<id>`); pick-existing-collection browser;
   highlights → notes; a contributed history.state.gov translator.
 

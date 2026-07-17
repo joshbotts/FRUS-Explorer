@@ -88,6 +88,15 @@ import SwiftUI
 ///          briefing packet / source dossier / scholarly edition) and the
 ///          editable "key takeaway" headnote card (AI-seeded or user-written,
 ///          with authorship provenance)
+///   1.15 — Build 33 docs pass: page 5 gains "Custom Volume Scopes" (#258) and
+///          "Related Documents" (#308 Phase 2) sections, a scope/detected-topic
+///          note in Full-Text Search, detected-topic framing + the reader's
+///          "Subjects (this volume)" panel under Top Subjects on Volumes, and a
+///          person-detail Subjects note; page 6 Corpus Analytics notes the
+///          "My Volume Scopes" / "By Detected Topic" scope menus, Word Cloud
+///          adds the detected-topic scope, Cross-Reference Graph notes macOS
+///          scroll-wheel zoom + node context menus, and Source Explorer notes
+///          the file-series name + HMS/MLR entry identifiers (#315)
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -840,8 +849,17 @@ private extension EducationPage {
                 systemImage: "magnifyingglass",
                 paragraphs: [
                     "Search the full text of every downloaded and indexed volume at once. Results are ranked by relevance with English stemming, so searching \"negotiation\" also returns \"negotiate,\" \"negotiated,\" and \"negotiations.\" The search box understands Google-style syntax: wrap words in quotes for an exact phrase (\"missile crisis\"), use OR for either term, a leading minus to exclude a word (-Cuba), and a trailing asterisk for prefix matching (negoti*).",
-                    "Open the advanced filters to narrow by date range, document type, a person mentioned, and the search scope (document text, summaries, notes). You can also limit a search to specific volumes or whole subseries. Search only covers indexed volumes — download and index more to widen the corpus.",
+                    "Open the advanced filters to narrow by date range, document type, a person mentioned, and the search scope (document text, summaries, notes). You can also limit a search to specific volumes or whole subseries, apply one of your named volume scopes (My Volume Scopes), or filter by a detected topic — either fills the volume picker with the matching indexed volumes, and warns you when a scope has none indexed yet. Search only covers indexed volumes — download and index more to widen the corpus.",
                     "Find it on the Search tab (iOS) or the search window, ⌘F (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "volume-scopes",
+                heading: "Custom Volume Scopes",
+                systemImage: "square.stack.3d.up",
+                paragraphs: [
+                    "A volume scope is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration. Build one in Settings \u{2192} Volume Scopes: the editor lists the whole series with a title filter, and Add Volumes By… gathers matches by detected subject, person, manifest tag, or coverage years and editor. Scopes sync to your other devices via iCloud, and volumes you haven't downloaded stay in a scope and take effect once indexed.",
+                    "Apply a scope anywhere the corpus can be sliced: the search filters, the Corpus, Person, and Cross-Reference Analytics scope menus, the Word Cloud, and the About the Series dashboards. Each entry shows how many of the scope's volumes are indexed, and a scope with none indexed is called out honestly rather than silently searching nothing."
                 ]
             ),
             EducationSection(
@@ -859,7 +877,8 @@ private extension EducationPage {
                 systemImage: "tag",
                 paragraphs: [
                     "Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category.",
-                    "Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library."
+                    "Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.",
+                    "These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, all narrow to the volumes where a topic is most characteristic. And below any document, the research panel's Subjects (this volume) list shows the same chips for the volume you are reading."
                 ]
             ),
             EducationSection(
@@ -878,6 +897,7 @@ private extension EducationPage {
                 paragraphs: [
                     "An alphabetical directory of everyone named across your indexed volumes. Select a person to see every document that mentions them — a fast way to follow an individual policymaker, diplomat, or foreign leader through the record.",
                     "The app groups a person's appearances across volumes automatically, but it is deliberately cautious — it won't merge two entries unless it is confident they are the same person, so some people appear more than once. You can finish the job by hand: merge two entries from a person's detail (or a row's context menu), and undo any merge or separation later from the Corrections list. Your corrections sync across your devices.",
+                    "A person's detail also lists Subjects — detected topics characteristic of the volumes where they are mentioned (volume-level, not per-document tags). Tap one to see every volume covering it.",
                     "Find it in the Corpus Browser's People section."
                 ]
             ),
@@ -888,6 +908,16 @@ private extension EducationPage {
                 paragraphs: [
                     "Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app helps you look for the right document — no manual hunting through volumes and document numbers.",
                     "Find it in the Search screen's overflow (More) menu."
+                ]
+            ),
+            EducationSection(
+                id: "related-documents",
+                heading: "Related Documents",
+                systemImage: "doc.on.doc",
+                paragraphs: [
+                    "From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, the same volume or subseries, and shared people. Small icon chips on each result show why it matched.",
+                    "A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until detected-topic document data ships.",
+                    "Find it in the document toolbar (iOS) or the Related button in the document's research strip (Mac). On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results."
                 ]
             ),
         ]
@@ -909,6 +939,7 @@ private extension EducationPage {
                     "Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.",
                     "A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The \u{201C}% of documents\u{201D} toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count \u{2014} the percentage of that period\u{2019}s documents that contain it \u{2014} so a term doesn\u{2019}t look like it is surging simply because the series published more in later decades.",
                     "On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into \u{201C}Other.\u{201D}",
+                    "The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.",
                     "Analytics runs entirely on your local index; no network connection is required.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
                 ]
@@ -928,7 +959,7 @@ private extension EducationPage {
                 heading: "Word Cloud",
                 systemImage: WordCloudGlyph.symbol,
                 paragraphs: [
-                    "See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.",
+                    "See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a detected topic, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.",
                     "Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don\u{2019}t want to see, or compare two scopes side by side; export the cloud as a PNG, PDF, or CSV. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud\u{2019}s typeface and density in Settings.",
                     "Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, saved searches, and your custom volume scopes (Settings → Volume Scopes)."
@@ -940,6 +971,7 @@ private extension EducationPage {
                 systemImage: "point.3.connected.trianglepath.dotted",
                 paragraphs: [
                     "Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.",
+                    "Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.",
                     "Find it from a document's toolbar (iOS) or the Graph window (Mac)."
                 ]
             ),
@@ -963,7 +995,7 @@ private extension EducationPage {
                     "Open the Source Explorer from any document to read its source note broken into structured archival fields detected during indexing, and to follow citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.",
                     "You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies rely on a free NARA Catalog API key you can request from the National Archives and then add in Settings.",
                     "From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same detected archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document\u{2019}s row in a volume\u{2019}s sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.",
-                    "More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app\u{2019}s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series."
+                    "More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app\u{2019}s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, worth quoting alongside the lot number when you request the original records."
                 ]
             ),
             EducationSection(
