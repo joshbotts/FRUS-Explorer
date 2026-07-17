@@ -305,7 +305,8 @@ struct RelatedDocumentsContent: View {
 
     // MARK: Rows
 
-    /// One related-document row: header, volume + dateline, and "why related" axis chips.
+    /// One related-document row: header, volume + dateline, a context snippet, and the "why
+    /// related" axis chips with their scores.
     @ViewBuilder
     private func rowLabel(_ row: RelatedDocumentRow) -> some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -318,23 +319,43 @@ struct RelatedDocumentsContent: View {
                     Text(dateline).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
+            // A leading excerpt (or on-device summary) so the reader can judge relevance without
+            // opening the document (#362).
+            if let snippet = row.snippet, !snippet.isEmpty {
+                Text(snippet)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             whyRelated(row)
         }
         .padding(.vertical, 2)
     }
 
-    /// Small icon chips naming the axes that contributed to this row, strongest first — the
-    /// "why related" affordance.
+    /// Small chips naming the axes that contributed to this row, strongest first, each with its
+    /// normalised 0–100 signal score — the "why related" affordance (#362).
     @ViewBuilder
     private func whyRelated(_ row: RelatedDocumentRow) -> some View {
-        let axes = row.axisScores.sorted { $0.value > $1.value }.map(\.key)
+        let axes = row.axisScores.sorted { $0.value > $1.value }
         if !axes.isEmpty {
-            HStack(spacing: 5) {
-                ForEach(axes) { axis in
-                    Image(systemName: axis.systemImage)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .accessibilityLabel(axis.displayName)
+            HStack(spacing: 8) {
+                ForEach(axes, id: \.key) { axis, score in
+                    // One rounded percent drives both the visible chip and the a11y label (so they
+                    // never disagree); a real but sub-1% contribution reads as "<1%", never "0%".
+                    let pct = Int((score * 100).rounded())
+                    let display = pct == 0
+                        ? String(localized: "related.why.subOnePercent", defaultValue: "<1%")
+                        : String(format: String(localized: "related.why.percent %lld",
+                                                defaultValue: "%lld%%"), Int64(pct))
+                    HStack(spacing: 2) {
+                        Image(systemName: axis.systemImage)
+                        Text(display).monospacedDigit()
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("\(axis.displayName), \(display)"))
                 }
             }
         }

@@ -176,6 +176,11 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     /// The nonzero per-axis contributions (post-weight `axisScore`, not the weighted product),
     /// for the "why related" chips.
     let axisScores: [SimilarityAxis: Double]
+    /// A short context snippet (on-device summary or a leading body excerpt), filled by the engine
+    /// for the shown rows so a researcher can judge relevance (#362); `nil` when the document has no
+    /// indexed text. Not a designated-init parameter — the ranker builds rows without it and the
+    /// engine fills it post-rank.
+    var snippet: String? = nil
 
     var id: DocumentKey { key }
     /// The related document's volume.
