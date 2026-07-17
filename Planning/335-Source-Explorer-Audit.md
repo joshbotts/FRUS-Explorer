@@ -157,10 +157,15 @@ re-resolution is step 2 / #352):
   collection-authority); the central-files enrich pass now *reports* fileUnit resolutions; and
   the keyless `PRUNE_FLAGGED_LOTS` mode drops fileUnit alongside `ancestryLacksRecordGroup`.
 
-**Still owed to step 2 (#352, keyed):** the *underlying* NAIDs in all three bundles are still
-wrong in the data (only suppressed at render). The owner-keyed CITATIONS_CSV re-resolution
-replaces them with correct Conference-Files-family NAIDs and regenerates the bundles; once
-re-harvested, the `untrustworthyNAIDs` set empties and the render guards become no-ops.
+**Step 2 executed — 2026-07-17 (partial):** the owner ran the keyed lot re-harvest (via the new
+cold-cache `RESOLVE_LOTS_ONLY` mode). `central-files` + `collection-authority` are now clean in the
+data: **971 lots, 0 fileUnit**, the 14 poisoned authority clusters cleared, every lot post-validated,
+17 drift-lost NAIDs preserved by `mergeLots`, +24 new lots. **But the coverage goal did not pan
+out** — only 2 of 573 "missed" lots resolved (they are not in NARA's control-number index; §5.3 was
+too optimistic), so those still route to the app's live lookup and need manual NAID curation. The
+`volume-sources` fileUnit entries remain (its self-contained render guard suppresses them; a keyed
+`VolumeSourcesIndexGenerator` run cleans them when convenient). Full detail:
+`Planning/352-lot-resolution-runbook.md` → "Actual run — 2026-07-17".
 
 ### 7b. #352 — resolver post-validation shipped (offline generator, no key)
 

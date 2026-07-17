@@ -44,9 +44,17 @@ public struct OfflineNAIDResolver: Sendable {
     }
 
     /// Resolves a normalized compact lot key (`"64D199"`) to its NARA record, or `nil`.
+    ///
+    /// The `central-files` source (`BundledLotResolver`) already rejects `fileUnit`-level and
+    /// `ancestryLacksRecordGroup` mis-resolutions (#321/#351/#352). The `volume-sources` `lots`
+    /// map is **not** otherwise guarded, so a `fileUnit`-level entry there — the same
+    /// wrong-collection class (60 D 627 → "Operation Mongoose") — is skipped here too (#352), or
+    /// it would re-poison the collection-authority clusters this resolver feeds. The per-lot cache
+    /// (step 3) carries no level, but the audited fileUnit lots have no cache files, so the
+    /// `fileUnit` class cannot reach that fallback.
     public func resolve(lotNorm: String) -> ResolvedNAID? {
         if let hit = bundled?.resolve(rawLot: lotNorm) { return hit }
-        if let hit = indexLots[lotNorm] { return hit }
+        if let hit = indexLots[lotNorm], hit.levelOfDescription != "fileUnit" { return hit }
         return cacheLots[lotNorm]
     }
 
