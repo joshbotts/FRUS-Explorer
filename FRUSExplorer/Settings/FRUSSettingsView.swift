@@ -860,6 +860,9 @@ private struct SettingsScopesPane: View {
             Button {
                 appState.pendingWordCloud = .customScope(id: scope.id)
                 openWindow(id: "frus.wordcloud")
+                // An already-open cloud window retargets via its onChange, but openWindow(id:)
+                // does not raise it — front it explicitly, like every other direct open (#334).
+                bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
                 Image(systemName: WordCloudGlyph.symbol)
             }

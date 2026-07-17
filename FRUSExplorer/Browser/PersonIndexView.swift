@@ -671,8 +671,11 @@ struct PersonIndexDetailSheet: View {
         }
         // #264 chip pivot: the same cross-volume sheet the volume detail's subject chips
         // open. `excluding: ""` excludes nothing — every covering volume is relevant here.
+        // `onNavigate` dismisses THIS detail sheet too: a row tap hands off to the browse
+        // surface, and leaving the person sheet up would cover the navigation it triggered.
         .sheet(item: $selectedAffinitySubject) { subject in
-            VolumeSubjectVolumesSheet(subject: subject, currentVolumeId: "")
+            VolumeSubjectVolumesSheet(subject: subject, currentVolumeId: "",
+                                      onNavigate: { dismiss() })
         }
         .alert(
             String(localized: "people.detail.mergeConfirm.title", defaultValue: "Merge these identities?"),

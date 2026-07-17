@@ -120,13 +120,8 @@ struct BrowserView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .onChange(of: appState.pendingBrowseDocument) { _, entry in
-            guard let entry else { return }
-            viewModel?.navigationPath.append(.document(entry))
-            appState.pendingBrowseDocument = nil
-            #if DEBUG
-            print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
-            #endif
+        .onChange(of: appState.pendingBrowseDocument) { _, _ in
+            consumePendingBrowseDocument()
         }
         // Volume-grain sibling of the observer above (UI audit gap 12): Cross-Volume
         // Provenance rows and the Session-9 subject pivot hand off a volume id; push
@@ -135,14 +130,8 @@ struct BrowserView: View {
         // silently dropping hand-offs to undownloaded volumes, which the subject
         // pivot's cross-corpus list routinely targets (VolumeView shows its own
         // Download placeholder for those).
-        .onChange(of: appState.pendingBrowseVolume) { _, volumeId in
-            guard let volumeId, let vm = viewModel else { return }
-            appState.pendingBrowseVolume = nil
-            guard let entry = appState.manifestStore.entry(forVolumeId: volumeId) else { return }
-            vm.navigationPath.append(.volume(entry))
-            #if DEBUG
-            print("[BrowserView] pendingBrowseVolume consumed: \(volumeId)")
-            #endif
+        .onChange(of: appState.pendingBrowseVolume) { _, _ in
+            consumePendingBrowseVolume()
         }
         .onChange(of: appState.filterDownloadedOnly) { _, flag in
             viewModel?.filterDownloadedOnly = flag
@@ -185,7 +174,17 @@ struct BrowserView: View {
             appState.pendingChronology = nil
             showChronology = true
         }
-        .onAppear { bootstrapViewModel() }
+        .onAppear {
+            bootstrapViewModel()
+            // Cumulative-review fix: `.onChange` only observes changes made while this view is
+            // attached, but the content channels can be set BEFORE BrowserView exists — a
+            // Related-Documents row tap or subject-chip pivot from another tab posts the value
+            // and switches to Browse via pendingTab, and Browse may be freshly instantiated.
+            // Drain anything already pending once the view model exists (bootstrap is
+            // synchronous, so it does).
+            consumePendingBrowseDocument()
+            consumePendingBrowseVolume()
+        }
         // #324: under FRUS_UI_TEST_MODE the browse stack can render before AppState
         // finishes booting the download manager, so the view model would capture nil
         // for the session and report every volume as not-downloaded. Back-fill it the
@@ -433,6 +432,31 @@ struct BrowserView: View {
     }
 
     // MARK: - Bootstrap
+
+    /// Consumes a pending document hand-off, pushing it onto the browse stack and clearing the
+    /// channel. Callable from both the `.onChange` observer (value set while the view is live)
+    /// and `.onAppear` (value set before the view existed). The clear happens only AFTER a
+    /// successful adopt — a nil view model leaves the value pending for the drain that runs once
+    /// bootstrap completes (previously the optional-chained append silently dropped it).
+    private func consumePendingBrowseDocument() {
+        guard let entry = appState.pendingBrowseDocument, let vm = viewModel else { return }
+        appState.pendingBrowseDocument = nil
+        vm.navigationPath.append(.document(entry))
+        #if DEBUG
+        print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
+        #endif
+    }
+
+    /// Volume-grain sibling of `consumePendingBrowseDocument` — same adopt-then-clear contract.
+    private func consumePendingBrowseVolume() {
+        guard let volumeId = appState.pendingBrowseVolume, let vm = viewModel else { return }
+        appState.pendingBrowseVolume = nil
+        guard let entry = appState.manifestStore.entry(forVolumeId: volumeId) else { return }
+        vm.navigationPath.append(.volume(entry))
+        #if DEBUG
+        print("[BrowserView] pendingBrowseVolume consumed: \(volumeId)")
+        #endif
+    }
 
     private func bootstrapViewModel() {
         guard viewModel == nil else { return }

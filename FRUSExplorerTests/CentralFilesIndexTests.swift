@@ -229,4 +229,35 @@ struct CentralFilesIndexTests {
         // Unflagged entries must be unaffected by the guard.
         #expect(index.lotFile(forRawLot: "81 D 208") != nil)
     }
+
+    /// The #321 guard exercised against a SYNTHETIC fixture, independent of the bundle's
+    /// content. The bundled-artifact test above went vacuous the day #340 pruned the 16
+    /// flagged lots from the shipped index (by design — it only loops when flags exist), which
+    /// left the accessor's `ancestryLacksRecordGroup` branch with no executing coverage
+    /// anywhere. This fixture keeps the guard permanently under test: a flagged entry must be
+    /// invisible through the accessor, an unflagged sibling must resolve, and the flag must
+    /// not leak through lot-number normalization.
+    @Test("The #321 guard drops flagged entries in a synthetic index")
+    func flaggedGuardSyntheticFixture() throws {
+        let json = """
+        {
+          "numericalFile": { "seriesNaId": "654171", "microfilm": "M862", "rolls": [] },
+          "lotFiles": [
+            { "lotNumber": "32D66", "recordGroup": "RG 59", "naId": "1", "title": "Ford Library staff file",
+              "catalogURL": "https://catalog.archives.gov/id/1", "matchType": "control",
+              "ancestryLacksRecordGroup": true },
+            { "lotNumber": "81D208", "recordGroup": "RG 59", "naId": "2", "title": "Human Rights Country Files",
+              "catalogURL": "https://catalog.archives.gov/id/2", "matchType": "control" }
+          ]
+        }
+        """
+        let index = try JSONDecoder().decode(CentralFilesIndex.self, from: Data(json.utf8))
+        // The flagged entry is present in the data but invisible through the accessor —
+        // including via every raw spelling the normalizer folds to the same key.
+        #expect(index.lotFiles.contains { $0.lotNumber == "32D66" })
+        #expect(index.lotFile(forRawLot: "32 D 66") == nil)
+        #expect(index.lotFile(forRawLot: "Lot 32-D 66") == nil)
+        // The unflagged sibling resolves normally.
+        #expect(index.lotFile(forRawLot: "81 D 208")?.naId == "2")
+    }
 }

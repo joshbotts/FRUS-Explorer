@@ -271,7 +271,13 @@ struct AnalyticsScopeBar: View {
     /// The "By Subject" facet sub-menu (#308 Phase 1): a category menu whose first item scopes
     /// to the whole (coarse) category and whose remaining items scope to each sub-category —
     /// where the facet actually discriminates (review F3). Volume-grain, from the bundled
-    /// profiles; every set is non-empty (only categories with volumes are listed).
+    /// profiles.
+    ///
+    /// Cumulative-review fix: every seeded set is **intersected with `indexedVolumeIds`** and
+    /// zero-indexed entries render disabled with an honest "none indexed yet" — the same
+    /// treatment as the custom-scope items in this menu. Analytics dashboards only have data
+    /// for indexed volumes, so seeding the raw manifest-wide profile set silently produced
+    /// empty (or partial-looking) charts for topics whose volumes aren't indexed.
     @ViewBuilder
     private func subjectScopeMenu(
         _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
@@ -281,25 +287,54 @@ struct AnalyticsScopeBar: View {
                          defaultValue: "Detected topics — experimental")) {
             ForEach(ScopeFacets.categoryCatalog(resolvedByVolume: resolved)) { category in
                 Menu(category.label) {
-                    Button(String(format: String(
-                        localized: "analytics.scope.subject.wholeCategory %@",
-                        defaultValue: "All of %@"), category.label)) {
-                        setScope(ScopeFacets.volumeIds(forCategory: category.label,
-                                                       resolvedByVolume: resolved).sorted(),
-                                 label: category.label)
-                    }
+                    subjectFacetItem(
+                        baseLabel: String(format: String(
+                            localized: "analytics.scope.subject.wholeCategory %@",
+                            defaultValue: "All of %@"), category.label),
+                        scopeLabel: category.label,
+                        profileVolumeIds: ScopeFacets.volumeIds(forCategory: category.label,
+                                                                resolvedByVolume: resolved))
                     ForEach(ScopeFacets.subCategoryCatalog(forCategory: category.label,
                                                           resolvedByVolume: resolved)) { sub in
-                        Button(sub.subcategory) {
-                            setScope(ScopeFacets.volumeIds(forCategory: sub.category,
-                                                           subcategory: sub.subcategory,
-                                                           resolvedByVolume: resolved).sorted(),
-                                     label: "\(sub.category) · \(sub.subcategory)")
-                        }
+                        subjectFacetItem(
+                            baseLabel: sub.subcategory,
+                            scopeLabel: "\(sub.category) · \(sub.subcategory)",
+                            profileVolumeIds: ScopeFacets.volumeIds(forCategory: sub.category,
+                                                                    subcategory: sub.subcategory,
+                                                                    resolvedByVolume: resolved))
                     }
                 }
             }
           }
+        }
+    }
+
+    /// One subject-facet menu item: enabled with an honest "N of M indexed" count when the
+    /// topic's profile volumes intersect the index (seeding only the indexed subset, so the
+    /// `setScope` empty→nil inversion can never fire), disabled with "none indexed yet"
+    /// otherwise — the `customScopeItem` idiom applied to the facet.
+    @ViewBuilder
+    private func subjectFacetItem(baseLabel: String, scopeLabel: String,
+                                  profileVolumeIds: Set<String>) -> some View {
+        let indexed = profileVolumeIds.intersection(indexedVolumeIds)
+        if indexed.isEmpty {
+            Button {
+                // Unreachable: disabled below. Present for the shared Button shape.
+            } label: {
+                Text(String(format: String(
+                    localized: "analytics.scope.subject.none %@",
+                    defaultValue: "%@ — none indexed yet"), baseLabel))
+            }
+            .disabled(true)
+        } else {
+            Button {
+                setScope(indexed.sorted(), label: scopeLabel)
+            } label: {
+                Text(String(format: String(
+                    localized: "analytics.scope.subject.indexed %@ %lld %lld",
+                    defaultValue: "%@ (%lld of %lld indexed)"),
+                    baseLabel, Int64(indexed.count), Int64(profileVolumeIds.count)))
+            }
         }
     }
 
@@ -349,10 +384,11 @@ struct AnalyticsScopeBar: View {
                     }
                 }
                 // #308 Phase 1 — subject category / sub-category facet (volume-grain, from the
-                // bundled profiles). `categoryCatalog` lists only categories that have volumes,
-                // so every set reaching `setScope` is non-empty — the empty→nil "no filter"
-                // inversion cannot fire here, so no indexed-resolution guard is needed (unlike
-                // Search). Content is built lazily when the sub-menu opens.
+                // bundled profiles). Each item intersects its profile volume set with
+                // `indexedVolumeIds` and disables at zero (the custom-scope idiom above), so
+                // every set reaching `setScope` is non-empty AND indexed — the empty→nil
+                // "no filter" inversion cannot fire, and no dashboard is scoped to volumes it
+                // has no data for. Content is built lazily when the sub-menu opens.
                 if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
                    !resolved.isEmpty {
                     Divider()

@@ -74,6 +74,12 @@ struct SearchFilterView: View {
     /// The label of the currently-applied subject facet (category or "category · sub-category"),
     /// or `nil`. Snapshot semantics like custom scopes: a label, not a live query field.
     @State private var subjectFacetLabel: String?
+    /// The exact volume selection the subject facet seeded, or `nil` when no facet is applied.
+    /// Lets the stale-clear `onChange` distinguish the facet's OWN seeding (which must not clear
+    /// the label it just set — `onChange` fires after the whole apply transaction) from a manual
+    /// picker edit / Clear Filters / custom-scope apply (which must clear it: the label would
+    /// otherwise keep describing a selection that no longer matches it).
+    @State private var subjectFacetSeededIds: [String]?
 
     /// Live text typed in the person-name search field.
     @State private var personSearchText: String = ""
@@ -105,9 +111,7 @@ struct SearchFilterView: View {
                 if vm.hasActiveFilters {
                     Button(String(localized: "search.filters.clear", defaultValue: "Clear"),
                            role: .destructive) {
-                        vm.clearFilters()
-                        personSearchText  = ""
-                        personSuggestions = []
+                        clearAllFilters()
                     }
                     .foregroundStyle(.red)
                 }
@@ -132,6 +136,14 @@ struct SearchFilterView: View {
             .formStyle(.grouped)
             .sheet(isPresented: $showSubjectFacet) {
                 SubjectCategoryFacetPicker { ids, label in applySubjectFacet(ids, label: label) }
+            }
+            // Stale-clear on the Form (not inside a gated section) so it runs for every user.
+            .onChange(of: vm.selectedVolumeIds) { _, newIds in clearStaleScopeState(newVolumeIds: newIds) }
+            .onChange(of: vm.selectedSubseriesIds) { _, newIds in
+                scopeWarningName = nil
+                // A manual subseries pick means the facet label no longer describes the filter;
+                // the facet's own apply only ever CLEARS subseries (newIds empty), so skip that.
+                if !newIds.isEmpty { subjectFacetLabel = nil; subjectFacetSeededIds = nil }
             }
 
             Divider()
@@ -169,6 +181,14 @@ struct SearchFilterView: View {
             .sheet(isPresented: $showSubjectFacet) {
                 SubjectCategoryFacetPicker { ids, label in applySubjectFacet(ids, label: label) }
             }
+            // Stale-clear on the Form (not inside a gated section) so it runs for every user.
+            .onChange(of: vm.selectedVolumeIds) { _, newIds in clearStaleScopeState(newVolumeIds: newIds) }
+            .onChange(of: vm.selectedSubseriesIds) { _, newIds in
+                scopeWarningName = nil
+                // A manual subseries pick means the facet label no longer describes the filter;
+                // the facet's own apply only ever CLEARS subseries (newIds empty), so skip that.
+                if !newIds.isEmpty { subjectFacetLabel = nil; subjectFacetSeededIds = nil }
+            }
             .navigationTitle(
                 String(localized: "search.filters.title", defaultValue: "Filters")
             )
@@ -187,9 +207,7 @@ struct SearchFilterView: View {
                         Button(String(localized: "search.filters.clear",
                                       defaultValue: "Clear"),
                                role: .destructive) {
-                            vm.clearFilters()
-                            personSearchText  = ""
-                            personSuggestions = []
+                            clearAllFilters()
                         }
                     }
                 }
@@ -420,13 +438,7 @@ struct SearchFilterView: View {
                     customScopeRow(scope)
                 }
                 if let warning = scopeWarningName {
-                    Label(String(format: String(
-                        localized: "search.scope.custom.noneIndexed %@",
-                        defaultValue: "No volumes of “%@” are indexed yet — download and index its volumes first."),
-                        warning),
-                          systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    noneIndexedWarning(warning)
                 }
             } header: {
                 Text(String(localized: "search.section.customScopes",
@@ -435,11 +447,24 @@ struct SearchFilterView: View {
                 Text(String(localized: "search.scope.custom.footer",
                             defaultValue: "Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings."))
             }
-            // Review fix: the no-indexed warning must not outlive a manual picker edit —
-            // once the user builds a valid selection by hand, the warning is stale.
-            .onChange(of: vm.selectedVolumeIds) { _, _ in scopeWarningName = nil }
-            .onChange(of: vm.selectedSubseriesIds) { _, _ in scopeWarningName = nil }
+            // The stale-clear onChange handlers moved to the Form (both bodies): attached here
+            // they only ran when the user HAD custom scopes, so a no-scopes user's facet state
+            // never stale-cleared (cumulative-review fix).
         }
+    }
+
+    /// The shared "no indexed members" refusal warning, rendered by whichever section owns the
+    /// refusing control: the custom-scopes section when the user has scopes, else the subject
+    /// facet section — so the #258 warn+refuse is never a silent no-op (cumulative-review fix:
+    /// it previously rendered ONLY inside the `!customScopes.isEmpty` gate).
+    private func noneIndexedWarning(_ name: String) -> some View {
+        Label(String(format: String(
+            localized: "search.scope.custom.noneIndexed %@",
+            defaultValue: "No volumes of “%@” are indexed yet — download and index its volumes first."),
+            name),
+              systemImage: "exclamationmark.triangle")
+            .font(.caption)
+            .foregroundStyle(.orange)
     }
 
     /// One scope row: name + "N of M indexed", applying on tap per the invariant above.
@@ -454,6 +479,11 @@ struct SearchFilterView: View {
                 vm.selectedVolumeIds = ids.sorted()
                 vm.selectedSubseriesIds = []
                 scopeWarningName = nil
+                // A scope apply supersedes any applied subject facet — clear its provenance
+                // explicitly rather than via the selection onChange, which never fires when
+                // the scope resolves to the byte-identical volume set the facet seeded.
+                subjectFacetLabel = nil
+                subjectFacetSeededIds = nil
             case .noIndexedMembers, .scopeUnavailable:
                 scopeWarningName = scope.name
             }
@@ -515,6 +545,12 @@ struct SearchFilterView: View {
                     }
                     .contentShape(Rectangle())
                 }
+                // Fallback surface for the refusal warning: with zero custom scopes the
+                // custom-scopes section (the warning's primary home) does not render at all,
+                // which used to make the facet's warn+refuse a silent no-op.
+                if customScopes.isEmpty, let warning = scopeWarningName {
+                    noneIndexedWarning(warning)
+                }
             } header: {
                 Text(String(localized: "search.section.subject",
                             defaultValue: "By Subject · Detected Topics"))
@@ -537,10 +573,40 @@ struct SearchFilterView: View {
             vm.selectedVolumeIds = hit.sorted()
             vm.selectedSubseriesIds = []
             subjectFacetLabel = label
+            subjectFacetSeededIds = hit.sorted()
             scopeWarningName = nil
         case .noIndexedMembers, .scopeUnavailable:
             scopeWarningName = label
             subjectFacetLabel = nil
+            subjectFacetSeededIds = nil
+        }
+    }
+
+    /// The single Clear Filters action shared by all three clear controls (macOS header, iOS
+    /// toolbar, iOS clear section): resets the view model AND this view's local facet/warning
+    /// state directly — the `onChange` stale-clears alone miss the case where the selection was
+    /// already empty when Clear was pressed (no change event fires), which would leave a facet
+    /// refusal warning or label displayed over a cleared filter set.
+    private func clearAllFilters() {
+        vm.clearFilters()
+        personSearchText  = ""
+        personSuggestions = []
+        scopeWarningName = nil
+        subjectFacetLabel = nil
+        subjectFacetSeededIds = nil
+    }
+
+    /// The stale-state clears shared by both bodies, attached to the Form so they run
+    /// regardless of which sections are visible (they previously lived inside the
+    /// custom-scopes section's `!customScopes.isEmpty` gate and never ran for no-scope users).
+    /// The facet label survives only the facet's OWN seeding (`subjectFacetSeededIds`); any
+    /// other selection change — manual picker edits, Clear Filters, a custom-scope apply —
+    /// means the label no longer describes the active filter.
+    private func clearStaleScopeState(newVolumeIds: [String]) {
+        scopeWarningName = nil
+        if newVolumeIds != (subjectFacetSeededIds ?? []) {
+            subjectFacetLabel = nil
+            subjectFacetSeededIds = nil
         }
     }
 
@@ -803,9 +869,7 @@ struct SearchFilterView: View {
     private var clearSection: some View {
         Section {
             Button(role: .destructive) {
-                vm.clearFilters()
-                personSearchText  = ""
-                personSuggestions = []
+                clearAllFilters()
             } label: {
                 Label(
                     String(localized: "search.clearfilters",

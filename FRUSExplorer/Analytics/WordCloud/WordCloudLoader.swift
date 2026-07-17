@@ -104,6 +104,18 @@ enum WordCloudLoader {
             if case .subjectCategory = scope { return true }
             return false
         }()
+        // The CACHE signature (never the scope's canonical signature — the precompute queue
+        // persists that one). A subject cloud's key set derives from the BUNDLED profiles, not
+        // just the index, so its cache entries must also rotate when an app update ships a
+        // regenerated volume-subject-profiles-index.json (the era-sanity regen did exactly
+        // that): decorate with the bundle's `generated` stamp. The index-count fingerprint the
+        // disk cache already applies covers indexing changes; this covers bundle changes.
+        let cacheSignature: String = {
+            if case .subjectCategory = scope {
+                return "\(scope.signature)|vsp=\(VolumeSubjectProfilesStore.shared?.generated ?? "none")"
+            }
+            return scope.signature
+        }()
         let result: WordCloudResult
         if resolved.isCorpus {
             result = try await service.corpusTopTerms(
@@ -112,7 +124,7 @@ enum WordCloudLoader {
             )
         } else {
             result = try await service.topTerms(
-                signature: scope.signature, keys: resolved.keys,
+                signature: cacheSignature, keys: resolved.keys,
                 limit: limit, includeDiplomaticStopwords: excludeBoilerplate,
                 extraStopwords: extras, lens: lens, tuning: tuning,
                 persistent: isPersistentScope, progress: isPersistentScope ? progress : nil

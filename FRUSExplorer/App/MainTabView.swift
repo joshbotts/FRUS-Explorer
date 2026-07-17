@@ -20,11 +20,10 @@ import SwiftData
 /// fully wired as of Session 44.
 ///
 /// ## Badges
-/// - **Activity** tab: count of `ResearchNote`s with `createdAt` newer than
-///   `appState.lastActivityTabVisit`. Cleared automatically when the user selects
-///   the Activity tab (the timestamp is stamped in the `.onChange` handler).
-/// - **Settings** tab: count of downloaded-but-unindexed volumes, via
+/// - **Settings** tab: a "·" indicator when downloaded-but-unindexed volumes exist, via
 ///   `appState.unindexedVolumeCount`. Prompts the user to run Reindex.
+///   (The Activity tab and its new-notes badge were retired in 1.7 — Research, its
+///   replacement, is a navigation tool, not an inbox, and carries no badge.)
 ///
 /// `MainTabView` is instantiated by `ContentView` on iOS after the user has
 /// completed onboarding. macOS continues to use `BrowserView` directly.
@@ -166,20 +165,15 @@ struct MainTabView: View {
         // field; every open MainTabView adopts it and clears it (the standard pendingX pattern),
         // so the hand-off's tab comes forward wherever the user is. Cleared so a later unrelated
         // change does not re-trigger it, and so a fresh window (nil) falls through to its seed.
-        .onChange(of: appState.pendingTab) { _, pending in
-            guard let pending else { return }
-            selectedTab = pending
-            appState.pendingTab = nil
+        .onChange(of: appState.pendingTab) { _, _ in
+            if let pending = appState.consumePendingTab() { selectedTab = pending }
         }
         // #316 — catch a request delivered during a cold launch (open-with, Spotlight, Handoff)
         // BEFORE this observer existed: `onChange` never fires for state set before the view
         // appeared, so drain any already-pending request here. A window opened later sees `nil`
         // (a prior window consumed it) and keeps its seeded tab.
         .onAppear {
-            if let pending = appState.pendingTab {
-                selectedTab = pending
-                appState.pendingTab = nil
-            }
+            if let pending = appState.consumePendingTab() { selectedTab = pending }
         }
         // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
         // sheet presents over whichever tab is active and clears it on dismiss.

@@ -543,7 +543,11 @@ struct FRUSExplorerApp: App {
                         crossReferenceStore: store,
                         downloadedVolumeIds: downloaded
                     )
-                    .id(request.entry.id)
+                    // Keyed on the store generation as well as the entry: the view captures the
+                    // store instance at init, and an in-session reindex REPLACES that instance
+                    // (#275 — the stale one reads empty). The generation bump tears the view down
+                    // and rebuilds it against the fresh store, matching the macOS graph window.
+                    .id("\(request.entry.id)-gen\(appState.readOnlyStoresGeneration)")
                 } else {
                     ContentUnavailableView(
                         String(localized: "graphWindow.empty.title",
