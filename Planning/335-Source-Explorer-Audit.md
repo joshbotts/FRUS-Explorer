@@ -18,9 +18,9 @@ healthy (99.86% roll-hit rate, no year-gating hole). But the errors are **concen
 diffuse**: the 16 fileUnit-level bundle entries are almost entirely wrong — headlined by lot
 **60 D 627 (455 records, the corpus's 2nd-most-cited lot) resolving to an "Operation Mongoose /
 Cuba – 1963" file unit**, confirmed wrong against the live catalog (the record carries zero
-`variantControlNumbers`, so the bundle's `control` match claim is unsupported) — and 316
+`variantControlNumbers`, so the bundle's `control` match claim is unsupported) — and 334
 decimal-file citations are misrouted onto Numerical File rolls by a year-only gate. The two
-concentrated defects account for ~771 records ≈ 6.3% of all strong (lot + numerical)
+concentrated defects account for ~789 records ≈ 6.5% of all strong (lot + numerical)
 resolutions. The wrong 60D627 NAID has propagated into **all three** bundled indexes, which is
 why intra-bundle agreement checks pass vacuously.
 
@@ -100,7 +100,11 @@ ordering-bug probe was **clean** — zero unrecognized notes match the shared lo
 
 1. **The RG-59 constant** (189,345 records, 71.6% of corpus): offline "resolution" for decimal
    central files is a record-group-grain link. Manuals/UI must say so; a follow-up could bundle
-   the ~23 series-level NAIDs under RG 59 keyed by era for series-grain links.
+   the ~23 series-level NAIDs under RG 59 keyed by era for series-grain links. *Framing note:*
+   this `resolvedVolumeSources` outcome is the **export's diagnostic join** (the volume-sources
+   RG map applied at document grain) — the app's decimal-note UI currently shows static
+   finding-aid links and filing-manual PDFs (`centralFilesPeriodSection`), not NAID 388; so
+   this row measures what the bundles *could* honestly claim, not what the app presently shows.
 2. **"Central Decimal File" label vs subject-numeric contents**: 3,225 records in the bucket
    are 1963–73 POL/DEF/SOC subject-numeric citations; the SA-3 legend calls the category
    "pre-1963". Rename to "Central Files (decimal & subject-numeric)" or split the label.

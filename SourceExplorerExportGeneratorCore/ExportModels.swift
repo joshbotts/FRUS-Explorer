@@ -180,7 +180,9 @@ public enum OfflineOutcome: String, Sendable, CaseIterable {
     case resolvedVolumeSources
     /// Only the collection-authority identity matched (a name/NAID, not a document-level link).
     case resolvedAuthorityOnly
-    /// Nothing resolved offline, but the strategy has a live NARA Catalog query route.
+    /// Nothing resolved offline, but the strategy has an onward route — a live NARA Catalog
+    /// query (`catalog*Query`) **or** a static guidance link (`staticSeriesLink` /
+    /// `staticCFPFGuidance`); consult `liveLookupRoute` to distinguish the two.
     case liveRouteOnly
     /// Nothing resolved offline and the strategy has no catalog route (CIA, foreign archive,
     /// previously published, unrecognized).
