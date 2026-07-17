@@ -41,6 +41,13 @@ import PackageDescription
 ///   Regression harness for parser grammar work; the committed BEFORE snapshot lives
 ///   at `SourceNoteKit/eval-baseline.txt`. Env: `CITATIONS_CSV`, `OUTPUT`.
 ///
+/// - **SourceExplorerExportGenerator**: the corpus-wide Source Explorer data export
+///   (#335) — one record per document source note (canonical id, raw stored note, the
+///   parsed value handed to Source Explorer logic, the strategy, and the offline
+///   resolution results across the three bundled artifacts), streamed to
+///   `Planning/source-explorer-export/` with a committed aggregate summary + sample.
+///   Entirely offline; the basis for the Source Explorer accuracy audit.
+///
 /// ## Library Components
 ///
 /// - **FTS5Store**: Swift actor wrapping SQLite FTS5 for full-text search. Used by the
@@ -461,6 +468,46 @@ let package = Package(
             name: "CrossRefValidationGeneratorTests",
             dependencies: [.target(name: "CrossRefValidationGeneratorCore")],
             path: "CrossRefValidationGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - SourceExplorerExportGenerator
+
+        /// The corpus-wide Source Explorer data export (#335): one record per document source
+        /// note — canonical id, raw stored note (parity-pinned DocumentNoteExtractor), the
+        /// parsed value handed to Source Explorer logic (shared SourceNoteParser), the strategy
+        /// (ProvenanceCategory), and the dictionary of offline resolution results (bundled lot
+        /// index with the #321 guard, 1906–1910 Numerical File rolls, volume-sources index,
+        /// collection-authority 4-step lookup) plus the recorded — never executed — live
+        /// catalog route. Entirely offline & deterministic.
+        .target(
+            name: "SourceExplorerExportGeneratorCore",
+            dependencies: [
+                .target(name: "SourceNoteKit"),
+                .target(name: "GeneratorKit"),
+                .target(name: "SourceProvenanceIndexGeneratorCore"),
+                .target(name: "CollectionAuthorityGeneratorCore"),
+                .target(name: "VolumeSourcesIndexGeneratorCore"),
+                .target(name: "CentralFilesIndexGeneratorCore"),
+            ],
+            path: "SourceExplorerExportGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls SourceExplorerExportRunner.run() and exits.
+        .executableTarget(
+            name: "SourceExplorerExportGenerator",
+            dependencies: [.target(name: "SourceExplorerExportGeneratorCore")],
+            path: "SourceExplorerExportGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit + fixture tests for SourceExplorerExportGeneratorCore (authority-lookup parity
+        /// table, year extraction, record construction per strategy, end-to-end determinism).
+        .testTarget(
+            name: "SourceExplorerExportGeneratorTests",
+            dependencies: [.target(name: "SourceExplorerExportGeneratorCore")],
+            path: "SourceExplorerExportGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
