@@ -52,7 +52,7 @@ The core reuse contract all checks out:
 
 | # | Handoff says | Code says |
 |---|---|---|
-| C1 | Rail accordions = Summary/Notes/Tags/Collections | A **fifth accordion exists**: "Subjects (this volume)" (#308 F7), key `…researchPanel.subjects`, both platforms (MacDocumentView:586-604, DocumentView:1774-1793). Implementing the handoff literally silently drops a shipped feature → **D1** |
+| C1 | Rail accordions = Summary/Notes/Tags/Collections | A **fifth accordion exists**: "Subjects (this volume)" (#308 F7), key `…researchPanel.subjects`, both platforms (MacDocumentView:586-604, DocumentView:1774-1793). **D1 resolved: retire it deliberately** (documented removal, not a silent drop); returns later as a separate view once document-level tagging is refined |
 | C2 | "New Window retires to the File menu" | **No app File-menu item exists** (no `CommandGroup(.newItem)`; the system ⌘N opens a new *main* window). Native tabbing for document windows already works (WindowGroup(for: DocumentWindowID.self)). The File-menu "Open in New Window" command must be **added** |
 | C3 | Titlebar spec applies to "the document window" | It exists only in **MainWindowView**. `MacDocumentWindowView` (MacDocumentView.swift:1081-1148) has **no toolbar at all** — the new titlebar + toggle must be added there, or standalone windows/tabs have no way to reopen the rail |
 | C4 | "Selection verbs pop in and out" incl. Highlight | Highlight is always-rendered, merely disabled without a selection; only Add-Note-to-Highlight/Excerpt/NARA are conditionally rendered (SupportingViews:388-467). Excerpt/NARA key off `webKitSelectedText`, which deliberately **survives selection-clear** — load-bearing for the floating bar's snapshot semantics (§6 Phase B) |
@@ -62,18 +62,18 @@ Minor: MacDocumentWindowView lives in MacDocumentView.swift (not the MainWindowV
 maximal count is 13 with Stage Manager + AI (11 unconditional); strip Word Cloud relies on a MainWindowView
 `onChange` observer, already broken-by-design in standalone windows → rail tiles must `openWindow` directly.
 
-## 4. Owner decisions (answer before Phase B)
+## 4. Owner decisions — RESOLVED 2026-07-18
 
-| # | Decision | Recommendation |
+| # | Decision | Resolution (owner) |
 |---|---|---|
-| **D1** | **Subjects accordion fate.** The handoff defers "Subjects" as a *future grid tile* ("not an accordion") — but a volume-level SUBJECTS accordion already shipped (#308 F7) | **Keep it** as the 5th accordion (order: Summary · Notes · Tags · Subjects · Collections-last, preserving the design's "Collections last"). Costs nothing; revisit as a tile when document-grain subjects (#261 gate) ship |
-| **D2** | **iPhone sheet persistence.** `panelVisible` is persisted + gates edge-taps (`!panelVisible`); as a sheet it would auto-present per document under `defaultDocumentMode == .research` — and the key **defaults `true`**, so a fresh install would open a modal over a new user's very first document | **Keep the binding** incl. auto-present under explicit `.research` (mirrors today's auto-expanded accordion); swipe-dismiss writes `false` (re-enabling edge-taps); on iPhone only, treat the *unset* key as `false` so first-run reads clean. Sheet folds into the existing `DocumentSheet` enum to avoid a third presentation anchor |
-| **D3** | **iOS floating bar vs the system edit menu.** Removing our two custom edit-menu verbs still leaves system Copy/Look Up/Translate popping at the selection anchor | Bar anchors **below** the selection rect on iOS (system menu owns "above"); macOS bar sits above per the mock. Keep system menu (Copy is essential) |
-| **D4** | **Scroll + zoom behavior of the bar (v1)** | **Hide on scroll** (JS scroll listener posts a hide signal; matches the system menu's behavior) and **hide while pinch-zoomed** (`visualViewport.scale != 1`). Live tracking is a later refinement |
-| **D5** | **"N documents" count fix.** Pickers show `documentEntries?.count` — which counts headings/prose/excerpts too (post-Composer). The rail rows need the true count (`entryKind == .document`) | Fix in the rail **and back-port to both pickers** in the same phase (small, correctness) |
-| **D6** | **MacDocumentWindowView toolbar composition.** The standalone document window has *no* toolbar today (C3) and the designer never drew one — some composition must be invented for the toggle to exist there | Minimal: **identity pill + rail toggle** only (engineering proposal — confirm or specify) |
-| **D7** | **Panel state under Stage Manager.** `panelVisible` is process-global; toggling one window's rail toggles all (pre-existing, today masked by the per-window notes inspector) | **Accept for v1** (status quo), note in the PR; per-window `@SceneStorage` seed (the #316 pattern) is a follow-up if it annoys |
-| **D8** | **iPad "Open in New Window" home.** The handoff removes it from the iPad toolbar but names no iPad destination ("File menu + tabbing" is macOS vocabulary); Stage Manager users lose the verb without a new home | Engineering proposal: a trailing icon in the rail header (net-new chrome the designer didn't draw — confirm or relocate) |
+| **D1** | **Subjects accordion fate.** The handoff defers "Subjects" as a *future grid tile* — but a volume-level SUBJECTS accordion already shipped (#308 F7) | **Drop it from the document view for now** (until document-level tagging is refined); when it returns, implement it as a **separate view, not an accordion**. The rail ships the handoff's four accordions. C1 therefore *deliberately retires* the document-view Subjects sections on both platforms + the now-orphaned `…researchPanel.subjects` key. `VolumeSubjectsChips` itself survives — its volume-browser and People-detail surfaces are untouched; only the document-panel embed dies |
+| **D2** | **iPhone sheet persistence** (incl. the fresh-install trap: the key defaults `true`) | **As recommended:** keep the binding; auto-present under explicit `.research`; swipe-dismiss writes `false`; on iPhone the *unset* key reads `false`; sheet folds into `DocumentSheet` |
+| **D3** | **iOS floating bar vs the system edit menu** | **As recommended:** bar below the selection on iOS, above on macOS; system menu kept |
+| **D4** | **Scroll + zoom behavior of the bar (v1)** | **As recommended:** hide on scroll + hide while pinch-zoomed; live tracking later |
+| **D5** | **"N documents" count fix.** The caption is the user-facing collection-size subtitle on the rail's membership rows (mock 02: "Cold War Origins · 14 documents") AND on both existing Add-to-Collection pickers; all derive from `documentEntries?.count`, which post-Composer also counts headings/prose/excerpts/apparatus | **As recommended:** count only `entryKind == .document`, in the rail and back-ported to both pickers |
+| **D6** | **MacDocumentWindowView toolbar composition** (no toolbar exists today; designer never drew one) | **As proposed:** identity pill + rail toggle only |
+| **D7** | **Panel state under Stage Manager** (process-global `panelVisible`) | **As recommended:** accept for v1; per-window seed is a follow-up |
+| **D8** | **iPad "Open in New Window" home** | **As recommended:** trailing icon in the rail header |
 
 Settled by the handoff, recorded as notes (not decisions): the rail-toggle glyph stays
 `doc.text.magnifyingglass` (its ~12 existing uses are all decorative empty-state art, not actions); the
@@ -150,10 +150,14 @@ Both platforms, both modes. Coexists with the strip until C1 (harmless one-PR du
 ### Phase C1 — Shared ResearchRailView + macOS adoption (L)
 1. New `ResearchRailView` (new file, shared iOS/macOS): `RESEARCH` header (FRUSTheme sectionLabel tokens,
    :185-187) · 3×2 `LazyVGrid` tiles (labels → `.caption2` per the FRUSTheme table :189-239; glyphs per handoff,
-   Word Cloud = `WordCloudGlyph.symbol` = `textformat.abc`) · accordion stack. Accordion content donated from
-   `macResearchPanel` (:477-606) / `iOSResearchPanel` (:1633-1795), parameterized for the platform deltas the
-   readers mapped (note editing: window vs sheet; summary block: `SummaryBlockView` vs `SummaryStripView`).
-   Extract `panelSectionHeader` (:651-690) as the shared accordion header.
+   Word Cloud = `WordCloudGlyph.symbol` = `textformat.abc`) · accordion stack **(four accordions per D1:
+   Summary · Notes · Tags · Collections)**. Accordion content donated from `macResearchPanel` (:477-606) /
+   `iOSResearchPanel` (:1633-1795), parameterized for the platform deltas the readers mapped (note editing:
+   window vs sheet; summary block: `SummaryBlockView` vs `SummaryStripView`). Extract `panelSectionHeader`
+   (:651-690) as the shared accordion header. **D1 removal rider:** the document-view Subjects sections
+   (MacDocumentView:586-604, DocumentView:1774-1793) and the orphaned `…researchPanel.subjects` key
+   declarations (MacDocumentView:112, DocumentView:273) are deleted — a documented retirement, called out in
+   the PR + release notes; `VolumeSubjectsChips`' other surfaces (volume browser, People detail) are untouched.
 2. **NEW Collections accordion** (last): membership query `#Predicate<CollectionEntry> { $0.volumeId == v &&
    $0.documentId == d && $0.kind == "document" }` (raw `kind` — computed `entryKind` isn't predicate-usable;
    without the filter, excerpt provenance rows create false memberships), grouped by `collection?.id`,
@@ -234,6 +238,8 @@ Both platforms, both modes. Coexists with the strip until C1 (harmless one-PR du
 
 ## 8. Out of scope / deferred
 
-- Document-level Subjects tile (gate #261) — the handoff's own deferral.
+- Document Subjects surface (D1): returns as a **separate view** (not an accordion, not the handoff's grid
+  tile) once document-level tagging is refined (#261 gate). The volume-level chips live on in the volume
+  browser meanwhile.
 - List-variant action area (mock's Tweaks alternative) — back pocket.
 - Live rect tracking during scroll; per-window rail state; Cite-in-titlebar variant (mock trade-off note).
