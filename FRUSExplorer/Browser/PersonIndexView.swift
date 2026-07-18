@@ -319,6 +319,57 @@ private struct PersonIndexRow: View {
 ///          bundled volume subject profiles; chips reuse the Session-9 styling and pivot
 ///          to the shared `VolumeSubjectVolumesSheet`; the caption states the volume
 ///          grain explicitly (doc-level tags stay retired until #261 clears)
+// MARK: - PersonSubjectAffinity
+
+/// The pure person↔subject affinity ranking (#264), factored out of `PersonIndexDetailSheet`
+/// so the join is unit-testable without a live `PersonMentionStore` or the subject-profiles
+/// bundle.
+///
+/// Join: the person's per-volume distinct-document mention counts × each volume's bundled
+/// subject profile. Affinity weight = Σ (person's doc count in a volume × the subject's score
+/// in that volume), so a subject scores high when it characterizes the volumes where the person
+/// appears MOST — not merely any volume they brush. Volume-grain by deliberate decision (#261):
+/// the affinity never claims a per-document link.
+enum PersonSubjectAffinity {
+
+    /// One ranked affinity: a subject plus how broadly (`volumeCount`) and strongly (`weight`)
+    /// it co-occurs with the person's mentions.
+    struct Ranked: Identifiable, Equatable {
+        /// The resolved subject (name, category, per-volume distinctiveness score).
+        let subject: VolumeSubjectProfiles.ResolvedSubject
+        /// How many of the person's mention volumes carry this subject in their profile.
+        let volumeCount: Int
+        /// Σ over those volumes of (person's distinct-document count × the subject's score).
+        let weight: Double
+        var id: String { subject.id }
+    }
+
+    /// Ranks a person's subject affinities. `topSubjectsByVolume` returns a volume's profile
+    /// subjects (`nil` when the volume has no bundled profile — that volume is skipped). Ties on
+    /// weight break by subject name for determinism; the result is capped to `limit`.
+    static func rank(
+        mentionCounts: [(volumeId: String, documentCount: Int)],
+        topSubjectsByVolume: (String) -> [VolumeSubjectProfiles.ResolvedSubject]?,
+        limit: Int
+    ) -> [Ranked] {
+        var aggregate: [String: (subject: VolumeSubjectProfiles.ResolvedSubject, volumes: Int, weight: Double)] = [:]
+        for (volumeId, documentCount) in mentionCounts {
+            guard let subjects = topSubjectsByVolume(volumeId) else { continue }
+            for subject in subjects {
+                var entry = aggregate[subject.ref] ?? (subject, 0, 0)
+                entry.volumes += 1
+                entry.weight += Double(documentCount) * subject.score
+                aggregate[subject.ref] = entry
+            }
+        }
+        return aggregate.values
+            .sorted { $0.weight != $1.weight ? $0.weight > $1.weight
+                                             : $0.subject.name < $1.subject.name }
+            .prefix(limit)
+            .map { Ranked(subject: $0.subject, volumeCount: $0.volumes, weight: $0.weight) }
+    }
+}
+
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
@@ -356,23 +407,9 @@ struct PersonIndexDetailSheet: View {
     /// Volume-level subject affinities (#264): subjects characteristic of the volumes where
     /// this person is mentioned, weighted by the person's footprint in each volume. Empty when
     /// the person has no indexed mentions or the bundled profiles are absent.
-    @State private var subjectAffinities: [SubjectAffinity] = []
+    @State private var subjectAffinities: [PersonSubjectAffinity.Ranked] = []
     /// The affinity chip whose cross-volume pivot sheet is open, or `nil`.
     @State private var selectedAffinitySubject: VolumeSubjectProfiles.ResolvedSubject?
-
-    /// One person↔subject affinity (#264): a subject from the bundled volume profiles plus how
-    /// broadly and how strongly it co-occurs with this person's mentions. Volume-grain by
-    /// deliberate decision — document-level subject tags were retired for noise (the gate is
-    /// #261), so the affinity NEVER claims a per-document link.
-    private struct SubjectAffinity: Identifiable {
-        /// The resolved subject (name, category, per-volume distinctiveness score).
-        let subject: VolumeSubjectProfiles.ResolvedSubject
-        /// How many of the person's mention volumes carry this subject in their profile.
-        let volumeCount: Int
-        /// Σ over those volumes of (person's distinct-document count × the subject's score).
-        let weight: Double
-        var id: String { subject.id }
-    }
 
     private var displayCount: Int { resolvedMentionCount ?? indexEntry.mentionCount }
     private var effectiveRollupId: Int? { indexEntry.rollupId ?? resolvedRollupId }
@@ -698,7 +735,7 @@ struct PersonIndexDetailSheet: View {
     /// One affinity chip (#264) — the volume-detail chip styling (Session 9), pivoting to the
     /// shared cross-volume subject sheet on tap.
     @ViewBuilder
-    private func affinityChip(_ affinity: SubjectAffinity) -> some View {
+    private func affinityChip(_ affinity: PersonSubjectAffinity.Ranked) -> some View {
         Button {
             selectedAffinitySubject = affinity.subject
         } label: {
@@ -735,21 +772,10 @@ struct PersonIndexDetailSheet: View {
               let profiles = VolumeSubjectProfilesStore.shared,
               let counts = try? await store.volumeMentionCounts(forRollupId: rollupId),
               !counts.isEmpty else { return }
-        var aggregate: [String: (subject: VolumeSubjectProfiles.ResolvedSubject, volumes: Int, weight: Double)] = [:]
-        for (volumeId, documentCount) in counts {
-            guard let subjects = profiles.topSubjects(forVolumeId: volumeId) else { continue }
-            for subject in subjects {
-                var entry = aggregate[subject.ref] ?? (subject, 0, 0)
-                entry.volumes += 1
-                entry.weight += Double(documentCount) * subject.score
-                aggregate[subject.ref] = entry
-            }
-        }
-        subjectAffinities = aggregate.values
-            .sorted { $0.weight != $1.weight ? $0.weight > $1.weight
-                                             : $0.subject.name < $1.subject.name }
-            .prefix(8)
-            .map { SubjectAffinity(subject: $0.subject, volumeCount: $0.volumes, weight: $0.weight) }
+        subjectAffinities = PersonSubjectAffinity.rank(
+            mentionCounts: counts,
+            topSubjectsByVolume: profiles.topSubjects(forVolumeId:),
+            limit: 8)
     }
 
     private func loadCorrectionContext() async {
