@@ -26,7 +26,8 @@ struct SummarizationScopeCodableTests {
             .subseries(subseries: "1969-76"),
             .userTag(documentKeys: ["frus1969-76v01/d1", "frus1969-76v01/d2"]),
             .savedSearch(documentKeys: ["frus1952-54v02/d9"]),
-            .dateRange(earliest: "1961-01-01", latest: "1963-12-31")
+            .dateRange(earliest: "1961-01-01", latest: "1963-12-31"),
+            .customScope(volumeIds: ["frus1969-76v01", "frus1952-54v02"])
         ]
         for scope in cases {
             #expect(try roundTrip(scope) == scope)

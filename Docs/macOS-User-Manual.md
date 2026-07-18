@@ -773,7 +773,7 @@ Documents that are too long for a single model call are automatically chunked (a
 
 To summarize many documents at once, use the **Background Summarizer** in **Settings → Advanced → Summarization → Background Summarizer**.
 
-1. Choose a scope: an entire subseries, a single volume, a user tag, a saved search, or a date range.
+1. Choose a scope: an entire subseries, a single volume, a user tag, a saved search, a date range, or one of your saved volume scopes (**My Volume Scopes** — Section 5.8; the picker shows each scope's indexed-volume count, and Run stays disabled until at least one member volume is indexed).
 2. Set the concurrency limit (how many documents are summarized in parallel).
 3. Click **Run**.
 

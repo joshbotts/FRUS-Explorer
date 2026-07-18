@@ -115,6 +115,43 @@ struct BackgroundSummarizationTests {
         #expect(!resolved.contains("vol3"))
     }
 
+    @Test("ScopeResolutionTest: customScope resolves to its member volumes intersected with downloaded")
+    func scopeResolutionCustomScope() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = await makeService(container: container)
+
+        let entries = [
+            makeManifestEntry(volumeId: "vol1", subseries: "1969-76"),
+            makeManifestEntry(volumeId: "vol2", subseries: "1977-80"),
+            makeManifestEntry(volumeId: "vol3", subseries: "1981-88"),
+        ]
+        // The scope names vol1 and vol3, but only vol1 is downloaded (vol3 is not).
+        let downloaded: Set<String> = ["vol1", "vol2"]
+
+        let resolved = await service.resolvedVolumeIds(
+            for: .customScope(volumeIds: ["vol1", "vol3"]),
+            in: entries,
+            downloadedVolumeIds: downloaded
+        )
+        // Only the downloaded member survives; vol2 (downloaded but not in scope) is excluded,
+        // vol3 (in scope but not downloaded) is dropped.
+        #expect(resolved == ["vol1"])
+    }
+
+    @Test("ScopeResolutionTest: an all-un-downloaded customScope resolves to nothing (no whole-corpus inversion)")
+    func scopeResolutionCustomScopeAllUndownloaded() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = await makeService(container: container)
+
+        let entries = [makeManifestEntry(volumeId: "vol1"), makeManifestEntry(volumeId: "vol2")]
+        let resolved = await service.resolvedVolumeIds(
+            for: .customScope(volumeIds: ["vol9"]),
+            in: entries,
+            downloadedVolumeIds: ["vol1", "vol2"]
+        )
+        #expect(resolved.isEmpty)
+    }
+
     // MARK: - SkipExistingTest
 
     @Test("SkipExistingTest: shouldSkip returns true when summary exists for document + prompt")
