@@ -107,36 +107,40 @@ The toolbar runs across the top of the window.
 
 When a document is open, a compact `volumeId/documentId` title (e.g., `frus1969-76v01/d42`) appears here, updating automatically as you navigate. This condensed format keeps the title short enough that the toolbar's other controls don't collapse into the overflow chevron — the main window also enforces a 980×600 minimum size for the same reason.
 
-**Right-side toolbar buttons**
+**Right-side toolbar — trailing tools**
 
-| Button | Shortcut | Opens |
+The toolbar's trailing edge carries five controls; the two ▾ entries are menus that group the specialized windows:
+
+| Control | Shortcut | Opens |
 |--------|----------|-------|
 | **Search** | ⌘F | Full-text search window |
-| **Graph** | — | Cross-reference graph for the current document |
-| **Info** | — | Citation and metadata popover for the current document |
-| **Research** | ⌘⌥R | Research window (all annotated documents) |
-| **Collections** | ⇧⌘K | Collections management window |
-| **Corpus** | ⇧⌘B | Corpus browser (volume hierarchy) |
-| **Analytics** | — | Term-frequency analytics window |
-| **Person Analytics** | — | Person Analytics window — most-mentioned people by era and mention trajectories (Section 13.5) |
-| **Cross-Reference Analytics** | — | Cross-Reference Analytics window — most-referenced documents, degree distribution, and influence (Section 13.6) |
-| **Chronology** | — | Date-range document browser (Section 14) |
+| **Browse** | ⇧⌘B | Corpus browser (volume hierarchy) |
+| **Analytics ▾** | — | A menu of the analytics windows: **Corpus Analytics**, **Person Analytics** (Section 13.5), **Cross-Reference Analytics** (Section 13.6), **Chronology** (Section 14), and **Word Cloud** (Section 13.4) |
+| **My Research ▾** | — | A menu: **Research** (⌘⌥R — the Research window listing all annotated documents) and **Collections** (⇧⌘K) |
+| **Research rail** | ⌘⇧R | Show or hide the per-document Research rail (Section 3.2) |
 
-![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the right-side buttons: Search, Graph, Info, Research, Collections, Corpus, Analytics, and Chronology.](screenshots/macos/toolbar.png) *(This shot predates build 27 and does not yet show the new Person Analytics and Cross-Reference Analytics buttons — slated for re-capture; see `screenshots/README.md`.)*
+The old titlebar **Graph** and **Info** buttons have been removed. The cross-reference graph now opens from the Research rail's **Graph** tile (Section 3.2), and a document's citation and metadata are reached through the rail's **Cite** tile.
 
-### 3.2 Research Strip
+![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the five trailing tools: Search, Browse, the Analytics ▾ menu, the My Research ▾ menu, and the Research-rail toggle (⌘⇧R).](screenshots/macos/toolbar.png) <!-- TODO Phase E: re-capture for Research rail -->
 
-Directly below the toolbar, the research strip is always visible when a document is open. It provides quick access to the annotation tools most researchers use on every document:
+### 3.2 The Research Rail
 
-- **Add / Edit Note** — Open the note editor for this document.
-- **Highlight** — Enabled when you have selected text in the document body. Click to save the selected passage as a colored highlight. The button is grayed out when no text is selected.
-- **Cite** — Open the citation popover (formatted citation, copy, and Copy as… BibTeX/RIS; see Section 9.3).
-- **Share** — Send this document to your Zotero library, export a Zotero file, or share its citation (Section 9.3).
-- **Word Cloud** — Open a word cloud for this document (Section 13.4).
-- **Related** — Open the **Related Documents** window: a ranked list of documents related to this one by archival provenance, cross-references, date, and shared people (Section 6.4).
-- **Tags** — Apply or remove user tags.
+The per-document research surface is the trailing **Research rail**, toggled with the **Research rail** toolbar button or **⌘⇧R**. (The always-visible "research strip" that older builds showed directly beneath the toolbar has been retired — everything it carried now lives in the rail.) On a wide window the rail sits side-by-side with the document; below roughly **900 pt** of window width it becomes a trailing overlay panel that slides in over the document.
 
-![The research strip directly beneath the toolbar with a document open — Add to collection, Add note, Tag, Graph, Sources, Highlight (greyed out until text is selected), Cite, and New Window, sitting above the open document's heading.](screenshots/macos/research-strip.png)
+The rail is headed by a **RESEARCH** label and has two parts:
+
+- A **3×2 tile grid** of one-tap actions:
+  - **Cite** — Open the citation popover (formatted citation, copy, and Copy as… BibTeX/RIS; see Section 9.3).
+  - **Word Cloud** — Open a word cloud for this document (Section 13.4).
+  - **Sources** — Open the Source Explorer for this document's source note (Section 12).
+  - **Graph** — Open the cross-reference graph for this document (Section 8). *(This is where the old titlebar Graph button went.)*
+  - **Related** — Open the **Related Documents** window: a ranked list of documents related to this one by archival provenance, cross-references, date, and shared people (Section 6.4).
+  - **Share** — A menu that sends this document to your Zotero library, exports a Zotero file, or shares its citation (Section 9.3).
+- A stack of expandable **accordions** — **Summary**, **Notes**, **Tags**, and **Collections** — that hold this document's generated summaries (Section 11), your research notes (Section 7.1), its user tags (Section 7.3), and the collections it belongs to (Section 10).
+
+**Highlighting is no longer a rail button.** To highlight, **select text in the document body**: a **floating selection bar** (a dark pill) appears at the selection with four **colour dots** — click a dot to save the passage as a highlight in that colour — plus **Excerpt**, **Look Up**, and **Note** actions (Sections 7.2, 12.1.1, 10.2a). For a selection **inside a footnote** the colour dots and Excerpt are disabled (you can still Look Up or add a Note). This floating bar replaces the old Highlight button and its colour-picker popover, and it now behaves the same on macOS and iOS.
+
+![The macOS Research rail beside an open document — the RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Sources · Graph · Related · Share), and the Summary / Notes / Tags / Collections accordions below.](screenshots/macos/research-strip.png) <!-- TODO Phase E: re-capture for Research rail -->
 
 ### 3.3 Document View
 
@@ -144,7 +148,7 @@ The large central area displays the currently open document. If no document is o
 
 Documents are rendered from TEI XML into native SwiftUI, matching the typography and structure of the history.state.gov website. As you navigate — through search results, cross-references, or the corpus browser — FRUS Explorer maintains a full navigation history. Use the standard macOS Back (⌘[) and Forward (⌘]) gestures or the toolbar arrows to move through your reading history.
 
-![Document view on macOS — a rendered FRUS document filling the window: heading, dateline, body text with linked person names and footnote markers, the footnotes section, the Read/Research toolbar, and previous/next document navigation.](screenshots/macos/document.png)
+![Document view on macOS — a rendered FRUS document filling the window: heading, dateline, body text with linked person names and footnote markers, the footnotes section, the ⌘⇧R Research-rail toggle in the toolbar, and the hover-revealed previous/next edge chevrons at the document's left and right margins.](screenshots/macos/document.png) <!-- TODO Phase E: re-capture for Research rail -->
 
 ### 3.4 Status Bar
 
@@ -168,16 +172,16 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 |--------|----------|
 | Search | ⌘F |
 | Corpus Browser | ⇧⌘B |
-| Cross-Reference Graph | (toolbar button) |
+| Cross-Reference Graph | (Research rail **Graph** tile) |
 | Source Explorer | (click source note link) |
 | Archival Neighbors | (Archival Neighbors action; one window per archival source) |
-| Related Documents | (Research strip **Related** button; one window per document — Section 6.4) |
+| Related Documents | (Research rail **Related** tile; one window per document — Section 6.4) |
 | Collections | ⇧⌘K |
 | Research | ⌘⌥R |
-| Analytics | (toolbar button) |
-| Person Analytics | (toolbar button, or `frus.personAnalytics`) |
-| Cross-Reference Analytics | (toolbar button, or `frus.crossRefAnalytics`) |
-| Chronology | (toolbar button) |
+| Analytics | (Analytics ▾ menu → **Corpus Analytics**) |
+| Person Analytics | (Analytics ▾ menu → **Person Analytics**, or `frus.personAnalytics`) |
+| Cross-Reference Analytics | (Analytics ▾ menu → **Cross-Reference Analytics**, or `frus.crossRefAnalytics`) |
+| Chronology | (Analytics ▾ menu → **Chronology**) |
 | History | (History menu → "Complete History…") |
 | FRUS Research Guide | (Help menu) |
 | Settings | ⌘, |
@@ -376,7 +380,6 @@ Each rendered document shows:
 - **Body** — Paragraphs, numbered footnotes, editorial notes, tables, and lists, all faithfully rendered from the TEI source.
 - **Summary Strip** — If a generated summary exists for this document, it appears in a strip above the body (see Section 11).
 - **Tags Section** — Subject tag chips and your user tag chips appear at the bottom. Click any tag to run a search filtered to that tag.
-- **Subjects (this volume)** — In the Research panel (the **Read / Research** picker in the research strip), a collapsible **Subjects (this volume)** section shows the detected topics most characteristic of the volume the document belongs to, as chips. Click a chip to see the other FRUS volumes covering the same subject and jump to any of them. The section is deliberately labeled *volume-level* — these are the volume's themes, not tags on this specific document — and appears only for volumes with a subject profile.
 
 ### 6.2 Interactive Elements Within Documents
 
@@ -399,7 +402,7 @@ FRUS Explorer tracks every document you open in the current session. Use **⌘[*
 
 ### 6.4 Related Documents
 
-Click **Related** in the research strip to open the **Related Documents** window — a ranked list of the indexed documents most related to the one you are reading, combining five signals:
+Click the **Related** tile in the Research rail (⌘⇧R) to open the **Related Documents** window — a ranked list of the indexed documents most related to the one you are reading, combining five signals:
 
 - **Archival provenance** — drawn from the same lot file, central file, or archival collection (the same keys Archival Neighbors uses, Section 12.1.2).
 - **Cross-references** — documents this one cites, and documents that cite it.
@@ -425,29 +428,28 @@ Research notes are freeform text attached to a specific document. They sync acro
 
 **To add a note:**
 1. Open the document.
-2. Click **Add Note** in the research strip (or press ⌘⌥N), or click the **Add Note** button that appears inline at the bottom of the Notes section in the research panel.
+2. Open the Research rail (⌘⇧R) and expand its **Notes** accordion, then click **Add Note** (or press ⌘⌥N).
 3. Type your note in the editor that appears.
 4. Click **Save**.
 
-`[SCREENSHOT: Research note editor open beneath the research strip with note text being entered]`
+`[SCREENSHOT: Research note editor open in the Research rail's Notes accordion with note text being entered]`
 
-**To edit an existing note:** Click any note row directly in the Notes section of the research panel — the note editor opens with the selected note pre-loaded. You can also click the note text in the research strip or open the Research window (⌘⌥R) and double-click the document entry.
+**To edit an existing note:** Click any note row in the Research rail's **Notes** accordion — the note editor opens with the selected note pre-loaded. You can also open the Research window (⌘⌥R) and double-click the document entry.
 
 Notes are associated with the active project (see Section 15). If another project has notes for the same document, a disclosure indicator appears at the bottom of the note area — click it to reveal those notes and optionally promote them to the current project.
 
 ### 7.2 Highlights
 
-Select any text in the document body. When a selection is active, the **Highlight** button in the research strip becomes enabled. Click it to open the color picker.
+Select any text in the document body. A **floating selection bar** (a dark pill) appears at the selection, carrying four **colour dots** — click a dot to save the selected passage as a highlight in that colour. (No separate Highlight button or colour-picker popover is involved; the same floating bar appears on macOS and iOS.)
 
-`[SCREENSHOT: Text selected in a document with the Highlight button enabled in the research strip and a color picker popover showing four color options]`
+`[SCREENSHOT: Text selected in a document with the floating selection bar showing its four colour dots, Excerpt, Look Up, and Note actions]`
 
 **To create a highlight:**
 1. Select the passage you want to highlight (click and drag or double-click a word).
-2. Click **Highlight** in the research strip (the paintbrush icon becomes active when text is selected).
-3. Choose a color: Yellow, Green, Blue, or Pink.
-4. The highlight appears immediately as a colored background over the selected text.
+2. In the **floating selection bar** that appears at the selection, click one of the four **colour dots** (Yellow, Green, Blue, or Pink).
+3. The highlight appears immediately as a colored background over the selected text.
 
-Highlights appear as colored background fills directly in the document body — no special mode is required to see them. The **Add Note** button in the research strip becomes active immediately after creating a highlight, allowing you to attach a note to the passage.
+Highlights appear as colored background fills directly in the document body — no special mode is required to see them. The floating selection bar's **Note** action lets you attach a note to a passage you have just highlighted. (When your selection is inside a footnote, the colour dots and Excerpt are disabled, but Look Up and Note remain available.)
 
 **Managing highlights:** All highlights for a document are visible in the document view itself. A **stale highlight** warning banner appears at the top of the document if any highlights were created from an older version of the document's content — this can happen if the underlying TEI source has been updated. Stale highlights are shown in amber; you can delete them from the Research window.
 
@@ -458,7 +460,7 @@ Highlights appear as colored background fills directly in the document body — 
 User tags are global labels you define. They are not the same as the official subject tags from the FRUS taxonomy.
 
 **To tag a document:**
-1. Click **Tags** in the research strip, or click the **+ Add Tag** button that appears next to the existing tag chips in the Tags section of the research panel.
+1. Open the Research rail (⌘⇧R), expand its **Tags** accordion, and click the **+ Add Tag** button next to the existing tag chips.
 2. Create a new tag from the **New Tag** field at the **top** of the picker — type a name and click **Add**, which creates the tag and selects it in one step — or choose from your existing tags listed beneath.
 3. Click **Done** to apply.
 
@@ -466,7 +468,7 @@ The picker's title names the document you are tagging (e.g. **Tags — Doc 42**,
 
 `[SCREENSHOT: Tag picker sheet titled "Tags — Doc 42" with the New Tag field at the top and a just-created tag pinned beneath it with a New badge]`
 
-Tags appear as **removable chips** in the Tags section of the research panel. Each chip has an **×** button — click it to remove that tag directly without opening the tag picker. A **+** button next to the chips adds more tags. Click any tag chip (without the × button) to run a search filtered to documents with that tag. Manage all your tags — rename, merge, delete — in **Settings → Research → Tags**.
+Tags appear as **removable chips** in the Research rail's **Tags** accordion. Each chip has an **×** button — click it to remove that tag directly without opening the tag picker. A **+** button next to the chips adds more tags. Click any tag chip (without the × button) to run a search filtered to documents with that tag. Manage all your tags — rename, merge, delete — in **Settings → Research → Tags**.
 
 ---
 
@@ -614,7 +616,7 @@ The Collections window has **no permanent sidebar**. You switch collections from
 
 With a collection selected, add documents in two ways:
 
-- **Individually**: Open any document and click **Collections** in the research strip. Choose an existing collection or create a new one.
+- **Individually**: Open any document, open the Research rail (⌘⇧R), and expand its **Collections** accordion. Choose an existing collection or create a new one.
 - **In bulk**: Choose **Add ▾ → Add Documents…** (⇧⌘A) for a picker with four ways in — **Search** the full text of your indexed volumes, where each result shows a matched-text **snippet preview** and the archival source note so you can judge it before adding (a snippet-length control sets how many lines of context to show, following the global default in Settings → Search with a per-sheet override); **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge. The **Citations** tab shows a running **"N of M resolved"** count (and how many lines still need review) as it matches your pasted references, and finishing an add briefly confirms with an **"Added N documents"** message so you know it landed.
 
 A collection isn't limited to a flat document list. From the **Add ▾** menu you can insert three kinds of editorial entry and place them anywhere in the order:
@@ -623,7 +625,7 @@ A collection isn't limited to a flat document list. From the **Add ▾** menu yo
 - **Prose blocks** — your own connecting commentary, written in a **rich-text editor** with **bold**, *italic*, underline, and colour, applied from the **visible formatting bar above each editor** (with a **Link** button for attaching a URL to selected text — links become real hyperlinks in HTML and Word exports, and print as visible URLs in PDF). Your formatting is preserved through PDF, HTML, and DOCX export.
 - **Excerpts** — frozen verbatim quotations from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). An excerpt keeps the exact passage you captured, so it renders even when the source volume isn't downloaded.
 
-**Three ways to create an excerpt.** (1) Choose **Add ▾ → Add Passages…** to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and click **Excerpt** in the research strip, then choose the collection. (3) Open a document entry's **inspector** (below) and click **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
+**Three ways to create an excerpt.** (1) Choose **Add ▾ → Add Passages…** to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and choose **Excerpt** from the floating selection bar, then choose the collection. (3) Open a document entry's **inspector** (below) and click **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
 
 **Apparatus blocks.** The **Add ▾** menu's **Apparatus** submenu inserts five kinds of *generated* scholarly apparatus. Unlike prose or excerpts, you never write their content — each block is computed from the collection's documents at every export and in the live preview, so it always reflects the current membership (smart collections included):
 
@@ -739,7 +741,7 @@ FRUS Explorer integrates with Apple Intelligence to generate on-device summaries
 ### 11.1 Summarizing a Document
 
 1. Open a document.
-2. Click **Summarize** (the summary strip above the document body, or the Research strip button).
+2. Click **Summarize** — either in the summary strip above the document body, or in the **Summary** accordion of the Research rail (⌘⇧R).
 3. A prompt picker sheet appears. Choose a prompt (see below) and click **Run**.
 
 `[SCREENSHOT: Prompt picker sheet showing standard prompts and a "Create Prompt" button]`
@@ -830,7 +832,7 @@ When the API returns multiple candidates (up to 5 for lot files and 3 for presid
 
 You can also run a free-text NARA Catalog query using any text you select in a document body — useful when the automatic parser cannot identify the source type, or when you want to search with different keywords.
 
-Select the relevant text (a lot number, decimal file identifier, archival keyword, etc.) and choose **NARA Lookup** from the research strip (macOS) or **Look Up** from the floating bar that appears at the selection (iOS). A lookup sheet appears pre-populated with your selection. Choose a search strategy (lot file by record group, keyword search within RG 59 or RG 84, or general catalog search), edit the query if needed, and tap **Search**.
+Select the relevant text (a lot number, decimal file identifier, archival keyword, etc.), then choose **Look Up** from the floating selection bar that appears at the selection (the same floating bar on both macOS and iOS). A lookup sheet appears pre-populated with your selection. Choose a search strategy (lot file by record group, keyword search within RG 59 or RG 84, or general catalog search), edit the query if needed, and tap **Search**.
 
 When you select text **inside a footnote**, the lookup additionally reads the whole footnote and offers any archival citations it recognises there under **Detected in This Footnote** — tap one to fill the search field with that citation (a lot file, record group, or repository) and pre-select a matching strategy. This is handy when the citation you want spans more text than you selected, or sits a few words away from your cursor in the note.
 
@@ -876,7 +878,7 @@ Lot file and presidential library lookups require a free NARA Catalog API key. E
 
 The **Analytics** window charts how often a search term appears across the corpus over time.
 
-Open it from the **Analytics** toolbar button in the main window, or by clicking a word in a **Word Cloud** (Section 13.4).
+Open it from the main window's **Analytics ▾** menu (choose **Corpus Analytics**), or by clicking a word in a **Word Cloud** (Section 13.4).
 
 ![Corpus Analytics on macOS — a term-frequency chart for "Berlin" by year across the corpus (16,224 documents matched), each bar colour-coded by source volume with a legend, plus the term field, dimension toggles, year-range controls, and a "View in Search" handoff.](screenshots/macos/analytics.png)
 
@@ -911,8 +913,8 @@ Click a bar, point, or table row to **View in Search** — this opens the Search
 
 Where Analytics charts one term over time, a **Word Cloud** shows the most frequent terms in a body of material at a glance. Open one from several places:
 
-- The **Word Cloud** button in the main window toolbar opens the Word Cloud window over the whole corpus, with an in-window **scope picker** to retarget it to any subseries, volume, collection, tag, saved search, custom **volume scope** (the **My Volume Scopes** menu, with each scope's indexed count; scopes with nothing indexed yet are listed but disabled — Section 5.8), **detected topic** (the experimental **By Detected Topic** category → sub-category menu), or **date range**. Choosing **Date Range** reveals inline start/end date pickers in the scope bar, so you can adjust the range right there in the window.
-- The **Share/Word Cloud** affordances on a document (Research strip), and the per-row buttons in the Corpus Browser's subseries and volume rows, open a cloud for that specific scope.
+- Choosing **Word Cloud** from the main window's **Analytics ▾** menu opens the Word Cloud window over the whole corpus, with an in-window **scope picker** to retarget it to any subseries, volume, collection, tag, saved search, custom **volume scope** (the **My Volume Scopes** menu, with each scope's indexed count; scopes with nothing indexed yet are listed but disabled — Section 5.8), **detected topic** (the experimental **By Detected Topic** category → sub-category menu), or **date range**. Choosing **Date Range** reveals inline start/end date pickers in the scope bar, so you can adjust the range right there in the window.
+- The **Word Cloud** tile on a document (in the Research rail — Section 3.2), and the per-row buttons in the Corpus Browser's subseries and volume rows, open a cloud for that specific scope.
 - The **word-cloud button** on a row in Settings → Research → **Volume Scopes** opens a cloud of that scope's indexed volumes (disabled until at least one member volume is indexed).
 
 `[SCREENSHOT: Word Cloud window on macOS — the scope bar, the lens chips, and a packed spiral of sized terms]`
@@ -928,7 +930,7 @@ Corpus- and subseries-wide clouds are cached on disk after the first computation
 
 ### 13.5 Person Analytics
 
-Where Corpus Analytics charts a *term* and the Word Cloud shows a *scope's* most frequent words, **Person Analytics** turns the corpus's people into data — who was written about, when, and alongside whom. Open it from the **Person Analytics** toolbar button in the main window (Section 3.1), or the `frus.personAnalytics` window scene. It works over your local index; if no volumes are indexed yet, the window shows a short placeholder until an index is available.
+Where Corpus Analytics charts a *term* and the Word Cloud shows a *scope's* most frequent words, **Person Analytics** turns the corpus's people into data — who was written about, when, and alongside whom. Open it from the main window's **Analytics ▾** menu (choose **Person Analytics** — Section 3.1), or the `frus.personAnalytics` window scene. It works over your local index; if no volumes are indexed yet, the window shows a short placeholder until an index is available.
 
 A segmented control at the top switches between two modes. A **Scope** bar and a **year-range** bar sit above both modes and narrow every figure — the most-mentioned ranking, the trajectories, the relationship chart, and the co-mention network — to a chosen subseries or volume and a span of years (the same controls Corpus and Cross-Reference Analytics use), so you can focus the analysis on one project's material.
 
@@ -947,7 +949,7 @@ An **info** button (ⓘ) explains what each view shows and how it is computed. T
 
 ### 13.6 Cross-Reference Analytics
 
-The Cross-Reference Graph (Section 8) shows the neighborhood of *one* document. **Cross-Reference Analytics** steps back to the whole citation network — which documents matter most, how references are distributed, and which volumes talk to each other. Open it from the **Cross-Reference Analytics** toolbar button in the main window (Section 3.1), or the `frus.crossRefAnalytics` window scene. It works over your local index and shows a placeholder until an index is available.
+The Cross-Reference Graph (Section 8) shows the neighborhood of *one* document. **Cross-Reference Analytics** steps back to the whole citation network — which documents matter most, how references are distributed, and which volumes talk to each other. Open it from the main window's **Analytics ▾** menu (choose **Cross-Reference Analytics** — Section 3.1), or the `frus.crossRefAnalytics` window scene. It works over your local index and shows a placeholder until an index is available.
 
 The window presents four **collapsible chart sections** — click a section's heading to expand or collapse it (remembered between visits) — and the two sections with their own controls host them in the section rather than a shared toolbar:
 
@@ -972,7 +974,7 @@ An **info** button (ⓘ) explains what each measure means and how it is computed
 
 The **Chronology** browser lets you pick a date range and read every indexed document that falls within it, arranged into date sections — a corpus-wide complement to Search and Analytics. Where Analytics charts how often a *term* appears over time, Chronology shows you the actual *documents* from a span of dates, whatever their subject.
 
-Open it from the **Chronology** button in the main window toolbar (Section 3.1), or the `frus.chronology` window scene.
+Open it from the main window's **Analytics ▾** menu (choose **Chronology** — Section 3.1), or the `frus.chronology` window scene.
 
 ![Chronology window on macOS — From/To date pickers, a per-subseries distribution chart with a colour legend, "spans this period" and "extends beyond this range" sections, and the date-grouped document list below.](screenshots/macos/chronology.png)
 

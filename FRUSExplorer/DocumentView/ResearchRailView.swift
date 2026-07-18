@@ -147,10 +147,18 @@ struct ResearchRailView: View {
         _documentTagAssignments = Query(
             filter: #Predicate<DocumentTagAssignment> { $0.volumeId == vId && $0.documentId == dId })
         _memberships = Query(
-            filter: #Predicate<CollectionEntry> {
-                $0.volumeId == vId && $0.documentId == dId && $0.kind == "document"
-            },
+            filter: Self.membershipPredicate(volumeId: vId, documentId: dId),
             sort: \.sortOrder)
+    }
+
+    /// The `CollectionEntry` filter backing the Collections accordion's `memberships` `@Query`: this
+    /// document's `.document`-kind entries only (owner decision D5 — headings/prose/excerpts are
+    /// composed-collection structure, not memberships). Extracted so the Phase-E unit test guards the
+    /// PRODUCTION predicate rather than a hand-copy that could silently drift.
+    nonisolated static func membershipPredicate(volumeId: String, documentId: String) -> Predicate<CollectionEntry> {
+        #Predicate<CollectionEntry> {
+            $0.volumeId == volumeId && $0.documentId == documentId && $0.kind == "document"
+        }
     }
 
     var body: some View {
@@ -622,10 +630,21 @@ struct ResearchRailView: View {
 
     // MARK: - Collections helper
 
-    /// The distinct collections this document belongs to, sorted by name. `memberships` sorts by
-    /// `CollectionEntry.sortOrder` — a *within-collection* position, meaningless across collections
-    /// — so the deduped result is re-sorted by name for a stable, readable order (C1b review F7).
+    /// The distinct collections this document belongs to, sorted by name (from the `memberships`
+    /// `@Query`). See ``distinctCollections(from:)`` for the pure dedup/orphan-drop/sort.
     private var membershipCollections: [Collection] {
+        Self.distinctCollections(from: memberships)
+    }
+
+    /// Reduces membership entries to the distinct collections they belong to, sorted by name.
+    ///
+    /// - Drops entries whose `collection` relationship is nil (orphans — a collection deleted under
+    ///   `.nullify`), and de-duplicates when a document has more than one entry in the same
+    ///   collection. `memberships` arrives sorted by `CollectionEntry.sortOrder` — a *within*-
+    ///   collection position, meaningless across collections — so the result is re-sorted by name for
+    ///   a stable, readable order (C1b review F7). Extracted as an internal `nonisolated` static so
+    ///   the Phase-E unit tests can exercise it off the main actor without mounting the view.
+    nonisolated static func distinctCollections(from memberships: [CollectionEntry]) -> [Collection] {
         var seen = Set<UUID>()
         var result: [Collection] = []
         for entry in memberships {

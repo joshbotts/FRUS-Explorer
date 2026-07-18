@@ -328,6 +328,7 @@ struct MainWindowView: View {
                          defaultValue: "Research panel (⌘⇧R)"))
             .accessibilityLabel(String(localized: "researchRail.toggle.a11y",
                                        defaultValue: "Research panel"))
+            .accessibilityIdentifier("researchRailToggle")
         }
     }
 

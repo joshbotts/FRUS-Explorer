@@ -462,7 +462,7 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Word Cloud window
 
 Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.
 
-Find it from a document's toolbar (iOS) or the Graph window (Mac).
+Find it from the Research rail's Graph tile (it opens in its own window on Mac and on iPad with Stage Manager).
 
 <!-- section-id: cross-reference-analytics -->
 
@@ -512,7 +512,7 @@ Turn any set of results into a timeline. From a search result list or a collecti
 
 **The Document Reader**
 
-Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Reader mode keeps the focus on the published text, while research mode brings your notes, tags, and AI summaries alongside it.
+Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Read mode keeps the focus on the published text, while Research mode opens the Research rail — your notes, tags, collections, and AI summaries — alongside it.
 
 <!-- section-id: annotations -->
 

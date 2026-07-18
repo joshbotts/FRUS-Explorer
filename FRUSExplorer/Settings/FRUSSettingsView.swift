@@ -351,7 +351,7 @@ private struct SettingsDisplayPane: View {
                 .labelsHidden()
                 .padding(.bottom, 8)
 
-                Text("\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. The in-document Read/Research control always overrides for the current document.")
+                Text("\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail alongside the document; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document.")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
 

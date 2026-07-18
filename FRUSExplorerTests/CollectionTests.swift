@@ -491,6 +491,72 @@ struct CollectionTests {
         #expect(fetched.first?.researchNoteId == note.id)
     }
 
+    // MARK: - Research-rail Collections membership (Phase E)
+
+    @Test("RailMembershipPredicate: the rail's membership query keeps only kind == \"document\" entries")
+    func railMembershipQueryFiltersToDocumentKind() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let collection = Collection(name: "Berlin Crisis")
+        context.insert(collection)
+
+        // One real document membership + three decoys of other kinds for the SAME (volume, document).
+        // The rail's Collections accordion counts/lists only `.document` entries (owner decision D5):
+        // headings / prose / excerpts are composed-collection structure, not document memberships.
+        let doc = CollectionEntry(collectionId: collection.id, documentId: "d5", volumeId: "vol1", sortOrder: 0)
+        doc.collection = collection
+        context.insert(doc)
+        for (i, kind) in [CollectionEntryKind.heading, .prose, .excerpt].enumerated() {
+            let decoy = CollectionEntry(collectionId: collection.id, documentId: "d5", volumeId: "vol1", sortOrder: i + 1)
+            decoy.collection = collection
+            decoy.entryKind = kind
+            context.insert(decoy)
+        }
+        try context.save()
+
+        // Fetch with the PRODUCTION predicate (shared with the rail's `memberships` @Query) so this
+        // test breaks if the shipped filter is ever weakened — not a hand-copy that could drift.
+        let descriptor = FetchDescriptor<CollectionEntry>(
+            predicate: ResearchRailView.membershipPredicate(volumeId: "vol1", documentId: "d5"))
+        let membership = try context.fetch(descriptor)
+
+        #expect(membership.count == 1)
+        #expect(membership.first?.entryKind == .document)
+    }
+
+    @Test("RailDistinctCollections: dedupes repeat memberships, drops nil-collection orphans, sorts by name")
+    func railDistinctCollectionsDedupesOrphansAndSorts() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let beta = Collection(name: "Berlin")
+        let alpha = Collection(name: "Algiers")
+        context.insert(beta)
+        context.insert(alpha)
+
+        func entry(_ collection: Collection?, order: Int) -> CollectionEntry {
+            let e = CollectionEntry(collectionId: collection?.id ?? UUID(),
+                                    documentId: "d5", volumeId: "vol1", sortOrder: order)
+            e.collection = collection
+            context.insert(e)
+            return e
+        }
+        // Two entries into Berlin (the document appears twice → must dedupe to one), one into Algiers,
+        // and one orphan whose collection was deleted under `.nullify` (relationship left nil → drop).
+        let memberships = [
+            entry(beta, order: 0),
+            entry(beta, order: 1),
+            entry(alpha, order: 2),
+            entry(nil, order: 3),
+        ]
+        try context.save()
+
+        let distinct = ResearchRailView.distinctCollections(from: memberships)
+
+        #expect(distinct.map(\.name) == ["Algiers", "Berlin"])   // deduped + name-sorted, orphan dropped
+    }
+
     // MARK: - HeadnoteDraftCleanup
 
     @Test("HeadnoteDraftCleanup: deleting an entry removes its isHeadnoteDraft summary; a real summary pointed at by headnoteSummaryId is left intact")

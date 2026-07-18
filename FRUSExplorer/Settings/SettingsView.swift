@@ -3480,7 +3480,7 @@ private struct DisplaySettingsView: View {
                             defaultValue: "Reading"))
             } footer: {
                 Text(String(localized: "settings.display.reading.footer",
-                            defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. The in-document Read/Research control always overrides for the current document."))
+                            defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail — a side panel on iPad, a bottom sheet on iPhone; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document."))
             }
         }
         .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
@@ -3624,8 +3624,8 @@ enum SettingsKeys {
     /// or remember the last choice (the pre-Session-154 behaviour, where
     /// `frus.document.researchPanel.visible` simply persists across documents).
     /// Applied once per document open by `DocumentView` (iOS) and
-    /// `MacDocumentView` (macOS); the in-document Read/Research segmented
-    /// control still overrides live for that document. Surfaced in the
+    /// `MacDocumentView` (macOS); the in-document Read/Research rail toggle
+    /// still overrides live for that document. Surfaced in the
     /// "Reading" group of Display settings on both platforms (Session 154).
     static let defaultDocumentMode = "frus.reading.defaultMode"
 

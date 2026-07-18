@@ -143,28 +143,36 @@ On iPhones with a Dynamic Island, starting a download presents a **Live Activity
 
 `[SCREENSHOT: Lock Screen Live Activity card showing volume download progress]`
 
-### 3.3 The Document Toolbar
+### 3.3 The Research Rail Toggle
 
-When you open a document for reading, its toolbar gathers every contextual action — annotation tools, citation tools, navigation, and AI features — into the system overflow ("**•••**") menu at the top of the screen. Tap it to reveal:
+When you open a document for reading, the toolbar carries a **single control**: the **Research-rail toggle** (a `doc.text.magnifyingglass` button), which becomes accent-tinted while the rail is open. The many separate annotation, citation, and AI actions that once crowded this toolbar have moved into the **Research rail** and the **floating selection bar** described below; returning to where you came from is the ordinary navigation back button.
 
-| Action | What it does |
-|--------|--------------|
-| **Add Research Note** | Attach a note to this document |
-| **Tag Document** | Apply or remove custom tags |
-| **Create Highlight** | Enter highlight mode to mark up passages (see Section 7.2) |
-| **Read / Research** (segmented control) | Switch between distraction-free Read mode and the Research panel layout (see Section 6.2) |
-| **Citation** | View the formatted citation, or copy it (including Copy as… BibTeX/RIS) — see Section 9.3 |
-| **Share** | Send this document to your Zotero library, export a Zotero file, or share the citation + link (see Section 9.3) |
-| **Word Cloud** | Open a frequency word cloud for this document (see Section 13.4) |
-| **Add to Collection** | File this document into one or more collections |
-| **Cross-References** | View this document's outbound and inbound cross-references, and look any referenced person up in the NARA catalog |
-| **Related Documents** | Find documents related to this one by archival provenance, cross-references, date, and shared people (see Section 6.5) |
-| **Source Explorer** | Open this document's archival source note in Source Explorer |
-| **Open in New Window** | (iPad, in a multi-window/Stage Manager session) open this document in its own window |
-| **Summarize with AI** | Generate or view an on-device AI summary |
-| **Show/Hide Notes Panel** | Toggle the notes panel alongside the document body |
+**The Research rail** is the per-document research surface. On **iPad** it slides in as the trailing `.inspector` panel beside the document; on **iPhone** it rises as a **bottom sheet** with medium and large detents and a drag indicator. It opens with a **RESEARCH** header, then a **3×2 grid of tiles** — **Cite**, **Word Cloud**, **Sources**, **Graph**, **Related**, and **Share** — above expandable **Summary**, **Notes**, **Tags**, and **Collections** accordions. On iPad the rail header also carries an **Open in New Window** icon for Stage Manager (Section 17.2).
 
-`[SCREENSHOT: Document view with the "•••" overflow menu open, listing all toolbar actions]`
+**The floating selection bar** is a dark pill that appears just below a passage you select in the document body. It offers four **colour dots** (tap one to highlight the selection in that colour), **Excerpt**, **Look Up** (a NARA catalog lookup for the selection), and **Note**. (For a selection inside a footnote, the colour dots and Excerpt are disabled.)
+
+Every action that used to live in the document toolbar now has one of these homes:
+
+| Former toolbar action | Where it lives now |
+|-----------------------|--------------------|
+| **Add Research Note** | The floating selection bar's **Note** (on a selection), or the rail's **Notes** accordion |
+| **Create Highlight** | Select text and tap one of the four **colour dots** on the floating selection bar (there is no separate highlight mode — see Section 7.2) |
+| **Add Selection as Excerpt** | The floating selection bar's **Excerpt** |
+| Look a selection up in NARA | The floating selection bar's **Look Up** |
+| **Tag Document** | The rail's **Tags** accordion |
+| **Add to Collection** | The rail's **Collections** accordion |
+| **Summarize with AI** | The rail's **Summary** accordion — **Summarize this Document** |
+| **Citation** | The rail's **Cite** tile (its sheet also has a **Copy Citation** button) — Section 9.3 |
+| **Share** | The rail's **Share** tile (Section 9.3) |
+| **Word Cloud** | The rail's **Word Cloud** tile (Section 13.4) |
+| **Cross-References** graph | The rail's **Graph** tile (opens the cross-reference graph; Section 8) |
+| **Related Documents** | The rail's **Related** tile (Section 6.5) |
+| **Source Explorer** | The rail's **Sources** tile (opens Source Explorer; Section 12) |
+| **Open in New Window** | The rail header's new-window icon (iPad Stage Manager, Section 17.2) |
+
+Showing the rail is **Research mode**; hiding it is a distraction-free **Read mode** (Section 6.2).
+
+`[SCREENSHOT: Document view with the Research rail open — the RESEARCH header, the 3×2 tile grid, and the Summary/Notes/Tags/Collections accordions]`
 
 ---
 
@@ -345,7 +353,7 @@ Checklist Mode is a per-session working aid: it isn't saved, it resets when you 
 
 Tapping any document — from Browse, Search, Research, or a Collection — opens it in the document view, where the original TEI-encoded text is rendered as readable, well-formatted prose: headings, datelines, paragraphs, footnotes, editorial notes, and cross-reference links all appear as the State Department originally published them, adapted for your screen.
 
-![Document view on iPhone — a rendered FRUS document with its heading, dateline, body text, linked person names and terms, and footnote markers, with the document toolbar across the top.](screenshots/ios/document-view.png)
+![Document view on iPhone — a rendered FRUS document with its heading, dateline, body text, linked person names and terms, and footnote markers, with the single Research-rail toggle in the toolbar.](screenshots/ios/document-view.png) <!-- TODO Phase E: re-capture for Research rail -->
 
 ### 6.1 Navigating Within a Document
 
@@ -357,16 +365,18 @@ Not every printed reference has somewhere to go: occasionally a volume cites a p
 
 ### 6.2 Read Mode and Research Mode
 
-The **Read / Research** segmented control in the document toolbar switches between two layouts:
+The **Research-rail toggle** in the document toolbar (Section 3.3) switches between two modes:
 
-- **Read** — a clean, distraction-free view of the document body, ideal for close reading. Read mode also enables **edge-tap page-turning** (see 6.3).
-- **Research** — shows the document alongside your notes panel, so you can read and annotate side by side.
+- **Read mode** — the rail is hidden, giving a clean, distraction-free view of the document body, ideal for close reading. Read mode also enables **edge-tap page-turning** (see 6.3).
+- **Research mode** — the rail is shown: on **iPad** it's the trailing `.inspector` panel beside the document; on **iPhone** it's a bottom sheet you can drag between medium and large detents. You read and annotate the document with the rail's tiles and accordions at hand.
 
-`[SCREENSHOT: Read/Research segmented control in the document toolbar]`
+There is no separate Read/Research switch — the single rail toggle is the whole control, and an accent tint on the button tells you the rail (and so Research mode) is showing.
+
+`[SCREENSHOT: The document with the Research rail open (Research mode) beside the same document with the rail hidden (Read mode)]`
 
 ### 6.3 Edge-Tap Page-Turning (Read Mode)
 
-While in Read mode, invisible tap zones along the left and right edges of the screen let you move to the previous or next document in the volume — much like turning pages in an e-book reader. Tap near the left edge to go back one document, or near the right edge to advance to the next one. This lets you read straight through a volume without returning to the table of contents or using the back button. (These tap zones are intentionally hidden in Research mode, where the edges of the screen are needed for the notes panel and other controls.)
+While in Read mode, invisible tap zones along the left and right edges of the screen let you move to the previous or next document in the volume — much like turning pages in an e-book reader. Tap near the left edge to go back one document, or near the right edge to advance to the next one. This lets you read straight through a volume without returning to the table of contents or using the back button. (These tap zones are suppressed whenever the Research rail — or any other sheet — is open, so a drag near the edge controls the sheet rather than turning the page.)
 
 `[SCREENSHOT: Document view in Read mode with annotated edge-tap zones for previous/next navigation]`
 
@@ -376,7 +386,7 @@ Adjust font size, line spacing, and other reading preferences from **Settings �
 
 ### 6.5 Related Documents
 
-A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Choose **Related Documents** from the document toolbar to see a ranked list of the indexed documents most related to the one you're reading, scored along five signals:
+A cross-reference tells you what a document *cites*; **Related Documents** tells you what belongs *near* it. Tap the **Related** tile in the Research rail (Section 3.3) to see a ranked list of the indexed documents most related to the one you're reading, scored along five signals:
 
 | Signal | What it connects |
 |--------|------------------|
@@ -396,12 +406,6 @@ On iPhone (and iPads without Stage Manager) the list opens as a sheet with a **D
 
 `[SCREENSHOT: Related Documents sheet on iPhone — the scope segmented control and the Adjust weights sliders above the ranked list with why-related icon chips]`
 
-### 6.6 Subjects (This Volume)
-
-The research panel below a document — alongside its Summary, Notes, and Tags sections (visible in Research mode; see Section 6.2) — includes a **Subjects (this volume)** disclosure: the detected topics most characteristic of the volume you're reading, shown as chips. Tap a chip to see the other FRUS volumes covering the same subject and jump to any of them. As the label says, these are **volume-level** subjects — the same "Top subjects" shown on the volume's own page (Section 4.1), not tags on the individual document — and the section appears only for volumes that have a subject profile.
-
-`[SCREENSHOT: The Subjects (this volume) disclosure expanded in the document research panel, showing detected-topic chips]`
-
 ---
 
 ## 7. Annotating and Tagging
@@ -410,25 +414,25 @@ FRUS Explorer's research tools let you build a personal layer of analysis on top
 
 ### 7.1 Research Notes
 
-From the document toolbar, choose **Add Research Note** to attach a free-form note to the current document. Notes appear in the notes panel (visible directly in Research mode, or toggled on in Read mode) and are collected across your whole library in the **Research** tab.
+To attach a free-form note to the current document, tap **Note** on the floating selection bar after selecting a passage (Section 3.3), or open the **Notes** accordion in the Research rail and add one there. Notes appear in the rail's Notes accordion and are collected across your whole library in the **Research** tab.
 
-`[SCREENSHOT: Notes panel showing a research note attached to a document]`
+`[SCREENSHOT: The Research rail's Notes accordion showing a research note attached to a document]`
 
 If you have an active research project, new notes are automatically associated with it; from Global Context, notes aren't tied to any particular project.
 
 ### 7.2 Highlights
 
-Choose **Create Highlight** from the document toolbar to enter highlight mode. Select a passage of text with your finger (or Apple Pencil on iPad) and choose one of four highlight colors — yellow, green, blue, or pink. Highlights appear as colored overlays directly in the text, are visible immediately without needing a separate "highlight mode" to view them, and survive document re-renders (such as display-preference changes) because their positions are tracked by stable text offsets rather than on-screen coordinates.
+There is no separate "highlight mode" to enter. Select a passage of text with your finger (or Apple Pencil on iPad) and the **floating selection bar** — a dark pill — appears just below it; tap one of its four **colour dots** — yellow, green, blue, or pink — to highlight the selection in that colour. Highlights appear as colored overlays directly in the text, are visible immediately, and survive document re-renders (such as display-preference changes) because their positions are tracked by stable text offsets rather than on-screen coordinates.
 
 `[SCREENSHOT: Document body with yellow and blue highlights visible inline]`
 
-`[SCREENSHOT: Highlight color picker showing the four available colors]`
+`[SCREENSHOT: The floating selection bar below a text selection, showing its four colour dots, Excerpt, Look Up, and Note]`
 
 Highlights you create can be annotated inline when you export a collection that contains the highlighted document — see Section 10.4.
 
 ### 7.3 Tags
 
-Choose **Tag Document** from the document toolbar to apply one or more custom tags — short labels you define yourself (e.g., "Berlin Crisis," "needs follow-up," "key source"). Manage your full tag list, including colors and names, from **Settings → Research → Tags**. Tags let you build cross-cutting collections of documents that share a theme, regardless of which volume they come from.
+Open the **Tags** accordion in the Research rail (Section 3.3) to apply one or more custom tags — short labels you define yourself (e.g., "Berlin Crisis," "needs follow-up," "key source"). Manage your full tag list, including colors and names, from **Settings → Research → Tags**. Tags let you build cross-cutting collections of documents that share a theme, regardless of which volume they come from.
 
 In the tag picker, the **New Tag** field sits at the **top** of the sheet, so creating a tag never means scrolling past a long list; a tag you create there pins to the top with a **New** badge until the sheet closes. The sheet's title — **Tags - Doc N** (or the document's id) — names exactly which document you're tagging.
 
@@ -455,9 +459,9 @@ Many FRUS documents reference one another — a memo might respond to a cable, o
 
 Page-number cross-references — the kind that print as "see p. 427" and point at a printed page rather than a document number — resolve to the correct target document, so they appear as ordinary links in the graph (and feed the corpus-wide analytics in Section 8.1) rather than dead-ending. **The first launch after this update rebuilds the cross-reference index one more time** — the rebuild also repairs a long-standing defect where some *cross-volume* page references pointed at the wrong document in graphs and analytics. It happens automatically in the background, and your reading isn't interrupted. (See the indexing banner in Section 3.1 and Index Health in Section 16.) References the corpus-wide validation dataset marks as unresolvable (Section 6.1) are excluded from the graph and its analytics rather than drawn as dead-end nodes.
 
-Open the graph from a document's **Cross-References** toolbar action. It opens full-screen (a sheet on iPad). Each node is a document, positioned left-to-right by date; arrows point from the citing document to the cited one, and larger nodes are more connected. A **legend** and an **info** button (ⓘ) explain the color, size, and direction encodings so meaning never depends on color alone.
+Open the graph from the **Graph** tile in the Research rail (Section 3.3). It opens full-screen (a sheet on iPad). Each node is a document, positioned left-to-right by date; arrows point from the citing document to the cited one, and larger nodes are more connected. A **legend** and an **info** button (ⓘ) explain the color, size, and direction encodings so meaning never depends on color alone.
 
-`[SCREENSHOT: Cross-reference graph on iPhone showing nodes arranged along a date axis with direction arrows and a legend — the Cross-References toolbar action (SF Symbol: point.3.connected.trianglepath.dotted) labeled]`
+`[SCREENSHOT: Cross-reference graph on iPhone showing nodes arranged along a date axis with direction arrows and a legend — the rail's Graph tile (SF Symbol: point.3.connected.trianglepath.dotted) labeled]`
 
 **Reference list vs. canvas.** On iPhone, a segmented **List / Graph** control switches between the visual canvas and a scrollable reference list of the same connections (on iPad and Mac the list is a side panel you toggle). Selecting a node shows its details; tapping opens the document.
 
@@ -499,7 +503,7 @@ FRUS Explorer formats citations to match the State Department's own recommended 
 
 ### 9.1 Viewing a Citation
 
-From any open document, choose **View Citation** in the toolbar to see the fully formatted citation string in a popover, ready to read or screenshot.
+From any open document, tap the **Cite** tile in the Research rail (Section 3.3) to see the fully formatted citation string, ready to read or screenshot.
 
 `[SCREENSHOT: Citation popover showing a formatted FRUS citation string]`
 
@@ -511,15 +515,15 @@ From the Search tab, tap the citation-lookup button to open **Citation Lookup**:
 
 ### 9.3 Copying and Sharing Citations
 
-The document toolbar separates the *citation itself* from *sending the document somewhere*:
+The Research rail separates the *citation itself* from *sending the document somewhere*:
 
-- The **Citation** menu is for the reference text — **View Citation** (opens the formatted citation; from there you can also **Copy as…** BibTeX or RIS) and **Copy Citation**.
-- The **Share** menu (the share icon, next to Citation) gathers the export and send actions:
+- The **Cite** tile is for the reference text — it opens the formatted citation, with a **Copy Citation** button and **Copy as…** BibTeX or RIS.
+- The **Share** tile (in the rail's tile grid) gathers the export and send actions:
   - **Send to Zotero Library** — pushes this document straight into your Zotero library over the Web API, with its tags and research notes (appears only when a Zotero account is connected; see Section 16).
   - **Export Zotero file (BibTeX / RIS)** — shares a Zotero-importable file via the system share sheet.
   - **Share Citation** — opens the share sheet with a single message combining the formatted citation *and* its canonical `history.state.gov` link, so whoever receives it can read the citation and open the original source online with one tap (works with Messages, Mail, Notes, AirDrop, third-party apps, and more).
 
-`[SCREENSHOT: Document Share menu showing Send to Zotero Library, Export Zotero file, and Share Citation]`
+`[SCREENSHOT: The Research rail's Share menu showing Send to Zotero Library, Export Zotero file, and Share Citation]`
 
 ---
 
@@ -543,7 +547,7 @@ Open the **Collections** tab and tap **New Collection**. The editor opens as its
 
 **Which collections you see.** By default the manager lists **every** collection, across all of your projects. When you have an active project, a banner at the top of the list notes this and offers **Scope to “\<project\>”** to narrow the list to just that project's collections; **Show All** brings the rest back. This scope choice is per-session — reopening the manager returns to showing everything.
 
-Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by choosing **Add to Collection** from any open document's toolbar, or — without leaving the editor — tap **Add Documents…** for a picker with four ways in: **Search** the full text of your indexed volumes — each result shows a matched-text **snippet preview** and the archival source note so you can judge it before adding, with a snippet-length control (offering **Follow global** plus 1–10 lines) that this sheet remembers independently of the main Search list; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge. The **Citations** tab shows a running **"N of M resolved"** count (and how many lines still need review) as it matches your pasted references, and finishing an add briefly confirms with an **"Added N documents"** message so you know it landed.
+Each document entry shows its **title, document number, volume, and date** once its volume is indexed. Add documents by opening the **Collections** accordion in an open document's Research rail (Section 3.3), or — without leaving the editor — tap **Add Documents…** for a picker with four ways in: **Search** the full text of your indexed volumes — each result shows a matched-text **snippet preview** and the archival source note so you can judge it before adding, with a snippet-length control (offering **Follow global** plus 1–10 lines) that this sheet remembers independently of the main Search list; **Browse** any volume's document list (with a Download button for volumes you don't have yet, and Select All for whole volumes); **Citations** — paste footnotes, a bibliography, or history.state.gov links, and each line is resolved to its document, with ambiguous and unmatched lines clearly flagged for review; and **Tags**, which gathers every document carrying a tag of yours (whether tagged directly or through a research note). Selections from all four tabs are appended to the end of the list in the order you picked them; adding a document that's already in the collection is allowed, and repeats show a subtle **Also in collection** badge. The **Citations** tab shows a running **"N of M resolved"** count (and how many lines still need review) as it matches your pasted references, and finishing an add briefly confirms with an **"Added N documents"** message so you know it landed.
 
 `[SCREENSHOT: Collection manager showing a mix of documents, a section heading, and a prose block with reorder handles]`
 
@@ -560,7 +564,7 @@ A collection isn't limited to a flat list of documents. From the manager's **add
 - **Prose blocks** — your own connecting commentary, written in a **rich-text editor**: **bold**, *italic*, underline, and colour are all supported, applied from the **formatting toolbar that appears above the keyboard** (with a **Link** button for attaching a URL to selected text — links become real hyperlinks in HTML and Word exports). Your formatting is preserved through export.
 - **Excerpts** — frozen verbatim quotations from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's colour as an accent bar). An excerpt keeps the exact passage you captured, so it renders even when the source volume isn't downloaded.
 
-**Three ways to create an excerpt.** (1) Choose **Add Highlighted Passages…** from the add menu to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and tap **Add Selection as Excerpt** in the toolbar, then choose the collection. (3) Open a document entry's **inspector** (10.3) and tap **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
+**Three ways to create an excerpt.** (1) Choose **Add Highlighted Passages…** from the add menu to pick from your highlights on the collection's documents, several at a time. (2) While reading any document, select a passage and tap **Excerpt** on the floating selection bar (Section 3.3), then choose the collection. (3) Open a document entry's **inspector** (10.3) and tap **Insert as Excerpt** on any highlight row. However created, excerpt rows move and delete like prose blocks; the quoted text itself is never edited — it stays exactly as the source prints it.
 
 **Apparatus blocks.** The add menu's **Apparatus** submenu inserts five kinds of *generated* scholarly apparatus. Unlike prose or excerpts, you never write their content — each block is computed from the collection's documents at every export and in the live preview, so it always reflects the current membership (smart collections included):
 
@@ -668,9 +672,9 @@ FRUS Explorer can generate concise summaries of long documents entirely **on-dev
 
 ### 11.1 Summarizing a Document
 
-Choose **Summarize with AI** from a document's toolbar. A summary is generated (this can take a few moments on first use for a given document) and displayed alongside the original text. Summaries are saved automatically and indexed for full-text search, so a later search can match text that appears only in a summary.
+Open the **Summary** accordion in the Research rail (Section 3.3) and tap **Summarize this Document**. A summary is generated (this can take a few moments on first use for a given document) and displayed alongside the original text. Summaries are saved automatically and indexed for full-text search, so a later search can match text that appears only in a summary.
 
-`[SCREENSHOT: Document view showing a generated AI summary panel beneath the toolbar]`
+`[SCREENSHOT: The Research rail's Summary accordion showing a generated AI summary of the open document]`
 
 ### 11.2 Summarization Prompts
 
@@ -686,7 +690,7 @@ When building a collection export, choosing **Summary only** as the body depth (
 
 To summarize a large set of documents without sitting through them one at a time, open **Settings → Research → Summarization** and turn on **background summarization**, then pick a scope — an entire subseries, a single volume, a user tag, a saved search, a date range, or one of your saved volume scopes (**My Volume Scopes**, Section 16.1; the picker shows how many of the scope's volumes are downloaded, and Start stays disabled until at least one member volume is downloaded). FRUS Explorer works through the queue conservatively, including for a period after you leave the app, and reports progress through a Live Activity (on supported iPhones) and the Settings screen. It's deliberately cautious about battery and heat, so a large batch may span several sessions; documents that already have a summary for the chosen prompt are skipped. Very long documents are handled automatically — they're summarized in sections and recombined, so even an unusually long policy paper completes rather than failing.
 
-> **Note:** Background summarization is opt-in and runs only while the device has capacity; it is not a guaranteed-immediate operation. For a single document, **Summarize with AI** (Section 11.1) is always the fastest path.
+> **Note:** Background summarization is opt-in and runs only while the device has capacity; it is not a guaranteed-immediate operation. For a single document, summarizing it from the Research rail's **Summary** accordion (Section 11.1) is always the fastest path.
 
 ---
 
@@ -696,7 +700,7 @@ Every FRUS document is drawn from original archival material, and each carries a
 
 **Coverage.** Source notes are extracted for **every era of the series**, including the modern volumes (roughly 1955 onward) that encode the note inside the document heading rather than as a standalone note — a form earlier releases of the app missed entirely. If a document has a source note in the published volume, FRUS Explorer has it.
 
-Open Source Explorer from a document's toolbar. It displays the parsed source-note information and offers a direct link to look the corresponding record up in the **National Archives (NARA) online catalog**, opened in FRUS Explorer's embedded browser. An **info** button (ⓘ) in the toolbar opens a popover explaining what the view shows and how to read an archival source note.
+Open Source Explorer from the **Sources** tile in the Research rail (Section 3.3). It displays the parsed source-note information and offers a direct link to look the corresponding record up in the **National Archives (NARA) online catalog**, opened in FRUS Explorer's embedded browser. An **info** button (ⓘ) in the toolbar opens a popover explaining what the view shows and how to read an archival source note.
 
 `[SCREENSHOT: Source Explorer view showing parsed archival source information with a NARA catalog link]`
 
@@ -750,7 +754,7 @@ The relationship runs both ways: whenever a search returns results, Search offer
 
 ### 13.4 Word Cloud
 
-Where Analytics charts one term over time, a **Word Cloud** shows the most frequent terms in a body of material at a glance. You can open one for almost any scope: a single **document** (Share/More menu in the document toolbar), a **volume** or **subseries** (the context menu in the browser), a **collection**, a **user tag**, a **saved search**, a custom **volume scope** (long-press its row in Settings → Research → Volume Scopes; available once at least one member volume is indexed — see Section 16.1), a **date range**, or the whole **corpus**. An **info** button (ⓘ) in the toolbar opens a popover explaining what the cloud shows and how to read it.
+Where Analytics charts one term over time, a **Word Cloud** shows the most frequent terms in a body of material at a glance. You can open one for almost any scope: a single **document** (the **Word Cloud** tile in the Research rail; see Section 3.3), a **volume** or **subseries** (the context menu in the browser), a **collection**, a **user tag**, a **saved search**, a custom **volume scope** (long-press its row in Settings → Research → Volume Scopes; available once at least one member volume is indexed — see Section 16.1), a **date range**, or the whole **corpus**. An **info** button (ⓘ) in the toolbar opens a popover explaining what the cloud shows and how to read it.
 
 `[SCREENSHOT: Word cloud for a volume on iPhone, with the lens bar above a packed spiral of sized terms]`
 
@@ -887,15 +891,15 @@ Setup takes a minute: tap **Create a Zotero API key** to open zotero.org with a 
 
 iPad's larger screen and multitasking model unlock several capabilities beyond the core iPhone experience.
 
-### 17.1 Inspector Panels
+### 17.1 The Research Rail as an Inspector
 
-On iPad, several views present supplementary information — such as a document's notes, tags, or cross-references — in a side **inspector panel** rather than a full-screen sheet, so you can see your primary content and its supporting material at the same time. Show or hide an inspector with the inspector toggle in the relevant toolbar.
+On iPad, the document view's **Research rail** (Section 3.3) is presented as a trailing `.inspector` panel beside the document rather than a full-screen sheet, so you can see the document and its research surface at the same time. Show or hide it with the single **Research-rail toggle** in the document toolbar. A document's **Summary**, **Notes**, **Tags**, and **Collections** live as accordions in the rail, while **Graph** is one of the rail's tiles — tapping it opens the graph as its own window (Section 17.2), not as an inspector section.
 
-`[SCREENSHOT: iPad split view showing a document with an inspector panel open alongside it]`
+`[SCREENSHOT: iPad split view showing a document with the Research rail open as a trailing inspector alongside it]`
 
 ### 17.2 Multi-Window and Stage Manager
 
-On iPads that support Stage Manager, FRUS Explorer can open documents in their own windows — choose **Open in New Window** from a document's toolbar to pop it out, then arrange it alongside other FRUS Explorer windows or other apps. This is especially useful for comparing two documents side by side, or keeping a reference document visible while you work in another.
+On iPads that support Stage Manager, FRUS Explorer can open documents in their own windows — tap the **Open in New Window** icon in the Research rail's header (Section 3.3) to pop it out, then arrange it alongside other FRUS Explorer windows or other apps. This is especially useful for comparing two documents side by side, or keeping a reference document visible while you work in another.
 
 `[SCREENSHOT: Stage Manager session showing two FRUS Explorer document windows side by side]`
 
