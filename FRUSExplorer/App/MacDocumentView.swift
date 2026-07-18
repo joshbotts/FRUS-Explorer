@@ -87,6 +87,8 @@ struct MacDocumentView: View {
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
     @State private var nextEntry: DocumentBrowserEntry? = nil
+    /// Which edge chevron is hover-revealed in Read mode (C2.4); `nil` = neither.
+    @State private var hoveredNavEdge: NavEdge? = nil
     @State private var showPersonNotFound = false
     @State private var showGlossNotFound  = false
     /// Set when an unresolvable cross-reference is tapped; drives the explanation sheet (#240).
@@ -334,49 +336,94 @@ struct MacDocumentView: View {
     /// Popover API).  The document identity line and highlights banner are pinned
     /// above the web view; volume navigation is fixed below. `SummaryBlockView`
     /// is omitted from this path until Session 147 finalises the WebKit migration.
-    private func webKitDocumentView(renderModel: FRUSDocumentRenderModel) -> some View {
-        HStack(spacing: 0) {
-            documentColumn(renderModel: renderModel)
+    /// Below this container width the Research rail becomes a trailing OVERLAY instead of a
+    /// side-by-side panel, so the reading column never reflows below its ~340 pt floor
+    /// (640 pt window min − 300 pt rail = 340). Above it the rail sits side-by-side (C2.3).
+    private static let railOverlayBreakpoint: CGFloat = 900
 
-            // Trailing Research rail (Phase C1) — the document research surface: RESEARCH header,
-            // action-tile grid, and Summary/Notes/Tags/Collections accordions. Mounted here so both
-            // hosts (MainWindowView + MacDocumentWindowView) inherit it; gated on the shared
-            // `panelVisible` (⌘⇧R). Replaces the retired top strip + bottom accordion.
-            if panelVisible {
-                Divider()
-                ResearchRailView(
-                    entry: entry,
-                    vm: vm,
-                    pendingHighlightLink: highlightCoordinator.pendingHighlightLink,
-                    onAddNote: { openNoteComposer() },
-                    onEditNote: { note in openNoteComposer(noteId: note.id) },
-                    onAddNoteToHighlight: { highlightId in
-                        // Restore the highlight-linked note path the retired strip carried (C1b
-                        // review F1): compose a note linked back to the just-created highlight.
-                        openNoteComposer(linkedHighlightId: highlightId)
-                        highlightCoordinator.pendingHighlightLink = nil
-                    })
-                    .frame(width: 300)
+    private func webKitDocumentView(renderModel: FRUSDocumentRenderModel) -> some View {
+        GeometryReader { proxy in
+            let wide = proxy.size.width >= Self.railOverlayBreakpoint
+            ZStack(alignment: .trailing) {
+                // Document column + the side-by-side Research rail (Phase C1), shown beside the
+                // document only when there's room (≥ ~900 pt). Mounted here so both hosts
+                // (MainWindowView + MacDocumentWindowView) inherit it; gated on `panelVisible` (⌘⇧R).
+                HStack(spacing: 0) {
+                    documentColumn(renderModel: renderModel)
+                    if panelVisible && wide {
+                        Divider()
+                        researchRail(width: 300)
+                    }
+                }
+
+                // Narrow (< ~900 pt): the rail floats as a trailing overlay (leading shadow + ×
+                // close, mock 04) so the document keeps full width and never reflows below the
+                // reading floor (C2.3). Manual overlay, NOT `.inspector` (which can't overlay).
+                if panelVisible && !wide {
+                    HStack(spacing: 0) {
+                        Divider()
+                        VStack(spacing: 0) {
+                            HStack {
+                                Spacer()
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.2)) { panelVisible = false }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                }
+                                .buttonStyle(.borderless)
+                                .help(String(localized: "researchRail.overlay.close.help",
+                                             defaultValue: "Close research panel"))
+                                .accessibilityLabel(String(localized: "researchRail.overlay.close.a11y",
+                                                           defaultValue: "Close research panel"))
+                                .padding(8)
+                            }
+                            researchRail(width: 300)
+                        }
+                        .frame(width: 300)
+                        .background(.regularMaterial)
+                        .shadow(color: .black.opacity(0.15), radius: 8, x: -2, y: 0)
+                    }
+                    .transition(.move(edge: .trailing))
+                }
             }
-        }
-        .animation(.easeInOut(duration: 0.2), value: panelVisible)
-        // Toggling the rail changes the web view's WIDTH → WKWebView reflows every line, but the DOM
-        // selection doesn't change, so no `selectioncleared` fires and the bar would strand on its
-        // pre-reflow anchor. Drop it on toggle (C1b review F4).
-        .onChange(of: panelVisible) { _, _ in selectionBar.hideNow() }
-        // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2). This
-        // mirrors the rail's own picker; C1a unified them into one shared `CollectionPickerSheet`.
-        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
-            if let capture = pendingExcerptCapture {
-                CollectionPickerSheet(entry: entry, excerpt: capture)
+            // GeometryReader lays its child out .topLeading; fill the reader so the document column
+            // (which relies on the caller's greedy frame) spans it.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.easeInOut(duration: 0.2), value: panelVisible)
+            // Toggling the rail changes the web view's WIDTH → WKWebView reflows every line, but the
+            // DOM selection doesn't change, so no `selectioncleared` fires and the bar would strand on
+            // its pre-reflow anchor. Drop it on toggle (C1b review F4; applies in both rail modes).
+            .onChange(of: panelVisible) { _, _ in selectionBar.hideNow() }
+            // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2),
+            // sharing the C1a-unified `CollectionPickerSheet`.
+            .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
+                if let capture = pendingExcerptCapture {
+                    CollectionPickerSheet(entry: entry, excerpt: capture)
+                }
             }
+            // Dismiss the bar when this document view is navigated away from (pop-back zombie — see
+            // Phase B2). NavigationStack retains pushed instances with their @State.
+            .onDisappear { selectionBar.hideNow() }
         }
-        // Dismiss the bar when this document view is navigated away from. NavigationStack RETAINS
-        // pushed instances (with their @State), and a nav-button hop fires no `selectioncleared`,
-        // so without this the bar would re-appear as a stale "zombie" on pop-back — anchored to the
-        // old rect, its dots no-op after the coordinator reset. This is the macOS counterpart to
-        // iOS's `clearSelectionState` bar-hide.
-        .onDisappear { selectionBar.hideNow() }
+    }
+
+    /// The Research rail wired to this document's actions. Extracted so the side-by-side and
+    /// overlay presentations (C2.3) share one construction; width is applied by the caller.
+    @ViewBuilder
+    private func researchRail(width: CGFloat) -> some View {
+        ResearchRailView(
+            entry: entry,
+            vm: vm,
+            pendingHighlightLink: highlightCoordinator.pendingHighlightLink,
+            onAddNote: { openNoteComposer() },
+            onEditNote: { note in openNoteComposer(noteId: note.id) },
+            onAddNoteToHighlight: { highlightId in
+                // Restore the highlight-linked note path the retired strip carried (C1b review F1):
+                // compose a note linked back to the just-created highlight.
+                openNoteComposer(linkedHighlightId: highlightId)
+                highlightCoordinator.pendingHighlightLink = nil
+            })
+            .frame(width: width)
     }
 
     /// The document column — identity header, web-view body (with the floating selection-bar
@@ -462,6 +509,10 @@ struct MacDocumentView: View {
             .overlay {
                 macFloatingSelectionBarOverlay
             }
+            // Read-mode hover-revealed prev/next chevrons (C2.4) — the rail-off replacement for the
+            // volume-nav bar. On the web view so they sit at the reading edges, vertically centred.
+            .overlay(alignment: .leading)  { edgeNavChevron(.leading) }
+            .overlay(alignment: .trailing) { edgeNavChevron(.trailing) }
 
             // Volume navigation bar — Research mode only (C5). In Read mode prev/next remain on the
             // ⌥⌘↑/↓ Document-menu commands (and the Phase-C2 hover edge chevrons).
@@ -735,6 +786,40 @@ struct MacDocumentView: View {
             if entry.isEditorialNote {
                 EditorialNoteBadge()
             }
+        }
+    }
+
+    // MARK: - Read-mode Edge Chevrons (C2.4)
+
+    /// Leading/trailing edge chevrons for prev/next document.
+    private enum NavEdge { case leading, trailing }
+
+    /// A Read-mode (rail-off) hover-revealed prev/next affordance: a 34 pt circle vertically centred
+    /// at the document's leading/trailing edge, reusing the volume reading-sequence
+    /// `prevEntry`/`nextEntry` push. Hidden in Research mode (the `volumeNavigationView` bar owns
+    /// prev/next there) and at volume boundaries (`prevEntry`/`nextEntry == nil`). ⌥⌘↑/↓ still work.
+    @ViewBuilder
+    private func edgeNavChevron(_ edge: NavEdge) -> some View {
+        let target = edge == .leading ? prevEntry : nextEntry
+        if !panelVisible, let target {
+            Button {
+                navigationPath.append(target)
+            } label: {
+                Image(systemName: edge == .leading ? "chevron.left" : "chevron.right")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(.black.opacity(0.05)))
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(edge == .leading ? .leading : .trailing, 8)
+            .opacity(hoveredNavEdge == edge ? 1 : 0)
+            .onHover { hoveredNavEdge = $0 ? edge : nil }
+            .animation(.easeInOut(duration: 0.15), value: hoveredNavEdge)
+            .help(String(localized: edge == .leading ? "document.nav.previous.help"
+                                                     : "document.nav.next.help",
+                         defaultValue: edge == .leading ? "Previous document in this volume"
+                                                        : "Next document in this volume"))
         }
     }
 

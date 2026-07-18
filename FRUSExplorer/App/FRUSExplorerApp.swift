@@ -585,8 +585,8 @@ struct FRUSExplorerApp: App {
         // Opening documents as separate windows lets macOS gather them into native
         // tabs (Window ▸ Merge All Windows / the window tab bar) and view them side
         // by side. Additive — the primary `mainWindowScene` remains the default;
-        // these open only via openWindow(value: DocumentWindowID(...)) (the "New
-        // Window" button in ResearchStripView). Value identity is (volumeId,
+        // these open only via openWindow(value: DocumentWindowID(...)) (the File
+        // menu's "Open Document in New Window", C2.2). Value identity is (volumeId,
         // documentId), so reopening the same document focuses its existing window.
         WindowGroup(for: DocumentWindowID.self) { $windowID in
             Group {
@@ -602,6 +602,9 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            // Same 640 pt reading-column floor as the main window (C2.3); the rail overlays below
+            // the 900 pt breakpoint so the document never squeezes below ~340 pt.
+            .frame(minWidth: 640, minHeight: 600)
         }
 
         // MARK: - Search Window
@@ -952,19 +955,13 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 #if os(macOS)
-                // 700 pt fits a split-screen half of a 13″ MacBook Air
-                // (≈722 pt), so the main window can tile side-by-side with a
-                // Search/Graph/Source Explorer window on small displays
-                // (UI audit gap 19; was 980). Below ~980 the trailing toolbar
-                // tool launchers progressively collapse into the system
-                // overflow chevron — at 700 the combined overflow menu (custom
-                // buttons next to the back-history popover) is mildly
-                // confusing but everything stays reachable and labelled, and
-                // graceful degradation beats forbidding tiling outright.
-                // The other former constraint — ResearchStripView's ~920 pt of
-                // action buttons — now scrolls horizontally below its ideal
-                // width, so no strip label truncates at 700.
-                .frame(minWidth: 700, minHeight: 600)
+                // 640 pt = the reading-column floor (340 pt) + the 300 pt Research rail. At the
+                // C2.3 900 pt breakpoint the rail is side-by-side; below it the rail OVERLAYS and the
+                // document keeps full width, so 640 never squeezes the reading column below 340 pt.
+                // The C2 titlebar is a fixed 5-tool set (identity pill yields first), so there's no
+                // strip/label-truncation concern any more; 640 lets the window tile comfortably as a
+                // split-screen half of a 13″ MacBook Air (≈722 pt).
+                .frame(minWidth: 640, minHeight: 600)
                 #endif
                 .task {
                     await bootDownloadManager()
