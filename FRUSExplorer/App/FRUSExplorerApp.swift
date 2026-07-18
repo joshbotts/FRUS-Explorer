@@ -1019,6 +1019,13 @@ struct FRUSExplorerApp: App {
                 }
             }
 
+            // File ▸ (after "New Window") "Open Document in New Window" (Research-rail C2.2) —
+            // opens the key document surface's current document in its own window via
+            // \.documentCommands, replacing the retired research strip's New Window verb.
+            CommandGroup(after: .newItem) {
+                OpenDocumentInNewWindowMenuItem()
+            }
+
             // Append a "FRUS Research Guide" item to the Help menu (after the
             // system search field) so the standalone primer is reachable
             // independently of the first-run indexing flow — mirroring the
@@ -1953,12 +1960,16 @@ struct DocumentCommandActions: Equatable {
     /// strip's "Add note" button).
     let addNote: @MainActor () -> Void
 
-    /// Saves the current selection as a highlight of the given color (the
-    /// research strip's Highlight button → color picker).
+    /// Saves the current selection as a highlight of the given color (the floating
+    /// selection bar's colour dots).
     let highlightSelection: @MainActor (DocumentHighlight.Color) -> Void
 
-    /// Toggles the research panel (the strip's Read/Research segmented picker).
+    /// Toggles the Research rail (⌘⇧R / the titlebar + document-window rail toggles).
     let toggleResearchPanel: @MainActor () -> Void
+
+    /// Opens the current document in its own `DocumentWindowID` window — the File menu's
+    /// "Open Document in New Window" (replaces the retired research strip's New Window verb, C2.2).
+    let openInNewWindow: @MainActor () -> Void
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.documentKey == rhs.documentKey
@@ -2099,6 +2110,23 @@ extension FocusedValues {
 }
 
 #if os(macOS)
+
+// MARK: - Open Document in New Window (File menu, Research-rail C2.2)
+
+/// File ▸ "Open Document in New Window". Enabled only when a document surface is key with a loaded
+/// document; opens that document in its own standalone `DocumentWindowID` window via
+/// `\.documentCommands`. `@FocusedValue` must be read inside a `View`, hence this tiny wrapper
+/// (mirrors `DocumentMenuContent`). Replaces the retired research strip's New Window verb.
+struct OpenDocumentInNewWindowMenuItem: View {
+    @FocusedValue(\.documentCommands) private var commands
+    var body: some View {
+        Button(String(localized: "menu.file.openInNewWindow",
+                      defaultValue: "Open Document in New Window")) {
+            commands?.openInNewWindow()
+        }
+        .disabled(commands == nil)
+    }
+}
 
 // MARK: - Document Menu Content
 

@@ -68,6 +68,10 @@ struct MainWindowView: View {
 
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
+    /// Shared research-panel visibility (⌘⇧R) — the C2 titlebar rail toggle writes the same
+    /// `@AppStorage` key the mounted rail reads (MacDocumentView / MacDocumentWindowView), so the
+    /// toolbar toggle and the rail stay in lock-step.
+    @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
 
     /// Shared highlight state passed to MacDocumentView (text selection, floating selection bar, and SwiftData insertion).
     @State private var highlightCoordinator = HighlightCoordinator()
@@ -193,10 +197,12 @@ struct MainWindowView: View {
                 // header + volume-title stack. This keeps the centred toolbar
                 // item compact at a fixed width regardless of how long the
                 // document's prose header or volume title happen to be —
-                // leaving the leading back button and trailing tool launchers
-                // (Search/Graph/Research/Collections/Corpus/Analytics) enough
-                // room that they no longer collapse into the system overflow
-                // chevron at typical window widths. ("Info" was removed in
+                // leaving the leading back button and the five trailing tool
+                // launchers (Search / Browse / Analytics ▾ / My Research ▾ /
+                // rail toggle, C2) enough room that they no longer collapse into
+                // the system overflow chevron at typical window widths. As the
+                // centred .principal item it also yields (truncates) first under
+                // width pressure, before the trailing tools. ("Info" was removed in
                 // Session 2026-06-08 — it duplicated ResearchStripView's "Cite"
                 // button, which presents the identical CitationPopoverView and
                 // is always visible rather than tucked in the toolbar.)
@@ -217,137 +223,111 @@ struct MainWindowView: View {
     private var trailingTools: some View {
         HStack(spacing: 6) {
 
-            // Search — shortcut owned by the "frus.search" Window scene
+            // Search — shortcut owned by the "frus.search" Window scene (⌘F)
             Button {
                 openWindow(id: "frus.search")
             } label: {
-                Label("Search", systemImage: "magnifyingglass")
+                Label(String(localized: "mainwindow.tools.search", defaultValue: "Search"),
+                      systemImage: "magnifyingglass")
             }
-            .help(String(
-                localized: "mainwindow.tools.search.help",
-                defaultValue: "Open the full-text search window (⌘F)"
-            ))
+            .help(String(localized: "mainwindow.tools.search.help",
+                         defaultValue: "Open the full-text search window (⌘F)"))
 
             Divider().frame(height: 20)
 
-            // Cross-reference graph — only when a document is loaded
-            Button {
-                appState.currentGraphEntry = currentEntry
-                openWindow(id: "frus.crossReferenceGraph")
-            } label: {
-                Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
-            }
-            .disabled(currentEntry == nil)
-            .help(String(
-                localized: "mainwindow.tools.graph.help",
-                defaultValue: "Show cross-references for the current document in a separate window"
-            ))
-
-            Divider().frame(height: 20)
-
-            // Research window — annotated documents and tags
-            Button {
-                openWindow(id: "frus.research")
-            } label: {
-                Label(String(localized: "mainwindow.tools.research", defaultValue: "Research"),
-                      systemImage: "note.text")
-            }
-            .keyboardShortcut("r", modifiers: [.command, .option])
-            .help(String(
-                localized: "mainwindow.tools.research.help",
-                defaultValue: "Open the Research window — browse annotated documents by tag (⌘⌥R)"
-            ))
-
-            Divider().frame(height: 20)
-
-            // Collections window
-            Button {
-                openWindow(id: "frus.collections")
-            } label: {
-                Label("Collections", systemImage: "tray.2")
-            }
-            .keyboardShortcut("k", modifiers: [.command, .shift])
-            .help(String(
-                localized: "mainwindow.tools.collections.help",
-                defaultValue: "Open the Collections window (⇧⌘K)"
-            ))
-
-            Divider().frame(height: 20)
-
-            // Corpus browser window
+            // Browse (was "Corpus") — shortcut owned by the "frus.corpusBrowser" scene (⌘⇧B)
             Button {
                 openWindow(id: "frus.corpusBrowser")
             } label: {
-                Label("Corpus", systemImage: "books.vertical")
+                Label(String(localized: "mainwindow.tools.browse", defaultValue: "Browse"),
+                      systemImage: "books.vertical")
             }
-            .help(String(
-                localized: "mainwindow.tools.corpus.help",
-                defaultValue: "Open the Corpus Browser to browse volumes by subseries"
-            ))
+            .help(String(localized: "mainwindow.tools.browse.help",
+                         defaultValue: "Browse volumes by subseries in the Corpus Browser (⌘⇧B)"))
 
-            // Analytics window
-            Button {
-                openWindow(id: "frus.analytics")
-            } label: {
-                Label("Analytics", systemImage: "chart.bar.xaxis")
-            }
-            .help(String(
-                localized: "mainwindow.tools.analytics.help",
-                defaultValue: "Open Corpus Analytics — chart term frequency over time"
-            ))
+            Divider().frame(height: 20)
 
-            // Person Analytics window (CA-5)
-            Button {
-                openWindow(id: "frus.personAnalytics")
-                bringMacWindowToFront(id: "frus.personAnalytics")
+            // Analytics — Corpus / Person / Cross-Reference analytics · Chronology · Word Cloud
+            Menu {
+                Button { openWindow(id: "frus.analytics") } label: {
+                    Label(String(localized: "mainwindow.tools.corpusAnalytics",
+                                 defaultValue: "Corpus Analytics"), systemImage: "chart.bar.xaxis")
+                }
+                Button {
+                    openWindow(id: "frus.personAnalytics")
+                    bringMacWindowToFront(id: "frus.personAnalytics")
+                } label: {
+                    Label(String(localized: "mainwindow.tools.personAnalytics",
+                                 defaultValue: "Person Analytics"), systemImage: "person.2")
+                }
+                Button {
+                    openWindow(id: "frus.crossRefAnalytics")
+                    bringMacWindowToFront(id: "frus.crossRefAnalytics")
+                } label: {
+                    Label(String(localized: "mainwindow.tools.crossRefAnalytics",
+                                 defaultValue: "Cross-Reference Analytics"), systemImage: "square.grid.3x3")
+                }
+                Divider()
+                Button { openWindow(id: "frus.chronology") } label: {
+                    Label(String(localized: "mainwindow.tools.chronology",
+                                 defaultValue: "Chronology"), systemImage: "calendar.day.timeline.left")
+                }
+                Button {
+                    appState.pendingWordCloud = .corpus
+                    openWindow(id: "frus.wordcloud")
+                } label: {
+                    Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
+                        icon: { Image(systemName: WordCloudGlyph.symbol) }
+                }
             } label: {
-                Label(String(localized: "mainwindow.tools.personAnalytics",
-                             defaultValue: "Person Analytics"),
-                      systemImage: "person.2")
+                Label(String(localized: "mainwindow.tools.analytics", defaultValue: "Analytics"),
+                      systemImage: "chart.bar.xaxis")
             }
-            .help(String(
-                localized: "mainwindow.tools.personAnalytics.help",
-                defaultValue: "Open Person Analytics — most-mentioned people by era and multi-person mention trajectories"
-            ))
+            .menuIndicator(.hidden)
+            .help(String(localized: "mainwindow.tools.analytics.menu.help",
+                         defaultValue: "Corpus, Person, and Cross-Reference analytics, Chronology, and Word Cloud"))
 
-            // Cross-Reference Analytics window (CA-6)
-            Button {
-                openWindow(id: "frus.crossRefAnalytics")
-                bringMacWindowToFront(id: "frus.crossRefAnalytics")
-            } label: {
-                Label(String(localized: "mainwindow.tools.crossRefAnalytics",
-                             defaultValue: "Cross-Reference Analytics"),
-                      systemImage: "square.grid.3x3")
-            }
-            .help(String(
-                localized: "mainwindow.tools.crossRefAnalytics.help",
-                defaultValue: "Open Cross-Reference Analytics — most-referenced documents, degree distribution, a volume citation heat matrix, and PageRank landmark documents"
-            ))
+            Divider().frame(height: 20)
 
-            // Word Cloud window (corpus scope)
-            Button {
-                appState.pendingWordCloud = .corpus
-                openWindow(id: "frus.wordcloud")
+            // My Research — Research window (⌘⌥R) and Collections (⌘⇧K). The Window scenes own the
+            // shortcuts; the menu items carry them for discoverability in the dropdown.
+            Menu {
+                Button { openWindow(id: "frus.research") } label: {
+                    Label(String(localized: "mainwindow.tools.research", defaultValue: "Research"),
+                          systemImage: "note.text")
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option])
+                Button { openWindow(id: "frus.collections") } label: {
+                    Label(String(localized: "mainwindow.tools.collections", defaultValue: "Collections"),
+                          systemImage: "tray.2")
+                }
+                .keyboardShortcut("k", modifiers: [.command, .shift])
             } label: {
-                Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
-                    icon: { Image(systemName: WordCloudGlyph.symbol) }
+                Label(String(localized: "mainwindow.tools.myResearch", defaultValue: "My Research"),
+                      systemImage: "note.text")
             }
-            .help(String(
-                localized: "mainwindow.tools.wordcloud.help",
-                defaultValue: "Visualise the most frequent terms across the corpus"
-            ))
+            .menuIndicator(.hidden)
+            .help(String(localized: "mainwindow.tools.myResearch.help",
+                         defaultValue: "Research window (⌘⌥R) and Collections (⇧⌘K)"))
 
-            // Chronology window
+            Divider().frame(height: 20)
+
+            // Research-panel rail toggle — flips the shared key the mounted rail reads. ⌘⇧R lives on
+            // the Document menu, so this button only names it in the tooltip (no redeclaration).
             Button {
-                openWindow(id: "frus.chronology")
+                withAnimation(.easeInOut(duration: 0.2)) { researchPanelVisible.toggle() }
             } label: {
-                Label(String(localized: "mainwindow.tools.chronology", defaultValue: "Chronology"),
-                      systemImage: "calendar.day.timeline.left")
+                Image(systemName: "doc.text.magnifyingglass")
+                    .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
+                    .padding(4)
+                    .background(researchPanelVisible ? Color.accentColor.opacity(0.12) : .clear,
+                                in: RoundedRectangle(cornerRadius: 6))
             }
-            .help(String(
-                localized: "mainwindow.tools.chronology.help",
-                defaultValue: "Browse every corpus document within a date range"
-            ))
+            .disabled(currentEntry == nil)
+            .help(String(localized: "researchRail.toggle.help",
+                         defaultValue: "Research panel (⌘⇧R)"))
+            .accessibilityLabel(String(localized: "researchRail.toggle.a11y",
+                                       defaultValue: "Research panel"))
         }
     }
 
