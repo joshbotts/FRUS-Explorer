@@ -87,42 +87,132 @@ struct AppStateTests {
         #expect(state.downloadQueue.isEmpty)
     }
 
-    // MARK: - Per-window navigation routing (visual-review fix 2026-07-18)
+    // MARK: - Per-window provenance routing (Planning/Window-Routing-Provenance.md)
 
-    @Test("routeBrowseToActiveHost targets a standalone document window and clears the pending value")
-    func routeBrowseToActiveWindowHost() {
+    private func entry(_ d: String = "d", _ v: String = "v") -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: d, volumeId: v, header: "H")
+    }
+
+    @Test("openDocument routes a tool to its bound provenance host, ignoring later key activity")
+    func provenanceBeatsRecency() {
         let state = AppState()
-        let host = DocumentHostID.window(DocumentWindowID(volumeId: "v1", documentId: "d1", header: "A"))
-        state.activeDocumentHost = host
-        state.pendingBrowseDocument = DocumentBrowserEntry(documentId: "d2", volumeId: "v2", header: "B")
+        let hostA = DocumentHostID.main(UUID())
+        let hostB = DocumentHostID.window(DocumentWindowID(volumeId: "v1", documentId: "d1", header: "B"))
+        state.registerHost(hostA)
+        state.registerHost(hostB)
+        state.bindTool(.search, to: hostA)
+        // The FM-A scenario: the user glances at host B AFTER launching the tool from A —
+        // recency moves, provenance must not.
+        state.hostBecameKey(hostB)
 
-        state.routeBrowseToActiveHost()
+        state.openDocument(entry("d2", "v2"), from: .tool(.search)) { _ in
+            Issue.record("mintWindow must not run while the provenance host is live")
+        }
 
-        #expect(state.pendingBrowseDocument == nil)
-        #expect(state.routedBrowse?.host == host)
+        #expect(state.routedBrowse?.host == hostA)
         #expect(state.routedBrowse?.entry.documentId == "d2")
-        #expect(state.routedBrowse?.entry.volumeId == "v2")
     }
 
-    @Test("routeBrowseToActiveHost defaults to the main window")
-    func routeBrowseToMainHost() {
+    @Test("transitive binding: a tool spawned from a tool inherits the ancestor host")
+    func transitiveProvenance() {
         let state = AppState()
-        state.pendingBrowseDocument = DocumentBrowserEntry(documentId: "d", volumeId: "v", header: "H")
-        state.routeBrowseToActiveHost()
-        #expect(state.routedBrowse?.host == .main)
+        let hostA = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.bindTool(.search, to: hostA)
+        // Search spawns Analytics: the launcher binds the child to ITS provenance, not to itself.
+        state.bindTool(.analytics, to: state.provenance(of: .search))
+
+        state.openDocument(entry(), from: .tool(.analytics)) { _ in
+            Issue.record("mintWindow must not run")
+        }
+        #expect(state.routedBrowse?.host == hostA)
+    }
+
+    @Test("singleton re-bind is last-spawner-wins")
+    func singletonRebind() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        let hostB = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.registerHost(hostB)
+        state.bindTool(.search, to: hostA)
+        state.bindTool(.search, to: hostB)
+
+        state.openDocument(entry(), from: .tool(.search)) { _ in Issue.record("no mint") }
+        #expect(state.routedBrowse?.host == hostB)
+    }
+
+    @Test("nil host leaves an existing binding untouched (shortcut launches don't clobber)")
+    func nilBindIsNoop() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.bindTool(.search, to: hostA)
+        state.bindTool(.search, to: nil)
+        #expect(state.provenance(of: .search) == hostA)
+    }
+
+    @Test("dead provenance falls back to the most-recently-key live host, never stranding")
+    func deadProvenanceFallsBack() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        let hostB = DocumentHostID.window(DocumentWindowID(volumeId: "v1", documentId: "d1", header: "B"))
+        state.registerHost(hostA)
+        state.registerHost(hostB)
+        state.bindTool(.search, to: hostA)
+        state.unregisterHost(hostA)   // origin closed
+
+        state.openDocument(entry(), from: .tool(.search)) { _ in Issue.record("no mint: B is live") }
+        #expect(state.routedBrowse?.host == hostB)
+    }
+
+    @Test("no live hosts at all mints a standalone window instead of stranding the click")
+    func emptyRegistryMints() {
+        let state = AppState()
+        var minted: DocumentBrowserEntry?
+        state.openDocument(entry("d9", "v9"), from: .global) { minted = $0 }
+        #expect(minted?.documentId == "d9")
+        #expect(state.routedBrowse == nil)
+    }
+
+    @Test("fallback prefers the most recently key host (monotonic stamps, deterministic)")
+    func fallbackOrdering() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        let hostB = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.registerHost(hostB)     // B registered later …
+        state.hostBecameKey(hostA)    // … but A became key after
+        #expect(state.fallbackHost() == hostA)
+    }
+
+    @Test("legacy pendingBrowseDocument translation is exactly-once across racing hosts")
+    func legacyShimExactlyOnce() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.pendingBrowseDocument = entry("d2", "v2")
+
+        state.routeLegacyPendingBrowse { _ in Issue.record("no mint: A is live") }
+        let first = state.routedBrowse
+        #expect(first?.host == hostA)
         #expect(state.pendingBrowseDocument == nil)
+        // A second host's observer racing the same translation must be a no-op.
+        state.routeLegacyPendingBrowse { _ in Issue.record("no mint on the no-op path") }
+        #expect(state.routedBrowse == first)
     }
 
-    @Test("routeBrowseToActiveHost is exactly-once: a second call with nothing pending is a no-op")
-    func routeBrowseIsExactlyOnce() {
+    @Test("unregister leaves the binding but liveness hides it")
+    func livenessHidesStaleBinding() {
         let state = AppState()
-        state.pendingBrowseDocument = DocumentBrowserEntry(documentId: "d", volumeId: "v", header: "H")
-        state.routeBrowseToActiveHost()
-        let firstRoute = state.routedBrowse
-        // A second observer (another open host) running the same translation must not re-fire or
-        // overwrite, because the first call already cleared `pendingBrowseDocument`.
-        state.routeBrowseToActiveHost()
-        #expect(state.routedBrowse == firstRoute)
+        let hostA = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.bindTool(.graph, to: hostA)
+        state.unregisterHost(hostA)
+        #expect(state.provenance(of: .graph) == nil)
+        // Re-registration (e.g. the host window reopens under the same token) revives it.
+        state.registerHost(hostA)
+        #expect(state.provenance(of: .graph) == hostA)
     }
 }
 

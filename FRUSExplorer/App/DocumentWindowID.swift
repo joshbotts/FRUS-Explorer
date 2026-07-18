@@ -7,6 +7,10 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 /// Typed identifier for iPadOS Stage Manager document windows.
 ///
@@ -44,31 +48,154 @@ struct DocumentWindowID: Codable, Hashable {
 
 // MARK: - DocumentHostID / RoutedBrowse (macOS per-window navigation routing)
 
-/// Identifies which document-hosting window a tool-window navigation should land in: the main
-/// window, or a specific standalone document window (`MacDocumentWindowView`). Used so a document
-/// selected in a tool window (search, cross-reference graph, corpus browser, …) opens in the window
-/// the user launched the tool from, instead of always hijacking the main window.
+/// Identifies which document-hosting window a tool-window navigation should land in: a specific
+/// main window, or a specific standalone document window (`MacDocumentWindowView`). Used so a
+/// document selected in a tool window (search, cross-reference graph, corpus browser, …) opens in
+/// the window the user launched the tool from — its **provenance host** — instead of whichever
+/// window happened to be active (`Planning/Window-Routing-Provenance.md`).
 ///
-/// Limitation: the system ⌘N opens additional main-`WindowGroup` windows, which all identify as
-/// `.main` — a `.main`-routed navigation lands in whichever runs its observer first, not
-/// necessarily the exact originating one. (Parity with the pre-routing behaviour, which always
-/// targeted the main WindowGroup.) Standalone document windows are distinguished by `DocumentWindowID`.
+/// Every ⌘N main window mints its own per-instance token (session-scoped `@State` UUID — owner
+/// decision D4), so two main windows are distinct routing targets; the pre-provenance design's
+/// shared `.main` identity (and its whichever-observer-runs-first consumption race) is retired.
 enum DocumentHostID: Hashable {
-    /// The primary `MainWindowView` (all ⌘N main windows share this case).
-    case main
+    /// One specific `MainWindowView` instance, keyed by its session-scoped identity token.
+    case main(UUID)
     /// A standalone document window, keyed by its `DocumentWindowID`.
     case window(DocumentWindowID)
 }
 
 /// A tool-window document selection routed to a specific `DocumentHostID`. The matching host
-/// consumes it (appends `entry` to its navigation path) and clears it. macOS only — iOS routes
-/// through `AppState.pendingBrowseDocument`.
+/// consumes it (appends `entry` to its navigation path, fronts itself) and clears it. macOS only —
+/// iOS routes through `AppState.pendingBrowseDocument`.
 struct RoutedBrowse: Equatable {
-    /// The window that should receive the navigation (the last active document host at selection).
+    /// The window that should receive the navigation (the producer's provenance host, resolved
+    /// against the live-host registry at delivery time).
     let host: DocumentHostID
     /// The document to open there.
     let entry: DocumentBrowserEntry
 }
+
+// MARK: - ToolWindowID / DocumentOpenSource (provenance routing vocabulary)
+
+/// A tool surface whose document opens are routed to a provenance host (macOS).
+///
+/// Singleton `Window` scenes get one case each — every explicit launch **re-binds** their
+/// provenance (last-spawner-wins; merely focusing the window never re-binds). Value-based
+/// `WindowGroup` scenes are keyed per-instance by their request value, which is also how SwiftUI
+/// identifies the window itself. Citation Lookup is deliberately absent: its result taps always
+/// mint standalone document windows (#239 — owner decision D2 blessed the exception), so it never
+/// routes and spawns no tools.
+enum ToolWindowID: Hashable {
+    case search
+    case corpusBrowser
+    case graph
+    case sourceExplorer
+    case analytics
+    case personAnalytics
+    case crossRefAnalytics
+    case wordCloud
+    case chronology
+    case research
+    case people
+    case history
+    case archivalNeighbors(ArchivalNeighborsRequest)
+    case relatedDocuments(RelatedDocumentsRequest)
+    case crossVolumeProvenance(CrossVolumeProvenanceRequest)
+}
+
+/// Who is asking `AppState.openDocument(_:from:mintWindow:)` to open a document.
+enum DocumentOpenSource {
+    /// A tool window — resolved through its (transitive) provenance binding.
+    case tool(ToolWindowID)
+    /// A launcher with no spawning window (History menu, Handoff/Spotlight, scene shortcuts) —
+    /// resolved straight through the fallback chain (owner decision D3).
+    case global
+}
+
+#if os(macOS)
+
+// MARK: - documentHostID environment (provenance plumbing)
+
+private struct DocumentHostIDEnvironmentKey: EnvironmentKey {
+    static let defaultValue: DocumentHostID? = nil
+}
+
+extension EnvironmentValues {
+    /// The identity of the document-hosting window this view is mounted in, set at each host root
+    /// (`MainWindowView`, `MacDocumentWindowView`). Launchers anywhere inside a host (rail tiles,
+    /// titlebar buttons, sheets) read it to stamp tool provenance — the launcher never needs to
+    /// know which window it lives in. `nil` outside a document host (tool windows resolve their
+    /// provenance from `AppState.toolProvenance` instead).
+    var documentHostID: DocumentHostID? {
+        get { self[DocumentHostIDEnvironmentKey.self] }
+        set { self[DocumentHostIDEnvironmentKey.self] = newValue }
+    }
+}
+
+// MARK: - HostWindowAccessor (reliable close signal + fronting)
+
+/// Captures the `NSWindow` hosting a document-host view and reports `willClose` — the reliable
+/// close signal host deregistration rides on (`onDisappear` is a known-unreliable close proxy in
+/// this codebase: popped `MacDocumentView`s are retained). Mount via `.background(...)`; the
+/// captured window also lets the `.main` consumer front itself on a routed delivery (FM-G).
+struct HostWindowAccessor: NSViewRepresentable {
+    /// Called (async, post-mount) with the hosting window, and again with `nil` on `willClose`.
+    var onWindow: (NSWindow?) -> Void
+    /// Called exactly once when the hosting window is about to close.
+    var onWillClose: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onWindow: onWindow, onWillClose: onWillClose) }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { [weak view] in
+            context.coordinator.attach(to: view?.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // The window can attach after makeNSView (SwiftUI mounts the view tree before the window
+        // exists during scene creation) — re-check on update until captured.
+        if context.coordinator.window == nil {
+            DispatchQueue.main.async { [weak nsView] in
+                context.coordinator.attach(to: nsView?.window)
+            }
+        }
+    }
+
+    @MainActor final class Coordinator {
+        let onWindow: (NSWindow?) -> Void
+        let onWillClose: () -> Void
+        private(set) weak var window: NSWindow?
+
+        init(onWindow: @escaping (NSWindow?) -> Void, onWillClose: @escaping () -> Void) {
+            self.onWindow = onWindow
+            self.onWillClose = onWillClose
+        }
+
+        func attach(to window: NSWindow?) {
+            guard let window, self.window !== window else { return }
+            self.window = window
+            onWindow(window)
+            // One-shot: willClose fires at most once per window; the handler removes its own
+            // token, so no non-Sendable state has to survive into a nonisolated deinit (Swift 6).
+            var token: NSObjectProtocol?
+            token = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification, object: window, queue: .main
+            ) { [weak self] _ in
+                if let token { NotificationCenter.default.removeObserver(token) }
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.onWindow(nil)
+                    self.onWillClose()
+                }
+            }
+        }
+    }
+}
+
+#endif // os(macOS)
 
 // MARK: - SourceExplorerRequest
 

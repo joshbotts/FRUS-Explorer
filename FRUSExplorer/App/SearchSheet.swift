@@ -31,8 +31,9 @@ import SwiftUI
 /// freely and remains open across navigation.
 ///
 /// ## Navigation
-/// Selecting a result sets `AppState.pendingBrowseDocument`, which every document host routes to the active window
-/// (`routeBrowseToActiveHost`) so it opens where the user launched the search. The search window stays open.
+/// Selecting a result sets `AppState.pendingBrowseDocument`, which the document hosts translate through the
+/// provenance fallback chain (`routeLegacyPendingBrowse`; direct provenance routing lands with the producer
+/// migration — provenance PR 2). The search window stays open.
 ///
 /// ## Pending Search
 /// `AppState.pendingSearch` (set by "Find all mentions" in `PersonDetailSheet`) is

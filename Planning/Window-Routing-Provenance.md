@@ -1,6 +1,6 @@
 # Window Routing: Provenance Redesign (macOS)
 
-**Status:** Investigation complete · awaiting owner decisions (§8) · implementation phased in §10
+**Status:** Investigation complete · **owner decisions D1–D5 RESOLVED 2026-07-18 (all as recommended — see §8)** · implementing per §10
 **Supersedes:** the #392 `activeDocumentHost` mechanism (merged 2026-07-18, confirmed flaky at runtime)
 **Scope:** macOS only. iOS/iPadOS keep their existing `pendingBrowseDocument` paths untouched (D5).
 
@@ -188,9 +188,9 @@ covered value equality). New `WindowRoutingTests`:
 Runtime verification stays the owner's visual pass (checklist in the PR, mirroring the A/B/C
 walkthrough); the two DEBUG prints are deleted with the observers they instrumented.
 
-## 8. Owner decisions
+## 8. Owner decisions — RESOLVED 2026-07-18 (all as recommended)
 
-| # | Question | Recommendation |
+| # | Question | Resolution (owner) |
 |---|----------|----------------|
 | **D1** | **Chronology rows** — currently read inline via a broken `.constant([])` embed. Route to provenance host like every other tool (killing the embed), or keep inline reading and fix the binding (making Chronology a quasi-host)? | **Route to provenance host.** Consistent with the spec's "corpus browser" example; deletes a broken code path; the rail inside chronology-pushed docs stops having ambiguous provenance. |
 | **D2** | **Citation Lookup** always mints a standalone window per result (deliberate, #239) — technically violates "Open in New Window is the *only* override." Bless as a named exception, or convert to routed-with-context-menu-override? | **Bless the exception.** It's a "locate this exact citation" tool; a dedicated window per match is arguably the right UX and predates the spec. Document it in the scene comment. |
