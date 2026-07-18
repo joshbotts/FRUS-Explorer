@@ -10,6 +10,7 @@ import Foundation
 import Network
 import Observation
 import SwiftData
+import SwiftUI   // OpenWindowAction (provenance routing convenience)
 import CloudKit
 import os              // shared `cloudKitLog` for redacted health-check telemetry (#188-C.1)
 #if os(iOS)
@@ -737,6 +738,18 @@ final class AppState {
             routedBrowse = RoutedBrowse(host: target, entry: entry)
         } else {
             mintWindow(entry)
+        }
+    }
+
+    /// Convenience for view-side producers: same resolution as `openDocument(_:from:mintWindow:)`,
+    /// with the mint tail wired to the caller's `@Environment(\.openWindow)` — a minted window
+    /// carries the entry's FULL display payload (the widened `DocumentWindowID`), so it renders
+    /// the same chrome as a routed open.
+    func openDocument(_ entry: DocumentBrowserEntry,
+                      from source: DocumentOpenSource,
+                      using openWindow: OpenWindowAction) {
+        openDocument(entry, from: source) { orphan in
+            openWindow(value: DocumentWindowID(entry: orphan))
         }
     }
 

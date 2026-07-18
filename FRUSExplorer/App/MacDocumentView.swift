@@ -1129,13 +1129,10 @@ struct MacDocumentWindowView: View {
     /// The shared research-panel visibility key — drives the D6 toolbar's rail toggle (⌘⇧R).
     @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
 
-    /// The document the window opened for, as a `DocumentBrowserEntry`.
+    /// The document the window opened for, as a `DocumentBrowserEntry` — rebuilt from the widened
+    /// `DocumentWindowID` payload so a minted window renders full document chrome (PR 2).
     private var rootEntry: DocumentBrowserEntry {
-        DocumentBrowserEntry(
-            documentId: windowID.documentId,
-            volumeId: windowID.volumeId,
-            header: windowID.header
-        )
+        windowID.rootEntry
     }
 
     /// The document currently shown (the navigation stack's top, or the root).
