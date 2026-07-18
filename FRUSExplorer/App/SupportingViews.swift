@@ -52,12 +52,6 @@ final class HighlightCoordinator {
     /// own block-aware look-around.
     var webKitSelectedBlockText: String? = nil
 
-    /// The current selection's bounding rect in the web view's own point space, or `nil` when
-    /// there is no live selection / the rect went stale (scroll). Anchors the floating selection
-    /// bar (Research-rail Phase A: stored now, consumed by the bar in Phase B). Unlike
-    /// `webKitSelectedText`, this does NOT survive a selection clear — it is geometry, not content.
-    var webKitSelectionRect: CGRect? = nil
-
     /// Called by `MacDocumentView` to create a `DocumentHighlight` from the
     /// WebKit selection range and colour chosen in `highlightColorPicker`.
     var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
@@ -78,7 +72,6 @@ final class HighlightCoordinator {
         webKitSelectionRange = nil
         webKitSelectedText   = nil
         webKitSelectedBlockText = nil
-        webKitSelectionRect = nil
         pendingHighlightLink = nil
         createWebKitHighlightAction = nil
         makeExcerptCaptureAction = nil
@@ -629,7 +622,10 @@ struct ResearchStripView: View {
 ///   1.2 — Authoring Phase 5 (excerpts): optional `excerpt` capture — when set, picking
 ///          a collection inserts a frozen `.excerpt` entry (via `CollectionExcerpts`)
 ///          instead of a document entry; no duplicate guard in excerpt mode
-private struct CollectionPickerSheet: View {
+///   1.3 — Research rail Phase B2: `internal` (was `private`) so `MacDocumentView` can present
+///          it for the floating selection bar's Excerpt action, alongside `ResearchStripView`.
+///          (C1 unifies the two per-platform pickers.)
+struct CollectionPickerSheet: View {
 
     let entry: DocumentBrowserEntry
 
