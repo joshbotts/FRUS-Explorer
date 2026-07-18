@@ -279,6 +279,12 @@ struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
         let start = CountryRoll.plausibleDate(startISO)
         let end = CountryRoll.plausibleDate(endISO)
         guard start != nil || end != nil else { return false }
+        // An **inverted** range (start > end) that survived the plausibility filter — both bounds
+        // in-window but reversed, e.g. "January 10, 1870 - March 31, 1861" — is still a corrupt
+        // title date and, unguarded, is unsatisfiable (no date is ≥1870 AND ≤1861), so the roll
+        // vanishes from every date query. We can't tell which bound is wrong, so fall back to a
+        // geography-only match rather than hide the roll.
+        if let start, let end, start > end { return true }
         if let start, dateISO < start { return false }
         if let end, dateISO > end { return false }
         return true

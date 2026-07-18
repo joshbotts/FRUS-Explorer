@@ -317,6 +317,14 @@ struct CentralFilesIndexTests {
                                    catalogURL: "u", fileUnitNaId: nil, fileUnitTitle: nil)
         #expect(badStart.matches(geoKey: "US", dateISO: "1886-01-01"))
         #expect(!badStart.matches(geoKey: "US", dateISO: "1900-01-01"))   // past the valid end
+        // BOTH bounds in-window but inverted ("January 10, 1870 - March 31, 1861": 1870 > 1861) —
+        // the larger, 151-roll class. Unguarded it would be unsatisfiable; instead geography wins.
+        let inWindowInverted = CountryRoll(naId: "4", title: "x", geoKeys: ["FR"],
+                                           startISO: "1870-01-10", endISO: "1861-03-31",
+                                           catalogURL: "u", fileUnitNaId: nil, fileUnitTitle: nil)
+        #expect(inWindowInverted.matches(geoKey: "FR", dateISO: "1865-06-01"),
+                "an in-window inverted range must not silently hide the roll")
+        #expect(!inWindowInverted.matches(geoKey: "US", dateISO: "1865-06-01"))   // wrong geo still excluded
         // A clean range still filters precisely and honours geography.
         let clean = CountryRoll(naId: "3", title: "x", geoKeys: ["US"],
                                 startISO: "1890-01-01", endISO: "1895-12-31",

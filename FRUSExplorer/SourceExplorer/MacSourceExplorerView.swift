@@ -1052,9 +1052,9 @@ struct MacSourceExplorerView: View {
     /// - When unknown: shows a compact table of all filing periods so the
     ///   researcher can navigate to the right one manually.
     ///
-    /// `resolveRG59CentralFiles` is intentionally not used here because
-    /// `catalog.archives.gov/search?q=…&f.parentDescriptionNaId=302028`
-    /// returns no useful results for decimal file identifiers.
+    /// `resolveRG59CentralFiles` is intentionally not used here: a catalog keyword search
+    /// returns no useful results for decimal file identifiers, so period-based finding-aid
+    /// routing replaces it.
     @ViewBuilder
     private func centralFilesPeriodBox(fileIdentifier: String?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
