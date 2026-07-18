@@ -552,7 +552,7 @@ Sending to Zotero is one action: connect a Zotero account (Settings → Zotero) 
 
 Where Apple Intelligence is available, generate on-device summaries of individual documents using prompt templates — standard ones for different research purposes (analytical, chronological, actor-focused) or your own. Summaries are stored locally and can be used as first drafts of research notes that you revise or exported alongside documents in collections; every summary in an exported collection is labeled as AI-generated content attributed to Apple Intelligence. Treat them as orientation only: always read the primary document yourself for your actual research.
 
-To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, or date range unattended, reporting progress as it goes — so a stack of summaries is ready when you return.
+To summarize a large body of material at once, the background summarizer works through an entire subseries, volume, tag, saved search, date range, or one of your saved volume scopes unattended, reporting progress as it goes — so a stack of summaries is ready when you return.
 
 <!-- section-id: sync -->
 

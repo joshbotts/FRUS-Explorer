@@ -14,7 +14,7 @@ import SwiftData
 /// Settings section for configuring and running background summarization.
 ///
 /// ## Layout
-/// - Scope type picker (Volume / Subseries / Subject Tag / Date Range)
+/// - Scope type picker (Volume / Subseries / User Tag / Saved Search / Date Range / My Volume Scopes)
 /// - Scope detail control (volume selector, subseries selector, etc.)
 /// - Prompt picker
 /// - Start / Stop button
@@ -24,6 +24,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 21: initial implementation
+///   1.1 — #367: "My Volume Scopes" scope — summarize a saved `CustomVolumeScope`'s
+///          downloaded member volumes (a snapshot; summarization reads the TEI, not the
+///          FTS index, so the gate is downloaded rather than indexed)
 struct BackgroundSummarizationSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -33,6 +36,7 @@ struct BackgroundSummarizationSettingsView: View {
     @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
     @Query private var allTagAssignments: [DocumentTagAssignment]
     @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
+    @Query(sort: \CustomVolumeScope.name) private var allCustomScopes: [CustomVolumeScope]
 
     // MARK: - Scope State
 
@@ -41,6 +45,7 @@ struct BackgroundSummarizationSettingsView: View {
     @State private var selectedSubseries: String = ""
     @State private var selectedUserTagId: UUID? = nil
     @State private var selectedSavedSearchId: UUID? = nil
+    @State private var selectedCustomScopeId: UUID? = nil
     @State private var dateRangeEarliest: String = ""
     @State private var dateRangeLatest: String = ""
 
@@ -116,6 +121,8 @@ struct BackgroundSummarizationSettingsView: View {
                 savedSearchPicker
             case .dateRange:
                 dateRangePickers
+            case .customScope:
+                customScopePicker
             }
         }
     }
@@ -259,6 +266,77 @@ struct BackgroundSummarizationSettingsView: View {
         }
     }
 
+    @ViewBuilder
+    private var customScopePicker: some View {
+        if allCustomScopes.isEmpty {
+            Text(String(localized: "bg.summarizer.scope.customScope.empty",
+                        defaultValue: "No volume scopes yet. Create one in Settings → Volume Scopes."))
+                .foregroundStyle(.secondary)
+                .font(.callout)
+        } else {
+            Picker(
+                String(localized: "bg.summarizer.scope.customScope.picker",
+                       defaultValue: "Scope"),
+                selection: $selectedCustomScopeId
+            ) {
+                Text(String(localized: "bg.summarizer.scope.customScope.none",
+                            defaultValue: "Select a scope…"))
+                    .tag(UUID?.none)
+                ForEach(allCustomScopes) { scope in
+                    Text(scope.name).tag(UUID?.some(scope.id))
+                }
+            }
+            .onAppear {
+                if selectedCustomScopeId == nil, let first = allCustomScopes.first {
+                    selectedCustomScopeId = first.id
+                }
+            }
+            // Honest "N of M downloaded" line: a run summarizes the DOWNLOADED members
+            // (summarization reads the TEI, not the index), so a scope with none downloaded
+            // can't start.
+            if let scope = selectedCustomScope {
+                let downloaded = selectedCustomScopeDownloadedIds.count
+                if downloaded == 0 {
+                    Text(String(localized: "bg.summarizer.scope.customScope.noneDownloaded",
+                                defaultValue: "None of this scope's volumes are downloaded yet — download them first."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(String(format: String(
+                        localized: "bg.summarizer.scope.customScope.downloaded %lld %lld",
+                        defaultValue: "%lld of %lld volumes downloaded"),
+                        Int64(downloaded), Int64(scope.volumeIds.count)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    /// The currently-selected custom scope record, if any.
+    private var selectedCustomScope: CustomVolumeScope? {
+        guard let id = selectedCustomScopeId else { return nil }
+        return allCustomScopes.first(where: { $0.id == id })
+    }
+
+    /// The DOWNLOADED member volume ids of the selected custom scope — the snapshot a
+    /// `.customScope` run summarizes. Summarization parses each volume's TEI directly and
+    /// never reads the FTS index, so the gate here is **downloaded**, not indexed —
+    /// matching the sibling Volume/Subseries scopes in this picker (and deliberately unlike
+    /// the FTS-grain "My Volume Scopes" surfaces in Search / Word Cloud / analytics, which
+    /// gate on indexed because they query the index). Empty when nothing is selected or no
+    /// member is downloaded; the service re-filters to downloaded at run time as well, so an
+    /// all-un-downloaded scope safely enumerates nothing rather than inverting to the corpus.
+    private var selectedCustomScopeDownloadedIds: Set<String> {
+        guard let scope = selectedCustomScope else { return [] }
+        return Set(scope.volumeIds).intersection(downloadedVolumeIdSet)
+    }
+
+    /// The ids of every currently-downloaded volume (the summarization gate).
+    private var downloadedVolumeIdSet: Set<String> {
+        Set(downloadedVolumes.map(\.volumeId))
+    }
+
     // MARK: - Prompt Section
 
     @ViewBuilder
@@ -326,7 +404,10 @@ struct BackgroundSummarizationSettingsView: View {
                         : String(localized: "bg.summarizer.control.start", defaultValue: "Start"),
                     systemImage: isRunning ? "stop.fill" : "play.fill"
                 )
-                .foregroundStyle(isRunning ? .red : .accentColor)
+                // Dim the label when Start is disabled (e.g. a custom scope with no indexed
+                // members, #367) so an explicit accent tint doesn't make a disabled control
+                // read as tappable.
+                .foregroundStyle(isRunning ? .red : (canStart ? Color.accentColor : Color.secondary))
             }
             .disabled(!canStart && !isRunning)
         }
@@ -405,6 +486,10 @@ struct BackgroundSummarizationSettingsView: View {
         case .userTag:      return selectedUserTagId != nil && !allUserTags.isEmpty
         case .savedSearch:  return selectedSavedSearchId != nil && !allSavedSearches.isEmpty
         case .dateRange:    return !dateRangeEarliest.isEmpty && !dateRangeLatest.isEmpty
+        // Require at least one downloaded member — an all-un-downloaded scope would
+        // enumerate nothing, so block Start (with the picker's "none downloaded" note)
+        // rather than silently no-op the run.
+        case .customScope:  return !selectedCustomScopeDownloadedIds.isEmpty
         }
     }
 
@@ -496,13 +581,20 @@ struct BackgroundSummarizationSettingsView: View {
             #endif
             return .savedSearch(documentKeys: keys)
         case .dateRange: return .dateRange(earliest: dateRangeEarliest, latest: dateRangeLatest)
+        case .customScope:
+            // Snapshot the scope's DOWNLOADED member ids now, so a persisted background run
+            // stays self-contained and is unaffected by later edits or deletion of the scope
+            // — the same pre-resolution userTag/savedSearch do. The service re-filters to
+            // downloaded at run time as well, so a member deleted before a BGTask wake drops
+            // out safely.
+            return .customScope(volumeIds: selectedCustomScopeDownloadedIds)
         }
     }
 
     // MARK: - ScopeType
 
     private enum ScopeType: String, CaseIterable, Identifiable {
-        case volume, subseries, userTag, savedSearch, dateRange
+        case volume, subseries, userTag, savedSearch, dateRange, customScope
         var id: String { rawValue }
         var displayName: String {
             switch self {
@@ -511,6 +603,7 @@ struct BackgroundSummarizationSettingsView: View {
             case .userTag:      return String(localized: "bg.summarizer.scope.type.userTag",     defaultValue: "User Tag")
             case .savedSearch:  return String(localized: "bg.summarizer.scope.type.savedSearch", defaultValue: "Saved Search")
             case .dateRange:    return String(localized: "bg.summarizer.scope.type.dateRange",   defaultValue: "Date Range")
+            case .customScope:  return String(localized: "bg.summarizer.scope.type.customScope", defaultValue: "My Volume Scopes")
             }
         }
     }

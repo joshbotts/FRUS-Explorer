@@ -31,6 +31,15 @@ public enum SummarizationScope: Sendable, Equatable, Codable {
     case savedSearch(documentKeys: Set<String>)
     /// All documents whose volume date range overlaps [earliest, latest] (ISO 8601 strings).
     case dateRange(earliest: String, latest: String)
+    /// All documents in the downloaded member volumes of a saved custom volume scope.
+    /// `volumeIds` is a pre-resolved snapshot of the scope's downloaded members, built by
+    /// the settings view at start time — mirroring how `userTag`/`savedSearch` pre-compute
+    /// `documentKeys`, so a persisted run survives relaunch (no `ModelContext` at
+    /// `BGProcessingTask` wake) and is unaffected by later edits or deletion of the scope.
+    /// The gate is *downloaded* (not indexed) because summarization parses each volume's TEI
+    /// directly and never reads the FTS index. Volume-grain: every document in each member
+    /// volume is summarized (it takes the same path as `.volume`/`.subseries`).
+    case customScope(volumeIds: Set<String>)
 }
 
 // MARK: - BackgroundSummarizationState
@@ -209,6 +218,11 @@ public actor BackgroundSummarizationService {
             candidates = manifestEntries
                 .filter { overlaps(range: $0.dateRange, earliest: earliest, latest: latest) }
                 .map(\.volumeId)
+        case .customScope(let volumeIds):
+            // Pre-resolved indexed member ids (snapshot). Volume-grain like `.volume` /
+            // `.subseries`, so the per-document key switches in `run` / `processBackgroundBatch`
+            // intentionally let it fall through their `default:` (no per-doc filter).
+            candidates = Array(volumeIds)
         }
         return candidates.filter { downloadedVolumeIds.contains($0) }
     }
