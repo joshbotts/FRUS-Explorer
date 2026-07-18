@@ -635,34 +635,120 @@ final class AppState {
     var pendingCollectionSelection: UUID? = nil
 
     /// Cross-platform hand-off channel for opening a document from any tool surface. On **iOS**
-    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** every document
-    /// host translates it (via `routeBrowseToActiveHost()`) into a `routedBrowse` targeting the
-    /// active window — so producers never write `routedBrowse` directly.
+    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** it is the
+    /// LEGACY producer channel (origin-less): hosts translate it through
+    /// `routeLegacyPendingBrowse(mintWindow:)` — the D3 fallback chain — until every macOS
+    /// producer migrates to `openDocument(_:from:mintWindow:)` (provenance PR 2), after which it
+    /// is iOS-only.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
 
-    /// The document-hosting window most recently made key (macOS). Each host
-    /// (`MainWindowView`, `MacDocumentWindowView`) updates it from its `controlActiveState`
-    /// observer, and resets it to `.main` when it closes. Tool-window navigation targets it so a
-    /// selected document opens in the window the user launched the tool from rather than always the
-    /// main window (visual-review finding, 2026-07-18).
-    var activeDocumentHost: DocumentHostID = .main
+    // MARK: Window routing — provenance model (macOS; Planning/Window-Routing-Provenance.md)
 
-    /// A tool-window document selection routed to `activeDocumentHost` (macOS). The matching host
+    /// The live document hosts, each with a monotonic "last became key" stamp. Registration and
+    /// liveness — not focus sampling — decide where a provenance-routed open lands; the stamp is
+    /// ADVISORY, consulted only by the fallback chain (originless opens, dead provenance), where
+    /// staleness degrades gracefully instead of corrupting every route. Hosts register on appear,
+    /// bump their stamp on `.key`, and unregister on `NSWindow.willClose` (+ `onDisappear` as
+    /// belt-and-braces).
+    var liveDocumentHosts: [DocumentHostID: UInt64] = [:]
+
+    /// Monotonic counter behind the advisory stamps (deterministic, unlike wall-clock ties).
+    private var hostStampCounter: UInt64 = 0
+
+    /// Which document host each tool surface currently belongs to — its (transitive) provenance,
+    /// bound by every explicit tool launch. Singletons re-bind last-spawner-wins; value-keyed
+    /// tools bind per-instance. Session-scoped, never persisted (owner decision D4).
+    var toolProvenance: [ToolWindowID: DocumentHostID] = [:]
+
+    /// A tool-window document selection routed to its provenance host (macOS). The matching host
     /// consumes it via `.onChange` (appends to its navigation path, fronts itself) and clears it.
-    /// Producers still set `pendingBrowseDocument`; every open document host translates it into this
-    /// routed form, so no producer needs to know about window routing.
     var routedBrowse: RoutedBrowse? = nil
 
-    /// Translates a pending `pendingBrowseDocument` into a `routedBrowse` aimed at the active
-    /// document window, then clears the pending value. Called by EVERY macOS document host from its
-    /// `pendingBrowseDocument` observer — the clear-first step makes it exactly-once no matter how
-    /// many hosts are open, and having every host (not just the main window) run it means the
-    /// translation survives even when the main window is closed (a user living in document windows).
-    /// No-op when nothing is pending.
-    func routeBrowseToActiveHost() {
+    /// Registers a document host as live (called from the host root's `onAppear`).
+    func registerHost(_ host: DocumentHostID) {
+        hostStampCounter += 1
+        liveDocumentHosts[host] = hostStampCounter
+        #if DEBUG
+        print("[AppState] registerHost \(host) (live: \(liveDocumentHosts.count))")
+        #endif
+    }
+
+    /// Bumps a host's advisory recency stamp (called when the host window becomes key).
+    /// Registers the host as a side effect if a missed `onAppear` left it unknown.
+    func hostBecameKey(_ host: DocumentHostID) {
+        hostStampCounter += 1
+        liveDocumentHosts[host] = hostStampCounter
+    }
+
+    /// Removes a closed host from the registry. Its tool bindings are left in place — they fail
+    /// the liveness check in `provenance(of:)` and resolve through the fallback chain (D3). An
+    /// in-flight `routedBrowse` addressed to the closing host is re-resolved (FM-F's consumption
+    /// gap): re-targeted at the fallback host, or — when no host survives — demoted back to
+    /// `pendingBrowseDocument`, which the next host to mount drains on appear.
+    func unregisterHost(_ host: DocumentHostID) {
+        liveDocumentHosts.removeValue(forKey: host)
+        #if DEBUG
+        print("[AppState] unregisterHost \(host) (live: \(liveDocumentHosts.count))")
+        #endif
+        if let inFlight = routedBrowse, inFlight.host == host {
+            if let survivor = fallbackHost() {
+                routedBrowse = RoutedBrowse(host: survivor, entry: inFlight.entry)
+            } else {
+                routedBrowse = nil
+                pendingBrowseDocument = inFlight.entry
+            }
+        }
+    }
+
+    /// Binds a tool surface to the document host it was launched from. Pass the launcher's own
+    /// provenance for tool→tool spawns (transitivity). A `nil` host (launcher outside any chain,
+    /// e.g. a scene keyboard shortcut) leaves any existing binding untouched.
+    func bindTool(_ tool: ToolWindowID, to host: DocumentHostID?) {
+        guard let host else { return }
+        toolProvenance[tool] = host
+    }
+
+    /// A tool's provenance host, or `nil` when unbound or the bound host has closed
+    /// (delivery-time liveness — a stale binding can never strand a click).
+    func provenance(of tool: ToolWindowID) -> DocumentHostID? {
+        guard let host = toolProvenance[tool], liveDocumentHosts[host] != nil else { return nil }
+        return host
+    }
+
+    /// The D3 fallback: the most-recently-key live host, else `nil` (caller mints a standalone
+    /// window — a document open must never silently do nothing).
+    func fallbackHost() -> DocumentHostID? {
+        liveDocumentHosts.max(by: { $0.value < $1.value })?.key
+    }
+
+    /// Opens a document in its provenance host (macOS). Tool sources resolve through their
+    /// binding, liveness-checked, then the fallback chain; `.global` sources go straight to the
+    /// fallback. When no live host exists at all, `mintWindow` runs (callers pass
+    /// `openWindow(value: DocumentWindowID(...))`) so the open lands in a fresh standalone window.
+    func openDocument(_ entry: DocumentBrowserEntry,
+                      from source: DocumentOpenSource,
+                      mintWindow: (DocumentBrowserEntry) -> Void) {
+        let target: DocumentHostID?
+        switch source {
+        case .tool(let tool): target = provenance(of: tool) ?? fallbackHost()
+        case .global:         target = fallbackHost()
+        }
+        if let target {
+            routedBrowse = RoutedBrowse(host: target, entry: entry)
+        } else {
+            mintWindow(entry)
+        }
+    }
+
+    /// Translates a legacy `pendingBrowseDocument` write (origin-less producer not yet migrated to
+    /// `openDocument(_:from:mintWindow:)`) through the fallback chain. Called by EVERY macOS
+    /// document host from its `pendingBrowseDocument` observer — the clear-first step makes it
+    /// exactly-once no matter how many hosts are open, and having every host run it means the
+    /// translation survives even when any particular window is closed. No-op when nothing pending.
+    func routeLegacyPendingBrowse(mintWindow: (DocumentBrowserEntry) -> Void) {
         guard let entry = pendingBrowseDocument else { return }
         pendingBrowseDocument = nil
-        routedBrowse = RoutedBrowse(host: activeDocumentHost, entry: entry)
+        openDocument(entry, from: .global, mintWindow: mintWindow)
     }
 
     /// Cross-view hand-off for opening a **volume** in the browser (the volume-grain

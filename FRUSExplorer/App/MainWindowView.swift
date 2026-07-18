@@ -29,10 +29,10 @@ import AppKit
 ///
 /// ## Navigation
 /// `navigationPath` is owned here so entries can be pushed without `MacDocumentView`
-/// knowing its position in the hierarchy. Tool-window navigations arrive via
-/// `AppState.pendingBrowseDocument`; every document host translates that into a
-/// `routedBrowse` aimed at the last active window (`routeBrowseToActiveHost`), and the
-/// host it targets appends the entry to its own path.
+/// knowing its position in the hierarchy. Tool-window navigations arrive as a
+/// `routedBrowse` aimed at the producer's provenance host (or, for legacy origin-less
+/// producers, via `pendingBrowseDocument` translated through the fallback chain —
+/// `routeLegacyPendingBrowse`); the host it targets appends the entry to its own path.
 ///
 /// ## Search
 /// Opening search calls `openWindow(id: "frus.search")`. The search window is a
@@ -62,9 +62,16 @@ struct MainWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openWindow) private var openWindow
-    /// Whether this (main) window is key — drives `activeDocumentHost` so tool-window navigation
-    /// routes back here when the user launched the tool from the main window.
+    /// Whether this (main) window is key — bumps this host's ADVISORY recency stamp in the
+    /// live-host registry (fallback resolution only; provenance routing never samples focus).
     @Environment(\.controlActiveState) private var controlActiveState
+
+    /// This window's session-scoped routing identity (owner decision D4) — each ⌘N main window
+    /// mints its own token, so two main windows are distinct provenance hosts.
+    @State private var hostToken = UUID()
+    /// The `NSWindow` hosting this view (captured by `HostWindowAccessor`) — used to front this
+    /// window when a routed navigation lands in it while it is buried or miniaturized (FM-G).
+    @State private var hostWindow: NSWindow?
 
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
@@ -77,6 +84,9 @@ struct MainWindowView: View {
     @State private var highlightCoordinator = HighlightCoordinator()
 
     // MARK: - Computed
+
+    /// This window's routing identity — a per-instance provenance host (never the old shared `.main`).
+    private var hostID: DocumentHostID { .main(hostToken) }
 
     private var currentEntry: DocumentBrowserEntry? {
         navigationPath.last
@@ -107,29 +117,53 @@ struct MainWindowView: View {
             StatusBarView()
         }
         .toolbar { mainToolbar }
-        // Translate every tool-window navigation (search, cross-reference graph, corpus browser,
-        // related, history, …) into a routed navigation aimed at the last active document window,
-        // instead of always hijacking this main window. Every open document host runs the same
-        // translation (see `routeBrowseToActiveHost`); the clear-first step keeps it exactly-once, so
-        // producers stay window-agnostic and the translation survives even if this window is closed.
-        .onChange(of: appState.pendingBrowseDocument) { _, entry in
-            guard entry != nil else { return }
-            appState.routeBrowseToActiveHost()
-        }
-        // Track this window as the active document host while it is key.
-        .onChange(of: controlActiveState, initial: true) { _, state in
-            if state == .key {
-                appState.activeDocumentHost = .main
-                #if DEBUG
-                print("[MainWindowView] active document host → .main")
-                #endif
+        // Provenance plumbing: every launcher mounted in this window (titlebar tools, rail tiles,
+        // sheets) reads this window's identity from the environment to stamp tool provenance.
+        .environment(\.documentHostID, hostID)
+        // Capture the NSWindow (fronting on routed delivery) and ride willClose for reliable
+        // host deregistration (onDisappear below is belt-and-braces).
+        .background(HostWindowAccessor(
+            onWindow: { hostWindow = $0 },
+            onWillClose: { appState.unregisterHost(hostID) }
+        ))
+        .onAppear {
+            appState.registerHost(hostID)
+            // Drain a legacy navigation written while NO host was mounted (e.g. a search-window
+            // click with every document window closed) — registration above makes this host the
+            // fallback, so the pending value routes here instead of stranding until the next
+            // distinct click (the iOS BrowserView adopt-on-appear discipline).
+            appState.routeLegacyPendingBrowse { orphan in
+                openWindow(value: DocumentWindowID(
+                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
             }
         }
-        // Consume a tool-window navigation routed to the main window.
+        .onDisappear { appState.unregisterHost(hostID) }
+        // Translate a LEGACY (origin-less, not-yet-migrated) tool-window navigation through the
+        // fallback chain. Every open document host runs the same translation; the clear-first step
+        // keeps it exactly-once, and it survives any particular window being closed.
+        .onChange(of: appState.pendingBrowseDocument) { _, entry in
+            guard entry != nil else { return }
+            appState.routeLegacyPendingBrowse { orphan in
+                openWindow(value: DocumentWindowID(
+                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+            }
+        }
+        // Bump this host's ADVISORY recency stamp while key — consulted only by the fallback
+        // chain (originless opens, dead provenance); provenance routing never samples focus.
+        .onChange(of: controlActiveState, initial: true) { _, state in
+            if state == .key { appState.hostBecameKey(hostID) }
+        }
+        // Consume a navigation routed to THIS main window (per-instance identity — no cross-window
+        // race). Re-read live state before consuming so a stale captured value can't double-apply,
+        // and front the window so a routed delivery is never invisible (FM-G).
         .onChange(of: appState.routedBrowse) { _, routed in
-            guard let routed, routed.host == .main else { return }
+            guard let routed, routed.host == hostID, appState.routedBrowse == routed else { return }
             navigationPath.append(routed.entry)
             appState.routedBrowse = nil
+            // makeKeyAndOrderFront does NOT restore a miniaturized window — deminiaturize first
+            // or a route into a docked window stays invisible (FM-G's second half).
+            if hostWindow?.isMiniaturized == true { hostWindow?.deminiaturize(nil) }
+            hostWindow?.makeKeyAndOrderFront(nil)
         }
         // Reset highlight state whenever the user navigates to a different document.
         .onChange(of: currentEntry) { _, _ in
