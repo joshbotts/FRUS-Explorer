@@ -273,11 +273,10 @@ struct DocumentView: View {
     @State private var lastValidSelectionRange: (Int, Int)? = nil
     /// Offsets of a tapped highlight pending the user's delete confirmation.
     @State private var highlightToDelete: (Int, Int)? = nil
-    /// Research panel accordion state (persisted; shared with macOS via AppStorage).
+    /// Research rail visibility (persisted; shared with macOS via AppStorage). On iPad it drives the
+    /// trailing `.inspector`; on iPhone it shadows the `.researchRail` sheet's presence and gates the
+    /// Read-mode edge-tap zones. The per-accordion expansion keys are owned by ``ResearchRailView``.
     @AppStorage("frus.document.researchPanel.visible")  private var panelVisible    = true
-    @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = true
-    @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
-    @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
     /// The user's persisted find-related weight tuning (#308), captured into the request on open.
     @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
     /// Whether the Read-mode edge-tap "page-turn" zones are active (Session 154).
@@ -1041,8 +1040,16 @@ struct DocumentView: View {
         case .cite:
             activeSheet = .citation
         case .wordCloud:
+            // Word Cloud is the one tool NOT presented through `activeSheet` — it rides the
+            // app-level `pendingWordCloud` sheet on `MainTabView`, an ANCESTOR of this view. On
+            // iPhone the rail is a live `.sheet` (`.researchRail`), and SwiftUI won't present the
+            // ancestor sheet over a descendant one, so the tap would be a dead no-op (and the
+            // word cloud would later ghost-present when the rail is dismissed). Set the hand-off
+            // then dismiss the rail sheet — the same set-then-dismiss order `ChronologyView` uses.
+            // On iPad the rail is the `.inspector` column (not a sheet), so nothing to dismiss.
             appState.pendingWordCloud = .document(
                 volumeId: entry.volumeId, documentId: entry.documentId)
+            if activeSheet?.id == "researchRail" { activeSheet = nil }
         case .sources:
             openSourceExplorer(vm: vm)
         case .graph:
@@ -1692,15 +1699,6 @@ struct DocumentShareMenu<LabelContent: View>: View {
     }
 }
 
-extension DocumentShareMenu where LabelContent == Label<Text, Image> {
-    /// Default construction with the standard "Share" `Label` (square-and-arrow-up + text).
-    init(vm: DocumentViewModel) {
-        self.init(vm: vm) {
-            Label(String(localized: "document.toolbar.share", defaultValue: "Share"),
-                  systemImage: "square.and.arrow.up")
-        }
-    }
-}
 
 // MARK: - CitationSheetView
 
@@ -1743,6 +1741,20 @@ private struct CitationSheetView: View {
                         .font(.body)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // One-tap copy of the formatted prose citation (italic markers stripped) —
+                    // restores the discrete "Copy Citation" the old toolbar Citation menu carried,
+                    // which the Cite rail tile → this sheet otherwise dropped (Phase D review).
+                    Button {
+                        if let plain = vm.plainTextFormattedCitation {
+                            copyToPasteboard(plain)
+                        }
+                    } label: {
+                        Label(String(localized: "document.citation.copy", defaultValue: "Copy Citation"),
+                              systemImage: "doc.on.doc")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(vm.plainTextFormattedCitation == nil)
 
                     exportMenu
                 }
