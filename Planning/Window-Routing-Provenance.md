@@ -235,3 +235,30 @@ zero-host click now lands when the next host mounts, per the iOS BrowserView dis
 demote to pending — FM-F's consumption gap); consumers deminiaturize before fronting
 (`makeKeyAndOrderFront`/`openWindow(value:)` don't restore docked windows); registry-side
 `#if DEBUG` prints replace the deleted #392 instrumentation for the owner's visual pass.
+
+**PR 2 delivered (2026-07-18):** the full §5 producer migration — every macOS tool-surface
+document open now calls `openDocument(_:from: .tool(…))` (Search, corpus browser ×3, graph ×3,
+Related Documents, Archival Neighbors, cross-ref analytics, Source Explorer window, Research,
+History window; History *menu* and Handoff/Spotlight route `.global`). D1: Chronology rows route
+to the provenance host and the broken `.constant([])` `MacDocumentView` embed is deleted (its
+`navigationDestination` is iOS-only now). The three MainWindowView opening relays
+(`pendingSearch`/`pendingAnalytics`/`pendingWordCloud`) are deleted; every macOS producer of
+those hand-offs opens its window directly (`openWindow` + `bringMacWindowToFront`) and stamps
+provenance — including the formerly relay-dependent ones (PersonDetailSheet in MacDocumentView,
+PersonIndexView + detail sheet, PersonAnalyticsView, AnalyticsView→Search, WordCloudView→
+Search/Analytics, ChronologyView→Search, ResearchView word cloud, SavedSearchesView). Launcher
+`bindTool` stamps landed at every §5 site (MainWindowView trailing tools via `hostID`; rail tiles
+via `@Environment(\.documentHostID)`, incl. the value-keyed `.relatedDocuments(request)` bound
+before `openWindow(value:)`; corpus-browser People/graph spawns; Search/graph/CollectionDetail
+Archival-Neighbors spawns; VolumeSources/Compilation spawns bind
+`documentHostID ?? provenance(of: .corpusBrowser)`; WordCloud's three hand-offs; transitive
+`provenance(of:)` everywhere a tool spawns a tool). `ArchivalNeighborsContent` gained an optional
+`originRequest` (the window view passes its request) so neighbor row taps route
+`.tool(.archivalNeighbors(request))`; sheet presentations stay iOS-only/`.global`. §6 folds:
+the Sources-tile leak fix (re-prime on `(volumeId, documentId)` mismatch, not only nil) and the
+scene-table doc fix (22 macOS scenes / 4 WindowGroups; iOS 5; `relatedDocumentsScene` row added).
+On macOS `pendingBrowseDocument`'s only remaining writer is `unregisterHost`'s demotion — the
+host observers/drains and `routeLegacyPendingBrowse` are KEPT as that path's delivery mechanism
+(iOS behaviour untouched throughout). Settings' word-cloud launch and the Collections manager's
+stay deliberately unbound (no provenance chain — D3 fallback), and Citation Lookup stays the
+blessed D2 exception (no bind, windows per match).

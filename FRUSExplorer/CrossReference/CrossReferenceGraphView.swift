@@ -315,10 +315,11 @@ struct CrossReferenceGraphView: View {
     }
 
     /// Opens a document using the platform's navigation convention and clears
-    /// any pinned selection. macOS opens in the main window; iOS pushes inline.
+    /// any pinned selection. macOS routes to this graph window's provenance host
+    /// (`AppState.openDocument`); iOS pushes inline.
     private func openDocument(_ entry: DocumentBrowserEntry) {
         #if os(macOS)
-        appState.pendingBrowseDocument = entry
+        appState.openDocument(entry, from: .tool(.graph), using: openWindow)
         #else
         vm.navigationPath.append(entry)
         #endif
@@ -764,7 +765,7 @@ struct CrossReferenceGraphView: View {
             Button {
                 guard let entry = vm.makeEntry(for: node.id) else { return }
                 #if os(macOS)
-                appState.pendingBrowseDocument = entry
+                appState.openDocument(entry, from: .tool(.graph), using: openWindow)
                 #else
                 vm.navigationPath.append(entry)
                 #endif
@@ -801,11 +802,16 @@ struct CrossReferenceGraphView: View {
                     return
                 }
                 #endif
-                openWindow(value: ArchivalNeighborsRequest.document(
+                let request = ArchivalNeighborsRequest.document(
                     volumeId:     meta.volumeId,
                     documentId:   meta.documentId,
                     documentYear: meta.dateISO.flatMap { Int($0.prefix(4)) }
-                ))
+                )
+                #if os(macOS)
+                // The neighbors window inherits this graph window's provenance (transitive bind).
+                appState.bindTool(.archivalNeighbors(request), to: appState.provenance(of: .graph))
+                #endif
+                openWindow(value: request)
             } label: {
                 Label(
                     String(localized: "graph.contextMenu.archivalNeighbors",
@@ -1029,7 +1035,7 @@ struct CrossReferenceGraphView: View {
                         Button {
                             if let entry = vm.makeEntry(for: key) {
                                 #if os(macOS)
-                                appState.pendingBrowseDocument = entry
+                                appState.openDocument(entry, from: .tool(.graph), using: openWindow)
                                 #else
                                 vm.navigationPath.append(entry)
                                 #endif

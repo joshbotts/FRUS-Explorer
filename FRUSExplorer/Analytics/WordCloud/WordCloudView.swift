@@ -832,7 +832,13 @@ struct WordCloudView: View {
         #if DEBUG
         print("[WordCloudView] Handoff to Corpus Analytics — term: \"\(term)\", scope: \(label ?? "corpus"), volumes: \(volumeIds?.count ?? 0)")
         #endif
-        #if os(iOS)
+        #if os(macOS)
+        // Open the Analytics window DIRECTLY (the MainWindowView relay is retired —
+        // provenance PR 2); it inherits this word cloud's provenance (transitive bind).
+        appState.bindTool(.analytics, to: appState.provenance(of: .wordCloud))
+        openWindow(id: "frus.analytics")
+        bringMacWindowToFront(id: "frus.analytics")
+        #else
         // Corpus Analytics is presented from the Browse tab on iOS; bring it forward
         // so the analytics sheet (opened by `BrowserView` on `pendingAnalytics`) is visible.
         appState.pendingTab = .browse
@@ -952,6 +958,13 @@ struct WordCloudView: View {
         #if DEBUG
         print("[WordCloudView] Handoff to Search — term: \"\(term)\"")
         #endif
+        #if os(macOS)
+        // Open the Search window DIRECTLY (the MainWindowView relay is retired —
+        // provenance PR 2); it inherits this word cloud's provenance (transitive bind).
+        appState.bindTool(.search, to: appState.provenance(of: .wordCloud))
+        openWindow(id: "frus.search")
+        bringMacWindowToFront(id: "frus.search")
+        #endif
         dismiss()
     }
 
@@ -975,6 +988,8 @@ struct WordCloudView: View {
         print("[WordCloudView] Handoff to Chronology — range: \(startISO)…\(endISO)")
         #endif
         #if os(macOS)
+        // Chronology inherits this word cloud's provenance (transitive bind).
+        appState.bindTool(.chronology, to: appState.provenance(of: .wordCloud))
         openWindow(id: "frus.chronology")
         bringMacWindowToFront(id: "frus.chronology")
         #else

@@ -636,11 +636,12 @@ final class AppState {
     var pendingCollectionSelection: UUID? = nil
 
     /// Cross-platform hand-off channel for opening a document from any tool surface. On **iOS**
-    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** it is the
-    /// LEGACY producer channel (origin-less): hosts translate it through
-    /// `routeLegacyPendingBrowse(mintWindow:)` — the D3 fallback chain — until every macOS
-    /// producer migrates to `openDocument(_:from:mintWindow:)` (provenance PR 2), after which it
-    /// is iOS-only.
+    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** every
+    /// producer now routes directly through `openDocument(_:from:mintWindow:)` (provenance
+    /// PR 2), so the only remaining macOS writer is `unregisterHost`'s demotion of an
+    /// in-flight `routedBrowse` whose target closed with no surviving host — the hosts'
+    /// observers + `onAppear` drains (`routeLegacyPendingBrowse`) stay as its delivery
+    /// mechanism, re-resolving the value when the next host mounts.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
 
     // MARK: Window routing — provenance model (macOS; Planning/Window-Routing-Provenance.md)

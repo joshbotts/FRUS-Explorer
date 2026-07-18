@@ -35,8 +35,8 @@ import SwiftUI
 ///     `AppState.currentGraphEntry` which transitions to Targeted mode.
 ///
 /// ## "View Document" interaction
-/// `CrossReferenceGraphView` sets `appState.pendingBrowseDocument` on macOS to open a
-/// document in the main FRUS window rather than pushing inline.
+/// `CrossReferenceGraphView` calls `AppState.openDocument(_:from: .tool(.graph))` on macOS
+/// to open a document in this graph window's provenance host rather than pushing inline.
 ///
 /// ## Volume hand-off (UI audit B6)
 /// `AppState.pendingVolumeGraph` — the volume-grain sibling of `currentGraphEntry`,

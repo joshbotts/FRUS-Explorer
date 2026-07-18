@@ -1793,6 +1793,9 @@ struct GlossDetailSheet: View {
 ///          repopulates the query field (the NARACatalogLookupItem rationale)
 struct SourceExplorerWindowView: View {
     @Environment(AppState.self) private var appState
+    /// Mint tail for `AppState.openDocument` — when no document host is live, a related-
+    /// document tap lands in a fresh standalone document window instead of being dropped.
+    @Environment(\.openWindow) private var openWindow
 
     /// The window's three views: the parsed document note, the corpus-wide
     /// browse-by-collection list (Source Explorer Phase 4), or the live NARA
@@ -1872,7 +1875,7 @@ struct SourceExplorerWindowView: View {
                         documentId: did, volumeId: vid,
                         documentNumber: nil, header: did, dateline: nil, sourceNote: nil
                     )
-                    appState.pendingBrowseDocument = entry
+                    appState.openDocument(entry, from: .tool(.sourceExplorer), using: openWindow)
                 },
                 documentHeader: appState.currentSourceNoteHeader,
                 documentDateline: appState.currentSourceNoteDateline,

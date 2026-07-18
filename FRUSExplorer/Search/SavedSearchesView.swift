@@ -38,6 +38,11 @@ struct SavedSearchesView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
+    #if os(macOS)
+    /// Opens the Word Cloud window directly for the row context-menu action (the
+    /// MainWindowView relay is retired — provenance PR 2).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     // MARK: - Data
 
@@ -179,6 +184,14 @@ struct SavedSearchesView: View {
                 .contextMenu {
                     Button {
                         appState.pendingWordCloud = .savedSearch(id: search.id)
+                        #if os(macOS)
+                        // Direct open (the MainWindowView relay is retired — provenance
+                        // PR 2). This sheet is presented from the Search window, so the
+                        // cloud inherits Search's provenance (transitive bind).
+                        appState.bindTool(.wordCloud, to: appState.provenance(of: .search))
+                        openWindow(id: "frus.wordcloud")
+                        bringMacWindowToFront(id: "frus.wordcloud")
+                        #endif
                         dismiss()
                     } label: {
                         Label { Text(String(localized: "savedSearches.row.wordCloud",

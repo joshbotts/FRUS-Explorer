@@ -23,9 +23,8 @@ import SwiftData
 ///
 /// ## Navigation
 /// Prev/next navigation appends to `navigationPath` (owned by `MainWindowView`) so
-/// the back button history is preserved. Cross-reference link taps set
-/// `AppState.pendingBrowseDocument`, which `MainWindowView.onChange` consumes and
-/// appends to the path.
+/// the back button history is preserved. Cross-reference link taps append to the same
+/// path — navigation inside a host stays local to the host's own stack.
 ///
 /// ## Session 68c Note
 /// The new macOS architecture uses `NavigationStack` (not `NavigationSplitView`), so
@@ -83,6 +82,10 @@ struct MacDocumentView: View {
     @Environment(\.openURL) private var openURL
     /// Opens the research-note composer window (UI audit C1).
     @Environment(\.openWindow) private var openWindow
+    /// The identity of the document host this view is mounted in (set at each host root —
+    /// `MainWindowView` or `MacDocumentWindowView`). Tool launchers here (Find all mentions)
+    /// stamp it as the spawned tool's provenance, so the tool's opens route back to THIS window.
+    @Environment(\.documentHostID) private var documentHostID
 
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
@@ -237,7 +240,10 @@ struct MacDocumentView: View {
                     // Search the resolved cross-corpus rollup identity — the same identity whose
                     // count the sheet displays; the raw per-volume `ref` collides across volumes
                     // and is only the fallback when the rollup isn't built (people-eval finding
-                    // G). MainWindowView opens the Search window on any pendingSearch.
+                    // G). The Search window is opened DIRECTLY (the MainWindowView relay is
+                    // retired — provenance PR 2, so this works from a standalone document
+                    // window with the main window closed) and bound to THIS host, so result
+                    // clicks come back to the window the user was reading in.
                     if let rollupId = vm.selectedPersonRollupId {
                         appState.pendingSearch = SearchParameters(personRollupId: rollupId,
                                                                   personLabel: person.name)
@@ -245,6 +251,9 @@ struct MacDocumentView: View {
                         appState.pendingSearch = SearchParameters(personRef: person.ref,
                                                                   personLabel: person.name)
                     }
+                    appState.bindTool(.search, to: documentHostID)
+                    openWindow(id: "frus.search")
+                    bringMacWindowToFront(id: "frus.search")
                 }
             )
         }
@@ -595,6 +604,9 @@ struct MacDocumentView: View {
             text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
         highlightCoordinator.webKitSelectedText = nil
         highlightCoordinator.webKitSelectedBlockText = nil
+        // A tool-window launch from a document host — stamp provenance (last-spawner-wins)
+        // so the Source Explorer's related-document taps route back to THIS window.
+        appState.bindTool(.sourceExplorer, to: documentHostID)
         openWindow(id: "frus.sourceExplorer")
         bringMacWindowToFront(id: "frus.sourceExplorer")
     }

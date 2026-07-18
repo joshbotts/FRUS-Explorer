@@ -22,10 +22,10 @@ import SwiftData
 /// this window shows the complete record with an optional project filter so
 /// researchers can review their full activity within a single project's scope.
 ///
-/// Selecting a document re-opens it in the main window
-/// (`AppState.pendingBrowseDocument`); selecting a search re-runs it in the
-/// Search window (`AppState.pendingSearch`) — the same mechanisms used
-/// throughout the app for cross-window navigation.
+/// Selecting a document re-opens it in this window's provenance host
+/// (`AppState.openDocument(_:from: .tool(.history))`); selecting a search re-runs it
+/// in the Search window (`AppState.pendingSearch` + a direct `openWindow`) — the same
+/// mechanisms used throughout the app for cross-window navigation.
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-07: initial implementation
@@ -191,20 +191,22 @@ struct HistoryWindowView: View {
 
     // MARK: - Navigation
 
-    /// Re-opens the document in the main window, mirroring
-    /// `FRUSExplorerApp.navigateToDocument` and the History menu's document items.
+    /// Re-opens the document in this History window's provenance host, falling back
+    /// (most-recently-key live host → mint a standalone window) when unbound or closed.
     private func openDocument(_ entry: ReadingHistoryEntry) {
-        appState.pendingBrowseDocument = DocumentBrowserEntry(
+        appState.openDocument(DocumentBrowserEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
             header: entry.displayTitle ?? entry.documentId
-        )
+        ), from: .tool(.history), using: openWindow)
     }
 
     /// Re-runs the search in the Search window via `AppState.pendingSearch`,
     /// the same hand-off mechanism used by saved searches and cross-references.
+    /// The Search window inherits this History window's provenance (transitive bind).
     private func runSearch(_ entry: SearchHistoryEntry) {
         appState.pendingSearch = SearchParameters(keywords: entry.queryText)
+        appState.bindTool(.search, to: appState.provenance(of: .history))
         openWindow(id: "frus.search")
     }
 }
@@ -280,14 +282,15 @@ struct HistoryMenuContent: View {
 
     // MARK: - Navigation
 
-    /// Re-opens the document in the active document window via `AppState.pendingBrowseDocument`,
-    /// mirroring `FRUSExplorerApp.navigateToDocument`.
+    /// Re-opens the document via `AppState.openDocument(_:from: .global)` — the menu has no
+    /// spawning window, so the open resolves straight through the fallback chain (owner
+    /// decision D3: most-recently-key live host, else a fresh standalone document window).
     private func openDocument(_ entry: ReadingHistoryEntry) {
-        appState.pendingBrowseDocument = DocumentBrowserEntry(
+        appState.openDocument(DocumentBrowserEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
             header: entry.displayTitle ?? entry.documentId
-        )
+        ), from: .global, using: openWindow)
     }
 
     /// Re-runs the search in the Search window via `AppState.pendingSearch`.

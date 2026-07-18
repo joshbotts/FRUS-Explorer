@@ -103,13 +103,16 @@ struct ChronologyView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "chronology.title", defaultValue: "Chronology"))
             #endif
+            // iOS pushes the document inline. On macOS a row routes to the provenance host
+            // instead (owner decision D1) — the old inline push mounted a
+            // `MacDocumentView(navigationPath: .constant([]))` whose constant binding
+            // silently broke cross-reference taps and prev/next (the same defect the
+            // Citation Lookup window fixed in #239).
+            #if os(iOS)
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
-                #if os(iOS)
                 DocumentView(entry: entry)
-                #else
-                MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
-                #endif
             }
+            #endif
             .toolbar { toolbarContent }
         }
         #if os(macOS)
@@ -183,6 +186,8 @@ struct ChronologyView: View {
         )
         appState.pendingWordCloud = scope
         #if os(macOS)
+        // The word cloud inherits this Chronology window's provenance (transitive bind).
+        appState.bindTool(.wordCloud, to: appState.provenance(of: .chronology))
         openWindow(id: "frus.wordcloud")
         bringMacWindowToFront(id: "frus.wordcloud")
         #else
@@ -1126,8 +1131,10 @@ struct ChronologyView: View {
         )
     }
 
+    /// Opens a chronology row: pushed inline on iOS; routed to this window's provenance
+    /// host on macOS (owner decision D1 — the broken inline embed is deleted).
     private func open(_ row: ChronologyRow) {
-        navigationPath.append(DocumentBrowserEntry(
+        let entry = DocumentBrowserEntry(
             documentId: row.documentId,
             volumeId: row.volumeId,
             documentNumber: row.documentNumber,
@@ -1135,7 +1142,12 @@ struct ChronologyView: View {
             dateline: row.dateline,
             sourceNote: nil,
             isEditorialNote: row.isEditorialNote
-        ))
+        )
+        #if os(macOS)
+        appState.openDocument(entry, from: .tool(.chronology), using: openWindow)
+        #else
+        navigationPath.append(entry)
+        #endif
     }
 
     /// Hand off to Search with the current range pre-applied as a date filter.
@@ -1153,7 +1165,13 @@ struct ChronologyView: View {
         #if DEBUG
         print("[ChronologyView] Handoff to Search — dateRange: \(String(describing: range))")
         #endif
-        #if os(iOS)
+        #if os(macOS)
+        // Open the Search window DIRECTLY (the MainWindowView relay is retired —
+        // provenance PR 2); it inherits this Chronology window's provenance.
+        appState.bindTool(.search, to: appState.provenance(of: .chronology))
+        openWindow(id: "frus.search")
+        bringMacWindowToFront(id: "frus.search")
+        #else
         appState.pendingTab = .search
         dismiss()
         #endif
