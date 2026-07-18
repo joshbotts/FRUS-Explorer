@@ -280,7 +280,7 @@ struct HistoryMenuContent: View {
 
     // MARK: - Navigation
 
-    /// Re-opens the document in the main window via `AppState.pendingBrowseDocument`,
+    /// Re-opens the document in the active document window via `AppState.pendingBrowseDocument`,
     /// mirroring `FRUSExplorerApp.navigateToDocument`.
     private func openDocument(_ entry: ReadingHistoryEntry) {
         appState.pendingBrowseDocument = DocumentBrowserEntry(

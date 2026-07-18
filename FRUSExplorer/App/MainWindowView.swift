@@ -28,10 +28,11 @@ import AppKit
 /// ```
 ///
 /// ## Navigation
-/// `navigationPath` is owned here so that cross-reference taps and search result
-/// selections can push entries without `MacDocumentView` knowing its position in the
-/// hierarchy. `AppState.pendingBrowseDocument` is consumed here via `.onChange`
-/// and appended to the path, then cleared.
+/// `navigationPath` is owned here so entries can be pushed without `MacDocumentView`
+/// knowing its position in the hierarchy. Tool-window navigations arrive via
+/// `AppState.pendingBrowseDocument`; every document host translates that into a
+/// `routedBrowse` aimed at the last active window (`routeBrowseToActiveHost`), and the
+/// host it targets appends the entry to its own path.
 ///
 /// ## Search
 /// Opening search calls `openWindow(id: "frus.search")`. The search window is a
@@ -61,6 +62,9 @@ struct MainWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openWindow) private var openWindow
+    /// Whether this (main) window is key — drives `activeDocumentHost` so tool-window navigation
+    /// routes back here when the user launched the tool from the main window.
+    @Environment(\.controlActiveState) private var controlActiveState
 
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
@@ -99,11 +103,29 @@ struct MainWindowView: View {
             StatusBarView()
         }
         .toolbar { mainToolbar }
-        // Consume pending navigation from cross-reference taps and search result selections.
+        // Translate every tool-window navigation (search, cross-reference graph, corpus browser,
+        // related, history, …) into a routed navigation aimed at the last active document window,
+        // instead of always hijacking this main window. Every open document host runs the same
+        // translation (see `routeBrowseToActiveHost`); the clear-first step keeps it exactly-once, so
+        // producers stay window-agnostic and the translation survives even if this window is closed.
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
-            guard let entry else { return }
-            navigationPath.append(entry)
-            appState.pendingBrowseDocument = nil
+            guard entry != nil else { return }
+            appState.routeBrowseToActiveHost()
+        }
+        // Track this window as the active document host while it is key.
+        .onChange(of: controlActiveState, initial: true) { _, state in
+            if state == .key {
+                appState.activeDocumentHost = .main
+                #if DEBUG
+                print("[MainWindowView] active document host → .main")
+                #endif
+            }
+        }
+        // Consume a tool-window navigation routed to the main window.
+        .onChange(of: appState.routedBrowse) { _, routed in
+            guard let routed, routed.host == .main else { return }
+            navigationPath.append(routed.entry)
+            appState.routedBrowse = nil
         }
         // Reset highlight state whenever the user navigates to a different document.
         .onChange(of: currentEntry) { _, _ in
