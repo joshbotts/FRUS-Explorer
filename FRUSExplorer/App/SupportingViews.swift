@@ -100,27 +100,68 @@ struct SummaryBlockView: View {
     /// only the generate/regenerate affordances are gated.
     private var aiAvailable: Bool { AppleIntelligenceProvider.shared.isAvailable }
 
+    /// Compact older/newer navigation across a document's summary history (shown only when more
+    /// than one summary exists) — kept on the header's first row so it stays beside the identity
+    /// label in the narrow rail.
+    private var summaryHistoryNav: some View {
+        HStack(spacing: 2) {
+            Button {
+                if vm.activeSummaryIndex < vm.summaries.count - 1 {
+                    vm.activeSummaryIndex += 1
+                }
+            } label: {
+                Image(systemName: "chevron.left").font(.system(size: 10))
+            }
+            .buttonStyle(.plain)
+            .disabled(vm.activeSummaryIndex >= vm.summaries.count - 1)
+            .help(String(localized: "summary.history.older.help", defaultValue: "Show older summary"))
+            .accessibilityLabel(String(localized: "summary.history.older.a11y", defaultValue: "Older summary"))
+
+            Text("\(vm.activeSummaryIndex + 1)/\(vm.summaries.count)")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+
+            Button {
+                if vm.activeSummaryIndex > 0 { vm.activeSummaryIndex -= 1 }
+            } label: {
+                Image(systemName: "chevron.right").font(.system(size: 10))
+            }
+            .buttonStyle(.plain)
+            .disabled(vm.activeSummaryIndex <= 0)
+            .help(String(localized: "summary.history.newer.help", defaultValue: "Show newer summary"))
+            .accessibilityLabel(String(localized: "summary.history.newer.a11y", defaultValue: "Newer summary"))
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
-            // Header row
-            HStack(alignment: .center) {
-                Label("AI summary", systemImage: "sparkles")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                    .kerning(0.7)
+            // Header — two rows so the identity label and the Change-prompt / Regenerate controls
+            // don't collide and clip in the ~270 pt Research rail (C1 follow-up; this view now lives
+            // only in the rail, so it can optimize for that width unconditionally).
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Label("AI summary", systemImage: "sparkles")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                        .kerning(0.7)
 
-                if vm.activeSummary != nil {
-                    Text("· custom prompt")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
+                    if vm.activeSummary != nil {
+                        Text("· custom prompt")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    if vm.summaries.count > 1 {
+                        summaryHistoryNav
+                    }
                 }
 
-                Spacer()
-
-                HStack(spacing: 4) {
-                    if aiAvailable {
+                if aiAvailable {
+                    HStack(spacing: 12) {
                         Button("Change prompt") { showPromptPicker = true }
                             .font(.system(size: 10))
                             .buttonStyle(.plain)
@@ -128,57 +169,14 @@ struct SummaryBlockView: View {
                             .popover(isPresented: $showPromptPicker) {
                                 SummaryPromptPickerView(vm: vm)
                             }
-                    }
 
-                    if vm.summaries.count > 1 {
-                        Text("·").foregroundStyle(.tertiary).font(.system(size: 10))
-                        HStack(spacing: 2) {
-                            Button {
-                                if vm.activeSummaryIndex < vm.summaries.count - 1 {
-                                    vm.activeSummaryIndex += 1
-                                }
-                            } label: {
-                                Image(systemName: "chevron.left").font(.system(size: 10))
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(vm.activeSummaryIndex >= vm.summaries.count - 1)
-                            .help(String(
-                                localized: "summary.history.older.help",
-                                defaultValue: "Show older summary"
-                            ))
-                            .accessibilityLabel(String(
-                                localized: "summary.history.older.a11y",
-                                defaultValue: "Older summary"
-                            ))
-
-                            Text("\(vm.activeSummaryIndex + 1)/\(vm.summaries.count)")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-
-                            Button {
-                                if vm.activeSummaryIndex > 0 { vm.activeSummaryIndex -= 1 }
-                            } label: {
-                                Image(systemName: "chevron.right").font(.system(size: 10))
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(vm.activeSummaryIndex <= 0)
-                            .help(String(
-                                localized: "summary.history.newer.help",
-                                defaultValue: "Show newer summary"
-                            ))
-                            .accessibilityLabel(String(
-                                localized: "summary.history.newer.a11y",
-                                defaultValue: "Newer summary"
-                            ))
-                        }
-                    }
-
-                    if aiAvailable {
                         Button("Regenerate") { Task { await regenerateSummary() } }
                             .font(.system(size: 10))
                             .buttonStyle(.plain)
                             .foregroundStyle(.secondary)
                             .disabled(vm.isSummarizing)
+
+                        Spacer(minLength: 0)
                     }
                 }
             }
