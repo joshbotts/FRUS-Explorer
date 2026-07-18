@@ -274,8 +274,6 @@ struct DocumentView: View {
     @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = true
     @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
     @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
-    /// Expansion state of the volume-level Subjects disclosure (#308 F7); shared with macOS.
-    @AppStorage("frus.document.researchPanel.subjects") private var subjectsExpanded = false
     /// The user's persisted find-related weight tuning (#308), captured into the request on open.
     @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
     /// Whether the Read-mode edge-tap "page-turn" zones are active (Session 154).
@@ -1845,26 +1843,6 @@ struct DocumentView: View {
                 .padding(.vertical, 10)
             }
 
-            // ── Subjects (this volume) — #308 F7 ─────────────────────────────────
-            // The volume's characteristic detected topics (volume-grain profiles, shipped).
-            // Visibility-gated: the section does not appear when the volume has no profile,
-            // rather than showing an empty state. The document-grain subject hierarchy is a
-            // Phase-3 disclosure (DocumentSubjectStore, gated off).
-            if VolumeSubjectsChips.hasContent(forVolumeId: entry.volumeId),
-               let volume = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
-                Divider()
-                iOSPanelSectionHeader(
-                    title: String(localized: "panel.subjects.title", defaultValue: "Subjects (this volume)"),
-                    badge: nil,
-                    isExpanded: $subjectsExpanded
-                )
-                if subjectsExpanded {
-                    Divider()
-                    VolumeSubjectsChips(volume: volume)
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.vertical, 10)
-                }
-            }
         }
     }
 

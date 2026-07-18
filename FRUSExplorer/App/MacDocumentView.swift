@@ -96,7 +96,6 @@ struct MacDocumentView: View {
     @State private var crossRefDownloadVolumeId: String? = nil
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
-    @State private var showTagPicker = false
     /// Visibility + anchor for the floating selection bar (Research-rail Phase B2). Driven straight
     /// from the selection payload's rect. macOS `NavigationStack` gives each *pushed* document a
     /// fresh view instance (see the type doc), so no cross-document offset leak is possible. But a
@@ -110,17 +109,10 @@ struct MacDocumentView: View {
     @State private var showAddExcerpt = false
 
     @Query private var highlights:              [DocumentHighlight]
-    @Query private var documentNotes:           [ResearchNote]
-    @Query private var documentTagAssignments:  [DocumentTagAssignment]
-    @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
 
-    // Research panel: persisted accordion state (shared with ResearchStripView)
+    // Research rail visibility (⌘⇧R) — gates the trailing rail + the volume-nav bar (C5). The
+    // rail owns the per-accordion expansion keys; this view only needs the top-level toggle.
     @AppStorage("frus.document.researchPanel.visible")   private var panelVisible    = true
-    @AppStorage("frus.document.researchPanel.summary")   private var summaryExpanded = true
-    @AppStorage("frus.document.researchPanel.notes")     private var notesExpanded   = true
-    @AppStorage("frus.document.researchPanel.tags")      private var tagsExpanded    = false
-    /// Expansion state of the volume-level Subjects disclosure (#308 F7); shared with iOS.
-    @AppStorage("frus.document.researchPanel.subjects")  private var subjectsExpanded = false
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
 
@@ -146,18 +138,6 @@ struct MacDocumentView: View {
                 h.volumeId == vId && h.documentId == dId
             },
             sort: \DocumentHighlight.createdAt
-        )
-        self._documentNotes = Query(
-            filter: #Predicate<ResearchNote> { n in
-                n.volumeId == vId && n.documentId == dId
-            },
-            sort: \ResearchNote.lastModified,
-            order: .reverse
-        )
-        self._documentTagAssignments = Query(
-            filter: #Predicate<DocumentTagAssignment> { a in
-                a.volumeId == vId && a.documentId == dId
-            }
         )
     }
 
@@ -246,13 +226,6 @@ struct MacDocumentView: View {
         // Optional-typed so the Equatable focusedSceneValue overload is selected
         // (the non-optional variant is deprecated on macOS 15).
         .focusedSceneValue(\.documentCommands, documentCommands)
-        .sheet(isPresented: $showTagPicker) {
-            UserTagPickerSheet(
-                entry: entry,
-                indexingPipeline: appState.indexingPipeline,
-                initialTagIds: Set(documentTagAssignments.map(\.tagId))
-            )
-        }
         .sheet(item: $vm.selectedPerson) { person in
             PersonDetailSheet(
                 person: person,
@@ -361,6 +334,43 @@ struct MacDocumentView: View {
     /// above the web view; volume navigation is fixed below. `SummaryBlockView`
     /// is omitted from this path until Session 147 finalises the WebKit migration.
     private func webKitDocumentView(renderModel: FRUSDocumentRenderModel) -> some View {
+        HStack(spacing: 0) {
+            documentColumn(renderModel: renderModel)
+
+            // Trailing Research rail (Phase C1) — the document research surface: RESEARCH header,
+            // action-tile grid, and Summary/Notes/Tags/Collections accordions. Mounted here so both
+            // hosts (MainWindowView + MacDocumentWindowView) inherit it; gated on the shared
+            // `panelVisible` (⌘⇧R). Replaces the retired top strip + bottom accordion.
+            if panelVisible {
+                Divider()
+                ResearchRailView(
+                    entry: entry,
+                    vm: vm,
+                    onAddNote: { openNoteComposer() },
+                    onEditNote: { note in openNoteComposer(noteId: note.id) })
+                    .frame(width: 300)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: panelVisible)
+        // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2). This
+        // mirrors the rail's own picker; C1a unified them into one shared `CollectionPickerSheet`.
+        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
+            if let capture = pendingExcerptCapture {
+                CollectionPickerSheet(entry: entry, excerpt: capture)
+            }
+        }
+        // Dismiss the bar when this document view is navigated away from. NavigationStack RETAINS
+        // pushed instances (with their @State), and a nav-button hop fires no `selectioncleared`,
+        // so without this the bar would re-appear as a stale "zombie" on pop-back — anchored to the
+        // old rect, its dots no-op after the coordinator reset. This is the macOS counterpart to
+        // iOS's `clearSelectionState` bar-hide.
+        .onDisappear { selectionBar.hideNow() }
+    }
+
+    /// The document column — identity header, web-view body (with the floating selection-bar
+    /// overlay), and the volume-navigation bar (Research mode only) — the leading member of the
+    /// `webKitDocumentView` HStack, beside the Research rail.
+    private func documentColumn(renderModel: FRUSDocumentRenderModel) -> some View {
         VStack(spacing: 0) {
             // Identity + highlights banner (non-scrollable header)
             documentIdentityView
@@ -441,32 +451,16 @@ struct MacDocumentView: View {
                 macFloatingSelectionBarOverlay
             }
 
-            // Research panel — accordion of Notes, Tags, Summary
+            // Volume navigation bar — Research mode only (C5). In Read mode prev/next remain on the
+            // ⌥⌘↑/↓ Document-menu commands (and the Phase-C2 hover edge chevrons).
             if panelVisible {
                 Divider()
-                macResearchPanel(vm: vm)
-            }
-
-            Divider()
-
-            volumeNavigationView
-                .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
-        }
-        // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2). This
-        // mirrors ResearchStripView's own picker; C1 unifies the two into one shared picker.
-        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
-            if let capture = pendingExcerptCapture {
-                CollectionPickerSheet(entry: entry, excerpt: capture)
+                volumeNavigationView
+                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
             }
         }
-        // Dismiss the bar when this document view is navigated away from. NavigationStack RETAINS
-        // pushed instances (with their @State), and a nav-button hop fires no `selectioncleared`,
-        // so without this the bar would re-appear as a stale "zombie" on pop-back — anchored to the
-        // old rect, its dots no-op after the coordinator reset. This is the macOS counterpart to
-        // iOS's `clearSelectionState` bar-hide.
-        .onDisappear { selectionBar.hideNow() }
     }
 
     // MARK: - Floating Selection Bar (Research-rail Phase B2)
@@ -566,143 +560,6 @@ struct MacDocumentView: View {
         .background(.orange.opacity(0.08))
     }
 
-    // MARK: - Research Panel (accordion below document body)
-
-    /// Accordion panel with three independently expandable sections:
-    /// Notes · Tags · Summary. Visibility and per-section expansion are
-    /// persisted via AppStorage so the state survives document navigation.
-    @ViewBuilder
-    private func macResearchPanel(vm: DocumentViewModel) -> some View {
-        VStack(spacing: 0) {
-            // ── Summary ───────────────────────────────────────────────────────
-            if appState.summarizationService != nil || vm.activeSummary != nil {
-                let summaryPreview = vm.activeSummary.map { s in
-                    String(s.responseText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
-                }
-                panelSectionHeader(
-                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
-                    badge: nil,
-                    isExpanded: $summaryExpanded,
-                    preview: summaryPreview
-                )
-                if summaryExpanded {
-                    Divider()
-                    SummaryBlockView(vm: vm)
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.vertical, 8)
-                }
-                Divider()
-            }
-
-            // ── Notes ────────────────────────────────────────────────────────
-            panelSectionHeader(
-                title: String(localized: "panel.notes.title", defaultValue: "Notes"),
-                badge: documentNotes.isEmpty ? nil : "\(documentNotes.count)",
-                isExpanded: $notesExpanded
-            )
-            if notesExpanded {
-                Divider()
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(documentNotes) { note in
-                        Button { openNoteComposer(noteId: note.id) } label: {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(note.bodyText.isEmpty
-                                     ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
-                                     : note.bodyText)
-                                    .font(.callout)
-                                    .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
-                                    .lineLimit(3)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text(note.lastModified ?? .now, style: .relative)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
-                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.plain)
-                        Divider()
-                    }
-                    Button {
-                        openNoteComposer()
-                    } label: {
-                        Label(
-                            String(localized: "panel.notes.add", defaultValue: "Add Note"),
-                            systemImage: "plus.circle"
-                        )
-                        .font(.callout)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 10)
-                }
-            }
-            Divider()
-
-            // ── Tags ─────────────────────────────────────────────────────────
-            let appliedTags = appliedUserTags
-            panelSectionHeader(
-                title: String(localized: "panel.tags.title", defaultValue: "Tags"),
-                badge: appliedTags.isEmpty ? nil : "\(appliedTags.count)",
-                isExpanded: $tagsExpanded
-            )
-            if tagsExpanded {
-                Divider()
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(appliedTags) { tag in
-                            FRUSTagChip(label: tag.name, style: .user) {
-                                removeUserTag(tag)
-                            }
-                        }
-                        Button {
-                            showTagPicker = true
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "plus")
-                                if appliedTags.isEmpty {
-                                    Text(String(localized: "panel.tags.add",
-                                                defaultValue: "Add Tag"))
-                                }
-                            }
-                            .font(.system(size: FRUSTheme.captionSize, weight: .medium))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, FRUSTheme.tagPaddingV)
-                            .background(Color.accentColor.opacity(0.10))
-                            .foregroundStyle(Color.accentColor)
-                            .clipShape(RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                }
-                .padding(.vertical, 10)
-            }
-
-            // ── Subjects (this volume) — #308 F7 ─────────────────────────────────
-            // The volume's characteristic detected topics (volume-grain profiles, shipped).
-            // Visibility-gated: absent when the volume has no profile. The document-grain
-            // subject hierarchy is a Phase-3 disclosure (DocumentSubjectStore, gated off).
-            if VolumeSubjectsChips.hasContent(forVolumeId: entry.volumeId),
-               let volume = appState.manifestStore.entry(forVolumeId: entry.volumeId) {
-                Divider()
-                panelSectionHeader(
-                    title: String(localized: "panel.subjects.title", defaultValue: "Subjects (this volume)"),
-                    badge: nil,
-                    isExpanded: $subjectsExpanded
-                )
-                if subjectsExpanded {
-                    Divider()
-                    VolumeSubjectsChips(volume: volume)
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.vertical, 10)
-                }
-            }
-        }
-    }
-
     /// The "Document" menu's command surface for this document (UI audit gap 6),
     /// published as the `\.documentCommands` focused-scene value.
     ///
@@ -743,72 +600,6 @@ struct MacDocumentView: View {
         )
         openWindow(id: "frus.noteComposer")
         bringMacWindowToFront(id: "frus.noteComposer")
-    }
-
-    /// Reusable accordion section header: label + optional badge + chevron.
-    private func panelSectionHeader(
-        title: String,
-        badge: String?,
-        isExpanded: Binding<Bool>,
-        preview: String? = nil
-    ) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.15)) { isExpanded.wrappedValue.toggle() }
-        } label: {
-            HStack(spacing: 6) {
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .textCase(.uppercase)
-                    .kerning(0.6)
-                    .foregroundStyle(.secondary)
-                if let badge {
-                    Text(badge)
-                        .font(.caption2.bold())
-                        .padding(.horizontal, 5).padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.12))
-                        .clipShape(Capsule())
-                }
-                if let preview, !isExpanded.wrappedValue {
-                    Text(preview + "…")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-            .padding(.vertical, 8)
-            .background(Color.secondary.opacity(0.04))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Tag Helpers
-
-    private var appliedUserTags: [UserTag] {
-        let assignedIds = Set(documentTagAssignments.map(\.tagId))
-        return allUserTags.filter { assignedIds.contains($0.id) }
-    }
-
-    private func removeUserTag(_ tag: UserTag) {
-        let vId = entry.volumeId
-        let dId = entry.documentId
-        let remaining = documentTagAssignments
-            .filter { $0.tagId != tag.id }
-            .map { $0.tagId.uuidString }
-        let tagString: String? = remaining.isEmpty ? nil : remaining.joined(separator: " ")
-        for assignment in documentTagAssignments where assignment.tagId == tag.id {
-            modelContext.delete(assignment)
-        }
-        try? modelContext.save()
-        guard let pipeline = appState.indexingPipeline else { return }
-        Task.detached(priority: .utility) {
-            try? await pipeline.updateUserTagIds(volumeId: vId, documentId: dId, userTagIds: tagString)
-        }
     }
 
     // MARK: - Highlight Deletion
@@ -1189,6 +980,8 @@ struct MacDocumentWindowView: View {
     @State private var navigationPath: [DocumentBrowserEntry] = []
     /// This window's own highlight state (text selection, pending highlight link).
     @State private var highlightCoordinator = HighlightCoordinator()
+    /// The shared research-panel visibility key — drives the D6 toolbar's rail toggle (⌘⇧R).
+    @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
 
     /// The document the window opened for, as a `DocumentBrowserEntry`.
     private var rootEntry: DocumentBrowserEntry {
@@ -1206,20 +999,6 @@ struct MacDocumentWindowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ResearchStripView(
-                entry: currentEntry,
-                highlightCoordinator: highlightCoordinator,
-                onNARALookup: { text in
-                    // B3: hand the selection to the Source Explorer window's NARA
-                    // Lookup segment (see `MainWindowView`). Carry the footnote block
-                    // context (#269) so the segment can surface candidate citations.
-                    appState.pendingNARALookup = NARALookupRequest(
-                        text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
-                    openWindow(id: "frus.sourceExplorer")
-                    bringMacWindowToFront(id: "frus.sourceExplorer")
-                }
-            )
-
             NavigationStack(path: $navigationPath) {
                 MacDocumentView(
                     entry: rootEntry,
@@ -1239,6 +1018,28 @@ struct MacDocumentWindowView: View {
         }
         // Window/tab title — the document's heading, falling back to its id.
         .navigationTitle(currentEntry.header.isEmpty ? currentEntry.documentId : currentEntry.header)
+        // D6: the research strip is retired (C1), so this standalone document window surfaces its
+        // identity + the rail toggle in a minimal toolbar. NARA + the selection verbs now live on the
+        // floating selection bar (Phase B2) and the rail's Sources tile, so the strip's `onNARALookup`
+        // hand-off is no longer needed here. The full MainWindowView titlebar collapse waits for C2.
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(currentEntry.documentId)
+                    .font(.system(.body, design: .monospaced))
+                    .truncationMode(.middle)
+                    .help(currentEntry.header.isEmpty ? currentEntry.documentId : currentEntry.header)
+            }
+            ToolbarItem {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { researchPanelVisible.toggle() }
+                } label: {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
+                }
+                .help(String(localized: "researchRail.toggle.help",
+                             defaultValue: "Research panel (⌘⇧R)"))
+            }
+        }
         .onChange(of: currentEntry) { _, _ in
             highlightCoordinator.reset()
         }

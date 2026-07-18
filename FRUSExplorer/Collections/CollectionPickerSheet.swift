@@ -103,7 +103,8 @@ struct CollectionPickerSheet: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(collection.name)
+        // No explicit label override: let the button announce name + document count together (the
+        // count is meaningful post-D5), plus the "Added" checkmark when present (C1a review F2).
     }
 
     // MARK: - macOS Body
@@ -269,10 +270,14 @@ struct CollectionPickerSheet: View {
             return
         }
 
-        // Guard against duplicates — show checkmark and dismiss if already a member.
+        // Guard against duplicates — show checkmark and dismiss if already a member. Match only
+        // `.document` entries: an *excerpt* from this document carries the same provenance
+        // (volumeId/documentId), so without the kind filter a prior excerpt would spuriously block
+        // adding the document itself — leaving the collection with "0 documents" (C1a review F1).
         let existing = collection.documentEntries ?? []
         guard !existing.contains(where: {
-            $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
+            $0.entryKind == .document
+                && $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
         }) else {
             addedCollectionId = collection.id
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { dismiss() }
