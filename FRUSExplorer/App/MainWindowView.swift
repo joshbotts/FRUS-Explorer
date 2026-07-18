@@ -126,7 +126,17 @@ struct MainWindowView: View {
             onWindow: { hostWindow = $0 },
             onWillClose: { appState.unregisterHost(hostID) }
         ))
-        .onAppear { appState.registerHost(hostID) }
+        .onAppear {
+            appState.registerHost(hostID)
+            // Drain a legacy navigation written while NO host was mounted (e.g. a search-window
+            // click with every document window closed) — registration above makes this host the
+            // fallback, so the pending value routes here instead of stranding until the next
+            // distinct click (the iOS BrowserView adopt-on-appear discipline).
+            appState.routeLegacyPendingBrowse { orphan in
+                openWindow(value: DocumentWindowID(
+                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+            }
+        }
         .onDisappear { appState.unregisterHost(hostID) }
         // Translate a LEGACY (origin-less, not-yet-migrated) tool-window navigation through the
         // fallback chain. Every open document host runs the same translation; the clear-first step
@@ -150,6 +160,9 @@ struct MainWindowView: View {
             guard let routed, routed.host == hostID, appState.routedBrowse == routed else { return }
             navigationPath.append(routed.entry)
             appState.routedBrowse = nil
+            // makeKeyAndOrderFront does NOT restore a miniaturized window — deminiaturize first
+            // or a route into a docked window stays invisible (FM-G's second half).
+            if hostWindow?.isMiniaturized == true { hostWindow?.deminiaturize(nil) }
             hostWindow?.makeKeyAndOrderFront(nil)
         }
         // Reset highlight state whenever the user navigates to a different document.

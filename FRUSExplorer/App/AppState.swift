@@ -668,6 +668,9 @@ final class AppState {
     func registerHost(_ host: DocumentHostID) {
         hostStampCounter += 1
         liveDocumentHosts[host] = hostStampCounter
+        #if DEBUG
+        print("[AppState] registerHost \(host) (live: \(liveDocumentHosts.count))")
+        #endif
     }
 
     /// Bumps a host's advisory recency stamp (called when the host window becomes key).
@@ -678,9 +681,23 @@ final class AppState {
     }
 
     /// Removes a closed host from the registry. Its tool bindings are left in place — they fail
-    /// the liveness check in `provenance(of:)` and resolve through the fallback chain (D3).
+    /// the liveness check in `provenance(of:)` and resolve through the fallback chain (D3). An
+    /// in-flight `routedBrowse` addressed to the closing host is re-resolved (FM-F's consumption
+    /// gap): re-targeted at the fallback host, or — when no host survives — demoted back to
+    /// `pendingBrowseDocument`, which the next host to mount drains on appear.
     func unregisterHost(_ host: DocumentHostID) {
         liveDocumentHosts.removeValue(forKey: host)
+        #if DEBUG
+        print("[AppState] unregisterHost \(host) (live: \(liveDocumentHosts.count))")
+        #endif
+        if let inFlight = routedBrowse, inFlight.host == host {
+            if let survivor = fallbackHost() {
+                routedBrowse = RoutedBrowse(host: survivor, entry: inFlight.entry)
+            } else {
+                routedBrowse = nil
+                pendingBrowseDocument = inFlight.entry
+            }
+        }
     }
 
     /// Binds a tool surface to the document host it was launched from. Pass the launcher's own

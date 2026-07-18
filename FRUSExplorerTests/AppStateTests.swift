@@ -202,6 +202,44 @@ struct AppStateTests {
         #expect(state.routedBrowse == first)
     }
 
+    @Test("closing a host with an in-flight route re-targets it at the surviving fallback")
+    func inFlightRouteRetargetsOnHostClose() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        let hostB = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.registerHost(hostB)
+        state.bindTool(.search, to: hostB)
+        state.openDocument(entry("d2", "v2"), from: .tool(.search)) { _ in Issue.record("no mint") }
+        #expect(state.routedBrowse?.host == hostB)
+
+        // B closes before its consumer runs (FM-F): the route must move to A, not strand.
+        state.unregisterHost(hostB)
+        #expect(state.routedBrowse?.host == hostA)
+        #expect(state.routedBrowse?.entry.documentId == "d2")
+    }
+
+    @Test("closing the LAST host demotes an in-flight route to pending for the next host's drain")
+    func inFlightRouteDemotesWhenNoSurvivor() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.pendingBrowseDocument = entry("d3", "v3")
+        state.routeLegacyPendingBrowse { _ in Issue.record("no mint: A is live") }
+        #expect(state.routedBrowse?.host == hostA)
+
+        state.unregisterHost(hostA)
+        #expect(state.routedBrowse == nil)
+        #expect(state.pendingBrowseDocument?.documentId == "d3")
+
+        // The next host to mount drains it (the onAppear discipline both hosts implement).
+        let hostB = DocumentHostID.main(UUID())
+        state.registerHost(hostB)
+        state.routeLegacyPendingBrowse { _ in Issue.record("no mint: B is live") }
+        #expect(state.routedBrowse?.host == hostB)
+        #expect(state.routedBrowse?.entry.documentId == "d3")
+    }
+
     @Test("unregister leaves the binding but liveness hides it")
     func livenessHidesStaleBinding() {
         let state = AppState()

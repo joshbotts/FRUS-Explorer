@@ -168,6 +168,12 @@ struct HostWindowAccessor: NSViewRepresentable {
         let onWindow: (NSWindow?) -> Void
         let onWillClose: () -> Void
         private(set) weak var window: NSWindow?
+        /// The willClose registration. Stored (not captured by the handler as a mutable local —
+        /// that pattern trips three strict-concurrency warnings and retains an observer→block→box
+        /// cycle) and removed inside the handler, so nothing non-Sendable reaches the nonisolated
+        /// deinit. `nonisolated(unsafe)` is sound: every touch happens on the main actor
+        /// (willClose posts on the main thread and delivery is `queue: .main`).
+        nonisolated(unsafe) private var willCloseToken: NSObjectProtocol?
 
         init(onWindow: @escaping (NSWindow?) -> Void, onWillClose: @escaping () -> Void) {
             self.onWindow = onWindow
@@ -178,15 +184,20 @@ struct HostWindowAccessor: NSViewRepresentable {
             guard let window, self.window !== window else { return }
             self.window = window
             onWindow(window)
-            // One-shot: willClose fires at most once per window; the handler removes its own
-            // token, so no non-Sendable state has to survive into a nonisolated deinit (Swift 6).
-            var token: NSObjectProtocol?
-            token = NotificationCenter.default.addObserver(
+            // Re-attach (the view landing in a second window) drops the stale registration first.
+            if let stale = willCloseToken {
+                NotificationCenter.default.removeObserver(stale)
+                willCloseToken = nil
+            }
+            willCloseToken = NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification, object: window, queue: .main
             ) { [weak self] _ in
-                if let token { NotificationCenter.default.removeObserver(token) }
                 MainActor.assumeIsolated {
                     guard let self else { return }
+                    if let token = self.willCloseToken {
+                        NotificationCenter.default.removeObserver(token)
+                        self.willCloseToken = nil
+                    }
                     self.onWindow(nil)
                     self.onWillClose()
                 }

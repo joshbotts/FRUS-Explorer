@@ -221,6 +221,17 @@ Two PRs, both fully green independently:
   fronting, drain) + `WindowRoutingTests`. The old translation path stays functional for
   not-yet-migrated producers (compat shim: unmigrated `pendingBrowseDocument` writes translate
   through the fallback chain instead of `activeDocumentHost`).
-- **PR 2 — migration + deletion:** all producers/launchers converted (§5), relays deleted,
-  `activeDocumentHost`/`routeBrowseToActiveHost`/observers/prints deleted, adjacent bugs (§6),
-  scene-table doc fix, memory + manuals updated.
+- **PR 2 — migration + deletion:** all producers/launchers converted (§5), relays deleted, the
+  legacy shim + its host observers deleted, adjacent bugs (§6), scene-table doc fix, memory +
+  manuals updated. Also (PR-1 review): widen `DocumentWindowID`'s non-identity payload
+  (documentNumber/dateline/sourceNote/isEditorialNote as optionals, the `GraphWindowRequest`
+  pattern) so D3-minted windows don't render a thinner document than routed opens.
+
+**PR-1 review folds (2026-07-18):** the Coordinator's one-shot willClose token became stored
+`nonisolated(unsafe)` state removed in-handler (3 strict-concurrency warnings + an
+observer→block→box retain cycle); both hosts drain `pendingBrowseDocument` on appear (a
+zero-host click now lands when the next host mounts, per the iOS BrowserView discipline);
+`unregisterHost` re-resolves an in-flight route addressed to the closing host (fallback, else
+demote to pending — FM-F's consumption gap); consumers deminiaturize before fronting
+(`makeKeyAndOrderFront`/`openWindow(value:)` don't restore docked windows); registry-side
+`#if DEBUG` prints replace the deleted #392 instrumentation for the owner's visual pass.

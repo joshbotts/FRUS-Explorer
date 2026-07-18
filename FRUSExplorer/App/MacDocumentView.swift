@@ -1116,6 +1116,11 @@ struct MacDocumentWindowView: View {
     /// `DocumentWindowID` (stable even after in-window navigation pushes other documents).
     private var hostID: DocumentHostID { .window(windowID) }
 
+    /// The `NSWindow` hosting this view (captured by `HostWindowAccessor`) — used to
+    /// deminiaturize on a routed delivery (`openWindow(value:)` re-fronts but does not restore a
+    /// docked window).
+    @State private var hostWindow: NSWindow?
+
     /// This window's own navigation stack — cross-reference taps push within the
     /// window rather than affecting the main window or other document windows.
     @State private var navigationPath: [DocumentBrowserEntry] = []
@@ -1197,10 +1202,17 @@ struct MacDocumentWindowView: View {
         .environment(\.documentHostID, hostID)
         // Reliable close signal for host deregistration (onDisappear below is belt-and-braces).
         .background(HostWindowAccessor(
-            onWindow: { _ in },
+            onWindow: { hostWindow = $0 },
             onWillClose: { appState.unregisterHost(hostID) }
         ))
-        .onAppear { appState.registerHost(hostID) }
+        .onAppear {
+            appState.registerHost(hostID)
+            // Drain a legacy navigation written while NO host was mounted (see MainWindowView).
+            appState.routeLegacyPendingBrowse { orphan in
+                openWindow(value: DocumentWindowID(
+                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+            }
+        }
         .onDisappear { appState.unregisterHost(hostID) }
         // Translate a LEGACY (origin-less, not-yet-migrated) tool-window navigation through the
         // fallback chain — done here too so translation survives when the main window is closed
@@ -1225,6 +1237,8 @@ struct MacDocumentWindowView: View {
             guard let routed, routed.host == hostID, appState.routedBrowse == routed else { return }
             navigationPath.append(routed.entry)
             appState.routedBrowse = nil
+            // openWindow(value:) re-fronts the existing window but does not restore a docked one.
+            if hostWindow?.isMiniaturized == true { hostWindow?.deminiaturize(nil) }
             openWindow(value: windowID)
         }
     }
