@@ -988,6 +988,7 @@ struct DocumentView: View {
                 systemImage: "doc.text.magnifyingglass"
             )
             .accessibilityAddTraits(railToggleActive ? [.isSelected] : [])
+            .accessibilityIdentifier("researchRailToggle")
         }
     }
 

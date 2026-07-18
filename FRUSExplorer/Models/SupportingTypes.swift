@@ -105,8 +105,8 @@ public enum TextSizePreference: String, CaseIterable, Identifiable, Sendable {
 /// preserves the original behaviour: `frus.document.researchPanel.visible`
 /// persists the last Read/Research choice across documents and is left alone
 /// on open. `.read`/`.research` force that panel-visibility flag to a fixed
-/// value each time a document opens; the in-document segmented control can
-/// still switch modes live for that document.
+/// value each time a document opens; the in-document Read/Research rail toggle
+/// can still switch modes live for that document.
 public enum DefaultDocumentMode: String, CaseIterable, Identifiable, Sendable {
     case read
     case research
