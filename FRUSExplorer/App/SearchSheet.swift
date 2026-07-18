@@ -1137,11 +1137,17 @@ struct MacSearchWindowView: View {
     /// `WindowGroup`, so they tab together. Per-document identity means reopening the
     /// same document focuses its existing window/tab.
     private func openResultInNewWindow(_ result: SearchResult) {
-        openWindow(value: DocumentWindowID(
-            volumeId: result.volumeId,
+        // Mint from the full result payload (widened DocumentWindowID) so the new window renders
+        // the same document chrome as a routed open — matching navigateToResult's entry fields.
+        openWindow(value: DocumentWindowID(entry: DocumentBrowserEntry(
             documentId: result.documentId,
-            header: result.header
-        ))
+            volumeId: result.volumeId,
+            documentNumber: result.documentNumber,
+            header: result.header,
+            dateline: result.dateline,
+            sourceNote: result.sourceNote,
+            isEditorialNote: result.isEditorialNote
+        )))
     }
 }
 

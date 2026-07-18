@@ -296,6 +296,9 @@ struct HistoryMenuContent: View {
     /// Re-runs the search in the Search window via `AppState.pendingSearch`.
     private func runSearch(_ entry: SearchHistoryEntry) {
         appState.pendingSearch = SearchParameters(keywords: entry.queryText)
+        // The menu-bar History menu has no spawning window — clear the search binding so results
+        // open via the D3 recency fallback (the window-hosted History runSearch binds `.history`).
+        appState.bindTool(.search, to: nil)
         openWindow(id: "frus.search")
     }
 }

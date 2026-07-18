@@ -133,8 +133,7 @@ struct MainWindowView: View {
             // fallback, so the pending value routes here instead of stranding until the next
             // distinct click (the iOS BrowserView adopt-on-appear discipline).
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         .onDisappear { appState.unregisterHost(hostID) }
@@ -144,8 +143,7 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
             guard entry != nil else { return }
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         // Bump this host's ADVISORY recency stamp while key — consulted only by the fallback

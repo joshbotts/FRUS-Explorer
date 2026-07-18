@@ -799,9 +799,10 @@ struct CrossReferenceAnalyticsView: View {
     // MARK: - Navigation
 
     /// Document tap → open in this window's provenance host on macOS
-    /// (`AppState.openDocument(_:from: .tool(.crossRefAnalytics))` — this view renders
-    /// inside both the frus.analytics and frus.crossRefAnalytics windows; sharing the one
-    /// case for both hosts is accepted per the provenance plan), or the Browse tab on iOS.
+    /// (`AppState.openDocument(_:from: .tool(.crossRefAnalytics))`), or the Browse tab on iOS. On
+    /// macOS this view renders only in the `frus.crossRefAnalytics` window (the `frus.analytics`
+    /// window hosts `AnalyticsView`, which has no document-open path), so `.crossRefAnalytics` is
+    /// its unambiguous provenance. (It is also shown as a sheet from the iOS Browse tab.)
     private func openDocument(volumeId: String, documentId: String, header: String) {
         let entry = DocumentBrowserEntry(
             documentId: documentId, volumeId: volumeId, header: header)

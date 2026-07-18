@@ -222,13 +222,15 @@ struct CrossReferenceGraphView: View {
                     }
                 }
             }
+            // iOS pushes documents inline. macOS has no in-graph document destination — graph doc
+            // opens ROUTE to the provenance host (`.tool(.graph)`), never push onto vm.navigationPath,
+            // so a macOS destination here would be dead code with a broken `.constant([])` binding
+            // (the same trap D1 removed from Chronology).
+            #if os(iOS)
             .navigationDestination(for: DocumentBrowserEntry.self) { entry in
-                #if os(iOS)
                 DocumentView(entry: entry)
-                #else
-                MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
-                #endif
             }
+            #endif
         }
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)

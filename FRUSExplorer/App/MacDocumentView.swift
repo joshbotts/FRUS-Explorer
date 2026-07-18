@@ -681,10 +681,10 @@ struct MacDocumentView: View {
             openInNewWindow: {
                 // File ▸ "Open Document in New Window" (C2.2). Value-based identity is
                 // (volumeId, documentId), so this focuses the window if the document is already open.
-                openWindow(value: DocumentWindowID(
-                    volumeId: entry.volumeId,
-                    documentId: entry.documentId,
-                    header: vm.documentTitle ?? entry.header))
+                // Mint from the full entry (widened payload → full chrome) with the live title override.
+                var id = DocumentWindowID(entry: entry)
+                id.header = vm.documentTitle ?? entry.header
+                openWindow(value: id)
             }
         )
     }
@@ -1218,8 +1218,7 @@ struct MacDocumentWindowView: View {
             appState.registerHost(hostID)
             // Drain a legacy navigation written while NO host was mounted (see MainWindowView).
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         .onDisappear { appState.unregisterHost(hostID) }
@@ -1229,8 +1228,7 @@ struct MacDocumentWindowView: View {
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
             guard entry != nil else { return }
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         // Bump this host's ADVISORY recency stamp while key — consulted only by the fallback

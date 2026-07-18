@@ -702,12 +702,16 @@ final class AppState {
         }
     }
 
-    /// Binds a tool surface to the document host it was launched from. Pass the launcher's own
-    /// provenance for tool→tool spawns (transitivity). A `nil` host (launcher outside any chain,
-    /// e.g. a scene keyboard shortcut) leaves any existing binding untouched.
+    /// Binds a tool surface to the document host it was launched from — every explicit launch
+    /// re-binds (last-spawner-wins). Pass the launcher's own provenance for tool→tool spawns
+    /// (transitivity). A `nil` host — an originless launch (Settings/Collections word cloud), or a
+    /// transitive spawn whose parent is itself unbound — **CLEARS** the binding, so the tool
+    /// resolves through the D3 recency fallback rather than a stale-but-live prior host. (Leaving a
+    /// stale binding was the FM-A resurfacing PR-2 review caught: a buried origin A kept stealing
+    /// opens from the recency host.) Bare scene keyboard shortcuts run no code, so they never reach
+    /// this and correctly leave the existing binding for `provenance(of:)`'s liveness check to age.
     func bindTool(_ tool: ToolWindowID, to host: DocumentHostID?) {
-        guard let host else { return }
-        toolProvenance[tool] = host
+        toolProvenance[tool] = host   // nil removes the key
     }
 
     /// A tool's provenance host, or `nil` when unbound or the bound host has closed

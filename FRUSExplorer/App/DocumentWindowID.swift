@@ -36,9 +36,12 @@ struct DocumentWindowID: Codable, Hashable {
     /// Not part of the value's identity — see the `Equatable`/`Hashable` note above.
     var header: String
     /// Non-identity display payload (provenance PR 2): carried so a window minted from a full
-    /// `DocumentBrowserEntry` (D3's mint tail, Open-in-New-Window, citation matches) renders the
-    /// same document chrome as a routed open, instead of a thin 3-field reconstruction. Optionals
-    /// decode cleanly from pre-widening restoration payloads (the GraphWindowRequest pattern).
+    /// `DocumentBrowserEntry` renders the same document chrome as a routed open, instead of a thin
+    /// 3-field reconstruction. Wired at the sites where a full entry is in scope: the D3 mint tail
+    /// (`AppState.openDocument`/`routeLegacyPendingBrowse` + the Handoff/Spotlight tail), the host
+    /// drain closures, File ▸ Open Document in New Window, and Search's Open-in-New-Window. (Citation
+    /// Lookup's per-result windows stay thin — `CitationMatch` has no richer payload to carry.)
+    /// Optionals decode cleanly from pre-widening restoration payloads (the GraphWindowRequest pattern).
     var documentNumber: String? = nil
     /// Dateline string, if the minting surface had one.
     var dateline: String? = nil

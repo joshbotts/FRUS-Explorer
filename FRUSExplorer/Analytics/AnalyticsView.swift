@@ -382,6 +382,18 @@ struct AnalyticsView: View {
             seriesCount = defaultSeriesCount
             seedDefaultYearRange()
             applyAnalyticsParameters(initialParameters)
+            #if os(macOS)
+            // A FRESH macOS `frus.analytics` window is created AFTER the producer set
+            // `pendingAnalytics` and opened it directly (relay elimination, PR 2). `initialParameters`
+            // is always nil on macOS (the scene mounts `AnalyticsView()`), and the `.onChange` below
+            // never fires for a value set BEFORE this view subscribed — so drain the hand-off here on
+            // first open, mirroring `MacSearchWindowView`/`WordCloudWindowContent`. Without this the
+            // window opens on the empty "enter a term" state and the term/date-range are lost.
+            if let pending = appState.pendingAnalytics {
+                applyAnalyticsParameters(pending)
+                appState.pendingAnalytics = nil
+            }
+            #endif
         }
         // Re-seed when a new handoff arrives while the view is already on screen
         // (macOS `frus.analytics` Window — a long-lived instance reused across
