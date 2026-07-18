@@ -97,6 +97,17 @@ struct MacDocumentView: View {
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     @State private var showTagPicker = false
+    /// Visibility + anchor for the floating selection bar (Research-rail Phase B2). Driven straight
+    /// from the selection payload's rect. macOS `NavigationStack` gives each *pushed* document a
+    /// fresh view instance (see the type doc), so no cross-document offset leak is possible. But a
+    /// pushed instance is RETAINED for pop-back, so the bar is explicitly dismissed on
+    /// `.onDisappear` to avoid a stale "zombie" bar re-appearing when the user navigates back.
+    @State private var selectionBar = SelectionBarState()
+    /// Excerpt capture pending presentation in the bar's Excerpt flow (mirrors ResearchStripView's
+    /// own picker state — C1 unifies the two).
+    @State private var pendingExcerptCapture: CollectionExcerptCapture? = nil
+    /// Presents the collection picker in excerpt mode for `pendingExcerptCapture`.
+    @State private var showAddExcerpt = false
 
     @Query private var highlights:              [DocumentHighlight]
     @Query private var documentNotes:           [ResearchNote]
@@ -403,23 +414,32 @@ struct MacDocumentView: View {
                         selection.blockText.isEmpty ? nil : selection.blockText
                 }
                 highlightCoordinator.webKitSelectedText = selection.text.isEmpty ? nil : selection.text
-                // Bounding rect for the floating selection bar (Phase A: stored; the bar reads it
-                // in Phase B). macOS never magnifies, so the rect maps 1:1 to view points.
-                highlightCoordinator.webKitSelectionRect = selection.rect
+                // Drive the floating selection bar (Phase B2) straight from the payload. macOS never
+                // magnifies, so the rect maps 1:1 to view points (no zoom gate). A footnote/
+                // out-of-document selection disables the dots + Excerpt, keeping Look Up + Note.
+                if let rect = selection.rect, !selection.text.isEmpty {
+                    selectionBar.present(rect: rect, atFootnote: !selection.hasOffsets)
+                } else {
+                    selectionBar.hideNow()
+                }
             }
             .onSelectionCleared {
                 highlightCoordinator.webKitSelectionRange = nil
-                highlightCoordinator.webKitSelectionRect = nil
                 // webKitSelectedText intentionally preserved for NARA lookup.
+                // Debounced so the bar survives a spurious clear; a real clear lets it elapse.
+                selectionBar.scheduleHide()
             }
             .onSelectionScrolled {
-                // The anchor rect is stale after a scroll; drop it so the bar (Phase B) can hide.
-                highlightCoordinator.webKitSelectionRect = nil
+                // The anchor rect is stale after a scroll; hide the bar immediately.
+                selectionBar.hideNow()
             }
             .onHighlightTapped { start, end in
                 highlightToDelete = (start, end)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay {
+                macFloatingSelectionBarOverlay
+            }
 
             // Research panel — accordion of Notes, Tags, Summary
             if panelVisible {
@@ -434,6 +454,75 @@ struct MacDocumentView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 20)
         }
+        // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2). This
+        // mirrors ResearchStripView's own picker; C1 unifies the two into one shared picker.
+        .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
+            if let capture = pendingExcerptCapture {
+                CollectionPickerSheet(entry: entry, excerpt: capture)
+            }
+        }
+        // Dismiss the bar when this document view is navigated away from. NavigationStack RETAINS
+        // pushed instances (with their @State), and a nav-button hop fires no `selectioncleared`,
+        // so without this the bar would re-appear as a stale "zombie" on pop-back — anchored to the
+        // old rect, its dots no-op after the coordinator reset. This is the macOS counterpart to
+        // iOS's `clearSelectionState` bar-hide.
+        .onDisappear { selectionBar.hideNow() }
+    }
+
+    // MARK: - Floating Selection Bar (Research-rail Phase B2)
+
+    /// The macOS floating selection bar overlay: the shared ``FloatingSelectionBar`` anchored
+    /// *above* the selection (D3 — macOS has no system selection callout to compete with) on the
+    /// web view. It coexists with `ResearchStripView` until C1. The dots create a highlight;
+    /// Excerpt/Look Up/Note reuse the same actions the strip and Document menu drive.
+    @ViewBuilder
+    private var macFloatingSelectionBarOverlay: some View {
+        GeometryReader { proxy in
+            if let anchor = selectionBar.anchor {
+                FloatingSelectionBar(
+                    atFootnote: selectionBar.atFootnote,
+                    compact: false,
+                    onHighlight: { color in
+                        createWebKitHighlight(color: color)
+                        selectionBar.hideNow()
+                    },
+                    onExcerpt: {
+                        if let capture = makeSelectionExcerptCapture() {
+                            pendingExcerptCapture = capture
+                            showAddExcerpt = true
+                        }
+                        selectionBar.hideNow()
+                    },
+                    onLookUp: {
+                        lookUpSelectionInNARA()
+                        selectionBar.hideNow()
+                    },
+                    onNote: {
+                        openNoteComposer()
+                        selectionBar.hideNow()
+                    }
+                )
+                .modifier(FloatingSelectionBarPositioner(
+                    selection: anchor, container: proxy.size, below: false))
+            }
+        }
+        .allowsHitTesting(selectionBar.isVisible)
+        .animation(.easeOut(duration: 0.25), value: selectionBar.isVisible)
+    }
+
+    /// Hands the current selection to the Source Explorer window's NARA Lookup segment — the same
+    /// hand-off `ResearchStripView`'s "NARA Lookup" button performs (B3), done directly here so the
+    /// bar needs no closure threaded through the window host.
+    private func lookUpSelectionInNARA() {
+        // Guard against an empty query (e.g. the strip's NARA button already consumed the text
+        // while the bar was still visible) — don't open the Source Explorer with a blank lookup.
+        guard let text = highlightCoordinator.webKitSelectedText, !text.isEmpty else { return }
+        appState.pendingNARALookup = NARALookupRequest(
+            text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
+        highlightCoordinator.webKitSelectedText = nil
+        highlightCoordinator.webKitSelectedBlockText = nil
+        openWindow(id: "frus.sourceExplorer")
+        bringMacWindowToFront(id: "frus.sourceExplorer")
     }
 
     // MARK: - Document Year Extraction
