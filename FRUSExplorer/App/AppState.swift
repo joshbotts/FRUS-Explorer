@@ -158,6 +158,21 @@ enum AppTab: String, CaseIterable, Sendable {
 }
 #endif
 
+// MARK: - NARALookupRequest
+
+/// A cross-window NARA-lookup hand-off (`AppState.pendingNARALookup`): the user-selected
+/// `text` plus, for a footnote selection, the enclosing note body (`blockContext`) whose
+/// archival citations the lookup surfaces as quick-fills (#269). `Equatable` so the Source
+/// Explorer window's `.onChange` hand-off consumer fires on each new request. Defined here
+/// (not in the macOS-only `MainWindowView`) because it types a cross-platform `AppState`
+/// property, so it must compile on iOS too.
+struct NARALookupRequest: Equatable {
+    /// The user-selected text (pre-populates the lookup query field).
+    let text: String
+    /// The enclosing footnote body for a footnote selection, else `nil`.
+    var blockContext: String? = nil
+}
+
 @Observable
 @MainActor
 final class AppState {
@@ -686,7 +701,7 @@ final class AppState {
     /// field shows the new text, and clears it — mirroring the `pendingSearch` /
     /// `pendingCollectionSelection` pattern. macOS-only in practice; iOS presents
     /// `NARACatalogLookupView` as a local sheet.
-    var pendingNARALookup: String? = nil
+    var pendingNARALookup: NARALookupRequest? = nil
 
     /// Cross-window hand-off into the research-note composer window (UI audit C1):
     /// the document context (and optional existing note / linked highlight) a note

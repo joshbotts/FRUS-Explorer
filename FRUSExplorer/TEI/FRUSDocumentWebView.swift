@@ -9,6 +9,38 @@
 import SwiftUI
 import WebKit
 
+// MARK: - FRUSSelectionEvent
+
+/// The decoded outcome of a `selectionChanged` message from the selection bridge JS — a pure
+/// value so decoding is unit-testable without a `WKScriptMessage` (which has no public
+/// initializer). See `decodeFRUSSelectionEvent(from:)`.
+enum FRUSSelectionEvent: Equatable {
+    /// No live selection (collapsed/cleared).
+    case cleared
+    /// A valid in-document selection with flat-text Unicode-scalar offsets and its raw text.
+    case ranged(start: Int, end: Int, text: String)
+    /// An out-of-document (footnote) selection: no offsets, but the raw selected `text` and the
+    /// enclosing `blockText` (the footnote body), used to characterise the note's citations (#269).
+    case footnote(text: String, blockText: String)
+}
+
+/// Decodes a `selectionChanged` message body into a `FRUSSelectionEvent`.
+///
+/// Returns `nil` for a malformed body (missing/non-integer `start`/`end`) or a degenerate
+/// in-document range (`end <= start`). A footnote body with a missing/empty `blockText` falls
+/// back to the raw selected text, so the footnote branch always has some block context.
+func decodeFRUSSelectionEvent(from body: [String: Any]) -> FRUSSelectionEvent? {
+    guard let start = body["start"] as? Int, let end = body["end"] as? Int else { return nil }
+    let text = (body["text"] as? String) ?? ""
+    if start < 0 {
+        guard !text.isEmpty else { return .cleared }
+        let block = (body["blockText"] as? String) ?? ""
+        return .footnote(text: text, blockText: block.isEmpty ? text : block)
+    }
+    guard end > start else { return nil }
+    return .ranged(start: start, end: end, text: text)
+}
+
 // MARK: - FRUSDocumentWebView
 
 /// SwiftUI document renderer backed by `WKWebView`.
@@ -81,11 +113,14 @@ public struct FRUSDocumentWebView: View {
 
     // MARK: Selection callbacks (Session 145)
 
-    /// Called with `(start, end, text)` when the user selects text in the WKWebView.
+    /// Called with `(start, end, text, blockText)` when the user selects text in the WKWebView.
     /// `start` and `end` are Unicode-scalar offsets into `buildFlatText(from: model)`.
     /// `text` is the raw selected string from `window.getSelection().toString()`,
     /// suitable for pre-populating the NARA Catalog lookup field.
-    var onSelectionChanged: ((Int, Int, String) -> Void)? = nil
+    /// `blockText` is the enclosing footnote body for a footnote selection (`start == -1`),
+    /// or an empty string for an in-document selection (whose block context Swift derives
+    /// from the offsets); it lets the footnote NARA path characterise the note's citations (#269).
+    var onSelectionChanged: ((Int, Int, String, String) -> Void)? = nil
 
     /// Called when the selection is collapsed or cleared.
     var onSelectionCleared: (() -> Void)? = nil
@@ -166,7 +201,7 @@ extension FRUSDocumentWebView {
 
     /// Registers a callback for when the user makes a text selection in the web view.
     /// `start` and `end` are Unicode-scalar offsets; `text` is the raw selected string.
-    func onSelectionChanged(_ handler: @escaping (Int, Int, String) -> Void) -> FRUSDocumentWebView {
+    func onSelectionChanged(_ handler: @escaping (Int, Int, String, String) -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onSelectionChanged = handler; return copy
     }
 
@@ -254,7 +289,7 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
     // MARK: Selection state (Session 145)
 
     /// Fired when JS reports a valid text selection `{start, end, text}`.
-    var onSelectionChanged: ((Int, Int, String) -> Void)?
+    var onSelectionChanged: ((Int, Int, String, String) -> Void)?
     /// Fired when JS reports the selection was cleared (`{start: -1, end: -1}`).
     var onSelectionCleared: (() -> Void)?
     /// Fired when the user taps inside a rendered highlight range.
@@ -262,11 +297,14 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
     // MARK: WKScriptMessageHandler
 
-    /// Receives `selectionChanged` messages from `frus-selection.js`.
+    /// Receives `selectionChanged` messages from `frus-selection.js` / `kSelectionJS`.
     ///
-    /// Message body is a `[String: Int]` dictionary with keys `"start"` and `"end"`.
-    /// `start == -1` signals selection cleared; `start >= 0 && end > start` is a
-    /// valid selection range in flat-text Unicode-scalar offsets.
+    /// The body carries `"start"`, `"end"`, and (for non-empty selections) `"text"`; a
+    /// footnote selection additionally carries `"blockText"` (the enclosing note body).
+    /// `start == -1` with empty text signals selection cleared; `start >= 0 && end > start`
+    /// is a valid in-document range in flat-text Unicode-scalar offsets. Decoding is factored
+    /// into the pure `decodeFRUSSelectionEvent(from:)` so it is unit-testable without a
+    /// `WKScriptMessage` (which has no public initializer).
     func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
@@ -275,20 +313,19 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
         switch message.name {
         case "selectionChanged":
-            guard let start = body["start"] as? Int,
-                  let end   = body["end"]   as? Int else { return }
-            let text = (body["text"] as? String) ?? ""
-            if start < 0 {
-                if text.isEmpty {
-                    // True clear — no selection anywhere in the document.
-                    onSelectionCleared?()
-                } else {
-                    // Text-only selection in a footnote or other out-of-document area.
-                    // Offsets are sentinel (-1,-1); NARA lookup is still available.
-                    onSelectionChanged?(-1, -1, text)
-                }
-            } else if end > start {
-                onSelectionChanged?(start, end, text)
+            switch decodeFRUSSelectionEvent(from: body) {
+            case .cleared:
+                onSelectionCleared?()
+            case .footnote(let text, let blockText):
+                // Out-of-document (footnote) selection: sentinel offsets, but raw text plus
+                // the enclosing block so the NARA path can characterise the note's citations.
+                onSelectionChanged?(-1, -1, text, blockText)
+            case .ranged(let start, let end, let text):
+                // In-document selection: block context is derived Swift-side from the offsets,
+                // so no blockText is threaded here.
+                onSelectionChanged?(start, end, text, "")
+            case nil:
+                break
             }
 
         case "highlightTapped":
@@ -389,7 +426,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
     var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
-    var onSelectionChanged: ((Int, Int, String) -> Void)?
+    var onSelectionChanged: ((Int, Int, String, String) -> Void)?
     var onSelectionCleared: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
 
@@ -516,7 +553,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
     var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
-    var onSelectionChanged: ((Int, Int, String) -> Void)?
+    var onSelectionChanged: ((Int, Int, String, String) -> Void)?
     var onSelectionCleared: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
     var onEditMenuHighlight:   (() -> Void)?

@@ -202,7 +202,10 @@ document.addEventListener('click', (e) => {
 /// Text-selection → flat-text offset bridge, embedded as a Swift string constant.
 /// Canonical source: `FRUSExplorer/Resources/frus-selection.js`
 /// Keep this constant in sync with that file when making edits.
-private let kSelectionJS = """
+/// The JS body is byte-identical to the body of `Resources/frus-selection.js` (below its
+/// JSDoc header); `SelectionScriptParityTests` pins them together. `internal` (not
+/// `private`) so that test can read it.
+let kSelectionJS = """
 function rangeEndpointToOffset(node, localOffset) {
   if (!window.FRUSOffsets) return -1;
   const map = window.FRUSOffsets.charToNode;
@@ -215,6 +218,21 @@ function postCleared() {
   try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1 }); }
   catch (_) {}
 }
+// The text of the block enclosing the selection, for footnote selections whose nodes the
+// offset engine can't map (so Swift's offset-based block look-around is unavailable). Prefers
+// the whole footnote body — the popover `aside.footnote` or the endnote `li.fn-list-item` —
+// else the nearest bounded block-level ancestor. `div`/`section` are deliberately excluded so
+// this can never climb to the `.frus-document` root or the footnotes section and return the
+// entire document. Falls back to the raw selected text; capped to bound the bridge payload.
+function enclosingBlockText(range, fallback) {
+  const node = range.commonAncestorContainer;
+  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  if (!el) return fallback;
+  const block = el.closest('aside.footnote, li.fn-list-item')
+             || el.closest('figcaption, p, li, td, blockquote');
+  const text = block ? block.textContent : fallback;
+  return text ? text.slice(0, 5000) : fallback;
+}
 document.addEventListener('selectionchange', () => {
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed || !window.FRUSOffsets) { postCleared(); return; }
@@ -222,19 +240,21 @@ document.addEventListener('selectionchange', () => {
   const start = rangeEndpointToOffset(range.startContainer, range.startOffset);
   const end   = rangeEndpointToOffset(range.endContainer,   range.endOffset);
   if (start >= 0 && end > start) {
-    // In-document selection: valid flat-text offsets + raw text.
+    // In-document selection: valid flat-text offsets + raw text. Swift derives block
+    // context from the offsets (flatTextExcerpt), so no blockText is sent here.
     const text = sel.toString();
     try { webkit.messageHandlers.selectionChanged.postMessage({ start, end, text }); }
     catch (_) {}
   } else {
-    // At least one endpoint is outside .frus-document — footnote popover or
-    // footnote section. The offset engine can't map these nodes, so we send
-    // sentinel offsets (-1) but still include the selected text. Swift will
-    // treat this as a text-only selection: NARA lookup is available but
-    // highlight creation is not (which requires valid offsets).
+    // At least one endpoint is outside the offset map — footnote popover or footnote
+    // section. The offset engine can't map these nodes, so we send sentinel offsets (-1)
+    // plus the selected text AND the enclosing block text (blockText) so Swift can
+    // characterise the footnote's citations. This is a text-only selection: NARA lookup is
+    // available but highlight creation is not (which requires valid offsets).
     const text = sel.toString();
     if (text) {
-      try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1, text }); }
+      const blockText = enclosingBlockText(range, text);
+      try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1, text, blockText }); }
       catch (_) {}
     } else {
       postCleared();

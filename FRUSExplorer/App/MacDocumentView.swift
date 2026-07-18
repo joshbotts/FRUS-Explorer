@@ -391,12 +391,15 @@ struct MacDocumentView: View {
                 }
             )
             .highlights(highlights)
-            .onSelectionChanged { start, end, text in
+            .onSelectionChanged { start, end, text, blockText in
                 if start >= 0 {
                     highlightCoordinator.webKitSelectionRange = (start, end)
+                    highlightCoordinator.webKitSelectedBlockText = nil
                 } else {
-                    // Footnote selection: text available but no valid offset range.
+                    // Footnote selection: text available but no valid offset range. Keep the
+                    // enclosing note body so the NARA lookup can characterise its citations (#269).
                     highlightCoordinator.webKitSelectionRange = nil
+                    highlightCoordinator.webKitSelectedBlockText = blockText.isEmpty ? nil : blockText
                 }
                 highlightCoordinator.webKitSelectedText = text.isEmpty ? nil : text
             }
@@ -1110,8 +1113,10 @@ struct MacDocumentWindowView: View {
                 highlightCoordinator: highlightCoordinator,
                 onNARALookup: { text in
                     // B3: hand the selection to the Source Explorer window's NARA
-                    // Lookup segment (see `MainWindowView`).
-                    appState.pendingNARALookup = text
+                    // Lookup segment (see `MainWindowView`). Carry the footnote block
+                    // context (#269) so the segment can surface candidate citations.
+                    appState.pendingNARALookup = NARALookupRequest(
+                        text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
                     openWindow(id: "frus.sourceExplorer")
                     bringMacWindowToFront(id: "frus.sourceExplorer")
                 }

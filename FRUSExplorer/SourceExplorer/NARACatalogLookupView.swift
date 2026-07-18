@@ -40,6 +40,15 @@ struct NARACatalogLookupView: View {
 
     let initialText: String
 
+    /// The enclosing footnote body (the JS `blockText`, #269), when the lookup was opened from
+    /// a footnote selection — scanned once for candidate archival citations offered as
+    /// one-tap quick-fills. `nil`/empty for an in-document selection or other entry points.
+    let blockContext: String?
+
+    /// Archival citations detected in `blockContext` (empty when there is none). Computed once
+    /// at init via SourceNoteKit's body-text `extractCitations`.
+    private let detectedCitations: [ArchiveCitation]
+
     // MARK: - Dependencies
 
     private let client = NARACatalogClient()
@@ -60,9 +69,30 @@ struct NARACatalogLookupView: View {
 
     // MARK: - Init
 
-    init(initialText: String) {
+    init(initialText: String, blockContext: String? = nil) {
         self.initialText = initialText
+        self.blockContext = blockContext
         _queryText = State(initialValue: initialText.trimmingCharacters(in: .whitespacesAndNewlines))
+        if let block = blockContext,
+           !block.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            detectedCitations = NARACatalogLookupView.dedupedCitations(
+                SourceNoteParser().extractCitations(from: block))
+        } else {
+            detectedCitations = []
+        }
+    }
+
+    /// De-duplicates detected citations by their normalised raw text, preserving order.
+    private static func dedupedCitations(_ citations: [ArchiveCitation]) -> [ArchiveCitation] {
+        var seen = Set<String>()
+        var out: [ArchiveCitation] = []
+        for citation in citations {
+            let key = citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if key.isEmpty || seen.contains(key) { continue }
+            seen.insert(key)
+            out.append(citation)
+        }
+        return out
     }
 
     // MARK: - Body
@@ -112,6 +142,7 @@ struct NARACatalogLookupView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     queryFieldSection
+                    candidateCitationsSection
                     strategySection
                     if showsPeriodLinks {
                         // Period links appear immediately — no API call needed
@@ -162,6 +193,7 @@ struct NARACatalogLookupView: View {
         NavigationStack {
             Form {
                 queryFieldSection
+                candidateCitationsSection
                 strategySection
                 if showsPeriodLinks {
                     periodLinksSection
@@ -225,6 +257,87 @@ struct NARACatalogLookupView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// Candidate archival citations detected in the enclosing footnote body (#269). Each is a
+    /// one-tap quick-fill that populates the query field and pre-selects a matching strategy;
+    /// the manual field + picker remain the fallback. Shown only when the lookup was opened
+    /// from a footnote selection whose block context yielded recognisable citations.
+    @ViewBuilder
+    private var candidateCitationsSection: some View {
+        if !detectedCitations.isEmpty {
+            Section(String(localized: "nara.lookup.detected.header",
+                           defaultValue: "Detected in This Footnote")) {
+                Text(String(localized: "nara.lookup.detected.hint",
+                            defaultValue: "Archival citations found in the footnote text — tap one to fill the search."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(Array(detectedCitations.enumerated()), id: \.offset) { _, citation in
+                    Button {
+                        applyCitation(citation)
+                    } label: {
+                        candidateLabel(citation)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(String(localized: "nara.lookup.detected.tapHint",
+                                              defaultValue: "Fills the search text with this citation"))
+                }
+            }
+        }
+    }
+
+    /// The display label for a detected citation: the most specific identifier on top, with the
+    /// repository (when known) beneath.
+    @ViewBuilder
+    private func candidateLabel(_ citation: ArchiveCitation) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(citationTitle(citation))
+                    .font(.callout)
+                    .multilineTextAlignment(.leading)
+                if let repository = citation.repository, !repository.isEmpty,
+                   repository != citationTitle(citation) {
+                    Text(repository)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+    }
+
+    /// The most specific human label for a citation (lot file › series › record group › raw).
+    private func citationTitle(_ citation: ArchiveCitation) -> String {
+        if let lot = citation.lotFile, !lot.isEmpty {
+            return String(format: String(localized: "nara.lookup.detected.lot %@",
+                                          defaultValue: "Lot File %@"), lot)
+        }
+        if let series = citation.seriesName, !series.isEmpty { return series }
+        if let rg = citation.recordGroup, !rg.isEmpty {
+            return String(format: String(localized: "nara.lookup.detected.rg %@",
+                                          defaultValue: "RG %@"), rg)
+        }
+        return citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Fills the query field from a detected citation and pre-selects a matching strategy.
+    private func applyCitation(_ citation: ArchiveCitation) {
+        if let lot = citation.lotFile, !lot.isEmpty {
+            queryText = lot
+            strategy = .lotFileRG59
+        } else if let series = citation.seriesName, !series.isEmpty {
+            queryText = series
+            strategy = .keywordRG59
+        } else {
+            queryText = citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        // Reset any prior results so the next Search reflects the new query.
+        results = []
+        searchError = nil
+        hasSearched = false
     }
 
     /// Strategy picker — maps to the collection-type logic in NARACatalogClient.
