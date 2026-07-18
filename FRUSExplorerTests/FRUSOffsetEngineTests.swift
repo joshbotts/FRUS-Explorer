@@ -631,3 +631,102 @@ struct NARACitationStrategyTests {
         #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "256") == .keyword)
     }
 }
+
+// MARK: - FloatingSelectionBarGeometryTests (Research-rail Phase B)
+
+/// Pure clamping/flip geometry for the floating selection bar's ``FloatingSelectionBar/anchorCenter``.
+struct FloatingSelectionBarGeometryTests {
+
+    private let container = CGSize(width: 800, height: 600)
+    private let barSize = CGSize(width: 200, height: 40)   // halfW 100, halfH 20
+
+    @Test("Below anchoring centres the bar under the selection")
+    func belowCentred() {
+        let center = FloatingSelectionBar.anchorCenter(
+            selection: CGRect(x: 100, y: 200, width: 60, height: 20),   // midX 130, maxY 220
+            barSize: barSize, in: container, below: true)
+        // x = midX (well within bounds); y = maxY + gap(8) + halfH(20) = 248.
+        #expect(center == CGPoint(x: 130, y: 248))
+    }
+
+    @Test("A selection near the left edge clamps the bar fully on-screen")
+    func clampsLeft() {
+        let center = FloatingSelectionBar.anchorCenter(
+            selection: CGRect(x: 0, y: 200, width: 20, height: 20),     // midX 10
+            barSize: barSize, in: container, below: true)
+        // minX = halfW(100) + margin(8) = 108 wins over midX 10.
+        #expect(center.x == 108)
+    }
+
+    @Test("A selection near the right edge clamps the bar fully on-screen")
+    func clampsRight() {
+        let center = FloatingSelectionBar.anchorCenter(
+            selection: CGRect(x: 780, y: 200, width: 20, height: 20),   // midX 790
+            barSize: barSize, in: container, below: true)
+        // maxX = width(800) - halfW(100) - margin(8) = 692 wins over midX 790.
+        #expect(center.x == 692)
+    }
+
+    @Test("Below anchoring flips above when it would clip past the container bottom")
+    func flipsAboveNearBottom() {
+        let center = FloatingSelectionBar.anchorCenter(
+            selection: CGRect(x: 100, y: 560, width: 60, height: 20),   // maxY 580, minY 560
+            barSize: barSize, in: container, below: true)
+        // centreBelow 608 would clip (608+20+8 > 600) → flip to centreAbove = 560 - 8 - 20 = 532.
+        #expect(center.y == 532)
+    }
+
+    @Test("Above anchoring (macOS) flips below when it would clip past the container top")
+    func flipsBelowNearTop() {
+        let center = FloatingSelectionBar.anchorCenter(
+            selection: CGRect(x: 100, y: 10, width: 60, height: 20),    // minY 10, maxY 30
+            barSize: barSize, in: container, below: false)
+        // centreAbove -18 would clip (-18-20-8 < 0) → flip to centreBelow = 30 + 8 + 20 = 58.
+        #expect(center.y == 58)
+    }
+}
+
+// MARK: - SelectionBarStateTests (Research-rail Phase B)
+
+/// Visibility + the false-clear debounce for ``SelectionBarState`` — the bar must survive the
+/// spurious `selectioncleared` a bar tap fires, yet dismiss on a real clear.
+@MainActor
+struct SelectionBarStateTests {
+
+    @Test("present shows the bar with its anchor + footnote flag; hideNow clears it")
+    func presentAndHide() {
+        let state = SelectionBarState()
+        #expect(state.isVisible == false)
+
+        let rect = CGRect(x: 1, y: 2, width: 3, height: 4)
+        state.present(rect: rect, atFootnote: true)
+        #expect(state.isVisible)
+        #expect(state.anchor == rect)
+        #expect(state.atFootnote)
+
+        state.hideNow()
+        #expect(state.isVisible == false)
+        #expect(state.anchor == nil)
+    }
+
+    @Test("A re-present cancels a pending debounced hide (bar survives the false clear)")
+    func presentCancelsScheduledHide() async {
+        let state = SelectionBarState()
+        state.present(rect: CGRect(x: 0, y: 0, width: 10, height: 10), atFootnote: false)
+        state.scheduleHide(after: 50)   // false-clear opens the debounce window…
+        let reanchored = CGRect(x: 5, y: 5, width: 10, height: 10)
+        state.present(rect: reanchored, atFootnote: false)   // …but a fresh selection re-presents
+        try? await Task.sleep(for: .milliseconds(120))       // let the cancelled window elapse
+        #expect(state.isVisible)
+        #expect(state.anchor == reanchored)
+    }
+
+    @Test("scheduleHide dismisses the bar once its window elapses with no intervening present")
+    func scheduleHideDismisses() async {
+        let state = SelectionBarState()
+        state.present(rect: CGRect(x: 0, y: 0, width: 10, height: 10), atFootnote: false)
+        state.scheduleHide(after: 30)
+        try? await Task.sleep(for: .milliseconds(120))
+        #expect(state.isVisible == false)
+    }
+}

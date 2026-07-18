@@ -28,8 +28,9 @@
  * `scale` = visualViewport.scale — together they anchor the floating selection bar.
  *
  * A separate `selectionScrolled` message (empty body) fires, throttled to one per frame, while
- * a selection is live and the document scrolls inside the web view (selectionchange does not
- * re-fire on scroll), so the viewport-anchored bar can dismiss before its rect goes stale.
+ * a selection is live and the document scrolls inside the web view, OR the visual viewport changes
+ * (pinch zoom, visual-viewport pan, rotation) — none of which re-fire selectionchange — so the
+ * viewport-anchored bar can dismiss before its rect goes stale.
  *
  * ## Reverse mapping
  * rangeEndpointToOffset() is the inverse of the forward-mapping used by
@@ -44,6 +45,8 @@
  *          (reconciles this file with kSelectionJS, which had already added `text`)
  *   1.2 — Research rail Phase A: selections carry a bounding `rect` + `scale`, and a throttled
  *          `selectionScrolled` hide signal is posted, to anchor/dismiss the floating selection bar
+ *   1.3 — Research rail Phase B: the `selectionScrolled` hide signal also fires on visualViewport
+ *          resize/scroll (pinch zoom, viewport pan, rotation) so the bar dismisses when zoomed (D4)
  */
 
 function rangeEndpointToOffset(node, localOffset) {
@@ -119,7 +122,7 @@ document.addEventListener('selectionchange', () => {
 // signal while a selection is live so the bar can dismiss; capture-phase + passive so it sees
 // scrolls on any inner scroller without blocking them.
 let selectionScrollScheduled = false;
-window.addEventListener('scroll', () => {
+function scheduleSelectionScrolled() {
   if (selectionScrollScheduled) return;
   selectionScrollScheduled = true;
   requestAnimationFrame(() => {
@@ -129,4 +132,12 @@ window.addEventListener('scroll', () => {
       try { webkit.messageHandlers.selectionScrolled.postMessage({}); } catch (_) {}
     }
   });
-}, { passive: true, capture: true });
+}
+window.addEventListener('scroll', scheduleSelectionScrolled, { passive: true, capture: true });
+// Pinch zoom, visual-viewport pan, and rotation move the selection on screen WITHOUT firing
+// `scroll` or `selectionchange`; route them through the same throttled hide-signal so the
+// viewport-anchored bar dismisses instead of floating over stale text (D4 zoom + rotation).
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', scheduleSelectionScrolled, { passive: true });
+  window.visualViewport.addEventListener('scroll', scheduleSelectionScrolled, { passive: true });
+}

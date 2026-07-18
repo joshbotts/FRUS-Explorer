@@ -280,7 +280,7 @@ document.addEventListener('selectionchange', () => {
 // signal while a selection is live so the bar can dismiss; capture-phase + passive so it sees
 // scrolls on any inner scroller without blocking them.
 let selectionScrollScheduled = false;
-window.addEventListener('scroll', () => {
+function scheduleSelectionScrolled() {
   if (selectionScrollScheduled) return;
   selectionScrollScheduled = true;
   requestAnimationFrame(() => {
@@ -290,5 +290,13 @@ window.addEventListener('scroll', () => {
       try { webkit.messageHandlers.selectionScrolled.postMessage({}); } catch (_) {}
     }
   });
-}, { passive: true, capture: true });
+}
+window.addEventListener('scroll', scheduleSelectionScrolled, { passive: true, capture: true });
+// Pinch zoom, visual-viewport pan, and rotation move the selection on screen WITHOUT firing
+// `scroll` or `selectionchange`; route them through the same throttled hide-signal so the
+// viewport-anchored bar dismisses instead of floating over stale text (D4 zoom + rotation).
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', scheduleSelectionScrolled, { passive: true });
+  window.visualViewport.addEventListener('scroll', scheduleSelectionScrolled, { passive: true });
+}
 """
