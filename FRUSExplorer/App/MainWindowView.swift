@@ -18,12 +18,10 @@ import AppKit
 /// ┌─────────────────────────────────────────────────────┐
 /// │  Unified titlebar  (toolbar items via .toolbar)     │
 /// ├─────────────────────────────────────────────────────┤
-/// │  ResearchStripView    (collapsible second row)       │
-/// ├─────────────────────────────────────────────────────┤
 /// │                                                     │
 /// │  MacDocumentView  (NavigationStack<DocumentBrowser  │
-/// │                    Entry> — replaces in-place)      │
-/// │                                                     │
+/// │    Entry>) — document column + trailing Research    │
+/// │    rail (C1); replaces in-place                     │
 /// ├─────────────────────────────────────────────────────┤
 /// │  StatusBarView        (index count · task · sync)   │
 /// └─────────────────────────────────────────────────────┘
@@ -67,7 +65,7 @@ struct MainWindowView: View {
     /// The document navigation stack. Empty path = no document loaded (welcome placeholder).
     @State private var navigationPath: [DocumentBrowserEntry] = []
 
-    /// Shared highlight state passed to ResearchStripView (buttons) and MacDocumentView (text selection / SwiftData insertion).
+    /// Shared highlight state passed to MacDocumentView (text selection, floating selection bar, and SwiftData insertion).
     @State private var highlightCoordinator = HighlightCoordinator()
 
     // MARK: - Computed
@@ -81,21 +79,9 @@ struct MainWindowView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            // Research strip — always rendered at full height.
-            ResearchStripView(
-                entry: currentEntry,
-                highlightCoordinator: highlightCoordinator,
-                onNARALookup: { text in
-                    // B3: hand the selection to the Source Explorer window's NARA
-                    // Lookup segment (a window, so the document stays readable while
-                    // querying). The window consumes and clears pendingNARALookup.
-                    // Carry the footnote block context (#269) for candidate citations.
-                    appState.pendingNARALookup = NARALookupRequest(
-                        text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
-                    openWindow(id: "frus.sourceExplorer")
-                    bringMacWindowToFront(id: "frus.sourceExplorer")
-                }
-            )
+            // The research strip is retired (Research-rail C1) — the per-document research surface
+            // is now the trailing rail mounted inside MacDocumentView. The rail-toggle affordance
+            // moves into `trailingTools` in the C2 titlebar collapse; until then ⌘⇧R toggles it.
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
