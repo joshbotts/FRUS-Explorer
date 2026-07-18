@@ -657,9 +657,10 @@ struct SourceExplorerView: View {
         Section(String(localized: "source.explorer.decimalPeriod.header",
                        defaultValue: "NARA Finding Aids by Period")) {
             if let year = documentYear {
-                // Resolved period
-                let periodLabel = client.decimalFilePeriodLabel(year: year)
-                let periodURL   = client.decimalFilePeriodURL(year: year)
+                // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
+                // mid-year era boundaries where the year alone is ambiguous.
+                let periodLabel = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)
+                let periodURL   = client.decimalFilePeriodURL(year: year, fileIdentifier: fileIdentifier)
                 LabeledContent(
                     String(localized: "source.explorer.decimalPeriod.matched",
                            defaultValue: "Filing Period"),
@@ -674,7 +675,7 @@ struct SourceExplorerView: View {
                         systemImage: "arrow.up.right.square"
                     )
                 }
-                if let manualURL = client.filingManualURL(year: year) {
+                if let manualURL = client.filingManualURL(year: year, fileIdentifier: fileIdentifier) {
                     Button {
                         openURL(manualURL)
                     } label: {

@@ -299,4 +299,35 @@ struct CentralFilesIndexTests {
         #expect(!index.isUntrustworthyNAID(nil))
         #expect(!index.isUntrustworthyNAID(""))
     }
+
+    /// An OCR-mangled country-roll date (a stray case number in the title parsed as an
+    /// implausible year) must be ignored, not used to *exclude* the roll from date-filtered
+    /// queries (NARA review 2026-07-17; 8 such rolls measured, 7 of them date-inverted).
+    @Test("A mangled country-roll date is ignored, not used to silently exclude the roll")
+    func countryRollMangledDateDoesNotExclude() {
+        // "…- August 31, 139" → endISO 1596 makes the range inverted; the valid start is kept.
+        let inverted = CountryRoll(naId: "1", title: "x", geoKeys: ["US"],
+                                   startISO: "1895-07-07", endISO: "1596-08-31",
+                                   catalogURL: "u", fileUnitNaId: nil, fileUnitTitle: nil)
+        #expect(inverted.matches(geoKey: "US", dateISO: "1896-01-01"),
+                "the roll must not vanish from an in-range date query")
+        // "Nov. 1, 11186 -" → startISO 1318 (pre-1780) is ignored; the valid end filters.
+        let badStart = CountryRoll(naId: "2", title: "x", geoKeys: ["US"],
+                                   startISO: "1318-11-01", endISO: "1887-05-31",
+                                   catalogURL: "u", fileUnitNaId: nil, fileUnitTitle: nil)
+        #expect(badStart.matches(geoKey: "US", dateISO: "1886-01-01"))
+        #expect(!badStart.matches(geoKey: "US", dateISO: "1900-01-01"))   // past the valid end
+        // A clean range still filters precisely and honours geography.
+        let clean = CountryRoll(naId: "3", title: "x", geoKeys: ["US"],
+                                startISO: "1890-01-01", endISO: "1895-12-31",
+                                catalogURL: "u", fileUnitNaId: nil, fileUnitTitle: nil)
+        #expect(clean.matches(geoKey: "US", dateISO: "1892-06-01"))
+        #expect(!clean.matches(geoKey: "US", dateISO: "1899-01-01"))
+        #expect(!clean.matches(geoKey: "FR", dateISO: "1892-06-01"))
+        // The plausibility filter itself.
+        #expect(CountryRoll.plausibleDate("1596-08-31") == nil)
+        #expect(CountryRoll.plausibleDate("1318-11-01") == nil)
+        #expect(CountryRoll.plausibleDate("1887-05-31") == "1887-05-31")
+        #expect(CountryRoll.plausibleDate(nil) == nil)
+    }
 }

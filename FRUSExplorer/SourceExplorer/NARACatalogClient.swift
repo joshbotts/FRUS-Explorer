@@ -121,8 +121,12 @@ public actor NARACatalogClient {
     private static let apiV1Base   = "https://catalog.archives.gov/api/v1"
     private static let catalogBase = "https://catalog.archives.gov"
 
-    /// naId for the RG-59 Central Foreign Policy Files parent description.
-    private static let rg59NaId = "302028"
+    /// naId for the **RG 59 record group** (General Records of the Department of State), which
+    /// contains every central-files era — the Numerical File, the decimal files, the
+    /// subject-numeric files, and the Central Foreign Policy File. The previous value (302028)
+    /// scoped only to the CFPF description, so a pre-1973 decimal / subject-numeric search was
+    /// filtered to the wrong subset. RG 59 is the honest, era-agnostic scope for this fallback.
+    private static let rg59NaId = "388"
 
     // MARK: - Init
 
@@ -162,13 +166,29 @@ public actor NARACatalogClient {
     /// |---|---|---|
     /// | 1789–1906 | Numerical/register | `rg-59-central-files/1789-1906` |
     /// | 1906–1910 | Numerical (transitional) | `rg-59-central-files/1906-1910` |
-    /// | 1910–1963 | Central decimal files | `rg-59-central-files/1910-1963/<period>` |
-    /// | 1963–1973 | Subject-numeric files | `rg-59-central-files/1963-1973` |
+    /// | 1910–January 1963 | Central decimal files | `rg-59-central-files/1910-1963` |
+    /// | February 1963–1973 | Subject-numeric files | `rg-59-central-files/1963-1973` |
+    /// | 1973–1979 | Central Foreign Policy File | `rg-59-central-files/1973-1979` |
     ///
-    /// - Parameter year: The year the document was created (from the dateline).
+    /// ## The mid-year boundaries
+    /// Two eras split *inside* a calendar year, so `year` alone is ambiguous — but the file-number
+    /// **form** resolves it, because the filing system is fixed by the number, not the document date:
+    /// - **1963**: the decimal file runs through *January* 1963; the subject-numeric file starts
+    ///   *February* 1963. A dotted decimal number (`611.61/…`) is decimal (1910–1963); a
+    ///   subject-numeric number (`POL 27 …`) is subject-numeric (1963–1973). `fileIdentifier`
+    ///   disambiguates; with none, the (more common) subject-numeric page is used.
+    /// - **1973**: subject-numeric ends December 1973 while the CFPF begins July 1973. A
+    ///   central-files-shaped note (decimal/subject-numeric) dated ≤1973 stays subject-numeric;
+    ///   ≥1974 it has outlived both systems, so a decimal-form number falls back to its decimal
+    ///   home and anything else to the CFPF (1973–1979) page.
+    ///
+    /// - Parameters:
+    ///   - year: The year the document was created (from the dateline).
+    ///   - fileIdentifier: The parsed central-file number, used to resolve the mid-year boundaries.
     /// - Returns: URL to the appropriate NARA research page.
-    public nonisolated func decimalFilePeriodURL(year: Int) -> URL {
+    public nonisolated func decimalFilePeriodURL(year: Int, fileIdentifier: String? = nil) -> URL {
         let base = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files"
+        let isDecimal = fileIdentifier.map(Self.isDecimalFileNumber) ?? false
         switch year {
         case ..<1906:
             return URL(string: "\(base)/1789-1906")!
@@ -179,13 +199,20 @@ public actor NARACatalogClient {
             // parent page. The individual sub-period URLs (/1910-1963/1910-1929 etc.)
             // all return HTTP 404 (verified 2026-06-04). Use the parent page.
             return URL(string: "\(base)/1910-1963")!
-        default:   // 1963–1973 subject-numeric
-            return URL(string: "\(base)/1963-1973")!
+        case 1963:
+            // January = decimal, February on = subject-numeric — split by number form.
+            return URL(string: "\(base)/\(isDecimal ? "1910-1963" : "1963-1973")")!
+        case 1964...1973:
+            return URL(string: "\(base)/1963-1973")!     // subject-numeric
+        default:   // 1974+ — both central-file systems have ended
+            return URL(string: "\(base)/\(isDecimal ? "1910-1963" : "1973-1979")")!
         }
     }
 
-    /// Human-readable label for the central-file period covering `year`.
-    public nonisolated func decimalFilePeriodLabel(year: Int) -> String {
+    /// Human-readable label for the central-file period covering `year` (and, at the mid-year
+    /// boundaries, the file-number `fileIdentifier` — see ``decimalFilePeriodURL(year:fileIdentifier:)``).
+    public nonisolated func decimalFilePeriodLabel(year: Int, fileIdentifier: String? = nil) -> String {
+        let isDecimal = fileIdentifier.map(Self.isDecimalFileNumber) ?? false
         switch year {
         case ..<1906:     return "1789–1906"
         case 1906...1909: return "1906–1910"
@@ -196,20 +223,28 @@ public actor NARACatalogClient {
         case 1950...1954: return "1950–1954"
         case 1955...1959: return "1955–1959"
         case 1960...1962: return "1960–January 1963"
-        default:          return "1963–1973"
+        case 1963:        return isDecimal ? "1960–January 1963" : "February 1963–1973"
+        case 1964...1973: return "1963–1973"
+        default:          return isDecimal ? "1910–January 1963" : "1973–1979"
         }
     }
 
     /// Returns the NARA filing manual PDF URL for the given document year, or
-    /// `nil` when no filing manual applies (e.g. pre-1910 or post-1973).
+    /// `nil` when no filing manual applies (e.g. pre-1910 or post-1972).
     ///
     /// NARA publishes scanned filing manuals for each filing system. These
     /// PDFs explain how records are classified and organized within each period.
+    /// At the January/February 1963 boundary the manual is chosen by file-number form:
+    /// a decimal number gets the 1960–January 1963 decimal manual, a subject-numeric number the
+    /// 1963 records-classification handbook.
     ///
-    /// - Parameter year: Document year.
+    /// - Parameters:
+    ///   - year: Document year.
+    ///   - fileIdentifier: The parsed central-file number, used at the 1963 boundary.
     /// - Returns: URL to the filing manual PDF, or `nil`.
-    public nonisolated func filingManualURL(year: Int) -> URL? {
+    public nonisolated func filingManualURL(year: Int, fileIdentifier: String? = nil) -> URL? {
         let base = "https://www.archives.gov/files/research/foreign-policy/state-dept/finding-aids"
+        let isDecimal = fileIdentifier.map(Self.isDecimalFileNumber) ?? false
         switch year {
         case 1910...1949:
             return URL(string: "\(base)/manual-1910-49.pdf")
@@ -220,12 +255,24 @@ public actor NARACatalogClient {
         case 1960...1962:
             return URL(string: "\(base)/manual-1960-63.pdf")
         case 1963:
-            return URL(string: "\(base)/records-classification-handbook-1963.pdf")
+            // January decimal → last decimal manual; February on → subject-numeric handbook.
+            return isDecimal
+                ? URL(string: "\(base)/manual-1960-63.pdf")
+                : URL(string: "\(base)/records-classification-handbook-1963.pdf")
         case 1964...1972:
             return URL(string: "\(base)/dos-records-classification-handbook-1965-1973.pdf")
         default:
             return nil
         }
+    }
+
+    /// Whether a central-file number is a **decimal** file number (1910–January 1963) rather than a
+    /// subject-numeric (`POL 27 ARAB-ISR`) or Numerical File (`5276/1`) number. A decimal number
+    /// opens with a 2–3 digit class plus optional country letters and then a dot (`711.61…`,
+    /// `862S.01…`); the other systems carry no such dotted class. Used to resolve the 1963 and 1973
+    /// mid-year era boundaries, where the calendar year alone is ambiguous.
+    nonisolated static func isDecimalFileNumber(_ identifier: String) -> Bool {
+        identifier.range(of: #"^\s*\d{2,3}[A-Za-z]{0,2}\."#, options: .regularExpression) != nil
     }
 
     // MARK: - Presidential Library Fallback URLs (static — no API call)

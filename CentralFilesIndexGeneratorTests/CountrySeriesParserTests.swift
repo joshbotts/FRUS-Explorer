@@ -148,4 +148,17 @@ struct CountrySeriesParserTests {
         let item = CatalogRecord(naId: "y", title: "Venezuela: 1835", levelOfDescription: "item")
         #expect(CountrySeriesParser.parse(item, category: .notesTo) == nil)
     }
+
+    /// The build-time OCR-mangled-date guard (NARA review 2026-07-17): a bound whose year is
+    /// outside the plausible pre-1906 window (1780–1911) is dropped, so a stray case number
+    /// parsed as a year cannot produce an inverted range that silently excludes the roll.
+    @Test("plausibleDate drops out-of-window years, keeps valid pre-1906 dates")
+    func plausibleDateFiltersMangledYears() {
+        #expect(CountrySeriesIndexBuilder.plausibleDate("1596-08-31") == nil)  // "…August 31, 139"
+        #expect(CountrySeriesIndexBuilder.plausibleDate("1318-11-01") == nil)  // "Nov. 1, 11186 -"
+        #expect(CountrySeriesIndexBuilder.plausibleDate("1202-07-31") == nil)
+        #expect(CountrySeriesIndexBuilder.plausibleDate("1783-01-01") == "1783-01-01")  // earliest real
+        #expect(CountrySeriesIndexBuilder.plausibleDate("1906-05-31") == "1906-05-31")
+        #expect(CountrySeriesIndexBuilder.plausibleDate(nil) == nil)
+    }
 }
