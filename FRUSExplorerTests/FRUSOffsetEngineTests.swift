@@ -535,10 +535,20 @@ struct FRUSSelectionEventDecodeTests {
         #expect(event == .footnote(text: "64 D 171", blockText: "64 D 171"))
     }
 
-    @Test("Sentinel offsets with empty text decode to .cleared")
+    @Test("Sentinel offsets with empty text decode to .cleared, even with a stray blockText")
     func clearedSelection() {
         #expect(decodeFRUSSelectionEvent(from: ["start": -1, "end": -1]) == .cleared)
         #expect(decodeFRUSSelectionEvent(from: ["start": -1, "end": -1, "text": ""]) == .cleared)
+        // The empty-text guard precedes the blockText read, so a stray key can't resurrect it.
+        #expect(decodeFRUSSelectionEvent(
+            from: ["start": -1, "end": -1, "text": "", "blockText": "junk"]) == .cleared)
+    }
+
+    @Test("In-document selection ignores a stray blockText key")
+    func rangedIgnoresBlockText() {
+        let event = decodeFRUSSelectionEvent(
+            from: ["start": 2, "end": 6, "text": "abc", "blockText": "junk"])
+        #expect(event == .ranged(start: 2, end: 6, text: "abc"))
     }
 
     @Test("Malformed and degenerate bodies decode to nil")
@@ -547,5 +557,35 @@ struct FRUSSelectionEventDecodeTests {
         #expect(decodeFRUSSelectionEvent(from: ["start": "x", "end": 4]) == nil)
         // Degenerate in-document range (end <= start) is not a valid selection.
         #expect(decodeFRUSSelectionEvent(from: ["start": 5, "end": 5, "text": "x"]) == nil)
+    }
+}
+
+// MARK: - NARACitationStrategyTests (#269)
+
+/// The strategy routing for a footnote's detected citation quick-fills — F1 of the #269 review
+/// (route by the citation's own record group, not a hardcoded RG 59).
+struct NARACitationStrategyTests {
+
+    @Test("Lot strategy honours an explicit record group")
+    func lotHonoursExplicitRG() {
+        #expect(NARACatalogLookupView.lotStrategy(recordGroup: "84", lotFile: "64 D 171") == .lotFileRG84)
+        #expect(NARACatalogLookupView.lotStrategy(recordGroup: "59", lotFile: "55 F 44") == .lotFileRG59)
+    }
+
+    @Test("Lot strategy infers RG 84 from an F-designator when the RG is absent")
+    func lotInfersFDesignator() {
+        #expect(NARACatalogLookupView.lotStrategy(recordGroup: nil, lotFile: "55 F 44") == .lotFileRG84)
+        #expect(NARACatalogLookupView.lotStrategy(recordGroup: nil, lotFile: "57–F103") == .lotFileRG84)
+        // A D-designator (or any non-F) lot without an explicit RG stays RG 59 (the default).
+        #expect(NARACatalogLookupView.lotStrategy(recordGroup: nil, lotFile: "64 D 171") == .lotFileRG59)
+    }
+
+    @Test("Keyword strategy scopes to the named RG, else general")
+    func keywordStrategyRouting() {
+        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "59") == .keywordRG59)
+        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "84") == .keywordRG84)
+        // A presidential-library collection (no record group) gets a general keyword search.
+        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: nil) == .keyword)
+        #expect(NARACatalogLookupView.keywordStrategy(recordGroup: "256") == .keyword)
     }
 }

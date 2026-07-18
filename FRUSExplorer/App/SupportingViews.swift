@@ -2675,8 +2675,8 @@ struct SourceExplorerWindowView: View {
         // the hand-off (`.onChange` misses a value that was already set), `.onChange`
         // covers one already open — mirroring MacSearchWindowView's pendingSearch.
         .task { consumePendingNARALookup() }
-        .onChange(of: appState.pendingNARALookup) { _, text in
-            guard text != nil else { return }
+        .onChange(of: appState.pendingNARALookup) { _, request in
+            guard request != nil else { return }
             consumePendingNARALookup()
         }
     }
