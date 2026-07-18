@@ -88,8 +88,8 @@ struct MainWindowView: View {
         VStack(spacing: 0) {
 
             // The research strip is retired (Research-rail C1) — the per-document research surface
-            // is now the trailing rail mounted inside MacDocumentView. The rail-toggle affordance
-            // moves into `trailingTools` in the C2 titlebar collapse; until then ⌘⇧R toggles it.
+            // is now the trailing rail mounted inside MacDocumentView, toggled from `trailingTools`
+            // (C2a) or ⌘⇧R.
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
