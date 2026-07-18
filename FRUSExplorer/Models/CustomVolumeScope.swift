@@ -353,9 +353,7 @@ enum ScopeFacets {
     static func volumeIds(coverageIntersecting fromYear: Int, toYear: Int,
                           editorContains editorFilter: String? = nil,
                           entries: [VolumeManifestEntry]) -> Set<String> {
-        let folded = editorFilter?
-            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-            .trimmingCharacters(in: .whitespaces)
+        let folded = foldedEditorNeedle(editorFilter)
         return Set(entries.compactMap { entry -> String? in
             guard let earliest = year(from: entry.dateRange.earliest)
                     ?? year(from: entry.dateRange.latest),
@@ -363,14 +361,41 @@ enum ScopeFacets {
                     ?? year(from: entry.dateRange.earliest),
                   earliest <= toYear, latest >= fromYear else { return nil }
             if let folded, !folded.isEmpty {
-                let match = entry.editors.contains {
-                    $0.folding(options: [.caseInsensitive, .diacriticInsensitive],
-                               locale: .current).contains(folded)
-                }
-                guard match else { return nil }
+                guard editorsContain(entry, folded: folded) else { return nil }
             }
             return entry.volumeId
         })
+    }
+
+    /// The editor-only facet (#366): volumes whose editor list contains `editorFilter`
+    /// (case- and diacritic-insensitive substring), **independent of coverage dates**.
+    /// Unlike `volumeIds(coverageIntersecting:)`, a volume with no parseable coverage
+    /// years is still eligible — an editor match is direct evidence, so absence of
+    /// coverage dates does not exclude it. An empty or whitespace-only filter matches
+    /// nothing (nothing to add).
+    static func volumeIds(editorContains editorFilter: String,
+                          entries: [VolumeManifestEntry]) -> Set<String> {
+        guard let folded = foldedEditorNeedle(editorFilter), !folded.isEmpty else { return [] }
+        return Set(entries.compactMap { entry in
+            editorsContain(entry, folded: folded) ? entry.volumeId : nil
+        })
+    }
+
+    /// Folds an editor-name filter to the case- and diacritic-insensitive, whitespace-trimmed
+    /// needle used for substring matching (`nil` when the filter itself is `nil`).
+    private static func foldedEditorNeedle(_ editorFilter: String?) -> String? {
+        editorFilter?
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Whether any of `entry`'s editors contains the already-folded needle (case- and
+    /// diacritic-insensitive substring).
+    private static func editorsContain(_ entry: VolumeManifestEntry, folded: String) -> Bool {
+        entry.editors.contains {
+            $0.folding(options: [.caseInsensitive, .diacriticInsensitive],
+                       locale: .current).contains(folded)
+        }
     }
 
     /// The leading year of an ISO 8601 date string, or `nil`.

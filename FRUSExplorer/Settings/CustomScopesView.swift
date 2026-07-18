@@ -38,6 +38,9 @@ import SwiftData
 ///   1.3 — #258 Phase 5: scope rows gain a "Word Cloud" context-menu launch
 ///          (`pendingWordCloud` hand-off, the SavedSearchesView row idiom; disabled
 ///          while no member volume is indexed)
+///   1.4 — #366: the coverage facet accepts an editor name with no year range
+///          (editor-only matching, ignoring coverage dates); a half-entered range gets a
+///          targeted prompt; `save()` no longer swallows a throwing `modelContext.save()`
 struct CustomScopesView: View {
 
     @Environment(AppState.self) private var appState
@@ -519,7 +522,15 @@ struct CustomScopeEditorView: View {
         scope.volumeIds = Array(selection).sorted()   // wholesale replace — never mutate in place
         scope.lastModified = Date()
         if isDraft { modelContext.insert(scope) }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            // A swallowed save error would present as a silent no-op to the user (#366). We
+            // can't raise a blocking alert from here without more plumbing, but never lose it.
+            #if DEBUG
+            print("[CustomScopeEditorView] save failed: \(error)")
+            #endif
+        }
         dismiss()
     }
 }
@@ -795,36 +806,60 @@ private struct CoverageFacetSheet: View {
     @State private var toYearText = ""
     @State private var editorFilter = ""
 
-    /// The live match for the current inputs, or `nil` when the years don't parse.
+    /// The live match for the current inputs, or `nil` when nothing is matchable yet.
+    /// Two paths (#366): a **year range** (both years parse, `from ≤ to`), optionally
+    /// narrowed by an editor substring; or an **editor-only** filter when both year fields
+    /// are blank. A partial or inverted year range yields `nil` (the disabled prompt).
     private var matches: Set<String>? {
-        guard let from = Int(fromYearText), let to = Int(toYearText), from <= to else { return nil }
-        return ScopeFacets.volumeIds(coverageIntersecting: from, toYear: to,
-                                     editorContains: editorFilter.isEmpty ? nil : editorFilter,
-                                     entries: entries)
+        let editor = editorFilter.trimmingCharacters(in: .whitespaces)
+        let fromTrimmed = fromYearText.trimmingCharacters(in: .whitespaces)
+        let toTrimmed = toYearText.trimmingCharacters(in: .whitespaces)
+        if let from = Int(fromTrimmed), let to = Int(toTrimmed), from <= to {
+            return ScopeFacets.volumeIds(coverageIntersecting: from, toYear: to,
+                                         editorContains: editor.isEmpty ? nil : editor,
+                                         entries: entries)
+        }
+        // Editor-only: both year fields blank and an editor name supplied.
+        if fromTrimmed.isEmpty, toTrimmed.isEmpty, !editor.isEmpty {
+            return ScopeFacets.volumeIds(editorContains: editor, entries: entries)
+        }
+        return nil
+    }
+
+    /// Whether exactly one year field is filled — a half-entered range that blocks both the
+    /// range path and the editor-only fallback, so the prompt should say *why* (F2/#366).
+    private var hasPartialYearRange: Bool {
+        fromYearText.trimmingCharacters(in: .whitespaces).isEmpty
+            != toYearText.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     /// The sheet's chrome title, shared by both platform bodies.
     private var pickerTitle: String {
         String(localized: "settings.scopes.facet.coverage.title",
-               defaultValue: "Add Volumes by Coverage")
+               defaultValue: "Add Volumes by Coverage or Editor")
     }
 
     /// The explanatory footer, shared by both platform bodies.
     private var footerString: String {
         String(localized: "settings.scopes.facet.coverage.footer",
-               defaultValue: "Adds volumes whose document coverage intersects the years. Volumes without coverage dates in the manifest are not matched.")
+               defaultValue: "Adds volumes whose document coverage intersects the years, optionally narrowed by editor. Leave both years blank to add by editor name alone. A year range does not match volumes that have no coverage dates in the manifest.")
     }
 
-    /// The add button's live label: match count, or the invalid-range prompt.
+    /// The add button's live label: match count, or an input prompt. A half-entered range
+    /// gets a targeted hint (the editor field alone can't rescue it) rather than the generic
+    /// prompt that would misleadingly read as already-satisfied when an editor name is present.
     @ViewBuilder
     private var addButtonLabel: some View {
         if let matches {
             Text(String(format: String(
                 localized: "settings.scopes.facet.coverage.add %lld",
                 defaultValue: "Add %lld matching volumes"), Int64(matches.count)))
+        } else if hasPartialYearRange {
+            Text(String(localized: "settings.scopes.facet.coverage.partialRange",
+                        defaultValue: "Enter both years, or clear them to match by editor"))
         } else {
             Text(String(localized: "settings.scopes.facet.coverage.invalid",
-                        defaultValue: "Enter a valid year range"))
+                        defaultValue: "Enter a year range or an editor name"))
         }
     }
 
