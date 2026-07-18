@@ -313,4 +313,25 @@ struct CollectionAuthorityStoreTests {
         #expect(CollectionAuthorityIndex.domainFiltered(lotRec, for: lotParse)?.id == lotRec.id)
         #expect(CollectionAuthorityIndex.domainFiltered(nil, for: libParse) == nil)
     }
+
+    /// #373: the front-matter entry point gets the same domain guard as `record(forParsed:)` —
+    /// a library-repository row must not alias-bridge to a State lot cluster — but keyed on the
+    /// row's `repository` (there is no `ParsedSourceNote` on this path).
+    @Test("#373 front-matter domain guard: a library-repository row never resolves to a lot cluster")
+    func frontMatterDomainGuard() throws {
+        let index = try index()
+        // Precondition (non-vacuous): the raw alias bridge to the lot cluster still exists.
+        #expect(index.uniqueRecord(
+            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))?.id == "lot:66D204")
+        // A library-repository front-matter row whose leading segment is "Presidential Files" must
+        // NOT land on the State lot cluster.
+        let resolved = index.record(forFrontMatterText: "Presidential Files",
+                                    repository: "Carter Library", lotFileNorm: nil, decimalClass: nil)
+        #expect(resolved?.id.hasPrefix("lot:") != true,
+                "a library-repo row must not bridge to a lot cluster; got \(resolved?.id ?? "nil")")
+        // An explicit lot-file row still resolves to its lot even under a library repository.
+        #expect(index.record(forFrontMatterText: "Presidential Correspondence: Lot 66 D 204",
+                             repository: "Carter Library", lotFileNorm: "66D204", decimalClass: nil)?
+            .id == "lot:66D204")
+    }
 }

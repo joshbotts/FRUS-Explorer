@@ -282,10 +282,21 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
             text: text, repository: repository, lotFileNorm: lotFileNorm,
             decimalClass: decimalClass) else { return nil }
         if let lotNorm = identity.lotFileNorm, !lotNorm.isEmpty {
+            // An explicit lot-file row resolves to its lot even under a library repository (a
+            // State-held original whose library copy is cited alongside) — not a cross-domain bridge.
             return record(forLotNorm: lotNorm)
         }
         guard let segment = identity.leadingSegment else { return nil }
-        return record(repository: identity.repository, leadingSegment: segment)
+        let match = record(repository: identity.repository, leadingSegment: segment)
+        // #373 domain guard: a library-repository row must never alias-bridge to a State lot-file
+        // cluster (the "Presidential Files" → `lot:66D204` bridge #351 closed on the parsed-note
+        // path via `domainFiltered`). Only this segment/alias path can bridge — the explicit
+        // `lotFileNorm` row above is a genuine lot citation — so key the guard on the row's repository.
+        if match?.id.hasPrefix("lot:") == true,
+           let repo = repository, CollectionKeying.isLibraryRepositoryName(repo) {
+            return nil
+        }
+        return match
     }
 
     /// The single record whose merged alias forms contain `norm` (a

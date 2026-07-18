@@ -48,6 +48,12 @@ extension NeighborScope {
 /// request value is the initial/restored tuning, not a per-keystroke identity — so tweaking a slider
 /// re-ranks in place rather than spawning a window.
 ///
+/// **#357 (decided: accept):** because `weights` is part of the identity, re-opening Related Documents
+/// for the same anchor *after* changing the persisted default tuning opens a second window rather than
+/// refocusing the first. This is intentional — a distinct tuning is a distinct query, and having two
+/// tunings of the same document side by side is a feature, not a bug. (Windows are cheap; revisit only
+/// if it annoys in practice.)
+///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
 struct RelatedDocumentsRequest: Codable, Hashable, Sendable {
