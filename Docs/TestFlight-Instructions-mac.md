@@ -3,7 +3,7 @@
 Build 33 is about finding the *next* document: a new **Related Documents** window ranks what to read next by archival provenance, cross-references, dates, and shared people — with tunable weights; **Custom Volume Scopes** let you name a set of volumes once and reuse it across Search, Analytics, and Word Clouds; the volume subject profiles from build 32 become **detected-topic filters** (experimental); Source Explorer now shows the **HMS/MLR entry numbers** NARA staff actually ask for; the cross-reference graph gains scroll-wheel zoom and node context menus; and window management got a reliability pass. No re-index this build — everything works on your existing library.
 
 ## Related Documents
-From any document, the Research strip's **Related** button opens a ranked list of documents related to the one you're reading — in its own window, so it works as a reading list.
+From any document, the Research rail's **Related** tile opens a ranked list of documents related to the one you're reading — in its own window, so it works as a reading list.
 - **Five signals** — **Archival provenance** (same lot file, decimal file, or collection), **Cross-references** (cites / cited by), **Close in date**, **Same volume or subseries**, and **Shared people**. Each row carries small **"why related" icon chips** showing which signals matched, strongest first.
 - **A work list, not a dead end** — clicking a row opens the document in the main window while the Related Documents window stays open beside it, so you can step through the results. The window restores across relaunch, tuning and all.
 - **Scope picker** — **This volume / This subseries / All volumes**; a scoped empty result invites widening rather than pretending there's nothing.
@@ -39,7 +39,7 @@ The per-volume "Top subjects" profiles from build 32 become filters. These are *
 
 ## Zotero
 - **Connect** — **Settings → Integrations → Zotero**: click **Create a Zotero API key** (opens zotero.org with the right permissions pre-selected), paste the key, and **Connect**. The key is verified, your library resolved automatically, and stored in the Keychain.
-- **Send documents** — once connected, the Research strip's Share popover gains **Send to Zotero Library**, sending the citation with your tags and research notes attached (Zotero-importable BibTeX/RIS file export remains alongside).
+- **Send documents** — once connected, the Research rail's Share menu gains **Send to Zotero Library**, sending the citation with your tags and research notes attached (Zotero-importable BibTeX/RIS file export remains alongside).
 - **Send collections** — the Collections export screen has a **Send to Zotero Library** row that sends every document in the collection, with editorial notes flagged correctly.
 
 ## Fixes

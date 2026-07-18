@@ -105,7 +105,7 @@ TEI Rendering Pipeline: XML → FRUSDocumentParser → FRUSASTNode
 
 ### Platform Layout Split
 
-- **iOS/iPadOS**: `MainTabView` with 5 tabs — Browse, Search, Activity, Collections, Settings. iPad adds `.inspector(isPresented:)` panels and Stage Manager multi-window scenes.
+- **iOS/iPadOS**: `MainTabView` with 5 tabs — Browse, Search, Research, Collections, Settings. iPad adds `.inspector(isPresented:)` panels (including the document Research rail) and Stage Manager multi-window scenes.
 - **macOS**: `MainWindowView` with sidebar navigation plus dedicated window scenes for Search, Browser, CrossReference, SourceExplorer, and Collections.
 
 The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used extensively throughout views.
@@ -119,7 +119,7 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
 | `Search/` | `SearchService`, `IndexingPipeline` (the largest file), `SearchView` |
 | `TEI/` | XML parser, AST types, AST-to-render conversion, renderer |
 | `Browser/` | Volume/subseries/corpus navigation with breadcrumb trail |
-| `DocumentView/` | Document display, research notes panel, cross-reference links |
+| `DocumentView/` | Document display, the shared Research rail + floating selection bar, cross-reference links |
 | `CrossReference/` | Graph visualization, `CrossReferenceStore` |
 | `Collections/` | Collection editor, PDF/HTML/DOCX exporters |
 | `Citation/` | Citation formatter, lookup engine, parser, BibTeX/RIS export |

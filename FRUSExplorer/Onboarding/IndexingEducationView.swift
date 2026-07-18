@@ -878,7 +878,7 @@ private extension EducationPage {
                 paragraphs: [
                     "Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category.",
                     "Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.",
-                    "These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, all narrow to the volumes where a topic is most characteristic. And below any document, the research panel's Subjects (this volume) list shows the same chips for the volume you are reading."
+                    "These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, all narrow to the volumes where a topic is most characteristic. The same chips also appear on each volume's page, in its Top Subjects section."
                 ]
             ),
             EducationSection(
@@ -917,7 +917,7 @@ private extension EducationPage {
                 paragraphs: [
                     "From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, the same volume or subseries, and shared people. Small icon chips on each result show why it matched.",
                     "A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until detected-topic document data ships.",
-                    "Find it in the document toolbar (iOS) or the Related button in the document's research strip (Mac). On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results."
+                    "Find it in the Research rail's Related tile. On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results."
                 ]
             ),
         ]
@@ -972,7 +972,7 @@ private extension EducationPage {
                 paragraphs: [
                     "Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.",
                     "Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.",
-                    "Find it from a document's toolbar (iOS) or the Graph window (Mac)."
+                    "Find it from the Research rail's Cross-reference Graph tile (it opens in its own window on Mac and on iPad with Stage Manager)."
                 ]
             ),
             EducationSection(
@@ -1022,7 +1022,7 @@ private extension EducationPage {
                 heading: "The Document Reader",
                 systemImage: "doc.richtext",
                 paragraphs: [
-                    "Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Reader mode keeps the focus on the published text, while research mode brings your notes, tags, and AI summaries alongside it."
+                    "Every document is rendered from its original TEI-encoded XML, preserving the published structure: headings, datelines, footnote markers, tables, and emphasis. Footnote markers open inline; person names link to the volume's biographical glossary. Read mode keeps the focus on the published text, while Research mode opens the Research rail — your notes, tags, collections, and AI summaries — alongside it."
                 ]
             ),
             EducationSection(

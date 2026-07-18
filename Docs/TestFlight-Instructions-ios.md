@@ -38,7 +38,7 @@ The per-volume "Top subjects" profiles from build 32 become filters. These are *
 
 ## Zotero
 - **Connect** — **Settings → Integrations → Zotero**: tap **Create a Zotero API key** (opens zotero.org with the right permissions pre-selected), paste the key, and **Connect**. The key is verified, your library resolved automatically, and stored in the Keychain.
-- **Send documents** — once connected, the document's **Share** menu gains **Send to Zotero Library…**, sending the citation with your tags and research notes attached. This is the only way to get FRUS annotations into Zotero on iPhone and iPad.
+- **Send documents** — once connected, the Research rail's **Share** menu gains **Send to Zotero Library…**, sending the citation with your tags and research notes attached. This is the only way to get FRUS annotations into Zotero on iPhone and iPad.
 - **Send collections** — the Collections export screen has a **Send to Zotero Library** row that sends every document in the collection, with editorial notes flagged correctly.
 
 ## Fixes
