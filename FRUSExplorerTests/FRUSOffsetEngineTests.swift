@@ -507,32 +507,47 @@ struct SelectionScriptParityTests {
             #expect(source.contains("start: -1, end: -1, text, blockText"))
         }
     }
+
+    @Test("both copies carry the selection rect and post the scroll hide-signal")
+    func bothCaptureRectAndScroll() throws {
+        let url = try #require(Bundle.main.url(forResource: "frus-selection", withExtension: "js"))
+        let fileSource = try String(contentsOf: url, encoding: .utf8)
+        // Research-rail Phase A: rect/scale on selections + a throttled selectionScrolled signal.
+        for source in [kSelectionJS, fileSource] {
+            #expect(source.contains("getBoundingClientRect"))
+            #expect(source.contains("rect: geom.rect, scale: geom.scale"))
+            #expect(source.contains("selectionScrolled"))
+        }
+    }
 }
 
-// MARK: - FRUSSelectionEventDecodeTests (#269)
+// MARK: - FRUSSelectionEventDecodeTests (#269 + Research-rail Phase A)
 
 /// Pure decode of the `selectionChanged` message body, testable without a `WKScriptMessage`.
 struct FRUSSelectionEventDecodeTests {
 
-    @Test("In-document selection decodes to .ranged")
+    @Test("In-document selection decodes to a .selection payload with offsets")
     func rangedSelection() {
         let event = decodeFRUSSelectionEvent(from: ["start": 3, "end": 10, "text": "telegram"])
-        #expect(event == .ranged(start: 3, end: 10, text: "telegram"))
+        #expect(event == .selection(SelectionPayload(start: 3, end: 10, text: "telegram")))
+        if case .selection(let p) = event { #expect(p.hasOffsets) } else { Issue.record("expected .selection") }
     }
 
-    @Test("Footnote selection carries text and blockText")
+    @Test("Footnote selection carries text and blockText, no offsets")
     func footnoteSelection() {
         let event = decodeFRUSSelectionEvent(from: [
             "start": -1, "end": -1, "text": "64 D 171",
             "blockText": "Source: National Archives, RG 59, Lot File 64 D 171."])
-        #expect(event == .footnote(text: "64 D 171",
-                                   blockText: "Source: National Archives, RG 59, Lot File 64 D 171."))
+        #expect(event == .selection(SelectionPayload(
+            start: -1, end: -1, text: "64 D 171",
+            blockText: "Source: National Archives, RG 59, Lot File 64 D 171.")))
+        if case .selection(let p) = event { #expect(!p.hasOffsets) } else { Issue.record("expected .selection") }
     }
 
     @Test("Footnote selection with missing blockText falls back to the raw text")
     func footnoteWithoutBlockText() {
         let event = decodeFRUSSelectionEvent(from: ["start": -1, "end": -1, "text": "64 D 171"])
-        #expect(event == .footnote(text: "64 D 171", blockText: "64 D 171"))
+        #expect(event == .selection(SelectionPayload(start: -1, end: -1, text: "64 D 171", blockText: "64 D 171")))
     }
 
     @Test("Sentinel offsets with empty text decode to .cleared, even with a stray blockText")
@@ -548,7 +563,7 @@ struct FRUSSelectionEventDecodeTests {
     func rangedIgnoresBlockText() {
         let event = decodeFRUSSelectionEvent(
             from: ["start": 2, "end": 6, "text": "abc", "blockText": "junk"])
-        #expect(event == .ranged(start: 2, end: 6, text: "abc"))
+        #expect(event == .selection(SelectionPayload(start: 2, end: 6, text: "abc")))
     }
 
     @Test("Malformed and degenerate bodies decode to nil")
@@ -557,6 +572,33 @@ struct FRUSSelectionEventDecodeTests {
         #expect(decodeFRUSSelectionEvent(from: ["start": "x", "end": 4]) == nil)
         // Degenerate in-document range (end <= start) is not a valid selection.
         #expect(decodeFRUSSelectionEvent(from: ["start": 5, "end": 5, "text": "x"]) == nil)
+    }
+
+    @Test("Selection carries the bounding rect + scale when present (both branches)")
+    func selectionCarriesRect() {
+        let ranged = decodeFRUSSelectionEvent(from: [
+            "start": 3, "end": 10, "text": "t",
+            "rect": ["x": 12.0, "y": 40.0, "w": 100.0, "h": 18.0], "scale": 1.0])
+        #expect(ranged == .selection(SelectionPayload(
+            start: 3, end: 10, text: "t", rect: CGRect(x: 12, y: 40, width: 100, height: 18), scale: 1)))
+
+        let footnote = decodeFRUSSelectionEvent(from: [
+            "start": -1, "end": -1, "text": "x", "blockText": "b",
+            "rect": ["x": 5.0, "y": 6.0, "w": 7.0, "h": 8.0], "scale": 2.0])
+        #expect(footnote == .selection(SelectionPayload(
+            start: -1, end: -1, text: "x", blockText: "b",
+            rect: CGRect(x: 5, y: 6, width: 7, height: 8), scale: 2)))
+    }
+
+    @Test("Absent or partial rect tolerates to nil rect, scale 1 (old payloads still decode)")
+    func rectTolerant() {
+        // Pre-rect payload shape (no rect/scale keys).
+        #expect(decodeFRUSSelectionEvent(from: ["start": 3, "end": 10, "text": "t"])
+                == .selection(SelectionPayload(start: 3, end: 10, text: "t", rect: nil, scale: 1)))
+        // Rect present but missing a field → nil rect, scale still defaults.
+        #expect(decodeFRUSSelectionEvent(from: [
+            "start": 3, "end": 10, "text": "t", "rect": ["x": 1.0, "y": 2.0, "w": 3.0]])
+                == .selection(SelectionPayload(start: 3, end: 10, text: "t", rect: nil, scale: 1)))
     }
 }
 

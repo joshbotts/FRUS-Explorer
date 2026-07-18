@@ -9,6 +9,43 @@
 import SwiftUI
 import WebKit
 
+// MARK: - SelectionPayload
+
+/// A live text selection reported to `onSelectionChanged` — offsets, text, footnote block, and
+/// the bounding geometry that anchors the floating selection bar. A struct (not a positional
+/// tuple) so the growing payload stays readable.
+struct SelectionPayload: Equatable {
+    /// Flat-text Unicode-scalar start offset, or `-1` for an out-of-document (footnote) selection.
+    let start: Int
+    /// Flat-text end offset, or `-1` for a footnote selection.
+    let end: Int
+    /// The raw selected string (`window.getSelection().toString()`), for pre-populating NARA lookup.
+    let text: String
+    /// The enclosing footnote body for a footnote selection, else `""` (#269).
+    let blockText: String
+    /// The selection's bounding rect in the web view's own point space (viewport CSS px at
+    /// `scale == 1`), or `nil` when unavailable — anchors the floating selection bar.
+    let rect: CGRect?
+    /// `visualViewport.scale` at capture (`1` when unavailable / unzoomed), so iOS can correct
+    /// for pinch zoom (macOS never magnifies).
+    let scale: CGFloat
+
+    /// Creates a payload. `blockText`/`rect`/`scale` default so tests and in-document callers stay terse.
+    init(start: Int, end: Int, text: String, blockText: String = "",
+         rect: CGRect? = nil, scale: CGFloat = 1) {
+        self.start = start
+        self.end = end
+        self.text = text
+        self.blockText = blockText
+        self.rect = rect
+        self.scale = scale
+    }
+
+    /// `true` when the selection has valid in-document flat-text offsets (so it is highlightable);
+    /// `false` for a footnote / out-of-document selection.
+    var hasOffsets: Bool { start >= 0 && end > start }
+}
+
 // MARK: - FRUSSelectionEvent
 
 /// The decoded outcome of a `selectionChanged` message from the selection bridge JS — a pure
@@ -17,28 +54,43 @@ import WebKit
 enum FRUSSelectionEvent: Equatable {
     /// No live selection (collapsed/cleared).
     case cleared
-    /// A valid in-document selection with flat-text Unicode-scalar offsets and its raw text.
-    case ranged(start: Int, end: Int, text: String)
-    /// An out-of-document (footnote) selection: no offsets, but the raw selected `text` and the
-    /// enclosing `blockText` (the footnote body), used to characterise the note's citations (#269).
-    case footnote(text: String, blockText: String)
+    /// A live selection — in-document when `payload.hasOffsets`, else a footnote selection.
+    case selection(SelectionPayload)
 }
 
 /// Decodes a `selectionChanged` message body into a `FRUSSelectionEvent`.
 ///
 /// Returns `nil` for a malformed body (missing/non-integer `start`/`end`) or a degenerate
 /// in-document range (`end <= start`). A footnote body with a missing/empty `blockText` falls
-/// back to the raw selected text, so the footnote branch always has some block context.
+/// back to the raw selected text, so the footnote branch always has some block context. `rect`
+/// and `scale` are tolerant — absent/malformed geometry decodes to `rect: nil, scale: 1`, so
+/// older payload shapes (pre-rect) still decode cleanly.
 func decodeFRUSSelectionEvent(from body: [String: Any]) -> FRUSSelectionEvent? {
     guard let start = body["start"] as? Int, let end = body["end"] as? Int else { return nil }
     let text = (body["text"] as? String) ?? ""
+    let rect = decodeSelectionRect(body["rect"])
+    let scale = CGFloat((body["scale"] as? NSNumber)?.doubleValue ?? 1)
     if start < 0 {
         guard !text.isEmpty else { return .cleared }
         let block = (body["blockText"] as? String) ?? ""
-        return .footnote(text: text, blockText: block.isEmpty ? text : block)
+        return .selection(SelectionPayload(start: -1, end: -1, text: text,
+                                           blockText: block.isEmpty ? text : block,
+                                           rect: rect, scale: scale))
     }
     guard end > start else { return nil }
-    return .ranged(start: start, end: end, text: text)
+    return .selection(SelectionPayload(start: start, end: end, text: text, rect: rect, scale: scale))
+}
+
+/// Decodes a `{x,y,w,h}` rect dictionary from a selection message body — JS numbers arrive as
+/// `NSNumber` (and plain `Double`/`Int` from unit tests bridge the same way). Returns `nil` when
+/// absent or any field is missing/non-numeric, so a bar consumer treats it as "no anchor".
+func decodeSelectionRect(_ value: Any?) -> CGRect? {
+    guard let d = value as? [String: Any],
+          let x = (d["x"] as? NSNumber)?.doubleValue,
+          let y = (d["y"] as? NSNumber)?.doubleValue,
+          let w = (d["w"] as? NSNumber)?.doubleValue,
+          let h = (d["h"] as? NSNumber)?.doubleValue else { return nil }
+    return CGRect(x: x, y: y, width: w, height: h)
 }
 
 // MARK: - FRUSDocumentWebView
@@ -113,17 +165,17 @@ public struct FRUSDocumentWebView: View {
 
     // MARK: Selection callbacks (Session 145)
 
-    /// Called with `(start, end, text, blockText)` when the user selects text in the WKWebView.
-    /// `start` and `end` are Unicode-scalar offsets into `buildFlatText(from: model)`.
-    /// `text` is the raw selected string from `window.getSelection().toString()`,
-    /// suitable for pre-populating the NARA Catalog lookup field.
-    /// `blockText` is the enclosing footnote body for a footnote selection (`start == -1`),
-    /// or an empty string for an in-document selection (whose block context Swift derives
-    /// from the offsets); it lets the footnote NARA path characterise the note's citations (#269).
-    var onSelectionChanged: ((Int, Int, String, String) -> Void)? = nil
+    /// Called with a `SelectionPayload` when the user selects text in the WKWebView — offsets,
+    /// raw text, the footnote `blockText` (#269), and the bounding `rect`/`scale` that anchor the
+    /// floating selection bar (`rect` is in the web view's own point space).
+    var onSelectionChanged: ((SelectionPayload) -> Void)? = nil
 
     /// Called when the selection is collapsed or cleared.
     var onSelectionCleared: (() -> Void)? = nil
+
+    /// Called (throttled) when the document scrolls inside the web view while a selection is
+    /// live — the anchoring `rect` has gone stale, so a floating bar consumer should dismiss.
+    var onSelectionScrolled: (() -> Void)? = nil
 
     /// Called when the user taps within a non-stale highlight range.
     /// `(startOffset, endOffset)` uniquely identifies the highlight so the
@@ -167,6 +219,7 @@ public struct FRUSDocumentWebView: View {
             onBrokenRefTap:     onBrokenRefTap,
             onSelectionChanged: onSelectionChanged,
             onSelectionCleared: onSelectionCleared,
+            onSelectionScrolled: onSelectionScrolled,
             onHighlightTapped:  onHighlightTapped
         )
         #else
@@ -181,6 +234,7 @@ public struct FRUSDocumentWebView: View {
             onBrokenRefTap:     onBrokenRefTap,
             onSelectionChanged: onSelectionChanged,
             onSelectionCleared: onSelectionCleared,
+            onSelectionScrolled: onSelectionScrolled,
             onHighlightTapped:  onHighlightTapped,
             onEditMenuHighlight:   onEditMenuHighlight,
             onEditMenuNARALookup:  onEditMenuNARALookup,
@@ -199,15 +253,22 @@ extension FRUSDocumentWebView {
         var copy = self; copy.highlights = newHighlights; return copy
     }
 
-    /// Registers a callback for when the user makes a text selection in the web view.
-    /// `start` and `end` are Unicode-scalar offsets; `text` is the raw selected string.
-    func onSelectionChanged(_ handler: @escaping (Int, Int, String, String) -> Void) -> FRUSDocumentWebView {
+    /// Registers a callback for when the user makes a text selection in the web view. The
+    /// `SelectionPayload` carries the flat-text offsets, raw text, footnote `blockText`, and the
+    /// bounding `rect`/`scale` that anchor the floating selection bar.
+    func onSelectionChanged(_ handler: @escaping (SelectionPayload) -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onSelectionChanged = handler; return copy
     }
 
     /// Registers a callback for when the selection is collapsed or cleared.
     func onSelectionCleared(_ handler: @escaping () -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onSelectionCleared = handler; return copy
+    }
+
+    /// Registers a callback fired (throttled) when a live selection scrolls inside the web view,
+    /// so an anchored floating bar can dismiss before its rect goes stale.
+    func onSelectionScrolled(_ handler: @escaping () -> Void) -> FRUSDocumentWebView {
+        var copy = self; copy.onSelectionScrolled = handler; return copy
     }
 
     /// Registers a callback fired when the user taps inside a rendered highlight.
@@ -288,23 +349,26 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
     // MARK: Selection state (Session 145)
 
-    /// Fired when JS reports a valid text selection `{start, end, text}`.
-    var onSelectionChanged: ((Int, Int, String, String) -> Void)?
+    /// Fired when JS reports a valid text selection.
+    var onSelectionChanged: ((SelectionPayload) -> Void)?
     /// Fired when JS reports the selection was cleared (`{start: -1, end: -1}`).
     var onSelectionCleared: (() -> Void)?
+    /// Fired (throttled) when the document scrolls with a live selection — the anchor rect is stale.
+    var onSelectionScrolled: (() -> Void)?
     /// Fired when the user taps inside a rendered highlight range.
     var onHighlightTapped: ((Int, Int) -> Void)?
 
     // MARK: WKScriptMessageHandler
 
-    /// Receives `selectionChanged` messages from `frus-selection.js` / `kSelectionJS`.
+    /// Receives `selectionChanged`, `selectionScrolled`, and `highlightTapped` messages from
+    /// `frus-selection.js` / `kSelectionJS`.
     ///
-    /// The body carries `"start"`, `"end"`, and (for non-empty selections) `"text"`; a
-    /// footnote selection additionally carries `"blockText"` (the enclosing note body).
-    /// `start == -1` with empty text signals selection cleared; `start >= 0 && end > start`
-    /// is a valid in-document range in flat-text Unicode-scalar offsets. Decoding is factored
-    /// into the pure `decodeFRUSSelectionEvent(from:)` so it is unit-testable without a
-    /// `WKScriptMessage` (which has no public initializer).
+    /// A `selectionChanged` body carries `"start"`, `"end"`, `"text"`, and — per selection kind —
+    /// `"blockText"` (footnote body) plus `"rect"`/`"scale"` (bar-anchor geometry). `start == -1`
+    /// with empty text signals selection cleared; `start >= 0 && end > start` is a valid
+    /// in-document range in flat-text Unicode-scalar offsets. `selectionScrolled` (empty body) is
+    /// the throttled stale-rect hide signal. Decoding is factored into the pure
+    /// `decodeFRUSSelectionEvent(from:)` so it is unit-testable without a `WKScriptMessage`.
     func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
@@ -316,17 +380,17 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
             switch decodeFRUSSelectionEvent(from: body) {
             case .cleared:
                 onSelectionCleared?()
-            case .footnote(let text, let blockText):
-                // Out-of-document (footnote) selection: sentinel offsets, but raw text plus
-                // the enclosing block so the NARA path can characterise the note's citations.
-                onSelectionChanged?(-1, -1, text, blockText)
-            case .ranged(let start, let end, let text):
-                // In-document selection: block context is derived Swift-side from the offsets,
-                // so no blockText is threaded here.
-                onSelectionChanged?(start, end, text, "")
+            case .selection(let payload):
+                // In-document (`payload.hasOffsets`) or footnote selection; the payload carries
+                // the offsets/text/blockText plus the rect/scale that anchor the floating bar.
+                onSelectionChanged?(payload)
             case nil:
                 break
             }
+
+        case "selectionScrolled":
+            // A live selection scrolled inside the web view: the anchoring rect is now stale.
+            onSelectionScrolled?()
 
         case "highlightTapped":
             guard let start = body["startOffset"] as? Int,
@@ -426,8 +490,9 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
     var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
-    var onSelectionChanged: ((Int, Int, String, String) -> Void)?
+    var onSelectionChanged: ((SelectionPayload) -> Void)?
     var onSelectionCleared: (() -> Void)?
+    var onSelectionScrolled: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
 
     // MARK: NSViewRepresentable
@@ -467,6 +532,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
         // Always sync selection callbacks (lightweight — just closure assignments)
         context.coordinator.onSelectionChanged = onSelectionChanged
         context.coordinator.onSelectionCleared = onSelectionCleared
+        context.coordinator.onSelectionScrolled = onSelectionScrolled
         context.coordinator.onHighlightTapped  = onHighlightTapped
 
         if context.coordinator.lastSignature != sig {
@@ -553,8 +619,9 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
     var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
-    var onSelectionChanged: ((Int, Int, String, String) -> Void)?
+    var onSelectionChanged: ((SelectionPayload) -> Void)?
     var onSelectionCleared: (() -> Void)?
+    var onSelectionScrolled: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
     var onEditMenuHighlight:   (() -> Void)?
     var onEditMenuNARALookup:  (() -> Void)?
@@ -596,6 +663,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         )
         context.coordinator.onSelectionChanged = onSelectionChanged
         context.coordinator.onSelectionCleared = onSelectionCleared
+        context.coordinator.onSelectionScrolled = onSelectionScrolled
         context.coordinator.onHighlightTapped  = onHighlightTapped
 
         if let editMenuWebView = webView as? _FRUSEditMenuWebView {

@@ -66,6 +66,7 @@ extension WKWebViewConfiguration {
             forMainFrameOnly: true
         ))
         ucc.add(messageHandler, name: "selectionChanged")
+        ucc.add(messageHandler, name: "selectionScrolled")
         ucc.add(messageHandler, name: "highlightTapped")
 
         return config
@@ -233,17 +234,30 @@ function enclosingBlockText(range, fallback) {
   const text = block ? block.textContent : fallback;
   return text ? text.slice(0, 5000) : fallback;
 }
+// The selection's bounding box in web-view viewport coordinates (CSS px) plus the visual
+// viewport scale, for anchoring the floating selection bar. getBoundingClientRect is
+// viewport-relative (already accounts for internal scroll); at scale 1 it maps 1:1 onto the
+// web view's own point space. `scale` (visualViewport.scale) lets a pinch-zoomed iOS reader
+// correct or hide the bar.
+function selectionGeometry(range) {
+  const r = range.getBoundingClientRect();
+  return {
+    rect: { x: r.x, y: r.y, w: r.width, h: r.height },
+    scale: (window.visualViewport && window.visualViewport.scale) || 1
+  };
+}
 document.addEventListener('selectionchange', () => {
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed || !window.FRUSOffsets) { postCleared(); return; }
   const range = sel.getRangeAt(0);
   const start = rangeEndpointToOffset(range.startContainer, range.startOffset);
   const end   = rangeEndpointToOffset(range.endContainer,   range.endOffset);
+  const geom = selectionGeometry(range);
   if (start >= 0 && end > start) {
     // In-document selection: valid flat-text offsets + raw text. Swift derives block
     // context from the offsets (flatTextExcerpt), so no blockText is sent here.
     const text = sel.toString();
-    try { webkit.messageHandlers.selectionChanged.postMessage({ start, end, text }); }
+    try { webkit.messageHandlers.selectionChanged.postMessage({ start, end, text, rect: geom.rect, scale: geom.scale }); }
     catch (_) {}
   } else {
     // At least one endpoint is outside the offset map — footnote popover or footnote
@@ -254,11 +268,27 @@ document.addEventListener('selectionchange', () => {
     const text = sel.toString();
     if (text) {
       const blockText = enclosingBlockText(range, text);
-      try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1, text, blockText }); }
+      try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1, text, blockText, rect: geom.rect, scale: geom.scale }); }
       catch (_) {}
     } else {
       postCleared();
     }
   }
 });
+// A viewport-anchored floating bar goes stale when the document scrolls inside the web view,
+// and `selectionchange` does NOT re-fire on scroll. Post a throttled (one-per-frame) hide
+// signal while a selection is live so the bar can dismiss; capture-phase + passive so it sees
+// scrolls on any inner scroller without blocking them.
+let selectionScrollScheduled = false;
+window.addEventListener('scroll', () => {
+  if (selectionScrollScheduled) return;
+  selectionScrollScheduled = true;
+  requestAnimationFrame(() => {
+    selectionScrollScheduled = false;
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      try { webkit.messageHandlers.selectionScrolled.postMessage({}); } catch (_) {}
+    }
+  });
+}, { passive: true, capture: true });
 """
