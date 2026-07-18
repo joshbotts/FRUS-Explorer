@@ -182,19 +182,6 @@ public struct FRUSDocumentWebView: View {
     /// caller can look it up in SwiftData and offer to delete it.
     var onHighlightTapped: ((Int, Int) -> Void)? = nil
 
-    /// Called when the user picks "Highlight" from the iOS text-selection edit
-    /// menu. Unused on macOS.
-    var onEditMenuHighlight: (() -> Void)? = nil
-
-    /// Called when the user picks "Look Up in NARA Catalog" from the iOS
-    /// text-selection edit menu. Unused on macOS.
-    var onEditMenuNARALookup: (() -> Void)? = nil
-
-    /// Returns `true` when the current selection lies inside the document body
-    /// (valid flat-text offsets), so the edit menu's Highlight action is only
-    /// offered where a highlight can actually be created. Unused on macOS.
-    var canHighlightSelection: (() -> Bool)? = nil
-
     /// Stored highlights to render via the CSS Custom Highlight API after each
     /// page load. Updated highlights are re-rendered without a full HTML reload.
     var highlights: [DocumentHighlight] = []
@@ -235,10 +222,7 @@ public struct FRUSDocumentWebView: View {
             onSelectionChanged: onSelectionChanged,
             onSelectionCleared: onSelectionCleared,
             onSelectionScrolled: onSelectionScrolled,
-            onHighlightTapped:  onHighlightTapped,
-            onEditMenuHighlight:   onEditMenuHighlight,
-            onEditMenuNARALookup:  onEditMenuNARALookup,
-            canHighlightSelection: canHighlightSelection
+            onHighlightTapped:  onHighlightTapped
         )
         #endif
     }
@@ -276,24 +260,6 @@ extension FRUSDocumentWebView {
     /// so the caller can fetch and delete the record from SwiftData.
     func onHighlightTapped(_ handler: @escaping (Int, Int) -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onHighlightTapped = handler; return copy
-    }
-
-    /// Registers the action for "Highlight" in the iOS text-selection edit menu.
-    /// No effect on macOS.
-    func onEditMenuHighlight(_ handler: @escaping () -> Void) -> FRUSDocumentWebView {
-        var copy = self; copy.onEditMenuHighlight = handler; return copy
-    }
-
-    /// Registers the action for "Look Up in NARA Catalog" in the iOS
-    /// text-selection edit menu. No effect on macOS.
-    func onEditMenuNARALookup(_ handler: @escaping () -> Void) -> FRUSDocumentWebView {
-        var copy = self; copy.onEditMenuNARALookup = handler; return copy
-    }
-
-    /// Supplies the predicate gating the edit menu's Highlight action to
-    /// selections with valid in-document offsets. No effect on macOS.
-    func canHighlightSelection(_ predicate: @escaping () -> Bool) -> FRUSDocumentWebView {
-        var copy = self; copy.canHighlightSelection = predicate; return copy
     }
 }
 
@@ -556,56 +522,6 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
 
 #else
 
-// MARK: - iOS Edit-Menu WKWebView
-
-/// `WKWebView` subclass that adds research actions to the text-selection edit menu.
-///
-/// Since iOS 16, the web view's edit menu is assembled through the responder
-/// chain's `buildMenu(with:)` using the context menu system, so a subclass can
-/// append its own inline actions. This puts "Highlight" and "Look Up in NARA
-/// Catalog" directly on the selection — the platform-native location — instead of
-/// requiring a round-trip through the navigation-bar overflow menu.
-final class _FRUSEditMenuWebView: WKWebView {
-
-    /// Action for the "Highlight" edit-menu item (opens the colour picker).
-    var onEditMenuHighlight: (() -> Void)?
-
-    /// Action for the "Look Up in NARA Catalog" edit-menu item.
-    var onEditMenuNARALookup: (() -> Void)?
-
-    /// Gates the Highlight item to selections with valid in-document offsets
-    /// (footnote/popover selections yield text but no highlightable range).
-    var canHighlightSelection: (() -> Bool)?
-
-    override func buildMenu(with builder: UIMenuBuilder) {
-        super.buildMenu(with: builder)
-        // Only augment the selection edit menu (context system) — never the
-        // app's main menu (iPad hardware-keyboard menu bar).
-        guard builder.system == .context else { return }
-
-        var actions: [UIAction] = []
-        if canHighlightSelection?() ?? false, let highlightAction = onEditMenuHighlight {
-            actions.append(UIAction(
-                title: String(localized: "document.editMenu.highlight",
-                              defaultValue: "Highlight"),
-                image: UIImage(systemName: "paintbrush.pointed")
-            ) { _ in highlightAction() })
-        }
-        if let lookupAction = onEditMenuNARALookup {
-            actions.append(UIAction(
-                title: String(localized: "document.editMenu.naraLookup",
-                              defaultValue: "Look Up in NARA Catalog"),
-                image: UIImage(systemName: "magnifyingglass.circle")
-            ) { _ in lookupAction() })
-        }
-        guard !actions.isEmpty else { return }
-        builder.insertSibling(
-            UIMenu(options: .displayInline, children: actions),
-            afterMenu: .standardEdit
-        )
-    }
-}
-
 // MARK: - iOS Representable
 
 /// iOS-specific `UIViewRepresentable` shell for `WKWebView`.
@@ -623,9 +539,6 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onSelectionCleared: (() -> Void)?
     var onSelectionScrolled: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
-    var onEditMenuHighlight:   (() -> Void)?
-    var onEditMenuNARALookup:  (() -> Void)?
-    var canHighlightSelection: (() -> Bool)?
 
     // MARK: UIViewRepresentable
 
@@ -633,7 +546,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         let handler = FRUSURLSchemeHandler()
         context.coordinator.schemeHandler = handler
 
-        let webView = _FRUSEditMenuWebView(
+        let webView = WKWebView(
             frame: .zero,
             configuration: WKWebViewConfiguration.frusExplorerConfiguration(
                 schemeHandler:  handler,
@@ -665,12 +578,6 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         context.coordinator.onSelectionCleared = onSelectionCleared
         context.coordinator.onSelectionScrolled = onSelectionScrolled
         context.coordinator.onHighlightTapped  = onHighlightTapped
-
-        if let editMenuWebView = webView as? _FRUSEditMenuWebView {
-            editMenuWebView.onEditMenuHighlight   = onEditMenuHighlight
-            editMenuWebView.onEditMenuNARALookup  = onEditMenuNARALookup
-            editMenuWebView.canHighlightSelection = canHighlightSelection
-        }
 
         if context.coordinator.lastSignature != sig {
             context.coordinator.lastSignature = sig

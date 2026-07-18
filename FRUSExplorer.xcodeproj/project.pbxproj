@@ -472,6 +472,7 @@
 		B9194D1EDE0254B62DCFE524 /* CustomVolumeScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314A46C43DF0C4373AFA5452 /* CustomVolumeScopeTests.swift */; };
 		B98F32DECC303257F9DD7AAE /* NativeCollectionFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4512DFE439D6FAB2694402DB /* NativeCollectionFormat.swift */; };
 		B98FC305D6D8115550513284 /* CollectionExcerpts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA4D049C98F1AD30D8A1C01 /* CollectionExcerpts.swift */; };
+		B9A6B5B72E030AB9F1B0848C /* FloatingSelectionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCE6131D0C55D635FD0796F /* FloatingSelectionBar.swift */; };
 		B9D561B055D8E51B6F26774B /* BackgroundDownloadEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */; };
 		BA011168F1E4FC343022CE91 /* VolumeConnectionGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFFFF3C4599E5F0FCDEEB89 /* VolumeConnectionGraphView.swift */; };
 		BA1B3B4761551F64C8AF2B7B /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
@@ -636,6 +637,7 @@
 		F32BBC57C2BE9110D3F57DA1 /* CrossReferenceGraphViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6016A27A7FA06E9422FE9D4 /* CrossReferenceGraphViewModel.swift */; };
 		F347C81E72B07D808A8151FA /* SummarizationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575AE87338FE62F1C04F2C21 /* SummarizationModels.swift */; };
 		F38326ED7268F68B3EC17242 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = FF735149F415370F2B4A807F /* Localizable.strings */; };
+		F47A58E2EA383B8634789DEB /* FloatingSelectionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DCE6131D0C55D635FD0796F /* FloatingSelectionBar.swift */; };
 		F4DD16BD1EAC2D799C5F26A2 /* PersonMentionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C96683E051C681C2741DAB4 /* PersonMentionStoreTests.swift */; };
 		F5C1AE794B915445DD6C0828 /* BrokenRefsIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6EE2422F991AFD4AB9EE005 /* BrokenRefsIndexTests.swift */; };
 		F7106E5C59A8C9A0962F5187 /* ChartDataInspectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4359D21C639BBE0B733EFD /* ChartDataInspectorTests.swift */; };
@@ -720,6 +722,7 @@
 		0BFBF974B967EE2E018062D3 /* CorpusAnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorpusAnalyticsService.swift; sourceTree = "<group>"; };
 		0C0EDF3F3E992E69AB62A686 /* AdministrationPresetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationPresetMenu.swift; sourceTree = "<group>"; };
 		0CC5315B1D4CB1B479C23348 /* CitationFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationFormatterTests.swift; sourceTree = "<group>"; };
+		0DCE6131D0C55D635FD0796F /* FloatingSelectionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingSelectionBar.swift; sourceTree = "<group>"; };
 		0DED2CFC2F10796AFA2F566D /* SeriesGeographyDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesGeographyDataTests.swift; sourceTree = "<group>"; };
 		0E07E3C0FF3893FAC63B624D /* CrossReferenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceStore.swift; sourceTree = "<group>"; };
 		0E4F3D3F106FDF9A1331D90F /* SeriesGeographyData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesGeographyData.swift; sourceTree = "<group>"; };
@@ -1196,6 +1199,7 @@
 				D81C4772A87DD472F9B4BB3F /* BrokenRefExplanationSheet.swift */,
 				F89AC5BB14EEE61586D263D1 /* DocumentView.swift */,
 				B39FEC04B970D1E9D0362C27 /* DocumentViewModel.swift */,
+				0DCE6131D0C55D635FD0796F /* FloatingSelectionBar.swift */,
 				2D20EB2E17BEEE50A2085004 /* UserTagPickerSheet.swift */,
 			);
 			path = DocumentView;
@@ -2107,6 +2111,7 @@
 				45FEBB7068690AC9F2D2CD31 /* FTS5Store.swift in Sources */,
 				AE3C4A9D6C4565A98F9A4A02 /* FTS5Tokenizer.swift in Sources */,
 				B0E3168594D62B32B5F306E8 /* FTS5Types.swift in Sources */,
+				F47A58E2EA383B8634789DEB /* FloatingSelectionBar.swift in Sources */,
 				E6B2C68CDC074332936054D4 /* FrontMatterPersonsView.swift in Sources */,
 				C18061CD97F79FE201E22E73 /* GeneratedSummary.swift in Sources */,
 				CC2D7CB47D18361D32A2D9F6 /* GeoKeyNormalizer.swift in Sources */,
@@ -2375,6 +2380,7 @@
 				387C8EC61FCD42C53EAE7806 /* FTS5Store.swift in Sources */,
 				F16CBC03DA4F3491B178EEE0 /* FTS5Tokenizer.swift in Sources */,
 				6AE738DB2D1F7C761C6ECAE6 /* FTS5Types.swift in Sources */,
+				B9A6B5B72E030AB9F1B0848C /* FloatingSelectionBar.swift in Sources */,
 				47CD55B7FCDC83BA11445A9F /* FrontMatterPersonsView.swift in Sources */,
 				BB3F91CEDDCDDC56D60B83E7 /* GeneratedSummary.swift in Sources */,
 				52B5C2808AE3AA9C2E774C4B /* GeoKeyNormalizer.swift in Sources */,
