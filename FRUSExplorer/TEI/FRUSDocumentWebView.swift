@@ -253,8 +253,9 @@ extension FRUSDocumentWebView {
         var copy = self; copy.highlights = newHighlights; return copy
     }
 
-    /// Registers a callback for when the user makes a text selection in the web view.
-    /// `start` and `end` are Unicode-scalar offsets; `text` is the raw selected string.
+    /// Registers a callback for when the user makes a text selection in the web view. The
+    /// `SelectionPayload` carries the flat-text offsets, raw text, footnote `blockText`, and the
+    /// bounding `rect`/`scale` that anchor the floating selection bar.
     func onSelectionChanged(_ handler: @escaping (SelectionPayload) -> Void) -> FRUSDocumentWebView {
         var copy = self; copy.onSelectionChanged = handler; return copy
     }
@@ -359,14 +360,15 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
     // MARK: WKScriptMessageHandler
 
-    /// Receives `selectionChanged` messages from `frus-selection.js` / `kSelectionJS`.
+    /// Receives `selectionChanged`, `selectionScrolled`, and `highlightTapped` messages from
+    /// `frus-selection.js` / `kSelectionJS`.
     ///
-    /// The body carries `"start"`, `"end"`, and (for non-empty selections) `"text"`; a
-    /// footnote selection additionally carries `"blockText"` (the enclosing note body).
-    /// `start == -1` with empty text signals selection cleared; `start >= 0 && end > start`
-    /// is a valid in-document range in flat-text Unicode-scalar offsets. Decoding is factored
-    /// into the pure `decodeFRUSSelectionEvent(from:)` so it is unit-testable without a
-    /// `WKScriptMessage` (which has no public initializer).
+    /// A `selectionChanged` body carries `"start"`, `"end"`, `"text"`, and — per selection kind —
+    /// `"blockText"` (footnote body) plus `"rect"`/`"scale"` (bar-anchor geometry). `start == -1`
+    /// with empty text signals selection cleared; `start >= 0 && end > start` is a valid
+    /// in-document range in flat-text Unicode-scalar offsets. `selectionScrolled` (empty body) is
+    /// the throttled stale-rect hide signal. Decoding is factored into the pure
+    /// `decodeFRUSSelectionEvent(from:)` so it is unit-testable without a `WKScriptMessage`.
     func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage

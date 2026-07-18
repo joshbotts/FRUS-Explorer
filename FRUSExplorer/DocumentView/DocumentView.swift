@@ -359,6 +359,13 @@ struct DocumentView: View {
                    || existingVm.entry.volumeId != entry.volumeId {
                 vm = nil
                 pendingHighlightLink = nil
+                // The selection rect is geometry tied to the outgoing document; drop it on view
+                // reuse so a floating bar (Phase B) never anchors to the previous document's
+                // coordinates. (The macOS twin already clears the whole selection block in
+                // HighlightCoordinator.reset() on navigation; broadening the iOS reset to the
+                // range/text is a Phase-B item.)
+                webKitSelectionRect = nil
+                webKitSelectionScale = 1
             }
             // Apply the default document mode on open. .rememberLast leaves
             // panelVisible untouched, preserving the prior cross-document
