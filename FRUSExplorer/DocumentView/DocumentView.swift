@@ -254,6 +254,11 @@ struct DocumentView: View {
     /// The enclosing footnote body for a footnote selection (the JS `blockText`, #269), or
     /// `nil` for an in-document selection. Feeds the NARA lookup's candidate-citation scan.
     @State private var webKitSelectedBlockText: String? = nil
+    /// The current selection's bounding rect (web-view viewport points), `nil` when none/stale.
+    /// Anchors the floating selection bar (Research-rail Phase A: stored; consumed in Phase B).
+    @State private var webKitSelectionRect: CGRect? = nil
+    /// `visualViewport.scale` at capture, so the bar can correct for pinch zoom (Phase B).
+    @State private var webKitSelectionScale: CGFloat = 1
     /// The last *valid in-document* selection range, preserved across the false
     /// `selectioncleared` the system overflow "···" menu fires when it blurs the web
     /// view (see `onSelectionCleared`). `webKitSelectedText` already survives that
@@ -1451,14 +1456,14 @@ struct DocumentView: View {
                 }
             )
             .highlights(highlights)
-            .onSelectionChanged { start, end, text, blockText in
-                if start >= 0 {
+            .onSelectionChanged { selection in
+                if selection.hasOffsets {
                     // In-document selection with valid offsets — enables highlights + lookup.
-                    webKitSelectionRange = (start, end)
+                    webKitSelectionRange = (selection.start, selection.end)
                     // Preserved past the overflow-menu blur for excerpt capture; must
                     // always describe the same selection as webKitSelectedText, so it
                     // is nil'd on the footnote branch below and for empty text.
-                    lastValidSelectionRange = text.isEmpty ? nil : (start, end)
+                    lastValidSelectionRange = selection.text.isEmpty ? nil : (selection.start, selection.end)
                     webKitSelectedBlockText = nil
                 } else {
                     // Footnote / out-of-document selection — text only, no valid offsets.
@@ -1467,9 +1472,13 @@ struct DocumentView: View {
                     // so the lookup can characterise the footnote's citations (#269).
                     webKitSelectionRange = nil
                     lastValidSelectionRange = nil
-                    webKitSelectedBlockText = blockText.isEmpty ? nil : blockText
+                    webKitSelectedBlockText = selection.blockText.isEmpty ? nil : selection.blockText
                 }
-                webKitSelectedText = text.isEmpty ? nil : text
+                webKitSelectedText = selection.text.isEmpty ? nil : selection.text
+                // Bounding rect + scale for the floating selection bar (Phase A: stored; the bar
+                // reads them in Phase B, correcting for pinch zoom via `scale`).
+                webKitSelectionRect = selection.rect
+                webKitSelectionScale = selection.scale
             }
             .onSelectionCleared {
                 // Only clear the offset range. webKitSelectedText is intentionally
@@ -1479,7 +1488,13 @@ struct DocumentView: View {
                 // webKitSelectedText is cleared when the NARA lookup button is tapped.
                 // lastValidSelectionRange is likewise preserved so the overflow-menu
                 // "Add Selection as Excerpt" action still captures the A9 anchors.
+                // The rect is geometry, not content, so it does NOT survive the clear.
                 webKitSelectionRange = nil
+                webKitSelectionRect = nil
+            }
+            .onSelectionScrolled {
+                // The anchor rect is stale after a scroll; drop it so the bar (Phase B) hides.
+                webKitSelectionRect = nil
             }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .onEditMenuHighlight {

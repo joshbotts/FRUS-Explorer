@@ -391,21 +391,30 @@ struct MacDocumentView: View {
                 }
             )
             .highlights(highlights)
-            .onSelectionChanged { start, end, text, blockText in
-                if start >= 0 {
-                    highlightCoordinator.webKitSelectionRange = (start, end)
+            .onSelectionChanged { selection in
+                if selection.hasOffsets {
+                    highlightCoordinator.webKitSelectionRange = (selection.start, selection.end)
                     highlightCoordinator.webKitSelectedBlockText = nil
                 } else {
                     // Footnote selection: text available but no valid offset range. Keep the
                     // enclosing note body so the NARA lookup can characterise its citations (#269).
                     highlightCoordinator.webKitSelectionRange = nil
-                    highlightCoordinator.webKitSelectedBlockText = blockText.isEmpty ? nil : blockText
+                    highlightCoordinator.webKitSelectedBlockText =
+                        selection.blockText.isEmpty ? nil : selection.blockText
                 }
-                highlightCoordinator.webKitSelectedText = text.isEmpty ? nil : text
+                highlightCoordinator.webKitSelectedText = selection.text.isEmpty ? nil : selection.text
+                // Bounding rect for the floating selection bar (Phase A: stored; the bar reads it
+                // in Phase B). macOS never magnifies, so the rect maps 1:1 to view points.
+                highlightCoordinator.webKitSelectionRect = selection.rect
             }
             .onSelectionCleared {
                 highlightCoordinator.webKitSelectionRange = nil
+                highlightCoordinator.webKitSelectionRect = nil
                 // webKitSelectedText intentionally preserved for NARA lookup.
+            }
+            .onSelectionScrolled {
+                // The anchor rect is stale after a scroll; drop it so the bar (Phase B) can hide.
+                highlightCoordinator.webKitSelectionRect = nil
             }
             .onHighlightTapped { start, end in
                 highlightToDelete = (start, end)
