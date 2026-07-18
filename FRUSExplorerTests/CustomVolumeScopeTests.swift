@@ -196,6 +196,17 @@ struct ScopeFacetsTests {
                 == ["dated-match", "undated-match"])
     }
 
+    @Test("Range vs editor-only: a year range excludes an undated editor match; editor-only keeps it")
+    func rangeExcludesUndatedEditorMatchButEditorOnlyKeepsIt() {
+        let undated = entry("undated", editors: ["Louis J. Smith"])
+        let entries = [undated]
+        // The range path drops the undated volume even though its editor matches...
+        #expect(ScopeFacets.volumeIds(coverageIntersecting: 1961, toYear: 1968,
+                                      editorContains: "smith", entries: entries).isEmpty)
+        // ...but the editor-only path keeps it (coverage dates are not consulted).
+        #expect(ScopeFacets.volumeIds(editorContains: "smith", entries: entries) == ["undated"])
+    }
+
     @Test("Editor-only folds case and diacritics")
     func editorOnlyFolds() {
         let entries = [
