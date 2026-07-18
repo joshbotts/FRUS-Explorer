@@ -265,4 +265,13 @@ enum ProximityMath {
         guard unionCount > 0 else { return 0 }
         return Double(lhs.intersection(rhs).count) / Double(unionCount)
     }
+
+    /// Log damping for a citation multiplicity: `1 + ln(max(count, 1))` (#356). Maps `1×` → `1.0`
+    /// (so a single direct citation never drops below the floor) while compressing the heavy tail
+    /// (measured up to 121× → ~5.8), so one outlier can't crush an anchor's genuine single-citation
+    /// partners toward 0 once `RelatedDocumentsRanker` normalises the cross-reference axis by its max.
+    /// `count ≤ 0` clamps to `1.0`.
+    static func logDampedMultiplicity(_ count: Int) -> Double {
+        1 + log(Double(max(count, 1)))
+    }
 }

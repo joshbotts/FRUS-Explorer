@@ -61,8 +61,14 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
 ///
 /// Wraps the bounded `CrossReferenceStore.relatedByCitation` ego query (document-target-filtered,
 /// both directions, indexed candidates only) — `O(ego edges)`, never a corpus scan (design §6.2).
-/// Strength is the citation multiplicity (how many edges connect the pair), so a document the anchor
-/// cites repeatedly ranks above one it cites once; the engine normalises the axis to `[0, 1]`.
+/// Strength is the citation multiplicity **log-damped** (`1 + ln(count)`, #356), so a document the
+/// anchor cites repeatedly still ranks above one it cites once, but a heavy-tailed outlier (measured
+/// up to 121× — usually an editorial note reproducing many telegrams) no longer compresses the
+/// anchor's genuine single-citation partners toward ~0 when the engine normalises the axis to
+/// `[0, 1]` by its max. `1 + ln` keeps a 1× citation at exactly 1.0 (never below the floor) while
+/// pulling the outlier from 121 down to ~5.8, so a lone direct citation stays visible above the
+/// flat archival-provenance bulk. Decision recorded in #356; the design owner chose log over √
+/// (gentler) and saturation (near-binary).
 ///
 /// Co-citation (documents citing the same sources as the anchor) is a deliberate fast-follow — it
 /// needs a landmark cap so a heavily-cited shared target doesn't blow the bound — and is not included
@@ -98,7 +104,9 @@ struct CrossReferenceGenerator: SimilarityGenerator {
                     dateline: candidate.dateline,
                     documentNumber: candidate.documentNumber,
                     isEditorialNote: candidate.isEditorialNote),
-                strength: Double(candidate.citationCount))
+                // #356: log-damp the raw multiplicity so one outlier can't bury the anchor's real
+                // single-citation partners (see ProximityMath.logDampedMultiplicity).
+                strength: ProximityMath.logDampedMultiplicity(candidate.citationCount))
         }
     }
 }

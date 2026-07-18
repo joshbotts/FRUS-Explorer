@@ -342,4 +342,21 @@ struct ProximityMathTests {
         // Works over string refs too (the subject axis).
         #expect(ProximityMath.jaccard(Set(["a", "b"]), Set(["b"])) == 0.5)
     }
+
+    @Test("logDampedMultiplicity: 1× is the floor (1.0) and the heavy tail is compressed (#356)")
+    func logDampedMultiplicity() {
+        // A single direct citation never drops below the floor.
+        #expect(ProximityMath.logDampedMultiplicity(1) == 1.0)
+        // 1 + ln(2) ≈ 1.693.
+        #expect(abs(ProximityMath.logDampedMultiplicity(2) - 1.6931) < 1e-3)
+        // The measured 121× outlier collapses from 121 to ~5.8, so after the ranker normalises the
+        // cross-ref axis by its max, a 1× partner scores 1.0/5.8 ≈ 0.17, not raw's 1/121 ≈ 0.008.
+        let outlier = ProximityMath.logDampedMultiplicity(121)
+        #expect(abs(outlier - 5.7957) < 1e-3)
+        #expect(1.0 / outlier > 0.17)   // the single-citation partner stays visible
+        // Monotonic: more citations still ranks higher.
+        #expect(ProximityMath.logDampedMultiplicity(5) > ProximityMath.logDampedMultiplicity(2))
+        // count ≤ 0 clamps to the floor (never -inf).
+        #expect(ProximityMath.logDampedMultiplicity(0) == 1.0)
+    }
 }
