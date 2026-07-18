@@ -92,6 +92,12 @@ struct VolumeSourcesView: View {
     /// Calling `openWindow` from row content is safe — unlike presentation modifiers,
     /// it is an action, so the Group/Section-in-List anchoring rule does not apply.
     @Environment(\.openWindow) private var openWindow
+    #if os(macOS)
+    /// The identity of the document host this view is mounted in, when it is one — this
+    /// list renders both inside document hosts and inside the corpus-browser window, so
+    /// neighbor spawns bind to `documentHostID ?? provenance(of: .corpusBrowser)`.
+    @Environment(\.documentHostID) private var documentHostID
+    #endif
     #if os(iOS)
     /// Gates the neighbors window on iOS: sheet fallback wherever windows are unavailable.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
@@ -331,8 +337,15 @@ struct VolumeSourcesView: View {
                             sourceNeighborsTarget = presented
                             return
                         }
-                        #endif
                         openWindow(value: ArchivalNeighborsRequest(volumeSource: presented))
+                        #else
+                        // Provenance: this list mounts inside document hosts AND inside
+                        // the corpus-browser window — bind to whichever spawned it.
+                        let request = ArchivalNeighborsRequest(volumeSource: presented)
+                        appState.bindTool(.archivalNeighbors(request),
+                                          to: documentHostID ?? appState.provenance(of: .corpusBrowser))
+                        openWindow(value: request)
+                        #endif
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: "archivebox")

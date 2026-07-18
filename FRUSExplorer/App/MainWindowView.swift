@@ -133,8 +133,7 @@ struct MainWindowView: View {
             // fallback, so the pending value routes here instead of stranding until the next
             // distinct click (the iOS BrowserView adopt-on-appear discipline).
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         .onDisappear { appState.unregisterHost(hostID) }
@@ -144,8 +143,7 @@ struct MainWindowView: View {
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
             guard entry != nil else { return }
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         // Bump this host's ADVISORY recency stamp while key — consulted only by the fallback
@@ -169,32 +167,14 @@ struct MainWindowView: View {
         .onChange(of: currentEntry) { _, _ in
             highlightCoordinator.reset()
         }
-        // Open the search window when a cross-view pendingSearch arrives (e.g. "Find all
-        // mentions" from PersonDetailSheet). MacSearchWindowView clears pendingSearch after
-        // applying the parameters so both observers don't race.
-        .onChange(of: appState.pendingSearch) { _, params in
-            guard params != nil else { return }
-            openWindow(id: "frus.search")
-            bringMacWindowToFront(id: "frus.search")
-        }
-        // Open the Corpus Analytics window when a cross-view pendingAnalytics
-        // arrives (Search's "Visualize in Corpus Analytics" over-cap suggestion).
-        // AnalyticsView itself observes pendingAnalytics, applies the parameters,
-        // and clears it — so both observers don't race (mirrors pendingSearch).
-        .onChange(of: appState.pendingAnalytics) { _, params in
-            guard params != nil else { return }
-            openWindow(id: "frus.analytics")
-            bringMacWindowToFront(id: "frus.analytics")
-        }
-        // Open the Word Cloud window when a cross-view pendingWordCloud arrives.
-        // WordCloudWindowContent applies the scope and clears pendingWordCloud
-        // (mirroring pendingSearch), so a later hand-off to the *same* scope is
-        // still an Equatable change and re-fires this observer.
-        .onChange(of: appState.pendingWordCloud) { _, scope in
-            guard scope != nil else { return }
-            openWindow(id: "frus.wordcloud")
-            bringMacWindowToFront(id: "frus.wordcloud")
-        }
+        // The pendingSearch / pendingAnalytics / pendingWordCloud opening relays that
+        // lived here are retired (provenance PR 2): every macOS producer now opens its
+        // target window DIRECTLY (openWindow + bringMacWindowToFront) alongside the
+        // hand-off and stamps the tool's provenance — so a hand-off no longer dead-drops
+        // when every main window is closed, and tool→tool provenance is exact at each hop.
+        // The pending* values themselves survive as the parameter channel each target
+        // window consumes and clears.
+        //
         // Citation Lookup (⌘⇧F) is the frus.citationLookup Window scene (UI audit
         // B4) — no sheet here; the scene shortcut opens it directly.
     }
@@ -257,8 +237,11 @@ struct MainWindowView: View {
     private var trailingTools: some View {
         HStack(spacing: 6) {
 
-            // Search — shortcut owned by the "frus.search" Window scene (⌘F)
+            // Search — shortcut owned by the "frus.search" Window scene (⌘F).
+            // Every tool launch below stamps this window's identity as the tool's
+            // provenance (bindTool), so the tool's document opens route back HERE.
             Button {
+                appState.bindTool(.search, to: hostID)
                 openWindow(id: "frus.search")
             } label: {
                 Label(String(localized: "mainwindow.tools.search", defaultValue: "Search"),
@@ -271,6 +254,7 @@ struct MainWindowView: View {
 
             // Browse (was "Corpus") — shortcut owned by the "frus.corpusBrowser" scene (⌘⇧B)
             Button {
+                appState.bindTool(.corpusBrowser, to: hostID)
                 openWindow(id: "frus.corpusBrowser")
             } label: {
                 Label(String(localized: "mainwindow.tools.browse", defaultValue: "Browse"),
@@ -283,11 +267,15 @@ struct MainWindowView: View {
 
             // Analytics — Corpus / Person / Cross-Reference analytics · Chronology · Word Cloud
             Menu {
-                Button { openWindow(id: "frus.analytics") } label: {
+                Button {
+                    appState.bindTool(.analytics, to: hostID)
+                    openWindow(id: "frus.analytics")
+                } label: {
                     Label(String(localized: "mainwindow.tools.corpusAnalytics",
                                  defaultValue: "Corpus Analytics"), systemImage: "chart.bar.xaxis")
                 }
                 Button {
+                    appState.bindTool(.personAnalytics, to: hostID)
                     openWindow(id: "frus.personAnalytics")
                     bringMacWindowToFront(id: "frus.personAnalytics")
                 } label: {
@@ -295,6 +283,7 @@ struct MainWindowView: View {
                                  defaultValue: "Person Analytics"), systemImage: "person.2")
                 }
                 Button {
+                    appState.bindTool(.crossRefAnalytics, to: hostID)
                     openWindow(id: "frus.crossRefAnalytics")
                     bringMacWindowToFront(id: "frus.crossRefAnalytics")
                 } label: {
@@ -302,12 +291,16 @@ struct MainWindowView: View {
                                  defaultValue: "Cross-Reference Analytics"), systemImage: "square.grid.3x3")
                 }
                 Divider()
-                Button { openWindow(id: "frus.chronology") } label: {
+                Button {
+                    appState.bindTool(.chronology, to: hostID)
+                    openWindow(id: "frus.chronology")
+                } label: {
                     Label(String(localized: "mainwindow.tools.chronology",
                                  defaultValue: "Chronology"), systemImage: "calendar.day.timeline.left")
                 }
                 Button {
                     appState.pendingWordCloud = .corpus
+                    appState.bindTool(.wordCloud, to: hostID)
                     openWindow(id: "frus.wordcloud")
                 } label: {
                     Label { Text(String(localized: "mainwindow.tools.wordcloud", defaultValue: "Word Cloud")) }
@@ -326,11 +319,15 @@ struct MainWindowView: View {
             // My Research — Research window (⌘⌥R) and Collections (⌘⇧K). The Window scenes own the
             // shortcuts; the menu items carry them for discoverability in the dropdown.
             Menu {
-                Button { openWindow(id: "frus.research") } label: {
+                Button {
+                    appState.bindTool(.research, to: hostID)
+                    openWindow(id: "frus.research")
+                } label: {
                     Label(String(localized: "mainwindow.tools.research", defaultValue: "Research"),
                           systemImage: "note.text")
                 }
                 .keyboardShortcut("r", modifiers: [.command, .option])
+                // Collections never routes document opens — no provenance bind.
                 Button { openWindow(id: "frus.collections") } label: {
                     Label(String(localized: "mainwindow.tools.collections", defaultValue: "Collections"),
                           systemImage: "tray.2")

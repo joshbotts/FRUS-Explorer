@@ -509,11 +509,19 @@ struct ResearchView: View {
 
     // MARK: - Word Cloud
 
-    /// A context-menu button that opens a word cloud for the given scope.
+    /// A context-menu button that opens a word cloud for the given scope. On macOS the
+    /// window opens DIRECTLY (the MainWindowView relay is retired — provenance PR 2),
+    /// inheriting this Research window's provenance; on iOS the `pendingWordCloud`
+    /// hand-off presents the tab-container sheet.
     @ViewBuilder
     private func wordCloudButton(_ scope: WordCloudScope) -> some View {
         Button {
             appState.pendingWordCloud = scope
+            #if os(macOS)
+            appState.bindTool(.wordCloud, to: appState.provenance(of: .research))
+            openWindow(id: "frus.wordcloud")
+            bringMacWindowToFront(id: "frus.wordcloud")
+            #endif
         } label: {
             Label { Text(String(localized: "research.wordCloud", defaultValue: "Word Cloud")) }
                 icon: { Image(systemName: WordCloudGlyph.symbol) }
@@ -543,6 +551,8 @@ struct ResearchView: View {
                 header: header
             )
             appState.currentGraphEntry = browsEntry
+            // The graph inherits this Research window's provenance (transitive bind).
+            appState.bindTool(.graph, to: appState.provenance(of: .research))
             openWindow(id: "frus.crossReferenceGraph")
         } label: {
             Label(
@@ -556,7 +566,8 @@ struct ResearchView: View {
 
     // MARK: - Actions
 
-    /// Opens the document in the main window (macOS) or navigates to Browse (iOS).
+    /// Opens the document in this Research window's provenance host (macOS) or
+    /// navigates to Browse (iOS).
     private func openDocument(_ entry: ResearchDocumentEntry) {
         let header = documentHeaders[entry.id] ?? entry.documentId
         let browsEntry = DocumentBrowserEntry(
@@ -564,8 +575,10 @@ struct ResearchView: View {
             volumeId: entry.volumeId,
             header: header
         )
+        #if os(macOS)
+        appState.openDocument(browsEntry, from: .tool(.research), using: openWindow)
+        #else
         appState.pendingBrowseDocument = browsEntry
-        #if os(iOS)
         appState.pendingTab = .browse
         #endif
     }

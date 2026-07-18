@@ -217,10 +217,11 @@ enum ArchivalNeighborsRequest: Codable, Hashable, Sendable {
 /// `ArchivalNeighborsWindowView` shows it bare under a window title/subtitle
 /// (Source Explorer Phase 5 S6).
 ///
-/// Row taps post the neighbor to `AppState.pendingBrowseDocument` (the established
-/// cross-window hand-off — `MainWindowView` consumes it on macOS, the Browse tab on
-/// iOS) and then invoke `onNavigate`: the sheet passes `dismiss`, the window passes
-/// nothing so the list stays open beside the reading window.
+/// Row taps navigate to the neighbor — on macOS via `AppState.openDocument`, routed to
+/// the presenting window's provenance host (`originRequest`); on iOS via the
+/// `pendingBrowseDocument` hand-off the Browse tab consumes — and then invoke
+/// `onNavigate`: the sheet passes `dismiss`, the window passes nothing so the list
+/// stays open beside the reading window.
 struct ArchivalNeighborsContent: View {
 
     /// Shared app state, used to navigate to a tapped neighbor and to resolve a
@@ -242,6 +243,18 @@ struct ArchivalNeighborsContent: View {
     /// Reports the loaded result upward — the sheet shows `basis` under its title,
     /// the macOS window shows it as the window subtitle.
     var onLoaded: ((ArchivalNeighborsResult) -> Void)? = nil
+    /// The value-based window request this content is presented under, when it IS the
+    /// Archival Neighbors window (`ArchivalNeighborsWindowView` passes its own request).
+    /// Row taps route through `.tool(.archivalNeighbors(originRequest))` so the open lands
+    /// in the window's provenance host; `nil` in the iOS sheet presentations, which
+    /// navigate via `pendingBrowseDocument` instead.
+    var originRequest: ArchivalNeighborsRequest? = nil
+
+    #if os(macOS)
+    /// Mint tail for `AppState.openDocument` — when no document host is live, a row tap
+    /// lands in a fresh standalone document window instead of being dropped.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var docs: [IndexingPipeline.RelatedDocument] = []
     @State private var totalCount = 0
@@ -261,13 +274,15 @@ struct ArchivalNeighborsContent: View {
          anchorVolumeId: String? = nil,
          load: @escaping (Set<String>?) async -> ArchivalNeighborsResult,
          onNavigate: (() -> Void)? = nil,
-         onLoaded: ((ArchivalNeighborsResult) -> Void)? = nil) {
+         onLoaded: ((ArchivalNeighborsResult) -> Void)? = nil,
+         originRequest: ArchivalNeighborsRequest? = nil) {
         self.appState = appState
         self.defaultScope = defaultScope
         self.anchorVolumeId = anchorVolumeId
         self.load = load
         self.onNavigate = onNavigate
         self.onLoaded = onLoaded
+        self.originRequest = originRequest
         _scope = State(initialValue: defaultScope)
     }
 
@@ -459,15 +474,21 @@ struct ArchivalNeighborsContent: View {
         .padding(.vertical, 2)
     }
 
-    /// Navigates to the tapped neighbor (Browse tab on iOS; the main browser window
-    /// on macOS, via the `pendingBrowseDocument` hand-off `MainWindowView` consumes).
+    /// Navigates to the tapped neighbor (Browse tab on iOS; this window's provenance host
+    /// on macOS, via `AppState.openDocument(_:from: .tool(.archivalNeighbors(request)))` —
+    /// `.global` when no window request identifies this presentation).
     private func open(_ doc: IndexingPipeline.RelatedDocument) {
-        appState.pendingBrowseDocument = DocumentBrowserEntry(
+        let entry = DocumentBrowserEntry(
             documentId: doc.documentId,
             volumeId:   doc.volumeId,
             header:     doc.header.isEmpty ? doc.documentId : doc.header
         )
-        #if os(iOS)
+        #if os(macOS)
+        let source: DocumentOpenSource =
+            originRequest.map { .tool(.archivalNeighbors($0)) } ?? .global
+        appState.openDocument(entry, from: source, using: openWindow)
+        #else
+        appState.pendingBrowseDocument = entry
         appState.pendingTab = .browse
         #endif
         onNavigate?()
@@ -652,7 +673,8 @@ struct ArchivalNeighborsWindowView: View {
                 await request.load(appState: appState, scopeVolumeIds: scopeVolumeIds)
             },
             onNavigate: nil,   // the window stays open — that is the point of S6
-            onLoaded: { basis = $0.basis }
+            onLoaded: { basis = $0.basis },
+            originRequest: request   // row taps route to this window's provenance host
         )
         .navigationTitle(String(localized: "archivalNeighbors.title",
                                 defaultValue: "Archival Neighbors"))

@@ -76,6 +76,12 @@ struct CompilationView: View {
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
+    #if os(macOS)
+    /// The identity of the document host this view is mounted in, when it is one — the
+    /// compilation list can render inside document hosts as well as the corpus-browser
+    /// window, so neighbor spawns bind to `documentHostID ?? provenance(of: .corpusBrowser)`.
+    @Environment(\.documentHostID) private var documentHostID
+    #endif
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
@@ -352,12 +358,23 @@ struct CompilationView: View {
                                 )
                                 return
                             }
-                            #endif
                             openWindow(value: ArchivalNeighborsRequest.document(
                                 volumeId:     doc.volumeId,
                                 documentId:   doc.documentId,
                                 documentYear: nil
                             ))
+                            #else
+                            // Provenance: bind to the mounting document host, else the
+                            // corpus-browser window's provenance.
+                            let request = ArchivalNeighborsRequest.document(
+                                volumeId:     doc.volumeId,
+                                documentId:   doc.documentId,
+                                documentYear: nil
+                            )
+                            appState.bindTool(.archivalNeighbors(request),
+                                              to: documentHostID ?? appState.provenance(of: .corpusBrowser))
+                            openWindow(value: request)
+                            #endif
                         } label: {
                             Label(String(localized: "browser.compilation.archivalNeighbors",
                                          defaultValue: "Archival Neighbors…"),

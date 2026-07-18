@@ -112,7 +112,10 @@ struct CorpusBrowserWindowView: View {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         // B5: the People index is a window (frus.people), browsable
-                        // alongside documents — not a modal over this browser.
+                        // alongside documents — not a modal over this browser. It inherits
+                        // this browser's provenance (transitive bind), so its "Find all
+                        // mentions" search lands where the browser's own opens do.
+                        appState.bindTool(.people, to: appState.provenance(of: .corpusBrowser))
                         openWindow(id: "frus.people")
                         bringMacWindowToFront(id: "frus.people")
                     } label: {
@@ -223,6 +226,7 @@ struct CorpusBrowserWindowView: View {
             Spacer()
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
+                appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
                 bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
@@ -241,6 +245,7 @@ struct CorpusBrowserWindowView: View {
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .subseries(subseriesId: sub)
+                appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334
                 bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
@@ -362,6 +367,7 @@ private struct SubseriesVolumeListView: View {
                                       defaultValue: "Opens the volume's contents"))
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+                appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
                 bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
@@ -379,8 +385,10 @@ private struct SubseriesVolumeListView: View {
             Button {
                 // B6: hand the volume to the graph window's volume-connections stage
                 // (a window, so this list stays open while exploring the graph). The
-                // window consumes and clears pendingVolumeGraph.
+                // window consumes and clears pendingVolumeGraph. The graph inherits
+                // this browser's provenance (transitive bind).
                 appState.pendingVolumeGraph = vol.volumeId
+                appState.bindTool(.graph, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.crossReferenceGraph")
                 bringMacWindowToFront(id: "frus.crossReferenceGraph")
             } label: {
@@ -400,6 +408,7 @@ private struct SubseriesVolumeListView: View {
         .contextMenu {
             Button {
                 appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+                appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334
                 bringMacWindowToFront(id: "frus.wordcloud")
             } label: {
@@ -524,6 +533,9 @@ private struct CorpusVolumeDetailView: View {
     /// The window's detail-column path; opening a section pushes onto it.
     @Binding var path: [CorpusNavValue]
     @Environment(AppState.self) private var appState
+    /// Mint tail for `AppState.openDocument` — when no document host is live, a
+    /// prose-section open lands in a fresh standalone document window.
+    @Environment(\.openWindow) private var openWindow
 
     enum Phase {
         case notDownloaded, downloading, indexing, loadingStructure
@@ -814,9 +826,13 @@ private struct CorpusVolumeDetailView: View {
             metadata: meta,
             volumeTitle: title,
             onSearchVolume: { volumeId in
-                // Setting pendingSearch triggers MainWindowView.onChange to open the search window.
-                // The browser stays where it is (this view is pushed, not a sheet to dismiss).
+                // Open the Search window DIRECTLY (the MainWindowView relay is retired —
+                // provenance PR 2); it inherits this browser's provenance. The browser
+                // stays where it is (this view is pushed, not a sheet to dismiss).
                 appState.pendingSearch = SearchParameters(volumeIds: [volumeId])
+                appState.bindTool(.search, to: appState.provenance(of: .corpusBrowser))
+                openWindow(id: "frus.search")
+                bringMacWindowToFront(id: "frus.search")
                 appState.completedIndexingMetadata = nil
             },
             onDismiss: {
@@ -907,18 +923,18 @@ private struct CorpusVolumeDetailView: View {
     /// Handles a tap on a section row in the volume structure list.
     ///
     /// Prose-readable sections (preface, introduction, errata, etc.) open straight
-    /// into the main window on the first tap — the same one-tap behaviour as a
-    /// numbered document — by posting to `AppState.pendingBrowseDocument`. Sections that
-    /// need an intermediate list or a structured view (compilations with documents, the
-    /// Persons glossary, the Sources list) push `CorpusSectionDocumentView` onto the
-    /// detail-column path instead.
+    /// into this browser's provenance host on the first tap — the same one-tap behaviour
+    /// as a numbered document — via `AppState.openDocument(_:from: .tool(.corpusBrowser))`.
+    /// Sections that need an intermediate list or a structured view (compilations with
+    /// documents, the Persons glossary, the Sources list) push `CorpusSectionDocumentView`
+    /// onto the detail-column path instead.
     private func openSection(_ section: VolumeSection) {
         if section.canReadDirectly {
-            appState.pendingBrowseDocument = DocumentBrowserEntry(
+            appState.openDocument(DocumentBrowserEntry(
                 documentId: section.sectionId,
                 volumeId: volume.volumeId,
                 header: section.title
-            )
+            ), from: .tool(.corpusBrowser), using: openWindow)
         } else {
             path.append(.section(volumeId: volume.volumeId, section: section))
         }
@@ -1102,8 +1118,8 @@ private struct DiscoveredMetadataRow: View {
 /// - **`"sources"`** sections embed `VolumeSourcesView` inside a `List` for the same reason.
 /// - All other sections fetch the indexed document list and display rows.
 ///
-/// Tapping a document (or the "Read" button) posts the entry to
-/// `AppState.pendingBrowseDocument`, routed to the active document window; the browser window
+/// Tapping a document (or the "Read" button) routes the entry to this browser's provenance
+/// host via `AppState.openDocument(_:from: .tool(.corpusBrowser))`; the browser window
 /// stays where it is. The system back button returns to the volume overview.
 ///
 /// Version history:
@@ -1255,14 +1271,14 @@ private struct CorpusSectionDocumentView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
             Button {
-                appState.pendingBrowseDocument = DocumentBrowserEntry(
+                appState.openDocument(DocumentBrowserEntry(
                     documentId: section.sectionId,
                     volumeId: volumeId,
                     documentNumber: nil,
                     header: section.title,
                     dateline: nil,
                     sourceNote: nil
-                )
+                ), from: .tool(.corpusBrowser), using: openWindow)
             } label: {
                 Label(
                     String(
@@ -1338,10 +1354,10 @@ private struct CorpusSectionDocumentView: View {
         .listStyle(.inset)
     }
 
-    /// A tappable document row that opens the document in the active document window.
+    /// A tappable document row that opens the document in this browser's provenance host.
     private func documentButton(_ doc: DocumentBrowserEntry) -> some View {
         Button {
-            appState.pendingBrowseDocument = doc
+            appState.openDocument(doc, from: .tool(.corpusBrowser), using: openWindow)
         } label: {
             DocumentRowLabel(doc: doc)
         }
@@ -1349,6 +1365,7 @@ private struct CorpusSectionDocumentView: View {
         .contextMenu {
             Button {
                 appState.currentGraphEntry = doc
+                appState.bindTool(.graph, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.crossReferenceGraph")
             } label: {
                 Label("Show Cross-Reference Graph",

@@ -150,6 +150,11 @@ struct AnalyticsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    #if os(macOS)
+    /// Opens the Search window directly for the View-in-Search hand-offs (the
+    /// MainWindowView relay is retired — provenance PR 2).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     // MARK: - State
 
@@ -377,6 +382,18 @@ struct AnalyticsView: View {
             seriesCount = defaultSeriesCount
             seedDefaultYearRange()
             applyAnalyticsParameters(initialParameters)
+            #if os(macOS)
+            // A FRESH macOS `frus.analytics` window is created AFTER the producer set
+            // `pendingAnalytics` and opened it directly (relay elimination, PR 2). `initialParameters`
+            // is always nil on macOS (the scene mounts `AnalyticsView()`), and the `.onChange` below
+            // never fires for a value set BEFORE this view subscribed — so drain the hand-off here on
+            // first open, mirroring `MacSearchWindowView`/`WordCloudWindowContent`. Without this the
+            // window opens on the empty "enter a term" state and the term/date-range are lost.
+            if let pending = appState.pendingAnalytics {
+                applyAnalyticsParameters(pending)
+                appState.pendingAnalytics = nil
+            }
+            #endif
         }
         // Re-seed when a new handoff arrives while the view is already on screen
         // (macOS `frus.analytics` Window — a long-lived instance reused across
@@ -464,11 +481,16 @@ struct AnalyticsView: View {
     ///
     /// On iOS, Analytics is a sheet over the Browse tab — switch to the Search tab
     /// (now pre-filled via `pendingSearch`) and dismiss the sheet. On macOS, Analytics
-    /// is a standalone `frus.analytics` Window; setting `pendingSearch` is enough —
-    /// `MainWindowView`/`BrowserView` open the search window/inspector and apply the
-    /// parameters, and the analytics window stays open for side-by-side comparison.
+    /// is a standalone `frus.analytics` Window; the Search window is opened DIRECTLY
+    /// (the MainWindowView relay is retired — provenance PR 2) and inherits this
+    /// analytics window's provenance, while the analytics window stays open for
+    /// side-by-side comparison.
     private func navigateToSearch() {
-        #if os(iOS)
+        #if os(macOS)
+        appState.bindTool(.search, to: appState.provenance(of: .analytics))
+        openWindow(id: "frus.search")
+        bringMacWindowToFront(id: "frus.search")
+        #else
         appState.pendingTab = .search
         dismiss()
         #endif

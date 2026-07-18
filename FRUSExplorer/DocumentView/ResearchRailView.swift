@@ -89,6 +89,13 @@ struct ResearchRailView: View {
     // Available on both platforms: macOS opens the tile windows; iPadOS opens a second document
     // window from the rail header (D8 — Stage Manager).
     @Environment(\.openWindow) private var openWindow
+    #if os(macOS)
+    /// The identity of the document host this rail is mounted in (set at each host root).
+    /// Tile launches stamp it as the spawned tool's provenance, so the tool's document
+    /// opens route back to THIS window — the rail never needs to know which window it
+    /// lives in (provenance PR 2).
+    @Environment(\.documentHostID) private var documentHostID
+    #endif
     #if os(iOS)
     /// Gates the rail-header "Open in New Window" icon to iPad Stage Manager (D8).
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
@@ -660,18 +667,25 @@ struct ResearchRailView: View {
     #if os(macOS)
     /// Opens the document-scoped Word Cloud window. The rail opens it DIRECTLY (the
     /// `pendingWordCloud` → openWindow observer lives only in `MainWindowView`, so the strip's
-    /// old set-only action was dead when mounted in a document window).
+    /// old set-only action was dead when mounted in a document window). The cloud is bound
+    /// to this rail's host window, so its Search/Analytics/Chronology hand-offs route back here.
     private func openWordCloud() {
         appState.pendingWordCloud = .document(volumeId: entry.volumeId, documentId: entry.documentId)
+        appState.bindTool(.wordCloud, to: documentHostID)
         openWindow(id: "frus.wordcloud")
         bringMacWindowToFront(id: "frus.wordcloud")
     }
 
-    /// Opens the Source Explorer window, priming the source-note fields only as a fallback —
-    /// `MacDocumentView.loadDocument()` pre-sets `currentSourceNote` from the live XML parse.
+    /// Opens the Source Explorer window, re-priming the source-note fields from the rail's own
+    /// `entry` whenever the globals describe a DIFFERENT document (§6.1 leak fix: with two
+    /// document windows open, the older window's tile used to open the newer document's note
+    /// because it only primed when the globals were nil). The same-document case is left
+    /// untouched so `MacDocumentView.loadDocument()`'s richer live-XML-parse priming wins.
     private func openSources() {
-        if appState.currentSourceNote == nil {
+        if appState.currentSourceNoteDocumentId != entry.documentId
+            || appState.currentSourceNoteVolumeId != entry.volumeId {
             appState.currentSourceNote = entry.sourceNote ?? ""
+            appState.currentSourceNoteYear = nil
             if let dl = entry.dateline,
                let m = dl.range(of: #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#, options: .regularExpression) {
                 appState.currentSourceNoteYear = Int(dl[m])
@@ -681,24 +695,31 @@ struct ResearchRailView: View {
             appState.currentSourceNoteVolumeId   = entry.volumeId
             appState.currentSourceNoteDocumentId = entry.documentId
         }
+        appState.bindTool(.sourceExplorer, to: documentHostID)
         openWindow(id: "frus.sourceExplorer")
         bringMacWindowToFront(id: "frus.sourceExplorer")
     }
 
-    /// Opens the cross-reference graph window anchored on this document.
+    /// Opens the cross-reference graph window anchored on this document, bound to this
+    /// rail's host window so "View Document" routes back here.
     private func openGraph() {
         appState.currentGraphEntry = entry
+        appState.bindTool(.graph, to: documentHostID)
         openWindow(id: "frus.crossReferenceGraph")
         bringMacWindowToFront(id: "frus.crossReferenceGraph")
     }
 
-    /// Opens the value-based Related Documents window (focuses an existing equal-request window).
+    /// Opens the value-based Related Documents window (focuses an existing equal-request
+    /// window), binding the request instance to this rail's host window BEFORE the open so
+    /// row taps route back here.
     private func openRelated() {
-        openWindow(value: RelatedDocumentsRequest(
+        let request = RelatedDocumentsRequest(
             anchor: DocumentKey(volumeId: entry.volumeId, documentId: entry.documentId),
             anchorYear: MacDocumentView.extractYear(from: entry.dateline),
             weights: relatedWeights,
-            scope: .allIndexed))
+            scope: .allIndexed)
+        appState.bindTool(.relatedDocuments(request), to: documentHostID)
+        openWindow(value: request)
     }
     #endif
 }

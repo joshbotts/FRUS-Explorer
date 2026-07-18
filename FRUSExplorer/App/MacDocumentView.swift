@@ -23,9 +23,8 @@ import SwiftData
 ///
 /// ## Navigation
 /// Prev/next navigation appends to `navigationPath` (owned by `MainWindowView`) so
-/// the back button history is preserved. Cross-reference link taps set
-/// `AppState.pendingBrowseDocument`, which `MainWindowView.onChange` consumes and
-/// appends to the path.
+/// the back button history is preserved. Cross-reference link taps append to the same
+/// path — navigation inside a host stays local to the host's own stack.
 ///
 /// ## Session 68c Note
 /// The new macOS architecture uses `NavigationStack` (not `NavigationSplitView`), so
@@ -83,6 +82,10 @@ struct MacDocumentView: View {
     @Environment(\.openURL) private var openURL
     /// Opens the research-note composer window (UI audit C1).
     @Environment(\.openWindow) private var openWindow
+    /// The identity of the document host this view is mounted in (set at each host root —
+    /// `MainWindowView` or `MacDocumentWindowView`). Tool launchers here (Find all mentions)
+    /// stamp it as the spawned tool's provenance, so the tool's opens route back to THIS window.
+    @Environment(\.documentHostID) private var documentHostID
 
     @State private var vm: DocumentViewModel
     @State private var prevEntry: DocumentBrowserEntry? = nil
@@ -237,7 +240,10 @@ struct MacDocumentView: View {
                     // Search the resolved cross-corpus rollup identity — the same identity whose
                     // count the sheet displays; the raw per-volume `ref` collides across volumes
                     // and is only the fallback when the rollup isn't built (people-eval finding
-                    // G). MainWindowView opens the Search window on any pendingSearch.
+                    // G). The Search window is opened DIRECTLY (the MainWindowView relay is
+                    // retired — provenance PR 2, so this works from a standalone document
+                    // window with the main window closed) and bound to THIS host, so result
+                    // clicks come back to the window the user was reading in.
                     if let rollupId = vm.selectedPersonRollupId {
                         appState.pendingSearch = SearchParameters(personRollupId: rollupId,
                                                                   personLabel: person.name)
@@ -245,6 +251,9 @@ struct MacDocumentView: View {
                         appState.pendingSearch = SearchParameters(personRef: person.ref,
                                                                   personLabel: person.name)
                     }
+                    appState.bindTool(.search, to: documentHostID)
+                    openWindow(id: "frus.search")
+                    bringMacWindowToFront(id: "frus.search")
                 }
             )
         }
@@ -595,6 +604,9 @@ struct MacDocumentView: View {
             text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
         highlightCoordinator.webKitSelectedText = nil
         highlightCoordinator.webKitSelectedBlockText = nil
+        // A tool-window launch from a document host — stamp provenance (last-spawner-wins)
+        // so the Source Explorer's related-document taps route back to THIS window.
+        appState.bindTool(.sourceExplorer, to: documentHostID)
         openWindow(id: "frus.sourceExplorer")
         bringMacWindowToFront(id: "frus.sourceExplorer")
     }
@@ -669,10 +681,10 @@ struct MacDocumentView: View {
             openInNewWindow: {
                 // File ▸ "Open Document in New Window" (C2.2). Value-based identity is
                 // (volumeId, documentId), so this focuses the window if the document is already open.
-                openWindow(value: DocumentWindowID(
-                    volumeId: entry.volumeId,
-                    documentId: entry.documentId,
-                    header: vm.documentTitle ?? entry.header))
+                // Mint from the full entry (widened payload → full chrome) with the live title override.
+                var id = DocumentWindowID(entry: entry)
+                id.header = vm.documentTitle ?? entry.header
+                openWindow(value: id)
             }
         )
     }
@@ -1129,13 +1141,10 @@ struct MacDocumentWindowView: View {
     /// The shared research-panel visibility key — drives the D6 toolbar's rail toggle (⌘⇧R).
     @AppStorage("frus.document.researchPanel.visible") private var researchPanelVisible = true
 
-    /// The document the window opened for, as a `DocumentBrowserEntry`.
+    /// The document the window opened for, as a `DocumentBrowserEntry` — rebuilt from the widened
+    /// `DocumentWindowID` payload so a minted window renders full document chrome (PR 2).
     private var rootEntry: DocumentBrowserEntry {
-        DocumentBrowserEntry(
-            documentId: windowID.documentId,
-            volumeId: windowID.volumeId,
-            header: windowID.header
-        )
+        windowID.rootEntry
     }
 
     /// The document currently shown (the navigation stack's top, or the root).
@@ -1209,8 +1218,7 @@ struct MacDocumentWindowView: View {
             appState.registerHost(hostID)
             // Drain a legacy navigation written while NO host was mounted (see MainWindowView).
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         .onDisappear { appState.unregisterHost(hostID) }
@@ -1220,8 +1228,7 @@ struct MacDocumentWindowView: View {
         .onChange(of: appState.pendingBrowseDocument) { _, entry in
             guard entry != nil else { return }
             appState.routeLegacyPendingBrowse { orphan in
-                openWindow(value: DocumentWindowID(
-                    volumeId: orphan.volumeId, documentId: orphan.documentId, header: orphan.header))
+                openWindow(value: DocumentWindowID(entry: orphan))
             }
         }
         // Bump this host's ADVISORY recency stamp while key — consulted only by the fallback

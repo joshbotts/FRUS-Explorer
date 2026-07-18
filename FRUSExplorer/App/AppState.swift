@@ -10,6 +10,7 @@ import Foundation
 import Network
 import Observation
 import SwiftData
+import SwiftUI   // OpenWindowAction (provenance routing convenience)
 import CloudKit
 import os              // shared `cloudKitLog` for redacted health-check telemetry (#188-C.1)
 #if os(iOS)
@@ -635,11 +636,12 @@ final class AppState {
     var pendingCollectionSelection: UUID? = nil
 
     /// Cross-platform hand-off channel for opening a document from any tool surface. On **iOS**
-    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** it is the
-    /// LEGACY producer channel (origin-less): hosts translate it through
-    /// `routeLegacyPendingBrowse(mintWindow:)` — the D3 fallback chain — until every macOS
-    /// producer migrates to `openDocument(_:from:mintWindow:)` (provenance PR 2), after which it
-    /// is iOS-only.
+    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** every
+    /// producer now routes directly through `openDocument(_:from:mintWindow:)` (provenance
+    /// PR 2), so the only remaining macOS writer is `unregisterHost`'s demotion of an
+    /// in-flight `routedBrowse` whose target closed with no surviving host — the hosts'
+    /// observers + `onAppear` drains (`routeLegacyPendingBrowse`) stay as its delivery
+    /// mechanism, re-resolving the value when the next host mounts.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
 
     // MARK: Window routing — provenance model (macOS; Planning/Window-Routing-Provenance.md)
@@ -700,12 +702,16 @@ final class AppState {
         }
     }
 
-    /// Binds a tool surface to the document host it was launched from. Pass the launcher's own
-    /// provenance for tool→tool spawns (transitivity). A `nil` host (launcher outside any chain,
-    /// e.g. a scene keyboard shortcut) leaves any existing binding untouched.
+    /// Binds a tool surface to the document host it was launched from — every explicit launch
+    /// re-binds (last-spawner-wins). Pass the launcher's own provenance for tool→tool spawns
+    /// (transitivity). A `nil` host — an originless launch (Settings/Collections word cloud), or a
+    /// transitive spawn whose parent is itself unbound — **CLEARS** the binding, so the tool
+    /// resolves through the D3 recency fallback rather than a stale-but-live prior host. (Leaving a
+    /// stale binding was the FM-A resurfacing PR-2 review caught: a buried origin A kept stealing
+    /// opens from the recency host.) Bare scene keyboard shortcuts run no code, so they never reach
+    /// this and correctly leave the existing binding for `provenance(of:)`'s liveness check to age.
     func bindTool(_ tool: ToolWindowID, to host: DocumentHostID?) {
-        guard let host else { return }
-        toolProvenance[tool] = host
+        toolProvenance[tool] = host   // nil removes the key
     }
 
     /// A tool's provenance host, or `nil` when unbound or the bound host has closed
@@ -737,6 +743,18 @@ final class AppState {
             routedBrowse = RoutedBrowse(host: target, entry: entry)
         } else {
             mintWindow(entry)
+        }
+    }
+
+    /// Convenience for view-side producers: same resolution as `openDocument(_:from:mintWindow:)`,
+    /// with the mint tail wired to the caller's `@Environment(\.openWindow)` — a minted window
+    /// carries the entry's FULL display payload (the widened `DocumentWindowID`), so it renders
+    /// the same chrome as a routed open.
+    func openDocument(_ entry: DocumentBrowserEntry,
+                      from source: DocumentOpenSource,
+                      using openWindow: OpenWindowAction) {
+        openDocument(entry, from: source) { orphan in
+            openWindow(value: DocumentWindowID(entry: orphan))
         }
     }
 

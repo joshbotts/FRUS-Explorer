@@ -31,15 +31,16 @@ import SwiftUI
 /// freely and remains open across navigation.
 ///
 /// ## Navigation
-/// Selecting a result sets `AppState.pendingBrowseDocument`, which the document hosts translate through the
-/// provenance fallback chain (`routeLegacyPendingBrowse`; direct provenance routing lands with the producer
-/// migration — provenance PR 2). The search window stays open.
+/// Selecting a result calls `AppState.openDocument(_:from: .tool(.search))`, which routes it to
+/// this window's provenance host — the document window Search was launched from — falling back
+/// (most-recently-key live host → mint a standalone window) when that host has closed. The search
+/// window stays open.
 ///
 /// ## Pending Search
 /// `AppState.pendingSearch` (set by "Find all mentions" in `PersonDetailSheet`) is
 /// observed here. On change the parameters are applied and a new search fires.
-/// `MainWindowView` also observes `pendingSearch` and calls `openWindow(id:)` to
-/// ensure the window is open before the parameters arrive.
+/// Producers open the window directly (`openWindow(id: "frus.search")`) alongside the
+/// hand-off — the old MainWindowView opening relay is retired (provenance PR 2).
 ///
 /// ## Advanced Filters
 /// Tapping "Advanced…" in the filter row opens `SearchFilterView` in a popover
@@ -902,8 +903,8 @@ struct MacSearchWindowView: View {
                     navigateToResult(result)
                 }
                 .contextMenu {
-                    // Default click opens in the main window (navigateToResult →
-                    // pendingBrowseDocument); offered explicitly here too.
+                    // Default click routes to this Search window's provenance host
+                    // (navigateToResult → appState.openDocument); offered explicitly here too.
                     Button {
                         navigateToResult(result)
                     } label: {
@@ -924,12 +925,16 @@ struct MacSearchWindowView: View {
                     }
                     Button {
                         // S6: Archival Neighbors opens in its own window so the
-                        // result list survives every row navigation.
-                        openWindow(value: ArchivalNeighborsRequest.document(
+                        // result list survives every row navigation. The spawned window
+                        // inherits this Search window's provenance (transitive bind).
+                        let request = ArchivalNeighborsRequest.document(
                             volumeId:     result.volumeId,
                             documentId:   result.documentId,
                             documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
-                        ))
+                        )
+                        appState.bindTool(.archivalNeighbors(request),
+                                          to: appState.provenance(of: .search))
+                        openWindow(value: request)
                     } label: {
                         Label(
                             String(localized: "search.result.archivalNeighbors",
@@ -1089,7 +1094,8 @@ struct MacSearchWindowView: View {
     /// Carries `submittedQuery` as the chart term and — when `parameters.dateRange`
     /// is set — its `earliest`/`latest` ISO years as the chart's year-range bounds,
     /// so the chart opens already focused on the same window the search was scoped
-    /// to. `MainWindowView` observes `pendingAnalytics` and opens `frus.analytics`;
+    /// to. Opens `frus.analytics` DIRECTLY (the MainWindowView relay is retired —
+    /// provenance PR 2), binding it to this Search window's own provenance;
     /// `AnalyticsView` applies the parameters and runs the chart query immediately.
     private func openSearchInAnalytics() {
         let term = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
@@ -1099,6 +1105,9 @@ struct MacSearchWindowView: View {
             yearRangeStart: searchVM.parameters.dateRange?.earliest.flatMap(Self.isoYear),
             yearRangeEnd: searchVM.parameters.dateRange?.latest.flatMap(Self.isoYear)
         )
+        appState.bindTool(.analytics, to: appState.provenance(of: .search))
+        openWindow(id: "frus.analytics")
+        bringMacWindowToFront(id: "frus.analytics")
     }
 
     /// Extracts the four-digit year from an ISO `yyyy-MM-dd` date string, as
@@ -1107,8 +1116,10 @@ struct MacSearchWindowView: View {
         Int(isoDate.prefix(4))
     }
 
+    /// Opens the result in this Search window's provenance host (the window the user
+    /// launched Search from), resolved through the fallback chain when that host has closed.
     private func navigateToResult(_ result: SearchResult) {
-        appState.pendingBrowseDocument = DocumentBrowserEntry(
+        appState.openDocument(DocumentBrowserEntry(
             documentId: result.documentId,
             volumeId: result.volumeId,
             documentNumber: result.documentNumber,
@@ -1116,7 +1127,7 @@ struct MacSearchWindowView: View {
             dateline: result.dateline,
             sourceNote: result.sourceNote,
             isEditorialNote: result.isEditorialNote
-        )
+        ), from: .tool(.search), using: openWindow)
     }
 
     /// Opens the result in its own document window, leaving the Search window and
@@ -1126,11 +1137,17 @@ struct MacSearchWindowView: View {
     /// `WindowGroup`, so they tab together. Per-document identity means reopening the
     /// same document focuses its existing window/tab.
     private func openResultInNewWindow(_ result: SearchResult) {
-        openWindow(value: DocumentWindowID(
-            volumeId: result.volumeId,
+        // Mint from the full result payload (widened DocumentWindowID) so the new window renders
+        // the same document chrome as a routed open — matching navigateToResult's entry fields.
+        openWindow(value: DocumentWindowID(entry: DocumentBrowserEntry(
             documentId: result.documentId,
-            header: result.header
-        ))
+            volumeId: result.volumeId,
+            documentNumber: result.documentNumber,
+            header: result.header,
+            dateline: result.dateline,
+            sourceNote: result.sourceNote,
+            isEditorialNote: result.isEditorialNote
+        )))
     }
 }
 

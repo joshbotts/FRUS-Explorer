@@ -38,6 +38,11 @@ import SwiftData
 struct PersonIndexView: View {
 
     @Environment(AppState.self) private var appState
+    #if os(macOS)
+    /// Opens the Search window directly for "Find all mentions" (the MainWindowView
+    /// relay is retired — provenance PR 2).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @State private var sections: [PersonIndexSection] = []
     @State private var isLoading = true
@@ -173,12 +178,18 @@ struct PersonIndexView: View {
     }
 
     /// A "Find all mentions" action for a cluster, used in the row context menu and iOS swipe.
+    /// macOS opens the Search window directly, binding it to this People window's own
+    /// provenance so result clicks land where the People browser's opens do.
     @ViewBuilder
     private func mentionsButton(for indexEntry: PersonIndexEntry) -> some View {
         Button {
             appState.pendingSearch = SearchParameters(personRollupId: indexEntry.rollupId,
                                                       personLabel: indexEntry.entry.name)
-            #if os(iOS)
+            #if os(macOS)
+            appState.bindTool(.search, to: appState.provenance(of: .people))
+            openWindow(id: "frus.search")
+            bringMacWindowToFront(id: "frus.search")
+            #else
             appState.pendingTab = .search
             #endif
         } label: {
@@ -382,6 +393,11 @@ struct PersonIndexDetailSheet: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    #if os(macOS)
+    /// Opens the Search window directly for "Find all mentions" (the MainWindowView
+    /// relay is retired — provenance PR 2).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     /// Cross-corpus mention count loaded asynchronously on appear.
     /// Already correct for rollup entries from `PersonIndexView`; resolved here for the per-volume
@@ -581,7 +597,13 @@ struct PersonIndexDetailSheet: View {
                     Button {
                         appState.pendingSearch = SearchParameters(personRollupId: effectiveRollupId,
                                                                   personLabel: indexEntry.entry.name)
-                        #if os(iOS)
+                        #if os(macOS)
+                        // Direct open (the MainWindowView relay is retired — provenance
+                        // PR 2), bound to the People window's own provenance.
+                        appState.bindTool(.search, to: appState.provenance(of: .people))
+                        openWindow(id: "frus.search")
+                        bringMacWindowToFront(id: "frus.search")
+                        #else
                         appState.pendingTab = .search
                         #endif
                         dismiss()

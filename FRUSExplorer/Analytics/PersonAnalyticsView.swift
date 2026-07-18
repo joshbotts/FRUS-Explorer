@@ -262,6 +262,11 @@ struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #if os(macOS)
+    /// Opens the Search window directly for the person-mentions deep-link (the
+    /// MainWindowView relay is retired — provenance PR 2).
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     // MARK: - Tunables
 
@@ -1083,10 +1088,15 @@ struct PersonAnalyticsView: View {
 
     /// Person tap → open the person's mentions in Search (the established person
     /// deep-link, reused from the People browser's "Find all mentions" action).
+    /// macOS opens the window directly, binding it to this analytics window's provenance.
     private func openPersonMentions(_ person: PersonMentionRanking) {
         appState.pendingSearch = SearchParameters(personRollupId: person.rollupId,
                                                   personLabel: person.canonicalName)
-        #if os(iOS)
+        #if os(macOS)
+        appState.bindTool(.search, to: appState.provenance(of: .personAnalytics))
+        openWindow(id: "frus.search")
+        bringMacWindowToFront(id: "frus.search")
+        #else
         appState.pendingTab = .search
         #endif
         #if DEBUG

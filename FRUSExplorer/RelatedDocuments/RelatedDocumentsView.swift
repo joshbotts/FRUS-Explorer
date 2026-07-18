@@ -84,6 +84,12 @@ struct RelatedDocumentsContent: View {
     /// restored macOS window keeps its own tuning independent of this global default.
     @AppStorage("frus.related.weights") private var persistedWeights = AxisWeights.default
 
+    #if os(macOS)
+    /// Mint tail for `AppState.openDocument` — when no document host is live, a row tap
+    /// lands in a fresh standalone document window instead of being dropped.
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
     @State private var weights: AxisWeights
     @State private var scope: NeighborScope
     @State private var rows: [RelatedDocumentRow] = []
@@ -361,15 +367,18 @@ struct RelatedDocumentsContent: View {
         }
     }
 
-    /// Navigates to the tapped document (Browse tab on iOS; the main browser window on macOS via the
-    /// `pendingBrowseDocument` hand-off), then invokes `onNavigate` (dismiss for the sheet, nothing
-    /// for the window).
+    /// Navigates to the tapped document (Browse tab on iOS; this window's provenance host on macOS
+    /// via `AppState.openDocument(_:from: .tool(.relatedDocuments(request)))`), then invokes
+    /// `onNavigate` (dismiss for the sheet, nothing for the window).
     private func open(_ row: RelatedDocumentRow) {
-        appState.pendingBrowseDocument = DocumentBrowserEntry(
+        let entry = DocumentBrowserEntry(
             documentId: row.documentId,
             volumeId: row.volumeId,
             header: row.record.header.isEmpty ? row.documentId : row.record.header)
-        #if os(iOS)
+        #if os(macOS)
+        appState.openDocument(entry, from: .tool(.relatedDocuments(request)), using: openWindow)
+        #else
+        appState.pendingBrowseDocument = entry
         appState.pendingTab = .browse
         #endif
         onNavigate?()

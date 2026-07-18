@@ -35,6 +35,46 @@ struct DocumentWindowID: Codable, Hashable {
     /// Placeholder heading shown in the window title bar while the document loads.
     /// Not part of the value's identity — see the `Equatable`/`Hashable` note above.
     var header: String
+    /// Non-identity display payload (provenance PR 2): carried so a window minted from a full
+    /// `DocumentBrowserEntry` renders the same document chrome as a routed open, instead of a thin
+    /// 3-field reconstruction. Wired at the sites where a full entry is in scope: the D3 mint tail
+    /// (`AppState.openDocument`/`routeLegacyPendingBrowse` + the Handoff/Spotlight tail), the host
+    /// drain closures, File ▸ Open Document in New Window, and Search's Open-in-New-Window. (Citation
+    /// Lookup's per-result windows stay thin — `CitationMatch` has no richer payload to carry.)
+    /// Optionals decode cleanly from pre-widening restoration payloads (the GraphWindowRequest pattern).
+    var documentNumber: String? = nil
+    /// Dateline string, if the minting surface had one.
+    var dateline: String? = nil
+    /// Source note, if the minting surface had one.
+    var sourceNote: String? = nil
+    /// Whether the entry is a FRUS editorial note (nil = unknown → treated as a document).
+    var isEditorialNote: Bool? = nil
+
+    /// Builds the id from a full `DocumentBrowserEntry`, preserving its display payload.
+    init(entry: DocumentBrowserEntry) {
+        self.volumeId = entry.volumeId
+        self.documentId = entry.documentId
+        self.header = entry.header
+        self.documentNumber = entry.documentNumber
+        self.dateline = entry.dateline
+        self.sourceNote = entry.sourceNote
+        self.isEditorialNote = entry.isEditorialNote
+    }
+
+    /// Memberwise-style init for the pre-widening 3-field call sites.
+    init(volumeId: String, documentId: String, header: String) {
+        self.volumeId = volumeId
+        self.documentId = documentId
+        self.header = header
+    }
+
+    /// The `DocumentBrowserEntry` this window renders at its root.
+    var rootEntry: DocumentBrowserEntry {
+        DocumentBrowserEntry(
+            documentId: documentId, volumeId: volumeId, documentNumber: documentNumber,
+            header: header, dateline: dateline, sourceNote: sourceNote,
+            isEditorialNote: isEditorialNote ?? false)
+    }
 
     static func == (lhs: DocumentWindowID, rhs: DocumentWindowID) -> Bool {
         lhs.volumeId == rhs.volumeId && lhs.documentId == rhs.documentId

@@ -53,16 +53,16 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// 4. `onChange(of: appState.isOnline)` enables/suspends the download manager in real time.
 ///
 /// ## Window Architecture
-/// Counted from this file's scene body, 2026-07-15 (#241). **Keep this table in sync when
-/// adding a scene** — it drifted before (six scenes missing, and planning docs quoted "~17"
-/// macOS scenes against an actual 21), and `Planning/241-iPad-Windowing-Investigation.md`
-/// depends on it being true.
+/// Recounted from this file's scene body, 2026-07-18 (provenance PR 2). **Keep this table in
+/// sync when adding a scene** — it drifted before (six scenes missing at the 2026-07-15 #241
+/// count, then `relatedDocumentsScene` omitted again by #308), and
+/// `Planning/241-iPad-Windowing-Investigation.md` depends on it being true.
 ///
 /// **Shared:** the default `WindowGroup` main window (onboarding → `MainTabView` on iOS,
-/// `MainWindowView` on macOS), plus `archivalNeighborsScene`, declared once and referenced
-/// from both platform regions.
+/// `MainWindowView` on macOS), plus `archivalNeighborsScene` and `relatedDocumentsScene`,
+/// declared once and referenced from both platform regions.
 ///
-/// **iOS auxiliary scenes (4)** — all `WindowGroup`; windowed multitasking only — and note
+/// **iOS auxiliary scenes (5)** — all `WindowGroup`; windowed multitasking only — and note
 /// `supportsMultipleWindows` is plist-derived, NOT strictly "Stage Manager" (an iPad in Full
 /// Screen Apps mode may still report true — unprobed; #241 review). `openWindow` is a no-op
 /// where it is false, so every caller keeps a sheet/inline fallback:
@@ -72,8 +72,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | (`SourceExplorerRequest`)       | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentSourceNote`-reading id scene) |
 /// | (`GraphWindowRequest`)          | WindowGroup   | Value-based — restores correctly (#317 port from the old `currentGraphEntry`-reading id scene) |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Value-based — restores correctly (#241 port): boot-race guard + honest empty state verified by the #241 review |
+/// | (`RelatedDocumentsRequest`)     | WindowGroup   | Value-based — find-related work list (#308 Phase 2b), shared `relatedDocumentsScene` |
 ///
-/// **macOS auxiliary scenes (21)** — 17 singleton `Window`, 3 `WindowGroup`, 1 `Settings`.
+/// **macOS auxiliary scenes (22)** — 17 singleton `Window`, 4 `WindowGroup`, 1 `Settings`.
 /// `SwiftUI.Window` is `@available(iOS, unavailable)`, which is why no singleton scene below
 /// can port to iPad as-is; each would become a `WindowGroup` (#241 §3):
 /// | Scene ID                        | Type          | Purpose                                          |
@@ -86,6 +87,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.crossReferenceGraph"`    | Window        | Cross-reference graph — floating, per-document   |
 /// | `"frus.sourceExplorer"`         | Window        | Source explorer — floating, per-document         |
 /// | (`ArchivalNeighborsRequest`)    | WindowGroup   | Archival Neighbors — value-based, per source (S6)|
+/// | (`RelatedDocumentsRequest`)     | WindowGroup   | Related Documents — value-based work list (#308 Phase 2b)|
 /// | (`CrossVolumeProvenanceRequest`)| WindowGroup   | Cross-volume provenance — value-based, per collection (B2)|
 /// | `"frus.analytics"`              | Window        | Corpus frequency analytics — Swift Charts        |
 /// | `"frus.personAnalytics"`        | Window        | Person analytics — most-mentioned + trajectories |
@@ -875,9 +877,9 @@ struct FRUSExplorerApp: App {
     /// with Stage Manager since #241.
     ///
     /// Archival Neighbors is a WINDOW, not a sheet: the result is a work list the
-    /// researcher steps through, and a sheet dies on the first navigation. Row taps hand
-    /// the document to the main window via `pendingBrowseDocument` and this window stays
-    /// open beside it.
+    /// researcher steps through, and a sheet dies on the first navigation. Row taps route
+    /// the document to the window's provenance host (`AppState.openDocument`) and this
+    /// window stays open beside it.
     ///
     /// Value-based `WindowGroup(for:)`: the `Codable + Hashable` `ArchivalNeighborsRequest`
     /// fully describes the query (all four shapes resolve through
@@ -1665,7 +1667,10 @@ struct FRUSExplorerApp: App {
         navigateToDocument(volumeId: volumeId, documentId: documentId, title: activity.title)
     }
 
-    /// Pushes navigation to the requested document on both platforms.
+    /// Pushes navigation to the requested document on both platforms. Handoff/Spotlight
+    /// continuations have no spawning window, so on macOS the open is `.global` — resolved
+    /// straight through the fallback chain (owner decision D3), minting a standalone
+    /// document window when no host is live.
     @MainActor
     private func navigateToDocument(volumeId: String, documentId: String, title: String?) {
         let entry = DocumentBrowserEntry(
@@ -1673,8 +1678,12 @@ struct FRUSExplorerApp: App {
             volumeId: volumeId,
             header: title ?? documentId
         )
+        #if os(macOS)
+        appState.openDocument(entry, from: .global) { orphan in
+            openWindow(value: DocumentWindowID(entry: orphan))
+        }
+        #else
         appState.pendingBrowseDocument = entry
-        #if os(iOS)
         appState.pendingTab = .browse
         #endif
     }

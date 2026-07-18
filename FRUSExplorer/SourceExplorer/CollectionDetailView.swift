@@ -212,8 +212,15 @@ struct CollectionDetailView: View {
                             neighborsTarget = CollectionNeighborsTarget(decimalClass: nil)
                             return
                         }
-                        #endif
                         openWindow(value: ArchivalNeighborsRequest(collectionRecord: record))
+                        #else
+                        // This view is hosted in the Source Explorer window's Collections
+                        // segment — the neighbors window inherits its provenance.
+                        let request = ArchivalNeighborsRequest(collectionRecord: record)
+                        appState.bindTool(.archivalNeighbors(request),
+                                          to: appState.provenance(of: .sourceExplorer))
+                        openWindow(value: request)
+                        #endif
                     } label: {
                         Label(String(localized: "collection.detail.neighbors",
                                      defaultValue: "Show Archival Neighbors"),
@@ -297,8 +304,14 @@ struct CollectionDetailView: View {
                                 neighborsTarget = CollectionNeighborsTarget(decimalClass: cls)
                                 return
                             }
-                            #endif
                             openWindow(value: ArchivalNeighborsRequest.decimalClass(cls))
+                            #else
+                            // Same provenance inheritance as the record-level action above.
+                            let request = ArchivalNeighborsRequest.decimalClass(cls)
+                            appState.bindTool(.archivalNeighbors(request),
+                                              to: appState.provenance(of: .sourceExplorer))
+                            openWindow(value: request)
+                            #endif
                         } label: {
                             Image(systemName: "archivebox")
                         }

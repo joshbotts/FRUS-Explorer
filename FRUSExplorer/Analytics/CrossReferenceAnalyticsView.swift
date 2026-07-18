@@ -117,6 +117,11 @@ struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #if os(macOS)
+    /// Mint tail for `AppState.openDocument` — when no document host is live, a document
+    /// tap lands in a fresh standalone document window instead of being dropped.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     // MARK: - Tunables
 
@@ -793,12 +798,18 @@ struct CrossReferenceAnalyticsView: View {
 
     // MARK: - Navigation
 
-    /// Document tap → open in the main browser window/tab (the established deep-link,
-    /// reused from HistoryWindowView and the analytics/search hand-offs).
+    /// Document tap → open in this window's provenance host on macOS
+    /// (`AppState.openDocument(_:from: .tool(.crossRefAnalytics))`), or the Browse tab on iOS. On
+    /// macOS this view renders only in the `frus.crossRefAnalytics` window (the `frus.analytics`
+    /// window hosts `AnalyticsView`, which has no document-open path), so `.crossRefAnalytics` is
+    /// its unambiguous provenance. (It is also shown as a sheet from the iOS Browse tab.)
     private func openDocument(volumeId: String, documentId: String, header: String) {
-        appState.pendingBrowseDocument = DocumentBrowserEntry(
+        let entry = DocumentBrowserEntry(
             documentId: documentId, volumeId: volumeId, header: header)
-        #if os(iOS)
+        #if os(macOS)
+        appState.openDocument(entry, from: .tool(.crossRefAnalytics), using: openWindow)
+        #else
+        appState.pendingBrowseDocument = entry
         appState.pendingTab = .browse
         #endif
         #if DEBUG

@@ -142,14 +142,37 @@ struct AppStateTests {
         #expect(state.routedBrowse?.host == hostB)
     }
 
-    @Test("nil host leaves an existing binding untouched (shortcut launches don't clobber)")
-    func nilBindIsNoop() {
+    @Test("an originless (nil) launch CLEARS the binding so it falls back to recency, not a stale live host")
+    func nilBindClearsToFallback() {
+        let state = AppState()
+        let hostA = DocumentHostID.main(UUID())
+        let hostB = DocumentHostID.main(UUID())
+        state.registerHost(hostA)
+        state.registerHost(hostB)
+        state.bindTool(.search, to: hostA)
+        // A stays LIVE (open but buried) and B is most-recently-key. An originless re-launch of
+        // Search (Settings/Collections) must NOT keep routing to A — the FM-A resurfacing the PR-2
+        // review caught. Clearing lets openDocument resolve to B via the D3 fallback.
+        state.hostBecameKey(hostB)
+        state.bindTool(.search, to: nil)
+        #expect(state.provenance(of: .search) == nil)
+        state.openDocument(entry("d2", "v2"), from: .tool(.search)) { _ in Issue.record("no mint: B is live") }
+        #expect(state.routedBrowse?.host == hostB)
+    }
+
+    @Test("a transitive spawn whose parent is unbound clears the child (doesn't inherit a stale host)")
+    func transitiveFromUnboundParentClears() {
         let state = AppState()
         let hostA = DocumentHostID.main(UUID())
         state.registerHost(hostA)
-        state.bindTool(.search, to: hostA)
-        state.bindTool(.search, to: nil)
-        #expect(state.provenance(of: .search) == hostA)
+        state.bindTool(.wordCloud, to: hostA)        // an earlier rail launch bound word cloud → A
+        // Later, a word cloud is launched from an UNBOUND Chronology (scene shortcut); its term →
+        // Search spawn must not inherit A. provenance(of: .chronology) is nil → clears .wordCloud;
+        // and the term→search transitive bind from the now-unbound word cloud clears .search too.
+        state.bindTool(.wordCloud, to: state.provenance(of: .chronology))
+        #expect(state.provenance(of: .wordCloud) == nil)
+        state.bindTool(.search, to: state.provenance(of: .wordCloud))
+        #expect(state.provenance(of: .search) == nil)
     }
 
     @Test("dead provenance falls back to the most-recently-key live host, never stranding")
