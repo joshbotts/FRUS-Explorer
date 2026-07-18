@@ -506,7 +506,7 @@ struct MacSourceExplorerView: View {
                         numericalFileBox(fileIdentifier: fileId)
                         Divider()
                     }
-                    centralFilesPeriodBox
+                    centralFilesPeriodBox(fileIdentifier: fileId)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1052,16 +1052,17 @@ struct MacSourceExplorerView: View {
     /// - When unknown: shows a compact table of all filing periods so the
     ///   researcher can navigate to the right one manually.
     ///
-    /// `resolveRG59CentralFiles` is intentionally not used here because
-    /// `catalog.archives.gov/search?q=…&f.parentDescriptionNaId=302028`
-    /// returns no useful results for decimal file identifiers.
+    /// `resolveRG59CentralFiles` is intentionally not used here: a catalog keyword search
+    /// returns no useful results for decimal file identifiers, so period-based finding-aid
+    /// routing replaces it.
     @ViewBuilder
-    private var centralFilesPeriodBox: some View {
+    private func centralFilesPeriodBox(fileIdentifier: String?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if let year = documentYear {
-                // Resolved period
-                let label  = client.decimalFilePeriodLabel(year: year)
-                let url    = client.decimalFilePeriodURL(year: year)
+                // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
+                // mid-year era boundaries where the year alone is ambiguous.
+                let label  = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)
+                let url    = client.decimalFilePeriodURL(year: year, fileIdentifier: fileIdentifier)
                 HStack {
                     Text(String(localized: "source.explorer.decimalPeriod.matched",
                                 defaultValue: "Filing Period"))
@@ -1078,7 +1079,7 @@ struct MacSourceExplorerView: View {
                           systemImage: "arrow.up.right.square")
                 }
                 .buttonStyle(.link)
-                if let manualURL = client.filingManualURL(year: year) {
+                if let manualURL = client.filingManualURL(year: year, fileIdentifier: fileIdentifier) {
                     Button {
                         openURL(manualURL)
                     } label: {

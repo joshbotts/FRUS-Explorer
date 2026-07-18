@@ -267,13 +267,34 @@ struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
 
     /// Returns `true` when `geoKey` is served and `dateISO` falls within the roll's range.
     /// A dateless roll is excluded from date-filtered queries; a nil query date matches any.
+    ///
+    /// An OCR-mangled title date — a stray case number parsed as an implausible year (e.g.
+    /// "…- August 31, 139" → 1596, or "Nov. 1, 11186 -" → 1318) — is **ignored**, not used to
+    /// filter. Otherwise such a roll (its other bound valid) silently vanishes from every
+    /// date-filtered query. The country series are all pre-1906, so a bound outside 1780–1911 is
+    /// untrustworthy. The generator applies the same guard at build time (`CountrySeriesIndexBuilder`).
     func matches(geoKey: String, dateISO: String?) -> Bool {
         guard geoKeys.contains(geoKey) else { return false }
         guard let dateISO else { return true }
-        guard startISO != nil || endISO != nil else { return false }
-        if let start = startISO, dateISO < start { return false }
-        if let end = endISO, dateISO > end { return false }
+        let start = CountryRoll.plausibleDate(startISO)
+        let end = CountryRoll.plausibleDate(endISO)
+        guard start != nil || end != nil else { return false }
+        // An **inverted** range (start > end) that survived the plausibility filter — both bounds
+        // in-window but reversed, e.g. "January 10, 1870 - March 31, 1861" — is still a corrupt
+        // title date and, unguarded, is unsatisfiable (no date is ≥1870 AND ≤1861), so the roll
+        // vanishes from every date query. We can't tell which bound is wrong, so fall back to a
+        // geography-only match rather than hide the roll.
+        if let start, let end, start > end { return true }
+        if let start, dateISO < start { return false }
+        if let end, dateISO > end { return false }
         return true
+    }
+
+    /// An ISO date whose year falls in the plausible pre-1906 country-series window (1780–1911),
+    /// else `nil` — filters out OCR-mangled bounds.
+    static func plausibleDate(_ iso: String?) -> String? {
+        guard let iso, let year = Int(iso.prefix(4)), (1780...1911).contains(year) else { return nil }
+        return iso
     }
 }
 

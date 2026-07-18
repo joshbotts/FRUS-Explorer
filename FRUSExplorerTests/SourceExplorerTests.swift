@@ -168,11 +168,14 @@ struct SourceExplorerTests {
         #expect(urlString.contains("862S") || urlString.contains(encoded))
     }
 
-    @Test("CentralFilesURLTest: resolveRG59CentralFiles includes RG-59 parent description filter")
+    @Test("CentralFilesURLTest: resolveRG59CentralFiles scopes to RG 59 via search-within/388")
     func centralFilesURLIncludesRG59Filter() async {
         let client = NARACatalogClient()
         let url = client.resolveRG59CentralFiles(fileIdentifier: "711.94/3-251")
-        #expect(url.absoluteString.contains("parentDescriptionNaId"))
+        // The `search-within/<naId>` route actually scopes to RG 59; the old inert
+        // `f.parentDescriptionNaId` facet (ignored by today's catalog) is gone.
+        #expect(url.absoluteString.contains("search-within/388"))
+        #expect(!url.absoluteString.contains("parentDescriptionNaId"))
     }
 
     // MARK: - LotNumberNormalisationTest
@@ -488,6 +491,85 @@ struct SourceExplorerTests {
             let url = client.decimalFilePeriodURL(year: year)
             #expect(url.absoluteString.contains("archives.gov"))
         }
+    }
+
+    // MARK: - Central-file era mid-year boundaries (NARA review, 2026-07-17)
+
+    @Test("isDecimalFileNumber: dotted decimal numbers are decimal; subject-numeric / File No. are not")
+    func isDecimalFileNumberDiscriminates() {
+        // Decimal (1910–Jan 1963): a 2–3 digit class + optional country letters, then a dot.
+        #expect(NARACatalogClient.isDecimalFileNumber("611.61/1-563"))
+        #expect(NARACatalogClient.isDecimalFileNumber("862S.01/10-1646"))
+        #expect(NARACatalogClient.isDecimalFileNumber("740.00112 European War 1939/6363"))
+        #expect(NARACatalogClient.isDecimalFileNumber("500.A15A4"))
+        // The dotless class-123 personnel decimals SourceNoteKit also treats as decimal.
+        #expect(NARACatalogClient.isDecimalFileNumber("123M431/163"))
+        #expect(NARACatalogClient.isDecimalFileNumber("123 F 84/16"))
+        #expect(NARACatalogClient.isDecimalFileNumber("123 Ward, Angus I."))
+        // Subject-numeric (Feb 1963–1973) and Numerical File (1906–1910) carry no leading class digits.
+        #expect(!NARACatalogClient.isDecimalFileNumber("POL 27 ARAB-ISR"))
+        #expect(!NARACatalogClient.isDecimalFileNumber("DEF 6 MLF"))
+        #expect(!NARACatalogClient.isDecimalFileNumber("5276/1"))
+        #expect(!NARACatalogClient.isDecimalFileNumber("195/597"))
+        #expect(!NARACatalogClient.isDecimalFileNumber("17529"))
+    }
+
+    @Test("A decimal-form number dated 1964–1973 routes to its decimal home (form over year)")
+    func decimalFormLateRoutesToDecimalHome() {
+        let client = NARACatalogClient()
+        // Consistency with the 1963/1974 rule: the filing system is fixed by the number, not the
+        // document date, so a mis-dated/retrospective decimal citation keeps its decimal era.
+        #expect(client.decimalFilePeriodURL(year: 1970, fileIdentifier: "611.61/462")
+            .absoluteString.hasSuffix("rg-59-central-files/1910-1963"))
+        #expect(client.filingManualURL(year: 1970, fileIdentifier: "611.61/462")?
+            .absoluteString.contains("manual-1960-63.pdf") == true)
+        // A subject-numeric number at 1973 still gets the 1965–1973 handbook (previously nil at 1973).
+        #expect(client.filingManualURL(year: 1973, fileIdentifier: "POL 27 US")?
+            .absoluteString.contains("1965-1973.pdf") == true)
+    }
+
+    @Test("1963 boundary: a decimal number (January) routes to the decimal era, not subject-numeric")
+    func year1963DecimalRoutesToDecimalEra() {
+        let client = NARACatalogClient()
+        let id = "611.61/1-563"   // decimal → January 1963
+        #expect(client.decimalFilePeriodURL(year: 1963, fileIdentifier: id)
+            .absoluteString.hasSuffix("rg-59-central-files/1910-1963"))
+        #expect(client.decimalFilePeriodLabel(year: 1963, fileIdentifier: id) == "1960–January 1963")
+        #expect(client.filingManualURL(year: 1963, fileIdentifier: id)?
+            .absoluteString.contains("manual-1960-63.pdf") == true)
+    }
+
+    @Test("1963 boundary: a subject-numeric number (February on) routes to the subject-numeric era")
+    func year1963SubjectNumericRoutesToSubjectNumericEra() {
+        let client = NARACatalogClient()
+        let id = "POL 27 US"   // subject-numeric → February 1963 or later
+        #expect(client.decimalFilePeriodURL(year: 1963, fileIdentifier: id)
+            .absoluteString.hasSuffix("rg-59-central-files/1963-1973"))
+        #expect(client.decimalFilePeriodLabel(year: 1963, fileIdentifier: id) == "February 1963–1973")
+        #expect(client.filingManualURL(year: 1963, fileIdentifier: id)?
+            .absoluteString.contains("records-classification-handbook-1963.pdf") == true)
+    }
+
+    @Test("Upper bound: a 1974+ central-files note no longer routes to the (ended) 1963–1973 era")
+    func post1973RoutesToCFPFEra() {
+        let client = NARACatalogClient()
+        // Subject-numeric ended December 1973; a later central-files-shaped note goes to the CFPF era.
+        let url = client.decimalFilePeriodURL(year: 1976, fileIdentifier: "POL 27 US")
+        #expect(url.absoluteString.hasSuffix("rg-59-central-files/1973-1979"))
+        #expect(!url.absoluteString.hasSuffix("1963-1973"))
+        // A decimal-form number that late is a mis-dated decimal — it falls back to its decimal home.
+        #expect(client.decimalFilePeriodURL(year: 1976, fileIdentifier: "611.61/462")
+            .absoluteString.hasSuffix("rg-59-central-files/1910-1963"))
+        // No filing manual applies past 1972.
+        #expect(client.filingManualURL(year: 1976) == nil)
+    }
+
+    @Test("resolveRG59CentralFiles scopes to the RG 59 record group (388), not the CFPF subset")
+    func rg59FallbackScopesToRecordGroup() {
+        let client = NARACatalogClient()
+        let url = client.resolveRG59CentralFiles(fileIdentifier: "711.94/3-251")
+        #expect(url.absoluteString.contains("search-within/388"))
+        #expect(!url.absoluteString.contains("302028"))
     }
 
     // MARK: - LibraryFallbackTest

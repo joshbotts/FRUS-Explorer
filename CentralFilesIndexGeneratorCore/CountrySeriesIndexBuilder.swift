@@ -55,8 +55,16 @@ public enum CountrySeriesIndexBuilder {
             guard seenNaIds.insert(record.naId).inserted else { continue }
             resolutionRecords += 1
 
+            // Drop an OCR-mangled bound (a stray case number in the title parsed as an implausible
+            // year — measured 8 such rolls: "…August 31, 139" → 1596, "Nov. 1, 11186 -" → 1318).
+            // The country series are all pre-1906, so a year outside 1780–1911 is untrustworthy;
+            // dropping it keeps the valid bound instead of producing an inverted range that would
+            // silently exclude the roll from every date-filtered query (mirrors `CountryRoll.matches`).
+            let startISO = Self.plausibleDate(parsed.dateRange?.startISO)
+            let endISO = Self.plausibleDate(parsed.dateRange?.endISO)
+
             if parsed.geoKeys.isEmpty { noGeo.append(record.title) }
-            if parsed.dateRange?.startISO == nil && parsed.dateRange?.endISO == nil {
+            if startISO == nil && endISO == nil {
                 noDate.append(record.title)
             }
 
@@ -64,8 +72,8 @@ public enum CountrySeriesIndexBuilder {
                 naId: record.naId,
                 title: record.title,
                 geoKeys: parsed.geoKeys,
-                startISO: parsed.dateRange?.startISO,
-                endISO: parsed.dateRange?.endISO,
+                startISO: startISO,
+                endISO: endISO,
                 catalogURL: NARACatalogHarvestClient.catalogIDBase + record.naId,
                 fileUnitNaId: record.parentFileUnitNaId,
                 fileUnitTitle: record.parentFileUnitTitle))
@@ -85,5 +93,13 @@ public enum CountrySeriesIndexBuilder {
             rollsWithoutDate: noDate.count,
             sampleNoGeo: Array(noGeo.prefix(maxSamples)),
             sampleNoDate: Array(noDate.prefix(maxSamples)))
+    }
+
+    /// An ISO date whose year falls in the plausible pre-1906 country-series window (1780–1911),
+    /// else `nil`. Filters an OCR-mangled bound out of a roll's date range at build time; the app's
+    /// `CountryRoll.matches` applies the identical guard when reading a bundle built before this.
+    static func plausibleDate(_ iso: String?) -> String? {
+        guard let iso, let year = Int(iso.prefix(4)), (1780...1911).contains(year) else { return nil }
+        return iso
     }
 }
