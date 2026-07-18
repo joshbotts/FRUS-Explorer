@@ -9,6 +9,30 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - ResearchRailTool
+
+/// A document-scoped tool the Research rail asks its host to open (Phase D iOS routing).
+///
+/// On macOS every tile self-opens a window or popover, so this is unused there. On iOS the tiles have
+/// no `openWindow`, and the target presentations (citation sheet, Source Explorer, cross-reference
+/// graph, Related list, the word-cloud hand-off, the summarize prompt picker) are owned by
+/// `DocumentView` — so the rail signals intent through `onOpenTool` and the host presents. `share`
+/// is deliberately absent: it is a `Menu` and stays self-owned in the rail on both platforms.
+enum ResearchRailTool {
+    /// Cite this document (iOS: the `.citation` sheet).
+    case cite
+    /// Word cloud of this document's terms (iOS: `appState.pendingWordCloud`).
+    case wordCloud
+    /// Resolve the source note in the Source Explorer.
+    case sources
+    /// This document's cross-reference graph.
+    case graph
+    /// Find related documents.
+    case related
+    /// Generate a summary (iOS: the `.summarizePromptPicker` sheet).
+    case summarize
+}
+
 // MARK: - ResearchRailView
 
 /// The trailing **Research rail** — the shared document research surface introduced by the
@@ -54,12 +78,20 @@ struct ResearchRailView: View {
     /// Opens the note composer for a note linked back to `pendingHighlightLink`.
     let onAddNoteToHighlight: (UUID) -> Void
 
+    /// Asks the host to open a document tool (iOS tile/summary routing — see ``ResearchRailTool``).
+    /// Defaults to a no-op so the macOS mount, whose tiles self-open windows, need not pass it.
+    let onOpenTool: (ResearchRailTool) -> Void
+
     // MARK: Environment
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    #if os(macOS)
+    // Available on both platforms: macOS opens the tile windows; iPadOS opens a second document
+    // window from the rail header (D8 — Stage Manager).
     @Environment(\.openWindow) private var openWindow
+    #if os(iOS)
+    /// Gates the rail-header "Open in New Window" icon to iPad Stage Manager (D8).
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
     // MARK: Accordion expansion (shared keys — survive navigation, stay in sync with any callers)
@@ -98,13 +130,15 @@ struct ResearchRailView: View {
          pendingHighlightLink: UUID?,
          onAddNote: @escaping () -> Void,
          onEditNote: @escaping (ResearchNote) -> Void,
-         onAddNoteToHighlight: @escaping (UUID) -> Void) {
+         onAddNoteToHighlight: @escaping (UUID) -> Void,
+         onOpenTool: @escaping (ResearchRailTool) -> Void = { _ in }) {
         self.entry = entry
         self.vm = vm
         self.pendingHighlightLink = pendingHighlightLink
         self.onAddNote = onAddNote
         self.onEditNote = onEditNote
         self.onAddNoteToHighlight = onAddNoteToHighlight
+        self.onOpenTool = onOpenTool
         let vId = entry.volumeId
         let dId = entry.documentId
         _documentNotes = Query(
@@ -157,6 +191,25 @@ struct ResearchRailView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(.tertiary)
             Spacer()
+            #if os(iOS)
+            // D8: the rail header is the iPad "Open in New Window" home (Stage Manager). Hidden on
+            // iPhone (single window) — `supportsMultipleWindows` is false there.
+            if supportsMultipleWindows {
+                Button {
+                    openWindow(value: DocumentWindowID(
+                        volumeId: entry.volumeId,
+                        documentId: entry.documentId,
+                        header: vm.documentTitle ?? entry.header))
+                } label: {
+                    Image(systemName: "rectangle.badge.plus")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "researchRail.openInNewWindow.a11y",
+                                           defaultValue: "Open document in a new window"))
+            }
+            #endif
         }
         .padding(.horizontal, hInset)
         .padding(.top, 12)
@@ -207,10 +260,66 @@ struct ResearchRailView: View {
                 DocumentSharePopover(entry: entry)
             }
             #endif
-            // iOS tile presentations are Phase D.
+            #if os(iOS)
+            // iOS has no `openWindow` for the reading-scoped tools, so the tiles route through the
+            // host (`onOpenTool` → `DocumentView`'s existing sheet/window presentations). Share is the
+            // exception — it's a `Menu`, so it stays self-owned here (mirroring the macOS Share tile).
+            railTile("quote.closing",
+                     String(localized: "researchRail.tile.cite", defaultValue: "Cite"),
+                     help: String(localized: "researchRail.tile.cite.help",
+                                  defaultValue: "Cite this document — copy a formatted citation or export BibTeX/RIS")) {
+                onOpenTool(.cite)
+            }
+            railTile(WordCloudGlyph.symbol,
+                     String(localized: "researchRail.tile.wordCloud", defaultValue: "Word Cloud"),
+                     help: String(localized: "researchRail.tile.wordCloud.help",
+                                  defaultValue: "Show a word cloud of this document's most frequent terms")) {
+                onOpenTool(.wordCloud)
+            }
+            railTile("archivebox",
+                     String(localized: "researchRail.tile.sources", defaultValue: "Sources"),
+                     help: String(localized: "researchRail.tile.sources.help",
+                                  defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records")) {
+                onOpenTool(.sources)
+            }
+            railTile("point.3.connected.trianglepath.dotted",
+                     String(localized: "researchRail.tile.graph", defaultValue: "Graph"),
+                     help: String(localized: "researchRail.tile.graph.help",
+                                  defaultValue: "Show this document's cross-reference graph")) {
+                onOpenTool(.graph)
+            }
+            railTile("doc.on.doc",
+                     String(localized: "researchRail.tile.related", defaultValue: "Related"),
+                     help: String(localized: "researchRail.tile.related.help",
+                                  defaultValue: "Find related documents by archival provenance, cross-references, date, and shared people")) {
+                onOpenTool(.related)
+            }
+            DocumentShareMenu(vm: vm) {
+                tileLabel("square.and.arrow.up",
+                          String(localized: "researchRail.tile.share", defaultValue: "Share"))
+            }
+            #endif
         }
         .padding(.horizontal, hInset)
         .padding(.vertical, 8)
+    }
+
+    /// The visual of one square grid tile — a centred glyph over a caption on a subtle rounded fill.
+    /// Extracted so both the `Button` tiles and the iOS Share `Menu` tile read identically.
+    private func tileLabel(_ glyph: String, _ label: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: glyph)
+                .font(.system(size: 15))
+            Text(label)
+                .font(.caption2)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .contentShape(RoundedRectangle(cornerRadius: 8))
     }
 
     /// A single square grid tile: centred glyph over a caption label, on a subtle rounded fill.
@@ -219,19 +328,7 @@ struct ResearchRailView: View {
     private func railTile(_ glyph: String, _ label: String, help: String,
                           action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: glyph)
-                    .font(.system(size: 15))
-                Text(label)
-                    .font(.caption2)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 6)
-            .background(Color.secondary.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+            tileLabel(glyph, label)
         }
         .buttonStyle(.plain)
         .help(help)
@@ -257,7 +354,48 @@ struct ResearchRailView: View {
                     .padding(.horizontal, hInset)
                     .padding(.vertical, 8)
                 #endif
-                // iOS Summary body (SummaryStripView + generate states) is Phase D.
+                #if os(iOS)
+                // Donated from the retired `iOSResearchPanel` Summary section (Summarize's new home).
+                // The generate trigger routes through the host (`.summarizePromptPicker` sheet); the
+                // failure alert stays on `DocumentView` so it also shows in Read mode.
+                if let summary = vm.activeSummary {
+                    SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
+                        .padding(.horizontal, hInset)
+                        .padding(.vertical, 8)
+                } else if vm.isSummarizing {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text(String(localized: "panel.summary.generating", defaultValue: "Summarizing…"))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, hInset)
+                    .padding(.vertical, 12)
+                } else if AppleIntelligenceProvider.shared.isAvailable {
+                    Button {
+                        onOpenTool(.summarize)
+                    } label: {
+                        Label(String(localized: "panel.summary.generate",
+                                     defaultValue: "Summarize this Document"),
+                              systemImage: "sparkles")
+                            .font(.callout)
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(vm.documentPlainText.isEmpty)
+                    .padding(.horizontal, hInset)
+                    .padding(.vertical, 12)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles").foregroundStyle(.tertiary)
+                        Text(String(localized: "panel.summary.unavailable",
+                                    defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, hInset)
+                    .padding(.vertical, 12)
+                }
+                #endif
             }
         }
     }

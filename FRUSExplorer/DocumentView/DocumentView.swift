@@ -2152,10 +2152,18 @@ struct DocumentView: View {
 ///
 /// Version history:
 ///   1.0 — Document Share/Export control split out from the citation sheet
-private struct DocumentShareMenu: View {
+struct DocumentShareMenu<LabelContent: View>: View {
     let vm: DocumentViewModel
+    /// The `Menu`'s tap target. The default construction (see the extension below) uses the standard
+    /// "Share" `Label`; the Research rail passes a tile-shaped label (Phase D).
+    let label: () -> LabelContent
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
+
+    init(vm: DocumentViewModel, @ViewBuilder label: @escaping () -> LabelContent) {
+        self.vm = vm
+        self.label = label
+    }
 
     @State private var bibtexFileURL: URL?
     @State private var risFileURL: URL?
@@ -2195,8 +2203,7 @@ private struct DocumentShareMenu: View {
                 }
             }
         } label: {
-            Label(String(localized: "document.toolbar.share", defaultValue: "Share"),
-                  systemImage: "square.and.arrow.up")
+            label()
         }
         .controlHelp(
             String(localized: "document.toolbar.share", defaultValue: "Share"),
@@ -2262,6 +2269,16 @@ private struct DocumentShareMenu: View {
             if (try? ris.write(to: url, atomically: true, encoding: .utf8)) != nil {
                 risFileURL = url
             }
+        }
+    }
+}
+
+extension DocumentShareMenu where LabelContent == Label<Text, Image> {
+    /// Default construction with the standard "Share" `Label` (square-and-arrow-up + text).
+    init(vm: DocumentViewModel) {
+        self.init(vm: vm) {
+            Label(String(localized: "document.toolbar.share", defaultValue: "Share"),
+                  systemImage: "square.and.arrow.up")
         }
     }
 }
@@ -2369,7 +2386,7 @@ private struct CitationSheetView: View {
 
 // MARK: - SummaryStripView
 
-private struct SummaryStripView: View {
+struct SummaryStripView: View {
     @Bindable var vm: DocumentViewModel
     let summary: GeneratedSummary
     let totalCount: Int
