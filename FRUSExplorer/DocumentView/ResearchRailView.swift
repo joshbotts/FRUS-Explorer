@@ -45,6 +45,15 @@ struct ResearchRailView: View {
     /// Opens the note composer to edit an existing note.
     let onEditNote: (ResearchNote) -> Void
 
+    /// The just-created highlight awaiting an optional linked note, or `nil`. When non-nil the Notes
+    /// accordion offers a transient "Add Note to Highlight" — the macOS counterpart to the retired
+    /// strip's conditional button (C1b review F1). Passed fresh each render so it appears/vanishes
+    /// as the highlight is created/consumed.
+    let pendingHighlightLink: UUID?
+
+    /// Opens the note composer for a note linked back to `pendingHighlightLink`.
+    let onAddNoteToHighlight: (UUID) -> Void
+
     // MARK: Environment
 
     @Environment(AppState.self) private var appState
@@ -86,12 +95,16 @@ struct ResearchRailView: View {
 
     init(entry: DocumentBrowserEntry,
          vm: DocumentViewModel,
+         pendingHighlightLink: UUID?,
          onAddNote: @escaping () -> Void,
-         onEditNote: @escaping (ResearchNote) -> Void) {
+         onEditNote: @escaping (ResearchNote) -> Void,
+         onAddNoteToHighlight: @escaping (UUID) -> Void) {
         self.entry = entry
         self.vm = vm
+        self.pendingHighlightLink = pendingHighlightLink
         self.onAddNote = onAddNote
         self.onEditNote = onEditNote
+        self.onAddNoteToHighlight = onAddNoteToHighlight
         let vId = entry.volumeId
         let dId = entry.documentId
         _documentNotes = Query(
@@ -111,7 +124,9 @@ struct ResearchRailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 tileGrid
-                Divider()
+                // `summaryAccordion` carries its OWN leading divider (only when it renders — the
+                // section vanishes with no summarization service + no stored summary), so there's
+                // no double hairline between the tile grid and Notes on non-AI hardware (C1b F6).
                 summaryAccordion
                 Divider()
                 notesAccordion
@@ -154,7 +169,9 @@ struct ResearchRailView: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
             #if os(macOS)
             railTile("quote.closing",
-                     String(localized: "researchRail.tile.cite", defaultValue: "Cite")) {
+                     String(localized: "researchRail.tile.cite", defaultValue: "Cite"),
+                     help: String(localized: "researchRail.tile.cite.help",
+                                  defaultValue: "Cite this document — copy a formatted citation or export BibTeX/RIS")) {
                 showCitePopover = true
             }
             .popover(isPresented: $showCitePopover, arrowEdge: .bottom) {
@@ -162,18 +179,28 @@ struct ResearchRailView: View {
             }
             railTile(WordCloudGlyph.symbol,
                      String(localized: "researchRail.tile.wordCloud", defaultValue: "Word Cloud"),
+                     help: String(localized: "researchRail.tile.wordCloud.help",
+                                  defaultValue: "Show a word cloud of this document's most frequent terms"),
                      action: openWordCloud)
             railTile("archivebox",
                      String(localized: "researchRail.tile.sources", defaultValue: "Sources"),
+                     help: String(localized: "researchRail.tile.sources.help",
+                                  defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"),
                      action: openSources)
             railTile("point.3.connected.trianglepath.dotted",
                      String(localized: "researchRail.tile.graph", defaultValue: "Graph"),
+                     help: String(localized: "researchRail.tile.graph.help",
+                                  defaultValue: "Show this document's cross-reference graph"),
                      action: openGraph)
             railTile("doc.on.doc",
                      String(localized: "researchRail.tile.related", defaultValue: "Related"),
+                     help: String(localized: "researchRail.tile.related.help",
+                                  defaultValue: "Find related documents by archival provenance, cross-references, date, and shared people"),
                      action: openRelated)
             railTile("square.and.arrow.up",
-                     String(localized: "researchRail.tile.share", defaultValue: "Share")) {
+                     String(localized: "researchRail.tile.share", defaultValue: "Share"),
+                     help: String(localized: "researchRail.tile.share.help",
+                                  defaultValue: "Share or export this document")) {
                 showSharePopover = true
             }
             .popover(isPresented: $showSharePopover, arrowEdge: .bottom) {
@@ -187,7 +214,10 @@ struct ResearchRailView: View {
     }
 
     /// A single square grid tile: centred glyph over a caption label, on a subtle rounded fill.
-    private func railTile(_ glyph: String, _ label: String, action: @escaping () -> Void) -> some View {
+    /// `help` restores the per-tile tooltip the retired strip carried (C1b review F5) — the
+    /// caption is small, so hover text explains what each glyph does.
+    private func railTile(_ glyph: String, _ label: String, help: String,
+                          action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: glyph)
@@ -204,12 +234,14 @@ struct ResearchRailView: View {
             .contentShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .help(help)
     }
 
     // MARK: - Accordions
 
     @ViewBuilder private var summaryAccordion: some View {
         if appState.summarizationService != nil || vm.activeSummary != nil {
+            Divider()
             let preview = vm.activeSummary.map {
                 String($0.responseText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
             }
@@ -258,6 +290,25 @@ struct ResearchRailView: View {
                         .padding(.vertical, 8)
                     }
                     .buttonStyle(.plain)
+                    Divider()
+                }
+                // Transient: appears right after a highlight is created (its dot tapped on the
+                // floating bar), so the note anchors back to that highlight — the macOS restoration
+                // of the retired strip's conditional "Add Note" verb (C1b review F1).
+                if let link = pendingHighlightLink {
+                    Button {
+                        onAddNoteToHighlight(link)
+                    } label: {
+                        Label(String(localized: "panel.notes.addToHighlight",
+                                     defaultValue: "Add Note to Highlight"),
+                              systemImage: "highlighter")
+                            .font(.callout)
+                            .foregroundStyle(Color.accentColor)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, hInset)
+                    .padding(.vertical, 10)
                     Divider()
                 }
                 Button {
@@ -433,8 +484,9 @@ struct ResearchRailView: View {
 
     // MARK: - Collections helper
 
-    /// The distinct collections this document belongs to, in membership sort order (the
-    /// duplicate guard makes one document-entry per collection, but dedupe defensively).
+    /// The distinct collections this document belongs to, sorted by name. `memberships` sorts by
+    /// `CollectionEntry.sortOrder` — a *within-collection* position, meaningless across collections
+    /// — so the deduped result is re-sorted by name for a stable, readable order (C1b review F7).
     private var membershipCollections: [Collection] {
         var seen = Set<UUID>()
         var result: [Collection] = []
@@ -443,7 +495,7 @@ struct ResearchRailView: View {
             seen.insert(collection.id)
             result.append(collection)
         }
-        return result
+        return result.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
 
     // MARK: - Tile actions (macOS)

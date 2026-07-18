@@ -99,8 +99,9 @@ struct FloatingSelectionBar: View {
     /// Hands the selected text to the NARA Source Explorer.
     let onLookUp: () -> Void
 
-    /// Opens the note composer (a document-level note; the highlight-linked path lives on the
-    /// toolbar's labeled "Add Note to Highlight").
+    /// Opens the note composer (a document-level note). The highlight-linked path lives on the
+    /// separate transient "Add Note to Highlight" affordance shown after a highlight is created
+    /// (the research rail's Notes accordion on macOS, the document toolbar on iOS).
     let onNote: () -> Void
 
     var body: some View {

@@ -193,13 +193,14 @@ struct MacDocumentView: View {
             }
         }
         .task {
-            // Apply the default document mode on open. .rememberLast leaves
-            // panelVisible untouched, preserving the prior cross-document
-            // persistence; .read/.research force it, but ResearchStripView's
-            // segmented control can still switch modes live afterwards.
+            // Apply the default document mode on open. .rememberLast leaves panelVisible untouched,
+            // preserving the prior cross-document persistence; .read/.research force it (⌘⇧R or the
+            // D6 toolbar toggle can switch live afterwards). Guarded to write only when the value
+            // actually changes (plan §7 C1 rider) — the key is shared across windows, so an
+            // unconditional same-value write fires spurious cross-window rail refreshes.
             switch defaultDocumentMode {
-            case .read:         panelVisible = false
-            case .research:     panelVisible = true
+            case .read:         if panelVisible { panelVisible = false }
+            case .research:     if !panelVisible { panelVisible = true }
             case .rememberLast: break
             }
             await loadDocument()
@@ -346,12 +347,23 @@ struct MacDocumentView: View {
                 ResearchRailView(
                     entry: entry,
                     vm: vm,
+                    pendingHighlightLink: highlightCoordinator.pendingHighlightLink,
                     onAddNote: { openNoteComposer() },
-                    onEditNote: { note in openNoteComposer(noteId: note.id) })
+                    onEditNote: { note in openNoteComposer(noteId: note.id) },
+                    onAddNoteToHighlight: { highlightId in
+                        // Restore the highlight-linked note path the retired strip carried (C1b
+                        // review F1): compose a note linked back to the just-created highlight.
+                        openNoteComposer(linkedHighlightId: highlightId)
+                        highlightCoordinator.pendingHighlightLink = nil
+                    })
                     .frame(width: 300)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: panelVisible)
+        // Toggling the rail changes the web view's WIDTH → WKWebView reflows every line, but the DOM
+        // selection doesn't change, so no `selectioncleared` fires and the bar would strand on its
+        // pre-reflow anchor. Drop it on toggle (C1b review F4).
+        .onChange(of: panelVisible) { _, _ in selectionBar.hideNow() }
         // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2). This
         // mirrors the rail's own picker; C1a unified them into one shared `CollectionPickerSheet`.
         .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
@@ -467,8 +479,8 @@ struct MacDocumentView: View {
 
     /// The macOS floating selection bar overlay: the shared ``FloatingSelectionBar`` anchored
     /// *above* the selection (D3 — macOS has no system selection callout to compete with) on the
-    /// web view. It coexists with `ResearchStripView` until C1. The dots create a highlight;
-    /// Excerpt/Look Up/Note reuse the same actions the strip and Document menu drive.
+    /// web view. The dots create a highlight; Excerpt/Look Up/Note reuse the same actions the
+    /// Research rail and Document menu drive.
     @ViewBuilder
     private var macFloatingSelectionBarOverlay: some View {
         GeometryReader { proxy in
@@ -504,9 +516,9 @@ struct MacDocumentView: View {
         .animation(.easeOut(duration: 0.25), value: selectionBar.isVisible)
     }
 
-    /// Hands the current selection to the Source Explorer window's NARA Lookup segment — the same
-    /// hand-off `ResearchStripView`'s "NARA Lookup" button performs (B3), done directly here so the
-    /// bar needs no closure threaded through the window host.
+    /// Hands the current selection to the Source Explorer window's NARA Lookup segment (the B3
+    /// hand-off), done directly here so the floating bar needs no closure threaded through the
+    /// window host.
     private func lookUpSelectionInNARA() {
         // Guard against an empty query (e.g. the strip's NARA button already consumed the text
         // while the bar was still visible) — don't open the Source Explorer with a blank lookup.
@@ -564,9 +576,9 @@ struct MacDocumentView: View {
     /// published as the `\.documentCommands` focused-scene value.
     ///
     /// Every closure routes to an action that already exists as a button: prev/next
-    /// mirror `volumeNavigationView`, add-note mirrors the research panel's "Add
-    /// Note" (`openNoteComposer`), highlight mirrors the research strip's color
-    /// picker (`createWebKitHighlight`), and the panel toggle mirrors the strip's
+    /// mirror `volumeNavigationView`, add-note mirrors the rail's "Add
+    /// Note" (`openNoteComposer`), highlight mirrors the floating bar's colour
+    /// dots (`createWebKitHighlight`), and the panel toggle mirrors the rail's
     /// Read/Research picker (same `AppStorage` key). Equality contract (see
     /// `DocumentCommandActions`): the closures capture only `prevEntry`/`nextEntry`,
     /// which are loaded once per document — any change to them flips
@@ -592,11 +604,12 @@ struct MacDocumentView: View {
     /// Hands this document (and optionally an existing note) to the research-note
     /// composer window (UI audit C1) — the note is composed beside the document
     /// instead of in a sheet covering the passage being annotated.
-    private func openNoteComposer(noteId: UUID? = nil) {
+    private func openNoteComposer(noteId: UUID? = nil, linkedHighlightId: UUID? = nil) {
         appState.pendingNoteComposer = NoteComposerRequest(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
-            noteId: noteId
+            noteId: noteId,
+            linkedHighlightId: linkedHighlightId
         )
         openWindow(id: "frus.noteComposer")
         bringMacWindowToFront(id: "frus.noteComposer")
@@ -630,7 +643,7 @@ struct MacDocumentView: View {
     /// Creates a `DocumentHighlight` from the WebKit flat-text selection range.
     ///
     /// Called by `HighlightCoordinator.createWebKitHighlightAction` (registered in `.task`)
-    /// when the user taps "Highlight" in `ResearchStripView` while a selection is active.
+    /// when the user taps a colour dot on the floating selection bar while a selection is active.
     @MainActor
     private func createWebKitHighlight(color: DocumentHighlight.Color) {
         guard let range = highlightCoordinator.webKitSelectionRange,
@@ -807,8 +820,8 @@ struct MacDocumentView: View {
 
         await vm.load(volumeURL: volumeURL)
 
-        // Pre-populate appState.currentSourceNote from the live-parsed source note so
-        // ResearchStripView's Sources button always works, even when the DocumentBrowserEntry
+        // Pre-populate appState.currentSourceNote from the live-parsed source note so the rail's
+        // Sources tile always works, even when the DocumentBrowserEntry
         // was created via a cross-reference tap (which sets sourceNote: nil).
         // This ensures the macOS source explorer uses the same data source as iOS.
         let year = Self.extractYear(from: entry.dateline)
@@ -951,7 +964,7 @@ private struct TrailingIconLabelStyle: LabelStyle {
 // MARK: - MacDocumentWindowView
 
 /// Standalone macOS document window hosting one document as a full research
-/// workspace — research strip, document body, and status bar — so a window opened
+/// workspace — document column, trailing Research rail, and status bar — so a window opened
 /// via `openWindow(value: DocumentWindowID(...))` is self-sufficient rather than a
 /// bare document with no tools.
 ///
@@ -971,9 +984,6 @@ struct MacDocumentWindowView: View {
 
     /// The document this window opened for.
     let windowID: DocumentWindowID
-
-    @Environment(AppState.self) private var appState
-    @Environment(\.openWindow) private var openWindow
 
     /// This window's own navigation stack — cross-reference taps push within the
     /// window rather than affecting the main window or other document windows.
@@ -1038,6 +1048,8 @@ struct MacDocumentWindowView: View {
                 }
                 .help(String(localized: "researchRail.toggle.help",
                              defaultValue: "Research panel (⌘⇧R)"))
+                .accessibilityLabel(String(localized: "researchRail.toggle.a11y",
+                                           defaultValue: "Research panel"))
             }
         }
         .onChange(of: currentEntry) { _, _ in
