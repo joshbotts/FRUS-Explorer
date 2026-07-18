@@ -46,6 +46,12 @@ final class HighlightCoordinator {
     /// `window.getSelection().toString()`. Pre-populates the NARA Catalog lookup field.
     var webKitSelectedText: String? = nil
 
+    /// The enclosing footnote body for a footnote selection (the JS `blockText`, #269), or
+    /// `nil` for an in-document selection. Feeds the NARA lookup's candidate-citation scan,
+    /// which needs the whole note — a footnote selection has no offset range for Swift's
+    /// own block-aware look-around.
+    var webKitSelectedBlockText: String? = nil
+
     /// Called by `MacDocumentView` to create a `DocumentHighlight` from the
     /// WebKit selection range and colour chosen in `highlightColorPicker`.
     var createWebKitHighlightAction: ((DocumentHighlight.Color) -> Void)? = nil
@@ -65,6 +71,7 @@ final class HighlightCoordinator {
     func reset() {
         webKitSelectionRange = nil
         webKitSelectedText   = nil
+        webKitSelectedBlockText = nil
         pendingHighlightLink = nil
         createWebKitHighlightAction = nil
         makeExcerptCaptureAction = nil
@@ -2659,7 +2666,8 @@ struct SourceExplorerWindowView: View {
             case .naraLookup:
                 // Live catalog query form. `.id` re-keys the view per hand-off so a
                 // new selection replaces a stale query field (fresh @State identity).
-                NARACatalogLookupView(initialText: naraLookupItem?.text ?? "")
+                NARACatalogLookupView(initialText: naraLookupItem?.text ?? "",
+                                      blockContext: naraLookupItem?.blockContext)
                     .id(naraLookupItem?.id)
             }
         }
@@ -2667,8 +2675,8 @@ struct SourceExplorerWindowView: View {
         // the hand-off (`.onChange` misses a value that was already set), `.onChange`
         // covers one already open — mirroring MacSearchWindowView's pendingSearch.
         .task { consumePendingNARALookup() }
-        .onChange(of: appState.pendingNARALookup) { _, text in
-            guard text != nil else { return }
+        .onChange(of: appState.pendingNARALookup) { _, request in
+            guard request != nil else { return }
             consumePendingNARALookup()
         }
     }
@@ -2676,9 +2684,9 @@ struct SourceExplorerWindowView: View {
     /// Applies (and clears) `AppState.pendingNARALookup`: switches to the NARA Lookup
     /// segment with a fresh lookup-view identity carrying the handed-off query text.
     private func consumePendingNARALookup() {
-        guard let text = appState.pendingNARALookup else { return }
+        guard let request = appState.pendingNARALookup else { return }
         appState.pendingNARALookup = nil
-        naraLookupItem = NARACatalogLookupItem(text: text)
+        naraLookupItem = NARACatalogLookupItem(text: request.text, blockContext: request.blockContext)
         mode = .naraLookup
     }
 

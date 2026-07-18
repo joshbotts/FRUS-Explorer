@@ -89,7 +89,9 @@ struct MainWindowView: View {
                     // B3: hand the selection to the Source Explorer window's NARA
                     // Lookup segment (a window, so the document stays readable while
                     // querying). The window consumes and clears pendingNARALookup.
-                    appState.pendingNARALookup = text
+                    // Carry the footnote block context (#269) for candidate citations.
+                    appState.pendingNARALookup = NARALookupRequest(
+                        text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
                     openWindow(id: "frus.sourceExplorer")
                     bringMacWindowToFront(id: "frus.sourceExplorer")
                 }
@@ -376,6 +378,9 @@ private struct DocumentPlaceholderView: View {
 struct NARACatalogLookupItem: Identifiable {
     let id  = UUID()
     let text: String
+    /// The enclosing footnote body for a footnote selection (#269), forwarded to
+    /// `NARACatalogLookupView` for its candidate-citation scan; `nil` otherwise.
+    var blockContext: String? = nil
 }
 
 // MARK: - Window foregrounding

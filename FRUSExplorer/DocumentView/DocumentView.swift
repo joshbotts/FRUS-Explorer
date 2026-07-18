@@ -56,7 +56,8 @@ enum DocumentSheet: Identifiable {
     /// Gloss link was tapped but the lookup returned nil.
     case glossNotFound
     /// User selected text in the document and chose "Look Up in NARA Catalog".
-    case naraLookup(text: String)
+    /// `blockContext` is the enclosing footnote body for a footnote selection (#269), else `nil`.
+    case naraLookup(text: String, blockContext: String?)
     /// An unresolvable cross-reference was tapped — explains why it can't be followed (#240).
     case brokenRefExplanation(BrokenRefInfo)
     /// The #308 find-related list, on surfaces without multiple windows (iPhone / non-Stage-Manager
@@ -250,6 +251,9 @@ struct DocumentView: View {
     @State private var webKitSelectionRange: (Int, Int)? = nil
     /// Raw selected text from the WebKit renderer. Pre-populates the NARA lookup field.
     @State private var webKitSelectedText: String? = nil
+    /// The enclosing footnote body for a footnote selection (the JS `blockText`, #269), or
+    /// `nil` for an in-document selection. Feeds the NARA lookup's candidate-citation scan.
+    @State private var webKitSelectedBlockText: String? = nil
     /// The last *valid in-document* selection range, preserved across the false
     /// `selectioncleared` the system overflow "···" menu fires when it blurs the web
     /// view (see `onSelectionCleared`). `webKitSelectedText` already survives that
@@ -602,8 +606,8 @@ struct DocumentView: View {
                 personNotFoundSheet
             case .glossNotFound:
                 glossNotFoundSheet
-            case .naraLookup(let text):
-                NARACatalogLookupView(initialText: text)
+            case .naraLookup(let text, let blockContext):
+                NARACatalogLookupView(initialText: text, blockContext: blockContext)
             case .brokenRefExplanation(let info):
                 BrokenRefExplanationSheet(info: info)
                     .presentationDetents([.medium])
@@ -1447,7 +1451,7 @@ struct DocumentView: View {
                 }
             )
             .highlights(highlights)
-            .onSelectionChanged { start, end, text in
+            .onSelectionChanged { start, end, text, blockText in
                 if start >= 0 {
                     // In-document selection with valid offsets — enables highlights + lookup.
                     webKitSelectionRange = (start, end)
@@ -1455,12 +1459,15 @@ struct DocumentView: View {
                     // always describe the same selection as webKitSelectedText, so it
                     // is nil'd on the footnote branch below and for empty text.
                     lastValidSelectionRange = text.isEmpty ? nil : (start, end)
+                    webKitSelectedBlockText = nil
                 } else {
                     // Footnote / out-of-document selection — text only, no valid offsets.
                     // Clear the range so highlight creation is not offered, but keep the
-                    // text so NARA lookup remains available.
+                    // text so NARA lookup remains available, plus the enclosing note body
+                    // so the lookup can characterise the footnote's citations (#269).
                     webKitSelectionRange = nil
                     lastValidSelectionRange = nil
+                    webKitSelectedBlockText = blockText.isEmpty ? nil : blockText
                 }
                 webKitSelectedText = text.isEmpty ? nil : text
             }
@@ -1483,8 +1490,10 @@ struct DocumentView: View {
             }
             .onEditMenuNARALookup {
                 let text = webKitSelectedText ?? ""
+                let blockContext = webKitSelectedBlockText
                 webKitSelectedText = nil
-                activeSheet = .naraLookup(text: text)
+                webKitSelectedBlockText = nil
+                activeSheet = .naraLookup(text: text, blockContext: blockContext)
             }
             .canHighlightSelection { webKitSelectionRange != nil }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
