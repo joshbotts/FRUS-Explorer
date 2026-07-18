@@ -180,6 +180,39 @@ struct ScopeFacetsTests {
                 == ["match"])
     }
 
+    // MARK: Editor-only facet (#366)
+
+    @Test("Editor-only matches by substring, ignoring coverage dates (including undated volumes)")
+    func editorOnlyIgnoresCoverage() {
+        let entries = [
+            entry("dated-match",   earliest: "1900-01-01", latest: "1905-01-01",
+                  editors: ["Louis J. Smith"]),
+            entry("undated-match", editors: ["Edward C. Keefer", "Louis J. Smith"]),
+            entry("nomatch",       earliest: "1962-01-01", latest: "1963-01-01",
+                  editors: ["Adrian Sanchez"]),
+        ]
+        // A bare surname substring, and coverage dates that a year range would have excluded.
+        #expect(ScopeFacets.volumeIds(editorContains: "smith", entries: entries)
+                == ["dated-match", "undated-match"])
+    }
+
+    @Test("Editor-only folds case and diacritics")
+    func editorOnlyFolds() {
+        let entries = [
+            entry("a", editors: ["Adrián Sánchez"]),
+            entry("b", editors: ["Louis J. Smith"]),
+        ]
+        #expect(ScopeFacets.volumeIds(editorContains: "ADRIAN sanchez", entries: entries)
+                == ["a"])
+    }
+
+    @Test("Editor-only with a blank filter matches nothing")
+    func editorOnlyBlankFilter() {
+        let entries = [entry("a", editors: ["Louis J. Smith"])]
+        #expect(ScopeFacets.volumeIds(editorContains: "", entries: entries).isEmpty)
+        #expect(ScopeFacets.volumeIds(editorContains: "   ", entries: entries).isEmpty)
+    }
+
     @Test("ISO year parsing: 4-digit prefix or nil")
     func yearParsing() {
         #expect(ScopeFacets.year(from: "1961-05-06") == 1961)

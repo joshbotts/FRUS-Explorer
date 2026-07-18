@@ -519,7 +519,15 @@ struct CustomScopeEditorView: View {
         scope.volumeIds = Array(selection).sorted()   // wholesale replace — never mutate in place
         scope.lastModified = Date()
         if isDraft { modelContext.insert(scope) }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            // A swallowed save error would present as a silent no-op to the user (#366). We
+            // can't raise a blocking alert from here without more plumbing, but never lose it.
+            #if DEBUG
+            print("[CustomScopeEditorView] save failed: \(error)")
+            #endif
+        }
         dismiss()
     }
 }
@@ -795,24 +803,36 @@ private struct CoverageFacetSheet: View {
     @State private var toYearText = ""
     @State private var editorFilter = ""
 
-    /// The live match for the current inputs, or `nil` when the years don't parse.
+    /// The live match for the current inputs, or `nil` when nothing is matchable yet.
+    /// Two paths (#366): a **year range** (both years parse, `from ≤ to`), optionally
+    /// narrowed by an editor substring; or an **editor-only** filter when both year fields
+    /// are blank. A partial or inverted year range yields `nil` (the disabled prompt).
     private var matches: Set<String>? {
-        guard let from = Int(fromYearText), let to = Int(toYearText), from <= to else { return nil }
-        return ScopeFacets.volumeIds(coverageIntersecting: from, toYear: to,
-                                     editorContains: editorFilter.isEmpty ? nil : editorFilter,
-                                     entries: entries)
+        let editor = editorFilter.trimmingCharacters(in: .whitespaces)
+        if let from = Int(fromYearText), let to = Int(toYearText), from <= to {
+            return ScopeFacets.volumeIds(coverageIntersecting: from, toYear: to,
+                                         editorContains: editor.isEmpty ? nil : editor,
+                                         entries: entries)
+        }
+        // Editor-only: both year fields blank and an editor name supplied.
+        if fromYearText.trimmingCharacters(in: .whitespaces).isEmpty,
+           toYearText.trimmingCharacters(in: .whitespaces).isEmpty,
+           !editor.isEmpty {
+            return ScopeFacets.volumeIds(editorContains: editor, entries: entries)
+        }
+        return nil
     }
 
     /// The sheet's chrome title, shared by both platform bodies.
     private var pickerTitle: String {
         String(localized: "settings.scopes.facet.coverage.title",
-               defaultValue: "Add Volumes by Coverage")
+               defaultValue: "Add Volumes by Coverage or Editor")
     }
 
     /// The explanatory footer, shared by both platform bodies.
     private var footerString: String {
         String(localized: "settings.scopes.facet.coverage.footer",
-               defaultValue: "Adds volumes whose document coverage intersects the years. Volumes without coverage dates in the manifest are not matched.")
+               defaultValue: "Adds volumes whose document coverage intersects the years, optionally narrowed by editor. Leave both years blank to add by editor name alone. A year range does not match volumes that have no coverage dates in the manifest.")
     }
 
     /// The add button's live label: match count, or the invalid-range prompt.
@@ -824,7 +844,7 @@ private struct CoverageFacetSheet: View {
                 defaultValue: "Add %lld matching volumes"), Int64(matches.count)))
         } else {
             Text(String(localized: "settings.scopes.facet.coverage.invalid",
-                        defaultValue: "Enter a valid year range"))
+                        defaultValue: "Enter a year range or an editor name"))
         }
     }
 

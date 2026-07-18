@@ -350,7 +350,7 @@ A **volume scope** is a named, reusable set of volumes — every volume covering
 Manage scopes in **Settings → Research → Volume Scopes** (Section 16):
 
 - **New Scope** opens the editor: name the scope and pick its members from the **whole manifest**, grouped by subseries, with a title filter field and per-subseries **Add All** / **Remove All**. Volumes you haven't downloaded stay in the scope and take effect once indexed.
-- The **Add Volumes By…** menu adds members by facet — **Subject…** (detected topics), **Person…** (volumes where a person is mentioned), **Manifest Tag…**, or **Coverage Years / Editor…**. Facets only ever *add* matching volumes; they never remove volumes already selected.
+- The **Add Volumes By…** menu adds members by facet — **Subject…** (detected topics), **Person…** (volumes where a person is mentioned), **Manifest Tag…**, or **Coverage Years / Editor…** (a year range optionally narrowed by editor, or — leaving both years blank — every volume with a matching editor regardless of coverage dates). Facets only ever *add* matching volumes; they never remove volumes already selected.
 - A footer keeps an honest running count: "N volumes selected · M indexed".
 - Each scope row in the pane shows its live coverage ("N of M volumes indexed") with **Edit** and **Delete** actions, plus a **Word Cloud** button that opens a cloud of the scope's indexed volumes (Section 13.4).
 
