@@ -597,6 +597,14 @@ struct MacDocumentView: View {
             highlightSelection: { color in createWebKitHighlight(color: color) },
             toggleResearchPanel: {
                 withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
+            },
+            openInNewWindow: {
+                // File ▸ "Open Document in New Window" (C2.2). Value-based identity is
+                // (volumeId, documentId), so this focuses the window if the document is already open.
+                openWindow(value: DocumentWindowID(
+                    volumeId: entry.volumeId,
+                    documentId: entry.documentId,
+                    header: vm.documentTitle ?? entry.header))
             }
         )
     }
