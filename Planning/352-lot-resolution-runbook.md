@@ -7,6 +7,49 @@ the corrected NAIDs propagate everywhere. From the #335 audit §5.3 / §7 step 2
 **Owner-keyed.** `CATALOG_API_KEY` stays owner-held; every keyed step below is run by the owner in
 their terminal. The offline steps need no key.
 
+---
+
+## Actual run — 2026-07-17 (outcome + the cold-cache `RESOLVE_LOTS_ONLY` path)
+
+The first real run was on a machine with a **cold page cache**, where a full `CITATIONS_CSV` run
+would re-enumerate Phase 1/2 (thousands of requests) just to touch lots. So it used the new
+**`RESOLVE_LOTS_ONLY`** mode (preserves the Numerical File + country series, re-harvests only lots)
+plus `ENRICH_LOTS`:
+
+```bash
+export CATALOG_API_KEY=<key>
+RESOLVE_LOTS_ONLY=1 CITATIONS_CSV=/Users/jbotts/Development/citations2.csv swift run CentralFilesIndexGenerator
+ENRICH_LOTS=1 swift run CentralFilesIndexGenerator
+# then, offline: collection-authority regen (fileUnit-guarded resolver), reviewed and committed.
+```
+
+**Outcome — an accuracy win, not the projected coverage jackpot:**
+- **971 lots, 100% series-level, 0 fileUnit.** The 16 fileUnit mis-resolutions (60 D 627 →
+  "Operation Mongoose" + 15) are gone from the *data*; **+24** newly-resolved lots.
+- **Every freshly-harvested lot is post-validated** — its NAID provably carries the lot number — a
+  stronger guarantee than the pre-#352 bundle. (The 17 `mergeLots`-preserved lots keep their June
+  resolution and are *not* re-post-validated this run — the trade for not losing valid NAIDs to
+  index drift; `RESOLVE_LOTS_ONLY` prints a spot-check warning for any preserved lot that also had a
+  fresh candidate rejected.) 22 lots shifted to a different (also lot-carrying) NARA record vs. the
+  June harvest; churn, not error, but worth an owner spot-check.
+- **`mergeLots` preserved 17 lots** that NARA's control-number search now misses (index drift since
+  June) but whose NAIDs are still valid records — a re-harvest must not lose those.
+- **collection-authority regenerated** (offline, fileUnit-guarded resolver): the 14 contaminated lot
+  clusters cleaned; 23 clusters gained a NAID (the new lots); 4,431 clusters unchanged in identity.
+- **The coverage goal did not pan out: 2 of 573 "missed" lots resolved.** They are not in NARA's
+  control-number index (which is why they were missing originally); the audit §5.3 estimate assumed
+  otherwise. They keep resolving through the app's live lookup, as before. Bulk-resolving them needs
+  manual NAID curation (the top-10 = 54% of the gap), not a keyed control-number pass.
+
+**Still deferred (needs the key):** `volume-sources-index.json`'s 9 fileUnit lot entries stay in the
+data (its self-contained #351 render guard suppresses them, so no wrong links show); a full keyed
+`VolumeSourcesIndexGenerator` run (reads the `rgs` cache → preserves the 31 record-groups, resolves
+lots against the clean central-files) would clean them too — do this when convenient.
+
+The original full-harvest run-book below stays valid for a machine with a warm cache.
+
+---
+
 Run every command from the repo root: `/Users/jbotts/Development/FRUS-Explorer`. Prefix the Swift
 commands with `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` if `swift` picks the
 wrong toolchain.

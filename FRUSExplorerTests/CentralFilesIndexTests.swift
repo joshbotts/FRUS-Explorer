@@ -180,30 +180,25 @@ struct CentralFilesIndexTests {
         }
     }
 
-    /// The file-unit records are the reason `isSeriesLevel` exists: their `title` is a file-unit
-    /// title, so #315-B must not present it as a "file series name". They also carry no entry
-    /// number — entry numbers describe series — which this pins as an observed property of the
-    /// corpus rather than an assumption.
-    @Test("Non-series lot records carry no entry number and are flagged")
-    func bundledNonSeriesRecordsAreFlagged() throws {
+    /// After the #352 post-validated re-harvest, **every** bundled lot resolves to a *series* — a
+    /// State Department lot file IS a series, and a `fileUnit` match is the wrong-collection class
+    /// (60 D 627 → "Operation Mongoose") the post-validation rejects. So the bundle carries no
+    /// non-series lot and no untrustworthy NAID; the #351 render guards become no-ops (nothing to
+    /// suppress). Exact NAIDs/entry numbers are intentionally not pinned — a re-harvest may shift a
+    /// lot to another record that also indexes it — but the *shape* invariant is stable.
+    @Test("Every bundled lot is series-level; no fileUnit mis-resolutions remain (#352)")
+    func everyBundledLotIsSeriesLevel() throws {
         let index = try #require(CentralFilesIndexStore.shared)
-        let nonSeries = index.lotFiles.filter {
-            $0.levelOfDescription != nil && !$0.isSeriesLevel
-        }
-        #expect(!nonSeries.isEmpty, "expected ~32 fileUnit-level lot entries")
-        for lot in nonSeries {
-            #expect((lot.hmsMlrEntryNumbers ?? []).isEmpty,
-                    "lot \(lot.lotNumber) is \(lot.levelOfDescription ?? "?")-level yet carries an entry number — the series/entry-number correlation broke")
-        }
-        // Golden series-level case. NOT the verifying spike's lot (64 D 171): that is RG 306,
-        // and this index bundles only the RG 59/84 Phase-3 harvest — the first executable run
-        // of this suite caught exactly that wrong assumption here. 81D208 is present, is
-        // series-level, and doubles as the recovered transient miss from the first harvest
-        // (naId 27499754, entry UD-06D 30).
-        let known = index.lotFile(forRawLot: "81 D 208")
-        #expect(known?.isSeriesLevel == true)
-        #expect(known?.hmsMlrEntryNumbers == ["UD-06D 30"])
-        #expect(known?.displaySeriesTitle == "Human Rights Country Files")
+        let nonSeries = index.lotFiles.filter { $0.levelOfDescription != nil && !$0.isSeriesLevel }
+        #expect(nonSeries.isEmpty,
+                "no lot may be non-series after the #352 re-harvest; found \(nonSeries.map(\.lotNumber))")
+        #expect(index.untrustworthyNAIDs.isEmpty, "a clean bundle exposes no untrustworthy NAIDs")
+        // A corpus-staple series lot resolves, is series-level, and carries its enrichment. Only
+        // the stable NAID is pinned (64 D 199 → 602231, the PPS-era Secretary's memoranda).
+        let known = try #require(index.lotFile(forRawLot: "64 D 199"))
+        #expect(known.isSeriesLevel)
+        #expect(known.naId == "602231")
+        #expect(!(known.hmsMlrEntryNumbers ?? []).isEmpty, "an enriched series lot carries an entry number")
     }
 
     /// The #321 app-side guard: entries whose resolved record has no record-group ancestry —

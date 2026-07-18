@@ -1,12 +1,12 @@
-collection-authority.json regeneration report — 2026-07-04
+collection-authority.json regeneration report — 2026-07-17
 ============================================================
 volumes parsed:            501
 document notes parsed:     264464
-authority records:         4431 (lot-keyed: 1727, with NAID: 939)
+authority records:         4431 (lot-keyed: 1727, with NAID: 938)
 sub-series children:       7650
 alias forms:               5436
 unclusterable references:  0
-artifact size:             1911312 bytes
+artifact size:             1911168 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
   lot-keyed:   4249/4249 (100.0%)
