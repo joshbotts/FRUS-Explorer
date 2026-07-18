@@ -462,7 +462,7 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Word Cloud window
 
 Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.
 
-Find it from the Research rail's Cross-reference Graph tile (it opens in its own window on Mac and on iPad with Stage Manager).
+Find it from the Research rail's Graph tile (it opens in its own window on Mac and on iPad with Stage Manager).
 
 <!-- section-id: cross-reference-analytics -->
 

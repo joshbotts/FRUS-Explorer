@@ -972,7 +972,7 @@ private extension EducationPage {
                 paragraphs: [
                     "Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.",
                     "Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.",
-                    "Find it from the Research rail's Cross-reference Graph tile (it opens in its own window on Mac and on iPad with Stage Manager)."
+                    "Find it from the Research rail's Graph tile (it opens in its own window on Mac and on iPad with Stage Manager)."
                 ]
             ),
             EducationSection(

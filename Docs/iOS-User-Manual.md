@@ -147,7 +147,7 @@ On iPhones with a Dynamic Island, starting a download presents a **Live Activity
 
 When you open a document for reading, the toolbar carries a **single control**: the **Research-rail toggle** (a `doc.text.magnifyingglass` button), which becomes accent-tinted while the rail is open. The many separate annotation, citation, and AI actions that once crowded this toolbar have moved into the **Research rail** and the **floating selection bar** described below; returning to where you came from is the ordinary navigation back button.
 
-**The Research rail** is the per-document research surface. On **iPad** it slides in as the trailing `.inspector` panel beside the document; on **iPhone** it rises as a **bottom sheet** with medium and large detents and a drag indicator. It opens with a **RESEARCH** header, then a **3×2 grid of tiles** — **Cite**, **Word Cloud**, **Source Explorer**, **Cross-reference Graph**, **Related**, and **Share** — above expandable **Summary**, **Notes**, **Tags**, and **Collections** accordions. On iPad the rail header also carries an **Open in New Window** icon for Stage Manager (Section 17.2).
+**The Research rail** is the per-document research surface. On **iPad** it slides in as the trailing `.inspector` panel beside the document; on **iPhone** it rises as a **bottom sheet** with medium and large detents and a drag indicator. It opens with a **RESEARCH** header, then a **3×2 grid of tiles** — **Cite**, **Word Cloud**, **Sources**, **Graph**, **Related**, and **Share** — above expandable **Summary**, **Notes**, **Tags**, and **Collections** accordions. On iPad the rail header also carries an **Open in New Window** icon for Stage Manager (Section 17.2).
 
 **The floating selection bar** is a dark pill that appears just below a passage you select in the document body. It offers four **colour dots** (tap one to highlight the selection in that colour), **Excerpt**, **Look Up** (a NARA catalog lookup for the selection), and **Note**. (For a selection inside a footnote, the colour dots and Excerpt are disabled.)
 
@@ -165,9 +165,9 @@ Every action that used to live in the document toolbar now has one of these home
 | **Citation** | The rail's **Cite** tile (its sheet also has a **Copy Citation** button) — Section 9.3 |
 | **Share** | The rail's **Share** tile (Section 9.3) |
 | **Word Cloud** | The rail's **Word Cloud** tile (Section 13.4) |
-| **Cross-References** graph | The rail's **Cross-reference Graph** tile (Section 8) |
+| **Cross-References** graph | The rail's **Graph** tile (opens the cross-reference graph; Section 8) |
 | **Related Documents** | The rail's **Related** tile (Section 6.5) |
-| **Source Explorer** | The rail's **Source Explorer** tile (Section 12) |
+| **Source Explorer** | The rail's **Sources** tile (opens Source Explorer; Section 12) |
 | **Open in New Window** | The rail header's new-window icon (iPad Stage Manager, Section 17.2) |
 
 Showing the rail is **Research mode**; hiding it is a distraction-free **Read mode** (Section 6.2).
@@ -459,9 +459,9 @@ Many FRUS documents reference one another — a memo might respond to a cable, o
 
 Page-number cross-references — the kind that print as "see p. 427" and point at a printed page rather than a document number — resolve to the correct target document, so they appear as ordinary links in the graph (and feed the corpus-wide analytics in Section 8.1) rather than dead-ending. **The first launch after this update rebuilds the cross-reference index one more time** — the rebuild also repairs a long-standing defect where some *cross-volume* page references pointed at the wrong document in graphs and analytics. It happens automatically in the background, and your reading isn't interrupted. (See the indexing banner in Section 3.1 and Index Health in Section 16.) References the corpus-wide validation dataset marks as unresolvable (Section 6.1) are excluded from the graph and its analytics rather than drawn as dead-end nodes.
 
-Open the graph from the **Cross-reference Graph** tile in the Research rail (Section 3.3). It opens full-screen (a sheet on iPad). Each node is a document, positioned left-to-right by date; arrows point from the citing document to the cited one, and larger nodes are more connected. A **legend** and an **info** button (ⓘ) explain the color, size, and direction encodings so meaning never depends on color alone.
+Open the graph from the **Graph** tile in the Research rail (Section 3.3). It opens full-screen (a sheet on iPad). Each node is a document, positioned left-to-right by date; arrows point from the citing document to the cited one, and larger nodes are more connected. A **legend** and an **info** button (ⓘ) explain the color, size, and direction encodings so meaning never depends on color alone.
 
-`[SCREENSHOT: Cross-reference graph on iPhone showing nodes arranged along a date axis with direction arrows and a legend — the rail's Cross-reference Graph tile (SF Symbol: point.3.connected.trianglepath.dotted) labeled]`
+`[SCREENSHOT: Cross-reference graph on iPhone showing nodes arranged along a date axis with direction arrows and a legend — the rail's Graph tile (SF Symbol: point.3.connected.trianglepath.dotted) labeled]`
 
 **Reference list vs. canvas.** On iPhone, a segmented **List / Graph** control switches between the visual canvas and a scrollable reference list of the same connections (on iPad and Mac the list is a side panel you toggle). Selecting a node shows its details; tapping opens the document.
 
@@ -700,7 +700,7 @@ Every FRUS document is drawn from original archival material, and each carries a
 
 **Coverage.** Source notes are extracted for **every era of the series**, including the modern volumes (roughly 1955 onward) that encode the note inside the document heading rather than as a standalone note — a form earlier releases of the app missed entirely. If a document has a source note in the published volume, FRUS Explorer has it.
 
-Open Source Explorer from the **Source Explorer** tile in the Research rail (Section 3.3). It displays the parsed source-note information and offers a direct link to look the corresponding record up in the **National Archives (NARA) online catalog**, opened in FRUS Explorer's embedded browser. An **info** button (ⓘ) in the toolbar opens a popover explaining what the view shows and how to read an archival source note.
+Open Source Explorer from the **Sources** tile in the Research rail (Section 3.3). It displays the parsed source-note information and offers a direct link to look the corresponding record up in the **National Archives (NARA) online catalog**, opened in FRUS Explorer's embedded browser. An **info** button (ⓘ) in the toolbar opens a popover explaining what the view shows and how to read an archival source note.
 
 `[SCREENSHOT: Source Explorer view showing parsed archival source information with a NARA catalog link]`
 
@@ -893,7 +893,7 @@ iPad's larger screen and multitasking model unlock several capabilities beyond t
 
 ### 17.1 The Research Rail as an Inspector
 
-On iPad, the document view's **Research rail** (Section 3.3) is presented as a trailing `.inspector` panel beside the document rather than a full-screen sheet, so you can see the document and its research surface at the same time. Show or hide it with the single **Research-rail toggle** in the document toolbar. A document's **Summary**, **Notes**, **Tags**, and **Collections** live as accordions in the rail, while **Cross-reference Graph** is one of the rail's tiles — tapping it opens the graph as its own window (Section 17.2), not as an inspector section.
+On iPad, the document view's **Research rail** (Section 3.3) is presented as a trailing `.inspector` panel beside the document rather than a full-screen sheet, so you can see the document and its research surface at the same time. Show or hide it with the single **Research-rail toggle** in the document toolbar. A document's **Summary**, **Notes**, **Tags**, and **Collections** live as accordions in the rail, while **Graph** is one of the rail's tiles — tapping it opens the graph as its own window (Section 17.2), not as an inspector section.
 
 `[SCREENSHOT: iPad split view showing a document with the Research rail open as a trailing inspector alongside it]`
 

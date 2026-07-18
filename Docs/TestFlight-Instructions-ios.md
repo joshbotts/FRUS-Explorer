@@ -3,7 +3,7 @@
 Build 33 is about finding the *next* document: a new **Related Documents** list ranks what to read next by archival provenance, cross-references, dates, and shared people — with tunable weights; **Custom Volume Scopes** let you name a set of volumes once and reuse it across Search, Analytics, and Word Clouds; the volume subject profiles from build 32 become **detected-topic filters** (experimental); Source Explorer now shows the **HMS/MLR entry numbers** NARA staff actually ask for; and iPad windows got a reliability pass. No re-index this build — everything works on your existing library.
 
 ## Related Documents
-From any document, the toolbar's **Related Documents** button opens a ranked list of documents related to the one you're reading.
+From any document, the Research rail's **Related** tile opens a ranked list of documents related to the one you're reading.
 - **Five signals** — **Archival provenance** (same lot file, decimal file, or collection), **Cross-references** (cites / cited by), **Close in date**, **Same volume or subseries**, and **Shared people**. Each row carries small **"why related" icon chips** showing which signals matched, strongest first.
 - **Scope picker** — **This volume / This subseries / All volumes**; a scoped empty result invites widening rather than pretending there's nothing.
 - **Adjust weights** — a disclosure of per-signal sliders; move one and the list re-ranks when you let go. Your tuning persists for the next document. A sixth slider, **Shared topics**, is visible but disabled — it activates when detected-topic document data ships.
@@ -21,7 +21,7 @@ Named, reusable volume sets — build "Cuban Missile Crisis volumes" or "Everyth
 The per-volume "Top subjects" profiles from build 32 become filters. These are **automatically detected topics, not editorial subject headings** — expect the occasional mistag, and tell us about the ones you find.
 - **Search** — a **By Subject · Detected Topics** section with **Filter by detected topic…**: pick a category, optionally drill into a sub-category, and the volume picker fills with the indexed matches (same warn-and-refuse guard as scopes).
 - **Analytics & Word Cloud** — the same scope menus gain a **By Detected Topic** submenu ("Detected topics — experimental"), including the About the Series dashboards.
-- **Subjects (this volume)** — the research panel below a document gains a **Subjects (this volume)** disclosure: the volume's characteristic detected topics as chips; tapping one lists the other volumes covering that subject. Volume-level, and labeled as such.
+- **Top subjects** — each volume's page shows its characteristic detected topics as chips; tapping one lists the other volumes covering that subject.
 - **Cleaner profiles** — an era-sanity pass removed 14 anachronistic subject-volume pairings (AIDS no longer appears on a 1964–68 volume).
 
 ## Source Explorer

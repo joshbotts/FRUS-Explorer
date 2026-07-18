@@ -21,7 +21,7 @@ Named, reusable volume sets — build "Cuban Missile Crisis volumes" or "Everyth
 The per-volume "Top subjects" profiles from build 32 become filters. These are **automatically detected topics, not editorial subject headings** — expect the occasional mistag, and tell us about the ones you find.
 - **Search** — a **By Subject · Detected Topics** section with **Filter by detected topic…**: pick a category, optionally drill into a sub-category, and the volume picker fills with the indexed matches (same warn-and-refuse guard as scopes).
 - **Analytics & Word Cloud** — the same scope menus gain a **By Detected Topic** submenu ("Detected topics — experimental"), including the About the Series dashboards.
-- **Subjects (this volume)** — the document research panel gains a **Subjects (this volume)** disclosure: the volume's characteristic detected topics as chips; clicking one lists the other volumes covering that subject. Volume-level, and labeled as such.
+- **Top subjects** — each volume's page shows its characteristic detected topics as chips; clicking one lists the other volumes covering that subject.
 - **Cleaner profiles** — an era-sanity pass removed 14 anachronistic subject-volume pairings (AIDS no longer appears on a 1964–68 volume).
 
 ## Source Explorer

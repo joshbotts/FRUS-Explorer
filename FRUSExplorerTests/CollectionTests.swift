@@ -515,10 +515,10 @@ struct CollectionTests {
         }
         try context.save()
 
-        // The predicate is the one ResearchRailView builds for its `memberships` @Query.
-        let vId = "vol1", dId = "d5"
+        // Fetch with the PRODUCTION predicate (shared with the rail's `memberships` @Query) so this
+        // test breaks if the shipped filter is ever weakened — not a hand-copy that could drift.
         let descriptor = FetchDescriptor<CollectionEntry>(
-            predicate: #Predicate { $0.volumeId == vId && $0.documentId == dId && $0.kind == "document" })
+            predicate: ResearchRailView.membershipPredicate(volumeId: "vol1", documentId: "d5"))
         let membership = try context.fetch(descriptor)
 
         #expect(membership.count == 1)

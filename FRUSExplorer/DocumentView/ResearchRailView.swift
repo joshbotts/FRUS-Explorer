@@ -147,10 +147,18 @@ struct ResearchRailView: View {
         _documentTagAssignments = Query(
             filter: #Predicate<DocumentTagAssignment> { $0.volumeId == vId && $0.documentId == dId })
         _memberships = Query(
-            filter: #Predicate<CollectionEntry> {
-                $0.volumeId == vId && $0.documentId == dId && $0.kind == "document"
-            },
+            filter: Self.membershipPredicate(volumeId: vId, documentId: dId),
             sort: \.sortOrder)
+    }
+
+    /// The `CollectionEntry` filter backing the Collections accordion's `memberships` `@Query`: this
+    /// document's `.document`-kind entries only (owner decision D5 — headings/prose/excerpts are
+    /// composed-collection structure, not memberships). Extracted so the Phase-E unit test guards the
+    /// PRODUCTION predicate rather than a hand-copy that could silently drift.
+    nonisolated static func membershipPredicate(volumeId: String, documentId: String) -> Predicate<CollectionEntry> {
+        #Predicate<CollectionEntry> {
+            $0.volumeId == volumeId && $0.documentId == documentId && $0.kind == "document"
+        }
     }
 
     var body: some View {

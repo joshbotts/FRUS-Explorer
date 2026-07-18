@@ -119,7 +119,7 @@ The toolbar's trailing edge carries five controls; the two ▾ entries are menus
 | **My Research ▾** | — | A menu: **Research** (⌘⌥R — the Research window listing all annotated documents) and **Collections** (⇧⌘K) |
 | **Research rail** | ⌘⇧R | Show or hide the per-document Research rail (Section 3.2) |
 
-The old titlebar **Graph** and **Info** buttons have been removed. The cross-reference graph now opens from the Research rail's **Cross-reference Graph** tile (Section 3.2), and a document's citation and metadata are reached through the rail's **Cite** tile.
+The old titlebar **Graph** and **Info** buttons have been removed. The cross-reference graph now opens from the Research rail's **Graph** tile (Section 3.2), and a document's citation and metadata are reached through the rail's **Cite** tile.
 
 ![The macOS main-window toolbar — the traffic-light controls, the centred document title (`volumeId/documentId`), and the five trailing tools: Search, Browse, the Analytics ▾ menu, the My Research ▾ menu, and the Research-rail toggle (⌘⇧R).](screenshots/macos/toolbar.png) <!-- TODO Phase E: re-capture for Research rail -->
 
@@ -132,15 +132,15 @@ The rail is headed by a **RESEARCH** label and has two parts:
 - A **3×2 tile grid** of one-tap actions:
   - **Cite** — Open the citation popover (formatted citation, copy, and Copy as… BibTeX/RIS; see Section 9.3).
   - **Word Cloud** — Open a word cloud for this document (Section 13.4).
-  - **Source Explorer** — Open the Source Explorer for this document's source note (Section 12).
-  - **Cross-reference Graph** — Open the cross-reference graph for this document (Section 8). *(This is where the old titlebar Graph button went.)*
+  - **Sources** — Open the Source Explorer for this document's source note (Section 12).
+  - **Graph** — Open the cross-reference graph for this document (Section 8). *(This is where the old titlebar Graph button went.)*
   - **Related** — Open the **Related Documents** window: a ranked list of documents related to this one by archival provenance, cross-references, date, and shared people (Section 6.4).
   - **Share** — A menu that sends this document to your Zotero library, exports a Zotero file, or shares its citation (Section 9.3).
 - A stack of expandable **accordions** — **Summary**, **Notes**, **Tags**, and **Collections** — that hold this document's generated summaries (Section 11), your research notes (Section 7.1), its user tags (Section 7.3), and the collections it belongs to (Section 10).
 
 **Highlighting is no longer a rail button.** To highlight, **select text in the document body**: a **floating selection bar** (a dark pill) appears at the selection with four **colour dots** — click a dot to save the passage as a highlight in that colour — plus **Excerpt**, **Look Up**, and **Note** actions (Sections 7.2, 12.1.1, 10.2a). For a selection **inside a footnote** the colour dots and Excerpt are disabled (you can still Look Up or add a Note). This floating bar replaces the old Highlight button and its colour-picker popover, and it now behaves the same on macOS and iOS.
 
-![The macOS Research rail beside an open document — the RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Source Explorer · Cross-reference Graph · Related · Share), and the Summary / Notes / Tags / Collections accordions below.](screenshots/macos/research-strip.png) <!-- TODO Phase E: re-capture for Research rail -->
+![The macOS Research rail beside an open document — the RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Sources · Graph · Related · Share), and the Summary / Notes / Tags / Collections accordions below.](screenshots/macos/research-strip.png) <!-- TODO Phase E: re-capture for Research rail -->
 
 ### 3.3 Document View
 
@@ -172,7 +172,7 @@ FRUS Explorer opens specialized tools in their own windows so you can keep a doc
 |--------|----------|
 | Search | ⌘F |
 | Corpus Browser | ⇧⌘B |
-| Cross-Reference Graph | (Research rail **Cross-reference Graph** tile) |
+| Cross-Reference Graph | (Research rail **Graph** tile) |
 | Source Explorer | (click source note link) |
 | Archival Neighbors | (Archival Neighbors action; one window per archival source) |
 | Related Documents | (Research rail **Related** tile; one window per document — Section 6.4) |
