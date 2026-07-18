@@ -196,7 +196,7 @@ public struct CentralFilesIndexGeneratorRunner {
         let harvested = await harvestLotFiles(csvPath: csvPath, client: client)
         let lotFiles = mergeLots(existing: existing.lotFiles, harvested: harvested)
         let harvestedKeys = Set(harvested.map(\.lotNumber))
-        let preserved = lotFiles.filter { !harvestedKeys.contains($0.lotNumber) }.count
+        let preservedLots = lotFiles.filter { !harvestedKeys.contains($0.lotNumber) }
         let index = CentralFilesIndex(
             generated: isoToday(),
             numericalFile: existing.numericalFile,
@@ -205,9 +205,22 @@ public struct CentralFilesIndexGeneratorRunner {
         do {
             try CentralFilesIndexWriter.write(index, to: outputPath)
             print("[CentralFilesIndexGenerator] ✓ RESOLVE_LOTS_ONLY wrote \(lotFiles.count) lot files "
-                  + "(\(harvested.count) freshly harvested + \(preserved) preserved from the existing "
-                  + "bundle through control-number drift; Numerical File + "
+                  + "(\(harvested.count) freshly harvested + \(preservedLots.count) preserved from the "
+                  + "existing bundle — these retain their prior resolution, NOT re-post-validated this "
+                  + "run — through control-number drift; Numerical File + "
                   + "\(existing.countrySeries.count) country series preserved) to \(outputPath)")
+            // A preserved lot for which THIS run also rejected a fresh candidate is suspect: its
+            // prior resolution may be the very record post-validation would now reject. Surface the
+            // overlap so the owner can spot-check (the fileUnit class is still caught downstream by
+            // ENRICH_LOTS → PRUNE_FLAGGED_LOTS; this covers the "no longer carries the lot" class).
+            let preservedKeys = Set(preservedLots.map(\.lotNumber))
+            let rejectedLots = Set(await client.lotPostValidationRejections
+                .compactMap { $0.split(separator: " ").first.map(String.init) })
+            let suspect = preservedKeys.intersection(rejectedLots).sorted()
+            if !suspect.isEmpty {
+                print("  ⚠︎ \(suspect.count) preserved lot(s) also had a fresh candidate rejected this "
+                      + "run — their prior resolution may be stale; spot-check: \(suspect.joined(separator: ", "))")
+            }
             print("  Next: run ENRICH_LOTS to re-attach #315/#351 fields, then PRUNE_FLAGGED_LOTS.")
         } catch {
             print("[CentralFilesIndexGenerator] ✗ RESOLVE_LOTS_ONLY: failed to write index: \(error)")
@@ -526,8 +539,11 @@ public struct CentralFilesIndexGeneratorRunner {
                 }
             }
         } catch {
-            print("[CentralFilesIndexGenerator] ✗ Could not read citations CSV: \(error)")
-            return []
+            // Fatal: an unreadable/typo'd CITATIONS_CSV must never masquerade as a successful
+            // zero-lot harvest (which would silently drop the whole lot set / partial-PRUNE a
+            // dirty bundle). The caller was explicitly told to harvest from this file.
+            print("[CentralFilesIndexGenerator] ✗ Could not read citations CSV at \(csvPath): \(error)")
+            exit(1)
         }
         let citations = distinct.values.sorted { $0.normalizedLot < $1.normalizedLot }
         print("  distinct lot numbers: \(citations.count)")

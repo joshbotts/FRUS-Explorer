@@ -26,8 +26,11 @@ ENRICH_LOTS=1 swift run CentralFilesIndexGenerator
 **Outcome — an accuracy win, not the projected coverage jackpot:**
 - **971 lots, 100% series-level, 0 fileUnit.** The 16 fileUnit mis-resolutions (60 D 627 →
   "Operation Mongoose" + 15) are gone from the *data*; **+24** newly-resolved lots.
-- **Every lot is post-validated** — its NAID provably carries the lot number — a stronger guarantee
-  than the pre-#352 bundle. 22 lots shifted to a different (also lot-carrying) NARA record vs. the
+- **Every freshly-harvested lot is post-validated** — its NAID provably carries the lot number — a
+  stronger guarantee than the pre-#352 bundle. (The 17 `mergeLots`-preserved lots keep their June
+  resolution and are *not* re-post-validated this run — the trade for not losing valid NAIDs to
+  index drift; `RESOLVE_LOTS_ONLY` prints a spot-check warning for any preserved lot that also had a
+  fresh candidate rejected.) 22 lots shifted to a different (also lot-carrying) NARA record vs. the
   June harvest; churn, not error, but worth an owner spot-check.
 - **`mergeLots` preserved 17 lots** that NARA's control-number search now misses (index drift since
   June) but whose NAIDs are still valid records — a re-harvest must not lose those.
