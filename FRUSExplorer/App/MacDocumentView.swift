@@ -330,17 +330,17 @@ struct MacDocumentView: View {
 
     // MARK: - WebKit document view (Session 142+)
 
-    /// Document view for the WebKit rendering path.
-    ///
-    /// `WKWebView` handles all scrolling, typography, and footnote display (HTML
-    /// Popover API).  The document identity line and highlights banner are pinned
-    /// above the web view; volume navigation is fixed below. `SummaryBlockView`
-    /// is omitted from this path until Session 147 finalises the WebKit migration.
     /// Below this container width the Research rail becomes a trailing OVERLAY instead of a
     /// side-by-side panel, so the reading column never reflows below its ~340 pt floor
     /// (640 pt window min − 300 pt rail = 340). Above it the rail sits side-by-side (C2.3).
     private static let railOverlayBreakpoint: CGFloat = 900
 
+    /// Document view for the WebKit rendering path.
+    ///
+    /// `WKWebView` handles all scrolling, typography, and footnote display (HTML Popover API). The
+    /// document identity line and highlights banner are pinned above the web view; the volume-nav
+    /// bar is below (Research + side-by-side mode only). The Research rail is either side-by-side
+    /// (≥ the breakpoint) or a trailing overlay (below it).
     private func webKitDocumentView(renderModel: FRUSDocumentRenderModel) -> some View {
         GeometryReader { proxy in
             let wide = proxy.size.width >= Self.railOverlayBreakpoint
@@ -349,7 +349,7 @@ struct MacDocumentView: View {
                 // document only when there's room (≥ ~900 pt). Mounted here so both hosts
                 // (MainWindowView + MacDocumentWindowView) inherit it; gated on `panelVisible` (⌘⇧R).
                 HStack(spacing: 0) {
-                    documentColumn(renderModel: renderModel)
+                    documentColumn(renderModel: renderModel, wide: wide)
                     if panelVisible && wide {
                         Divider()
                         researchRail(width: 300)
@@ -380,7 +380,11 @@ struct MacDocumentView: View {
                             researchRail(width: 300)
                         }
                         .frame(width: 300)
-                        .background(.regularMaterial)
+                        // Opaque so the full-width document underneath doesn't ghost through the
+                        // panel (C2b review D6); `.compositingGroup()` flattens the panel so the
+                        // shadow traces its silhouette instead of haloing every element inside (D2).
+                        .background(Color(nsColor: .windowBackgroundColor))
+                        .compositingGroup()
                         .shadow(color: .black.opacity(0.15), radius: 8, x: -2, y: 0)
                     }
                     .transition(.move(edge: .trailing))
@@ -393,7 +397,12 @@ struct MacDocumentView: View {
             // Toggling the rail changes the web view's WIDTH → WKWebView reflows every line, but the
             // DOM selection doesn't change, so no `selectioncleared` fires and the bar would strand on
             // its pre-reflow anchor. Drop it on toggle (C1b review F4; applies in both rail modes).
-            .onChange(of: panelVisible) { _, _ in selectionBar.hideNow() }
+            .onChange(of: panelVisible) { _, _ in
+                selectionBar.hideNow()
+                // The edge chevrons unmount when the rail opens; `onHover(false)` isn't guaranteed on
+                // unmount, so clear the hover state or a stale edge stays "armed" (C2b review D3).
+                hoveredNavEdge = nil
+            }
             // The bar's Excerpt action presents the collection picker in excerpt mode (Phase B2),
             // sharing the C1a-unified `CollectionPickerSheet`.
             .sheet(isPresented: $showAddExcerpt, onDismiss: { pendingExcerptCapture = nil }) {
@@ -403,7 +412,10 @@ struct MacDocumentView: View {
             }
             // Dismiss the bar when this document view is navigated away from (pop-back zombie — see
             // Phase B2). NavigationStack retains pushed instances with their @State.
-            .onDisappear { selectionBar.hideNow() }
+            .onDisappear {
+                selectionBar.hideNow()
+                hoveredNavEdge = nil
+            }
         }
     }
 
@@ -429,7 +441,7 @@ struct MacDocumentView: View {
     /// The document column — identity header, web-view body (with the floating selection-bar
     /// overlay), and the volume-navigation bar (Research mode only) — the leading member of the
     /// `webKitDocumentView` HStack, beside the Research rail.
-    private func documentColumn(renderModel: FRUSDocumentRenderModel) -> some View {
+    private func documentColumn(renderModel: FRUSDocumentRenderModel, wide: Bool) -> some View {
         VStack(spacing: 0) {
             // Identity + highlights banner (non-scrollable header)
             documentIdentityView
@@ -506,17 +518,22 @@ struct MacDocumentView: View {
                 highlightToDelete = (start, end)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Read-mode hover-revealed prev/next chevrons (C2.4) — the rail-off replacement for the
+            // volume-nav bar. On the web view so they sit at the reading edges, vertically centred.
+            // Declared BEFORE the selection bar so the bar wins the z-order when both want the same
+            // edge — an armed-but-invisible chevron must never intercept a Look Up/Note tap (D3).
+            .overlay(alignment: .leading)  { edgeNavChevron(.leading) }
+            .overlay(alignment: .trailing) { edgeNavChevron(.trailing) }
             .overlay {
                 macFloatingSelectionBarOverlay
             }
-            // Read-mode hover-revealed prev/next chevrons (C2.4) — the rail-off replacement for the
-            // volume-nav bar. On the web view so they sit at the reading edges, vertically centred.
-            .overlay(alignment: .leading)  { edgeNavChevron(.leading) }
-            .overlay(alignment: .trailing) { edgeNavChevron(.trailing) }
 
-            // Volume navigation bar — Research mode only (C5). In Read mode prev/next remain on the
-            // ⌥⌘↑/↓ Document-menu commands (and the Phase-C2 hover edge chevrons).
-            if panelVisible {
+            // Volume navigation bar — Research mode only (C5), and only side-by-side (`wide`). In the
+            // narrow OVERLAY mode the trailing rail floats over the document's right edge, so a
+            // full-width nav bar here would put its Next button UNDER the opaque panel — a dead
+            // control (C2b review D1). There prev/next stay on the ⌥⌘↑/↓ Document-menu commands. In
+            // Read mode both modes fall back to those commands + the hover edge chevrons.
+            if panelVisible && wide {
                 Divider()
                 volumeNavigationView
                     .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
@@ -809,10 +826,17 @@ struct MacDocumentView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(.black.opacity(0.05)))
+                    // Hit region = the 34 pt circle only (NOT the padded frame), so a click anywhere
+                    // else in the margin passes through to the web view. The circle can't swallow a
+                    // click while it's faded out: on macOS a pointer can't reach the circle without a
+                    // mouseEntered firing first (which reveals it), so any click there lands on a
+                    // shown chevron (C2b review D3). The inset below keeps it clear of the scrollbar.
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .padding(edge == .leading ? .leading : .trailing, 8)
+            // 16 pt inset (not 8) so the circle sits inboard of the trailing overlay scrollbar band;
+            // otherwise reaching for the scrollbar would land on this button instead (C2b review D3a).
+            .padding(edge == .leading ? .leading : .trailing, 16)
             .opacity(hoveredNavEdge == edge ? 1 : 0)
             .onHover { hoveredNavEdge = $0 ? edge : nil }
             .animation(.easeInOut(duration: 0.15), value: hoveredNavEdge)
@@ -820,6 +844,10 @@ struct MacDocumentView: View {
                                                      : "document.nav.next.help",
                          defaultValue: edge == .leading ? "Previous document in this volume"
                                                         : "Next document in this volume"))
+            .accessibilityLabel(String(localized: edge == .leading ? "document.nav.previous.label"
+                                                                   : "document.nav.next.label",
+                                       defaultValue: edge == .leading ? "Previous document"
+                                                                      : "Next document"))
         }
     }
 
@@ -1130,7 +1158,7 @@ struct MacDocumentWindowView: View {
         // D6: the research strip is retired (C1), so this standalone document window surfaces its
         // identity + the rail toggle in a minimal toolbar. NARA + the selection verbs now live on the
         // floating selection bar (Phase B2) and the rail's Sources tile, so the strip's `onNARALookup`
-        // hand-off is no longer needed here. The full MainWindowView titlebar collapse waits for C2.
+        // hand-off is no longer needed here. (The main window's fuller 5-tool titlebar landed in C2a.)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text(currentEntry.documentId)
@@ -1142,8 +1170,13 @@ struct MacDocumentWindowView: View {
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { researchPanelVisible.toggle() }
                 } label: {
+                    // Matches the main window's titlebar rail toggle (C2a): accent icon on an
+                    // accent.opacity(0.12) rounded fill when on (C2a review F3, plan §5).
                     Image(systemName: "doc.text.magnifyingglass")
                         .foregroundStyle(researchPanelVisible ? Color.accentColor : Color.secondary)
+                        .padding(4)
+                        .background(researchPanelVisible ? Color.accentColor.opacity(0.12) : .clear,
+                                    in: RoundedRectangle(cornerRadius: 6))
                 }
                 .help(String(localized: "researchRail.toggle.help",
                              defaultValue: "Research panel (⌘⇧R)"))
