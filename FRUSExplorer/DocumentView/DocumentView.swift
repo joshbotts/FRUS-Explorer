@@ -63,6 +63,9 @@ enum DocumentSheet: Identifiable {
     /// The #308 find-related list, on surfaces without multiple windows (iPhone / non-Stage-Manager
     /// iPad). Where windows exist the caller opens the `RelatedDocumentsRequest` window instead.
     case relatedDocuments(RelatedDocumentsRequest)
+    /// The Research rail as an iPhone bottom sheet (Phase D). On iPad the rail is the trailing
+    /// `.inspector` instead; on iPhone it folds into this consolidated sheet (owner decision D2).
+    case researchRail
 
     var id: String {
         switch self {
@@ -83,6 +86,7 @@ enum DocumentSheet: Identifiable {
         case .glossNotFound:                   return "glossNotFound"
         case .naraLookup:                      return "naraLookup"
         case .relatedDocuments(let r):         return "relatedDocs-\(r.anchor.compositeString)"
+        case .researchRail:                    return "researchRail"
         }
     }
 }
@@ -242,9 +246,9 @@ struct DocumentView: View {
     @State private var graphSheetDetent: PresentationDetent = .large
 
     // MARK: Highlight state
-    @State private var showHighlightColorPicker = false
-    /// The `DocumentHighlight.id` of the most recently created highlight.
-    /// Non-nil while the "Add Note to Highlight" toolbar button should be enabled.
+    /// The `DocumentHighlight.id` of the most recently created highlight. Non-nil while the rail's
+    /// transient "Add Note to Highlight" row should appear (its dot was just tapped on the floating
+    /// selection bar); cleared once the linked note is composed.
     @State private var pendingHighlightLink: UUID? = nil
     /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
     /// Set by `onSelectionChanged` from `FRUSDocumentWebView`.
@@ -269,20 +273,16 @@ struct DocumentView: View {
     @State private var lastValidSelectionRange: (Int, Int)? = nil
     /// Offsets of a tapped highlight pending the user's delete confirmation.
     @State private var highlightToDelete: (Int, Int)? = nil
-    /// Research panel accordion state (persisted; shared with macOS via AppStorage).
+    /// Research rail visibility (persisted; shared with macOS via AppStorage). On iPad it drives the
+    /// trailing `.inspector`; on iPhone it shadows the `.researchRail` sheet's presence and gates the
+    /// Read-mode edge-tap zones. The per-accordion expansion keys are owned by ``ResearchRailView``.
     @AppStorage("frus.document.researchPanel.visible")  private var panelVisible    = true
-    @AppStorage("frus.document.researchPanel.summary")  private var summaryExpanded = true
-    @AppStorage("frus.document.researchPanel.notes")    private var notesExpanded   = true
-    @AppStorage("frus.document.researchPanel.tags")     private var tagsExpanded    = false
     /// The user's persisted find-related weight tuning (#308), captured into the request on open.
     @AppStorage("frus.related.weights") private var relatedWeights = AxisWeights.default
     /// Whether the Read-mode edge-tap "page-turn" zones are active (Session 154).
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
-    /// Controls the trailing notes inspector panel (iPad only; on iPhone the button
-    /// that sets this is hidden, keeping the panel closed).
-    @State private var showNotesPanel = false
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
@@ -294,9 +294,12 @@ struct DocumentView: View {
     /// would silently no-op. `sizeClass == .regular` is true on *all* iPads and
     /// is therefore the wrong proxy for multi-window capability.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
-    /// Differentiate Without Color (A3): when set, the highlight color swatches also
-    /// show the color's initial so the choices are never conveyed by hue alone.
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
+    /// `true` on iPhone — the rail presents as a bottom sheet there; iPad (and any regular-width
+    /// idiom) gets the trailing `.inspector`. Uses `userInterfaceIdiom`, not `sizeClass`, because an
+    /// iPhone Plus/Max in landscape reports `.regular` yet must still use the sheet (the same idiom
+    /// probe `Browser/BrowserView` uses).
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
 
     @Query private var highlights:             [DocumentHighlight]
     @Query private var documentNotes:          [ResearchNote]
@@ -366,14 +369,20 @@ struct DocumentView: View {
                 // HighlightCoordinator.reset(); this is the iOS twin the Phase-A note deferred.)
                 clearSelectionState()
             }
-            // Apply the default document mode on open. .rememberLast leaves
-            // panelVisible untouched, preserving the prior cross-document
-            // persistence; .read/.research force it, but the in-document
-            // segmented control can still switch modes live afterwards.
+            // Apply the default document mode on open (owner decision D2). On iPad/Mac .rememberLast
+            // leaves panelVisible untouched — the inspector rail is persisted and defaults open. On
+            // iPhone the rail is a TRANSIENT bottom sheet, so .rememberLast resolves to CLOSED: this
+            // both makes a fresh install's unset key (which defaults `true`) read as closed and keeps
+            // auto-present to explicit .research only. .research additionally presents the sheet on
+            // iPhone (the iPad inspector auto-shows off the `panelVisible` binding).
             switch defaultDocumentMode {
-            case .read:         panelVisible = false
-            case .research:     panelVisible = true
-            case .rememberLast: break
+            case .read:
+                panelVisible = false
+            case .research:
+                panelVisible = true
+                if isPhone { activeSheet = .researchRail }
+            case .rememberLast:
+                if isPhone { panelVisible = false }
             }
             bootstrapViewModel()
             appState.logEvent(.documentOpen(
@@ -624,10 +633,14 @@ struct DocumentView: View {
                     .presentationDetents([.medium])
             case .relatedDocuments(let request):
                 RelatedDocumentsSheet(appState: appState, request: request)
+            case .researchRail:
+                // iPhone bottom-sheet rail (iPad uses the trailing .inspector). medium/large detents
+                // + a visible drag indicator (owner decision D2 / plan §5). Swipe-dismiss writes
+                // panelVisible = false via the activeSheet onChange below.
+                researchRail(vm: vm)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
             }
-        }
-        .sheet(isPresented: $showHighlightColorPicker) {
-            highlightColorPickerSheet
         }
         .confirmationDialog(
             String(localized: "highlight.delete.title", defaultValue: "Remove Highlight"),
@@ -654,10 +667,16 @@ struct DocumentView: View {
             Text(String(localized: "highlight.delete.message",
                         defaultValue: "This highlight will be permanently removed."))
         }
-        // Trailing inspector panel for research notes (iPad).
-        // On iPhone the toggle button is hidden, so showNotesPanel stays false.
-        .inspector(isPresented: $showNotesPanel) {
-            notesPanel
+        // Trailing Research rail — iPad only (Phase D). The binding reads `panelVisible` on iPad and
+        // is pinned false on iPhone, where the rail is the `.researchRail` bottom sheet instead; this
+        // keeps the shared `panelVisible` mode bit (edge-tap gate, macOS ⌘⇧R parity) but presents the
+        // right surface per idiom. On compact width SwiftUI would otherwise auto-present the inspector
+        // AS a sheet, colliding with the `.researchRail` sheet — the `!isPhone` guard prevents that.
+        .inspector(isPresented: Binding(
+            get: { !isPhone && panelVisible },
+            set: { if !isPhone { panelVisible = $0 } }
+        )) {
+            researchRail(vm: vm)
         }
         // Load the mention count for the selected person from the FTS index.
         // vm.selectedPerson is set alongside activeSheet so the task id fires correctly.
@@ -670,8 +689,15 @@ struct DocumentView: View {
         // Uses activeSheet?.id (String?) rather than activeSheet directly because
         // DocumentSheet associated-value types (PersonEntry, GlossEntry) are not
         // necessarily Equatable — String? always is.
-        .onChange(of: activeSheet?.id) { _, newId in
+        .onChange(of: activeSheet?.id) { oldId, newId in
             if newId == nil { vm.selectedPerson = nil }
+            // iPhone: `panelVisible` shadows "the rail sheet is up". Leaving `.researchRail` by ANY
+            // path — swipe, the toggle, or a tile swapping the sheet for its target — writes false, so
+            // the shared mode bit stays truthful and the Read-mode edge-tap zones re-enable once the
+            // target is also dismissed (the gate additionally requires `activeSheet == nil`). On iPad
+            // the rail is the `.inspector`, so `activeSheet` never becomes `.researchRail` there and
+            // this is inert. (D2.)
+            if oldId == "researchRail" { panelVisible = false }
         }
         // Handle frusexplorer:// deep-link URLs emitted by FRUSDocumentRenderer's
         // AttributedString rendering path.  Three URL forms are supported:
@@ -936,374 +962,102 @@ struct DocumentView: View {
 
     // MARK: - Toolbar
 
-    /// Document toolbar.
+    /// Document toolbar — collapsed to a single **Research rail toggle** (Phase D).
     ///
-    /// ## Layout — single flat `ToolbarItemGroup`, no app-owned overflow menu
-    /// Every action (Add Note, Tag, Highlight, Read/Research toggle, View/Copy/
-    /// Share Citation, Add to Collection, Cross-References, NARA Lookup, Source
-    /// Explorer, Open in New Window, Summarize) is placed directly in one
-    /// `ToolbarItemGroup(placement: .primaryAction)`.
-    ///
-    /// On iPhone, when these don't all fit the navigation bar, UIKit/SwiftUI
-    /// automatically collapses the overflow behind its own "···" button and
-    /// presents the remaining actions as a single flat list — one tap reveals
-    /// every tool. Previously the app *also* wrapped the long tail of actions
-    /// in its own "More" `Menu`, so the system's "···" → our "More" → tools
-    /// produced a wasted, confusing extra hierarchy level. Removing the
-    /// wrapper lets the system overflow serve as the one and only "···" menu
-    /// (Session 2026-06-07).
-    ///
-    /// "Share Citation" (added Session 2026-06-07) presents the system share
-    /// sheet via `ShareLink` with a single message combining the formatted
-    /// citation and the document's canonical `history.state.gov` URL — see
-    /// `DocumentViewModel.shareableCitationMessage`.
+    /// The redesign moved every former toolbar action onto the rail (its tiles + the
+    /// Summary/Notes/Tags/Collections accordions) or the floating selection bar, so the navigation
+    /// bar now carries just this one control. Back is free (the enclosing `NavigationStack`). The
+    /// toggle shows/hides the rail: on iPad the trailing `.inspector`, on iPhone the `.researchRail`
+    /// bottom sheet. "Open in New Window" lives in the rail header on iPad (D8); the summarize-failure
+    /// alert and the retired color picker's replacement (the floating bar's colour dots) live outside
+    /// the toolbar, so nothing is stranded by the collapse.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-
-            // 1. Add research note
+        ToolbarItem(placement: .primaryAction) {
             Button {
-                activeSheet = .noteEditor
+                toggleRail()
             } label: {
-                Label(
-                    String(localized: "document.toolbar.addNote", defaultValue: "Add Research Note"),
-                    systemImage: "note.text.badge.plus"
-                )
+                Image(systemName: "doc.text.magnifyingglass")
+                    .foregroundStyle(railToggleActive ? Color.accentColor : Color.primary)
             }
             .controlHelp(
-                String(localized: "document.toolbar.addNote.a11y", defaultValue: "Add research note"),
-                detail: String(localized: "document.toolbar.addNote.help",
-                               defaultValue: "Write a research note attached to this document"),
-                systemImage: "note.text.badge.plus"
+                String(localized: "document.toolbar.researchRail.a11y",
+                       defaultValue: "Research panel"),
+                detail: String(localized: "document.toolbar.panelMode.hint",
+                               defaultValue: "Read mode also enables edge-tap navigation to the previous and next document in this volume"),
+                systemImage: "doc.text.magnifyingglass"
             )
-
-            // 2. Tag document
-            Button {
-                activeSheet = .tagPicker
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.addTag", defaultValue: "Tag Document"),
-                    systemImage: "tag"
-                )
-            }
-            .controlHelp(
-                String(localized: "document.toolbar.addTag.a11y", defaultValue: "Tag document"),
-                detail: String(localized: "document.toolbar.addTag.help",
-                               defaultValue: "Apply your subject tags to this document"),
-                systemImage: "tag"
-            )
-
-            // 2b. Word cloud for this document
-            Button {
-                appState.pendingWordCloud = .document(
-                    volumeId: vm.entry.volumeId, documentId: vm.entry.documentId)
-            } label: {
-                Label {
-                    Text(String(localized: "document.toolbar.wordCloud", defaultValue: "Word Cloud"))
-                } icon: { Image(systemName: WordCloudGlyph.symbol) }
-            }
-            .controlHelp(
-                String(localized: "document.toolbar.wordCloud.a11y", defaultValue: "Word cloud"),
-                detail: String(localized: "document.toolbar.wordCloud.help",
-                               defaultValue: "Visualise the most frequent terms in this document"),
-                systemImage: WordCloudGlyph.symbol
-            )
-
-            // 3. Create highlight — enabled when text is selected in the web view
-            Button {
-                showHighlightColorPicker = true
-            } label: {
-                Image(systemName: "paintbrush.pointed")
-            }
-            .disabled(webKitSelectionRange == nil)
-            .controlHelp(
-                String(localized: "document.toolbar.createHighlight.a11y",
-                       defaultValue: "Create highlight"),
-                detail: String(localized: "document.toolbar.createHighlight.help",
-                               defaultValue: "Highlight the selected passage — select text in the document first"),
-                systemImage: "paintbrush.pointed"
-            )
-            // The colour-picker sheet is presented from the main content chain
-            // (single `.sheet(isPresented:)` for this binding) so it works even
-            // when this button is collapsed into the system overflow menu. (The
-            // floating selection bar's colour dots create highlights directly and
-            // do not route through this picker.)
-
-            // 3b. Add Note to Highlight — transient, appears right after a
-            // highlight is created (mirrors the macOS research strip button).
-            // One-shot: consumed on tap, cleared on document change.
-            if let highlightId = pendingHighlightLink {
-                Button {
-                    pendingHighlightLink = nil
-                    activeSheet = .noteEditorForHighlight(highlightId)
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.noteForHighlight",
-                               defaultValue: "Add Note to Highlight"),
-                        systemImage: "note.text.badge.plus"
-                    )
-                }
-                .controlHelp(
-                    String(localized: "document.toolbar.noteForHighlight",
-                           defaultValue: "Add Note to Highlight"),
-                    detail: String(localized: "document.toolbar.noteForHighlight.a11y",
-                                   defaultValue: "Add a research note to the highlight you just created"),
-                    systemImage: "note.text.badge.plus"
-                )
-            }
-
-            // 4. Research panel toggle — segmented Read / Research picker.
-            // Binding wraps the AppStorage Bool so the layout transition can be
-            // animated; the segmented control's own selection animation handles the
-            // visual state change without an additional withAnimation call.
-            Picker(
-                String(localized: "document.toolbar.panelMode",
-                       defaultValue: "View mode"),
-                selection: Binding(
-                    get: { panelVisible },
-                    set: { newVal in
-                        withAnimation(.easeInOut(duration: 0.2)) { panelVisible = newVal }
-                    }
-                )
-            ) {
-                Text(String(localized: "document.toolbar.panelMode.read",
-                            defaultValue: "Read"))
-                    .tag(false)
-                Text(String(localized: "document.toolbar.panelMode.research",
-                            defaultValue: "Research"))
-                    .tag(true)
-            }
-            .pickerStyle(.segmented)
-            .fixedSize()
-            .accessibilityLabel(
-                String(localized: "document.toolbar.panelMode.a11y",
-                       defaultValue: "Toggle reading or research view")
-            )
-            .accessibilityHint(
-                String(localized: "document.toolbar.panelMode.hint",
-                       defaultValue: "Read mode also enables edge-tap navigation to the previous and next document in this volume")
-            )
-
-            // 5. Citation — one toolbar item; View / Copy / Share are options in
-            // its menu (mirrors the macOS citation popover's Export menu), so the
-            // toolbar isn't crowded with three separate citation buttons.
-            Menu {
-                Button {
-                    activeSheet = .citation
-                } label: {
-                    Label(String(localized: "document.toolbar.viewCitation", defaultValue: "View Citation"),
-                          systemImage: "doc.text")
-                }
-                .disabled(vm.formattedCitation == nil)
-
-                // Copy uses plain text so _..._ italic markers aren't pasted as raw
-                // underscores; the View sheet still renders the markdown italics.
-                Button {
-                    if let citation = vm.plainTextFormattedCitation {
-                        copyToPasteboard(citation)
-                    }
-                } label: {
-                    Label(String(localized: "document.toolbar.copyCitation", defaultValue: "Copy Citation"),
-                          systemImage: "doc.on.clipboard")
-                }
-                .disabled(vm.plainTextFormattedCitation == nil)
-            } label: {
-                Label(String(localized: "document.toolbar.citation", defaultValue: "Citation"),
-                      systemImage: "quote.bubble")
-            }
-            .disabled(vm.formattedCitation == nil)
-            .controlHelp(
-                String(localized: "document.toolbar.citation", defaultValue: "Citation"),
-                detail: String(localized: "document.toolbar.citation.help",
-                               defaultValue: "View or copy the formatted citation for this document"),
-                systemImage: "quote.bubble"
-            )
-
-            // 5b. Share / Export — Zotero (Web API), Zotero files, share citation.
-            DocumentShareMenu(vm: vm)
-
-            // 7. Add to Collection
-            Button {
-                activeSheet = .addToCollection
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.addToCollection",
-                           defaultValue: "Add to Collection"),
-                    systemImage: "folder.badge.plus"
-                )
-            }
-            .controlHelp(
-                String(localized: "document.toolbar.addToCollection.a11y",
-                       defaultValue: "Add document to a collection"),
-                detail: String(localized: "document.toolbar.addToCollection.help",
-                               defaultValue: "Add this document to a new or existing collection"),
-                systemImage: "folder.badge.plus"
-            )
-
-            // 7b. Add Selection as Excerpt (Authoring Phase 5) — transient, appears
-            // while text is selected (mirrors the Add Note to Highlight pattern):
-            // freezes the selection into a `.excerpt` collection entry via the same
-            // collection picker as Add to Collection.
-            if webKitSelectedText != nil {
-                Button {
-                    if let capture = selectionExcerptCapture(vm: vm) {
-                        activeSheet = .addSelectionAsExcerpt(capture)
-                    }
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.addSelectionAsExcerpt",
-                               defaultValue: "Add Selection as Excerpt"),
-                        systemImage: "text.quote"
-                    )
-                }
-                .controlHelp(
-                    String(localized: "document.toolbar.addSelectionAsExcerpt.a11y",
-                           defaultValue: "Add selection to a collection as an excerpt"),
-                    detail: String(localized: "document.toolbar.addSelectionAsExcerpt.help",
-                                   defaultValue: "Freeze the selected passage into a collection as a quoted excerpt with its citation"),
-                    systemImage: "text.quote"
-                )
-            }
-
-            // 8. Cross-references — opens alongside the document as a Stage Manager
-            // window when multi-window is available, otherwise an in-place sheet.
-            Button {
-                openCrossReferenceGraph()
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.crossRef", defaultValue: "Cross-References"),
-                    systemImage: "arrow.triangle.branch"
-                )
-            }
-            .controlHelp(
-                String(localized: "document.toolbar.crossRef", defaultValue: "Cross-References"),
-                detail: String(localized: "document.toolbar.crossRef.help",
-                               defaultValue: "Explore the documents this one cites and the documents that cite it, on a timeline"),
-                systemImage: "arrow.triangle.branch"
-            )
-            .popoverTip(ExploreCrossReferencesTip())
-
-            // 8b. Related documents (#308) — the multi-axis find-related list. Opens as a
-            // Stage Manager window when multi-window is available, otherwise an in-place sheet.
-            Button {
-                openRelatedDocuments()
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.related", defaultValue: "Related Documents"),
-                    systemImage: "doc.on.doc"
-                )
-            }
-            .controlHelp(
-                String(localized: "document.toolbar.related", defaultValue: "Related Documents"),
-                detail: String(localized: "document.toolbar.related.help",
-                               defaultValue: "Find documents related to this one by archival provenance, cross-references, date, and shared people"),
-                systemImage: "doc.on.doc"
-            )
-
-            // 9. NARA Catalog Lookup lives on the floating selection bar's "Look Up"
-            // action (see floatingSelectionBarOverlay) — a conditional toolbar item
-            // popped in and out of the overflow menu as the selection changed, which
-            // was both jarring and undiscoverable.
-
-            // 10. Source Explorer — always available for all documents. Opens
-            // alongside the document as a Stage Manager window when multi-window is
-            // available (the value-based SourceExplorerRequest window scene, #317),
-            // otherwise an in-place sheet — so it works for every iPad regardless of
-            // Stage Manager.
-            Button {
-                openSourceExplorer(vm: vm)
-            } label: {
-                Label(
-                    String(localized: "document.toolbar.sourceExplorer",
-                           defaultValue: "Source Explorer"),
-                    systemImage: "archivebox"
-                )
-            }
-            .controlHelp(
-                String(localized: "document.toolbar.sourceExplorer",
-                       defaultValue: "Source Explorer"),
-                detail: String(localized: "document.toolbar.sourceExplorer.help",
-                               defaultValue: "Trace this document's archival source in the National Archives catalog"),
-                systemImage: "archivebox"
-            )
-
-            // 11. Open in New Window — only when the platform can actually open a
-            // second window (Stage Manager on iPad). Gating on supportsMultipleWindows
-            // instead of sizeClass == .regular stops the button from appearing on
-            // every iPad and then doing nothing when Stage Manager is off.
-            if supportsMultipleWindows {
-                Button {
-                    openWindow(value: DocumentWindowID(
-                        volumeId: entry.volumeId,
-                        documentId: entry.documentId,
-                        header: vm.documentTitle ?? entry.header
-                    ))
-                } label: {
-                    Label(
-                        String(localized: "document.toolbar.openInNewWindow",
-                               defaultValue: "Open in New Window"),
-                        systemImage: "square.on.square"
-                    )
-                }
-                .controlHelp(
-                    String(localized: "document.toolbar.openInNewWindow",
-                           defaultValue: "Open in New Window"),
-                    detail: String(localized: "document.toolbar.openInNewWindow.help",
-                                   defaultValue: "Open this document in a separate window alongside the current one"),
-                    systemImage: "square.on.square"
-                )
-            }
-
-            // 12. Summarize — only when Apple Intelligence is available
-            if appState.summarizationService != nil
-                && AppleIntelligenceProvider.shared.isAvailable {
-                Button {
-                    activeSheet = .summarizePromptPicker
-                } label: {
-                    if vm.isSummarizing {
-                        Label(
-                            String(localized: "document.toolbar.summarizing",
-                                   defaultValue: "Summarizing…"),
-                            systemImage: "sparkles"
-                        )
-                    } else {
-                        Label(
-                            String(localized: "document.toolbar.summarize",
-                                   defaultValue: "Summarize with AI"),
-                            systemImage: "sparkles"
-                        )
-                    }
-                }
-                .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
-                .controlHelp(
-                    String(localized: "document.toolbar.summarize",
-                           defaultValue: "Summarize with AI"),
-                    detail: String(localized: "document.toolbar.summarize.help",
-                                   defaultValue: "Generate an on-device summary of this document with Apple Intelligence"),
-                    systemImage: "sparkles"
-                )
-            }
+            .accessibilityAddTraits(railToggleActive ? [.isSelected] : [])
         }
-        // Notes panel toggle — leading nav bar position on iPad
-        if sizeClass == .regular {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showNotesPanel.toggle()
-                } label: {
-                    Image(systemName: "note.text")
-                        .foregroundStyle(showNotesPanel ? Color.accentColor : Color.primary)
-                }
-                .controlHelp(
-                    showNotesPanel
-                        ? String(localized: "document.toolbar.notesPanel.hide.a11y",
-                                 defaultValue: "Hide notes panel")
-                        : String(localized: "document.toolbar.notesPanel.show.a11y",
-                                 defaultValue: "Show notes panel"),
-                    detail: String(localized: "document.toolbar.notesPanel.help",
-                                   defaultValue: "Show or hide the research notes panel beside the document"),
-                    systemImage: "note.text"
-                )
+    }
+
+    /// Whether the rail is currently visible — accent-tints the toggle. iPad reads `panelVisible`
+    /// (the `.inspector` binding); iPhone reads whether the `.researchRail` sheet is up.
+    private var railToggleActive: Bool {
+        isPhone ? (activeSheet?.id == "researchRail") : panelVisible
+    }
+
+    /// Shows/hides the rail from the toolbar toggle. iPad drives the `.inspector` via `panelVisible`;
+    /// iPhone presents/dismisses the `.researchRail` sheet — dismissing writes `panelVisible = false`
+    /// (via the `activeSheet` onChange) so Research mode and the edge-tap gate stay coherent (D2).
+    private func toggleRail() {
+        if isPhone {
+            if activeSheet?.id == "researchRail" {
+                activeSheet = nil
+            } else {
+                panelVisible = true
+                activeSheet = .researchRail
             }
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) { panelVisible.toggle() }
+        }
+    }
+
+    /// Builds the shared Research rail for this document, wiring the iOS-specific note-composer and
+    /// tool presentations. Note editing presents `DocumentView`'s sheets; the tiles route through
+    /// ``openRailTool(_:)``. Mounted twice — the iPad `.inspector` and the iPhone `.researchRail`
+    /// sheet — so the closures are captured here once.
+    private func researchRail(vm: DocumentViewModel) -> some View {
+        ResearchRailView(
+            entry: entry,
+            vm: vm,
+            pendingHighlightLink: pendingHighlightLink,
+            onAddNote: { activeSheet = .noteEditor },
+            onEditNote: { note in activeSheet = .editNote(note) },
+            onAddNoteToHighlight: { highlightId in
+                pendingHighlightLink = nil
+                activeSheet = .noteEditorForHighlight(highlightId)
+            },
+            onOpenTool: { tool in openRailTool(tool, vm: vm) })
+    }
+
+    /// Fulfils a rail tile/summary tap with `DocumentView`'s existing iOS presentation. Cite and
+    /// Summarize present consolidated sheets; Sources/Graph/Related reuse the same handlers the old
+    /// toolbar used (which open a Stage-Manager window when available, else an in-place sheet); Word
+    /// Cloud rides the app-level `pendingWordCloud` hand-off observed in `MainTabView`.
+    private func openRailTool(_ tool: ResearchRailTool, vm: DocumentViewModel) {
+        switch tool {
+        case .cite:
+            activeSheet = .citation
+        case .wordCloud:
+            // Word Cloud is the one tool NOT presented through `activeSheet` — it rides the
+            // app-level `pendingWordCloud` sheet on `MainTabView`, an ANCESTOR of this view. On
+            // iPhone the rail is a live `.sheet` (`.researchRail`), and SwiftUI won't present the
+            // ancestor sheet over a descendant one, so the tap would be a dead no-op (and the
+            // word cloud would later ghost-present when the rail is dismissed). Set the hand-off
+            // then dismiss the rail sheet — the same set-then-dismiss order `ChronologyView` uses.
+            // On iPad the rail is the `.inspector` column (not a sheet), so nothing to dismiss.
+            appState.pendingWordCloud = .document(
+                volumeId: entry.volumeId, documentId: entry.documentId)
+            if activeSheet?.id == "researchRail" { activeSheet = nil }
+        case .sources:
+            openSourceExplorer(vm: vm)
+        case .graph:
+            openCrossReferenceGraph()
+        case .related:
+            openRelatedDocuments()
+        case .summarize:
+            activeSheet = .summarizePromptPicker
         }
     }
 
@@ -1520,12 +1274,8 @@ struct DocumentView: View {
             .overlay {
                 floatingSelectionBarOverlay(vm: vm)
             }
-
-            // Research panel — accordion of Notes, Tags, Summary
-            if panelVisible {
-                Divider()
-                iOSResearchPanel(vm: vm)
-            }
+            // The inline Summary/Notes/Tags accordion is retired (Phase D) — the shared Research rail
+            // (iPad `.inspector` / iPhone `.researchRail` sheet) is now the one research surface.
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -1610,9 +1360,12 @@ struct DocumentView: View {
     /// Version history:
     ///   1.0 — Session 2026-06-07: initial implementation
     ///   1.1 — Session 154: gated on `edgeTapNavigationEnabled` preference
+    ///   1.2 — Phase D: also suppressed while ANY DocumentView sheet is up (`activeSheet != nil`) —
+    ///          on iPhone the rail sheet keeps `panelVisible` false, so without this term the zones
+    ///          would stay live under person/citation/NARA/rail sheets and steal edge taps.
     @ViewBuilder
     private func documentEdgeNavigationOverlay(vm: DocumentViewModel) -> some View {
-        if !panelVisible && edgeTapNavigationEnabled {
+        if !panelVisible && edgeTapNavigationEnabled && activeSheet == nil {
             HStack(spacing: 0) {
                 documentEdgeTapZone(
                     adjacentEntry: vm.previousEntry,
@@ -1697,187 +1450,6 @@ struct DocumentView: View {
         #if DEBUG
         print("[DocumentView] Edge-tap page-turn → \(adjacent.volumeId)/\(adjacent.documentId)")
         #endif
-    }
-
-    // MARK: - iOS Research Panel
-
-    @ViewBuilder
-    private func iOSResearchPanel(vm: DocumentViewModel) -> some View {
-        @Bindable var vm = vm
-        VStack(spacing: 0) {
-            // ── Summary ────────────────────────────────────────────────────────
-            if appState.summarizationService != nil || vm.activeSummary != nil {
-                iOSPanelSectionHeader(
-                    title: String(localized: "panel.summary.title", defaultValue: "Summary"),
-                    badge: nil,
-                    isExpanded: $summaryExpanded
-                )
-                if summaryExpanded, let summary = vm.activeSummary {
-                    Divider()
-                    SummaryStripView(vm: vm, summary: summary, totalCount: vm.summaries.count)
-                        .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                        .padding(.vertical, 8)
-                } else if summaryExpanded {
-                    Divider()
-                    if vm.isSummarizing {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                            Text(String(localized: "panel.summary.generating",
-                                        defaultValue: "Summarizing…"))
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(16)
-                    } else if AppleIntelligenceProvider.shared.isAvailable {
-                        Button {
-                            activeSheet = .summarizePromptPicker
-                        } label: {
-                            Label(
-                                String(localized: "panel.summary.generate",
-                                       defaultValue: "Summarize this Document"),
-                                systemImage: "sparkles"
-                            )
-                            .font(.callout)
-                        }
-                        .buttonStyle(.borderless)
-                        .disabled(vm.documentPlainText.isEmpty)
-                        .padding(16)
-                    } else {
-                        HStack(spacing: 8) {
-                            Image(systemName: "sparkles").foregroundStyle(.tertiary)
-                            Text(String(localized: "panel.summary.unavailable",
-                                        defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud."))
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(16)
-                    }
-                }
-                Divider()
-            }
-
-            // ── Notes ─────────────────────────────────────────────────────────
-            iOSPanelSectionHeader(
-                title: String(localized: "panel.notes.title", defaultValue: "Notes"),
-                badge: documentNotes.isEmpty ? nil : "\(documentNotes.count)",
-                isExpanded: $notesExpanded
-            )
-            if notesExpanded {
-                Divider()
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(documentNotes) { note in
-                        Button { activeSheet = .editNote(note) } label: {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(note.bodyText.isEmpty
-                                     ? String(localized: "panel.notes.emptyNote", defaultValue: "Empty note")
-                                     : note.bodyText)
-                                    .font(.callout)
-                                    .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
-                                    .lineLimit(3)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text(note.lastModified ?? .now, style: .relative)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
-                            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                            .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.plain)
-                        Divider()
-                    }
-                    Button {
-                        activeSheet = .noteEditor
-                    } label: {
-                        Label(
-                            String(localized: "panel.notes.add", defaultValue: "Add Note"),
-                            systemImage: "plus.circle"
-                        )
-                        .font(.callout)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                    .padding(.vertical, 10)
-                }
-            }
-            Divider()
-
-            // ── Tags ───────────────────────────────────────────────────────────
-            let appliedTags = appliedUserTags
-            iOSPanelSectionHeader(
-                title: String(localized: "panel.tags.title", defaultValue: "Tags"),
-                badge: appliedTags.isEmpty ? nil : "\(appliedTags.count)",
-                isExpanded: $tagsExpanded
-            )
-            if tagsExpanded {
-                Divider()
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(appliedTags) { tag in
-                            FRUSTagChip(label: tag.name, style: .user) {
-                                removeUserTag(tag)
-                            }
-                        }
-                        Button {
-                            activeSheet = .tagPicker
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "plus")
-                                if appliedTags.isEmpty {
-                                    Text(String(localized: "panel.tags.add",
-                                                defaultValue: "Add Tag"))
-                                }
-                            }
-                            .font(FRUSTheme.captionFont.weight(.medium))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, FRUSTheme.tagPaddingV)
-                            .background(Color.accentColor.opacity(0.10))
-                            .foregroundStyle(Color.accentColor)
-                            .clipShape(RoundedRectangle(cornerRadius: FRUSTheme.tagCornerRadius))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-                }
-                .padding(.vertical, 10)
-            }
-
-        }
-    }
-
-    private func iOSPanelSectionHeader(
-        title: String,
-        badge: String?,
-        isExpanded: Binding<Bool>
-    ) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.15)) { isExpanded.wrappedValue.toggle() }
-        } label: {
-            HStack(spacing: 6) {
-                Text(title)
-                    .font(.footnote.weight(.semibold))
-                    .textCase(.uppercase)
-                    .kerning(0.6)
-                    .foregroundStyle(.secondary)
-                if let badge {
-                    Text(badge)
-                        .font(.caption2.bold())
-                        .padding(.horizontal, 5).padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.12))
-                        .clipShape(Capsule())
-                }
-                Spacer()
-                Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
-            .padding(.vertical, 8)
-            .background(Color.secondary.opacity(0.04))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Highlight Actions
@@ -1985,77 +1557,6 @@ struct DocumentView: View {
             colorTag: nil)
     }
 
-    private func swiftUIColor(for color: DocumentHighlight.Color) -> Color {
-        switch color {
-        case .yellow: return .yellow
-        case .green:  return .green
-        case .blue:   return .blue
-        case .pink:   return .pink
-        }
-    }
-
-    // MARK: - Highlight Color Picker Sheet
-
-    private var highlightColorPickerSheet: some View {
-        NavigationStack {
-            // A2: wrap in a ScrollView so that at large Dynamic Type sizes the
-            // title/nav chrome growth scrolls instead of clipping the swatch row.
-            // A multi-detent sheet opens at its SMALLEST detent, so `.height(180)`
-            // alone would still clip the (grown) chrome; scrolling keeps every
-            // control reachable even before the user drags up to `.medium`.
-            ScrollView {
-                VStack(spacing: 20) {
-                    Text(String(localized: "doc.highlight.pickColor",
-                                defaultValue: "Highlight Color"))
-                        .font(.headline)
-                    HStack(spacing: 16) {
-                        ForEach(DocumentHighlight.Color.allCases, id: \.rawValue) { color in
-                            Button {
-                                createHighlight(color: color)
-                                showHighlightColorPicker = false
-                            } label: {
-                                ZStack {
-                                    Circle()
-                                        .fill(swiftUIColor(for: color))
-                                        .frame(width: 44, height: 44)
-                                    Circle()
-                                        .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
-                                        .frame(width: 44, height: 44)
-                                    // A3: under Differentiate Without Color the swatch also
-                                    // shows the color's initial, so choices aren't hue-only.
-                                    if differentiateWithoutColor {
-                                        Text(String(color.displayName.prefix(1)))
-                                            .font(.callout.weight(.bold))
-                                            .foregroundStyle(Color.black.opacity(0.7))
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(color.displayName)
-                        }
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle(String(localized: "doc.highlight.sheet.title",
-                                    defaultValue: "Choose Color"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "doc.highlight.sheet.cancel",
-                                  defaultValue: "Cancel")) {
-                        showHighlightColorPicker = false
-                    }
-                }
-            }
-        }
-        // A2: a multi-detent sheet opens at its SMALLEST detent, so `.height(180)`
-        // can still clip the grown title/nav chrome at large Dynamic Type sizes.
-        // The ScrollView above lets that overflow scroll (every control stays
-        // reachable); `.medium` additionally lets the user drag the sheet taller.
-        .presentationDetents([.height(180), .medium])
-    }
-
     // MARK: - Clipboard
 
     private func copyToPasteboard(_ text: String) {
@@ -2065,81 +1566,6 @@ struct DocumentView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         #endif
-    }
-
-    private var notesPanel: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(String(localized: "document.notesPanel.title",
-                            defaultValue: "Research Notes"))
-                    .font(.headline)
-                if !documentNotes.isEmpty {
-                    Text("\(documentNotes.count)")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.12))
-                        .foregroundStyle(Color.accentColor)
-                        .clipShape(Capsule())
-                }
-                Spacer()
-                Button {
-                    activeSheet = .noteEditor
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .accessibilityLabel(
-                    String(localized: "document.notesPanel.add.a11y",
-                           defaultValue: "Add research note")
-                )
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-
-            Divider()
-
-            if documentNotes.isEmpty {
-                ContentUnavailableView(
-                    String(localized: "document.notesPanel.empty.title",
-                           defaultValue: "No Notes"),
-                    systemImage: "note.text",
-                    description: Text(
-                        String(localized: "document.notesPanel.empty.detail",
-                               defaultValue: "Tap + to add a research note for this document.")
-                    )
-                )
-                .frame(maxHeight: .infinity)
-            } else {
-                List(documentNotes) { note in
-                    Button {
-                        activeSheet = .editNote(note)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(note.bodyText.isEmpty
-                                 ? String(localized: "document.notesPanel.emptyNote",
-                                          defaultValue: "Empty note")
-                                 : note.bodyText)
-                                .font(.callout)
-                                .foregroundStyle(note.bodyText.isEmpty ? .tertiary : .primary)
-                                .lineLimit(4)
-                            Text(note.lastModified ?? .now, style: .relative)
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        note.bodyText.isEmpty
-                            ? String(localized: "document.notesPanel.emptyNote.a11y",
-                                     defaultValue: "Empty note")
-                            : note.bodyText
-                    )
-                }
-                .listStyle(.plain)
-            }
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color(uiColor: .secondarySystemBackground))
     }
 }
 
@@ -2152,10 +1578,18 @@ struct DocumentView: View {
 ///
 /// Version history:
 ///   1.0 — Document Share/Export control split out from the citation sheet
-private struct DocumentShareMenu: View {
+struct DocumentShareMenu<LabelContent: View>: View {
     let vm: DocumentViewModel
+    /// The `Menu`'s tap target. The default construction (see the extension below) uses the standard
+    /// "Share" `Label`; the Research rail passes a tile-shaped label (Phase D).
+    let label: () -> LabelContent
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
+
+    init(vm: DocumentViewModel, @ViewBuilder label: @escaping () -> LabelContent) {
+        self.vm = vm
+        self.label = label
+    }
 
     @State private var bibtexFileURL: URL?
     @State private var risFileURL: URL?
@@ -2195,8 +1629,7 @@ private struct DocumentShareMenu: View {
                 }
             }
         } label: {
-            Label(String(localized: "document.toolbar.share", defaultValue: "Share"),
-                  systemImage: "square.and.arrow.up")
+            label()
         }
         .controlHelp(
             String(localized: "document.toolbar.share", defaultValue: "Share"),
@@ -2266,6 +1699,7 @@ private struct DocumentShareMenu: View {
     }
 }
 
+
 // MARK: - CitationSheetView
 
 /// Displays a formatted citation string in a sheet with Copy/Done actions and
@@ -2307,6 +1741,20 @@ private struct CitationSheetView: View {
                         .font(.body)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // One-tap copy of the formatted prose citation (italic markers stripped) —
+                    // restores the discrete "Copy Citation" the old toolbar Citation menu carried,
+                    // which the Cite rail tile → this sheet otherwise dropped (Phase D review).
+                    Button {
+                        if let plain = vm.plainTextFormattedCitation {
+                            copyToPasteboard(plain)
+                        }
+                    } label: {
+                        Label(String(localized: "document.citation.copy", defaultValue: "Copy Citation"),
+                              systemImage: "doc.on.doc")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(vm.plainTextFormattedCitation == nil)
 
                     exportMenu
                 }
@@ -2369,7 +1817,7 @@ private struct CitationSheetView: View {
 
 // MARK: - SummaryStripView
 
-private struct SummaryStripView: View {
+struct SummaryStripView: View {
     @Bindable var vm: DocumentViewModel
     let summary: GeneratedSummary
     let totalCount: Int
