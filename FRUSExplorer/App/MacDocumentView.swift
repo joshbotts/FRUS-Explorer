@@ -985,6 +985,12 @@ struct MacDocumentWindowView: View {
     /// The document this window opened for.
     let windowID: DocumentWindowID
 
+    @Environment(AppState.self) private var appState
+    @Environment(\.openWindow) private var openWindow
+    /// Whether this window is key — drives `activeDocumentHost` so tool-window navigation launched
+    /// from this window routes back here instead of hijacking the main window.
+    @Environment(\.controlActiveState) private var controlActiveState
+
     /// This window's own navigation stack — cross-reference taps push within the
     /// window rather than affecting the main window or other document windows.
     @State private var navigationPath: [DocumentBrowserEntry] = []
@@ -1054,6 +1060,39 @@ struct MacDocumentWindowView: View {
         }
         .onChange(of: currentEntry) { _, _ in
             highlightCoordinator.reset()
+        }
+        // Translate a pending tool-window navigation into a routed one (see MainWindowView) — done
+        // here too so routing still works when the main window is closed and the user lives in
+        // document windows. Exactly-once via the clear-first step in `routeBrowseToActiveHost`.
+        .onChange(of: appState.pendingBrowseDocument) { _, entry in
+            guard entry != nil else { return }
+            appState.routeBrowseToActiveHost()
+        }
+        // Track this window as the active document host while it is key, so tool-window navigation
+        // launched from here routes back to this window instead of the main window.
+        .onChange(of: controlActiveState, initial: true) { _, state in
+            if state == .key {
+                appState.activeDocumentHost = .window(windowID)
+                #if DEBUG
+                print("[MacDocumentWindowView] active document host → .window(\(windowID.documentId))")
+                #endif
+            }
+        }
+        // Consume a tool-window navigation routed to this window — push it onto this window's stack
+        // and bring this window to the front (value-based openWindow focuses the existing window),
+        // so a route into a backgrounded / minimized window isn't invisible.
+        .onChange(of: appState.routedBrowse) { _, routed in
+            guard let routed, routed.host == .window(windowID) else { return }
+            navigationPath.append(routed.entry)
+            appState.routedBrowse = nil
+            openWindow(value: windowID)
+        }
+        // If this window was the active host, fall back to the main window when it closes so a
+        // routed navigation can't be lost to a vanished target.
+        .onDisappear {
+            if appState.activeDocumentHost == .window(windowID) {
+                appState.activeDocumentHost = .main
+            }
         }
     }
 }

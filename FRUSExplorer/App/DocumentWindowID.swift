@@ -42,6 +42,34 @@ struct DocumentWindowID: Codable, Hashable {
     }
 }
 
+// MARK: - DocumentHostID / RoutedBrowse (macOS per-window navigation routing)
+
+/// Identifies which document-hosting window a tool-window navigation should land in: the main
+/// window, or a specific standalone document window (`MacDocumentWindowView`). Used so a document
+/// selected in a tool window (search, cross-reference graph, corpus browser, …) opens in the window
+/// the user launched the tool from, instead of always hijacking the main window.
+///
+/// Limitation: the system ⌘N opens additional main-`WindowGroup` windows, which all identify as
+/// `.main` — a `.main`-routed navigation lands in whichever runs its observer first, not
+/// necessarily the exact originating one. (Parity with the pre-routing behaviour, which always
+/// targeted the main WindowGroup.) Standalone document windows are distinguished by `DocumentWindowID`.
+enum DocumentHostID: Hashable {
+    /// The primary `MainWindowView` (all ⌘N main windows share this case).
+    case main
+    /// A standalone document window, keyed by its `DocumentWindowID`.
+    case window(DocumentWindowID)
+}
+
+/// A tool-window document selection routed to a specific `DocumentHostID`. The matching host
+/// consumes it (appends `entry` to its navigation path) and clears it. macOS only — iOS routes
+/// through `AppState.pendingBrowseDocument`.
+struct RoutedBrowse: Equatable {
+    /// The window that should receive the navigation (the last active document host at selection).
+    let host: DocumentHostID
+    /// The document to open there.
+    let entry: DocumentBrowserEntry
+}
+
 // MARK: - SourceExplorerRequest
 
 /// Value-based request describing which document's source note the iPad Source Explorer

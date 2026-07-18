@@ -634,10 +634,36 @@ final class AppState {
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingCollectionSelection: UUID? = nil
 
-    /// Set by cross-reference navigation to push a document into the Browse tab's
-    /// NavigationStack/NavigationSplitView. `BrowserView` observes via `.onChange`
-    /// and appends the entry to its path, then this property is cleared.
+    /// Cross-platform hand-off channel for opening a document from any tool surface. On **iOS**
+    /// `BrowserView` observes it and appends to the Browse tab's path. On **macOS** every document
+    /// host translates it (via `routeBrowseToActiveHost()`) into a `routedBrowse` targeting the
+    /// active window — so producers never write `routedBrowse` directly.
     var pendingBrowseDocument: DocumentBrowserEntry? = nil
+
+    /// The document-hosting window most recently made key (macOS). Each host
+    /// (`MainWindowView`, `MacDocumentWindowView`) updates it from its `controlActiveState`
+    /// observer, and resets it to `.main` when it closes. Tool-window navigation targets it so a
+    /// selected document opens in the window the user launched the tool from rather than always the
+    /// main window (visual-review finding, 2026-07-18).
+    var activeDocumentHost: DocumentHostID = .main
+
+    /// A tool-window document selection routed to `activeDocumentHost` (macOS). The matching host
+    /// consumes it via `.onChange` (appends to its navigation path, fronts itself) and clears it.
+    /// Producers still set `pendingBrowseDocument`; every open document host translates it into this
+    /// routed form, so no producer needs to know about window routing.
+    var routedBrowse: RoutedBrowse? = nil
+
+    /// Translates a pending `pendingBrowseDocument` into a `routedBrowse` aimed at the active
+    /// document window, then clears the pending value. Called by EVERY macOS document host from its
+    /// `pendingBrowseDocument` observer — the clear-first step makes it exactly-once no matter how
+    /// many hosts are open, and having every host (not just the main window) run it means the
+    /// translation survives even when the main window is closed (a user living in document windows).
+    /// No-op when nothing is pending.
+    func routeBrowseToActiveHost() {
+        guard let entry = pendingBrowseDocument else { return }
+        pendingBrowseDocument = nil
+        routedBrowse = RoutedBrowse(host: activeDocumentHost, entry: entry)
+    }
 
     /// Cross-view hand-off for opening a **volume** in the browser (the volume-grain
     /// sibling of `pendingBrowseDocument`), set by the Cross-Volume Provenance rows

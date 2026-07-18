@@ -86,6 +86,44 @@ struct AppStateTests {
         let state = AppState()
         #expect(state.downloadQueue.isEmpty)
     }
+
+    // MARK: - Per-window navigation routing (visual-review fix 2026-07-18)
+
+    @Test("routeBrowseToActiveHost targets a standalone document window and clears the pending value")
+    func routeBrowseToActiveWindowHost() {
+        let state = AppState()
+        let host = DocumentHostID.window(DocumentWindowID(volumeId: "v1", documentId: "d1", header: "A"))
+        state.activeDocumentHost = host
+        state.pendingBrowseDocument = DocumentBrowserEntry(documentId: "d2", volumeId: "v2", header: "B")
+
+        state.routeBrowseToActiveHost()
+
+        #expect(state.pendingBrowseDocument == nil)
+        #expect(state.routedBrowse?.host == host)
+        #expect(state.routedBrowse?.entry.documentId == "d2")
+        #expect(state.routedBrowse?.entry.volumeId == "v2")
+    }
+
+    @Test("routeBrowseToActiveHost defaults to the main window")
+    func routeBrowseToMainHost() {
+        let state = AppState()
+        state.pendingBrowseDocument = DocumentBrowserEntry(documentId: "d", volumeId: "v", header: "H")
+        state.routeBrowseToActiveHost()
+        #expect(state.routedBrowse?.host == .main)
+        #expect(state.pendingBrowseDocument == nil)
+    }
+
+    @Test("routeBrowseToActiveHost is exactly-once: a second call with nothing pending is a no-op")
+    func routeBrowseIsExactlyOnce() {
+        let state = AppState()
+        state.pendingBrowseDocument = DocumentBrowserEntry(documentId: "d", volumeId: "v", header: "H")
+        state.routeBrowseToActiveHost()
+        let firstRoute = state.routedBrowse
+        // A second observer (another open host) running the same translation must not re-fire or
+        // overwrite, because the first call already cleared `pendingBrowseDocument`.
+        state.routeBrowseToActiveHost()
+        #expect(state.routedBrowse == firstRoute)
+    }
 }
 
 // MARK: - AppTabTests

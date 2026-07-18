@@ -1103,7 +1103,7 @@ private struct DiscoveredMetadataRow: View {
 /// - All other sections fetch the indexed document list and display rows.
 ///
 /// Tapping a document (or the "Read" button) posts the entry to
-/// `AppState.pendingBrowseDocument` so the main window navigates to it; the browser window
+/// `AppState.pendingBrowseDocument`, routed to the active document window; the browser window
 /// stays where it is. The system back button returns to the volume overview.
 ///
 /// Version history:
@@ -1338,7 +1338,7 @@ private struct CorpusSectionDocumentView: View {
         .listStyle(.inset)
     }
 
-    /// A tappable document row that opens the document in the main window.
+    /// A tappable document row that opens the document in the active document window.
     private func documentButton(_ doc: DocumentBrowserEntry) -> some View {
         Button {
             appState.pendingBrowseDocument = doc
