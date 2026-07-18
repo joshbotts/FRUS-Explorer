@@ -338,7 +338,8 @@ struct CommandFocusedValueTests {
             canHighlight: canHighlight,
             isResearchPanelVisible: isResearchPanelVisible,
             goPrevious: {}, goNext: {}, addNote: {},
-            highlightSelection: { _ in }, toggleResearchPanel: {}
+            highlightSelection: { _ in }, toggleResearchPanel: {},
+            openInNewWindow: {}
         )
     }
 
@@ -374,7 +375,8 @@ struct CommandFocusedValueTests {
             goPrevious: { sideEffect += 1 }, goNext: { sideEffect += 1 },
             addNote: { sideEffect += 1 },
             highlightSelection: { _ in sideEffect += 1 },
-            toggleResearchPanel: { sideEffect += 1 }
+            toggleResearchPanel: { sideEffect += 1 },
+            openInNewWindow: { sideEffect += 1 }
         )
         #expect(a == b)
         #expect(sideEffect == 0)
