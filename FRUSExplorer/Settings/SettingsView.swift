@@ -3404,6 +3404,18 @@ private struct DisplaySettingsView: View {
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     #endif
 
+    /// Whether this is an iPhone. The "Open Documents In" default is offered only where passive
+    /// Research mode is usable — the iPad/Mac side panel. On iPhone the rail is a user-triggered
+    /// bottom sheet (#404), so a "Research" default would have nothing to act on; the picker is
+    /// hidden there and the mode setting simply doesn't apply.
+    private var isPhone: Bool {
+        #if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .phone
+        #else
+        false
+        #endif
+    }
+
     var body: some View {
         Form {
             Section {
@@ -3464,19 +3476,24 @@ private struct DisplaySettingsView: View {
             }
 
             Section {
-                Picker(String(localized: "settings.display.defaultMode.label",
-                              defaultValue: "Open Documents In"),
-                       selection: $defaultDocumentMode) {
-                    ForEach(DefaultDocumentMode.allCases) { mode in
-                        Text(mode.label).tag(mode)
+                // #404: the "Open Documents In" default applies only where passive Research mode is
+                // usable — the iPad/Mac side panel. On iPhone the rail is a user-triggered bottom
+                // sheet, so a Research default would have no effect; the picker is hidden there.
+                if !isPhone {
+                    Picker(String(localized: "settings.display.defaultMode.label",
+                                  defaultValue: "Open Documents In"),
+                           selection: $defaultDocumentMode) {
+                        ForEach(DefaultDocumentMode.allCases) { mode in
+                            Text(mode.label).tag(mode)
+                        }
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                    .accessibilityLabel(
+                        String(localized: "settings.display.defaultMode.a11y",
+                               defaultValue: "Default document mode")
+                    )
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
-                .accessibilityLabel(
-                    String(localized: "settings.display.defaultMode.a11y",
-                           defaultValue: "Default document mode")
-                )
 
                 #if os(iOS)
                 Toggle(
@@ -3486,15 +3503,20 @@ private struct DisplaySettingsView: View {
                 )
                 .accessibilityHint(
                     String(localized: "settings.display.edgeTapNavigation.a11y",
-                           defaultValue: "When on, tapping near the left or right edge in Read mode opens the previous or next document")
+                           defaultValue: "When on, tapping near the left or right edge of a document opens the previous or next one — available whenever the Research rail is closed")
                 )
                 #endif
             } header: {
                 Text(String(localized: "settings.display.reading.header",
                             defaultValue: "Reading"))
             } footer: {
-                Text(String(localized: "settings.display.reading.footer",
-                            defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail — a side panel on iPad, a bottom sheet on iPhone; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document."))
+                if isPhone {
+                    Text(String(localized: "settings.display.reading.footer.iphone",
+                                defaultValue: "The Research rail opens as a bottom sheet from the toolbar's Research button — it is never shown automatically, so it can't cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed."))
+                } else {
+                    Text(String(localized: "settings.display.reading.footer",
+                                defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail in a side panel beside the document; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document."))
+                }
             }
         }
         .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
