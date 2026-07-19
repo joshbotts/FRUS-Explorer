@@ -168,6 +168,8 @@ The status bar at the bottom of the main window provides at-a-glance information
 
 FRUS Explorer opens specialized tools in their own windows so you can keep a document open in the main window while working elsewhere. Windows are persistent — closing and reopening them restores their previous size and position. Launching a tool whose window is already open brings that window to the front rather than opening a duplicate or leaving it buried behind other windows — including word-cloud windows relaunched from Settings.
 
+**Documents open where you launched the tool.** When you open a document from a tool window — a search result, a cross-reference graph node, a Corpus Browser row, a Related Documents entry — it opens in the document window you launched that tool *from*, and that window comes forward. Open a second main window with **⌘N** and its tools route to it independently of the first. To deliberately open a document in a *fresh* window instead, use **Open in New Window** from a search result's context menu, or **File ▸ Open Document in New Window** for the document you're reading.
+
 | Window | Shortcut |
 |--------|----------|
 | Search | ⌘F |
