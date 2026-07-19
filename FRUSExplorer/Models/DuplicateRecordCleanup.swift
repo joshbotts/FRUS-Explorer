@@ -76,10 +76,17 @@ enum DuplicateRecordCleanup {
 
     /// Collapses duplicate `UserTag` records (same `id`), keeping a placeholder-aware keeper.
     ///
-    /// Identical to `dedupeSimple` except for keeper selection: a real (or user-renamed) tag
-    /// always beats an `OrphanedTagRepair` `"Recovered Tag …"` placeholder that shares its id, so
-    /// if a genuine tag ever re-syncs from CloudKit retention it replaces the stand-in the repair
-    /// created — the real name wins, the id (and therefore every association) is preserved.
+    /// Identical to `dedupeSimple` except for keeper selection (see `userTagKeeper`): a real,
+    /// non-`"Recovered Tag …"`-named record beats an *un-renamed* `OrphanedTagRepair` placeholder
+    /// that shares its id, so if a genuine tag re-materialises with the same id — another device
+    /// that still holds it, or CloudKit retention *within the same environment* — it replaces the
+    /// stand-in: the real name wins, the id (and every association) preserved. Between two
+    /// non-placeholder names (e.g. after the user renames a recovered tag) the keeper falls to the
+    /// `createdAt`/id tiebreak, so the *original* record is not guaranteed to win — but the two
+    /// rows are the same tag (same id, same associations), so whichever survives loses nothing.
+    /// Neither path recovers a tag stranded in a *different* CloudKit environment (e.g. a
+    /// Development record that never reached Production); that record cannot re-sync, so its
+    /// placeholder keeps the "Recovered Tag" name until the user renames it.
     private static func dedupeUserTags(context: ModelContext) -> Int {
         guard let all = try? context.fetch(FetchDescriptor<UserTag>()) else { return 0 }
         var deleted = 0

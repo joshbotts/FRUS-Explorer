@@ -203,4 +203,68 @@ struct OrphanedTagRepairTests {
         #expect(!OrphanedTagRepair.isPlaceholderName("Berlin Crisis"))
         #expect(!OrphanedTagRepair.isPlaceholderName(""))
     }
+
+    // MARK: - #406 review folds
+
+    @Test("dedupe-then-repair: a late-synced real tag collapses a prior placeholder, leaving one real record")
+    func dedupeThenRepairCollapsesLateDuplicate() throws {
+        let context = try makeContext()
+
+        // Reproduces the post-import debounce state (#406 review, Finding 2): an earlier debounce
+        // minted a placeholder for an orphaned id, then the genuine tag arrived in a later import.
+        // Both rows now coexist plus an assignment keyed on the shared id. The debounce runs dedupe
+        // BEFORE repair so this duplicate collapses immediately (real record kept) instead of
+        // lingering — visibly duplicated in pickers — until the next cold boot.
+        let placeholder = UserTag(name: OrphanedTagRepair.placeholderNamePrefix + "11111111")
+        placeholder.id = Self.orphanB
+        placeholder.createdAt = Date(timeIntervalSince1970: 1_000)
+        let real = UserTag(name: "Berlin Crisis")
+        real.id = Self.orphanB
+        real.createdAt = Date(timeIntervalSince1970: 500)
+        context.insert(placeholder)
+        context.insert(real)
+        context.insert(DocumentTagAssignment(volumeId: "v1", documentId: "d1", tagId: Self.orphanB))
+        try context.save()
+
+        DuplicateRecordCleanup.run(context: context)          // dedupe first: drop the placeholder
+        #expect(OrphanedTagRepair.run(context: context) == 0) // id now has a real tag → nothing to repair
+
+        let tags = try context.fetch(FetchDescriptor<UserTag>())
+        #expect(tags.count == 1)
+        #expect(tags.first?.name == "Berlin Crisis")          // real kept, placeholder dropped
+        let assignments = try context.fetch(FetchDescriptor<DocumentTagAssignment>())
+        #expect(assignments.count == 1)
+        #expect(assignments.first?.tagId == tags.first?.id)   // association re-attaches to the survivor
+    }
+
+    @Test("dedupe: a renamed placeholder that outranks a returning original still preserves the association")
+    func dedupeRenamedPlaceholderPreservesAssociations() throws {
+        let context = try makeContext()
+
+        // Finding 1 (#406 review): after the user RENAMES a recovered placeholder, its name no
+        // longer carries the "Recovered Tag" prefix, so the keeper's non-placeholder tier no longer
+        // separates it from a returning original; and if `mergeTag` had re-pointed an OLDER
+        // assignment, the placeholder's createdAt can be earlier than the original's. The keeper
+        // then picks the renamed placeholder. This is acceptable — the two rows share an id, so the
+        // assignment re-attaches to whichever survives and NO annotation is lost.
+        let renamedPlaceholder = UserTag(name: "Renamed By User")        // was a placeholder, now renamed
+        renamedPlaceholder.id = Self.orphanC
+        renamedPlaceholder.createdAt = Date(timeIntervalSince1970: 100)  // merge-poisoned earlier date
+        let original = UserTag(name: "Original Name")
+        original.id = Self.orphanC
+        original.createdAt = Date(timeIntervalSince1970: 900)
+        context.insert(renamedPlaceholder)
+        context.insert(original)
+        context.insert(DocumentTagAssignment(volumeId: "v1", documentId: "d1", tagId: Self.orphanC))
+        try context.save()
+
+        DuplicateRecordCleanup.run(context: context)
+
+        let tags = try context.fetch(FetchDescriptor<UserTag>())
+        #expect(tags.count == 1)                              // collapsed to a single row
+        #expect(tags.first?.id == Self.orphanC)               // id preserved …
+        let assignments = try context.fetch(FetchDescriptor<DocumentTagAssignment>())
+        #expect(assignments.count == 1)
+        #expect(assignments.first?.tagId == tags.first?.id)   // … so the association survives either way
+    }
 }

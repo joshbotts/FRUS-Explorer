@@ -3348,17 +3348,25 @@ private struct ResetView: View {
             do {
                 // Delete downloaded volumes and clear the search index.
                 await ResetService.resetLocalData(appState: appState)
-                // Delete all SwiftData user-generated records
-                try modelContext.delete(model: ResearchNote.self)
-                try modelContext.delete(model: UserTag.self)
-                // #406: these were previously omitted, so a full reset left orphaned tag
-                // assignments and stranded highlights that CloudKit kept syncing.
+                // Delete all SwiftData user-generated records. Dependent records are deleted
+                // BEFORE the records they reference: this sequence is not transactional, so if a
+                // reset is interrupted (a thrown delete, OS termination), a leftover child is
+                // harmless but a leftover reference to an already-deleted parent is an orphan.
+                // In particular `DocumentTagAssignment` must go before `UserTag` — otherwise an
+                // interrupted reset leaves dangling assignments that the boot-time
+                // `OrphanedTagRepair` would resurrect as "Recovered Tag" placeholders for tags the
+                // user explicitly asked to delete (#406). Likewise `CollectionEntry` before
+                // `Collection` (its delete rule is `.nullify`, not cascade).
+                // #406: `DocumentTagAssignment`/`DocumentHighlight` were previously omitted entirely,
+                // so a full reset left orphaned tag assignments and stranded highlights syncing.
                 try modelContext.delete(model: DocumentTagAssignment.self)
                 try modelContext.delete(model: DocumentHighlight.self)
+                try modelContext.delete(model: CollectionEntry.self)
+                try modelContext.delete(model: ResearchNote.self)
+                try modelContext.delete(model: UserTag.self)
+                try modelContext.delete(model: Collection.self)
                 try modelContext.delete(model: GeneratedSummary.self)
                 try modelContext.delete(model: ReadingHistoryEntry.self)
-                try modelContext.delete(model: Collection.self)
-                try modelContext.delete(model: CollectionEntry.self)
                 try modelContext.delete(model: SummarizationPrompt.self)
                 try modelContext.delete(model: Project.self)
                 await MainActor.run {

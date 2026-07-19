@@ -3670,22 +3670,28 @@ private struct SettingsResetPane: View {
     }
 
     private func deleteAllUserData() {
+        // Dependent records are listed BEFORE the records they reference. This loop is not
+        // transactional, so if a reset is interrupted (an individual delete failing, OS
+        // termination) a leftover child is harmless but a leftover reference to an already-deleted
+        // parent is an orphan. In particular `DocumentTagAssignment` must precede `UserTag` —
+        // otherwise an interrupted reset leaves dangling assignments that the boot-time
+        // `OrphanedTagRepair` would resurrect as "Recovered Tag" placeholders for tags the user
+        // explicitly asked to delete (#406). Mirrors iOS `SettingsView.performReset`.
         let types: [any PersistentModel.Type] = [
+            // Children / references first.
+            DocumentTagAssignment.self,   // #406: previously omitted → orphaned assignments syncing
+            DocumentHighlight.self,       // #406: previously omitted → stranded highlights syncing
+            // `Collection.documentEntries` has deleteRule `.nullify`, not cascade, so entries must be
+            // deleted explicitly and before their `Collection` — otherwise a full reset leaves
+            // orphaned `CollectionEntry` rows (collection=nil) that CloudKit keeps syncing.
+            CollectionEntry.self,
             ResearchNote.self,
+            // Parents next.
+            UserTag.self,
+            Collection.self,       // project's SwiftData model is Collection, not DocumentCollection
             GeneratedSummary.self,
             ReadingHistoryEntry.self,
             SummarizationPrompt.self,
-            Collection.self,       // project's SwiftData model is Collection, not DocumentCollection
-            // `Collection.documentEntries` has deleteRule `.nullify`, not cascade, so entries must be
-            // deleted explicitly — otherwise a full reset leaves orphaned `CollectionEntry` rows
-            // (collection=nil) that CloudKit keeps syncing. iOS `SettingsView.performReset` already
-            // deletes both; keep macOS in parity.
-            CollectionEntry.self,
-            UserTag.self,
-            // #406: previously omitted, so a full reset left orphaned tag assignments and
-            // stranded highlights that CloudKit kept syncing.
-            DocumentTagAssignment.self,
-            DocumentHighlight.self,
             Project.self,
         ]
         for type in types {

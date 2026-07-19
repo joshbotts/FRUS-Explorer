@@ -34,18 +34,30 @@ import SwiftData
 /// ## Safety contract
 /// The pass is **purely additive and id-preserving**, so it can never itself create a new
 /// orphan or delete anything. It is safe to run repeatedly because it is *existence-guarded*
-/// (it only inserts for ids that have no `UserTag`). All derived values — the placeholder
-/// name and `createdAt` — are computed deterministically from already-synced data (the id and
-/// the earliest referencing record's date), **never** from `Date.now`, so two devices that run
-/// the pass before CloudKit converges emit byte-identical placeholders and
-/// `DuplicateRecordCleanup` collapses the accidental duplicate with no cross-device delete war.
+/// (it only inserts for ids that have no `UserTag`). The placeholder name is derived purely from
+/// the id and the `createdAt` from already-synced reference dates — **never** from `Date.now` — so
+/// two devices that run the pass before CloudKit converges mint a placeholder with the **same id
+/// and name** for each orphan (the `createdAt` can differ if the two devices have seen different
+/// subsets of the references, but that only decides *which* row survives, not *whether* the pair
+/// collapses: `DuplicateRecordCleanup` groups by id). The result is a clean cross-device
+/// convergence with no delete war.
 ///
-/// The placeholder `createdAt` is the earliest referencing record's date. A genuine returning
-/// `UserTag` is always created *before* its own assignments/notes, so its `createdAt` is
-/// earlier — meaning `DuplicateRecordCleanup`'s earliest-`createdAt` keeper rule (reinforced by
-/// its explicit non-placeholder preference) keeps the **real** record and drops the placeholder
-/// if the true tag ever re-syncs from CloudKit retention. Real name wins, id preserved,
-/// associations intact.
+/// ## Keeper interaction with a returning real tag
+/// The placeholder `createdAt` is the earliest referencing record's date — *usually* ≥ the lost
+/// tag's own `createdAt` (a tag is normally created before anything references it), which lets
+/// `DuplicateRecordCleanup` keep the **real** record and drop the placeholder if the true tag ever
+/// re-materialises with the same id (another device that still holds it, or CloudKit retention
+/// within the **same** environment). Two caveats, both benign because the id — and therefore every
+/// association — is preserved no matter which row wins:
+///   1. Once the user **renames** a placeholder it is indistinguishable from a real tag (the
+///      `"Recovered Tag"` prefix is gone), so the keeper falls through to the `createdAt`/id
+///      tiebreak. And `mergeTag` can re-point an *older* assignment onto a tag, so the earliest
+///      referencing date is not guaranteed ≥ the real tag's `createdAt`. A returning original can
+///      therefore lose the tiebreak to a renamed placeholder — but the survivor carries the user's
+///      own chosen name and all associations, so nothing is lost; the two rows are the same tag.
+///   2. A tag stranded in a *different* CloudKit environment (e.g. a Development record that never
+///      reached Production) cannot re-sync at all, so its placeholder keeps the `"Recovered Tag"`
+///      name until the user renames it.
 ///
 /// ## When it runs
 /// `FRUSExplorerApp.bootApp()` runs it **after** the initial CloudKit import has settled — never
@@ -75,8 +87,10 @@ enum OrphanedTagRepair {
         let id: UUID
         /// Deterministic `"Recovered Tag <id-prefix>"` label (never derived from `Date.now`).
         let name: String
-        /// Earliest referencing record date — always ≥ a genuine tag's own `createdAt`, so a real
-        /// record wins the dedupe keeper contest if it ever returns.
+        /// Earliest referencing record date — *usually* ≥ a genuine tag's own `createdAt`, so a
+        /// real record tends to win the dedupe keeper contest if it ever returns. Not a hard
+        /// guarantee (`mergeTag` can re-point an older assignment), but the id and associations
+        /// survive whichever row wins — see the type doc's keeper caveats.
         let createdAt: Date
     }
 

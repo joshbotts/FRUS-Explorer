@@ -1567,13 +1567,17 @@ struct FRUSExplorerApp: App {
                         // associations — but debounced, so the repair runs once a few seconds
                         // after imports go quiet (a settled store), never against the partial
                         // store mid-sync where a not-yet-arrived tag would look like an orphan.
-                        // A genuine tag that re-syncs later still wins: `DuplicateRecordCleanup`
-                        // prefers the real record over the "Recovered Tag" placeholder.
+                        // We dedupe FIRST: if an earlier debounce minted a placeholder and the
+                        // real tag has since arrived in a later import, `DuplicateRecordCleanup`
+                        // collapses that same-id pair now (keeping the real record) instead of
+                        // leaving a visible duplicate until the next cold boot; the repair then
+                        // fills only the ids that are still genuinely orphaned.
                         if phase == "import" {
                             appState.orphanedTagRepairDebounce?.cancel()
                             appState.orphanedTagRepairDebounce = Task { @MainActor in
                                 try? await Task.sleep(for: .seconds(8))
                                 guard !Task.isCancelled else { return }
+                                DuplicateRecordCleanup.run(context: modelContainer.mainContext)
                                 OrphanedTagRepair.run(context: modelContainer.mainContext)
                             }
                         }
