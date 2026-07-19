@@ -267,6 +267,15 @@ final class AppState {
     /// developers and users can see exactly what is preventing data from syncing.
     var cloudKitSyncState: CloudKitSyncState = .unknown
 
+    /// Debounce handle for the boot-time orphaned-tag repair (#406).
+    ///
+    /// `FRUSExplorerApp.bootApp()`'s CloudKit event observer reschedules this on every successful
+    /// import so `OrphanedTagRepair` runs once, a few seconds after imports go quiet — i.e. only
+    /// against a *settled* store, never mid-import where a not-yet-arrived tag would look like an
+    /// orphan. `@ObservationIgnored` because it is transient plumbing, not observable UI state.
+    @ObservationIgnored
+    var orphanedTagRepairDebounce: Task<Void, Never>? = nil
+
     /// Whether the iCloud private zone required for CloudKit sync exists on the server.
     ///
     /// `nil` = not yet verified; `true` = zone found and sync should work;

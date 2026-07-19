@@ -1218,6 +1218,15 @@ struct FRUSExplorerApp: App {
             // (SwiftData + CloudKit can't enforce unique `id`s) so they stop
             // appearing twice in lists.
             DuplicateRecordCleanup.run(context: modelContainer.mainContext)
+            // #406: reconstruct orphaned tag associations. On a local-only store there is no
+            // CloudKit import to wait for and the local store is authoritative, so run it now.
+            // When CloudKit IS enabled we DEFER this to the sync-event observer below, which runs
+            // it only after imports settle — never against a mid-import partial store, where a
+            // not-yet-arrived tag would look like an orphan and be reconstructed (and pushed to
+            // CloudKit) as a duplicate of a live record.
+            if !appState.cloudKitSyncEnabled {
+                OrphanedTagRepair.run(context: modelContainer.mainContext)
+            }
             // Optional cross-device settings sync: mirror UserDefaults to/from a
             // CloudKit-synced record when this device has opted in. Starting it
             // installs the change observer and performs an initial pull if enabled.
@@ -1524,7 +1533,7 @@ struct FRUSExplorerApp: App {
                 forName: eventNotificationName,
                 object: nil,
                 queue: .main
-            ) { [appState] notification in
+            ) { [appState, modelContainer] notification in
                 // Extract only Sendable values on the calling thread before the
                 // @MainActor hop, avoiding Sendable warnings on NSPersistentCloudKitContainer.Event.
                 guard let event = notification.userInfo?[eventUserInfoKey]
@@ -1554,6 +1563,24 @@ struct FRUSExplorerApp: App {
                         // A completed import may have brought down updated settings;
                         // pull them into UserDefaults if this device syncs settings.
                         appState.settingsSync?.syncNowIfEnabled()
+                        // #406: after a successful IMPORT, reconstruct any orphaned tag
+                        // associations — but debounced, so the repair runs once a few seconds
+                        // after imports go quiet (a settled store), never against the partial
+                        // store mid-sync where a not-yet-arrived tag would look like an orphan.
+                        // We dedupe FIRST: if an earlier debounce minted a placeholder and the
+                        // real tag has since arrived in a later import, `DuplicateRecordCleanup`
+                        // collapses that same-id pair now (keeping the real record) instead of
+                        // leaving a visible duplicate until the next cold boot; the repair then
+                        // fills only the ids that are still genuinely orphaned.
+                        if phase == "import" {
+                            appState.orphanedTagRepairDebounce?.cancel()
+                            appState.orphanedTagRepairDebounce = Task { @MainActor in
+                                try? await Task.sleep(for: .seconds(8))
+                                guard !Task.isCancelled else { return }
+                                DuplicateRecordCleanup.run(context: modelContainer.mainContext)
+                                OrphanedTagRepair.run(context: modelContainer.mainContext)
+                            }
+                        }
                     } else {
                         let msg = diag?.message ?? String(localized: "cloudkit.error.unknown",
                                                           defaultValue: "Unknown sync error")

@@ -50,22 +50,68 @@ extension CustomVolumeScope: DeduplicableRecord {}   // #258 — flat record, de
 ///
 /// Version history:
 ///   1.0 — iOS testing fixes: CloudKit duplicate collapse
+///   1.1 — #406: `UserTag` now uses a placeholder-aware keeper (a real/renamed tag beats an
+///          `OrphanedTagRepair` "Recovered Tag …" placeholder that shares its id); the
+///          removal-count log is promoted from `#if DEBUG` to always-on, since deleting synced
+///          records is a destructive, CloudKit-propagating event worth a durable trace.
 @MainActor
 enum DuplicateRecordCleanup {
 
     /// Runs the cleanup and saves. Idempotent and a no-op when there are no
     /// duplicates, so it's safe to call on every launch.
     static func run(context: ModelContext) {
-        let removed = dedupeSimple(UserTag.self, context: context)
+        let removed = dedupeUserTags(context: context)
             + dedupeSimple(Project.self, context: context)
             + dedupeCollections(context: context)
             + dedupeSimple(CollectionEntry.self, context: context)
             + dedupeSimple(CustomVolumeScope.self, context: context)
         guard removed > 0 else { return }
         try? context.save()
-        #if DEBUG
+        // Always-on (not #if DEBUG): deleting synced user records is a destructive,
+        // CloudKit-propagating operation; a persistent log line is the only post-hoc evidence
+        // if a pass ever removes more than expected (cf. #406). Mirrors the always-on
+        // CloudKit-failure logging in `ModelContainer+FRUS`.
         print("[DuplicateRecordCleanup] Removed \(removed) duplicate record(s).")
-        #endif
+    }
+
+    /// Collapses duplicate `UserTag` records (same `id`), keeping a placeholder-aware keeper.
+    ///
+    /// Identical to `dedupeSimple` except for keeper selection (see `userTagKeeper`): a real,
+    /// non-`"Recovered Tag …"`-named record beats an *un-renamed* `OrphanedTagRepair` placeholder
+    /// that shares its id, so if a genuine tag re-materialises with the same id — another device
+    /// that still holds it, or CloudKit retention *within the same environment* — it replaces the
+    /// stand-in: the real name wins, the id (and every association) preserved. Between two
+    /// non-placeholder names (e.g. after the user renames a recovered tag) the keeper falls to the
+    /// `createdAt`/id tiebreak, so the *original* record is not guaranteed to win — but the two
+    /// rows are the same tag (same id, same associations), so whichever survives loses nothing.
+    /// Neither path recovers a tag stranded in a *different* CloudKit environment (e.g. a
+    /// Development record that never reached Production); that record cannot re-sync, so its
+    /// placeholder keeps the "Recovered Tag" name until the user renames it.
+    private static func dedupeUserTags(context: ModelContext) -> Int {
+        guard let all = try? context.fetch(FetchDescriptor<UserTag>()) else { return 0 }
+        var deleted = 0
+        for (_, group) in Dictionary(grouping: all, by: \.id) where group.count > 1 {
+            let keeper = userTagKeeper(group)
+            for extra in group where extra.persistentModelID != keeper.persistentModelID {
+                context.delete(extra)
+                deleted += 1
+            }
+        }
+        return deleted
+    }
+
+    /// The stable keeper for a duplicate `UserTag` group: prefer a non-placeholder (real) name,
+    /// then earliest `createdAt`, then a deterministic id ordering so independent devices agree.
+    private static func userTagKeeper(_ group: [UserTag]) -> UserTag {
+        group.min { lhs, rhs in
+            let lhsPlaceholder = OrphanedTagRepair.isPlaceholderName(lhs.name)
+            let rhsPlaceholder = OrphanedTagRepair.isPlaceholderName(rhs.name)
+            if lhsPlaceholder != rhsPlaceholder { return !lhsPlaceholder }  // real record sorts first (kept)
+            let l = lhs.createdAt ?? .distantFuture
+            let r = rhs.createdAt ?? .distantFuture
+            if l != r { return l < r }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }!
     }
 
     /// Keeps the stable keeper per `id`, deleting the rest. Returns the count deleted.
