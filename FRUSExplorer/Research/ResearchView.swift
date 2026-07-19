@@ -366,17 +366,17 @@ struct ResearchView: View {
 
     private func documentRow(_ entry: ResearchDocumentEntry) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Document header (or fallback to documentId)
+            // Document header (falls back to the doc number until `loadHeaders` resolves the title).
+            // `reservesSpace: true` keeps the title area a constant TWO body lines whether it shows
+            // the short fallback or the (often two-line) real title — so the post-open async header
+            // merge swaps text in place instead of growing the row and reflowing the whole list a
+            // beat after it appears (the second half of #390's "flickers after open").
             let header = documentHeaders[entry.id]
-            if let h = header, !h.isEmpty {
-                Text(h)
-                    .font(.body)
-                    .lineLimit(2)
-            } else {
-                Text(entry.documentId)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
+            let hasHeader = !(header ?? "").isEmpty
+            Text(hasHeader ? header! : entry.documentId)
+                .font(.body)
+                .foregroundStyle(hasHeader ? .primary : .secondary)
+                .lineLimit(2, reservesSpace: true)
 
             // Volume title + most-recent annotation date
             HStack(spacing: 6) {
@@ -429,18 +429,26 @@ struct ResearchView: View {
                     .italic()
             }
 
-            // Footer: tags · note count · collections
-            let tagNames = entry.allTagIds
-                .compactMap { id in allTags.first(where: { $0.id == id })?.name }
-                .sorted()
-            let collectionNames = entry.collectionIds
-                .compactMap { id in allCollections.first(where: { $0.id == id })?.name }
-                .sorted()
-            let hasFooter = !tagNames.isEmpty || entry.noteCount > 1 || !collectionNames.isEmpty
+            // Footer: tags · note count · collections. Keyed by the record UUID, not the display
+            // name — two tags/collections can share a name, and `ForEach(id: \.self)` on the name
+            // string would collide (SwiftUI drops/duplicates rows). Name is the sort key, id the tiebreak.
+            let tagRows: [(id: UUID, name: String)] = entry.allTagIds
+                .compactMap { id in allTags.first(where: { $0.id == id }).map { (id, $0.name) } }
+                .sorted {
+                    let names = $0.name.localizedCaseInsensitiveCompare($1.name)
+                    return names != .orderedSame ? names == .orderedAscending : $0.id.uuidString < $1.id.uuidString
+                }
+            let collectionRows: [(id: UUID, name: String)] = entry.collectionIds
+                .compactMap { id in allCollections.first(where: { $0.id == id }).map { (id, $0.name) } }
+                .sorted {
+                    let names = $0.name.localizedCaseInsensitiveCompare($1.name)
+                    return names != .orderedSame ? names == .orderedAscending : $0.id.uuidString < $1.id.uuidString
+                }
+            let hasFooter = !tagRows.isEmpty || entry.noteCount > 1 || !collectionRows.isEmpty
             if hasFooter {
                 HStack(spacing: 4) {
-                    ForEach(tagNames, id: \.self) { name in
-                        Text("◆ \(name)")
+                    ForEach(tagRows, id: \.id) { row in
+                        Text("◆ \(row.name)")
                             .font(.caption2)
                             .foregroundStyle(Color.accentColor)
                     }
@@ -453,13 +461,13 @@ struct ResearchView: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                     }
-                    ForEach(collectionNames, id: \.self) { name in
+                    ForEach(collectionRows, id: \.id) { row in
                         HStack(spacing: 2) {
                             Image(systemName: "tray.2")
-                            Text(name.isEmpty
+                            Text(row.name.isEmpty
                                  ? String(localized: "research.row.untitledCollection",
                                           defaultValue: "Untitled Collection")
-                                 : name)
+                                 : row.name)
                         }
                         .font(.caption2)
                         .foregroundStyle(Color.secondary)
@@ -638,7 +646,11 @@ struct ResearchView: View {
             return (collection: collection, count: count)
         }
         .sorted {
-            $0.collection.name.localizedCaseInsensitiveCompare($1.collection.name) == .orderedAscending
+            // Alphabetical, then the stable collection id — a total order so equal/empty-named
+            // collections (id is a UUID, name defaults to "") don't reshuffle on recompute.
+            let names = $0.collection.name.localizedCaseInsensitiveCompare($1.collection.name)
+            return names != .orderedSame ? names == .orderedAscending
+                                         : $0.collection.id.uuidString < $1.collection.id.uuidString
         }
     }
 
@@ -668,7 +680,14 @@ struct ResearchView: View {
             guard count > 0 else { return nil }
             return (tag: tag, count: count)
         }
-        .sorted { $0.count > $1.count }
+        .sorted {
+            // Most-used first, then alphabetical, then the unique tag id — a strict total order so
+            // equal-count (and same-named) tags don't reshuffle on recompute.
+            if $0.count != $1.count { return $0.count > $1.count }
+            let names = $0.tag.name.localizedCaseInsensitiveCompare($1.tag.name)
+            return names != .orderedSame ? names == .orderedAscending
+                                         : $0.tag.id.uuidString < $1.tag.id.uuidString
+        }
     }
 
     /// Doc key → highlights array (newest-first), built from `allHighlights`.
@@ -740,12 +759,20 @@ struct ResearchView: View {
             let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { return nil }
 
-            let sortedNotes  = notes.sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
+            // Total-order tiebreaks (by record id) so equal-timestamp notes/highlights don't
+            // reshuffle across recomputes — `latestNote` (sortedNotes.first) and the highlight-strip
+            // `ForEach` below both consume these. UUID isn't Comparable, so compare `uuidString`.
+            let sortedNotes = notes.sorted {
+                let l = $0.lastModified ?? .distantPast, r = $1.lastModified ?? .distantPast
+                return l != r ? l > r : $0.id.uuidString < $1.id.uuidString
+            }
             let directTagIds = Set(directlyTaggedDocs[key] ?? [])
             let noteTagIds   = Set(notes.flatMap { $0.userTagIds })
             let colIds       = collectionMemberships[key] ?? []
-            let docHighlights = (highlightedDocs[key] ?? [])
-                .sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+            let docHighlights = (highlightedDocs[key] ?? []).sorted {
+                let l = $0.createdAt ?? .distantPast, r = $1.createdAt ?? .distantPast
+                return l != r ? l > r : $0.id.uuidString < $1.id.uuidString
+            }
 
             return ResearchDocumentEntry(
                 id: key,
@@ -759,12 +786,21 @@ struct ResearchView: View {
             )
         }
         .sorted { lhs, rhs in
-            // Sort by the most recent annotation of any type.
+            // Sort by the most recent annotation of any type…
             let lhsDate = [lhs.latestNote?.lastModified,
                            lhs.highlights.first?.createdAt].compactMap { $0 }.max() ?? .distantPast
             let rhsDate = [rhs.latestNote?.lastModified,
                            rhs.highlights.first?.createdAt].compactMap { $0 }.max() ?? .distantPast
-            return lhsDate > rhsDate
+            if lhsDate != rhsDate { return lhsDate > rhsDate }
+            // …then the doc key, so the order is a strict TOTAL order. Without this, every document
+            // with no note/highlight date (collection-only or directly-tagged-only docs) ties at
+            // `.distantPast`. `sorted(by:)` IS stable, so it faithfully reproduces the tie order of
+            // its input — the `matchingKeys` Set / `grouped` Dictionary iteration order, which Swift
+            // derives from a per-process randomized hash seed and re-derives on every recompute (the
+            // post-open `loadHeaders` merge, any @Query update). So the tied rows arrive in a new
+            // order each time and `ForEach` — keyed by the stable id — animates a reshuffle: issue
+            // #390's "reordering/flickering after open". Ordering by the unique id kills the ties.
+            return lhs.id < rhs.id
         }
     }
 
