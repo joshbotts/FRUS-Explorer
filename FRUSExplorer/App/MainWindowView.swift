@@ -83,10 +83,28 @@ struct MainWindowView: View {
     /// Shared highlight state passed to MacDocumentView (text selection, floating selection bar, and SwiftData insertion).
     @State private var highlightCoordinator = HighlightCoordinator()
 
+    /// Measured window content width (≈ titlebar width) and trailing-tools width, driving the
+    /// centred identity pill's yield behaviour (see `pillBudget`).
+    @State private var contentWidth: CGFloat = 0
+    @State private var trailingWidth: CGFloat = 0
+
     // MARK: - Computed
 
     /// This window's routing identity — a per-instance provenance host (never the old shared `.main`).
     private var hostID: DocumentHostID { .main(hostToken) }
+
+    /// How wide the centred identity pill is allowed to be before it must yield (truncate, then
+    /// hide) so the trailing tool buttons never collapse into the overflow chevron — the handoff's
+    /// "identity pill yields first" behaviour, which the default `.principal` layout inverts.
+    ///
+    /// A centred item reserves SYMMETRIC margins, so the wider of the two flanks bounds it: the
+    /// trailing tools (measured) vs the leading traffic-lights + back chrome (~120 pt). The pill may
+    /// occupy what's left after mirroring that flank on both sides: `content − 2·max(trailing, 120)`,
+    /// minus a little slack. Below ~60 pt it hides entirely rather than showing a useless sliver.
+    private var pillBudget: CGFloat {
+        guard contentWidth > 0, trailingWidth > 0 else { return 0 }
+        return max(0, contentWidth - 2 * max(trailingWidth, 120) - 24)
+    }
 
     private var currentEntry: DocumentBrowserEntry? {
         navigationPath.last
@@ -96,6 +114,13 @@ struct MainWindowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+
+            // Measures the window content width (≈ titlebar width) for the pill-yield budget.
+            Color.clear.frame(height: 0)
+                .background(GeometryReader { proxy in
+                    Color.clear
+                        .task(id: proxy.size.width) { contentWidth = proxy.size.width }
+                })
 
             // The research strip is retired (Research-rail C1) — the per-document research surface
             // is now the trailing rail mounted inside MacDocumentView, toggled from `trailingTools`
@@ -205,30 +230,26 @@ struct MainWindowView: View {
 
     private var documentTitle: some View {
         Group {
-            if let entry = currentEntry {
-                // Condensed "volumeId/documentId" identifier (e.g.
-                // "frus1977-1980v28/d217") in place of the previous two-line
-                // header + volume-title stack. This keeps the centred toolbar
-                // item compact at a fixed width regardless of how long the
-                // document's prose header or volume title happen to be —
-                // leaving the leading back button and the five trailing tool
-                // launchers (Search / Browse / Analytics ▾ / My Research ▾ /
-                // rail toggle, C2) enough room that they no longer collapse into
-                // the system overflow chevron at typical window widths. As the
-                // centred .principal item it also yields (truncates) first under
-                // width pressure, before the trailing tools. ("Info" was removed in
-                // Session 2026-06-08 — it duplicated ResearchStripView's "Cite"
-                // button, which presents the identical CitationPopoverView and
-                // is always visible rather than tucked in the toolbar.)
+            if let entry = currentEntry, pillBudget >= 60 {
+                // Condensed "volumeId/documentId" identifier (e.g. "frus1977-1980v28/d217"). As the
+                // centred .principal item it must YIELD before the trailing tools under width
+                // pressure (handoff: "the identity pill yields first"). `pillBudget` caps its width
+                // so it truncates within the room the tools leave, and below ~60 pt it drops out
+                // entirely — freeing the whole flank so the buttons never collapse into the overflow
+                // chevron. (Default `.principal` layout inverts this, overflowing the tools first —
+                // the bug this replaces.) ("Info" removed Session 2026-06-08 — duplicated the rail's Cite.)
                 Text(entry.id)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .lineLimit(1)
                     .truncationMode(.middle)
+                    .frame(maxWidth: pillBudget)
                     .help(entry.header.isEmpty ? entry.documentId : entry.header)
-            } else {
+            } else if currentEntry == nil {
                 Text("FRUS Explorer")
                     .font(.system(size: 13, weight: .medium))
             }
+            // A document is open but the window is too narrow to centre the pill without shoving
+            // the tools into overflow → render nothing; the tools win the space.
         }
     }
 
@@ -263,8 +284,9 @@ struct MainWindowView: View {
                 Label(String(localized: "mainwindow.tools.browse", defaultValue: "Browse"),
                       systemImage: "books.vertical")
             }
-            // Handoff: Browse carries a visible "Browse" label (books.vertical + text).
-            .labelStyle(.titleAndIcon)
+            // Owner override of the handoff (2026-07-18): the Corpus Browser button stays
+            // icon-only like Search, not a labelled "Browse" button.
+            .labelStyle(.iconOnly)
             .help(String(localized: "mainwindow.tools.browse.help",
                          defaultValue: "Browse volumes by subseries in the Corpus Browser (⌘⇧B)"))
 
@@ -368,6 +390,12 @@ struct MainWindowView: View {
                                        defaultValue: "Research panel"))
             .accessibilityIdentifier("researchRailToggle")
         }
+        // Measure the trailing tools' natural width so the centred pill can size itself to never
+        // push them into overflow (the pill-yields-first budget).
+        .background(GeometryReader { proxy in
+            Color.clear
+                .task(id: proxy.size.width) { trailingWidth = proxy.size.width }
+        })
     }
 
 }
