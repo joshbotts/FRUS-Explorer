@@ -247,6 +247,9 @@ struct MainWindowView: View {
                 Label(String(localized: "mainwindow.tools.search", defaultValue: "Search"),
                       systemImage: "magnifyingglass")
             }
+            // Handoff: Search stays icon-only (the toolbar's default). Explicit so it holds even
+            // though its labelled siblings force `.titleAndIcon`.
+            .labelStyle(.iconOnly)
             .help(String(localized: "mainwindow.tools.search.help",
                          defaultValue: "Open the full-text search window (⌘F)"))
 
@@ -260,6 +263,8 @@ struct MainWindowView: View {
                 Label(String(localized: "mainwindow.tools.browse", defaultValue: "Browse"),
                       systemImage: "books.vertical")
             }
+            // Handoff: Browse carries a visible "Browse" label (books.vertical + text).
+            .labelStyle(.titleAndIcon)
             .help(String(localized: "mainwindow.tools.browse.help",
                          defaultValue: "Browse volumes by subseries in the Corpus Browser (⌘⇧B)"))
 
@@ -310,7 +315,8 @@ struct MainWindowView: View {
                 Label(String(localized: "mainwindow.tools.analytics", defaultValue: "Analytics"),
                       systemImage: "chart.bar.xaxis")
             }
-            .menuIndicator(.hidden)
+            // Handoff: "Analytics menu (▾)" — visible name + the default disclosure chevron.
+            .labelStyle(.titleAndIcon)
             .help(String(localized: "mainwindow.tools.analytics.menu.help",
                          defaultValue: "Corpus, Person, and Cross-Reference analytics, Chronology, and Word Cloud"))
 
@@ -337,7 +343,8 @@ struct MainWindowView: View {
                 Label(String(localized: "mainwindow.tools.myResearch", defaultValue: "My Research"),
                       systemImage: "note.text")
             }
-            .menuIndicator(.hidden)
+            // Handoff: "My Research menu (▾)" — visible name + the default disclosure chevron.
+            .labelStyle(.titleAndIcon)
             .help(String(localized: "mainwindow.tools.myResearch.help",
                          defaultValue: "Research window (⌘⌥R) and Collections (⇧⌘K)"))
 
