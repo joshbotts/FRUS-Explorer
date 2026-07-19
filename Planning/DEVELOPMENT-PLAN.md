@@ -1592,3 +1592,31 @@ Two days ahead of the Rev-3 schedule by close.
   People additions, iPad windows, Zotero); **build 32 → 33** (project.yml + project.pbxproj
   direct edit, no xcodegen). Owner release gates: CloudKit Production schema deploy
   (CustomVolumeScope), two-device LWW sync check, Zotero live E2E verify, upload.
+
+### Session 2026-07-19 — #406 orphaned user tags (data-loss investigation + fix)
+- **Symptom (from the owner's research-data export):** 1 `UserTag` survived but 94
+  `DocumentTagAssignment`s referenced 13 distinct tag ids — 12 gone, 92 of 94 assignments
+  orphaned; notes/collections/projects/highlights intact (loss selective to `UserTag`). Tags
+  were in active use through 2026-07-17, so the loss window is 07-17…19.
+- **Investigation (ultracode workflow: 4 finders + 3 adversarial verifiers + synthesis).**
+  Root **trigger is under-determined** — the export equally fits (A) a Settings tag-delete with
+  no cascade, or (B) `DuplicateRecordCleanup` colliding with a CloudKit re-import; the
+  "tombstone also removes the keeper" mechanism is not demonstrable, and neither explains the
+  timing without an unobserved event. RULED OUT: the #390 flicker fix (read-only, verified),
+  both full-resets (notes survived), merge (its assignment-repoint fix `638a400` shipped in
+  build 33), the id-default-collapse theory (survivor keeps a real distinct id; only 92/94
+  orphaned). The **confirmed defect** is trigger-independent: tag→doc/note links are plain
+  `UUID`s with no referential integrity or orphan cleanup anywhere.
+- **Fix (PR on `claude/orphaned-user-tags-mka3qb`).** New `UserTagAdmin.deleteCascading`
+  (strip note ids + delete assignments) wired to both raw Settings delete sites; new
+  `OrphanedTagRepair` reconstructs a `"Recovered Tag …"` placeholder `UserTag` per orphaned id
+  (id-preserving, so all 92 associations re-attach — names unrecoverable, no pre-loss backup),
+  run **after CloudKit imports settle** (8 s debounce off the sync-event observer; immediately
+  for local-only stores) so it never mints duplicates against a partial mid-import store;
+  `DuplicateRecordCleanup` gains a placeholder-aware keeper (a real/renamed tag beats a
+  placeholder sharing its id) + always-on removal logging; both full-reset paths now also delete
+  `DocumentTagAssignment` + `DocumentHighlight` (same missing-cascade class).
+  New `OrphanedTagRepairTests`. **NOT built/tested in-session** (no Xcode toolchain on the CI
+  host) — owner must `xcodegen generate` (+ restore schemes), build iOS+macOS, run the suite.
+  Diagnostics to confirm the trigger: console `[DuplicateRecordCleanup] Removed N …` on a
+  build-33 launch; CloudKit Dashboard `CD_UserTag` (deleted vs. present-not-syncing).

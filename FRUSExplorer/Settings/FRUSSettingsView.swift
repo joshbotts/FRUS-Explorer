@@ -975,11 +975,14 @@ private struct SettingsTagsPane: View {
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) {
-                if let tag = tagToDelete { modelContext.delete(tag) }
+                // Cascading delete (#406): strip the id from notes and delete its
+                // DocumentTagAssignment rows so deletion never leaves orphaned associations —
+                // and so the message below is actually true.
+                if let tag = tagToDelete { UserTagAdmin.deleteCascading(tag, context: modelContext) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Notes that use this tag will no longer have it applied.")
+            Text("Notes and documents tagged with this tag will no longer have it applied.")
         }
     }
 
@@ -3679,6 +3682,10 @@ private struct SettingsResetPane: View {
             // deletes both; keep macOS in parity.
             CollectionEntry.self,
             UserTag.self,
+            // #406: previously omitted, so a full reset left orphaned tag assignments and
+            // stranded highlights that CloudKit kept syncing.
+            DocumentTagAssignment.self,
+            DocumentHighlight.self,
             Project.self,
         ]
         for type in types {

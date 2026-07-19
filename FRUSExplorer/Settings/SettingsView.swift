@@ -2194,8 +2194,10 @@ private struct UserTagsView: View {
                         }
                     }
                     .onDelete { offsets in
+                        // Cascading delete (#406): strip the id from notes and delete its
+                        // DocumentTagAssignment rows so deletion never leaves orphaned associations.
                         for index in offsets {
-                            modelContext.delete(tags[index])
+                            UserTagAdmin.deleteCascading(tags[index], context: modelContext)
                         }
                     }
                 }
@@ -3349,6 +3351,10 @@ private struct ResetView: View {
                 // Delete all SwiftData user-generated records
                 try modelContext.delete(model: ResearchNote.self)
                 try modelContext.delete(model: UserTag.self)
+                // #406: these were previously omitted, so a full reset left orphaned tag
+                // assignments and stranded highlights that CloudKit kept syncing.
+                try modelContext.delete(model: DocumentTagAssignment.self)
+                try modelContext.delete(model: DocumentHighlight.self)
                 try modelContext.delete(model: GeneratedSummary.self)
                 try modelContext.delete(model: ReadingHistoryEntry.self)
                 try modelContext.delete(model: Collection.self)
