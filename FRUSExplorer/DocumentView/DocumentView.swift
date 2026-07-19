@@ -369,21 +369,28 @@ struct DocumentView: View {
                 // HighlightCoordinator.reset(); this is the iOS twin the Phase-A note deferred.)
                 clearSelectionState()
             }
-            // Apply the default document mode on open (owner decision D2). On iPad/Mac .rememberLast
-            // leaves panelVisible untouched — the inspector rail is persisted and defaults open. On
-            // iPhone the rail is a TRANSIENT bottom sheet, so .rememberLast resolves to CLOSED: this
-            // both makes a fresh install's unset key (which defaults `true`) read as closed and keeps
-            // auto-present to explicit .research only. .research additionally presents the sheet on
-            // iPhone (the iPad inspector auto-shows off the `panelVisible` binding).
+            // Apply the default document mode on open (owner decision D2). On iPad/Mac the rail is the
+            // persistent trailing inspector: .read closes it, .research opens it (via `panelVisible`),
+            // .rememberLast leaves the persisted state untouched (defaults open).
+            //
+            // On iPhone the rail is a TRANSIENT bottom sheet, and per #404 it is ALWAYS user-triggered
+            // — never auto-presented by the default mode, because a sheet covering the document on
+            // every open is intrusive. So every mode resolves to CLOSED on iPhone (which also makes a
+            // fresh install's unset `panelVisible` key, defaulting `true`, read as closed).
             switch defaultDocumentMode {
             case .read:
                 panelVisible = false
             case .research:
-                panelVisible = true
-                if isPhone { activeSheet = .researchRail }
+                panelVisible = !isPhone
             case .rememberLast:
                 if isPhone { panelVisible = false }
             }
+            // #404: the iPhone rail is user-triggered only, so never leave its sheet up across a
+            // document open — including SwiftUI view reuse, where a sheet raised for the PREVIOUS
+            // document would otherwise persist over the new one. No-op on a fresh open (activeSheet is
+            // already nil); inert on iPad/Mac, where the rail is the inspector and `activeSheet` is
+            // never `.researchRail`. The `onChange` below keeps `panelVisible` in sync on dismissal.
+            if isPhone, activeSheet?.id == "researchRail" { activeSheet = nil }
             bootstrapViewModel()
             appState.logEvent(.documentOpen(
                 volumeId: entry.volumeId,

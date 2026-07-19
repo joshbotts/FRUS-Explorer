@@ -370,7 +370,7 @@ The **Research-rail toggle** in the document toolbar (Section 3.3) switches betw
 - **Read mode** — the rail is hidden, giving a clean, distraction-free view of the document body, ideal for close reading. Read mode also enables **edge-tap page-turning** (see 6.3).
 - **Research mode** — the rail is shown: on **iPad** it's the trailing `.inspector` panel beside the document; on **iPhone** it's a bottom sheet you can drag between medium and large detents. You read and annotate the document with the rail's tiles and accordions at hand.
 
-There is no separate Read/Research switch — the single rail toggle is the whole control, and an accent tint on the button tells you the rail (and so Research mode) is showing.
+There is no separate Read/Research switch — the single rail toggle is the whole control, and an accent tint on the button tells you the rail (and so Research mode) is showing. On **iPhone** the rail is always summoned with this toggle — it never rises on its own when you open a document, so the bottom sheet can't cover a document you only meant to read. (On iPad, the **Open Documents In** setting can default new documents to Research mode, since there the rail is a side panel that sits beside the text rather than over it.)
 
 `[SCREENSHOT: The document with the Research rail open (Research mode) beside the same document with the rail hidden (Read mode)]`
 
