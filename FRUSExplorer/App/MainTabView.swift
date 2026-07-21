@@ -89,6 +89,15 @@ struct MainTabView: View {
     /// drained below.
     @SceneStorage("frus.selectedTab") private var selectedTab: AppTab = AppState.seedActiveTab
 
+    /// Per-scene identity for cross-scene hand-off targeting (#338), minted once per window for its
+    /// live lifetime — the exact iPad analogue of the macOS per-instance `DocumentHostID.main`, which
+    /// is likewise `@State` (session-scoped, deliberately NOT restored). Hand-offs are transient, so
+    /// nothing needs the token to survive process death; `@SceneStorage` was avoided because
+    /// restoration could replay one archived token into two live scenes and silently re-open the
+    /// fan-out this exists to close (#338 review). Published via `\.sceneID` so a hand-off producer in
+    /// this window addresses its `Handoff` to *this* scene, and only this scene applies it.
+    @State private var sceneIDToken = UUID().uuidString
+
     var body: some View {
         @Bindable var appState = appState
         TabView(selection: $selectedTab) {
@@ -153,6 +162,10 @@ struct MainTabView: View {
         // forward-looking. (BigPicture-iPadMacParity Phase 1 + #238 correction — note that
         // doc carries its own stale copy of this ledger; this comment is authoritative.)
         .tabViewStyle(.sidebarAdaptable)
+        // #338 — publish this window's scene identity to every tab (and the sheets they present) so a
+        // hand-off producer can address its `Handoff` to this scene, and only this scene consumes it
+        // (the foundation for fixing the pendingX fan-out across open iPad windows).
+        .environment(\.sceneID, SceneID(sceneIDToken))
         // #316 — persist THIS window's selection as the fresh-window seed. Written straight to
         // UserDefaults (not a shared @Observable property), so a user tap here is never observed
         // by another window and cannot mirror. Any window may update the seed; it is just "the

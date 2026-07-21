@@ -1433,3 +1433,78 @@ final class AppState {
         static let filterDownloadedOnly = "frus.filterDownloadedOnly"
     }
 }
+
+// MARK: - Cross-scene Handoff primitive (#338)
+
+/// Identity of a UI scene (window) that a ``Handoff`` can be addressed to.
+///
+/// On iPad each ``MainTabView`` instance mints one (`@SceneStorage("frus.sceneID")`) and publishes it
+/// through `\.sceneID`, so a cross-scene hand-off is delivered to exactly the scene it originated in
+/// rather than fanning out to every open window (#338). Platform-neutral and `Sendable` so a single
+/// ``Handoff`` type serves every field.
+///
+/// macOS document-open routing keeps its own, already-correct `DocumentHostID` / `RoutedBrowse`
+/// provenance (its tool targets are singleton windows that can't fan out) and does not go through
+/// `SceneID`.
+struct SceneID: Hashable, Sendable {
+    /// Opaque per-scene token — a `UUID` string on iPad.
+    let raw: String
+    /// Wraps a raw per-scene token.
+    init(_ raw: String) { self.raw = raw }
+}
+
+/// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
+///
+/// Replaces the process-global single-slot `pendingX` pattern, whose consumers were per-scene
+/// observers on shared `AppState` — so on iPad multi-window a single hand-off was observed (and
+/// applied) by *every* open window (#338 fan-out / nondeterministic winner). Carrying the target
+/// scene lets only the addressed scene apply it, via ``AppState/consumeHandoff(_:for:)``: an iPad
+/// ``MainTabView`` addresses its minted per-scene id; a macOS singleton tool window a fixed
+/// ``SceneID`` of its own.
+///
+/// There is intentionally **no** "every window" broadcast target: it would need its own all-consume,
+/// non-clearing consumer, so a reserved-but-unconsumable case would silently black-hole a hand-off
+/// (#338 review). Reintroduce a target enum, with that consumer, if a broadcast use ever appears.
+struct Handoff<Payload: Equatable & Sendable>: Equatable, Sendable, Identifiable {
+    /// Stable identity, for dedupe, the consume-once re-read guard, and `.sheet(item:)`.
+    let id: UUID
+    /// The scene that should receive this hand-off.
+    var target: SceneID
+    /// The delivered value.
+    var payload: Payload
+
+    /// Creates a hand-off addressed to `target` carrying `payload`. `id` defaults to a fresh `UUID`.
+    init(target: SceneID, payload: Payload, id: UUID = UUID()) {
+        self.id = id
+        self.target = target
+        self.payload = payload
+    }
+}
+
+extension AppState {
+    /// Returns the payload of the hand-off at `keyPath` **iff** it is addressed to `sceneID`,
+    /// clearing the slot as it does so (consume-once). A scene that is not the target gets `nil` and
+    /// therefore never applies the hand-off — the fix for the #338 fan-out. Main-actor via `AppState`.
+    func consumeHandoff<P>(_ keyPath: ReferenceWritableKeyPath<AppState, Handoff<P>?>,
+                           for sceneID: SceneID) -> P? {
+        guard let handoff = self[keyPath: keyPath],
+              handoff.target == sceneID else { return nil }
+        self[keyPath: keyPath] = nil
+        return handoff.payload
+    }
+}
+
+// MARK: - Scene identity environment
+
+private struct SceneIDEnvironmentKey: EnvironmentKey {
+    static let defaultValue: SceneID? = nil
+}
+
+extension EnvironmentValues {
+    /// Identity of the scene (window) the current view renders in, if the host published one (iPad
+    /// ``MainTabView``). A hand-off producer reads it to address a ``Handoff`` to its own scene.
+    var sceneID: SceneID? {
+        get { self[SceneIDEnvironmentKey.self] }
+        set { self[SceneIDEnvironmentKey.self] = newValue }
+    }
+}
