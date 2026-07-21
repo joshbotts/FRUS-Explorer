@@ -95,9 +95,14 @@ targets:
         LSApplicationCategoryType: "public.app-category.reference"
         UIApplicationSupportsIndirectInputEvents: YES
         UILaunchScreen: {}
-        # Required for Stage Manager multi-window support on M-chip iPads.
-        # On iPhone this key is ignored; Stage Manager is iPad-only.
-        UIApplicationSupportsMultipleScenes: YES
+        # Multi-window support (Stage Manager / iPadOS windowed apps). This key MUST be nested
+        # under `UIApplicationSceneManifest` — a TOP-LEVEL `UIApplicationSupportsMultipleScenes`
+        # is silently ignored by iOS, which left `@Environment(\.supportsMultipleWindows)` FALSE
+        # and made iPad multi-window entirely non-functional (the "Open in New Window" affordances
+        # stayed hidden and every `openWindow(value:)` was a no-op). No `UISceneConfigurations`:
+        # SwiftUI's App/WindowGroup DSL owns scene configuration. iPhone reports single-window either way.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
         # Required for CloudKit push notifications. Without this entry CloudKit
         # falls back to BGTaskScheduler background-fetch tasks and logs:
         # "BUG IN CLIENT OF CLOUDKIT: CloudKit push notifications require the
