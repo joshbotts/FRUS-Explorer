@@ -963,13 +963,17 @@ struct MacDocumentView: View {
         appState.currentSourceNoteDateline = entry.dateline
         appState.currentSourceNoteVolumeId = entry.volumeId
         appState.currentSourceNoteDocumentId = entry.documentId
-        if let note = vm.sourceNote ?? entry.sourceNote {
-            appState.currentSourceNote = note
-        } else if let year, year < 1906 {
-            // Pre-1906 documents carry no source note; open the explorer anyway so the
-            // country-series classifier can resolve the archival roll.
-            appState.currentSourceNote = ""
-        }
+        // Set `currentSourceNote` unconditionally and non-nil, in lockstep with the metadata
+        // fields above (esp. `currentSourceNoteDocumentId`, just set to this document's id). The
+        // Source Explorer window binds to `currentSourceNote` and shows "No Document Selected"
+        // ONLY when it is nil, while `openSources()` skips re-priming once
+        // `currentSourceNoteDocumentId` matches the current document — trusting this block to have
+        // populated the note. Leaving it nil for a note-less document whose dateline year didn't
+        // parse therefore stranded the *loaded* document's window on "No Document Selected" (#410).
+        // "" opens the explorer regardless: the country-series classifier resolves pre-1906 rolls
+        // from the year/dateline, and a note-less modern document gets an empty-source state rather
+        // than a false "no document". This matches `openSources()`'s own `entry.sourceNote ?? ""`.
+        appState.currentSourceNote = vm.sourceNote ?? entry.sourceNote ?? ""
 
         vm.recordReadingHistory(projectId: appState.activeProjectId, in: modelContext)
         vm.loadSummaries(context: modelContext)
