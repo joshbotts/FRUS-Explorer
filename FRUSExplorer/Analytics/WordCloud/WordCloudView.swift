@@ -964,6 +964,11 @@ struct WordCloudView: View {
         appState.bindTool(.search, to: appState.provenance(of: .wordCloud))
         openWindow(id: "frus.search")
         bringMacWindowToFront(id: "frus.search")
+        #else
+        // #369 BUG-10: bring the Search tab forward on iOS. Without this the query runs invisibly on
+        // the backgrounded Search tab and the user is dropped back on the word cloud's prior tab —
+        // every sibling hand-off (Analyze/Chronology, :844) sets `pendingTab`; this one didn't.
+        appState.pendingTab = .search
         #endif
         dismiss()
     }

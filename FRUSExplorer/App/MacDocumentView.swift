@@ -604,6 +604,18 @@ struct MacDocumentView: View {
             text: text, blockContext: highlightCoordinator.webKitSelectedBlockText)
         highlightCoordinator.webKitSelectedText = nil
         highlightCoordinator.webKitSelectedBlockText = nil
+        // #369 BUG-8: this NARA lookup ALSO opens the shared Source Explorer window (the other of
+        // its two openers). Re-assert THIS window's document into the source-note globals — another
+        // document window's `loadDocument()` may have overwritten them — and stamp the focus id, so
+        // if the user flips the segmented control to "Source Note" it shows THIS document rather than
+        // whichever window loaded last. Mirrors `openSources()`; uses the same non-nil note value.
+        appState.currentSourceNoteYear       = Self.extractYear(from: entry.dateline)
+        appState.currentSourceNoteHeader     = entry.header
+        appState.currentSourceNoteDateline   = entry.dateline
+        appState.currentSourceNoteVolumeId   = entry.volumeId
+        appState.currentSourceNoteDocumentId = entry.documentId
+        appState.currentSourceNote           = vm.sourceNote ?? entry.sourceNote ?? ""
+        appState.sourceNoteFocusID           = UUID()
         // A tool-window launch from a document host — stamp provenance (last-spawner-wins)
         // so the Source Explorer's related-document taps route back to THIS window.
         appState.bindTool(.sourceExplorer, to: documentHostID)

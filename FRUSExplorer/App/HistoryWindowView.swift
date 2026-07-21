@@ -208,6 +208,7 @@ struct HistoryWindowView: View {
         appState.pendingSearch = SearchParameters(keywords: entry.queryText)
         appState.bindTool(.search, to: appState.provenance(of: .history))
         openWindow(id: "frus.search")
+        bringMacWindowToFront(id: "frus.search")   // #369 BUG-9: match the eight sibling producers
     }
 }
 
@@ -300,6 +301,7 @@ struct HistoryMenuContent: View {
         // open via the D3 recency fallback (the window-hosted History runSearch binds `.history`).
         appState.bindTool(.search, to: nil)
         openWindow(id: "frus.search")
+        bringMacWindowToFront(id: "frus.search")   // #369 BUG-9: match the eight sibling producers
     }
 }
 

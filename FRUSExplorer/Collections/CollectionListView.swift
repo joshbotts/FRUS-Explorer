@@ -81,6 +81,19 @@ struct CollectionListView: View {
     /// "Scope to project" choice doesn't silently persist across sessions.
     @State private var showAllCollections = Collection.managerDefaultShowAllCollections
 
+    #if os(iOS)
+    /// #369 BUG-12: applies (once) a `pendingCollectionSelection` hand-off — pushes the imported
+    /// collection's editor so the user lands on it after an open-with import. macOS has the twin in
+    /// `MacCollectionManagerView`; this is iOS-only to avoid a double-consume race with that window.
+    private func consumePendingCollectionSelection() {
+        guard let id = appState.pendingCollectionSelection else { return }
+        appState.pendingCollectionSelection = nil
+        if let collection = allCollections.first(where: { $0.id == id }) {
+            collectionToEdit = collection
+        }
+    }
+    #endif
+
     // MARK: - Body
 
     var body: some View {
@@ -137,6 +150,14 @@ struct CollectionListView: View {
             }
             .navigationDestination(item: $collectionToEdit) { collection in
                 CollectionEditorView(collection: collection, presentationStyle: .pushed)
+            }
+            // #369 BUG-12: iOS consumer for the open-with import hand-off (macOS consumes it in
+            // MacCollectionManagerView; iOS previously had no reader, so the tab switched but the
+            // imported collection was never surfaced). `.task` covers a fresh mount, `.onChange` a
+            // live one — mirroring the macOS pattern.
+            .task { consumePendingCollectionSelection() }
+            .onChange(of: appState.pendingCollectionSelection) { _, id in
+                if id != nil { consumePendingCollectionSelection() }
             }
             #else
             .sheet(isPresented: $isCreating) {

@@ -1810,6 +1810,21 @@ struct SourceExplorerWindowView: View {
     /// the segment manually — the form opens empty.
     @State private var naraLookupItem: NARACatalogLookupItem? = nil
 
+    /// Snapshot of the `currentSourceNote*` sextet, taken at the moment this window is deliberately
+    /// targeted for the note view (#369 BUG-8). The note segment renders THIS, not the live globals,
+    /// so a background document window's `loadDocument()` can't mutate the open explorer's content.
+    @State private var noteSnapshot: SourceNoteSnapshot? = nil
+
+    /// Immutable copy of the Source Explorer note context, snapshotted on focus (see `noteSnapshot`).
+    private struct SourceNoteSnapshot: Equatable {
+        let note: String
+        let year: Int?
+        let header: String?
+        let dateline: String?
+        let volumeId: String?
+        let documentId: String?
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             Picker(String(localized: "source.explorer.window.mode", defaultValue: "View"),
@@ -1846,10 +1861,36 @@ struct SourceExplorerWindowView: View {
         // Consume a NARA Lookup hand-off: `.task` covers a window freshly created by
         // the hand-off (`.onChange` misses a value that was already set), `.onChange`
         // covers one already open — mirroring MacSearchWindowView's pendingSearch.
-        .task { consumePendingNARALookup() }
+        .task {
+            consumePendingNARALookup()
+            snapshotSourceNote()
+        }
         .onChange(of: appState.pendingNARALookup) { _, request in
             guard request != nil else { return }
             consumePendingNARALookup()
+        }
+        // #369 BUG-8: re-snapshot the note when a deliberate Sources open bumps the focus id (covers
+        // an already-open window; a freshly created one is covered by the `.task` above). Background
+        // `loadDocument()` writes to `currentSourceNote*` do NOT bump this, so they no longer leak in.
+        .onChange(of: appState.sourceNoteFocusID) { _, _ in
+            snapshotSourceNote()
+        }
+    }
+
+    /// #369 BUG-8: copies the `currentSourceNote*` globals into `noteSnapshot` at focus time so the
+    /// note segment renders a stable snapshot rather than the live, shared globals.
+    private func snapshotSourceNote() {
+        if let note = appState.currentSourceNote {
+            noteSnapshot = SourceNoteSnapshot(
+                note: note,
+                year: appState.currentSourceNoteYear,
+                header: appState.currentSourceNoteHeader,
+                dateline: appState.currentSourceNoteDateline,
+                volumeId: appState.currentSourceNoteVolumeId,
+                documentId: appState.currentSourceNoteDocumentId
+            )
+        } else {
+            noteSnapshot = nil
         }
     }
 
@@ -1865,10 +1906,10 @@ struct SourceExplorerWindowView: View {
     /// The pre-Phase-4 window content: the current document's parsed source note.
     @ViewBuilder
     private var noteContent: some View {
-        if let note = appState.currentSourceNote {
+        if let snap = noteSnapshot {
             MacSourceExplorerView(
-                rawSourceNote: note,
-                documentYear: appState.currentSourceNoteYear,
+                rawSourceNote: snap.note,
+                documentYear: snap.year,
                 indexingPipeline: appState.indexingPipeline,
                 onRelatedDocumentTapped: { vid, did in
                     let entry = DocumentBrowserEntry(
@@ -1877,10 +1918,10 @@ struct SourceExplorerWindowView: View {
                     )
                     appState.openDocument(entry, from: .tool(.sourceExplorer), using: openWindow)
                 },
-                documentHeader: appState.currentSourceNoteHeader,
-                documentDateline: appState.currentSourceNoteDateline,
-                documentVolumeId: appState.currentSourceNoteVolumeId,
-                documentId: appState.currentSourceNoteDocumentId
+                documentHeader: snap.header,
+                documentDateline: snap.dateline,
+                documentVolumeId: snap.volumeId,
+                documentId: snap.documentId
             )
         } else {
             ContentUnavailableView(
