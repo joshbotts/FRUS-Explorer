@@ -739,6 +739,13 @@ struct SearchView: View {
             yearRangeStart: startYear,
             yearRangeEnd: endYear
         )
+        // #369 BUG-11: the analytics sheet is owned by BrowserView (Browse tab), so bring that tab
+        // forward — otherwise, handed off from the Search tab, the sheet presents on a backgrounded
+        // tab and nothing appears to happen. Mirrors WordCloudView's analyze/chronology hand-offs.
+        // `pendingTab` is iOS-only (macOS routes to windows), so guard it like the siblings do.
+        #if os(iOS)
+        appState.pendingTab = .browse
+        #endif
         #if DEBUG
         print("[SearchView] Over-cap handoff to Analytics — term: \"\(term)\", years: \(String(describing: startYear))–\(String(describing: endYear))")
         #endif

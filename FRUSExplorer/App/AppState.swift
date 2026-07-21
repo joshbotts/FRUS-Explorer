@@ -829,6 +829,15 @@ final class AppState {
     var currentSourceNoteVolumeId: String? = nil
     var currentSourceNoteDocumentId: String? = nil
 
+    /// Bumped to a fresh `UUID` by a **deliberate** Source Explorer note open (`openSources`) so the
+    /// Source Explorer window snapshots the `currentSourceNote*` sextet into local `@State` at that
+    /// moment and thereafter ignores background mutations (#369 BUG-8). Without this focus signal the
+    /// window binds the globals *live*, so a *second* document window's `loadDocument()` — which
+    /// rewrites the same globals — would flicker the open explorer to a different document's note
+    /// (or "No Document Selected"). Mirrors how `pendingNARALookup` is consumed once into local
+    /// state rather than read live.
+    var sourceNoteFocusID: UUID? = nil
+
     /// Cross-window hand-off into the Source Explorer window's **NARA Lookup** mode
     /// (UI audit B3): the selected document text a caller wants pre-filled as the
     /// catalog query.

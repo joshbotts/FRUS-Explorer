@@ -696,6 +696,10 @@ struct ResearchRailView: View {
             appState.currentSourceNoteDocumentId = entry.documentId
         }
         appState.bindTool(.sourceExplorer, to: documentHostID)
+        // #369 BUG-8: signal the Source Explorer window to snapshot the note NOW (fresh window via
+        // its `.task`; an already-open window via `.onChange(of: sourceNoteFocusID)`), so it stops
+        // binding the shared globals live and can't be flickered by another window's `loadDocument`.
+        appState.sourceNoteFocusID = UUID()
         openWindow(id: "frus.sourceExplorer")
         bringMacWindowToFront(id: "frus.sourceExplorer")
     }
