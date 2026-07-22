@@ -96,7 +96,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.chronology"`             | Window        | Chronology                                       |
 /// | `"frus.research"`               | Window        | Research — notes, tags, collections, highlights  |
 /// | `"frus.collections"`            | Window        | Collections — manage, edit, and export           |
-/// | `"frus.noteComposer"`           | Window        | Note composer                                    |
+/// | (`NoteComposerRequest`)         | WindowGroup   | Note composer — value-based, off the Window menu (#363) |
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | (`Settings`)                    | Settings      | Settings scene (`FRUSSettingsView`)              |
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
@@ -825,16 +825,30 @@ struct FRUSExplorerApp: App {
         //
         // Utility window for composing/editing a research note while the document
         // being annotated stays readable — the modal sheets this replaces covered
-        // the passage the user was writing about. Pending-state hand-off
-        // (`appState.pendingNoteComposer`), one composer at a time by design; a
-        // window restored at launch shows a neutral placeholder (no boot race —
-        // it renders nothing definitive without a hand-off).
-        Window(String(localized: "note.composer.window.title",
-                      defaultValue: "Research Note"),
-               id: "frus.noteComposer") {
-            NoteComposerWindowView()
-                .environment(appState)
-                .modelContainer(modelContainer)
+        // the passage the user was writing about. Value-based (#363): the restorable
+        // `NoteComposerRequest` fully describes the composer, so it no longer clutters the Window menu
+        // (a value-based `WindowGroup` isn't auto-listed the way a singleton `Window(id:)` is) and a
+        // relaunch-restored window rebuilds its editor instead of returning on a dead placeholder.
+        // Mirrors the Archival-Neighbors / Related-Documents value-based scenes.
+        WindowGroup(String(localized: "note.composer.window.title", defaultValue: "Research Note"),
+                    for: NoteComposerRequest.self) { $request in
+            Group {
+                if let request {
+                    NoteComposerWindowView(request: request)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "note.composer.empty.title",
+                               defaultValue: "No Note Being Composed"),
+                        systemImage: "note.text",
+                        description: Text(
+                            String(localized: "note.composer.empty.detail",
+                                   defaultValue: "Use “Add note” in a document's Research strip, or open a note from its Research panel.")
+                        )
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
         }
         .defaultSize(width: 560, height: 620)
 

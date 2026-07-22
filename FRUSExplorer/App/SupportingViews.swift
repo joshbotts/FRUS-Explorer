@@ -1801,7 +1801,11 @@ struct SourceExplorerWindowView: View {
     /// browse-by-collection list (Source Explorer Phase 4), or the live NARA
     /// Catalog lookup form (UI audit B3).
     private enum Mode: Hashable { case note, collections, naraLookup }
-    @State private var mode: Mode = .note
+    // #363: cold default is the standalone Collections browser, so opening this window with no active
+    // document (e.g. from the Window menu) shows a working view instead of the note segment's "No
+    // Document Selected" placeholder. The `.task`/`.onChange` handlers below override this default when
+    // there is context: a NARA hand-off → `.naraLookup`, a present/focused source note → `.note`.
+    @State private var mode: Mode = .collections
 
     /// The current NARA Lookup hand-off, wrapped for view identity: a fresh `UUID`
     /// per hand-off makes SwiftUI create a brand-new `NARACatalogLookupView`, so
@@ -1858,27 +1862,37 @@ struct SourceExplorerWindowView: View {
                     .id(naraLookupItem?.id)
             }
         }
-        // Consume a NARA Lookup hand-off: `.task` covers a window freshly created by
-        // the hand-off (`.onChange` misses a value that was already set), `.onChange`
-        // covers one already open — mirroring MacSearchWindowView's pendingSearch.
+        // The `.task` covers a window freshly created by a hand-off; `.onChange(of: sourceNoteFocusID)`
+        // covers one already open — mirroring MacSearchWindowView's pendingSearch. Presentation is
+        // decided in ONE place in each path (never two racing `.onChange` handlers both writing `mode`).
         .task {
-            consumePendingNARALookup()
+            // Presentation precedence on a freshly created window (#363): a NARA hand-off wins;
+            // otherwise a present source note shows the note segment; otherwise the cold default
+            // (`.collections`) stands — never the note segment's "No Document Selected" placeholder.
+            let consumedNARA = consumePendingNARALookup()
             snapshotSourceNote()
-        }
-        .onChange(of: appState.pendingNARALookup) { _, request in
-            guard request != nil else { return }
-            consumePendingNARALookup()
+            if !consumedNARA, noteSnapshot != nil { mode = .note }
         }
         // #369 BUG-8: re-snapshot the note when a deliberate Sources open bumps the focus id (covers
         // an already-open window; a freshly created one is covered by the `.task` above). Background
         // `loadDocument()` writes to `currentSourceNote*` do NOT bump this, so they no longer leak in.
+        //
+        // #363: this ONE handler also decides the mode, so a NARA hand-off and a note focus can't race
+        // two separate `.onChange` closures. The sole `pendingNARALookup` producer (lookUpSelectionInNARA)
+        // ALSO bumps this focus id, so a riding-along NARA hand-off is consumed here and wins over the
+        // note default; a deliberate Sources focus (openSources — no pending lookup) shows the note.
+        // (A hand-off to a *freshly created* window is instead covered by the `.task` above.)
         .onChange(of: appState.sourceNoteFocusID) { _, _ in
             snapshotSourceNote()
+            let consumedNARA = consumePendingNARALookup()
+            if !consumedNARA, noteSnapshot != nil { mode = .note }
         }
     }
 
     /// #369 BUG-8: copies the `currentSourceNote*` globals into `noteSnapshot` at focus time so the
-    /// note segment renders a stable snapshot rather than the live, shared globals.
+    /// note segment renders a stable snapshot rather than the live, shared globals. Pure data capture —
+    /// the `mode` (which segment is shown) is decided by the caller, because a NARA hand-off must win
+    /// over the note default (see the `.task` below) while a deliberate Sources focus must not (#363).
     private func snapshotSourceNote() {
         if let note = appState.currentSourceNote {
             noteSnapshot = SourceNoteSnapshot(
@@ -1896,11 +1910,15 @@ struct SourceExplorerWindowView: View {
 
     /// Applies (and clears) `AppState.pendingNARALookup`: switches to the NARA Lookup
     /// segment with a fresh lookup-view identity carrying the handed-off query text.
-    private func consumePendingNARALookup() {
-        guard let request = appState.pendingNARALookup else { return }
+    /// Returns `true` when a hand-off was consumed (so the caller can let the NARA
+    /// segment win over the note default — see the `.task` below).
+    @discardableResult
+    private func consumePendingNARALookup() -> Bool {
+        guard let request = appState.pendingNARALookup else { return false }
         appState.pendingNARALookup = nil
         naraLookupItem = NARACatalogLookupItem(text: request.text, blockContext: request.blockContext)
         mode = .naraLookup
+        return true
     }
 
     /// The pre-Phase-4 window content: the current document's parsed source note.

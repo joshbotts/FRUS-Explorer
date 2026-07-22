@@ -609,6 +609,11 @@ struct MacDocumentView: View {
         // document window's `loadDocument()` may have overwritten them — and stamp the focus id, so
         // if the user flips the segmented control to "Source Note" it shows THIS document rather than
         // whichever window loaded last. Mirrors `openSources()`; uses the same non-nil note value.
+        //
+        // #363 (load-bearing): the focus-id bump below is ALSO how an ALREADY-OPEN Source Explorer
+        // window learns to switch to the NARA Lookup segment — its `.onChange(of: sourceNoteFocusID)`
+        // consumes the pending lookup with precedence. Any future producer of `pendingNARALookup`
+        // must likewise bump `sourceNoteFocusID`, or an already-open window won't front the lookup.
         appState.currentSourceNoteYear       = Self.extractYear(from: entry.dateline)
         appState.currentSourceNoteHeader     = entry.header
         appState.currentSourceNoteDateline   = entry.dateline
@@ -705,14 +710,15 @@ struct MacDocumentView: View {
     /// composer window (UI audit C1) — the note is composed beside the document
     /// instead of in a sheet covering the passage being annotated.
     private func openNoteComposer(noteId: UUID? = nil, linkedHighlightId: UUID? = nil) {
-        appState.pendingNoteComposer = NoteComposerRequest(
+        // #363: value-based open — the request carries the full composer context, so the window
+        // rebuilds on restore and no longer needs a separate `pendingNoteComposer` hand-off. Opening
+        // for the same request focuses the existing composer; a distinct request opens a new one.
+        openWindow(value: NoteComposerRequest(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
             noteId: noteId,
             linkedHighlightId: linkedHighlightId
-        )
-        openWindow(id: "frus.noteComposer")
-        bringMacWindowToFront(id: "frus.noteComposer")
+        ))
     }
 
     // MARK: - Highlight Deletion

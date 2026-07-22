@@ -340,23 +340,36 @@ struct ResearchNoteEditorView: View {
 
 // MARK: - NoteComposerRequest
 
-/// Cross-window hand-off value for the macOS research-note composer window
+/// The window value for the macOS research-note composer window group
 /// (`frus.noteComposer`, UI audit C1): the document context a note is composed
 /// against, plus the optional existing note to edit or highlight to link.
 ///
-/// Carried through `AppState.pendingNoteComposer` (pending-state hand-off, not a
-/// value-based `WindowGroup`): note composition is deliberately **one window at a
-/// time** — a second hand-off retargets the open composer rather than spawning a
-/// second editor over the same SwiftData store. `handoffId` is fresh per hand-off
-/// so `NoteComposerWindowView` can re-key the editor (`.id`) even when the same
-/// document's composer is requested twice in a row.
+/// Carried as the value of a `WindowGroup(for: NoteComposerRequest.self)` and
+/// opened via `openWindow(value:)` (#363 — replaces the old
+/// `AppState.pendingNoteComposer` hand-off). Being value-based keeps the composer
+/// off the macOS Window menu and lets the window restore itself.
 ///
-/// Declared outside `#if os(macOS)` because `AppState.pendingNoteComposer` is a
-/// cross-platform property (always nil on iOS, which keeps its editor sheets).
+/// ## Identity (window reuse)
+/// All stored properties are identity fields, so SwiftUI reuses an existing
+/// composer window whenever an equal request is opened and mints a new one only
+/// for a genuinely different target — the same contract `DocumentWindowID` relies
+/// on. Concretely: opening the composer twice for the same document (or the same
+/// existing `noteId`, or the same `linkedHighlightId`) focuses the window already
+/// open rather than stacking a second editor over the same SwiftData store, while
+/// editing two *different* notes gives two side-by-side windows. There is
+/// deliberately **no** per-open nonce — a nonce would make every request unique
+/// and spawn a duplicate window on every "Add note" click.
+///
+/// Declared outside `#if os(macOS)` because it is referenced from cross-platform
+/// call sites; the window group itself is macOS-only (iOS keeps its editor sheets).
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-04 (macOS UI audit C1): initial implementation
-struct NoteComposerRequest: Equatable, Hashable, Sendable {
+///   1.1 — #363: migrated from `pendingNoteComposer` to value-based `WindowGroup`
+///         (`Codable`/`Hashable`); removes the composer from the Window menu.
+///         Identity is now the semantic target (no `handoffId` nonce), so the
+///         window is reused per target instead of duplicated per open.
+struct NoteComposerRequest: Codable, Equatable, Hashable, Sendable {
     /// The document the note is attached to.
     let documentId: String
     /// The volume containing `documentId`.
@@ -365,20 +378,16 @@ struct NoteComposerRequest: Equatable, Hashable, Sendable {
     let noteId: UUID?
     /// The `DocumentHighlight.id` a newly saved note should be linked back to, or `nil`.
     let linkedHighlightId: UUID?
-    /// Fresh per hand-off; keys the editor's view identity so `@State` repopulates.
-    let handoffId: UUID
 
-    /// Creates a request; `handoffId` defaults to a fresh UUID per hand-off.
+    /// Creates a request describing the composer's target.
     init(documentId: String,
          volumeId: String,
          noteId: UUID? = nil,
-         linkedHighlightId: UUID? = nil,
-         handoffId: UUID = UUID()) {
+         linkedHighlightId: UUID? = nil) {
         self.documentId = documentId
         self.volumeId = volumeId
         self.noteId = noteId
         self.linkedHighlightId = linkedHighlightId
-        self.handoffId = handoffId
     }
 }
 
@@ -389,61 +398,39 @@ struct NoteComposerRequest: Equatable, Hashable, Sendable {
 ///
 /// Hosts the unchanged `ResearchNoteEditorView` so a researcher can read the
 /// passage they are annotating while typing — the modal sheet this replaces
-/// covered the document. Consumes `AppState.pendingNoteComposer` via the
-/// `.task` + `.onChange` pattern (MacSearchWindowView precedent) and re-keys the
-/// editor with `.id(request.handoffId)` so each hand-off starts from the handed
-/// context. One composer at a time: a new hand-off replaces any in-progress
-/// draft, which is the deliberate trade for never stacking editor windows.
+/// covered the document. Driven by the value-based window's `request`
+/// (#363 — the scene is `WindowGroup(for: NoteComposerRequest.self)`; the
+/// request-less restored-window placeholder lives in the scene, so this view
+/// always has a concrete request). Each distinct request already gets its own
+/// window (and thus its own fresh editor), so no `.id`-rekeying is needed; a
+/// reused window keeps its in-progress draft for the same target.
 ///
-/// No indexing-pipeline boot guard is needed: the window only ever shows an
-/// editor after a hand-off (a window restored at launch has no pending request
-/// and shows the neutral placeholder, never a false empty state), and
-/// `ResearchNoteEditorView` tolerates a nil pipeline (the FTS5 push is skipped).
+/// No indexing-pipeline boot guard is needed: `ResearchNoteEditorView` tolerates
+/// a nil pipeline (the FTS5 push is skipped).
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-04 (macOS UI audit C1): initial implementation
+///   1.1 — #363: value-based window (`let request` in place of the
+///         `pendingNoteComposer` `.task`/`.onChange` consume).
 struct NoteComposerWindowView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
-    /// The consumed hand-off currently being composed, or `nil` (placeholder).
-    @State private var request: NoteComposerRequest? = nil
+    /// The request this value-based window presents (#363 — was an `AppState.pendingNoteComposer`
+    /// hand-off; the window is now `WindowGroup(for: NoteComposerRequest.self)`, so the placeholder for
+    /// a request-less restored window lives in the scene and this view always has a concrete request).
+    let request: NoteComposerRequest
 
     var body: some View {
-        Group {
-            if let request {
-                ResearchNoteEditorView(
-                    documentId: request.documentId,
-                    volumeId: request.volumeId,
-                    activeProjectId: appState.activeProjectId,
-                    noteToEdit: fetchNote(request.noteId),
-                    linkedHighlightId: request.linkedHighlightId,
-                    indexingPipeline: appState.indexingPipeline
-                )
-                .id(request.handoffId)
-            } else {
-                ContentUnavailableView(
-                    String(localized: "note.composer.empty.title",
-                           defaultValue: "No Note Being Composed"),
-                    systemImage: "note.text",
-                    description: Text(
-                        String(localized: "note.composer.empty.detail",
-                               defaultValue: "Use “Add note” in a document's Research strip, or open a note from its Research panel.")
-                    )
-                )
-            }
-        }
-        .task { consumePending() }
-        .onChange(of: appState.pendingNoteComposer) { _, _ in consumePending() }
-    }
-
-    /// Applies and clears `AppState.pendingNoteComposer`. Idempotent — safe under
-    /// the `.task` + `.onChange` double-fire on window creation.
-    private func consumePending() {
-        guard let pending = appState.pendingNoteComposer else { return }
-        request = pending
-        appState.pendingNoteComposer = nil
+        ResearchNoteEditorView(
+            documentId: request.documentId,
+            volumeId: request.volumeId,
+            activeProjectId: appState.activeProjectId,
+            noteToEdit: fetchNote(request.noteId),
+            linkedHighlightId: request.linkedHighlightId,
+            indexingPipeline: appState.indexingPipeline
+        )
     }
 
     /// Resolves an existing note id from the hand-off to its SwiftData model.
