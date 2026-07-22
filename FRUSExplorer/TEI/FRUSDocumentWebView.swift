@@ -186,6 +186,14 @@ public struct FRUSDocumentWebView: View {
     /// page load. Updated highlights are re-rendered without a full HTML reload.
     var highlights: [DocumentHighlight] = []
 
+    #if os(macOS)
+    /// Find-in-document controller (#363 #5). The macOS representable hands it the live
+    /// `WKWebView` so `WKWebView.find(_:configuration:)` can drive the find bar. `nil`
+    /// where find-in-document isn't wired (macOS has no native find bar; iOS uses
+    /// `isFindInteractionEnabled` instead, so this is macOS-only).
+    var findController: DocumentFindController? = nil
+    #endif
+
     // MARK: Environment
 
     @Environment(\.colorScheme) private var colorScheme
@@ -200,6 +208,7 @@ public struct FRUSDocumentWebView: View {
             colorScheme:        colorScheme,
             textSize:           textSize,
             highlights:         highlights,
+            findController:     findController,
             onPersonTap:        onPersonTap,
             onGlossTap:         onGlossTap,
             onCrossRefTap:      onCrossRefTap,
@@ -236,6 +245,15 @@ extension FRUSDocumentWebView {
     func highlights(_ newHighlights: [DocumentHighlight]) -> FRUSDocumentWebView {
         var copy = self; copy.highlights = newHighlights; return copy
     }
+
+    #if os(macOS)
+    /// Attaches the find-in-document controller (#363 #5) so ⌘F can drive
+    /// `WKWebView.find` on this document's web view. macOS-only — iOS uses the
+    /// web view's native `isFindInteractionEnabled`.
+    func findController(_ controller: DocumentFindController) -> FRUSDocumentWebView {
+        var copy = self; copy.findController = controller; return copy
+    }
+    #endif
 
     /// Registers a callback for when the user makes a text selection in the web view. The
     /// `SelectionPayload` carries the flat-text offsets, raw text, footnote `blockText`, and the
@@ -452,6 +470,8 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     let highlights:     [DocumentHighlight]
+    /// Find-in-document controller (#363 #5); receives the live `WKWebView` on creation.
+    var findController:     DocumentFindController?
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
     var onCrossRefTap:      ((String, String?) -> Void)?
@@ -477,6 +497,11 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.autoresizingMask   = [.width, .height]
         webView.setValue(false, forKey: "drawsBackground")
+        // Hand the live web view to the find controller (#363 #5). Deferred off the view-update
+        // pass so the controller's @Observable state isn't mutated mid-render.
+        if let findController {
+            Task { @MainActor in findController.webView = webView }
+        }
         return webView
     }
 
@@ -557,6 +582,10 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         webView.isOpaque                     = false
         webView.backgroundColor              = .clear
         webView.scrollView.backgroundColor   = .clear
+        // #363 #5: the native find interaction — a hardware-keyboard ⌘F (or the system edit
+        // menu) presents iOS/iPadOS's built-in find bar over the document. macOS has no
+        // equivalent, so it uses the custom `DocumentFindBar` instead.
+        webView.isFindInteractionEnabled = true
         return webView
     }
 

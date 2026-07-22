@@ -10,6 +10,7 @@
 
 import SwiftUI
 import SwiftData
+import WebKit
 
 /// Displays a single FRUS document in the main macOS window.
 ///
@@ -107,6 +108,11 @@ struct MacDocumentView: View {
     /// pushed instance is RETAINED for pop-back, so the bar is explicitly dismissed on
     /// `.onDisappear` to avoid a stale "zombie" bar re-appearing when the user navigates back.
     @State private var selectionBar = SelectionBarState()
+
+    /// Find-in-document controller (#363 #5) — owns the find bar's query/visibility and the
+    /// live web view for `WKWebView.find`. One per document surface (main window + each
+    /// standalone document window), so each searches its own document.
+    @State private var findController = DocumentFindController()
     /// Excerpt capture pending presentation in the bar's Excerpt flow (mirrors ResearchStripView's
     /// own picker state — C1 unifies the two).
     @State private var pendingExcerptCapture: CollectionExcerptCapture? = nil
@@ -424,6 +430,7 @@ struct MacDocumentView: View {
             .onDisappear {
                 selectionBar.hideNow()
                 hoveredNavEdge = nil
+                findController.hide()   // #363 #5: same pop-back zombie guard — don't resurface a stale find bar.
             }
         }
     }
@@ -492,6 +499,7 @@ struct MacDocumentView: View {
                 }
             )
             .highlights(highlights)
+            .findController(findController)   // #363 #5: ⌘F find-in-document
             .onSelectionChanged { selection in
                 if selection.hasOffsets {
                     highlightCoordinator.webKitSelectionRange = (selection.start, selection.end)
@@ -535,6 +543,13 @@ struct MacDocumentView: View {
             .overlay(alignment: .trailing) { edgeNavChevron(.trailing) }
             .overlay {
                 macFloatingSelectionBarOverlay
+            }
+            // #363 #5: the find bar pins to the top of the document when ⌘F is pressed.
+            .overlay(alignment: .top) {
+                if findController.isBarVisible {
+                    DocumentFindBar(controller: findController)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
 
             // Volume navigation bar — Research mode only (C5), and only side-by-side (`wide`). In the
@@ -704,7 +719,11 @@ struct MacDocumentView: View {
                 var id = DocumentWindowID(entry: entry)
                 id.header = vm.documentTitle ?? entry.header
                 openWindow(value: id)
-            }
+            },
+            canFindInDocument: true,   // #363 #5: available whenever a document is loaded
+            startFindInDocument: { findController.show() },
+            findNext: { findController.find(forward: true) },
+            findPrevious: { findController.find(forward: false) }
         )
     }
 
@@ -1272,6 +1291,164 @@ struct MacDocumentWindowView: View {
             if hostWindow?.isMiniaturized == true { hostWindow?.deminiaturize(nil) }
             openWindow(value: windowID)
         }
+    }
+}
+
+// MARK: - DocumentFindController (#363 #5)
+
+/// Drives find-in-document for a single macOS document web view (#363 #5).
+///
+/// macOS `WKWebView` has no native find bar (unlike iOS, where
+/// `isFindInteractionEnabled` provides one), so this controller pairs the SwiftUI
+/// ``DocumentFindBar`` with `WKWebView.find(_:configuration:)` — which selects and
+/// scrolls to each match, wrapping at the document ends. There are no per-match
+/// totals: WebKit's find API reports only whether the current search matched, so the
+/// bar shows a "Not found" state rather than a "1 of N" count.
+///
+/// One controller is owned per document surface by `MacDocumentView` (`@State`), so
+/// the main window and each standalone document window search their own document.
+/// The web-view representable hands the controller its live `WKWebView` on creation.
+///
+/// Version history:
+///   1.0 — #363 #5: initial implementation (⌘F Find in Document)
+@MainActor
+@Observable
+final class DocumentFindController {
+
+    /// The document's web view, handed over by the representable when it is created.
+    /// Weak so closing the window doesn't keep the view alive through the controller.
+    weak var webView: WKWebView?
+
+    /// Whether the find bar is shown over the document.
+    var isBarVisible = false
+
+    /// The current query text (bound to the bar's text field).
+    var query = ""
+
+    /// Whether the most recent search matched — drives the bar's "Not found" state.
+    /// Reset to `true` whenever the query is empty so an empty bar never reads
+    /// "Not found".
+    var matchFound = true
+
+    /// Bumped by ``show()`` so the bar re-focuses its field even when it is already
+    /// visible — pressing ⌘F again should return focus to the search field.
+    private(set) var focusToken = 0
+
+    /// Monotonic id of the most recently issued find. `WKWebView.find` is an async IPC
+    /// round-trip whose completions can arrive out of order under fast typing, so each
+    /// result is applied only if it is still the latest — otherwise a stale search's
+    /// found/not-found state could clobber the current query's (#363 #5).
+    private var findGeneration = 0
+
+    /// Creates an idle controller (no web view attached yet).
+    init() {}
+
+    /// Shows the find bar and (re)focuses its field.
+    func show() {
+        isBarVisible = true
+        focusToken &+= 1
+    }
+
+    /// Hides the find bar and drops the transient not-found state.
+    func hide() {
+        isBarVisible = false
+        matchFound = true
+    }
+
+    /// Runs a find in the given direction from the current selection, wrapping at the
+    /// document ends. A no-op (with a cleared not-found state) when the query is empty.
+    func find(forward: Bool) {
+        guard !query.isEmpty else {
+            matchFound = true
+            return
+        }
+        guard let webView else { return }
+        let configuration = WKFindConfiguration()
+        configuration.backwards = !forward
+        configuration.caseSensitive = false
+        configuration.wraps = true
+        let currentQuery = query
+        findGeneration &+= 1
+        let generation = findGeneration
+        Task { @MainActor in
+            // A find failure is non-fatal (e.g. the page reloaded mid-search) — treat it as no match.
+            let result = try? await webView.find(currentQuery, configuration: configuration)
+            // Ignore a result superseded by a newer find (fast typing → out-of-order completions).
+            guard generation == findGeneration else { return }
+            matchFound = result?.matchFound ?? false
+        }
+    }
+}
+
+// MARK: - DocumentFindBar (#363 #5)
+
+/// The macOS find-in-document bar (#363 #5) — a compact overlay pinned to the top of
+/// the document, shown when its ``DocumentFindController`` is visible.
+///
+/// Find-as-you-type drives `WKWebView.find`; Return / the ⌄ button find the next
+/// match, the ⌃ button finds the previous, and Escape / "Done" dismiss the bar.
+///
+/// Version history:
+///   1.0 — #363 #5: initial implementation
+struct DocumentFindBar: View {
+
+    /// The controller that owns the query, visibility, and match state.
+    @Bindable var controller: DocumentFindController
+
+    /// Focus for the search field, so the bar takes focus the moment it appears.
+    @FocusState private var fieldFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField(
+                String(localized: "document.find.field", defaultValue: "Find in Document"),
+                text: $controller.query
+            )
+            .textFieldStyle(.plain)
+            .focused($fieldFocused)
+            .frame(minWidth: 180)
+            .onSubmit { controller.find(forward: true) }
+            .onChange(of: controller.query) { _, _ in controller.find(forward: true) }
+
+            if !controller.matchFound, !controller.query.isEmpty {
+                Text(String(localized: "document.find.notFound", defaultValue: "Not found"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button { controller.find(forward: false) } label: {
+                Image(systemName: "chevron.up")
+            }
+            .buttonStyle(.borderless)
+            .disabled(controller.query.isEmpty)
+            .help(String(localized: "document.find.previous", defaultValue: "Find Previous"))
+
+            Button { controller.find(forward: true) } label: {
+                Image(systemName: "chevron.down")
+            }
+            .buttonStyle(.borderless)
+            .disabled(controller.query.isEmpty)
+            .help(String(localized: "document.find.next", defaultValue: "Find Next"))
+
+            Button(String(localized: "document.find.done", defaultValue: "Done")) {
+                controller.hide()
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
+        .shadow(radius: 4, y: 2)
+        .padding(10)
+        .onAppear { fieldFocused = true }
+        // Re-focus (⌘F while already open) — the controller bumps `focusToken`.
+        .onChange(of: controller.focusToken) { _, _ in fieldFocused = true }
+        // Escape dismisses the bar (standard find-bar behaviour).
+        .onExitCommand { controller.hide() }
     }
 }
 
