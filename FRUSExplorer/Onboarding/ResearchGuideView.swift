@@ -82,6 +82,25 @@ struct ResearchGuideView: View {
     }
 }
 
+#if os(macOS)
+/// The window value for the macOS FRUS Research Guide window group (#363 #7).
+///
+/// A deliberately **empty, always-equal** marker: the guide is a single standalone
+/// reference window, so every open resolves to the one window (SwiftUI reuses a
+/// value-based window when the presented value compares equal). Migrating the guide
+/// from a singleton `Window(id:)` to `WindowGroup(for: ResearchGuideWindowID.self)`
+/// takes it **off the macOS Window menu** (value-based groups aren't auto-listed);
+/// the guide stays reachable from **Help ▸ FRUS Research Guide**, Settings, and the
+/// contextual `ResearchGuideLinkButton`s. The requested topic is **not** carried in
+/// this value — it flows through `AppState.researchGuideInitialPageId`, which
+/// `ResearchGuideView.body` reads directly (and re-keys on), so both a fresh open
+/// and a deep-link into an already-open guide jump to the right page.
+///
+/// Version history:
+///   1.0 — #363 #7: initial implementation (value-based, off the Window menu)
+struct ResearchGuideWindowID: Codable, Hashable {}
+#endif
+
 // MARK: - ResearchGuideLinkButton
 
 /// Contextual entry point that opens the standalone Research Guide
@@ -124,7 +143,7 @@ struct ResearchGuideLinkButton: View {
             // — `ResearchGuideView` reads it on appearance.
             appState.researchGuideInitialPageId = pageId
             #if os(macOS)
-            openWindow(id: "frus.researchGuide")
+            openWindow(value: ResearchGuideWindowID())   // #363 #7: value-based guide window
             #else
             showGuide = true
             #endif
