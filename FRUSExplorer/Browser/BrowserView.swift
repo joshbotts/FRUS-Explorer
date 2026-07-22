@@ -167,16 +167,19 @@ struct BrowserView: View {
         // Search → Analytics handoff (a capped search offered to "Visualize in Corpus Analytics")
         // and the cross-view → Chronology handoff. Captured into local state before presenting, then
         // cleared on AppState so the observer doesn't refire on the next sheet dismissal.
-        .onChange(of: appState.pendingAnalytics) { _, params in
-            guard let params else { return }
+        // #338 step 3: consume the hand-off only when it is addressed to THIS window's scene, so a
+        // word cloud's / search's Analyze or Chronology hand-off no longer fans its sheet out to
+        // every open iPad window. `consumeHandoff` re-reads, target-checks, and clears in one step.
+        .onChange(of: appState.pendingAnalytics) { _, _ in
+            guard let sceneID,
+                  let params = appState.consumeHandoff(\.pendingAnalytics, for: sceneID) else { return }
             analyticsParameters = params
-            appState.pendingAnalytics = nil
             showAnalytics = true
         }
-        .onChange(of: appState.pendingChronology) { _, params in
-            guard let params else { return }
+        .onChange(of: appState.pendingChronology) { _, _ in
+            guard let sceneID,
+                  let params = appState.consumeHandoff(\.pendingChronology, for: sceneID) else { return }
             chronologyParameters = params
-            appState.pendingChronology = nil
             showChronology = true
         }
         .onAppear {

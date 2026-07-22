@@ -609,19 +609,19 @@ final class AppState {
     /// .searchHardLimit` and the user chooses to "Visualize in Corpus Analytics" —
     /// seeding the chart with the submitted keywords (and active date filter, if
     /// any) so they can see the distribution over time and pick a narrower range.
-    /// `MainTabView` (iOS sheet) and `MainWindowView`/`AnalyticsView` (macOS
-    /// `frus.analytics` window) observe this via `.onChange`, apply it, and clear
-    /// it — mirroring the `pendingSearch` pattern.
-    var pendingAnalytics: AnalyticsParameters? = nil
+    /// `BrowserView` (iOS sheet) and `AnalyticsView` (macOS `frus.analytics` window) observe this via
+    /// `.onChange` + drain and consume it through ``consumeHandoff(_:for:)`` — scene-addressed (#338
+    /// step 3) so on iPad multi-window only the producing window's Browse tab presents the chart.
+    var pendingAnalytics: Handoff<AnalyticsParameters>? = nil
 
     /// Cross-view handoff into the corpus Chronology browser.
     ///
     /// Set when another surface wants to open Chronology pre-seeded with a date range
     /// (e.g. a future "browse this range chronologically" affordance from Search or
-    /// Corpus Analytics). `BrowserTabView` (iOS sheet) and `ChronologyView` (macOS
-    /// `frus.chronology` window) observe this via `.onChange`, apply it, and clear it —
-    /// mirroring the `pendingSearch` / `pendingAnalytics` pattern.
-    var pendingChronology: ChronologyParameters? = nil
+    /// Corpus Analytics). `BrowserView` (iOS sheet) and `ChronologyView` (macOS `frus.chronology`
+    /// window) observe this via `.onChange` + drain and consume it through ``consumeHandoff(_:for:)``
+    /// — scene-addressed (#338 step 3) so on iPad multi-window only the producing window presents it.
+    var pendingChronology: Handoff<ChronologyParameters>? = nil
 
     /// Cross-view handoff into the Word Cloud analytics view.
     ///
@@ -1455,6 +1455,12 @@ struct SceneID: Hashable, Sendable {
     /// Fixed identity of the macOS singleton **word-cloud** window (`frus.wordcloud`, #338 step 2).
     /// macOS word-cloud hand-offs address this; iPad producers address their own minted per-scene id.
     static let macWordCloud = SceneID("frus.wordcloud")
+
+    /// Fixed identity of the macOS singleton **Corpus Analytics** window (`frus.analytics`, #338 step 3).
+    static let macAnalytics = SceneID("frus.analytics")
+
+    /// Fixed identity of the macOS singleton **Chronology** window (`frus.chronology`, #338 step 3).
+    static let macChronology = SceneID("frus.chronology")
 }
 
 /// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
@@ -1523,6 +1529,45 @@ extension AppState {
         }
         #endif
         pendingWordCloud = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"), payload: scope)
+        #endif
+    }
+
+    /// Opens Corpus Analytics with `params` as a scene-addressed hand-off (#338 step 3, replacing the
+    /// fan-out-prone `pendingAnalytics = params`). On iPad it addresses the producing window's own
+    /// `\.sceneID`, so only that window's Browse-tab observer presents the chart — no fan-out across
+    /// open windows; on macOS the singleton `frus.analytics` window (``SceneID/macAnalytics``).
+    /// Producers call this in place of the assignment; the surrounding open-window / tab-switch /
+    /// dismiss logic is unchanged. Pass the producer view's `@Environment(\.sceneID)` (nil on macOS,
+    /// where it is ignored).
+    func openAnalytics(_ params: AnalyticsParameters, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingAnalytics = Handoff(target: .macAnalytics, payload: params)
+        #else
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openAnalytics: \\.sceneID did not reach this producer (#338 step 3) — "
+                + "the chart won't present until this scene publishes a \\.sceneID.")
+        }
+        #endif
+        pendingAnalytics = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"), payload: params)
+        #endif
+    }
+
+    /// Opens the Chronology browser with `params` as a scene-addressed hand-off (#338 step 3),
+    /// mirroring ``openAnalytics(_:from:)``: iPad addresses the producing window's `\.sceneID` (only
+    /// its Browse-tab observer presents), macOS the singleton `frus.chronology` window
+    /// (``SceneID/macChronology``). Pass the producer view's `@Environment(\.sceneID)`.
+    func openChronology(_ params: ChronologyParameters, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingChronology = Handoff(target: .macChronology, payload: params)
+        #else
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openChronology: \\.sceneID did not reach this producer (#338 step 3) — "
+                + "Chronology won't present until this scene publishes a \\.sceneID.")
+        }
+        #endif
+        pendingChronology = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"), payload: params)
         #endif
     }
 }

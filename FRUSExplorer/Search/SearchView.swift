@@ -740,10 +740,13 @@ struct SearchView: View {
             startYear = cal.component(.year, from: vm.dateRangeStart)
             endYear   = cal.component(.year, from: vm.dateRangeEnd)
         }
-        appState.pendingAnalytics = AnalyticsParameters(
-            term: term,
-            yearRangeStart: startYear,
-            yearRangeEnd: endYear
+        appState.openAnalytics(
+            AnalyticsParameters(
+                term: term,
+                yearRangeStart: startYear,
+                yearRangeEnd: endYear
+            ),
+            from: sceneID
         )
         // #369 BUG-11: the analytics sheet is owned by BrowserView (Browse tab), so bring that tab
         // forward — otherwise, handed off from the Search tab, the sheet presents on a backgrounded

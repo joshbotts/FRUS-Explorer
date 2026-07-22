@@ -203,6 +203,10 @@ struct MainTabView: View {
         )) { handoff in
             WordCloudView(scope: handoff.payload)
                 .environment(appState)
+                // #338 step 3: publish THIS window's scene id into the word-cloud sheet so the
+                // in-cloud Analyze / Chronology producers address this window (a sheet doesn't
+                // reliably inherit `\.sceneID`).
+                .environment(\.sceneID, SceneID(sceneIDToken))
         }
     }
 

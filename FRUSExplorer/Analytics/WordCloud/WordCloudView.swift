@@ -95,6 +95,10 @@ struct WordCloudView: View {
     /// +/− prefixes to polarised words (cloud, list, legend, and image exports) so
     /// polarity is never conveyed by hue alone.
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    /// #338 step 3: the scene (window) this cloud renders in, so its Analyze / Chronology hand-offs
+    /// address the same window. Injected into the iOS word-cloud sheet by `MainTabView`; nil on macOS,
+    /// where the helper targets the singleton analytics / chronology windows.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -826,8 +830,9 @@ struct WordCloudView: View {
         } else {
             (volumeIds, label) = (nil, nil)
         }
-        appState.pendingAnalytics = AnalyticsParameters(
-            term: term, scopeVolumeIds: volumeIds, scopeLabel: label
+        appState.openAnalytics(
+            AnalyticsParameters(term: term, scopeVolumeIds: volumeIds, scopeLabel: label),
+            from: sceneID
         )
         #if DEBUG
         print("[WordCloudView] Handoff to Corpus Analytics — term: \"\(term)\", scope: \(label ?? "corpus"), volumes: \(volumeIds?.count ?? 0)")
@@ -985,9 +990,12 @@ struct WordCloudView: View {
     /// `.dateRange` scope.
     private func viewInChronology() {
         guard case let .dateRange(startISO, endISO) = scope else { return }
-        appState.pendingChronology = ChronologyParameters(
-            rangeStart: WordCloudScope.day(fromISO: startISO),
-            rangeEnd: WordCloudScope.day(fromISO: endISO)
+        appState.openChronology(
+            ChronologyParameters(
+                rangeStart: WordCloudScope.day(fromISO: startISO),
+                rangeEnd: WordCloudScope.day(fromISO: endISO)
+            ),
+            from: sceneID
         )
         #if DEBUG
         print("[WordCloudView] Handoff to Chronology — range: \(startISO)…\(endISO)")
