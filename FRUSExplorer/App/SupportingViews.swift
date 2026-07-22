@@ -1863,9 +1863,12 @@ struct SourceExplorerWindowView: View {
                     .id(naraLookupItem?.id)
             }
         }
-        // The `.task` covers a window freshly created by a hand-off; `.onChange(of: sourceNoteFocusID)`
-        // covers one already open — mirroring MacSearchWindowView's pendingSearch. Presentation is
-        // decided in ONE place in each path (never two racing `.onChange` handlers both writing `mode`).
+        // Presentation is driven by TWO DISJOINT signals, each with its own handler — deliberately
+        // not merged into one, because the earlier single-handler consolidation (#363) broke the
+        // already-open NARA path (a NARA hand-off arriving at a backgrounded window failed to switch
+        // segments). The producers never fire both signals at once (see below), so there is no race.
+        //
+        // Fresh window: `.task` runs once and applies the same precedence (NARA > note > collections).
         .task {
             // Presentation precedence on a freshly created window (#363): a NARA hand-off wins;
             // otherwise a present source note shows the note segment; otherwise the cold default
@@ -1874,19 +1877,23 @@ struct SourceExplorerWindowView: View {
             snapshotSourceNote()
             if !consumedNARA, noteSnapshot != nil { mode = .note }
         }
-        // #369 BUG-8: re-snapshot the note when a deliberate Sources open bumps the focus id (covers
-        // an already-open window; a freshly created one is covered by the `.task` above). Background
-        // `loadDocument()` writes to `currentSourceNote*` do NOT bump this, so they no longer leak in.
-        //
-        // #363: this ONE handler also decides the mode, so a NARA hand-off and a note focus can't race
-        // two separate `.onChange` closures. The sole `pendingNARALookup` producer (lookUpSelectionInNARA)
-        // ALSO bumps this focus id, so a riding-along NARA hand-off is consumed here and wins over the
-        // note default; a deliberate Sources focus (openSources — no pending lookup) shows the note.
-        // (A hand-off to a *freshly created* window is instead covered by the `.task` above.)
+        // NARA hand-off into an ALREADY-OPEN window (the reliable pre-#363 mechanism, restored). The
+        // sole producer (`lookUpSelectionInNARA`) sets `pendingNARALookup` and does NOT bump
+        // `sourceNoteFocusID`, so ONLY this handler fires for a NARA lookup — no race with the note
+        // handler below. Snapshot first so flipping the picker to "Source Note" shows THIS document.
+        .onChange(of: appState.pendingNARALookup) { _, request in
+            guard request != nil else { return }
+            snapshotSourceNote()
+            consumePendingNARALookup()   // → mode = .naraLookup
+        }
+        // #369 BUG-8: re-snapshot the note when a DELIBERATE Sources open bumps the focus id (covers an
+        // already-open window; a fresh one is covered by `.task`). Background `loadDocument()` writes to
+        // `currentSourceNote*` do NOT bump this, so they no longer leak in. `openSources` bumps the focus
+        // id with NO pending NARA, so this handler owns the note path; the `pendingNARALookup == nil`
+        // guard is belt-and-suspenders should a future producer ever set both (#363).
         .onChange(of: appState.sourceNoteFocusID) { _, _ in
             snapshotSourceNote()
-            let consumedNARA = consumePendingNARALookup()
-            if !consumedNARA, noteSnapshot != nil { mode = .note }
+            if appState.pendingNARALookup == nil, noteSnapshot != nil { mode = .note }
         }
     }
 
