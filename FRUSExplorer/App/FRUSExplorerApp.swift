@@ -100,7 +100,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// | `"frus.history"`                | Window        | Complete reading + search history, project filter|
 /// | (`Settings`)                    | Settings      | Settings scene (`FRUSSettingsView`)              |
 /// | `"about"`                       | Window        | About FRUS Explorer                              |
-/// | `"frus.researchGuide"`          | Window        | FRUS Research Guide                              |
+/// | (`ResearchGuideWindowID`)       | WindowGroup   | FRUS Research Guide — value-based, off the Window menu (#363) |
 ///
 /// Version history:
 ///   1.0 — Session 01: initial implementation
@@ -808,7 +808,8 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
         }
         .defaultSize(width: 760, height: 600)
-        .keyboardShortcut("r", modifiers: [.command, .option])
+        // #363 #2: ⌘⌥R now lives solely on the Research command menu (ResearchMenuContent) —
+        // it was previously declared here AND on the toolbar button, a duplicate key equivalent.
 
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {
@@ -819,7 +820,8 @@ struct FRUSExplorerApp: App {
         // Composer v2 (§B): wide enough for Contents (372) + live preview + the optional Document
         // inspector (320) on a 13-inch screen.
         .defaultSize(width: 1180, height: 760)
-        .keyboardShortcut("k", modifiers: [.command, .shift])
+        // #363 #2: ⌘⇧K now lives solely on the Research command menu (ResearchMenuContent) —
+        // it was previously declared here AND on the toolbar button, a duplicate key equivalent.
 
         // MARK: - Research Note Composer Window (UI audit C1)
         //
@@ -888,8 +890,14 @@ struct FRUSExplorerApp: App {
         // primer or jump straight to a specific topic (Source Explorer,
         // research strategies, etc. open it pre-scrolled to the relevant
         // page via `appState.researchGuideInitialPageId`).
-        Window(String(localized: "researchGuide.window.title", defaultValue: "FRUS Research Guide"),
-               id: "frus.researchGuide") {
+        //
+        // #363 #7: value-based (`WindowGroup(for: ResearchGuideWindowID.self)`) rather than a
+        // singleton `Window(id:)`, so the guide no longer clutters the macOS Window menu.
+        // `ResearchGuideWindowID` is an always-equal marker → one reused window; the requested
+        // topic still flows through `appState.researchGuideInitialPageId` (read by the view), not
+        // the window value, so a restored value-less window simply opens on the first page.
+        WindowGroup(String(localized: "researchGuide.window.title", defaultValue: "FRUS Research Guide"),
+                    for: ResearchGuideWindowID.self) { _ in
             ResearchGuideView()
                 .environment(appState)
                 // #258 Phase 4: the Series dashboards' scope bar hosts a @Query (custom
@@ -1062,7 +1070,7 @@ struct FRUSExplorerApp: App {
             CommandGroup(after: .help) {
                 Button(String(localized: "menu.researchGuide",
                               defaultValue: "FRUS Research Guide")) {
-                    openWindow(id: "frus.researchGuide")
+                    openWindow(value: ResearchGuideWindowID())   // #363 #7: value-based guide window
                 }
             }
 
@@ -1101,14 +1109,21 @@ struct FRUSExplorerApp: App {
                 CollectionMenuContent()
             }
 
-            // "History" menu — last ten documents visited and searches executed,
-            // plus a "Complete History…" item opening the combined, project-
-            // filterable HistoryWindowView (frus.history). appState/openWindow
-            // are passed as explicit init params (mirroring how the surrounding
-            // CommandGroup blocks capture them directly) rather than relying on
-            // @Environment propagation into .commands content.
-            CommandMenu(String(localized: "menu.history", defaultValue: "History")) {
-                HistoryMenuContent(appState: appState, openWindow: openWindow)
+            // "Analytics" menu (#363 #4) — the five analytics windows in the menu bar,
+            // no longer only reachable via the toolbar dropdown + the auto Window menu.
+            CommandMenu(String(localized: "menu.analytics", defaultValue: "Analytics")) {
+                AnalyticsMenuContent(appState: appState, openWindow: openWindow)
+            }
+
+            // "Research" menu (#363 #4) — the researcher's own-work windows (Research ⌘⌥R,
+            // Collections ⌘⇧K) with the former standalone History menu folded in as a
+            // submenu. This menu is the single owner of ⌘⌥R / ⌘⇧K (#363 #2 — the duplicate
+            // declarations on the window scenes and toolbar buttons were removed).
+            // `.modelContainer` feeds the embedded History submenu's @Query; appState/
+            // openWindow are explicit init params (mirroring the surrounding CommandGroup
+            // blocks) rather than relying on @Environment propagation into .commands.
+            CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
+                ResearchMenuContent(appState: appState, openWindow: openWindow)
                     .modelContainer(modelContainer)
             }
         }
@@ -2370,8 +2385,117 @@ struct CollectionMenuContent: View {
                       defaultValue: "Export Collection…")) {
             detail?.exportCollection()
         }
-        .keyboardShortcut("e", modifiers: .command)
+        // #363 #6a: ⌘⇧E, not plain ⌘E — ⌘E is macOS-conventionally "Use Selection for Find",
+        // and ⌘⇧E is the idiomatic Export binding. Frees ⌘E for text contexts.
+        .keyboardShortcut("e", modifiers: [.command, .shift])
         .disabled(detail?.canExport != true)
+    }
+}
+
+/// Content of the menu-bar **Analytics** menu (#363 #4).
+///
+/// Surfaces the five analytics windows — Corpus / Person / Cross-Reference
+/// analytics, Chronology, and Word Cloud — in a proper top-level menu, so they are
+/// reachable and discoverable from the menu bar rather than only via the main
+/// window's toolbar dropdown (which vanishes when the toolbar is hidden) and the
+/// cluttered auto Window menu. Mirrors the toolbar Analytics dropdown's actions.
+///
+/// Provenance: unlike the toolbar buttons (which bind the tool to their host
+/// window), a menu-bar command has no originating host, so each item **clears** the
+/// tool's binding (`bindTool(_, to: nil)`) rather than leaving a stale one in place.
+/// A cleared binding makes a later document-open resolve through the
+/// most-recently-key-host fallback (the same path an originless launch uses) — so
+/// the open lands in whatever window the researcher is actually looking at, not a
+/// window this analytics tool happened to be launched from earlier. Word Cloud
+/// opens on the whole corpus, matching the toolbar affordance.
+///
+/// Version history:
+///   1.0 — #363 #4: initial implementation
+struct AnalyticsMenuContent: View {
+
+    /// Shared app state — clears tool provenance and seeds the Word Cloud's corpus scope.
+    let appState: AppState
+    /// The scene's window opener.
+    let openWindow: OpenWindowAction
+
+    var body: some View {
+        Button(String(localized: "menu.analytics.corpus", defaultValue: "Corpus Analytics")) {
+            appState.bindTool(.analytics, to: nil)   // clear stale provenance → recency fallback
+            openWindow(id: "frus.analytics")
+            bringMacWindowToFront(id: "frus.analytics")
+        }
+        Button(String(localized: "menu.analytics.person", defaultValue: "Person Analytics")) {
+            appState.bindTool(.personAnalytics, to: nil)
+            openWindow(id: "frus.personAnalytics")
+            bringMacWindowToFront(id: "frus.personAnalytics")
+        }
+        Button(String(localized: "menu.analytics.crossRef", defaultValue: "Cross-Reference Analytics")) {
+            appState.bindTool(.crossRefAnalytics, to: nil)
+            openWindow(id: "frus.crossRefAnalytics")
+            bringMacWindowToFront(id: "frus.crossRefAnalytics")
+        }
+
+        Divider()
+
+        Button(String(localized: "menu.analytics.chronology", defaultValue: "Chronology")) {
+            appState.bindTool(.chronology, to: nil)
+            openWindow(id: "frus.chronology")
+            bringMacWindowToFront(id: "frus.chronology")
+        }
+        Button(String(localized: "menu.analytics.wordcloud", defaultValue: "Word Cloud")) {
+            appState.bindTool(.wordCloud, to: nil)
+            appState.openWordCloud(.corpus, from: nil)   // corpus scope, matching the toolbar affordance
+            openWindow(id: "frus.wordcloud")
+            bringMacWindowToFront(id: "frus.wordcloud")
+        }
+    }
+}
+
+/// Content of the menu-bar **Research** menu (#363 #4).
+///
+/// Groups the researcher's own-work windows — the Research window (notes, tags,
+/// collections, highlights; ⌘⌥R) and the Collections manager (⌘⇧K) — and folds the
+/// former standalone History menu in as a submenu, so the menu bar carries one
+/// "Research" menu instead of scattering these across the auto Window menu, the
+/// toolbar dropdown, and a separate History menu.
+///
+/// This menu is now the **single owner** of ⌘⌥R / ⌘⇧K (#363 #2): the duplicate
+/// declarations on the window scenes and the main-window toolbar buttons were
+/// removed, so the key equivalents resolve unambiguously here. As with
+/// `AnalyticsMenuContent`, the Research item **clears** its tool provenance
+/// (`bindTool(.research, to: nil)`) so a note/highlight's document opens in the
+/// most-recently-key window; Collections never routes document opens, so it needs
+/// no binding at all.
+///
+/// Version history:
+///   1.0 — #363 #4: initial implementation (also folds in History, #2 shortcut owner)
+struct ResearchMenuContent: View {
+
+    /// Shared app state — clears Research provenance and feeds the embedded History menu.
+    let appState: AppState
+    /// The scene's window opener.
+    let openWindow: OpenWindowAction
+
+    var body: some View {
+        Button(String(localized: "menu.research.research", defaultValue: "Research")) {
+            appState.bindTool(.research, to: nil)   // clear stale provenance → recency fallback
+            openWindow(id: "frus.research")
+            bringMacWindowToFront(id: "frus.research")
+        }
+        .keyboardShortcut("r", modifiers: [.command, .option])
+
+        // Collections never routes document opens — no provenance bind (mirrors the toolbar button).
+        Button(String(localized: "menu.research.collections", defaultValue: "Collections")) {
+            openWindow(id: "frus.collections")
+            bringMacWindowToFront(id: "frus.collections")
+        }
+        .keyboardShortcut("k", modifiers: [.command, .shift])
+
+        Divider()
+
+        Menu(String(localized: "menu.research.history", defaultValue: "History")) {
+            HistoryMenuContent(appState: appState, openWindow: openWindow)
+        }
     }
 }
 
