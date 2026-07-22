@@ -44,6 +44,8 @@ import SwiftData
 struct CustomScopesView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
@@ -116,7 +118,7 @@ struct CustomScopesView: View {
         let resolution = CustomScopeResolver.indexedResolution(
             memberVolumeIds: scope.volumeIds, indexed: appState.indexedVolumeIds)
         Button {
-            appState.pendingWordCloud = .customScope(id: scope.id)
+            appState.openWordCloud(.customScope(id: scope.id), from: sceneID)
         } label: {
             Label { Text(String(localized: "settings.scopes.row.wordCloud",
                                 defaultValue: "Word Cloud")) }

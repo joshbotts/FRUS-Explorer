@@ -31,6 +31,8 @@ import Charts
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.dismiss) private var dismiss
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
@@ -184,7 +186,7 @@ struct ChronologyView: View {
             startISO: WordCloudScope.isoDay(from: min(vm.rangeStart, vm.rangeEnd)),
             endISO: WordCloudScope.isoDay(from: max(vm.rangeStart, vm.rangeEnd))
         )
-        appState.pendingWordCloud = scope
+        appState.openWordCloud(scope, from: sceneID)
         #if os(macOS)
         // The word cloud inherits this Chronology window's provenance (transitive bind).
         appState.bindTool(.wordCloud, to: appState.provenance(of: .chronology))

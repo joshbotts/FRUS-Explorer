@@ -38,6 +38,8 @@ struct SavedSearchesView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     /// Opens the Word Cloud window directly for the row context-menu action (the
     /// MainWindowView relay is retired — provenance PR 2).
@@ -183,7 +185,7 @@ struct SavedSearchesView: View {
                 .buttonStyle(.plain)
                 .contextMenu {
                     Button {
-                        appState.pendingWordCloud = .savedSearch(id: search.id)
+                        appState.openWordCloud(.savedSearch(id: search.id), from: sceneID)
                         #if os(macOS)
                         // Direct open (the MainWindowView relay is retired — provenance
                         // PR 2). This sheet is presented from the Search window, so the

@@ -55,6 +55,8 @@ struct CollectionListView: View {
     var showDoneButton: Bool = true
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.modelContext) private var modelContext
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
@@ -262,7 +264,7 @@ struct CollectionListView: View {
                         }
                         Divider()
                         Button {
-                            appState.pendingWordCloud = .collection(id: collection.id)
+                            appState.openWordCloud(.collection(id: collection.id), from: sceneID)
                         } label: {
                             Label { Text(String(localized: "collection.wordCloud",
                                                 defaultValue: "Word Cloud")) }

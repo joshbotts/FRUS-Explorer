@@ -858,7 +858,7 @@ private struct SettingsScopesPane: View {
             // when nothing is indexed: the cloud reads indexed text, so a zero-indexed
             // scope could only ever render an empty cloud.
             Button {
-                appState.pendingWordCloud = .customScope(id: scope.id)
+                appState.openWordCloud(.customScope(id: scope.id), from: nil)   // #338: macOS singleton window
                 // Settings has no document-host provenance — clear the word cloud's binding so any
                 // document open it spawns resolves via the D3 recency fallback, not a stale host.
                 appState.bindTool(.wordCloud, to: nil)

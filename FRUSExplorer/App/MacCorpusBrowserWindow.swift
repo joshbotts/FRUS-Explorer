@@ -225,7 +225,7 @@ struct CorpusBrowserWindowView: View {
             }
             Spacer()
             Button {
-                appState.pendingWordCloud = .subseries(subseriesId: sub)
+                appState.openWordCloud(.subseries(subseriesId: sub), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
                 bringMacWindowToFront(id: "frus.wordcloud")
@@ -244,7 +244,7 @@ struct CorpusBrowserWindowView: View {
         }
         .contextMenu {
             Button {
-                appState.pendingWordCloud = .subseries(subseriesId: sub)
+                appState.openWordCloud(.subseries(subseriesId: sub), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334
                 bringMacWindowToFront(id: "frus.wordcloud")
@@ -366,7 +366,7 @@ private struct SubseriesVolumeListView: View {
             .accessibilityHint(String(localized: "corpus.volume.row.hint",
                                       defaultValue: "Opens the volume's contents"))
             Button {
-                appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+                appState.openWordCloud(.volume(volumeId: vol.volumeId), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334: open directly, not via MainWindowView's observer
                 bringMacWindowToFront(id: "frus.wordcloud")
@@ -407,7 +407,7 @@ private struct SubseriesVolumeListView: View {
         .padding(.vertical, 2)
         .contextMenu {
             Button {
-                appState.pendingWordCloud = .volume(volumeId: vol.volumeId)
+                appState.openWordCloud(.volume(volumeId: vol.volumeId), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.wordcloud")            // #334
                 bringMacWindowToFront(id: "frus.wordcloud")

@@ -249,7 +249,7 @@ struct MacCollectionManagerView: View {
                 collections: filteredCollections,
                 selectedId: $selectedId,
                 onWordCloud: {
-                    appState.pendingWordCloud = .collection(id: $0.id)
+                    appState.openWordCloud(.collection(id: $0.id), from: nil)   // #338: macOS singleton window
                     // The Collections manager has no document-host provenance — clear the word
                     // cloud's binding so a spawned document open resolves via the D3 recency
                     // fallback, not a stale host.

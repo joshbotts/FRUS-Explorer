@@ -78,6 +78,9 @@ struct SearchView: View {
     /// results list stays visible alongside; otherwise the document is pushed onto
     /// the search navigation stack as before.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// #338 step 2: this scene's identity, injected into the Saved Searches sheet so its Word Cloud
+    /// action addresses THIS window (a sheet doesn't reliably inherit `\.sceneID`).
+    @Environment(\.sceneID) private var sceneID
 
     /// Point size of the empty-prompt hero glyph, scaled with Dynamic Type
     /// relative to `.largeTitle` so it tracks the prompt text. Clamped via
@@ -195,6 +198,9 @@ struct SearchView: View {
                         Task { await vm.search() }
                     }
                     .modelContainer(modelContext.container)
+                    // #338 step 2: publish this window's scene id into the sheet so
+                    // SavedSearchesView's Word Cloud action targets THIS window (Finding 2).
+                    .environment(\.sceneID, sceneID)
                 }
                 .sheet(isPresented: $showCitationLookup) {
                     CitationLookupView()

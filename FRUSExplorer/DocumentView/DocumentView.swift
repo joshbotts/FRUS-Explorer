@@ -224,6 +224,8 @@ enum DocumentSheet: Identifiable {
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.modelContext) private var modelContext
 
     let entry: DocumentBrowserEntry
@@ -1037,6 +1039,10 @@ struct DocumentView: View {
                 activeSheet = .noteEditorForHighlight(highlightId)
             },
             onOpenTool: { tool in openRailTool(tool, vm: vm) })
+        // #338 step 2: the rail is presented via `.inspector` (iPad) / `.researchRail` sheet
+        // (iPhone) — neither reliably inherits `\.sceneID` (review Finding 1), so publish it
+        // explicitly here so the rail's Word Cloud tile addresses its hand-off to THIS window.
+        .environment(\.sceneID, sceneID)
     }
 
     /// Fulfils a rail tile/summary tap with `DocumentView`'s existing iOS presentation. Cite and
@@ -1055,8 +1061,8 @@ struct DocumentView: View {
             // word cloud would later ghost-present when the rail is dismissed). Set the hand-off
             // then dismiss the rail sheet — the same set-then-dismiss order `ChronologyView` uses.
             // On iPad the rail is the `.inspector` column (not a sheet), so nothing to dismiss.
-            appState.pendingWordCloud = .document(
-                volumeId: entry.volumeId, documentId: entry.documentId)
+            appState.openWordCloud(.document(
+                volumeId: entry.volumeId, documentId: entry.documentId), from: sceneID)
             if activeSheet?.id == "researchRail" { activeSheet = nil }
         case .sources:
             openSourceExplorer(vm: vm)
