@@ -606,21 +606,23 @@ struct MacDocumentView: View {
         highlightCoordinator.webKitSelectedBlockText = nil
         // #369 BUG-8: this NARA lookup ALSO opens the shared Source Explorer window (the other of
         // its two openers). Re-assert THIS window's document into the source-note globals — another
-        // document window's `loadDocument()` may have overwritten them — and stamp the focus id, so
-        // if the user flips the segmented control to "Source Note" it shows THIS document rather than
-        // whichever window loaded last. Mirrors `openSources()`; uses the same non-nil note value.
+        // document window's `loadDocument()` may have overwritten them — so if the user flips the
+        // segmented control to "Source Note" it shows THIS document rather than whichever window
+        // loaded last. Mirrors `openSources()`; uses the same non-nil note value.
         //
-        // #363 (load-bearing): the focus-id bump below is ALSO how an ALREADY-OPEN Source Explorer
-        // window learns to switch to the NARA Lookup segment — its `.onChange(of: sourceNoteFocusID)`
-        // consumes the pending lookup with precedence. Any future producer of `pendingNARALookup`
-        // must likewise bump `sourceNoteFocusID`, or an already-open window won't front the lookup.
+        // #363: do NOT bump `sourceNoteFocusID` here. The Source Explorer window learns to switch to
+        // the NARA Lookup segment from the `pendingNARALookup` hand-off itself (its
+        // `.onChange(of: pendingNARALookup)` snapshots the note THEN consumes the lookup). Bumping the
+        // focus id too would ALSO trip the window's note-focus handler, racing it back to Source Note
+        // (the bug that made an already-open lookup land on "Source Note"). Keeping the two signals
+        // disjoint — pendingNARALookup here, sourceNoteFocusID only in `openSources` — is what makes
+        // the segment switch deterministic.
         appState.currentSourceNoteYear       = Self.extractYear(from: entry.dateline)
         appState.currentSourceNoteHeader     = entry.header
         appState.currentSourceNoteDateline   = entry.dateline
         appState.currentSourceNoteVolumeId   = entry.volumeId
         appState.currentSourceNoteDocumentId = entry.documentId
         appState.currentSourceNote           = vm.sourceNote ?? entry.sourceNote ?? ""
-        appState.sourceNoteFocusID           = UUID()
         // A tool-window launch from a document host — stamp provenance (last-spawner-wins)
         // so the Source Explorer's related-document taps route back to THIS window.
         appState.bindTool(.sourceExplorer, to: documentHostID)

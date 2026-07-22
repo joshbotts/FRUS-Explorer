@@ -864,14 +864,19 @@ final class AppState {
     /// (UI audit B3): the selected document text a caller wants pre-filled as the
     /// catalog query.
     ///
-    /// Set by the ResearchStripView `onNARALookup` closures (`MainWindowView`,
-    /// `MacDocumentWindowView`) immediately before
-    /// `openWindow(id: "frus.sourceExplorer")`. `SourceExplorerWindowView` consumes
-    /// it (`.task` for a freshly created window, `.onChange` for one already open),
-    /// switches to the NARA Lookup segment with a fresh view identity so the query
-    /// field shows the new text, and clears it — mirroring the `pendingSearch` /
+    /// The **sole** producer is `MacDocumentView.lookUpSelectionInNARA` (the floating
+    /// selection bar's "Look up in NARA" action), which sets this immediately before
+    /// `openWindow(id: "frus.sourceExplorer")`. `SourceExplorerWindowView` consumes it
+    /// (`.task` for a freshly created window, `.onChange(of: pendingNARALookup)` for one
+    /// already open), switches to the NARA Lookup segment with a fresh view identity so
+    /// the query field shows the new text, and clears it — mirroring the `pendingSearch` /
     /// `pendingCollectionSelection` pattern. macOS-only in practice; iOS presents
     /// `NARACatalogLookupView` as a local sheet.
+    ///
+    /// #363: this producer deliberately does NOT also bump `sourceNoteFocusID` — keeping
+    /// the NARA and note-focus signals disjoint is what makes the Source Explorer segment
+    /// switch deterministic (a shared signal previously raced the note handler back to the
+    /// Source Note segment).
     var pendingNARALookup: NARALookupRequest? = nil
 
     // (#363) The research-note composer is now a value-based `WindowGroup(for: NoteComposerRequest.self)`
