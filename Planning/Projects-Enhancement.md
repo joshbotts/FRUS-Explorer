@@ -52,10 +52,11 @@ dashboard **window** (`frus.projectHome`), consistent with the app's window-per-
 model (Analytics, Collections, Search are all their own windows). Being its own window
 is what lets it sit **alongside** the main window (answering D2).
 
-- **macOS**: `Research ▸ Project Home` (proposed shortcut **⌘⌥J** — ⌘⌥P is taken by the
-  Collection menu's "Show Preview"; "J" is free and mnemonic-neutral) opens/fronts the
-  `frus.projectHome` window. Value-based on the active project id so it re-titles when
-  you switch projects.
+- **macOS**: `Research ▸ Project Home` (**⌘P** — the owner is not implementing document
+  printing, so plain ⌘P is free and is the natural "P for Project" mnemonic) opens/fronts
+  the `frus.projectHome` window. Value-based on the active project id so it re-titles when
+  you switch projects. *(Guard: since ⌘P conventionally means Print, add a `CommandGroup`
+  that replaces `.printItem` so no stray system Print item competes for ⌘P.)*
 - **iOS/iPadOS**: Project Home is the **landing screen of the Research tab** (the tab
   the Browse-toolbar project picker already routes to) — the dashboard on top, drilling
   into the existing notes/tags/collections/highlights browser below. No separate
@@ -113,12 +114,51 @@ Turn `ProjectContextView`'s link-only "Activity" section into a real per-project
 - Reuses `ProjectContextViewModel` / `GlobalContextViewModel` + `ResearchDocumentEntry`
   aggregation; no new persistence.
 
-### Phase 2 — Project-scoped search  *(effort M)*
-Beyond today's default pre-population, add a real **"Search within this project"** scope:
-restrict results to documents in the project's collections + documents the user has
-noted/visited in it. Reuses FTS5 + the tagged activity as a document-id allow-list
-(a post-filter over ranked results, or an FTS5 `IN (…)` gate). Surfaces as a scope
-chip in Search when a project is active.
+### Phase 2 — Project-scoped search: two modes for two research phases  *(effort M–L)*
+
+A Project has a **dual nature**, and search must honor both. Collapsing them into one
+"search within this project" scope (the engaged set) — as the first draft did — only
+serves the *retrospective* half and actively harms *discovery*. So Phase 2 ships **two
+distinct, clearly-labeled search modes**:
+
+#### Mode A — **Project Focus** (discovery / research-phase)  *— "What in the corpus fits this project that I haven't seen yet?"*
+A corpus-wide search **actively scoped by the project's research focus**, to surface
+**new, unengaged** material. It is NOT limited to what you've already touched. The focus
+parameters map cleanly onto the existing `SearchParameters` filters:
+- **Date range** → `SearchParameters.dateRange` (the project's `defaultDateRange`).
+- **Subjects → volumes** → `SearchParameters.volumeIds`. This is the payoff of reviving
+  `defaultSubjectTagIds` (owner decision #4): a project's subjects resolve, via the
+  **volume-subject profiles** (`Browser/VolumeSubjectProfiles`, `volumeId → [ranked
+  subjects]`), to the **set of volumes** whose profiles rank those subjects highly.
+  Because subject data is volume-grain today, discovery-by-subject is *volume-scoped*,
+  which is exactly what the `volumeIds` filter expresses. (When document-level tagging is
+  re-integrated later, this tightens from volume-scope to document-scope with no UI change.)
+- **"Only new to this project"** toggle → post-filters out the engaged doc-id set
+  (collections + noted + visited), so discovery emphasizes what you *haven't* seen.
+- The **research question** seeds suggested keywords (future: semantic ranking).
+
+Net: a project's focus becomes a **discovery lens over the whole corpus** — the
+research-phase filter the owner asked for, not a container of prior activity.
+
+#### Mode B — **Project History** (recall / later-phase)  *— "Where did I see that, in my working set?"*
+Restricts results to the project's **engaged documents** — its collections + noted +
+visited + tagged docs. Retrospective recall over what you've already gathered. Needs a
+document-id allow-list gate (a small `SearchParameters.documentIds: [String]?` addition,
+or an FTS5 `IN (…)`), assembled from the project's tagged records. (`SearchParameters`
+already has `projectId` + `userTagIds`, which cover the tag subset; collections/visits
+need the doc-id set.)
+
+#### Foundation (pulled forward from old Phase 4, because Mode A depends on it)
+Revive `defaultSubjectTagIds` against the **volume-subject-profile vocabulary** and add a
+resolver `project subjects → [volumeId]` (volumes whose profile ranks those subjects above
+a threshold). This one piece powers Mode A's discovery scope, the Phase-4 editor surfacing,
+and Phase 5's per-project volume scope. Country focus is **not** wired to discovery: there
+is no country filter in `SearchParameters` today (`defaultCountryTagIds` is vestigial in
+search) — leave it out of Mode A rather than fake it; revisit if a place filter ships.
+
+Surfaces as a **two-way scope control** in Search when a project is active (Focus /
+History / off), each clearly labeled so the researcher knows whether they're discovering
+or recalling.
 
 ### Phase 3 — Project on export & citation  *(effort S–M)*
 Carry the project (name + research question) into collection / research-data exports as
@@ -126,13 +166,14 @@ a provenance line/header (PDF/DOCX/HTML + the research-data JSON), so an exporte
 set self-documents what project it belongs to. Touches `Collections/*Exporter*` +
 `Export/ResearchDataExporter.swift`.
 
-### Phase 4 — Surfacing & defaults cleanup  *(effort S–M)*
+### Phase 4 — Surfacing & focus editing  *(effort S–M)*
 - Show the active project's research question subtly in the Browse/Search chrome
   ("Working on: …") so the lens is visible while reading.
-- Make project defaults easier to set from Project Home.
-- **Retire the dead `defaultSubjectTagIds` control** from `ProjectEditorView` +
-  `applyProjectDefaults` (keep the stored field for CloudKit stability; just stop
-  surfacing dead UI). Optionally re-point it at the live **volume-subject profiles**.
+- A **focus editor** in Project Home / `ProjectEditorView`: date range + **subjects**
+  (now live — picked from the volume-subject-profile vocabulary the Phase-2 foundation
+  established, owner decision #4) — the controls that drive Mode-A discovery. (Subject
+  focus stays *volume-grain* until document-level tagging is re-integrated, at which point
+  the same control gains document-grain precision — a later expansion, per owner note.)
 - Add the "second project created → open Project Home?" first-run nudge (D2.3).
 
 ### Phase 5 — Per-project default volume scope  *(optional; effort M)*
@@ -148,12 +189,22 @@ the #258 custom-scope work to the project lens.
 - **Docs pass** (Docs/ manuals + in-app ResearchGuide/IndexingEducation + README) closes
   the program once the shipped phases land.
 
-## 5. Open questions for the owner
-1. **Shortcut** for `Research ▸ Project Home` — proposed ⌘⌥J; confirm or pick another
-   (⌘⌥P is taken).
-2. **Phase order** after Phase 1 — default is 2 → 3 → 4 → (5). Reprioritize?
-3. **Phase 2 scope semantics** — "within this project" = the project's collections +
-   noted/visited documents. Include tagged-but-unvisited? (Recommend: collections +
-   any tagged/noted/visited doc.)
-4. **`defaultSubjectTagIds`** — retire the dead control (recommended), or revive it
-   against the live volume-subject profiles?
+## 5. Owner decisions (2026-07-22)
+1. **Project Home shortcut = ⌘P.** No document printing is planned, so ⌘P is free and is
+   the "P for Project" mnemonic. (Add a `.printItem` `CommandGroup` guard so no system
+   Print item claims ⌘P.)
+2. **Phase order confirmed:** 1 → 2 → 3 → 4 → (5).
+3. **Phase 2 = two modes** (see §3, Phase 2). The engaged-set scope is correct for
+   **Project History** (recall) but wrong for research-phase **discovery**; discovery is a
+   separate **Project Focus** mode — corpus-wide, scoped by the project's date range +
+   subjects→volumes, with an "only new" toggle. Both ship.
+4. **Revive `defaultSubjectTagIds`** against the **volume-subject profiles** (volume-grain
+   for now; expands to document-grain when document-level tagging is re-integrated). This
+   revival is the foundation Mode-A discovery depends on, so it's pulled into Phase 2.
+
+### Still to confirm
+- **Mode-A subject→volumes threshold**: how strongly must a volume's profile rank a
+  project subject to be included in the discovery scope (top-N per volume? a min score?)
+  — a tuning knob to settle during Phase 2 with real data.
+- **Mode-B doc-id gate**: add `SearchParameters.documentIds: [String]?` (clean, explicit)
+  vs. a post-filter over ranked results (no schema touch). Recommend the field.
