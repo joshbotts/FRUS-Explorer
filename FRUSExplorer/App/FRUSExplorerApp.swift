@@ -630,18 +630,19 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
         }
         .defaultSize(width: 820, height: 680)
-        .keyboardShortcut("f", modifiers: .command)
+        // #363 #5: Search's key equivalent is now ⌘S, owned by the Find command menu
+        // (FindMenuContent) — ⌘F was remapped to Find in Document. Removed from the scene so
+        // there is a single owner (mirrors the #2 duplicate-binding fix).
 
         // MARK: - Citation Lookup Window (UI audit B4)
         //
-        // The other "find a document" flow. Its sibling, full-text Search (⌘F), is a
-        // window — Citation Lookup was a modal sheet on the same mental model (the
-        // audit's gap 7). The scene owns ⌘⇧F exactly as frus.search owns ⌘F, which
-        // also lists it in the Window menu; the old CommandGroup item (which set the
-        // now-removed appState.showCitationLookup flag) is gone. Parsed matches stay
-        // around while the researcher reads documents; result taps open the document in
-        // its own window via DocumentWindowID (#239 — matching the Search window; the
-        // earlier in-window push used a constant navigationPath that broke prev/next).
+        // The other "find a document" flow. Its sibling, full-text Search, is a window —
+        // Citation Lookup was a modal sheet on the same mental model (the audit's gap 7).
+        // #363 #5: ⌘⇧F is now owned by the Find command menu (FindMenuContent), removed from
+        // this scene for a single owner. Parsed matches stay around while the researcher reads
+        // documents; result taps open the document in its own window via DocumentWindowID (#239 —
+        // matching the Search window; the earlier in-window push used a constant navigationPath
+        // that broke prev/next).
         Window(String(localized: "citationLookup.window.title", defaultValue: "Citation Lookup"),
                id: "frus.citationLookup") {
             CitationLookupWindowView()
@@ -649,7 +650,6 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
         }
         .defaultSize(width: 620, height: 560)
-        .keyboardShortcut("f", modifiers: [.command, .shift])
 
         // MARK: - Corpus Browser Window
         Window("Corpus Browser", id: "frus.corpusBrowser") {
@@ -1081,9 +1081,10 @@ struct FRUSExplorerApp: App {
             // only via the right-click Font submenu (ui-audit #2).
             TextFormattingCommands()
 
-            // Citation Lookup (⌘⇧F) is handled by the "frus.citationLookup" Window
-            // scene shortcut, exactly as Search (⌘F) is handled by "frus.search" —
-            // both find flows are windows with scene-owned shortcuts (UI audit B4).
+            // Search (⌘S), Citation Lookup (⌘⇧F), and Find in Document (⌘F) are all owned by the
+            // "Find" command menu below (#363 #5). The scene-level shortcuts on frus.search /
+            // frus.citationLookup were removed so the Find menu is the single owner (do NOT re-add
+            // a scene `.keyboardShortcut` — ⌘F now belongs to Find in Document, not Search).
 
             // "Document" menu (UI audit gap 6) — reading shortcuts for whichever
             // document surface is frontmost (the main window's pushed document or a
@@ -1096,6 +1097,13 @@ struct FRUSExplorerApp: App {
             // panel toggle) — no new behaviors.
             CommandMenu(String(localized: "menu.document", defaultValue: "Document")) {
                 DocumentMenuContent()
+            }
+
+            // "Find" menu (#363 #5) — the three finding flows: Find in Document (⌘F, in-page find
+            // on the key document's web view), Search (⌘S, full-text corpus), Citation Lookup (⌘⇧F).
+            // ⌘F was remapped off Search (which moves to ⌘S) so the document's own find bar owns it.
+            CommandMenu(String(localized: "menu.find", defaultValue: "Find")) {
+                FindMenuContent(openWindow: openWindow)
             }
 
             // "Collection" menu (UI audit gap 5) — collection-authoring commands,
@@ -2049,12 +2057,27 @@ struct DocumentCommandActions: Equatable {
     /// "Open Document in New Window" (replaces the retired research strip's New Window verb, C2.2).
     let openInNewWindow: @MainActor () -> Void
 
+    /// Whether find-in-document is available (a document is loaded in this window). Always
+    /// true when a `DocumentCommandActions` is published; part of the equality contract only
+    /// for symmetry (#363 #5).
+    let canFindInDocument: Bool
+
+    /// Shows this document's find bar and focuses it — the Find menu's "Find in Document" (⌘F).
+    let startFindInDocument: @MainActor () -> Void
+
+    /// Advances to the next match in this document — the Find menu's "Find Next" (⌘G).
+    let findNext: @MainActor () -> Void
+
+    /// Moves to the previous match in this document — the Find menu's "Find Previous" (⌘⇧G).
+    let findPrevious: @MainActor () -> Void
+
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.documentKey == rhs.documentKey
             && lhs.canGoPrevious == rhs.canGoPrevious
             && lhs.canGoNext == rhs.canGoNext
             && lhs.canHighlight == rhs.canHighlight
             && lhs.isResearchPanelVisible == rhs.isResearchPanelVisible
+            && lhs.canFindInDocument == rhs.canFindInDocument
     }
 }
 
@@ -2281,6 +2304,60 @@ struct DocumentMenuContent: View {
     }
 }
 
+// MARK: - Find Menu Content (#363 #5)
+
+/// Content of the menu-bar **Find** menu (#363 #5).
+///
+/// Groups the three "finding" flows: **Find in Document** (⌘F — the focused
+/// document's in-page find bar, driven through `\.documentCommands`, so it targets
+/// the key document window and is disabled when no document surface is key), plus
+/// **Find Next** (⌘G) / **Find Previous** (⌘⇧G); full-text **Search** (⌘S — moved
+/// off ⌘F, which Find in Document now owns; the app has no Save command, so ⌘S was
+/// free); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
+/// owners of their key equivalents (removed from the window scenes, mirroring #2).
+struct FindMenuContent: View {
+
+    /// The key document window's commands (nil ⇒ the find-in-document items are disabled).
+    @FocusedValue(\.documentCommands) private var document
+
+    /// The scene's window opener (for Search / Citation Lookup).
+    let openWindow: OpenWindowAction
+
+    var body: some View {
+        Button(String(localized: "menu.find.inDocument", defaultValue: "Find in Document…")) {
+            document?.startFindInDocument()
+        }
+        .keyboardShortcut("f", modifiers: .command)
+        .disabled(document == nil)
+
+        Button(String(localized: "menu.find.next", defaultValue: "Find Next")) {
+            document?.findNext()
+        }
+        .keyboardShortcut("g", modifiers: .command)
+        .disabled(document == nil)
+
+        Button(String(localized: "menu.find.previous", defaultValue: "Find Previous")) {
+            document?.findPrevious()
+        }
+        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .disabled(document == nil)
+
+        Divider()
+
+        Button(String(localized: "menu.find.search", defaultValue: "Search…")) {
+            openWindow(id: "frus.search")
+            bringMacWindowToFront(id: "frus.search")
+        }
+        .keyboardShortcut("s", modifiers: .command)
+
+        Button(String(localized: "menu.find.citationLookup", defaultValue: "Citation Lookup…")) {
+            openWindow(id: "frus.citationLookup")
+            bringMacWindowToFront(id: "frus.citationLookup")
+        }
+        .keyboardShortcut("f", modifiers: [.command, .shift])
+    }
+}
+
 // MARK: - Collection Menu Content
 
 /// Body of the "Collection" CommandMenu (UI audit gap 5).
@@ -2295,8 +2372,8 @@ struct DocumentMenuContent: View {
 ///   - ⌘⇧A add documents: moved from the detail pane's toolbar button (which
 ///     used to declare it) so the equivalent has exactly one menu-bar owner.
 ///   - ⌥⌘P preview: ⌘P is conventionally Print; ⌥⌘P is unclaimed here.
-///   - ⌘E export: free — the app declares no Find menu, so the system's
-///     "Use Selection for Find" (⌘E) has no item to collide with.
+///   - ⌘⇧E export (#363 #6a): moved off plain ⌘E, which is macOS-conventionally
+///     "Use Selection for Find"; ⌘⇧E is the idiomatic Export binding.
 struct CollectionMenuContent: View {
 
     /// The Collections window's selection-independent actions; nil disables

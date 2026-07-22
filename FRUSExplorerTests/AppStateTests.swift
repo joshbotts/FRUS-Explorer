@@ -503,7 +503,8 @@ struct CommandFocusedValueTests {
         canGoPrevious: Bool = true,
         canGoNext: Bool = true,
         canHighlight: Bool = false,
-        isResearchPanelVisible: Bool = true
+        isResearchPanelVisible: Bool = true,
+        canFindInDocument: Bool = true
     ) -> DocumentCommandActions {
         DocumentCommandActions(
             documentKey: documentKey,
@@ -513,7 +514,9 @@ struct CommandFocusedValueTests {
             isResearchPanelVisible: isResearchPanelVisible,
             goPrevious: {}, goNext: {}, addNote: {},
             highlightSelection: { _ in }, toggleResearchPanel: {},
-            openInNewWindow: {}
+            openInNewWindow: {},
+            canFindInDocument: canFindInDocument,
+            startFindInDocument: {}, findNext: {}, findPrevious: {}
         )
     }
 
@@ -550,7 +553,10 @@ struct CommandFocusedValueTests {
             addNote: { sideEffect += 1 },
             highlightSelection: { _ in sideEffect += 1 },
             toggleResearchPanel: { sideEffect += 1 },
-            openInNewWindow: { sideEffect += 1 }
+            openInNewWindow: { sideEffect += 1 },
+            canFindInDocument: true,
+            startFindInDocument: { sideEffect += 1 },
+            findNext: { sideEffect += 1 }, findPrevious: { sideEffect += 1 }
         )
         #expect(a == b)
         #expect(sideEffect == 0)
@@ -564,6 +570,7 @@ struct CommandFocusedValueTests {
         #expect(documentActions(canGoNext: false) != base)
         #expect(documentActions(canHighlight: true) != base)
         #expect(documentActions(isResearchPanelVisible: false) != base)
+        #expect(documentActions(canFindInDocument: false) != base)
     }
 
     @Test("CollectionDetailCommandActions: identical state compares equal across distinct closures")
