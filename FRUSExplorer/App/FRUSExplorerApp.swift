@@ -1151,7 +1151,7 @@ struct FRUSExplorerApp: App {
     @MainActor
     private func surfaceOpenedCollection(_ id: UUID) {
         #if os(iOS)
-        appState.pendingTab = .collections
+        appState.openTab(.collections, from: .anyWindow)
         #else
         appState.pendingCollectionSelection = id
         openWindow(id: "frus.collections")
@@ -1727,7 +1727,7 @@ struct FRUSExplorerApp: App {
         // #338 step 4: a deep link / Spotlight / Handoff continuation has no spawning window (the iOS
         // analogue of macOS `.global`), so address the wildcard — the first main window opens it.
         appState.openBrowseDocument(entry, from: .anyWindow)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: .anyWindow)
         #endif
     }
 

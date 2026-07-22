@@ -1164,7 +1164,7 @@ struct ChronologyView: View {
             earliest: fmt.string(from: cal.startOfDay(for: min(vm.rangeStart, vm.rangeEnd))),
             latest: fmt.string(from: cal.startOfDay(for: max(vm.rangeStart, vm.rangeEnd)))
         )
-        appState.pendingSearch = SearchParameters(dateRange: range)
+        appState.openSearch(SearchParameters(dateRange: range), from: sceneID)
         #if DEBUG
         print("[ChronologyView] Handoff to Search — dateRange: \(String(describing: range))")
         #endif
@@ -1175,7 +1175,7 @@ struct ChronologyView: View {
         openWindow(id: "frus.search")
         bringMacWindowToFront(id: "frus.search")
         #else
-        appState.pendingTab = .search
+        appState.openTab(.search, from: sceneID)
         dismiss()
         #endif
     }

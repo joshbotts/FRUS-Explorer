@@ -589,7 +589,7 @@ struct ResearchView: View {
         appState.openDocument(browsEntry, from: .tool(.research), using: openWindow)
         #else
         appState.openBrowseDocument(browsEntry, from: sceneID)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
     }
 

@@ -146,6 +146,10 @@ struct BrowserView: View {
                 // matches the SearchView convention and survives a future #241-program
                 // move of these views into their own window scenes.
                 .modelContainer(modelContext.container)
+                // #338 step 5: publish this window's scene id so AnalyticsView's "open in Search"
+                // hand-off targets THIS window (a sheet doesn't reliably inherit `\.sceneID`) —
+                // matching the sibling CrossRef-Analytics / Chronology sheets below.
+                .environment(\.sceneID, sceneID)
         }
         .sheet(isPresented: $showPersonAnalytics) {
             PersonAnalyticsView()
@@ -291,7 +295,7 @@ struct BrowserView: View {
                     // tabs, so only the project picker and download filter appear here.
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
-                            appState.pendingTab = .research
+                            appState.openTab(.research, from: sceneID)
                         }
                     }
                     ToolbarItem(placement: .primaryAction) {
@@ -344,7 +348,7 @@ struct BrowserView: View {
                     // Only the ProjectPickerMenu and download filter remain in the Browse toolbar.
                     ToolbarItem(placement: .primaryAction) {
                         ProjectPickerMenu {
-                            appState.pendingTab = .research
+                            appState.openTab(.research, from: sceneID)
                         }
                     }
                     ToolbarItem(placement: .primaryAction) {

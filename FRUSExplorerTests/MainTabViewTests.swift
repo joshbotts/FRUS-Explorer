@@ -50,17 +50,18 @@ struct MainTabViewTests {
     @Test("pendingTabConsumeOnce — the first consumer adopts, the channel clears, later consumers get nil")
     func pendingTabConsumeOnce() {
         let state = AppState()
+        let scene = SceneID("test.window")
         // No request → nothing to adopt.
-        #expect(state.consumePendingTab() == nil)
-        // A hand-off arrives; the FIRST consumer (a MainTabView drain) adopts it, and the
-        // adopt clears the channel in the same step.
-        state.pendingTab = .research
-        #expect(state.consumePendingTab() == .research)
+        #expect(state.consumePendingTab(for: scene) == nil)
+        // A hand-off addressed to this scene; the FIRST consumer (a MainTabView drain) adopts it,
+        // and the adopt clears the channel in the same step (#338 step 5 — scene-addressed).
+        state.pendingTab = Handoff(target: scene, payload: .research)
+        #expect(state.consumePendingTab(for: scene) == .research)
         #expect(state.pendingTab == nil)
         // A SECOND consumer — another iPad window's drain, or the post-clear onChange
-        // re-fire — gets nil and keeps its own selection (the #316 multi-window contract:
-        // exactly one window follows a hand-off; the rest never mirror).
-        #expect(state.consumePendingTab() == nil)
+        // re-fire — gets nil and keeps its own selection (exactly one window follows a hand-off;
+        // the rest never mirror).
+        #expect(state.consumePendingTab(for: scene) == nil)
     }
 
     @Test("seedActiveTabRoundTrip — seedActiveTab restores each persisted tab")
