@@ -383,7 +383,7 @@ struct RelatedDocumentsContent: View {
         appState.openDocument(entry, from: .tool(.relatedDocuments(request)), using: openWindow)
         #else
         appState.openBrowseDocument(entry, from: sceneID)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         onNavigate?()
     }

@@ -286,8 +286,10 @@ struct SearchView: View {
     /// applies the volume scope — surfaced as the dismissible `volumeScopeBanner`
     /// — and waits for the user to type a query that will be scoped to it.
     private func consumePendingSearch() {
-        guard let params = appState.pendingSearch else { return }
-        appState.pendingSearch = nil
+        // #338 step 5: consume only a search hand-off addressed to THIS window (or the `.anyWindow`
+        // wildcard), so the query runs in the window it was triggered from, coupled to the tab switch.
+        guard let sceneID,
+              let params = appState.consumeHandoff(\.pendingSearch, for: sceneID, orAnyWindow: true) else { return }
         vm.applyParameters(params)
         let canRun = !(params.keywords ?? "").isEmpty
             || !(params.phrase ?? "").isEmpty
@@ -755,7 +757,7 @@ struct SearchView: View {
         // tab and nothing appears to happen. Mirrors WordCloudView's analyze/chronology hand-offs.
         // `pendingTab` is iOS-only (macOS routes to windows), so guard it like the siblings do.
         #if os(iOS)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         #if DEBUG
         print("[SearchView] Over-cap handoff to Analytics — term: \"\(term)\", years: \(String(describing: startYear))–\(String(describing: endYear))")

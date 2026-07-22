@@ -494,7 +494,7 @@ struct ArchivalNeighborsContent: View {
         appState.openDocument(entry, from: source, using: openWindow)
         #else
         appState.openBrowseDocument(entry, from: sceneID)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         onNavigate?()
     }

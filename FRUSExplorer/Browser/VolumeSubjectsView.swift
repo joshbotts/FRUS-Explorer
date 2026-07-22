@@ -238,7 +238,7 @@ struct VolumeSubjectVolumesSheet: View {
         openWindow(id: "frus.corpusBrowser")
         bringMacWindowToFront(id: "frus.corpusBrowser")
         #else
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         dismiss()
         onNavigate?()

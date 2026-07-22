@@ -205,7 +205,7 @@ struct HistoryWindowView: View {
     /// the same hand-off mechanism used by saved searches and cross-references.
     /// The Search window inherits this History window's provenance (transitive bind).
     private func runSearch(_ entry: SearchHistoryEntry) {
-        appState.pendingSearch = SearchParameters(keywords: entry.queryText)
+        appState.openSearch(SearchParameters(keywords: entry.queryText), from: nil)
         appState.bindTool(.search, to: appState.provenance(of: .history))
         openWindow(id: "frus.search")
         bringMacWindowToFront(id: "frus.search")   // #369 BUG-9: match the eight sibling producers
@@ -296,7 +296,7 @@ struct HistoryMenuContent: View {
 
     /// Re-runs the search in the Search window via `AppState.pendingSearch`.
     private func runSearch(_ entry: SearchHistoryEntry) {
-        appState.pendingSearch = SearchParameters(keywords: entry.queryText)
+        appState.openSearch(SearchParameters(keywords: entry.queryText), from: nil)
         // The menu-bar History menu has no spawning window — clear the search binding so results
         // open via the D3 recency fallback (the window-hosted History runSearch binds `.history`).
         appState.bindTool(.search, to: nil)

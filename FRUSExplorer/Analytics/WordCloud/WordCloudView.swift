@@ -846,7 +846,7 @@ struct WordCloudView: View {
         #else
         // Corpus Analytics is presented from the Browse tab on iOS; bring it forward
         // so the analytics sheet (opened by `BrowserView` on `pendingAnalytics`) is visible.
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         dismiss()
     }
@@ -959,7 +959,7 @@ struct WordCloudView: View {
     /// Analytics → Search handoff. Still offered in the word context menu for users
     /// who want to jump straight to the documents rather than via Analytics.
     private func search(for term: String) {
-        appState.pendingSearch = SearchParameters(keywords: term)
+        appState.openSearch(SearchParameters(keywords: term), from: sceneID)
         #if DEBUG
         print("[WordCloudView] Handoff to Search — term: \"\(term)\"")
         #endif
@@ -973,7 +973,7 @@ struct WordCloudView: View {
         // #369 BUG-10: bring the Search tab forward on iOS. Without this the query runs invisibly on
         // the backgrounded Search tab and the user is dropped back on the word cloud's prior tab —
         // every sibling hand-off (Analyze/Chronology, :844) sets `pendingTab`; this one didn't.
-        appState.pendingTab = .search
+        appState.openTab(.search, from: sceneID)
         #endif
         dismiss()
     }
@@ -1008,7 +1008,7 @@ struct WordCloudView: View {
         #else
         // Chronology is presented from the Browse tab on iOS; surface it and dismiss
         // this sheet so `BrowserView` can present it on the `pendingChronology` change.
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         dismiss()
         #endif
     }

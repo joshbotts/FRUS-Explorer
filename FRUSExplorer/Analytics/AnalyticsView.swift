@@ -148,6 +148,7 @@ struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     #if os(macOS)
@@ -454,9 +455,9 @@ struct AnalyticsView: View {
             : nil
         // Carry the active volume scope through to Search so a Word Cloud → Analytics
         // → Search chain lands on the same documents the (scoped) chart visualised.
-        appState.pendingSearch = SearchParameters(
+        appState.openSearch(SearchParameters(
             keywords: committedTerm, dateRange: range, volumeIds: scopeVolumeIds
-        )
+        ), from: sceneID)
         #if DEBUG
         print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range)), scopeVolumes: \(scopeVolumeIds?.count ?? 0)")
         #endif
@@ -471,7 +472,7 @@ struct AnalyticsView: View {
     /// date-based.
     private func openScopedDocumentsInSearch(volumeIds: [String]) {
         guard !volumeIds.isEmpty else { return }
-        appState.pendingSearch = SearchParameters(keywords: committedTerm, volumeIds: volumeIds)
+        appState.openSearch(SearchParameters(keywords: committedTerm, volumeIds: volumeIds), from: sceneID)
         #if DEBUG
         print("[AnalyticsView] Scoped handoff to Search — term: \"\(committedTerm)\", volumes: \(volumeIds.count)")
         #endif
@@ -492,7 +493,7 @@ struct AnalyticsView: View {
         openWindow(id: "frus.search")
         bringMacWindowToFront(id: "frus.search")
         #else
-        appState.pendingTab = .search
+        appState.openTab(.search, from: sceneID)
         dismiss()
         #endif
     }

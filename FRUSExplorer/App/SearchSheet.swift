@@ -197,15 +197,13 @@ struct MacSearchWindowView: View {
             // `.onChange` only fires on subsequent value changes — it misses the
             // initial `pendingSearch` that was already set when the Window scene
             // created a fresh `MacSearchWindowView` instance.
-            if let params = appState.pendingSearch {
+            if let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) {
                 searchVM.applyParameters(params)
-                appState.pendingSearch = nil
             }
         }
-        .onChange(of: appState.pendingSearch) { _, params in
-            guard let params else { return }
+        .onChange(of: appState.pendingSearch) { _, _ in
+            guard let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) else { return }
             searchVM.applyParameters(params)
-            appState.pendingSearch = nil
         }
         .onChange(of: appState.indexGeneration) { _, _ in
             searchVM.results = []

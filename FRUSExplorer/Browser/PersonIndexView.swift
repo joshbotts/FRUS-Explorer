@@ -188,14 +188,14 @@ struct PersonIndexView: View {
     @ViewBuilder
     private func mentionsButton(for indexEntry: PersonIndexEntry) -> some View {
         Button {
-            appState.pendingSearch = SearchParameters(personRollupId: indexEntry.rollupId,
-                                                      personLabel: indexEntry.entry.name)
+            appState.openSearch(SearchParameters(personRollupId: indexEntry.rollupId,
+                                                      personLabel: indexEntry.entry.name), from: sceneID)
             #if os(macOS)
             appState.bindTool(.search, to: appState.provenance(of: .people))
             openWindow(id: "frus.search")
             bringMacWindowToFront(id: "frus.search")
             #else
-            appState.pendingTab = .search
+            appState.openTab(.search, from: sceneID)
             #endif
         } label: {
             Label(String(localized: "people.row.findMentions", defaultValue: "Find all mentions"),
@@ -603,8 +603,8 @@ struct PersonIndexDetailSheet: View {
 
                 Section {
                     Button {
-                        appState.pendingSearch = SearchParameters(personRollupId: effectiveRollupId,
-                                                                  personLabel: indexEntry.entry.name)
+                        appState.openSearch(SearchParameters(personRollupId: effectiveRollupId,
+                                                                  personLabel: indexEntry.entry.name), from: sceneID)
                         #if os(macOS)
                         // Direct open (the MainWindowView relay is retired — provenance
                         // PR 2), bound to the People window's own provenance.
@@ -612,7 +612,7 @@ struct PersonIndexDetailSheet: View {
                         openWindow(id: "frus.search")
                         bringMacWindowToFront(id: "frus.search")
                         #else
-                        appState.pendingTab = .search
+                        appState.openTab(.search, from: sceneID)
                         #endif
                         dismiss()
                     } label: {

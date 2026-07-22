@@ -245,11 +245,11 @@ struct MacDocumentView: View {
                     // window with the main window closed) and bound to THIS host, so result
                     // clicks come back to the window the user was reading in.
                     if let rollupId = vm.selectedPersonRollupId {
-                        appState.pendingSearch = SearchParameters(personRollupId: rollupId,
-                                                                  personLabel: person.name)
+                        appState.openSearch(SearchParameters(personRollupId: rollupId,
+                                                                  personLabel: person.name), from: nil)
                     } else {
-                        appState.pendingSearch = SearchParameters(personRef: person.ref,
-                                                                  personLabel: person.name)
+                        appState.openSearch(SearchParameters(personRef: person.ref,
+                                                                  personLabel: person.name), from: nil)
                     }
                     appState.bindTool(.search, to: documentHostID)
                     openWindow(id: "frus.search")

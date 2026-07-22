@@ -179,14 +179,14 @@ struct MainTabView: View {
         // so the hand-off's tab comes forward wherever the user is. Cleared so a later unrelated
         // change does not re-trigger it, and so a fresh window (nil) falls through to its seed.
         .onChange(of: appState.pendingTab) { _, _ in
-            if let pending = appState.consumePendingTab() { selectedTab = pending }
+            if let pending = appState.consumePendingTab(for: SceneID(sceneIDToken)) { selectedTab = pending }
         }
         // #316 — catch a request delivered during a cold launch (open-with, Spotlight, Handoff)
         // BEFORE this observer existed: `onChange` never fires for state set before the view
         // appeared, so drain any already-pending request here. A window opened later sees `nil`
         // (a prior window consumed it) and keeps its seeded tab.
         .onAppear {
-            if let pending = appState.consumePendingTab() { selectedTab = pending }
+            if let pending = appState.consumePendingTab(for: SceneID(sceneIDToken)) { selectedTab = pending }
             // #338 aux-window origin: publish this main window's scene as live, so an aux window
             // (Archival Neighbors / Related Documents) launched from here can hand a document back to
             // THIS window; removed on disappear so a closed window resolves to `.anyWindow` instead.
@@ -239,8 +239,8 @@ struct MainTabView: View {
                 metadata: meta,
                 volumeTitle: title,
                 onSearchVolume: { volumeId in
-                    appState.pendingSearch = SearchParameters(volumeIds: [volumeId])
-                    appState.pendingTab = .search
+                    appState.openSearch(SearchParameters(volumeIds: [volumeId]), from: SceneID(sceneIDToken))
+                    appState.openTab(.search, from: SceneID(sceneIDToken))
                     appState.completedIndexingMetadata = nil
                 },
                 onDismiss: {
@@ -265,8 +265,8 @@ struct MainTabView: View {
                 metadata: appState.lastDiscoveredMetadata,
                 volume: appState.manifestStore.entry(forVolumeId: update.volumeId),
                 onPersonSearch: { name in
-                    appState.pendingSearch = SearchParameters(keywords: name)
-                    appState.pendingTab = .search
+                    appState.openSearch(SearchParameters(keywords: name), from: SceneID(sceneIDToken))
+                    appState.openTab(.search, from: SceneID(sceneIDToken))
                 }
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))

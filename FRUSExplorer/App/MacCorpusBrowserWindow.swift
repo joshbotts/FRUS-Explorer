@@ -833,7 +833,7 @@ private struct CorpusVolumeDetailView: View {
                 // Open the Search window DIRECTLY (the MainWindowView relay is retired —
                 // provenance PR 2); it inherits this browser's provenance. The browser
                 // stays where it is (this view is pushed, not a sheet to dismiss).
-                appState.pendingSearch = SearchParameters(volumeIds: [volumeId])
+                appState.openSearch(SearchParameters(volumeIds: [volumeId]), from: nil)
                 appState.bindTool(.search, to: appState.provenance(of: .corpusBrowser))
                 openWindow(id: "frus.search")
                 bringMacWindowToFront(id: "frus.search")

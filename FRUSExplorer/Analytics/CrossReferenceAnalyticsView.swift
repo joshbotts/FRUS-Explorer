@@ -813,7 +813,7 @@ struct CrossReferenceAnalyticsView: View {
         appState.openDocument(entry, from: .tool(.crossRefAnalytics), using: openWindow)
         #else
         appState.openBrowseDocument(entry, from: sceneID)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         #if DEBUG
         print("[CrossReferenceAnalyticsView] Open document \(volumeId)/\(documentId)")
@@ -825,7 +825,7 @@ struct CrossReferenceAnalyticsView: View {
     private func openVolume(_ volumeId: String) {
         appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(iOS)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         #if DEBUG
         print("[CrossReferenceAnalyticsView] Open volume \(volumeId)")

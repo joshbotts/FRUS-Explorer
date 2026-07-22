@@ -599,9 +599,11 @@ final class AppState {
     /// used by `StorageManagementView` to report index disk usage.
     var indexDirectory: URL?
 
-    /// Set by `PersonDetailSheet` "Find all mentions" to trigger search pre-filled
-    /// with a `personRef` filter. `BrowserView` consumes this and clears it.
-    var pendingSearch: SearchParameters? = nil
+    /// Set by "Find all mentions", Corpus Analytics, indexing banners, … to open Search pre-filled.
+    /// Scene-addressed (#338 step 5): the iOS `SearchView` / macOS `SearchSheet` consume it through
+    /// ``consumeHandoff(_:for:)`` so the query runs in the producing window (paired with `openTab`),
+    /// fixing the BUG-6 nondeterministic winner + the tab/query decoupling.
+    var pendingSearch: Handoff<SearchParameters>? = nil
 
     /// Cross-view handoff from Search to Corpus Analytics (and vice versa).
     ///
@@ -1315,17 +1317,15 @@ final class AppState {
     /// propagate to another. `nil` means no pending request. `MainTabView` also drains a
     /// non-`nil` value on appear, so a request delivered during a cold launch (open-with,
     /// Spotlight) before any `onChange` observer exists is not dropped.
-    var pendingTab: AppTab? = nil
+    var pendingTab: Handoff<AppTab>? = nil
 
     /// Adopts and clears the consume-once tab hand-off (#316): returns the pending tab (the
     /// caller selects it) and nils the channel in the same step, so exactly one consumer ever
     /// adopts a given request — a second window (or the post-clear `onChange` re-fire) gets
     /// `nil` and keeps its own selection. Factored out of `MainTabView`'s `onChange`/`onAppear`
     /// drains so the adopt-then-clear contract is directly unit-testable.
-    func consumePendingTab() -> AppTab? {
-        guard let pending = pendingTab else { return nil }
-        pendingTab = nil
-        return pending
+    func consumePendingTab(for sceneID: SceneID) -> AppTab? {
+        consumeHandoff(\.pendingTab, for: sceneID, orAnyWindow: true)
     }
 
     /// The persisted last-selected tab (or `.browse`), used to seed a fresh window's per-scene
@@ -1498,6 +1498,10 @@ struct SceneID: Hashable, Sendable {
     /// first live `BrowserView` to observe it consumes-and-clears it, so the open lands in exactly ONE
     /// window (never fans out, never black-holes — c.f. the deliberately-absent broadcast target).
     static let anyWindow = SceneID("frus.anyWindow")
+
+    /// Fixed identity of the macOS singleton **Search** window (`frus.search`, #338 step 5). macOS
+    /// search hand-offs address this; iPad producers address their own scene.
+    static let macSearch = SceneID("frus.search")
 }
 
 /// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
@@ -1689,6 +1693,28 @@ extension AppState {
         pendingBrowseVolume = Handoff(target: sceneID ?? .anyWindow, payload: volumeId)
         #endif
     }
+
+    /// Opens Search with `params` as a scene-addressed hand-off (#338 step 5). On iPad it addresses the
+    /// producing window's own `\.sceneID` (so the SAME window switches to Search and runs the query — no
+    /// more decoupled winners; nil scene-less producers route to `.anyWindow` first-wins). On macOS it
+    /// targets the singleton `frus.search` window (`.macSearch`). On iOS, pair with `openTab(.search, from:)`.
+    func openSearch(_ params: SearchParameters, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingSearch = Handoff(target: .macSearch, payload: params)
+        #else
+        pendingSearch = Handoff(target: sceneID ?? .anyWindow, payload: params)
+        #endif
+    }
+
+    #if os(iOS)
+    /// Brings a tab forward as a scene-addressed hand-off (#338 step 5, folding the old shared
+    /// `pendingTab`). Addresses the producing window's `\.sceneID` (scene-less producers pass
+    /// `.anyWindow`), so the tab switch lands in the SAME window as its content hand-off — the two can
+    /// no longer split across windows (BUG-7). macOS has no tabs; it routes to windows instead.
+    func openTab(_ tab: AppTab, from sceneID: SceneID?) {
+        pendingTab = Handoff(target: sceneID ?? .anyWindow, payload: tab)
+    }
+    #endif
 }
 
 // MARK: - Scene identity environment

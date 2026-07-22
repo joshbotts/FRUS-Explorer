@@ -548,16 +548,16 @@ struct DocumentView: View {
                         // unrelated people across volumes, so it is only the fallback when the
                         // rollup isn't built yet (people-eval finding G).
                         if let rollupId = vm.selectedPersonRollupId {
-                            appState.pendingSearch = SearchParameters(personRollupId: rollupId,
-                                                                      personLabel: person.name)
+                            appState.openSearch(SearchParameters(personRollupId: rollupId,
+                                                                      personLabel: person.name), from: sceneID)
                         } else {
-                            appState.pendingSearch = SearchParameters(personRef: person.ref,
-                                                                      personLabel: person.name)
+                            appState.openSearch(SearchParameters(personRef: person.ref,
+                                                                      personLabel: person.name), from: sceneID)
                         }
                         #if os(iOS)
                         // Switch to the Search tab so the handoff is visible — without this the
                         // sheet dismissed and nothing happened (people-eval finding F).
-                        appState.pendingTab = .search
+                        appState.openTab(.search, from: sceneID)
                         #endif
                     }
                 )
@@ -941,7 +941,7 @@ struct DocumentView: View {
             sourceNote: nil
         )
         #if os(iOS)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         appState.openBrowseDocument(crossEntry, from: sceneID)
 
@@ -1461,7 +1461,7 @@ struct DocumentView: View {
     /// keeps behaviour predictable and consistent with existing in-document navigation.
     private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry) {
         #if os(iOS)
-        appState.pendingTab = .browse
+        appState.openTab(.browse, from: sceneID)
         #endif
         appState.openBrowseDocument(adjacent, from: sceneID)
         #if DEBUG
