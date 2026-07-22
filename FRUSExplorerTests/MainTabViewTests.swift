@@ -108,7 +108,7 @@ struct MainTabViewTests {
             dateline: nil,
             sourceNote: nil
         )
-        state.pendingBrowseDocument = entry
+        state.pendingBrowseDocument = Handoff(target: .anyWindow, payload: entry)
         #expect(state.pendingBrowseDocument != nil)
 
         // Simulate what BrowserView.onChange does: consume and clear.

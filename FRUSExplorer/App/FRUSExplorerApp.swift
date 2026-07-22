@@ -496,7 +496,10 @@ struct FRUSExplorerApp: App {
                                     documentId: did, volumeId: vid,
                                     documentNumber: nil, header: did, dateline: nil, sourceNote: nil
                                 )
-                                appState.pendingBrowseDocument = entry
+                                // #338 step 4: this Stage-Manager Source Explorer window publishes no
+                                // `\.sceneID`, so address the wildcard — the first main window's
+                                // BrowserView opens the document (one window, no fan-out).
+                                appState.openBrowseDocument(entry, from: .anyWindow)
                             },
                             documentHeader: request.documentHeader,
                             documentDateline: request.documentDateline,
@@ -1710,7 +1713,9 @@ struct FRUSExplorerApp: App {
             openWindow(value: DocumentWindowID(entry: orphan))
         }
         #else
-        appState.pendingBrowseDocument = entry
+        // #338 step 4: a deep link / Spotlight / Handoff continuation has no spawning window (the iOS
+        // analogue of macOS `.global`), so address the wildcard — the first main window opens it.
+        appState.openBrowseDocument(entry, from: .anyWindow)
         appState.pendingTab = .browse
         #endif
     }

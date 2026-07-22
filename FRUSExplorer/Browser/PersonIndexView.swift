@@ -38,6 +38,9 @@ import SwiftData
 struct PersonIndexView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 4: this window's scene, threaded into PersonIndexDetailSheet → its nested cross-volume
+    /// sheet, so a volume-open hand-off from a person's subject-affinity row targets THIS window.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     /// Opens the Search window directly for "Find all mentions" (the MainWindowView
     /// relay is retired — provenance PR 2).
@@ -158,6 +161,8 @@ struct PersonIndexView: View {
                                    onCorrection: {
                 Task { await loadPeople() }
             })
+            // #338 step 4: thread this window's scene into the detail sheet (and its nested sheets).
+            .environment(\.sceneID, sceneID)
         }
         .sheet(isPresented: $showCorrections) {
             PersonCorrectionsSheet(onChange: { Task { await loadPeople() } })
@@ -393,6 +398,9 @@ struct PersonIndexDetailSheet: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    /// #338 step 4: this window's scene (received from the presenter), re-injected into the nested
+    /// cross-volume sheet so its volume-open hand-off targets THIS window.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     /// Opens the Search window directly for "Find all mentions" (the MainWindowView
     /// relay is retired — provenance PR 2).
@@ -735,6 +743,7 @@ struct PersonIndexDetailSheet: View {
         .sheet(item: $selectedAffinitySubject) { subject in
             VolumeSubjectVolumesSheet(subject: subject, currentVolumeId: "",
                                       onNavigate: { dismiss() })
+                .environment(\.sceneID, sceneID)
         }
         .alert(
             String(localized: "people.detail.mergeConfirm.title", defaultValue: "Merge these identities?"),

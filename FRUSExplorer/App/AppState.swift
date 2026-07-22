@@ -651,7 +651,11 @@ final class AppState {
     /// in-flight `routedBrowse` whose target closed with no surviving host — the hosts'
     /// observers + `onAppear` drains (`routeLegacyPendingBrowse`) stay as its delivery
     /// mechanism, re-resolving the value when the next host mounts.
-    var pendingBrowseDocument: DocumentBrowserEntry? = nil
+    ///
+    /// Scene-addressed (#338 step 4): iOS producers target the producing window's `\.sceneID` (only
+    /// that window's `BrowserView` consumes), so a document hand-off no longer fans out across iPad
+    /// windows; the macOS demotion targets `.macLegacyBrowse`, which `routeLegacyPendingBrowse` drains.
+    var pendingBrowseDocument: Handoff<DocumentBrowserEntry>? = nil
 
     // MARK: Window routing — provenance model (macOS; Planning/Window-Routing-Provenance.md)
 
@@ -706,7 +710,7 @@ final class AppState {
                 routedBrowse = RoutedBrowse(host: survivor, entry: inFlight.entry)
             } else {
                 routedBrowse = nil
-                pendingBrowseDocument = inFlight.entry
+                pendingBrowseDocument = Handoff(target: .macLegacyBrowse, payload: inFlight.entry)
             }
         }
     }
@@ -773,8 +777,7 @@ final class AppState {
     /// exactly-once no matter how many hosts are open, and having every host run it means the
     /// translation survives even when any particular window is closed. No-op when nothing pending.
     func routeLegacyPendingBrowse(mintWindow: (DocumentBrowserEntry) -> Void) {
-        guard let entry = pendingBrowseDocument else { return }
-        pendingBrowseDocument = nil
+        guard let entry = consumeHandoff(\.pendingBrowseDocument, for: .macLegacyBrowse) else { return }
         openDocument(entry, from: .global, mintWindow: mintWindow)
     }
 
@@ -788,7 +791,10 @@ final class AppState {
     /// volume onto its detail path, and clears it. On iOS `BrowserView` consumes it
     /// via `.onChange` and appends the volume to the Browse tab's path — mirroring
     /// the `pendingBrowseDocument` pattern.
-    var pendingBrowseVolume: String? = nil
+    ///
+    /// Scene-addressed (#338 step 4): iOS producers target the producing window's `\.sceneID`; macOS
+    /// producers target `.macCorpusBrowser` (the singleton corpus-browser window).
+    var pendingBrowseVolume: Handoff<String>? = nil
 
     /// The document currently targeted by the Cross-Reference Graph window.
     ///
@@ -1461,6 +1467,23 @@ struct SceneID: Hashable, Sendable {
 
     /// Fixed identity of the macOS singleton **Chronology** window (`frus.chronology`, #338 step 3).
     static let macChronology = SceneID("frus.chronology")
+
+    /// Fixed identity of the macOS singleton **Corpus Browser** window (`frus.corpusBrowser`, #338
+    /// step 4) — the volume hand-off target on macOS.
+    static let macCorpusBrowser = SceneID("frus.corpusBrowser")
+
+    /// Target for a macOS **legacy document-browse** hand-off (#338 step 4). macOS document opens
+    /// route through the provenance model (`routedBrowse`); the only writer of `pendingBrowseDocument`
+    /// on macOS is `unregisterHost`'s demotion of an orphaned in-flight open, drained by every host
+    /// via `routeLegacyPendingBrowse`. This fixed target preserves that clear-first, exactly-once bridge.
+    static let macLegacyBrowse = SceneID("frus.legacyBrowse")
+
+    /// Wildcard target for a **scene-less** iPad open (#338 step 4) — a document reached from a deep
+    /// link / Spotlight / Handoff continuation (no spawning window by definition) or from an auxiliary
+    /// Stage-Manager window that publishes no `\.sceneID`. It is **first-wins, not a broadcast**: the
+    /// first live `BrowserView` to observe it consumes-and-clears it, so the open lands in exactly ONE
+    /// window (never fans out, never black-holes — c.f. the deliberately-absent broadcast target).
+    static let anyWindow = SceneID("frus.anyWindow")
 }
 
 /// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
@@ -1499,6 +1522,18 @@ extension AppState {
                            for sceneID: SceneID) -> P? {
         guard let handoff = self[keyPath: keyPath],
               handoff.target == sceneID else { return nil }
+        self[keyPath: keyPath] = nil
+        return handoff.payload
+    }
+
+    /// As ``consumeHandoff(_:for:)``, but also accepts a hand-off addressed to the wildcard
+    /// ``SceneID/anyWindow`` when `orAnyWindow` is true (#338 step 4). A scene-less open (deep link,
+    /// Spotlight, an aux window) targets `.anyWindow`; because this still clears on consume, the first
+    /// live scene to observe it wins and the open lands in exactly one window — never a fan-out.
+    func consumeHandoff<P>(_ keyPath: ReferenceWritableKeyPath<AppState, Handoff<P>?>,
+                           for sceneID: SceneID, orAnyWindow: Bool) -> P? {
+        guard let handoff = self[keyPath: keyPath],
+              handoff.target == sceneID || (orAnyWindow && handoff.target == .anyWindow) else { return nil }
         self[keyPath: keyPath] = nil
         return handoff.payload
     }
@@ -1568,6 +1603,50 @@ extension AppState {
         }
         #endif
         pendingChronology = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"), payload: params)
+        #endif
+    }
+
+    /// Opens a document in the browser as a scene-addressed hand-off (#338 step 4). On iPad it
+    /// addresses the producing window's own `\.sceneID`, so only that window's `BrowserView` appends
+    /// it — no fan-out across open windows. On macOS it targets `.macLegacyBrowse`, which every
+    /// document host drains through `routeLegacyPendingBrowse` (clear-first, exactly-once) into the
+    /// provenance router — i.e. the pre-existing legacy bridge, unchanged. Works uniformly whether a
+    /// producer is iOS-only or cross-platform; a macOS producer that already routes through
+    /// `openDocument(_:from:)` never calls this. Pass the producer view's `@Environment(\.sceneID)`.
+    func openBrowseDocument(_ entry: DocumentBrowserEntry, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingBrowseDocument = Handoff(target: .macLegacyBrowse, payload: entry)
+        #else
+        // A nil `sceneID` is EXPECTED, not a bug: the producer is scene-less — an aux Stage-Manager
+        // window (Archival Neighbors / Related Documents / the standalone Document window) or a deep
+        // link / Spotlight / Handoff continuation — none of which publish `\.sceneID`. Route those to
+        // the `.anyWindow` wildcard so the first live `BrowserView` opens the document (one window, no
+        // fan-out) rather than stranding it at a dead sentinel (#338 step-4 review Findings 1/2/3/5/6/7).
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openBrowseDocument: scene-less producer — routing to .anyWindow (#338 step 4).")
+        }
+        #endif
+        pendingBrowseDocument = Handoff(target: sceneID ?? .anyWindow, payload: entry)
+        #endif
+    }
+
+    /// Opens a volume in the browser as a scene-addressed hand-off (#338 step 4), the volume-grain
+    /// sibling of ``openBrowseDocument(_:from:)``: iPad addresses the producing window's `\.sceneID`
+    /// (only its `BrowserView` appends), macOS the singleton corpus-browser window (`.macCorpusBrowser`).
+    /// Pass the producer view's `@Environment(\.sceneID)`.
+    func openBrowseVolume(_ volumeId: String, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingBrowseVolume = Handoff(target: .macCorpusBrowser, payload: volumeId)
+        #else
+        // A nil `sceneID` routes to the `.anyWindow` wildcard (first-wins) rather than a dead sentinel,
+        // matching `openBrowseDocument` — defensive for any scene-less volume producer (#338 step 4).
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openBrowseVolume: scene-less producer — routing to .anyWindow (#338 step 4).")
+        }
+        #endif
+        pendingBrowseVolume = Handoff(target: sceneID ?? .anyWindow, payload: volumeId)
         #endif
     }
 }

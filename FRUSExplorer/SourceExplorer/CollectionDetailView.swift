@@ -49,6 +49,9 @@ struct CollectionDetailView: View {
     let record: AuthorityCollectionRecord
 
     @Environment(AppState.self) private var appState
+    /// #338 step 4: the scene this view renders in (nil inside the SourceExplorer aux window), so the
+    /// Archival-Neighbors sheet's open-document action targets a window — or `.anyWindow` if scene-less.
+    @Environment(\.sceneID) private var sceneID
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
@@ -105,6 +108,7 @@ struct CollectionDetailView: View {
                 await loadNeighbors(for: target, scopeVolumeIds: scopeVolumeIds)
             }
             .environment(appState)
+            .environment(\.sceneID, sceneID ?? .anyWindow)
         }
         #endif
         .task {

@@ -90,6 +90,10 @@ struct RelatedDocumentsContent: View {
     @Environment(\.openWindow) private var openWindow
     #endif
 
+    /// #338 step 4: the scene this list renders in (iOS sheet), so a row tap's open-document hand-off
+    /// addresses the presenting window. Injected at the sheet site; nil on macOS (uses `openDocument`).
+    @Environment(\.sceneID) private var sceneID
+
     @State private var weights: AxisWeights
     @State private var scope: NeighborScope
     @State private var rows: [RelatedDocumentRow] = []
@@ -378,7 +382,7 @@ struct RelatedDocumentsContent: View {
         #if os(macOS)
         appState.openDocument(entry, from: .tool(.relatedDocuments(request)), using: openWindow)
         #else
-        appState.pendingBrowseDocument = entry
+        appState.openBrowseDocument(entry, from: sceneID)
         appState.pendingTab = .browse
         #endif
         onNavigate?()

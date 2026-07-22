@@ -73,6 +73,9 @@ struct CompilationView: View {
     let section: VolumeSection
 
     @Environment(AppState.self) private var appState
+    /// #338 step 4: this window's scene, so the Archival-Neighbors sheets' open-document actions
+    /// target THIS window (a sheet doesn't reliably inherit `\.sceneID`).
+    @Environment(\.sceneID) private var sceneID
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
@@ -183,6 +186,7 @@ struct CompilationView: View {
         .sheet(item: $archivalNeighborsTarget) { key in
             ArchivalNeighborsSheet(appState: appState, docKey: key)
                 .environment(appState)
+                .environment(\.sceneID, sceneID)
         }
         // Presentation for the section-emitting front-matter subviews (sources/persons),
         // anchored HERE on the List — exactly once. Attaching these inside those views
@@ -208,6 +212,7 @@ struct CompilationView: View {
                 )) ?? ([], 0, nil)
             }
             .environment(appState)
+            .environment(\.sceneID, sceneID)
         }
         // Cross-Volume Provenance is iOS-only here too (B2): on macOS the row action
         // opens the value-based Cross-Volume Provenance window instead, so the
@@ -215,6 +220,7 @@ struct CompilationView: View {
         .sheet(item: $crossVolumeTarget) { target in
             VolumeSourcesCrossVolumeSheet(collectionTitle: target.title, volumeIds: target.volumeIds)
                 .environment(appState)
+                .environment(\.sceneID, sceneID)
         }
         #endif
         .sheet(item: $collectionDetailTarget) { record in
@@ -223,6 +229,7 @@ struct CompilationView: View {
         }
         .sheet(item: $selectedPerson) { entry in
             PersonIndexDetailSheet(indexEntry: entry)
+                .environment(\.sceneID, sceneID)
         }
     }
 

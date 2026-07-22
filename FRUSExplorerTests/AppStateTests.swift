@@ -214,7 +214,7 @@ struct AppStateTests {
         let state = AppState()
         let hostA = DocumentHostID.main(UUID())
         state.registerHost(hostA)
-        state.pendingBrowseDocument = entry("d2", "v2")
+        state.pendingBrowseDocument = Handoff(target: .macLegacyBrowse, payload: entry("d2", "v2"))
 
         state.routeLegacyPendingBrowse { _ in Issue.record("no mint: A is live") }
         let first = state.routedBrowse
@@ -247,13 +247,13 @@ struct AppStateTests {
         let state = AppState()
         let hostA = DocumentHostID.main(UUID())
         state.registerHost(hostA)
-        state.pendingBrowseDocument = entry("d3", "v3")
+        state.pendingBrowseDocument = Handoff(target: .macLegacyBrowse, payload: entry("d3", "v3"))
         state.routeLegacyPendingBrowse { _ in Issue.record("no mint: A is live") }
         #expect(state.routedBrowse?.host == hostA)
 
         state.unregisterHost(hostA)
         #expect(state.routedBrowse == nil)
-        #expect(state.pendingBrowseDocument?.documentId == "d3")
+        #expect(state.pendingBrowseDocument?.payload.documentId == "d3")
 
         // The next host to mount drains it (the onAppear discipline both hosts implement).
         let hostB = DocumentHostID.main(UUID())

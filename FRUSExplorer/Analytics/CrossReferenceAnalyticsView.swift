@@ -117,6 +117,9 @@ struct CrossReferenceAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    /// #338 step 4: the scene this view renders in on iOS (the Browse-tab sheet), so its document /
+    /// volume open hand-offs address the presenting window. Injected at the sheet site; nil on macOS.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     /// Mint tail for `AppState.openDocument` — when no document host is live, a document
     /// tap lands in a fresh standalone document window instead of being dropped.
@@ -809,7 +812,7 @@ struct CrossReferenceAnalyticsView: View {
         #if os(macOS)
         appState.openDocument(entry, from: .tool(.crossRefAnalytics), using: openWindow)
         #else
-        appState.pendingBrowseDocument = entry
+        appState.openBrowseDocument(entry, from: sceneID)
         appState.pendingTab = .browse
         #endif
         #if DEBUG
@@ -820,7 +823,7 @@ struct CrossReferenceAnalyticsView: View {
     /// Volume tap → open the browser to that volume (the `pendingBrowseVolume` deep-link,
     /// the volume-grain sibling used by Cross-Volume Provenance rows).
     private func openVolume(_ volumeId: String) {
-        appState.pendingBrowseVolume = volumeId
+        appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(iOS)
         appState.pendingTab = .browse
         #endif

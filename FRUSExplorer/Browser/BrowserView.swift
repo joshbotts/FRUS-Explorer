@@ -156,6 +156,9 @@ struct BrowserView: View {
             CrossReferenceAnalyticsView()
                 .environment(appState)
                 .modelContainer(modelContext.container)
+                // #338 step 4: publish this window's scene id so the analytics view's document /
+                // volume open actions target THIS window (a sheet doesn't reliably inherit it).
+                .environment(\.sceneID, sceneID)
         }
         .sheet(isPresented: $showChronology) {
             ChronologyView(initialParameters: chronologyParameters)
@@ -447,8 +450,12 @@ struct BrowserView: View {
     /// successful adopt — a nil view model leaves the value pending for the drain that runs once
     /// bootstrap completes (previously the optional-chained append silently dropped it).
     private func consumePendingBrowseDocument() {
-        guard let entry = appState.pendingBrowseDocument, let vm = viewModel else { return }
-        appState.pendingBrowseDocument = nil
+        // #338 step 4: consume only a hand-off addressed to THIS window's scene, so a document open
+        // no longer fans out to every iPad window. The `vm` check precedes the consume (short-circuit),
+        // so a not-yet-bootstrapped window leaves the hand-off pending for the onAppear drain.
+        guard let sceneID, let vm = viewModel,
+              let entry = appState.consumeHandoff(\.pendingBrowseDocument, for: sceneID,
+                                                  orAnyWindow: true) else { return }
         vm.navigationPath.append(.document(entry))
         #if DEBUG
         print("[BrowserView] pendingBrowseDocument consumed: \(entry.volumeId)/\(entry.documentId)")
@@ -457,8 +464,10 @@ struct BrowserView: View {
 
     /// Volume-grain sibling of `consumePendingBrowseDocument` — same adopt-then-clear contract.
     private func consumePendingBrowseVolume() {
-        guard let volumeId = appState.pendingBrowseVolume, let vm = viewModel else { return }
-        appState.pendingBrowseVolume = nil
+        // #338 step 4: scene-addressed twin of consumePendingBrowseDocument (same vm-before-consume order).
+        guard let sceneID, let vm = viewModel,
+              let volumeId = appState.consumeHandoff(\.pendingBrowseVolume, for: sceneID,
+                                                     orAnyWindow: true) else { return }
         guard let entry = appState.manifestStore.entry(forVolumeId: volumeId) else { return }
         vm.navigationPath.append(.volume(entry))
         #if DEBUG
