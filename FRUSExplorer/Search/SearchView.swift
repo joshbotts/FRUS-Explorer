@@ -64,6 +64,11 @@ import SwiftData
 ///   1.14 — Dynamic Type review 2026-07-04: glyph cap enforced in code via
 ///          `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
 ///          on a `.system(size:)` font).
+///   1.15 — 2026-07-22: reversed the 1.12 Stage-Manager default per owner request —
+///          a result tap now opens the document IN THIS window (push), keeping the
+///          search context one back-swipe away; opening in a separate document window
+///          (the 1.12 behaviour, so the results list stays visible) is demoted to the
+///          row context menu's "Open in New Window". iPhone unchanged (always pushed).
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -833,19 +838,11 @@ struct SearchView: View {
     /// Manager on iPad) the document opens in its own window — the results list
     /// stays visible alongside, so the user can open several documents from one
     /// list in turn. Per-document window identity means reopening the same document
-    /// focuses its existing window while a different document opens a new one.
-    /// Everywhere else the document is pushed onto the search navigation stack.
+    /// Opens a tapped result IN THIS window by pushing it onto the search navigation stack, so the
+    /// document opens where the search is and the results list is one back-swipe away. "Open in New
+    /// Window" (the row context menu, Stage Manager) is the explicit alternative that opens a separate
+    /// document window so the results list stays visible alongside.
     private func openResult(_ entry: DocumentBrowserEntry) {
-        #if os(iOS)
-        if supportsMultipleWindows {
-            appState.openAuxWindow(DocumentWindowID(
-                volumeId: entry.volumeId,
-                documentId: entry.documentId,
-                header: entry.header
-            ), from: sceneID, using: openWindow)
-            return
-        }
-        #endif
         vm.navigationPath.append(entry)
     }
 
@@ -883,8 +880,9 @@ struct SearchView: View {
                     }
                 }
                 #if os(iOS)
-                // When multi-window is available the row opens a window by default;
-                // offer the in-place reader (push) as an explicit alternative.
+                // The row opens the document IN THIS window by default (push); on Stage Manager, offer
+                // "Open in New Window" as the explicit alternative that keeps the results list visible
+                // alongside while several documents are opened in turn.
                 .contextMenu {
                     if vm.checklistMode {
                         Button {
@@ -898,12 +896,16 @@ struct SearchView: View {
                     }
                     if supportsMultipleWindows {
                         Button {
-                            vm.navigationPath.append(vm.makeEntry(from: result))
+                            appState.openAuxWindow(DocumentWindowID(
+                                volumeId: result.volumeId,
+                                documentId: result.documentId,
+                                header: result.header
+                            ), from: sceneID, using: openWindow)
                         } label: {
                             Label(
-                                String(localized: "search.result.openInPlace",
-                                       defaultValue: "Open in Place"),
-                                systemImage: "rectangle.portrait"
+                                String(localized: "search.result.openInNewWindow",
+                                       defaultValue: "Open in New Window"),
+                                systemImage: "rectangle.badge.plus"
                             )
                         }
                     }
