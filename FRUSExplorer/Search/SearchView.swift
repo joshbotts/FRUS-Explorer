@@ -208,6 +208,8 @@ struct SearchView: View {
                 .sheet(item: $archivalNeighborsTarget) { key in
                     ArchivalNeighborsSheet(appState: appState, docKey: key)
                         .environment(appState)
+                        // #338 step 4: address THIS window for the sheet's open-document action.
+                        .environment(\.sceneID, sceneID)
                 }
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)

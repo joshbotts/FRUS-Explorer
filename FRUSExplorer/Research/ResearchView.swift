@@ -588,7 +588,7 @@ struct ResearchView: View {
         #if os(macOS)
         appState.openDocument(browsEntry, from: .tool(.research), using: openWindow)
         #else
-        appState.pendingBrowseDocument = browsEntry
+        appState.openBrowseDocument(browsEntry, from: sceneID)
         appState.pendingTab = .browse
         #endif
     }

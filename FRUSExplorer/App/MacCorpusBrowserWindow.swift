@@ -195,8 +195,12 @@ struct CorpusBrowserWindowView: View {
     /// subseries selection has to change, the push is deferred through
     /// `pendingVolumePush` so the selection observer's path reset doesn't wipe it.
     private func consumePendingVolume() {
-        guard let volumeId = appState.pendingBrowseVolume,
-              let entry = allEntries.first(where: { $0.volumeId == volumeId }) else { return }
+        // #338 step 4: the field is now a scene-addressed Handoff. This singleton window is the sole
+        // macOS target (`.macCorpusBrowser`), so the target-check always matches here; the clear is
+        // still deferred until the volume entry is resolved (unchanged retry-if-not-found behaviour).
+        guard let handoff = appState.pendingBrowseVolume, handoff.target == .macCorpusBrowser else { return }
+        let volumeId = handoff.payload
+        guard let entry = allEntries.first(where: { $0.volumeId == volumeId }) else { return }
         appState.pendingBrowseVolume = nil
         if selectedSubseries == entry.subseries {
             detailPath = [.volume(volumeId: volumeId)]

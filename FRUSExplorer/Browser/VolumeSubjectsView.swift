@@ -31,6 +31,10 @@ struct VolumeSubjectsChips: View {
     /// The volume whose profile is shown.
     let volume: VolumeManifestEntry
 
+    /// #338 step 4: this window's scene, injected into the cross-volume sheet so its volume-open
+    /// hand-off targets THIS window.
+    @Environment(\.sceneID) private var sceneID
+
     /// The subject whose cross-volume sheet is open, or `nil`.
     @State private var selectedSubject: VolumeSubjectProfiles.ResolvedSubject?
 
@@ -76,6 +80,7 @@ struct VolumeSubjectsChips: View {
         }
         .sheet(item: $selectedSubject) { subject in
             VolumeSubjectVolumesSheet(subject: subject, currentVolumeId: volume.volumeId)
+                .environment(\.sceneID, sceneID)
         }
     }
 
@@ -130,6 +135,9 @@ struct VolumeSubjectVolumesSheet: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    /// #338 step 4: the scene this sheet renders in, so a volume-row tap's hand-off addresses the
+    /// presenting window. Injected by each presenter (incl. the nested PersonIndex path); nil on macOS.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -225,7 +233,7 @@ struct VolumeSubjectVolumesSheet: View {
     /// macOS), mirroring `CrossVolumeProvenanceContent.open`, then lets any presenting
     /// context dismiss itself via `onNavigate`.
     private func open(_ volumeId: String) {
-        appState.pendingBrowseVolume = volumeId
+        appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(macOS)
         openWindow(id: "frus.corpusBrowser")
         bringMacWindowToFront(id: "frus.corpusBrowser")

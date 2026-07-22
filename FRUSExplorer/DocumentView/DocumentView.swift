@@ -642,6 +642,9 @@ struct DocumentView: View {
                     .presentationDetents([.medium])
             case .relatedDocuments(let request):
                 RelatedDocumentsSheet(appState: appState, request: request)
+                    // #338 step 4: publish this window's scene id so RelatedDocuments' open-document
+                    // action targets THIS window (a sheet doesn't reliably inherit `\.sceneID`).
+                    .environment(\.sceneID, sceneID)
             case .researchRail:
                 // iPhone bottom-sheet rail (iPad uses the trailing .inspector). medium/large detents
                 // + a visible drag indicator (owner decision D2 / plan §5). Swipe-dismiss writes
@@ -940,7 +943,7 @@ struct DocumentView: View {
         #if os(iOS)
         appState.pendingTab = .browse
         #endif
-        appState.pendingBrowseDocument = crossEntry
+        appState.openBrowseDocument(crossEntry, from: sceneID)
 
         #if DEBUG
         print("[DocumentView] Cross-ref tap → \(volumeId)/\(documentId)")
@@ -1460,7 +1463,7 @@ struct DocumentView: View {
         #if os(iOS)
         appState.pendingTab = .browse
         #endif
-        appState.pendingBrowseDocument = adjacent
+        appState.openBrowseDocument(adjacent, from: sceneID)
         #if DEBUG
         print("[DocumentView] Edge-tap page-turn → \(adjacent.volumeId)/\(adjacent.documentId)")
         #endif

@@ -100,6 +100,9 @@ private enum CompactGraphContent {
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 4: the scene this graph renders in (nil in the iPad aux Graph window), so its Archival
+    /// Neighbors sheet's open-document action targets a window — or `.anyWindow` when scene-less.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
@@ -247,6 +250,7 @@ struct CrossReferenceGraphView: View {
         .sheet(item: $archivalNeighborsTarget) { target in
             ArchivalNeighborsSheet(appState: appState, docKey: target)
                 .environment(appState)
+                .environment(\.sceneID, sceneID ?? .anyWindow)
         }
         #endif
     }

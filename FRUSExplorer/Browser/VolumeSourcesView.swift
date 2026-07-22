@@ -687,6 +687,9 @@ struct CrossVolumeProvenanceContent: View {
     var onNavigate: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
+    /// #338 step 4: the scene this sheet renders in (iOS), so a volume-row tap's hand-off addresses
+    /// the presenting window. Injected at the sheet site; nil on macOS (targets the singleton window).
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     /// Opens the Corpus Browser window for a tapped volume row.
     @Environment(\.openWindow) private var openWindow
@@ -728,7 +731,7 @@ struct CrossVolumeProvenanceContent: View {
     /// Navigates to the tapped volume (Browse tab on iOS; the Corpus Browser window on
     /// macOS, via the `pendingBrowseVolume` hand-off both consume).
     private func open(_ volumeId: String) {
-        appState.pendingBrowseVolume = volumeId
+        appState.openBrowseVolume(volumeId, from: sceneID)
         #if os(macOS)
         openWindow(id: "frus.corpusBrowser")
         bringMacWindowToFront(id: "frus.corpusBrowser")

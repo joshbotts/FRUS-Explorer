@@ -256,6 +256,11 @@ struct ArchivalNeighborsContent: View {
     @Environment(\.openWindow) private var openWindow
     #endif
 
+    /// #338 step 4: the scene this sheet renders in on iOS, so a row tap's open-document hand-off
+    /// addresses the presenting window. Injected at each of the sheet's presentation sites; nil on
+    /// macOS (the row tap routes through `openDocument`).
+    @Environment(\.sceneID) private var sceneID
+
     @State private var docs: [IndexingPipeline.RelatedDocument] = []
     @State private var totalCount = 0
     @State private var isLoading = true
@@ -488,7 +493,7 @@ struct ArchivalNeighborsContent: View {
             originRequest.map { .tool(.archivalNeighbors($0)) } ?? .global
         appState.openDocument(entry, from: source, using: openWindow)
         #else
-        appState.pendingBrowseDocument = entry
+        appState.openBrowseDocument(entry, from: sceneID)
         appState.pendingTab = .browse
         #endif
         onNavigate?()
