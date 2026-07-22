@@ -213,10 +213,10 @@ struct ResearchRailView: View {
             // iPhone (single window) — `supportsMultipleWindows` is false there.
             if supportsMultipleWindows {
                 Button {
-                    openWindow(value: DocumentWindowID(
+                    appState.openAuxWindow(DocumentWindowID(
                         volumeId: entry.volumeId,
                         documentId: entry.documentId,
-                        header: vm.documentTitle ?? entry.header))
+                        header: vm.documentTitle ?? entry.header), from: sceneID, using: openWindow)
                 } label: {
                     Image(systemName: "rectangle.badge.plus")
                         .font(.system(size: 13))

@@ -1705,3 +1705,32 @@ extension EnvironmentValues {
         set { self[SceneIDEnvironmentKey.self] = newValue }
     }
 }
+
+#if os(iOS)
+/// #338 aux-window origin: drains the launching window's scene from the transient `AppState` hand-off
+/// once on appear and re-publishes it as this auxiliary window's `\.sceneID` (resolved live, else
+/// `.anyWindow`). Applied to an aux `WindowGroup`'s content root, it makes origin flow TRANSITIVELY:
+/// a document opened here — or a further aux window launched here — routes back to the originating
+/// main window. Captured ONCE: a same-request `openWindow(value:)` refocus keeps the first origin
+/// (a live window, no black-hole; #338 review, accepted).
+struct AuxWindowOriginModifier: ViewModifier {
+    let appState: AppState
+    @State private var originRaw: String? = nil
+    @State private var didCapture = false
+    func body(content: Content) -> some View {
+        content
+            .environment(\.sceneID, appState.resolveOriginScene(originRaw))
+            .onAppear {
+                guard !didCapture else { return }
+                didCapture = true
+                originRaw = appState.pendingAuxWindowOriginRaw
+                appState.pendingAuxWindowOriginRaw = nil
+            }
+    }
+}
+
+extension View {
+    /// Applies ``AuxWindowOriginModifier`` — see it for the origin-propagation contract.
+    func auxWindowOrigin(_ appState: AppState) -> some View { modifier(AuxWindowOriginModifier(appState: appState)) }
+}
+#endif

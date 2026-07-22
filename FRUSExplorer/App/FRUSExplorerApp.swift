@@ -473,6 +473,9 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            // #338 aux-window origin: republish the launching window's scene so this document window's
+            // rail producers (cross-ref, edge-tap, word cloud) route back to it, not `.anyWindow`.
+            .auxWindowOrigin(appState)
         }
         .defaultSize(width: 820, height: 680)
 
@@ -496,9 +499,11 @@ struct FRUSExplorerApp: App {
                                     documentId: did, volumeId: vid,
                                     documentNumber: nil, header: did, dateline: nil, sourceNote: nil
                                 )
-                                // #338 step 4: this Stage-Manager Source Explorer window publishes no
-                                // `\.sceneID`, so address the wildcard — the first main window's
-                                // BrowserView opens the document (one window, no fan-out).
+                                // The Source Explorer window republishes its launching scene via
+                                // `.auxWindowOrigin` (#338), but this inline related-docs tap is a plain
+                                // closure — not a View — so it can't read `\.sceneID`; it addresses the
+                                // `.anyWindow` wildcard (one window, no fan-out). The dedicated Archival
+                                // Neighbors WINDOW reached from here routes to the origin (it reads `\.sceneID`).
                                 appState.openBrowseDocument(entry, from: .anyWindow)
                             },
                             documentHeader: request.documentHeader,
@@ -521,6 +526,9 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            // #338 aux-window origin: republish the launching window's scene so nested launchers here
+            // (Archival Neighbors) route documents back to it, not `.anyWindow`.
+            .auxWindowOrigin(appState)
         }
         .defaultSize(width: 700, height: 560)
 
@@ -567,6 +575,9 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            // #338 aux-window origin: republish the launching window's scene so the graph's Archival
+            // Neighbors launcher routes documents back to it.
+            .auxWindowOrigin(appState)
         }
         .defaultSize(width: 900, height: 640)
 
