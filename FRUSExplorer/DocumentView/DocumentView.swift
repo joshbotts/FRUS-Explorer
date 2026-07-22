@@ -776,7 +776,7 @@ struct DocumentView: View {
         // The user found the feature — retire its discovery tip.
         ExploreCrossReferencesTip().invalidate(reason: .actionPerformed)
         if supportsMultipleWindows {
-            openWindow(value: GraphWindowRequest(entry: entry))
+            appState.openAuxWindow(GraphWindowRequest(entry: entry), from: sceneID, using: openWindow)
         } else {
             activeSheet = .crossReferenceGraph
         }
@@ -788,14 +788,14 @@ struct DocumentView: View {
     /// restored window rebuilds correctly); otherwise the in-place sheet.
     private func openSourceExplorer(vm: DocumentViewModel) {
         if supportsMultipleWindows {
-            openWindow(value: SourceExplorerRequest(
+            appState.openAuxWindow(SourceExplorerRequest(
                 rawSourceNote: vm.sourceNote ?? "",
                 documentYear: Self.extractYear(from: entry.dateline),
                 documentHeader: entry.header,
                 documentDateline: entry.dateline,
                 documentVolumeId: entry.volumeId,
                 documentId: entry.documentId
-            ))
+            ), from: sceneID, using: openWindow)
         } else {
             activeSheet = .sourceExplorer(vm.sourceNote ?? "")
         }

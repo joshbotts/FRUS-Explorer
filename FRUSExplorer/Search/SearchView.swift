@@ -836,11 +836,11 @@ struct SearchView: View {
     private func openResult(_ entry: DocumentBrowserEntry) {
         #if os(iOS)
         if supportsMultipleWindows {
-            openWindow(value: DocumentWindowID(
+            appState.openAuxWindow(DocumentWindowID(
                 volumeId: entry.volumeId,
                 documentId: entry.documentId,
                 header: entry.header
-            ))
+            ), from: sceneID, using: openWindow)
             return
         }
         #endif
