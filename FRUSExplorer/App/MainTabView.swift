@@ -187,7 +187,18 @@ struct MainTabView: View {
         // (a prior window consumed it) and keeps its seeded tab.
         .onAppear {
             if let pending = appState.consumePendingTab() { selectedTab = pending }
+            // #338 aux-window origin: publish this main window's scene as live, so an aux window
+            // (Archival Neighbors / Related Documents) launched from here can hand a document back to
+            // THIS window; removed on disappear so a closed window resolves to `.anyWindow` instead.
+            appState.registerScene(SceneID(sceneIDToken))
         }
+        // Deregister on teardown so a closed window's aux windows resolve their origin to `.anyWindow`
+        // instead of a dead scene. On iPadOS a window close disconnects the scene and tears down this
+        // WindowGroup root, firing `onDisappear` — unlike macOS (`liveDocumentHosts`), which needs an
+        // NSWindow `willClose` backstop because a red-button close there can outrun SwiftUI's teardown.
+        // If a stale token is ever observed on-device (an aux-window open black-holing after its
+        // launcher closed), add a UIWindowScene `willDisconnect` belt-and-braces here. (#338 review.)
+        .onDisappear { appState.unregisterScene(SceneID(sceneIDToken)) }
         // Word Cloud hand-off (#338 step 2): present the sheet only when the hand-off is addressed to
         // THIS window's scene, so a word cloud opened in one iPad window no longer fans out to every
         // open window. `Handoff` is `Identifiable`; the guarded binding yields it only for a matching

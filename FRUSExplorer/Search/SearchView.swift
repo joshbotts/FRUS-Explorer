@@ -911,11 +911,11 @@ struct SearchView: View {
                         // — the same reason `openResult` prefers a document window above.
                         // Elsewhere (iPhone, iPads without Stage Manager) it stays a sheet.
                         if supportsMultipleWindows {
-                            openWindow(value: ArchivalNeighborsRequest.document(
+                            appState.openAuxWindow(ArchivalNeighborsRequest.document(
                                 volumeId:     result.volumeId,
                                 documentId:   result.documentId,
                                 documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
-                            ))
+                            ), from: sceneID, using: openWindow)
                         } else {
                             archivalNeighborsTarget = ArchivalNeighborsDocKey(
                                 volumeId:     result.volumeId,
