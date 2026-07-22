@@ -24,6 +24,8 @@ struct SubseriesView: View {
     let group: SubseriesGroup
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
 
     var body: some View {
         List {
@@ -85,7 +87,7 @@ struct SubseriesView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    appState.pendingWordCloud = .subseries(subseriesId: group.subseries)
+                    appState.openWordCloud(.subseries(subseriesId: group.subseries), from: sceneID)
                 } label: {
                     Image(systemName: WordCloudGlyph.symbol)
                 }
@@ -373,6 +375,8 @@ struct VolumeRowLabel: View {
 private struct VolumeRowContextMenu: View {
     let volume: VolumeManifestEntry
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
 
     var body: some View {
         if let dm = appState.downloadManager, !dm.isVolumeDownloaded(volume.volumeId) {
@@ -400,7 +404,7 @@ private struct VolumeRowContextMenu: View {
             }
         }
         Button {
-            appState.pendingWordCloud = .volume(volumeId: volume.volumeId)
+            appState.openWordCloud(.volume(volumeId: volume.volumeId), from: sceneID)
         } label: {
             Label { Text(String(localized: "browser.volume.wordCloud.action",
                                 defaultValue: "Word Cloud")) }

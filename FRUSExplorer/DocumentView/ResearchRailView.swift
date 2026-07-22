@@ -85,6 +85,8 @@ struct ResearchRailView: View {
     // MARK: Environment
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.modelContext) private var modelContext
     // Available on both platforms: macOS opens the tile windows; iPadOS opens a second document
     // window from the rail header (D8 — Stage Manager).
@@ -670,7 +672,7 @@ struct ResearchRailView: View {
     /// old set-only action was dead when mounted in a document window). The cloud is bound
     /// to this rail's host window, so its Search/Analytics/Chronology hand-offs route back here.
     private func openWordCloud() {
-        appState.pendingWordCloud = .document(volumeId: entry.volumeId, documentId: entry.documentId)
+        appState.openWordCloud(.document(volumeId: entry.volumeId, documentId: entry.documentId), from: sceneID)
         appState.bindTool(.wordCloud, to: documentHostID)
         openWindow(id: "frus.wordcloud")
         bringMacWindowToFront(id: "frus.wordcloud")

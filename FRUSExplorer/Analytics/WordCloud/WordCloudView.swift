@@ -1091,15 +1091,16 @@ struct WordCloudWindowContent: View {
             // the one that opened it, or one made while it was closed. A pending
             // scope is always fresher than any state this window carries, because
             // every consumption clears it.
-            if let pending = appState.pendingWordCloud {
-                scope = pending
+            // #338 step 2: consume the hand-off addressed to this singleton window.
+            if let handoff = appState.pendingWordCloud, handoff.target == .macWordCloud {
+                scope = handoff.payload
                 appState.pendingWordCloud = nil
             }
         }
-        .onChange(of: appState.pendingWordCloud) { _, handedOff in
+        .onChange(of: appState.pendingWordCloud) { _, handoff in
             // A hand-off arriving while the window is already open retargets it.
-            guard let handedOff else { return }
-            scope = handedOff
+            guard let handoff, handoff.target == .macWordCloud else { return }
+            scope = handoff.payload
             appState.pendingWordCloud = nil
         }
     }

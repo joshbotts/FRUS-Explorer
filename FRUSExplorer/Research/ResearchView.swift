@@ -99,6 +99,8 @@ struct ResearchDocumentEntry: Identifiable {
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.modelContext) private var modelContext
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
@@ -524,7 +526,7 @@ struct ResearchView: View {
     @ViewBuilder
     private func wordCloudButton(_ scope: WordCloudScope) -> some View {
         Button {
-            appState.pendingWordCloud = scope
+            appState.openWordCloud(scope, from: sceneID)
             #if os(macOS)
             appState.bindTool(.wordCloud, to: appState.provenance(of: .research))
             openWindow(id: "frus.wordcloud")

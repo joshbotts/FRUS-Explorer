@@ -630,7 +630,7 @@ final class AppState {
     /// `MainTabView` (iOS sheet) and the macOS `frus.wordcloud` window observe this
     /// via `.onChange`, present the cloud, and clear it — mirroring the
     /// `pendingSearch` / `pendingAnalytics` pattern.
-    var pendingWordCloud: WordCloudScope? = nil
+    var pendingWordCloud: Handoff<WordCloudScope>? = nil
 
     /// Cross-window hand-off into the Collections manager: the id of a collection
     /// another surface wants selected there.
@@ -1451,6 +1451,10 @@ struct SceneID: Hashable, Sendable {
     let raw: String
     /// Wraps a raw per-scene token.
     init(_ raw: String) { self.raw = raw }
+
+    /// Fixed identity of the macOS singleton **word-cloud** window (`frus.wordcloud`, #338 step 2).
+    /// macOS word-cloud hand-offs address this; iPad producers address their own minted per-scene id.
+    static let macWordCloud = SceneID("frus.wordcloud")
 }
 
 /// A cross-scene hand-off carrying a `payload` addressed to a target ``SceneID``.
@@ -1491,6 +1495,35 @@ extension AppState {
               handoff.target == sceneID else { return nil }
         self[keyPath: keyPath] = nil
         return handoff.payload
+    }
+
+    /// Opens a word cloud as a scene-addressed hand-off (#338 step 2, replacing the fan-out-prone
+    /// single-slot `pendingWordCloud = scope`). On iPad it addresses the producing window's own
+    /// `\.sceneID`, so only that window's sheet presents — no fan-out across open windows; on macOS
+    /// the singleton `frus.wordcloud` window. Every producer calls this uniformly; pass the producer
+    /// view's `@Environment(\.sceneID)` (nil on macOS, where it's ignored).
+    func openWordCloud(_ scope: WordCloudScope, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingWordCloud = Handoff(target: .macWordCloud, payload: scope)
+        #else
+        // `\.sceneID` is published by MainTabView and must reach every producer. A nil means it did
+        // not propagate (a sheet/inspector not handed it) — the sheet would then present in no
+        // window. Loud in debug; in release it's a localized non-open, caught by the two-window
+        // on-device check (#338 review Finding 1). Producers in sheets/inspectors inject `\.sceneID`
+        // explicitly at their presentation site rather than trust inheritance.
+        // A nil `sceneID` means `\.sceneID` didn't reach this producer — a producer in a scene that
+        // doesn't publish one (a standalone document window, #338 step-2 follow-up). Rather than trap
+        // (which would crash Debug builds) it falls through to an unmatched target, so the word cloud
+        // simply doesn't present from that surface — a graceful no-op logged for diagnosis, not a
+        // crash. The main-window and injected sheet/inspector producers always have a real id.
+        #if DEBUG
+        if sceneID == nil {
+            print("[AppState] openWordCloud: \\.sceneID did not reach this producer (#338) — the word "
+                + "cloud won't present here until this scene publishes a \\.sceneID + hosts the sheet.")
+        }
+        #endif
+        pendingWordCloud = Handoff(target: sceneID ?? SceneID("frus.sceneID.unreached"), payload: scope)
+        #endif
     }
 }
 

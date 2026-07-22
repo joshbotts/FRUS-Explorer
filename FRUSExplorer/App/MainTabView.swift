@@ -188,12 +188,20 @@ struct MainTabView: View {
         .onAppear {
             if let pending = appState.consumePendingTab() { selectedTab = pending }
         }
-        // Word Cloud handoff: any surface sets `appState.pendingWordCloud`; the
-        // sheet presents over whichever tab is active and clears it on dismiss.
-        // Mirrors the `pendingAnalytics` pattern but presented at the tab root so
-        // it is reachable from every tab.
-        .sheet(item: $appState.pendingWordCloud) { scope in
-            WordCloudView(scope: scope)
+        // Word Cloud hand-off (#338 step 2): present the sheet only when the hand-off is addressed to
+        // THIS window's scene, so a word cloud opened in one iPad window no longer fans out to every
+        // open window. `Handoff` is `Identifiable`; the guarded binding yields it only for a matching
+        // target, and clears the shared slot on dismiss. A producer stamps its own `\.sceneID`
+        // (published above), so exactly one window's binding matches.
+        .sheet(item: Binding<Handoff<WordCloudScope>?>(
+            get: {
+                guard let handoff = appState.pendingWordCloud,
+                      handoff.target == SceneID(sceneIDToken) else { return nil }
+                return handoff
+            },
+            set: { if $0 == nil { appState.pendingWordCloud = nil } }
+        )) { handoff in
+            WordCloudView(scope: handoff.payload)
                 .environment(appState)
         }
     }

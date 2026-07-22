@@ -78,6 +78,8 @@ import SwiftUI
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
+    /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    @Environment(\.sceneID) private var sceneID
     /// The shared container, re-injected into the three analytics sheets (#258 P3 review).
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: BrowserViewModel?
@@ -158,6 +160,9 @@ struct BrowserView: View {
         .sheet(isPresented: $showChronology) {
             ChronologyView(initialParameters: chronologyParameters)
                 .environment(appState)
+                // #338 step 2: a sheet doesn't reliably inherit `\.sceneID` (review Finding 1), so
+                // publish it explicitly so ChronologyView's Word Cloud button targets THIS window.
+                .environment(\.sceneID, sceneID)
         }
         // Search → Analytics handoff (a capped search offered to "Visualize in Corpus Analytics")
         // and the cross-view → Chronology handoff. Captured into local state before presenting, then
@@ -245,7 +250,7 @@ struct BrowserView: View {
                           systemImage: "point.3.connected.trianglepath.dotted")
                 }
                 Button {
-                    appState.pendingWordCloud = .corpus
+                    appState.openWordCloud(.corpus, from: sceneID)
                 } label: {
                     Label { Text(String(localized: "browse.wordcloud.a11y", defaultValue: "Corpus Word Cloud")) }
                         icon: { Image(systemName: WordCloudGlyph.symbol) }

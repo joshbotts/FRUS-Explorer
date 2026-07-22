@@ -326,7 +326,7 @@ struct MainWindowView: View {
                                  defaultValue: "Chronology"), systemImage: "calendar.day.timeline.left")
                 }
                 Button {
-                    appState.pendingWordCloud = .corpus
+                    appState.openWordCloud(.corpus, from: nil)   // #338: macOS singleton window
                     appState.bindTool(.wordCloud, to: hostID)
                     openWindow(id: "frus.wordcloud")
                 } label: {
