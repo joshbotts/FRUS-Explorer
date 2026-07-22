@@ -440,10 +440,25 @@ struct RelatedDocumentsWindowView: View {
     let request: RelatedDocumentsRequest
 
     @Environment(AppState.self) private var appState
+    /// #338 aux-window origin: the launching main window's scene, drained once from the transient
+    /// AppState hand-off; nil on a restored window (falls back to `.anyWindow`). Captured ONCE: if
+    /// `openWindow(value:)` later refocuses this same-request window from a different launcher, the
+    /// origin stays pinned to the first launcher — a live window, so no black-hole (#338 review, accepted).
+    @State private var originRaw: String? = nil
+    @State private var didCaptureOrigin = false
 
     var body: some View {
         #if os(iOS)
         NavigationStack { content }
+            // Publish the launching window's scene (resolved live, else `.anyWindow`) so a row-tap
+            // document opens back in the window this was launched from. #338 aux-window origin.
+            .environment(\.sceneID, appState.resolveOriginScene(originRaw))
+            .onAppear {
+                guard !didCaptureOrigin else { return }
+                didCaptureOrigin = true
+                originRaw = appState.pendingAuxWindowOriginRaw
+                appState.pendingAuxWindowOriginRaw = nil
+            }
         #else
         content
         #endif

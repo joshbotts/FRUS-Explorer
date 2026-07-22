@@ -812,7 +812,7 @@ struct DocumentView: View {
             weights: relatedWeights,
             scope: .allIndexed)
         if supportsMultipleWindows {
-            openWindow(value: request)
+            appState.openAuxWindow(request, from: sceneID, using: openWindow)
         } else {
             activeSheet = .relatedDocuments(request)
         }

@@ -216,7 +216,7 @@ struct CollectionDetailView: View {
                             neighborsTarget = CollectionNeighborsTarget(decimalClass: nil)
                             return
                         }
-                        openWindow(value: ArchivalNeighborsRequest(collectionRecord: record))
+                        appState.openAuxWindow(ArchivalNeighborsRequest(collectionRecord: record), from: sceneID, using: openWindow)
                         #else
                         // This view is hosted in the Source Explorer window's Collections
                         // segment — the neighbors window inherits its provenance.
@@ -308,7 +308,7 @@ struct CollectionDetailView: View {
                                 neighborsTarget = CollectionNeighborsTarget(decimalClass: cls)
                                 return
                             }
-                            openWindow(value: ArchivalNeighborsRequest.decimalClass(cls))
+                            appState.openAuxWindow(ArchivalNeighborsRequest.decimalClass(cls), from: sceneID, using: openWindow)
                             #else
                             // Same provenance inheritance as the record-level action above.
                             let request = ArchivalNeighborsRequest.decimalClass(cls)

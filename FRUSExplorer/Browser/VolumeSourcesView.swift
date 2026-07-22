@@ -101,6 +101,9 @@ struct VolumeSourcesView: View {
     #if os(iOS)
     /// Gates the neighbors window on iOS: sheet fallback wherever windows are unavailable.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// #338 aux-window origin: this main window's scene, recorded as the Archival Neighbors window's
+    /// origin so a row-tap document routes back here.
+    @Environment(\.sceneID) private var sceneID
     #endif
 
     @State private var sources: [VolumeSourceEntry] = []
@@ -337,7 +340,7 @@ struct VolumeSourcesView: View {
                             sourceNeighborsTarget = presented
                             return
                         }
-                        openWindow(value: ArchivalNeighborsRequest(volumeSource: presented))
+                        appState.openAuxWindow(ArchivalNeighborsRequest(volumeSource: presented), from: sceneID, using: openWindow)
                         #else
                         // Provenance: this list mounts inside document hosts AND inside
                         // the corpus-browser window — bind to whichever spawned it.

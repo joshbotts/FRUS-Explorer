@@ -817,7 +817,7 @@ struct CrossReferenceGraphView: View {
                 // The neighbors window inherits this graph window's provenance (transitive bind).
                 appState.bindTool(.archivalNeighbors(request), to: appState.provenance(of: .graph))
                 #endif
-                openWindow(value: request)
+                appState.openAuxWindow(request, from: sceneID, using: openWindow)
             } label: {
                 Label(
                     String(localized: "graph.contextMenu.archivalNeighbors",

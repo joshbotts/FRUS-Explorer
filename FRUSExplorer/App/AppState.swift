@@ -667,6 +667,20 @@ final class AppState {
     /// belt-and-braces).
     var liveDocumentHosts: [DocumentHostID: UInt64] = [:]
 
+    /// Live iPad scene identities — the `\.sceneID` of every open main window (`MainTabView`), which
+    /// registers on appear and removes on disappear. The iPad analogue of `liveDocumentHosts`: it lets
+    /// an auxiliary window (Archival Neighbors / Related Documents) resolve its "originating window"
+    /// target to a still-open window, falling back to `.anyWindow` when that window has closed or the
+    /// aux window was restored into a new session (#338 aux-window origin).
+    var liveSceneIDs: Set<SceneID> = []
+
+    /// The raw `\.sceneID` of the window currently launching a value-based auxiliary window (Archival
+    /// Neighbors / Related Documents). Set by the launcher immediately before `openWindow(value:)` and
+    /// drained by the aux window's `.onAppear` into its own state, so the aux window knows which main
+    /// window opened it. Transient (never persisted) — a restored aux window reads nil and falls back
+    /// to `.anyWindow`. #338 aux-window origin.
+    var pendingAuxWindowOriginRaw: String? = nil
+
     /// Monotonic counter behind the advisory stamps (deterministic, unlike wall-clock ties).
     private var hostStampCounter: UInt64 = 0
 
@@ -1536,6 +1550,32 @@ extension AppState {
               handoff.target == sceneID || (orAnyWindow && handoff.target == .anyWindow) else { return nil }
         self[keyPath: keyPath] = nil
         return handoff.payload
+    }
+
+    /// Registers a main window's scene identity as live (called by `MainTabView.onAppear`). #338.
+    func registerScene(_ id: SceneID) { liveSceneIDs.insert(id) }
+
+    /// Removes a main window's scene identity (called by `MainTabView.onDisappear`). #338.
+    func unregisterScene(_ id: SceneID) { liveSceneIDs.remove(id) }
+
+    /// Resolves an aux window's stored origin (`rawSceneID`) to a delivery target: the originating
+    /// window if it is still open, else the `.anyWindow` first-wins wildcard — so a document opened
+    /// from an aux window lands in the launching window when it survives, and in *some* live window
+    /// (never nowhere) when it doesn't (the launcher closed, or a restored aux window whose launcher
+    /// is gone). #338 aux-window origin.
+    func resolveOriginScene(_ rawSceneID: String?) -> SceneID {
+        guard let rawSceneID else { return .anyWindow }
+        let candidate = SceneID(rawSceneID)
+        return liveSceneIDs.contains(candidate) ? candidate : .anyWindow
+    }
+
+    /// Opens a value-based auxiliary window, recording the launching window's scene as its origin so a
+    /// document opened from inside it routes back to that window (#338 aux-window origin). `sceneID` is
+    /// the launcher's `@Environment(\.sceneID)` (nil on macOS, where aux windows route via provenance).
+    func openAuxWindow<V: Codable & Hashable>(_ value: V, from sceneID: SceneID?,
+                                              using openWindow: OpenWindowAction) {
+        pendingAuxWindowOriginRaw = sceneID?.raw
+        openWindow(value: value)
     }
 
     /// Opens a word cloud as a scene-addressed hand-off (#338 step 2, replacing the fan-out-prone

@@ -365,11 +365,11 @@ struct CompilationView: View {
                                 )
                                 return
                             }
-                            openWindow(value: ArchivalNeighborsRequest.document(
+                            appState.openAuxWindow(ArchivalNeighborsRequest.document(
                                 volumeId:     doc.volumeId,
                                 documentId:   doc.documentId,
                                 documentYear: nil
-                            ))
+                            ), from: sceneID, using: openWindow)
                             #else
                             // Provenance: bind to the mounting document host, else the
                             // corpus-browser window's provenance.
