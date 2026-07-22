@@ -874,20 +874,8 @@ final class AppState {
     /// `NARACatalogLookupView` as a local sheet.
     var pendingNARALookup: NARALookupRequest? = nil
 
-    /// Cross-window hand-off into the research-note composer window (UI audit C1):
-    /// the document context (and optional existing note / linked highlight) a note
-    /// should be composed against.
-    ///
-    /// Set by the macOS note entry points (ResearchStripView's "Add note" and
-    /// highlight-note buttons; MacDocumentView's research-panel note rows and
-    /// "Add Note" button) immediately before `openWindow(id: "frus.noteComposer")`.
-    /// `NoteComposerWindowView` consumes it (`.task` for a freshly created window,
-    /// `.onChange` for one already open) and clears it — mirroring the
-    /// `pendingNARALookup` pattern, including the fresh view identity per hand-off
-    /// (`handoffId`) so the editor repopulates. One composer at a time by design:
-    /// a new hand-off replaces the window's content. macOS-only in practice; iOS
-    /// keeps its local `ResearchNoteEditorView` sheets.
-    var pendingNoteComposer: NoteComposerRequest? = nil
+    // (#363) The research-note composer is now a value-based `WindowGroup(for: NoteComposerRequest.self)`
+    // opened via `openWindow(value:)`, so the old `pendingNoteComposer` hand-off field was removed.
 
     /// `EducationPage.id` to open the Research Guide to directly, or `nil` to
     /// open at the first page.

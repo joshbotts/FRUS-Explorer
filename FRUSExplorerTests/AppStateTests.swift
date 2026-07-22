@@ -367,41 +367,64 @@ struct NavigationStateTests {
         #expect(state.pendingVolumeGraph == nil)
     }
 
-    @Test("AppState.pendingNoteComposer initialises to nil")
-    func pendingNoteComposerInitiallyNil() {
-        let state = AppState()
-        #expect(state.pendingNoteComposer == nil)
-    }
+    // (#363) `pendingNoteComposer` was removed — the composer is now a value-based
+    // `WindowGroup(for: NoteComposerRequest.self)`, so there is no init-nil field to
+    // assert. `NoteComposerRequest` hand-off identity is covered below.
 }
 
 // MARK: - NoteComposerRequestTests
 
-/// Tests `NoteComposerRequest` hand-off identity (Session 2026-07-04, UI audit C1).
+/// Tests `NoteComposerRequest` value identity, which drives macOS window reuse
+/// (#363: the composer is a value-based `WindowGroup(for:)`).
 ///
-/// `NoteComposerWindowView` re-keys the editor with `.id(request.handoffId)`, so two
-/// hand-offs for the same document must still compare distinct — otherwise a second
-/// "Add note" on the same document would silently reuse the stale editor state.
+/// SwiftUI reuses an existing window when the presented value compares equal, so the
+/// request's identity must be the *semantic target* — two requests for the same
+/// document (or same existing note, or same linked highlight) must compare **equal**
+/// so a second "Add note" focuses the open composer instead of stacking a duplicate
+/// editor over the same SwiftData store; distinct targets must compare distinct so
+/// two different notes open side-by-side. There is deliberately no per-open nonce.
 struct NoteComposerRequestTests {
 
-    @Test("Two requests for the same document are distinct hand-offs")
-    func sameDocumentDistinctHandoffs() {
+    @Test("Two requests for the same document are equal (window reuse, not duplication)")
+    func sameDocumentEqual() {
         let a = NoteComposerRequest(documentId: "d1", volumeId: "frus1969-76v01")
         let b = NoteComposerRequest(documentId: "d1", volumeId: "frus1969-76v01")
-        #expect(a != b)
-        #expect(a.handoffId != b.handoffId)
+        #expect(a == b)
+        #expect(a.hashValue == b.hashValue)
     }
 
-    @Test("Explicit handoffId round-trips and equal values compare equal")
-    func explicitHandoffIdEquality() {
-        let id = UUID()
-        let noteId = UUID()
-        let a = NoteComposerRequest(documentId: "d1", volumeId: "v1",
-                                    noteId: noteId, handoffId: id)
-        let b = NoteComposerRequest(documentId: "d1", volumeId: "v1",
-                                    noteId: noteId, handoffId: id)
-        #expect(a == b)
-        #expect(a.noteId == noteId)
+    @Test("Requests for different documents are distinct windows")
+    func differentDocumentsDistinct() {
+        let a = NoteComposerRequest(documentId: "d1", volumeId: "v1")
+        let b = NoteComposerRequest(documentId: "d2", volumeId: "v1")
+        #expect(a != b)
+    }
+
+    @Test("Requests for different existing notes are distinct windows")
+    func differentNotesDistinct() {
+        let n1 = UUID(), n2 = UUID()
+        let a = NoteComposerRequest(documentId: "d1", volumeId: "v1", noteId: n1)
+        let b = NoteComposerRequest(documentId: "d1", volumeId: "v1", noteId: n2)
+        #expect(a != b)
+        #expect(a.noteId == n1)
         #expect(a.linkedHighlightId == nil)
+    }
+
+    @Test("Requests for different linked highlights are distinct windows")
+    func differentLinkedHighlightsDistinct() {
+        let h1 = UUID(), h2 = UUID()
+        let a = NoteComposerRequest(documentId: "d1", volumeId: "v1", linkedHighlightId: h1)
+        let b = NoteComposerRequest(documentId: "d1", volumeId: "v1", linkedHighlightId: h2)
+        #expect(a != b)
+    }
+
+    @Test("Value round-trips through Codable (window-state restoration)")
+    func codableRoundTrips() throws {
+        let original = NoteComposerRequest(documentId: "d1", volumeId: "v1",
+                                           noteId: UUID(), linkedHighlightId: UUID())
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(NoteComposerRequest.self, from: data)
+        #expect(decoded == original)
     }
 }
 
