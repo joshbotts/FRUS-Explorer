@@ -1100,10 +1100,13 @@ struct MacSearchWindowView: View {
     private func openSearchInAnalytics() {
         let term = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
         guard !term.isEmpty else { return }
-        appState.pendingAnalytics = AnalyticsParameters(
-            term: term,
-            yearRangeStart: searchVM.parameters.dateRange?.earliest.flatMap(Self.isoYear),
-            yearRangeEnd: searchVM.parameters.dateRange?.latest.flatMap(Self.isoYear)
+        appState.openAnalytics(
+            AnalyticsParameters(
+                term: term,
+                yearRangeStart: searchVM.parameters.dateRange?.earliest.flatMap(Self.isoYear),
+                yearRangeEnd: searchVM.parameters.dateRange?.latest.flatMap(Self.isoYear)
+            ),
+            from: nil
         )
         appState.bindTool(.analytics, to: appState.provenance(of: .search))
         openWindow(id: "frus.analytics")

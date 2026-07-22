@@ -389,9 +389,8 @@ struct AnalyticsView: View {
             // never fires for a value set BEFORE this view subscribed — so drain the hand-off here on
             // first open, mirroring `MacSearchWindowView`/`WordCloudWindowContent`. Without this the
             // window opens on the empty "enter a term" state and the term/date-range are lost.
-            if let pending = appState.pendingAnalytics {
+            if let pending = appState.consumeHandoff(\.pendingAnalytics, for: .macAnalytics) {
                 applyAnalyticsParameters(pending)
-                appState.pendingAnalytics = nil
             }
             #endif
         }
@@ -400,10 +399,12 @@ struct AnalyticsView: View {
         // openWindow calls). `MainWindowView` opens the window; this clears the
         // pending value once consumed, mirroring `MacSearchWindowView`'s
         // `pendingSearch` handling.
-        .onChange(of: appState.pendingAnalytics) { _, params in
-            guard let params else { return }
+        // Re-seed when a new hand-off arrives while a window is already open. macOS `frus.analytics`
+        // is a long-lived singleton (`.macAnalytics`); iOS seeds via `initialParameters` (BrowserView),
+        // so on iOS this consumes nothing (the hand-off targets the producing window, not `.macAnalytics`).
+        .onChange(of: appState.pendingAnalytics) { _, _ in
+            guard let params = appState.consumeHandoff(\.pendingAnalytics, for: .macAnalytics) else { return }
             applyAnalyticsParameters(params)
-            appState.pendingAnalytics = nil
         }
     }
 

@@ -122,10 +122,12 @@ struct ChronologyView: View {
         #endif
         .task { seedDefaultsAndApply(initialParameters) }
         .onChange(of: seriesCount) { _, newCount in vm.applySeriesCount(newCount) }
-        .onChange(of: appState.pendingChronology) { _, params in
-            guard let params else { return }
+        // Re-seed when a new hand-off arrives while the macOS `frus.chronology` singleton is open
+        // (`.macChronology`). iOS seeds via `initialParameters` (BrowserView), so on iOS this consumes
+        // nothing (the hand-off targets the producing window, not `.macChronology`).
+        .onChange(of: appState.pendingChronology) { _, _ in
+            guard let params = appState.consumeHandoff(\.pendingChronology, for: .macChronology) else { return }
             apply(params)
-            appState.pendingChronology = nil
         }
     }
 
@@ -151,8 +153,7 @@ struct ChronologyView: View {
             apply(params)
             return
         }
-        if let pending = appState.pendingChronology {
-            appState.pendingChronology = nil
+        if let pending = appState.consumeHandoff(\.pendingChronology, for: .macChronology) {
             apply(pending)
             return
         }
