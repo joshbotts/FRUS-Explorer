@@ -344,8 +344,10 @@ struct MainWindowView: View {
 
             Divider().frame(height: 20)
 
-            // My Research — Research window (⌘⌥R) and Collections (⌘⇧K). The Window scenes own the
-            // shortcuts; the menu items carry them for discoverability in the dropdown.
+            // My Research — Research window (⌘⌥R) and Collections (⌘⇧K). The key equivalents live
+            // solely on the Research command menu (#363 #2 — they were previously ALSO declared here,
+            // a duplicate binding); these buttons keep the click action and name the shortcut in the
+            // menu-bar Research menu + the tooltip below for discoverability.
             Menu {
                 Button {
                     appState.bindTool(.research, to: hostID)
@@ -354,13 +356,11 @@ struct MainWindowView: View {
                     Label(String(localized: "mainwindow.tools.research", defaultValue: "Research"),
                           systemImage: "note.text")
                 }
-                .keyboardShortcut("r", modifiers: [.command, .option])
                 // Collections never routes document opens — no provenance bind.
                 Button { openWindow(id: "frus.collections") } label: {
                     Label(String(localized: "mainwindow.tools.collections", defaultValue: "Collections"),
                           systemImage: "tray.2")
                 }
-                .keyboardShortcut("k", modifiers: [.command, .shift])
             } label: {
                 Label(String(localized: "mainwindow.tools.myResearch", defaultValue: "My Research"),
                       systemImage: "note.text")

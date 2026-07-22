@@ -350,8 +350,9 @@ struct StatusBarView: View {
     /// Opens (and foregrounds) the standalone Research Guide window — the same
     /// educational pages the removed WhileIndexing sheet showed (UI audit B7).
     private func openResearchGuide() {
-        openWindow(id: "frus.researchGuide")
-        bringMacWindowToFront(id: "frus.researchGuide")
+        // #363 #7: value-based guide window; `openWindow(value:)` opens or re-fronts the single
+        // guide on its own, so the explicit `bringMacWindowToFront` is no longer needed.
+        openWindow(value: ResearchGuideWindowID())
     }
 
     // MARK: - Computed
