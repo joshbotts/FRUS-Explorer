@@ -258,6 +258,7 @@ public actor SearchService {
     private func makeFilters(from parameters: SearchParameters) -> SearchSQLFilters {
         SearchSQLFilters(
             volumeIds: parameters.volumeIds,
+            documentIds: parameters.documentIds,
             dateRange: parameters.dateRange,
             includeFrontMatter: parameters.includeFrontMatter,
             personRef: parameters.personRef,

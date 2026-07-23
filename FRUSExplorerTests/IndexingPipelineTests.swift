@@ -544,6 +544,38 @@ struct SearchParametersTests {
         }
     }
 
+    @Test("search filters by documentIds (Project History scope, #377 Phase 2)")
+    func documentIdFilter() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>Memo</head><p>Detente talks in Moscow.</p>"),
+                    ("d2", "<head>Cable</head><p>Detente talks in Bonn.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            // Both documents match "detente"; the documentIds gate restricts to d1 only.
+            let scoped = try await service.search(
+                parameters: SearchParameters(keywords: "detente",
+                                             documentIds: ["frus1969-76v01/d1"])
+            )
+            #expect(scoped.contains { $0.documentId == "d1" })
+            #expect(!scoped.contains { $0.documentId == "d2" })
+
+            // Sanity: without the gate, both documents come back.
+            let all = try await service.search(parameters: SearchParameters(keywords: "detente"))
+            #expect(all.contains { $0.documentId == "d1" })
+            #expect(all.contains { $0.documentId == "d2" })
+        }
+    }
+
     @Test("search with phrase returns only phrase-matching results")
     func phraseSearch() async throws {
         try await withTempDir { dir in

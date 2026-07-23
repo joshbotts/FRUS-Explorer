@@ -108,6 +108,12 @@ public struct SearchParameters: Sendable, Equatable {
     /// `nil` = search all indexed volumes.
     public var volumeIds: [String]?
 
+    /// Restrict results to this explicit set of documents, each keyed `"volumeId/documentId"`.
+    /// `nil` = no document-set restriction. Powers the **Project History** search scope (#377
+    /// Phase 2): the caller supplies the project's engaged documents (collections + noted +
+    /// visited + tagged). Applied as an SQL `IN (…)`, so keep the set to a sane size.
+    public var documentIds: [String]?
+
     // MARK: - Content scope
 
     /// Whether document body text (header, dateline, source note, body) should be searched.
@@ -178,6 +184,7 @@ public struct SearchParameters: Sendable, Equatable {
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
         volumeIds: [String]? = nil,
+        documentIds: [String]? = nil,
         includeDocumentText: Bool = true,
         includeSummaries: Bool = true,
         includeNotes: Bool = true,
@@ -197,6 +204,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.volumeIds = volumeIds
+        self.documentIds = documentIds
         self.includeDocumentText = includeDocumentText
         self.includeSummaries = includeSummaries
         self.includeNotes = includeNotes

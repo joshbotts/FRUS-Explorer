@@ -2159,6 +2159,13 @@ public actor IndexingPipeline {
             binds.append(contentsOf: vids)
         }
 
+        // Project History scope (#377 Phase 2): restrict to an explicit `"volumeId/documentId"` set.
+        if let docIds = filters.documentIds, !docIds.isEmpty {
+            let placeholders = docIds.map { _ in "?" }.joined(separator: ", ")
+            conditions.append("(dc.volume_id || '/' || dc.document_id) IN (\(placeholders))")
+            binds.append(contentsOf: docIds)
+        }
+
         if let range = filters.dateRange {
             // Interval overlap, matching documentKeysInDateRange: the document's
             // [date_iso, COALESCE(date_iso_max, date_iso)] range must intersect the
@@ -6529,6 +6536,9 @@ public struct IndexedSearchRow: Sendable {
 public struct SearchSQLFilters: Sendable {
     /// Restrict results to these volume IDs. `nil` (or empty) = all volumes.
     public var volumeIds: [String]?
+    /// Restrict results to this explicit set of `"volumeId/documentId"` keys (Project History
+    /// scope, #377 Phase 2). `nil` (or empty) = no document-set restriction.
+    public var documentIds: [String]?
     /// Restrict results to documents whose date range overlaps this range.
     /// Undated documents are excluded when non-nil.
     public var dateRange: DateRange?
@@ -6549,6 +6559,7 @@ public struct SearchSQLFilters: Sendable {
 
     public init(
         volumeIds: [String]? = nil,
+        documentIds: [String]? = nil,
         dateRange: DateRange? = nil,
         includeFrontMatter: Bool = true,
         personRef: String? = nil,
@@ -6558,6 +6569,7 @@ public struct SearchSQLFilters: Sendable {
         documentTypeFilter: DocumentTypeFilter = .all
     ) {
         self.volumeIds = volumeIds
+        self.documentIds = documentIds
         self.dateRange = dateRange
         self.includeFrontMatter = includeFrontMatter
         self.personRef = personRef
