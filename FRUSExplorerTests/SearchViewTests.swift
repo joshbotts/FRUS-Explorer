@@ -229,8 +229,16 @@ struct SearchViewTests {
         vm.projectOnlyNew = true
         #expect(vm.searchParameters.excludeDocumentIds == ["frus1969-76v01/d5"])
 
-        // Focus whose subjects resolve to NO volumes must match nothing (empty documentIds
-        // → SQL 1=0), not silently search the whole corpus.
+        // A manual volume selection overrides the subject-derived focus volumes (owner
+        // refinement) — the manual pick wins, subjects are ignored.
+        vm.selectedVolumeIds = ["frus1952-54v08"]
+        #expect(vm.searchParameters.volumeIds == ["frus1952-54v08"])
+        // …and clearing it falls back to the subject-derived scope.
+        vm.selectedVolumeIds = []
+        #expect(vm.searchParameters.volumeIds == ["frus1969-76v01", "frus1969-76v02"])
+
+        // Focus with neither a manual selection nor resolvable subject volumes must match
+        // nothing (empty documentIds → SQL 1=0), not silently search the whole corpus.
         vm.projectFocusVolumeIds = []
         #expect(vm.searchParameters.volumeIds == nil)
         #expect(vm.searchParameters.documentIds == [])

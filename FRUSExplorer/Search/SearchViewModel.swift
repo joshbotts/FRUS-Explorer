@@ -560,10 +560,11 @@ final class SearchViewModel {
     }
 
     /// The volume scope + History/Focus document gate the active project scope produces
-    /// (#377 Phase 2). Focus overrides the volume scope with the subject-derived focus
-    /// volumes; History gates `documentIds` to the engaged set; a Focus scope whose subjects
-    /// resolve to **no** volumes matches nothing (an empty `documentIds`, mirroring History's
-    /// empty-set contract) rather than silently searching the whole corpus.
+    /// (#377 Phase 2). History gates `documentIds` to the engaged set. Focus scopes to
+    /// volumes: a **manual** volume selection (or applied custom scope) *overrides* the
+    /// subject-derived focus volumes, otherwise the subject volumes apply; a Focus scope
+    /// with neither matches nothing (an empty `documentIds`, mirroring History's empty-set
+    /// contract) rather than silently searching the whole corpus.
     private var projectScopedGates: (volumeIds: [String]?, documentIds: [String]?) {
         let manualVolumes = effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds
         switch projectScope {
@@ -572,9 +573,10 @@ final class SearchViewModel {
         case .history:
             return (manualVolumes, projectEngagedDocumentKeys)
         case .focus:
+            if let manualVolumes { return (manualVolumes, nil) }        // manual overrides
             return projectFocusVolumeIds.isEmpty
-                ? (nil, [])                       // no resolvable focus volumes → match nothing
-                : (projectFocusVolumeIds, nil)
+                ? (nil, [])                                             // neither → match nothing
+                : (projectFocusVolumeIds, nil)                         // subject-derived
         }
     }
 
