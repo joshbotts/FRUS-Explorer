@@ -91,6 +91,23 @@ struct ProjectLeadsServiceTests {
         #expect(ProjectLeadsService.collectionSeedKeys(forProject: project, in: context) == ["v1/d1", "v1/d2"])
     }
 
+    @Test("noteSeedKeys returns the project's noted document keys (non-blank), excluding other projects")
+    func noteSeed() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let project = UUID()
+
+        context.insert(ResearchNote(documentId: "d1", volumeId: "v1", projectIds: [project]))
+        context.insert(ResearchNote(documentId: "d2", volumeId: "v1", projectIds: [project]))
+        // A note anchored to no document (blank ids) contributes nothing.
+        context.insert(ResearchNote(documentId: "", volumeId: "", projectIds: [project]))
+        // A different project's note must not leak in.
+        context.insert(ResearchNote(documentId: "d9", volumeId: "v9", projectIds: [UUID()]))
+        try context.save()
+
+        #expect(ProjectLeadsService.noteSeedKeys(forProject: project, in: context) == ["v1/d1", "v1/d2"])
+    }
+
     @Test("effectiveWeights: project override beats global preference beats default; missing axes default")
     func effectiveWeightsResolution() {
         let defaults = UserDefaults.standard
@@ -168,7 +185,7 @@ struct ProjectLeadsServiceTests {
         #expect(remaining.first { $0.documentKey == "v/b" }?.dismissed == true)
     }
 
-    @Test("gatherSeed returns the project's seed keys + weight string off a background context")
+    @Test("gatherSeed unions collection + noted documents off a background context")
     func gatherSeedOffMain() async throws {
         let container = try ModelContainer.makeTestContainer()
         let context = ModelContext(container)
@@ -183,12 +200,14 @@ struct ProjectLeadsServiceTests {
             e.collection = c
             context.insert(e)
         }
+        // A noted document not in any collection also seeds (deliberate engagement, unlike a visit).
+        context.insert(ResearchNote(documentId: "d3", volumeId: "v2", projectIds: [project.id]))
         try context.save()
 
-        // The seed + raw weight string are read on a fresh background context (freeze lesson).
+        // The seed (collections ∪ notes) + raw weight string are read on a fresh background context.
         let (seedKeys, raw) = await ProjectLeadsService.gatherSeed(
             forProject: project.id, container: container)
-        #expect(seedKeys == ["v1/d1", "v1/d2"])
+        #expect(seedKeys == ["v1/d1", "v1/d2", "v2/d3"])
         #expect(raw == "crossReference:0.9")
     }
 

@@ -14,16 +14,19 @@ import SwiftData
 /// Computes and persists a project's discovery **leads** (#377 Phase 3): documents related to
 /// the project's seed that it hasn't engaged yet.
 ///
-/// The seed is the project's **collection documents** — a curated set is higher-signal than
-/// every visited document (owner decision; can widen later). For each seed the multi-axis
-/// related-document engine (#308) is run, the rankings are aggregated across the seed
-/// (`ProjectLeadsAggregator`), and the top leads are upserted as `ProjectLeadEntry` records —
-/// preserving each lead's `firstSurfacedAt` (the "new since you last looked" anchor) and any
-/// `dismissed` flag.
+/// The seed is the project's **deliberately engaged documents** — its collection documents plus
+/// the documents it has research notes on (both are intentional, in-scope engagement). Visited
+/// documents are **excluded**: an opened-but-never-tagged/noted/collected document is as likely to
+/// have been found irrelevant as relevant, so it would add noise, not signal (owner decision — the
+/// engaged set still tracks visits for the "already seen" search filter and the recent-activity
+/// log). For each seed the multi-axis related-document engine (#308) is run, the rankings are
+/// aggregated across the seed (`ProjectLeadsAggregator`), and the top leads are upserted as
+/// `ProjectLeadEntry` records — preserving each lead's `firstSurfacedAt` (the "new since you last
+/// looked" anchor) and any `dismissed` flag.
 ///
 /// `@MainActor` because the engine reads `AppState`; its work is bounded and `async`, so it
 /// yields between per-seed ranks rather than blocking the UI. Callers should debounce it and
-/// re-run when the project's collections change.
+/// re-run when the project's collections or noted documents change.
 @MainActor
 enum ProjectLeadsService {
 
@@ -78,12 +81,27 @@ enum ProjectLeadsService {
         return keys.sorted()
     }
 
-    /// Gathers the project's seed keys and its raw per-project weight string on a **background**
-    /// context, off the main actor. The seed fetch pulls every collection and faults each one's
-    /// `documentEntries` relationship (the `projectIds`-contains predicate is unreliable in
-    /// SwiftData, so it's a fetch-all-filter-in-memory); doing that synchronously on the main
-    /// thread froze the UI on a large library in Phase 2a, so it runs here on a detached task
-    /// and returns only Sendable values.
+    /// The project's noted-document seed: the `"volumeId/documentId"` keys of the documents that
+    /// have a research note tagged to this project, de-duplicated and sorted. A note is a deliberate,
+    /// in-scope engagement (unlike a mere visit), so noted documents anchor suggestions alongside
+    /// collection documents. `nonisolated` so `gatherSeed` can run it off the main actor (an
+    /// unscoped fetch filtered in memory — `[UUID].contains` predicates are unreliable in SwiftData).
+    nonisolated static func noteSeedKeys(forProject projectId: UUID, in context: ModelContext) -> [String] {
+        let notes = ((try? context.fetch(FetchDescriptor<ResearchNote>())) ?? [])
+            .filter { $0.projectIds.contains(projectId) && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+        var keys = Set<String>()
+        for note in notes {
+            keys.insert("\(note.volumeId)/\(note.documentId)")
+        }
+        return keys.sorted()
+    }
+
+    /// Gathers the project's seed keys (its collection documents unioned with its noted documents)
+    /// and its raw per-project weight string on a **background** context, off the main actor. The
+    /// seed fetches pull every collection/note and filter in memory (the `projectIds`-contains
+    /// predicate is unreliable in SwiftData); doing that — plus faulting each collection's
+    /// `documentEntries` relationship — synchronously on the main thread froze the UI on a large
+    /// library in Phase 2a, so it runs here on a detached task and returns only Sendable values.
     nonisolated static func gatherSeed(
         forProject projectId: UUID, container: ModelContainer
     ) async -> (seedKeys: [String], projectWeightsRaw: String?) {
@@ -92,7 +110,9 @@ enum ProjectLeadsService {
             let pid = projectId
             let raw = (try? context.fetch(
                 FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })).first)?.leadAxisWeights
-            return (collectionSeedKeys(forProject: projectId, in: context), raw)
+            let seed = Set(collectionSeedKeys(forProject: projectId, in: context))
+                .union(noteSeedKeys(forProject: projectId, in: context))
+            return (seed.sorted(), raw)
         }.value
     }
 

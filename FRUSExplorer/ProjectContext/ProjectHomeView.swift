@@ -489,15 +489,23 @@ struct ProjectHomeView: View {
     /// collections' ids + `lastModified` (which bumps on rename / retag and the
     /// `documentEntries.append` add path), plus the app-wide `CollectionEntry` count as a coarse
     /// reactive signal for the `entry.collection =` inverse-add path (which doesn't bump the
-    /// parent's `lastModified`). This only decides *when* to recompute; the real seed is derived
-    /// off-main inside `recompute`, and the open-time and Refresh recomputes backstop any coarse
-    /// miss (e.g. an add + remove that leaves the count unchanged).
+    /// parent's `lastModified`), plus the distinct set of the project's **noted document keys** (the
+    /// second seed source — reacts when a note is added/removed/retagged to the project; note
+    /// `volumeId`/`documentId` are scalars, so no relationship fault). This only decides *when* to
+    /// recompute; the real seed is derived off-main inside `recompute`, and the open-time and
+    /// Refresh recomputes backstop any coarse miss (e.g. an add + remove that leaves the count
+    /// unchanged).
     private var seedSignature: String {
         let collections = summary.collections
             .map { "\($0.id.uuidString):\($0.lastModified?.timeIntervalSince1970 ?? 0)" }
             .sorted()
             .joined(separator: ",")
-        return "\(allCollectionEntries.count)|\(collections)"
+        let notedDocs = Set(summary.notes
+            .filter { !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+            .map { "\($0.volumeId)/\($0.documentId)" })
+            .sorted()
+            .joined(separator: ",")
+        return "\(allCollectionEntries.count)|\(collections)|n:\(notedDocs)"
     }
 
     /// Schedules a debounced leads recompute. `immediate` skips the debounce (the Refresh button
