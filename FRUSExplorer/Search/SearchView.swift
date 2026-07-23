@@ -311,8 +311,13 @@ struct SearchView: View {
         }
         let descriptor = FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })
         vm.projectScopeName = (try? modelContext.fetch(descriptor).first)?.name
-        vm.projectEngagedDocumentKeys =
-            ProjectEngagedDocuments.keys(forProject: pid, in: modelContext).sorted()
+        // Compute the engaged set off the main thread so a large library never freezes the
+        // UI when the filter panel opens or the project changes (#377 Phase 2a fix).
+        let container = modelContext.container
+        Task {
+            let keys = await ProjectEngagedDocuments.keys(forProject: pid, container: container)
+            vm.projectEngagedDocumentKeys = keys.sorted()
+        }
     }
 
     /// Placement for the `.searchable` field — a pinned drawer on iOS so the
