@@ -1,0 +1,145 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Testing
+import Foundation
+import SwiftData
+@testable import FRUSExplorer
+
+// MARK: - ProjectLeadsAggregatorTests
+
+/// Tests for the pure lead aggregation (#377 Phase 3).
+struct ProjectLeadsAggregatorTests {
+
+    @Test("aggregate sums relatedness across seeds, drops seeds, ranks + caps")
+    func aggregatesLeads() {
+        let perSeed: [(seed: String, related: [(key: String, score: Double)])] = [
+            ("v/s1", [("v/a", 1.0), ("v/b", 0.5), ("v/s2", 9.0)]),  // s2 is a seed → excluded
+            ("v/s2", [("v/a", 2.0), ("v/c", 0.3)]),
+        ]
+        let seeds: Set<String> = ["v/s1", "v/s2"]
+        let leads = ProjectLeadsAggregator.aggregate(perSeedRelated: perSeed, seedKeys: seeds, limit: 10)
+
+        // a: 1.0 + 2.0 = 3.0 (recurs across both seeds) leads; then b (0.5), c (0.3). s2 dropped.
+        #expect(leads.map(\.key) == ["v/a", "v/b", "v/c"])
+        #expect(leads[0].aggregateScore == 3.0)
+        #expect(leads[0].contributingSeedKeys == ["v/s1", "v/s2"])
+        #expect(!leads.contains { $0.key == "v/s2" })
+
+        // limit caps the result.
+        #expect(ProjectLeadsAggregator.aggregate(
+            perSeedRelated: perSeed, seedKeys: seeds, limit: 1).count == 1)
+    }
+}
+
+// MARK: - ProjectLeadsServiceTests
+
+/// Tests for the seed-gathering and upsert persistence (#377 Phase 3). The `recompute` engine
+/// path needs an indexed corpus + `AppState`, so it is exercised on-device rather than here.
+@MainActor
+struct ProjectLeadsServiceTests {
+
+    @Test("collectionSeedKeys returns the project's collection document keys only")
+    func collectionSeed() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let project = UUID()
+
+        let c = Collection(name: "C", projectIds: [project])
+        context.insert(c)
+        for (i, doc) in [("v1", "d1"), ("v1", "d2")].enumerated() {
+            let e = CollectionEntry(collectionId: c.id, documentId: doc.1, volumeId: doc.0, sortOrder: i)
+            e.collection = c
+            context.insert(e)
+        }
+        let heading = CollectionEntry(collectionId: c.id, documentId: "", volumeId: "", sortOrder: 2)
+        heading.entryKind = .heading
+        heading.collection = c
+        context.insert(heading)
+
+        // A different project's collection must not leak in.
+        let other = Collection(name: "O", projectIds: [UUID()])
+        context.insert(other)
+        let eo = CollectionEntry(collectionId: other.id, documentId: "d9", volumeId: "v9", sortOrder: 0)
+        eo.collection = other
+        context.insert(eo)
+        try context.save()
+
+        #expect(ProjectLeadsService.collectionSeedKeys(forProject: project, in: context) == ["v1/d1", "v1/d2"])
+    }
+
+    @Test("effectiveWeights: project override beats global preference beats default; missing axes default")
+    func effectiveWeightsResolution() {
+        let defaults = UserDefaults.standard
+        let key = ProjectLeadsService.globalWeightsKey
+        let saved = defaults.string(forKey: key)
+        defer { if let saved { defaults.set(saved, forKey: key) } else { defaults.removeObject(forKey: key) } }
+
+        // No project + no global preference → app defaults.
+        defaults.removeObject(forKey: key)
+        let appDefault = ProjectLeadsService.effectiveWeights(for: nil)
+        #expect(appDefault[.archivalProvenance] == 1.0)
+        #expect(appDefault[.sharedPersons] == 0.7)
+
+        // Global preference (a partial string) → its explicit axes win; axes absent from the
+        // string fall back to their default (the forward-compat merge for future axes).
+        defaults.set("archivalProvenance:0.2", forKey: key)
+        let global = ProjectLeadsService.effectiveWeights(for: nil)
+        #expect(global[.archivalProvenance] == 0.2)
+        #expect(global[.sharedPersons] == 0.7)
+
+        // A project's own weights beat the global preference.
+        let project = Project(name: "P")
+        project.leadAxisWeights = "crossReference:0.9"
+        let projectW = ProjectLeadsService.effectiveWeights(for: project)
+        #expect(projectW[.crossReference] == 0.9)
+        #expect(projectW[.archivalProvenance] == 1.0)   // not set by the project → default, not global 0.2
+    }
+
+    @Test("applyLeads upserts: preserves firstSurfacedAt + dismissed, deletes stale")
+    func applyLeadsUpsert() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let project = UUID()
+
+        let t0 = Date(timeIntervalSince1970: 1000)
+        ProjectLeadsService.applyLeads([
+            ProjectLeadCandidate(key: "v/a", aggregateScore: 3.0, contributingSeedKeys: ["v/s1"]),
+            ProjectLeadCandidate(key: "v/b", aggregateScore: 2.0, contributingSeedKeys: ["v/s1"]),
+        ], forProject: project, in: context, now: t0)
+        try context.save()
+
+        var entries = try context.fetch(FetchDescriptor<ProjectLeadEntry>())
+        #expect(entries.count == 2)
+
+        // Dismiss 'a'.
+        try #require(entries.first { $0.documentKey == "v/a" }).dismissed = true
+        try context.save()
+
+        // Re-apply: 'a' still a candidate (with a new score), 'b' dropped, 'c' new.
+        let t1 = Date(timeIntervalSince1970: 2000)
+        ProjectLeadsService.applyLeads([
+            ProjectLeadCandidate(key: "v/a", aggregateScore: 99.0, contributingSeedKeys: ["v/s2"]),
+            ProjectLeadCandidate(key: "v/c", aggregateScore: 1.0, contributingSeedKeys: ["v/s1"]),
+        ], forProject: project, in: context, now: t1)
+        try context.save()
+
+        entries = try context.fetch(FetchDescriptor<ProjectLeadEntry>())
+        let byKey = Dictionary(uniqueKeysWithValues: entries.map { ($0.documentKey, $0) })
+
+        // 'b' dropped (no longer a candidate).
+        #expect(byKey["v/b"] == nil)
+        // 'a' dismissed → score NOT re-ranked (stays 3.0), firstSurfacedAt preserved, still dismissed.
+        #expect(byKey["v/a"]?.aggregateScore == 3.0)
+        #expect(byKey["v/a"]?.dismissed == true)
+        #expect(byKey["v/a"]?.firstSurfacedAt == t0)
+        // 'c' new → stamped at t1.
+        #expect(byKey["v/c"]?.aggregateScore == 1.0)
+        #expect(byKey["v/c"]?.firstSurfacedAt == t1)
+    }
+}

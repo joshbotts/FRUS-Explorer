@@ -78,6 +78,14 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// Per-project **Project Leads** axis weights (#377 Phase 3), stored as the `AxisWeights`
+    /// raw string (`"axis:weight,…"`). `nil` = never tuned for this project, so leads use the
+    /// researcher's global related-documents preference. Set once the researcher adjusts the
+    /// project's lead weights.
+    var leadAxisWeights: String? = nil {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Timestamps
 
     /// Set at creation; never mutated. Optional for CloudKit schema compatibility — always non-nil in practice.
