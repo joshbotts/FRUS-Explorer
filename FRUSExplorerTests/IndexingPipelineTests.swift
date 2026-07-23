@@ -596,6 +596,24 @@ struct SearchParametersTests {
             )
             #expect(emptyExclude.contains { $0.documentId == "d1" })
             #expect(emptyExclude.contains { $0.documentId == "d2" })
+
+            // Chunking: a set larger than SQLite's ~999-bind ceiling must not throw at
+            // prepare — the filter chunks into ≤499-bind IN/NOT-IN groups. Most keys here are
+            // synthetic bind values (never indexed); only d1 is real, so it is still excluded.
+            let bigExclude = (0..<1200).map { "frusfake/\($0)" } + ["frus1969-76v01/d1"]
+            let bigExcluded = try await service.search(
+                parameters: SearchParameters(keywords: "detente", excludeDocumentIds: bigExclude)
+            )
+            #expect(!bigExcluded.contains { $0.documentId == "d1" })
+            #expect(bigExcluded.contains { $0.documentId == "d2" })
+
+            // Same for a large positive gate: 1200+ ids across 3 chunks, OR-combined.
+            let bigInclude = (0..<1200).map { "frusfake/\($0)" } + ["frus1969-76v01/d2"]
+            let bigIncluded = try await service.search(
+                parameters: SearchParameters(keywords: "detente", documentIds: bigInclude)
+            )
+            #expect(bigIncluded.contains { $0.documentId == "d2" })
+            #expect(!bigIncluded.contains { $0.documentId == "d1" })
         }
     }
 

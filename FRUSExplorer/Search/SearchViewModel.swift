@@ -559,6 +559,25 @@ final class SearchViewModel {
         return ids.sorted()
     }
 
+    /// The volume scope + History/Focus document gate the active project scope produces
+    /// (#377 Phase 2). Focus overrides the volume scope with the subject-derived focus
+    /// volumes; History gates `documentIds` to the engaged set; a Focus scope whose subjects
+    /// resolve to **no** volumes matches nothing (an empty `documentIds`, mirroring History's
+    /// empty-set contract) rather than silently searching the whole corpus.
+    private var projectScopedGates: (volumeIds: [String]?, documentIds: [String]?) {
+        let manualVolumes = effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds
+        switch projectScope {
+        case .off:
+            return (manualVolumes, nil)
+        case .history:
+            return (manualVolumes, projectEngagedDocumentKeys)
+        case .focus:
+            return projectFocusVolumeIds.isEmpty
+                ? (nil, [])                       // no resolvable focus volumes → match nothing
+                : (projectFocusVolumeIds, nil)
+        }
+    }
+
     var searchParameters: SearchParameters {
         let kw = keywords.trimmingCharacters(in: .whitespaces)
         let ph = phrase.trimmingCharacters(in: .whitespaces)
@@ -573,6 +592,7 @@ final class SearchViewModel {
                 latest: SearchViewModel.isoDate(dateRangeEnd)
               )
             : nil
+        let scoped = projectScopedGates
         return SearchParameters(
             keywords: kw.isEmpty ? nil : kw,
             phrase: ph.isEmpty ? nil : ph,
@@ -582,16 +602,8 @@ final class SearchViewModel {
             dateRange: range,
             subjectTagIds: [],
             userTagIds: selectedUserTagIds.map(\.uuidString),
-            // Project Focus scope (#377 Phase 2b) overrides the volume scope with the
-            // subject-derived focus volumes; otherwise the manual volume/subseries selection
-            // applies. (Focus is only offered when `projectFocusVolumeIds` is non-empty.)
-            volumeIds: projectScope == .focus
-                ? (projectFocusVolumeIds.isEmpty ? nil : projectFocusVolumeIds)
-                : (effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds),
-            // Project History scope (#377 Phase 2): `.history` gates to the project's
-            // engaged documents (empty set = match nothing, per the `documentIds`
-            // contract); `.off`/`.focus` leave `documentIds` unset.
-            documentIds: projectScope == .history ? projectEngagedDocumentKeys : nil,
+            volumeIds: scoped.volumeIds,
+            documentIds: scoped.documentIds,
             // Project Focus "only new" (#377 Phase 2b): excludes the engaged set so discovery
             // emphasizes fresh material. Only in `.focus` with the toggle on.
             excludeDocumentIds: (projectScope == .focus && projectOnlyNew)

@@ -228,6 +228,12 @@ struct SearchViewTests {
         // "Only new" on: the engaged set becomes the exclusion.
         vm.projectOnlyNew = true
         #expect(vm.searchParameters.excludeDocumentIds == ["frus1969-76v01/d5"])
+
+        // Focus whose subjects resolve to NO volumes must match nothing (empty documentIds
+        // → SQL 1=0), not silently search the whole corpus.
+        vm.projectFocusVolumeIds = []
+        #expect(vm.searchParameters.volumeIds == nil)
+        #expect(vm.searchParameters.documentIds == [])
     }
 
     // MARK: - SubjectTagFilterTest

@@ -391,6 +391,13 @@ final class MacSearchViewModel {
 
     func clearVolumeFilter() {
         parameters.volumeIds = nil
+        // In Focus mode the volume scope IS the focus, so clearing the Volume chip exits
+        // Focus — otherwise reopening the Advanced panel would silently reinstate the
+        // focus volumes via `applyProjectScope` (#377 Phase 2b).
+        if filterVM?.projectScope == .focus {
+            filterVM?.projectScope = .off
+            filterVM?.projectOnlyNew = false
+        }
         parametersVersion += 1
     }
 
@@ -581,14 +588,22 @@ final class MacSearchViewModel {
     ///   off uses the manual volume/subseries selection.
     private func scopeDerivedParams() -> (volumeIds: [String]?, documentIds: [String]?, excludeDocumentIds: [String]?) {
         guard let fvm = filterVM else { return (nil, nil, nil) }
+        let manualVolumes = fvm.effectiveVolumeIds.isEmpty ? nil : fvm.effectiveVolumeIds
         let volumeIds: [String]?
-        if fvm.projectScope == .focus {
+        let documentIds: [String]?
+        switch fvm.projectScope {
+        case .off:
+            volumeIds = manualVolumes
+            documentIds = nil
+        case .history:
+            volumeIds = manualVolumes
+            documentIds = fvm.projectEngagedDocumentKeys
+        case .focus:
+            // A Focus scope whose subjects resolve to no volumes matches nothing (empty
+            // `documentIds`, per the History contract), not the whole corpus.
             volumeIds = fvm.projectFocusVolumeIds.isEmpty ? nil : fvm.projectFocusVolumeIds
-        } else {
-            let effective = fvm.effectiveVolumeIds
-            volumeIds = effective.isEmpty ? nil : effective
+            documentIds = fvm.projectFocusVolumeIds.isEmpty ? [] : nil
         }
-        let documentIds = fvm.projectScope == .history ? fvm.projectEngagedDocumentKeys : nil
         let exclude = (fvm.projectScope == .focus && fvm.projectOnlyNew)
             ? fvm.projectEngagedDocumentKeys : nil
         return (volumeIds, documentIds, exclude)

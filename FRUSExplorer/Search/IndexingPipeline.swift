@@ -2159,6 +2159,20 @@ public actor IndexingPipeline {
             binds.append(contentsOf: vids)
         }
 
+        // Chunks a large `"volumeId/documentId"` key set into ≤499-bind `IN`/`NOT IN` groups
+        // (SQLite caps bound variables at ~999) and appends the combined condition. `IN` groups
+        // OR (match any chunk); `NOT IN` groups AND (excluded from every chunk). Mirrors the
+        // chunking the rest of this file uses for unbounded `IN` lists. (#377 Phase 2)
+        func appendChunkedKeyCondition(_ ids: [String], op: String, chunkJoin: String) {
+            let parts = stride(from: 0, to: ids.count, by: 499).map { start -> String in
+                let chunk = Array(ids[start..<min(start + 499, ids.count)])
+                let placeholders = chunk.map { _ in "?" }.joined(separator: ", ")
+                binds.append(contentsOf: chunk)
+                return "(dc.volume_id || '/' || dc.document_id) \(op) (\(placeholders))"
+            }
+            conditions.append("(" + parts.joined(separator: chunkJoin) + ")")
+        }
+
         // Project History scope (#377 Phase 2): restrict to an explicit `"volumeId/documentId"` set.
         // Contract: `nil` = no document gate (the default). A non-nil array gates to exactly
         // that set — so an *empty* array (a History scope whose project has engaged no documents
@@ -2167,9 +2181,7 @@ public actor IndexingPipeline {
             if docIds.isEmpty {
                 conditions.append("1 = 0")
             } else {
-                let placeholders = docIds.map { _ in "?" }.joined(separator: ", ")
-                conditions.append("(dc.volume_id || '/' || dc.document_id) IN (\(placeholders))")
-                binds.append(contentsOf: docIds)
+                appendChunkedKeyCondition(docIds, op: "IN", chunkJoin: " OR ")
             }
         }
 
@@ -2177,9 +2189,7 @@ public actor IndexingPipeline {
         // Contract: `nil`/empty = exclude nothing (unlike `documentIds`, an empty *exclusion*
         // is a no-op, not "match nothing").
         if let excludeIds = filters.excludeDocumentIds, !excludeIds.isEmpty {
-            let placeholders = excludeIds.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("(dc.volume_id || '/' || dc.document_id) NOT IN (\(placeholders))")
-            binds.append(contentsOf: excludeIds)
+            appendChunkedKeyCondition(excludeIds, op: "NOT IN", chunkJoin: " AND ")
         }
 
         if let range = filters.dateRange {

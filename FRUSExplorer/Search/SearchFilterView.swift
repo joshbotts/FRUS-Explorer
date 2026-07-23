@@ -125,9 +125,9 @@ struct SearchFilterView: View {
             Form {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
-                if !vm.availableVolumes.isEmpty     { customScopeSection }
-                if !vm.availableVolumes.isEmpty     { subjectFacetSection }
-                if !vm.availableVolumes.isEmpty     { volumeScopeSectionMac }
+                if showVolumeScopeSections          { customScopeSection }
+                if showVolumeScopeSections          { subjectFacetSection }
+                if showVolumeScopeSections          { volumeScopeSectionMac }
                 documentTypeSection
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
@@ -170,9 +170,9 @@ struct SearchFilterView: View {
             Form {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
-                if !vm.availableVolumes.isEmpty     { customScopeSection }
-                if !vm.availableVolumes.isEmpty     { subjectFacetSection }
-                if !vm.availableVolumes.isEmpty     { volumeScopeSectioniOS }
+                if showVolumeScopeSections          { customScopeSection }
+                if showVolumeScopeSections          { subjectFacetSection }
+                if showVolumeScopeSections          { volumeScopeSectioniOS }
                 documentTypeSection
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
@@ -262,6 +262,13 @@ struct SearchFilterView: View {
         showHistoryOption || showFocusOption || vm.projectScope != .off
     }
 
+    /// The manual volume-scoping sections (custom scope, subject facet, volume/subseries
+    /// pickers) are hidden in **Focus** mode — Focus derives the volume scope from the
+    /// project's subjects, so a manual selection would have no effect (#377 Phase 2b).
+    private var showVolumeScopeSections: Bool {
+        !vm.availableVolumes.isEmpty && vm.projectScope != .focus
+    }
+
     /// Scopes the search to the active project — **History** (its engaged documents) or
     /// **Focus** (the volumes its subjects define, optionally excluding already-engaged
     /// documents). See the `show*Option` helpers for which modes are offered.
@@ -316,15 +323,16 @@ struct SearchFilterView: View {
                          defaultValue: "History limits results to the \(n) documents you've collected, annotated, or opened in this project."))
         case .focus:
             let v = vm.projectFocusVolumeIds.count
-            let base = v == 1
-                ? String(localized: "search.projectscope.footer.focus.one",
-                         defaultValue: "Focus searches the 1 volume your project's subjects define")
-                : String(localized: "search.projectscope.footer.focus.other",
-                         defaultValue: "Focus searches the \(v) volumes your project's subjects define")
+            let volumesClause = v == 1
+                ? String(localized: "search.projectscope.focus.volumes.one",
+                         defaultValue: "1 volume your project's subjects define")
+                : String(localized: "search.projectscope.focus.volumes.other",
+                         defaultValue: "\(v) volumes your project's subjects define")
             Text(vm.projectOnlyNew
                  ? String(localized: "search.projectscope.footer.focus.onlynew",
-                          defaultValue: "\(base), excluding documents you've already engaged.")
-                 : "\(base).")
+                          defaultValue: "Focus searches the \(volumesClause), excluding documents you've already engaged.")
+                 : String(localized: "search.projectscope.footer.focus",
+                          defaultValue: "Focus searches the \(volumesClause)."))
         case .off:
             Text(String(localized: "search.projectscope.footer.off",
                         defaultValue: "Choose History to search only what you've engaged, or Focus to discover across the volumes your project's subjects define."))
