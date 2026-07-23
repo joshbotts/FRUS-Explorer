@@ -73,6 +73,34 @@ struct ProjectLeadsServiceTests {
         #expect(ProjectLeadsService.collectionSeedKeys(forProject: project, in: context) == ["v1/d1", "v1/d2"])
     }
 
+    @Test("effectiveWeights: project override beats global preference beats default; missing axes default")
+    func effectiveWeightsResolution() {
+        let defaults = UserDefaults.standard
+        let key = ProjectLeadsService.globalWeightsKey
+        let saved = defaults.string(forKey: key)
+        defer { if let saved { defaults.set(saved, forKey: key) } else { defaults.removeObject(forKey: key) } }
+
+        // No project + no global preference → app defaults.
+        defaults.removeObject(forKey: key)
+        let appDefault = ProjectLeadsService.effectiveWeights(for: nil)
+        #expect(appDefault[.archivalProvenance] == 1.0)
+        #expect(appDefault[.sharedPersons] == 0.7)
+
+        // Global preference (a partial string) → its explicit axes win; axes absent from the
+        // string fall back to their default (the forward-compat merge for future axes).
+        defaults.set("archivalProvenance:0.2", forKey: key)
+        let global = ProjectLeadsService.effectiveWeights(for: nil)
+        #expect(global[.archivalProvenance] == 0.2)
+        #expect(global[.sharedPersons] == 0.7)
+
+        // A project's own weights beat the global preference.
+        let project = Project(name: "P")
+        project.leadAxisWeights = "crossReference:0.9"
+        let projectW = ProjectLeadsService.effectiveWeights(for: project)
+        #expect(projectW[.crossReference] == 0.9)
+        #expect(projectW[.archivalProvenance] == 1.0)   // not set by the project → default, not global 0.2
+    }
+
     @Test("applyLeads upserts: preserves firstSurfacedAt + dismissed, deletes stale")
     func applyLeadsUpsert() throws {
         let container = try ModelContainer.makeTestContainer()

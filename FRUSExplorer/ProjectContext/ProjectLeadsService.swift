@@ -34,6 +34,25 @@ enum ProjectLeadsService {
     /// Maximum leads persisted per project.
     static let leadLimit = 24
 
+    /// The `@AppStorage` key of the global related-documents weight preference (shared with
+    /// the document-view Related panel).
+    static let globalWeightsKey = "frus.related.weights"
+
+    /// The effective lead axis weights for a project (#377 Phase 3): its own per-project
+    /// tuning if set, else the researcher's global related-documents preference, else the app
+    /// default — always overlaid onto the current defaults so a newly-added axis (e.g. a future
+    /// semantic-proximity axis) inherits its default weight rather than an implicit 0.
+    static func effectiveWeights(for project: Project?) -> AxisWeights {
+        let stored = project?.leadAxisWeights
+            ?? UserDefaults.standard.string(forKey: globalWeightsKey)
+        let base = stored.flatMap { AxisWeights(rawValue: $0) } ?? .default
+        var merged: [SimilarityAxis: Double] = [:]
+        for axis in SimilarityAxis.allCases {
+            merged[axis] = base.weights[axis] ?? axis.defaultWeight
+        }
+        return AxisWeights(weights: merged)
+    }
+
     /// The project's seed: the `"volumeId/documentId"` keys of its collection documents,
     /// de-duplicated and sorted.
     static func collectionSeedKeys(forProject projectId: UUID, in context: ModelContext) -> [String] {
@@ -53,6 +72,10 @@ enum ProjectLeadsService {
     /// Recomputes the project's leads end-to-end: gather the seed, rank each seed's related
     /// documents, aggregate, and upsert the top leads. Clears the leads when the seed is empty.
     static func recompute(forProject projectId: UUID, appState: AppState, in context: ModelContext) async {
+        let pid = projectId
+        let project = try? context.fetch(
+            FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })).first
+        let weights = effectiveWeights(for: project)
         let seedKeys = collectionSeedKeys(forProject: projectId, in: context)
         guard !seedKeys.isEmpty else {
             applyLeads([], forProject: projectId, in: context)
@@ -63,7 +86,7 @@ enum ProjectLeadsService {
         for seedKey in seedKeys.prefix(seedCap) {
             guard let anchor = DocumentKey(compositeString: seedKey) else { continue }
             let result = await RelatedDocumentsEngine.rank(
-                anchor: anchor, anchorYear: nil, weights: .default,
+                anchor: anchor, anchorYear: nil, weights: weights,
                 scopeVolumeIds: nil, limit: perSeedRelatedLimit, appState: appState)
             perSeed.append((seed: seedKey,
                             related: result.rows.map { ($0.key.compositeString, $0.totalScore) }))
