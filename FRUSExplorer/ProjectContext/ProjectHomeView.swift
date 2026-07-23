@@ -84,6 +84,12 @@ struct ProjectHomeView: View {
     @State private var recomputeTask: Task<Void, Never>?
     @State private var isRecomputing = false
 
+    /// Live draft of this project's per-project lead axis weights (#377 Phase 3b), seeded from the
+    /// effective weights (project override → global preference → default) on appearance. Editing a
+    /// slider updates this immediately for live feedback; the value is persisted to
+    /// `Project.leadAxisWeights` and re-ranked only when the drag settles.
+    @State private var draftWeights = AxisWeights.default
+
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
@@ -103,6 +109,7 @@ struct ProjectHomeView: View {
                     summarySection
                     focusSubjectsSection(project)
                     leadsSection
+                    weightTuningSection(project)
                     recentSection
                     quickActions
                 }
@@ -127,6 +134,7 @@ struct ProjectHomeView: View {
             recomputeTask?.cancel()
             isRecomputing = false
             questionDraft = project?.researchQuestion ?? ""
+            if let project { draftWeights = ProjectLeadsService.effectiveWeights(for: project) }
             scheduleRecompute(immediate: true)   // no chatter to debounce on open / project switch
         }
         // Recompute leads when the project's collections (or their documents) change — the
@@ -427,6 +435,90 @@ struct ProjectHomeView: View {
             guard !Task.isCancelled else { return }
             isRecomputing = false
         }
+    }
+
+    // MARK: - Lead weight tuning (#377 Phase 3b)
+
+    /// A collapsible panel to tune how much each similarity axis influences *this project's*
+    /// suggestions — the per-project override of the global related-documents weighting. Shown only
+    /// once the project has a collection (a seed to rank against). Mirrors the document-view Related
+    /// panel's weight sliders (same axes, same `0…1` range, same persist-on-release behaviour), but
+    /// writes to `Project.leadAxisWeights` and re-ranks the leads instead of the panel.
+    @ViewBuilder
+    private func weightTuningSection(_ project: Project) -> some View {
+        if !summary.collections.isEmpty {
+            DisclosureGroup(String(localized: "project.home.leads.tune", defaultValue: "Adjust weighting")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(String(localized: "project.home.leads.tune.detail",
+                                defaultValue: "Set how much each kind of connection shapes this project's suggestions."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(SimilarityAxis.allCases) { axis in
+                        weightRow(axis, project)
+                    }
+                    HStack {
+                        Spacer()
+                        Button(String(localized: "project.home.leads.tune.reset", defaultValue: "Reset to default")) {
+                            resetWeights(project)
+                        }
+                        .buttonStyle(.borderless)
+                        .font(.caption)
+                        .disabled(project.leadAxisWeights == nil)
+                    }
+                }
+                .padding(.top, 6)
+            }
+            .font(.subheadline)
+        }
+    }
+
+    /// One axis's weight slider. The value updates live for feedback; the persist + re-rank happens
+    /// only when the drag settles (`onEditingChanged` false), so a drag is one recompute, not one per
+    /// tick. The shared-subjects axis stays disabled + annotated until its detected-topic data ships.
+    @ViewBuilder
+    private func weightRow(_ axis: SimilarityAxis, _ project: Project) -> some View {
+        let subjectsInert = axis == .sharedSubjects && DocumentSubjectStore.shared == nil
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 6) {
+                Label(axis.displayName, systemImage: axis.systemImage)
+                    .font(.caption)
+                    .labelStyle(.titleAndIcon)
+                Spacer()
+                Text(draftWeights[axis], format: .number.precision(.fractionLength(1)))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Slider(
+                value: Binding(
+                    get: { draftWeights[axis] },
+                    set: { draftWeights[axis] = $0 }),   // live @State only; persist + re-rank on release
+                in: 0...1,
+                onEditingChanged: { editing in
+                    if !editing { commitWeights(project) }
+                })
+            .disabled(subjectsInert)
+            if subjectsInert {
+                Text(String(localized: "project.home.leads.tune.subjects.gated",
+                            defaultValue: "Available when detected-topic data ships (experimental)."))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    /// Persists the drafted weights to the project (its per-project override) and re-ranks the leads.
+    private func commitWeights(_ project: Project) {
+        project.leadAxisWeights = draftWeights.rawValue
+        scheduleRecompute(immediate: true)
+    }
+
+    /// Clears the per-project override (falling back to the global preference / default), re-seeds the
+    /// sliders from the now-effective weights, and re-ranks.
+    private func resetWeights(_ project: Project) {
+        project.leadAxisWeights = nil
+        draftWeights = ProjectLeadsService.effectiveWeights(for: project)
+        scheduleRecompute(immediate: true)
     }
 
     // MARK: - Recent activity

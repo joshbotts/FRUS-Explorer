@@ -101,6 +101,24 @@ struct ProjectLeadsServiceTests {
         #expect(projectW[.archivalProvenance] == 1.0)   // not set by the project → default, not global 0.2
     }
 
+    @Test("tuning panel round-trip: drafted weights → rawValue → effectiveWeights (unset axes default)")
+    func perProjectWeightRoundTrip() {
+        // Mirror the Project Home tuning panel's commit path: start from the effective defaults,
+        // tweak two axes, persist as the raw string, and resolve back.
+        var draft = AxisWeights.default
+        draft[.crossReference] = 0.2
+        draft[.dateProximity] = 0.9
+        let project = Project(name: "P")
+        project.leadAxisWeights = draft.rawValue
+
+        let resolved = ProjectLeadsService.effectiveWeights(for: project)
+        #expect(resolved[.crossReference] == 0.2)
+        #expect(resolved[.dateProximity] == 0.9)
+        // Axes the researcher didn't touch keep their default weight.
+        #expect(resolved[.archivalProvenance] == 1.0)
+        #expect(resolved[.sharedPersons] == 0.7)
+    }
+
     @Test("gatherSeed returns the project's seed keys + weight string off a background context")
     func gatherSeedOffMain() async throws {
         let container = try ModelContainer.makeTestContainer()
