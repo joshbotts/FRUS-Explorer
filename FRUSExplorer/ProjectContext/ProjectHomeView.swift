@@ -552,11 +552,11 @@ struct ProjectHomeView: View {
     /// `documentEntries.append` add path), plus the app-wide `CollectionEntry` count as a coarse
     /// reactive signal for the `entry.collection =` inverse-add path (which doesn't bump the
     /// parent's `lastModified`), plus the distinct set of the project's **noted document keys** (the
-    /// second seed source — reacts when a note is added/removed/retagged to the project; note
-    /// `volumeId`/`documentId` are scalars, so no relationship fault). This only decides *when* to
-    /// recompute; the real seed is derived off-main inside `recompute`, and the open-time and
-    /// Refresh recomputes backstop any coarse miss (e.g. an add + remove that leaves the count
-    /// unchanged).
+    /// second seed source), plus the distinct set of the documents the project's **focus tags**
+    /// resolve to (the third seed source — from direct + note-applied tags). All scalar reads, so no
+    /// relationship fault. This only decides *when* to recompute; the real seed is derived off-main
+    /// inside `recompute`, and the open-time and Refresh recomputes backstop any coarse miss (e.g. an
+    /// add + remove that leaves the collection-entry count unchanged).
     private var seedSignature: String {
         let collections = summary.collections
             .map { "\($0.id.uuidString):\($0.lastModified?.timeIntervalSince1970 ?? 0)" }
@@ -567,11 +567,23 @@ struct ProjectHomeView: View {
             .map { "\($0.volumeId)/\($0.documentId)" })
             .sorted()
             .joined(separator: ",")
-        // The project's chosen focus tags (reacts to editing the focus set) + the app-wide tag-
-        // assignment count (a coarse reactive signal for tagging a document with a focus tag). Both
-        // scalars — no fault. Note-applied focus-tag changes are backstopped by open/Refresh.
-        let focusTags = (project?.defaultUserTagIds ?? []).map(\.uuidString).sorted().joined(separator: ",")
-        return "\(allCollectionEntries.count)|\(collections)|n:\(notedDocs)|t:\(focusTags)|ta:\(allTagAssignments.count)"
+        // The exact set of documents the project's focus tags resolve to — from direct tag
+        // assignments AND note-applied tags, all scalar reads (tagId / userTagIds / volumeId /
+        // documentId), no relationship fault. This reacts to editing the focus set AND to
+        // (re)tagging a document, including a same-count tag swap (which a bare assignment count
+        // would miss). Empty when the project has no focus tags.
+        let focusTagSet = Set(project?.defaultUserTagIds ?? [])
+        let taggedDocs = focusTagSet.isEmpty ? "" : Set(
+            allTagAssignments
+                .filter { focusTagSet.contains($0.tagId) && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                .map { "\($0.volumeId)/\($0.documentId)" }
+            + allNotes
+                .filter { !Set($0.userTagIds).isDisjoint(with: focusTagSet)
+                          && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                .map { "\($0.volumeId)/\($0.documentId)" })
+            .sorted()
+            .joined(separator: ",")
+        return "\(allCollectionEntries.count)|\(collections)|n:\(notedDocs)|tg:\(taggedDocs)"
     }
 
     /// Schedules a debounced leads recompute. `immediate` skips the debounce (the Refresh button
@@ -1096,10 +1108,14 @@ struct ProjectFocusTagsEditor: View {
 
     /// Adds or removes a tag id from the project's focus (live save).
     private func toggle(_ tagId: UUID) {
-        if let index = project.defaultUserTagIds.firstIndex(of: tagId) {
-            project.defaultUserTagIds.remove(at: index)
+        // Reassign the whole array — Project's array `didSet` (and thus `lastModified` / CloudKit
+        // last-write-wins) does NOT fire on an in-place `remove`/`append` (see Project.swift).
+        var ids = project.defaultUserTagIds
+        if let index = ids.firstIndex(of: tagId) {
+            ids.remove(at: index)
         } else {
-            project.defaultUserTagIds.append(tagId)
+            ids.append(tagId)
         }
+        project.defaultUserTagIds = ids
     }
 }

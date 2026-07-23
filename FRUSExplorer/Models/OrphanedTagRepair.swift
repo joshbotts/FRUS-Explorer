@@ -94,13 +94,16 @@ enum OrphanedTagRepair {
         let createdAt: Date
     }
 
-    /// Pure, deterministic core: given the three reference sources, returns one `Placeholder`
-    /// per orphaned id (referenced but absent from `existingTagIds`), sorted by id for a stable
-    /// order. Factored out so it can be unit-tested without a live container.
+    /// Pure, deterministic core: given the reference sources, returns one `Placeholder` per
+    /// orphaned id (referenced but absent from `existingTagIds`), sorted by id for a stable order.
+    /// Factored out so it can be unit-tested without a live container. `projects` (their
+    /// `defaultUserTagIds` tag focus, #377 Phase 3) is a defaulted source so existing callers/tests
+    /// are unaffected.
     static func placeholders(
         assignments: [DocumentTagAssignment],
         notes: [ResearchNote],
-        existingTagIds: Set<UUID>
+        existingTagIds: Set<UUID>,
+        projects: [Project] = []
     ) -> [Placeholder] {
         // Earliest referencing date per orphaned id — deterministic across devices.
         var earliest: [UUID: Date] = [:]
@@ -116,6 +119,9 @@ enum OrphanedTagRepair {
         for assignment in assignments { consider(assignment.tagId, assignment.createdAt) }
         for note in notes {
             for tagId in note.userTagIds { consider(tagId, note.createdAt) }
+        }
+        for project in projects {
+            for tagId in project.defaultUserTagIds { consider(tagId, project.createdAt) }
         }
         return earliest
             .sorted { $0.key.uuidString < $1.key.uuidString }
@@ -139,9 +145,11 @@ enum OrphanedTagRepair {
             let assignments = try? context.fetch(FetchDescriptor<DocumentTagAssignment>()),
             let notes = try? context.fetch(FetchDescriptor<ResearchNote>())
         else { return 0 }
+        let projects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
 
         let existing = Set(tags.map(\.id))
-        let toCreate = placeholders(assignments: assignments, notes: notes, existingTagIds: existing)
+        let toCreate = placeholders(assignments: assignments, notes: notes,
+                                    existingTagIds: existing, projects: projects)
         guard !toCreate.isEmpty else { return 0 }
 
         for placeholder in toCreate {
