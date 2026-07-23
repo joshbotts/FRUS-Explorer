@@ -111,6 +111,30 @@ struct VolumeSubjectProfilesTests {
         #expect(p.volumeIds(forSubjectRefs: [String]()).isEmpty)
     }
 
+    @Test("focus suggestions rank by recurrence across engaged volumes, then score")
+    func focusSuggestions() throws {
+        let p = try decode()
+        // One engaged volume → its top subjects, ranked by score (count ties at 1).
+        let fromV1 = ProjectFocusSuggestions.suggestions(
+            engagedVolumeIds: ["frus_v1"], profiles: p, excluding: [])
+        #expect(fromV1.map(\.name) == ["Naval Blockade", "Diplomacy"])  // 0.83 before 0.37
+
+        // Both volumes → 'shared' recurs (count 2) so it leads; the specifics (count 1)
+        // follow, ordered by score (peaceSpecific 0.94 before warSpecific 0.83).
+        let fromBoth = ProjectFocusSuggestions.suggestions(
+            engagedVolumeIds: ["frus_v1", "frus_v2"], profiles: p, excluding: [])
+        #expect(fromBoth.map(\.ref) == ["shared", "peaceSpecific", "warSpecific"])
+
+        // Already-chosen refs are excluded from suggestions.
+        let excludingShared = ProjectFocusSuggestions.suggestions(
+            engagedVolumeIds: ["frus_v1", "frus_v2"], profiles: p, excluding: ["shared"])
+        #expect(!excludingShared.contains { $0.ref == "shared" })
+
+        // A limit caps the count.
+        #expect(ProjectFocusSuggestions.suggestions(
+            engagedVolumeIds: ["frus_v1", "frus_v2"], profiles: p, excluding: [], limit: 1).count == 1)
+    }
+
     // MARK: Tolerance
 
     @Test("out-of-range vocab indices are skipped, not fatal")

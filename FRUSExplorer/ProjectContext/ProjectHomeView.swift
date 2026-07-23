@@ -73,6 +73,9 @@ struct ProjectHomeView: View {
     /// is never lost if the window closes before the field would have "committed".
     @State private var questionDraft: String = ""
 
+    /// Whether the focus-subjects editor sheet is presented (#377 Phase 2b).
+    @State private var showFocusEditor = false
+
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
@@ -90,6 +93,7 @@ struct ProjectHomeView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     header(project)
                     summarySection
+                    focusSubjectsSection(project)
                     leadsSection
                     recentSection
                     quickActions
@@ -109,7 +113,60 @@ struct ProjectHomeView: View {
         }
         .navigationTitle(project?.name ?? String(localized: "project.home.title", defaultValue: "Project Home"))
         .task(id: projectId) { questionDraft = project?.researchQuestion ?? "" }
+        .sheet(isPresented: $showFocusEditor) {
+            if let project {
+                ProjectFocusSubjectsEditor(project: project)
+            }
+        }
     }
+
+    // MARK: - Focus subjects (#377 Phase 2b)
+
+    /// The project's discovery-focus subjects: a chip list plus an editor entry. The focus
+    /// resolves (in Mode A search) to the volumes those subjects are characteristic of, so a
+    /// project's subjects become a discovery lens over the corpus. Hidden when the subject
+    /// index is unavailable.
+    @ViewBuilder
+    private func focusSubjectsSection(_ project: Project) -> some View {
+        if let profiles = VolumeSubjectProfilesStore.shared {
+            let chosen = project.defaultSubjectTagIds
+            let subjects = profiles.allSubjects.filter { chosen.contains($0.ref) }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(String(localized: "project.home.focus.title", defaultValue: "Focus subjects"))
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        showFocusEditor = true
+                    } label: {
+                        Label(subjects.isEmpty
+                              ? String(localized: "project.home.focus.add", defaultValue: "Add")
+                              : String(localized: "project.home.focus.edit", defaultValue: "Edit"),
+                              systemImage: "slider.horizontal.3")
+                    }
+                    .buttonStyle(.borderless)
+                }
+                if subjects.isEmpty {
+                    Text(String(localized: "project.home.focus.empty",
+                                defaultValue: "Choose subjects to focus discovery on the volumes they define."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 8)],
+                              alignment: .leading, spacing: 8) {
+                        ForEach(subjects) { subject in
+                            Text(subject.name)
+                                .font(.caption)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Capsule().fill(Color.accentColor.opacity(0.15)))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     // MARK: - Header (name + research question + focus)
 
