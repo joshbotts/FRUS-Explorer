@@ -71,6 +71,10 @@ struct ProjectHomeView: View {
     // A count-only reactive signal for the leads recompute trigger (see `seedSignature`) — its
     // `.count` changes when any collection document is added/removed, without faulting relationships.
     @Query private var allCollectionEntries: [CollectionEntry]
+    // The researcher's user tags (for the focus-tags chips + editor) and a count-only reactive
+    // signal for direct tag assignments (so tagging a document recomputes the focus-tag seed).
+    @Query(sort: \UserTag.name) private var allTags: [UserTag]
+    @Query private var allTagAssignments: [DocumentTagAssignment]
 
     /// Local draft of the research question, loaded from the model on appearance and
     /// saved live on every edit (like the collection editors) — so an in-progress edit
@@ -96,6 +100,9 @@ struct ProjectHomeView: View {
     /// Whether the "manage collections" editor sheet is presented (#377 Phase 5 polish).
     @State private var showCollectionsEditor = false
 
+    /// Whether the focus-tags editor sheet is presented (#377 Phase 3 — tag focus).
+    @State private var showTagsEditor = false
+
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
@@ -115,6 +122,7 @@ struct ProjectHomeView: View {
                     summarySection
                     collectionsSection(project)
                     focusSubjectsSection(project)
+                    focusTagsSection(project)
                     leadsSection
                     recentSection
                     quickActions
@@ -156,6 +164,60 @@ struct ProjectHomeView: View {
             if let project {
                 ProjectCollectionsEditor(projectId: project.id, projectName: project.name)
             }
+        }
+        .sheet(isPresented: $showTagsEditor) {
+            if let project {
+                ProjectFocusTagsEditor(project: project)
+            }
+        }
+    }
+
+    // MARK: - Focus tags (#377 Phase 3 — tag focus)
+
+    /// The project's user-tag focus: the tags whose documents anchor this project's suggestions, plus
+    /// an editor entry. Distinct from the *subject* focus above (which scopes Mode A search to
+    /// volumes) — these are the researcher's own tags feeding the leads seed. Shown only once the
+    /// researcher has created tags.
+    @ViewBuilder
+    private func focusTagsSection(_ project: Project) -> some View {
+        if !allTags.isEmpty {
+            let chosen = project.defaultUserTagIds
+            let chosenTags = allTags.filter { chosen.contains($0.id) }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(String(localized: "project.home.focusTags.title", defaultValue: "Focus tags"))
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        showTagsEditor = true
+                    } label: {
+                        Label(chosenTags.isEmpty
+                              ? String(localized: "project.home.focusTags.add", defaultValue: "Add")
+                              : String(localized: "project.home.focusTags.edit", defaultValue: "Edit"),
+                              systemImage: "tag")
+                    }
+                    .buttonStyle(.borderless)
+                }
+                if chosenTags.isEmpty {
+                    Text(String(localized: "project.home.focusTags.empty",
+                                defaultValue: "Choose tags whose documents should anchor this project's suggestions."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 8)],
+                              alignment: .leading, spacing: 8) {
+                        ForEach(chosenTags) { tag in
+                            Text(tag.name)
+                                .font(.caption)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Capsule().fill(Color.accentColor.opacity(0.15)))
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -505,7 +567,11 @@ struct ProjectHomeView: View {
             .map { "\($0.volumeId)/\($0.documentId)" })
             .sorted()
             .joined(separator: ",")
-        return "\(allCollectionEntries.count)|\(collections)|n:\(notedDocs)"
+        // The project's chosen focus tags (reacts to editing the focus set) + the app-wide tag-
+        // assignment count (a coarse reactive signal for tagging a document with a focus tag). Both
+        // scalars — no fault. Note-applied focus-tag changes are backstopped by open/Refresh.
+        let focusTags = (project?.defaultUserTagIds ?? []).map(\.uuidString).sorted().joined(separator: ",")
+        return "\(allCollectionEntries.count)|\(collections)|n:\(notedDocs)|t:\(focusTags)|ta:\(allTagAssignments.count)"
     }
 
     /// Schedules a debounced leads recompute. `immediate` skips the debounce (the Refresh button
@@ -946,5 +1012,94 @@ struct ProjectCollectionsEditor: View {
             return updated
         }
         return ids + [projectId]
+    }
+}
+
+// MARK: - ProjectFocusTagsEditor
+
+/// Chooses which of the researcher's user tags focus a project's suggestions (#377 Phase 3).
+///
+/// The chosen tags are stored in `Project.defaultUserTagIds`; documents carrying any of them (via a
+/// direct tag or a note tag) join the project's Project Leads seed. User tags are otherwise global,
+/// so this is the project's deliberate lens over them. Selection saves live (toggling writes
+/// straight to the model). Presented as a sheet from Project Home; shared by both platforms.
+///
+/// Version history:
+///   1.0 — #377 Phase 3: initial implementation
+struct ProjectFocusTagsEditor: View {
+
+    /// The project whose tag focus is being edited; `defaultUserTagIds` is written live.
+    @Bindable var project: Project
+
+    @Environment(\.dismiss) private var dismiss
+
+    /// The researcher's user tags (a small, free-form set — no search needed).
+    @Query(sort: \UserTag.name) private var allTags: [UserTag]
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if allTags.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "project.focusTags.empty.title", defaultValue: "No Tags"),
+                        systemImage: "tag.slash",
+                        description: Text(String(localized: "project.focusTags.empty.detail",
+                                                 defaultValue: "Tag documents while you research, then choose which tags focus this project's suggestions here."))
+                    )
+                } else {
+                    List {
+                        Section {
+                            ForEach(allTags) { tag in
+                                row(tag)
+                            }
+                        } footer: {
+                            Text(String(localized: "project.focusTags.footer",
+                                        defaultValue: "Documents you've tagged with the chosen tags anchor this project's Suggested Next."))
+                        }
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "project.focusTags.title", defaultValue: "Focus Tags"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "project.focusTags.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 520)
+        #endif
+    }
+
+    @ViewBuilder
+    private func row(_ tag: UserTag) -> some View {
+        let isChosen = project.defaultUserTagIds.contains(tag.id)
+        Button {
+            toggle(tag.id)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isChosen ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isChosen ? Color.accentColor : Color.secondary)
+                Text(tag.name.isEmpty
+                     ? String(localized: "project.focusTags.untitled", defaultValue: "Untitled tag")
+                     : tag.name)
+                    .foregroundStyle(.primary)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Adds or removes a tag id from the project's focus (live save).
+    private func toggle(_ tagId: UUID) {
+        if let index = project.defaultUserTagIds.firstIndex(of: tagId) {
+            project.defaultUserTagIds.remove(at: index)
+        } else {
+            project.defaultUserTagIds.append(tagId)
+        }
     }
 }

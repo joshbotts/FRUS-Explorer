@@ -96,22 +96,47 @@ enum ProjectLeadsService {
         return keys.sorted()
     }
 
-    /// Gathers the project's seed keys (its collection documents unioned with its noted documents)
-    /// and its raw per-project weight string on a **background** context, off the main actor. The
-    /// seed fetches pull every collection/note and filter in memory (the `projectIds`-contains
-    /// predicate is unreliable in SwiftData); doing that — plus faulting each collection's
-    /// `documentEntries` relationship — synchronously on the main thread froze the UI on a large
-    /// library in Phase 2a, so it runs here on a detached task and returns only Sendable values.
+    /// The project's tag-focus seed: the `"volumeId/documentId"` keys of documents carrying any of
+    /// the project's chosen focus tags (`Project.defaultUserTagIds`). A document is "tagged" via a
+    /// direct `DocumentTagAssignment` **or** a `ResearchNote` whose `userTagIds` include a focus tag
+    /// (the same two sources the Research sidebar unions). User tags are global, so this is the
+    /// project's deliberate lens over them. Empty focus set → no contribution. `nonisolated` for the
+    /// off-main gather; unscoped fetches filtered in memory (`[UUID].contains` predicates unreliable).
+    nonisolated static func taggedSeedKeys(forTags focusTags: Set<UUID>, in context: ModelContext) -> [String] {
+        guard !focusTags.isEmpty else { return [] }
+        var keys = Set<String>()
+        for assignment in ((try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? [])
+        where focusTags.contains(assignment.tagId)
+            && !assignment.volumeId.isEmpty && !assignment.documentId.isEmpty {
+            keys.insert("\(assignment.volumeId)/\(assignment.documentId)")
+        }
+        for note in ((try? context.fetch(FetchDescriptor<ResearchNote>())) ?? [])
+        where !Set(note.userTagIds).isDisjoint(with: focusTags)
+            && !note.volumeId.isEmpty && !note.documentId.isEmpty {
+            keys.insert("\(note.volumeId)/\(note.documentId)")
+        }
+        return keys.sorted()
+    }
+
+    /// Gathers the project's seed keys (its collection documents, noted documents, and focus-tagged
+    /// documents unioned) and its raw per-project weight string on a **background** context, off the
+    /// main actor. The seed fetches pull every collection/note/tag-assignment and filter in memory
+    /// (the `projectIds`-contains predicate is unreliable in SwiftData); doing that — plus faulting
+    /// each collection's `documentEntries` relationship — synchronously on the main thread froze the
+    /// UI on a large library in Phase 2a, so it runs here on a detached task, returning Sendable values.
     nonisolated static func gatherSeed(
         forProject projectId: UUID, container: ModelContainer
     ) async -> (seedKeys: [String], projectWeightsRaw: String?) {
         await Task.detached {
             let context = ModelContext(container)
             let pid = projectId
-            let raw = (try? context.fetch(
-                FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })).first)?.leadAxisWeights
+            let project = try? context.fetch(
+                FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })).first
+            let raw = project?.leadAxisWeights
+            let focusTags = Set(project?.defaultUserTagIds ?? [])
             let seed = Set(collectionSeedKeys(forProject: projectId, in: context))
                 .union(noteSeedKeys(forProject: projectId, in: context))
+                .union(taggedSeedKeys(forTags: focusTags, in: context))
             return (seed.sorted(), raw)
         }.value
     }

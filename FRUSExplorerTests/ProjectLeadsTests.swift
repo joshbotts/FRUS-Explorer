@@ -108,6 +108,27 @@ struct ProjectLeadsServiceTests {
         #expect(ProjectLeadsService.noteSeedKeys(forProject: project, in: context) == ["v1/d1", "v1/d2"])
     }
 
+    @Test("taggedSeedKeys unions direct-tagged + note-tagged docs for the focus tags only")
+    func taggedSeed() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let tagA = UUID(); let tagB = UUID(); let otherTag = UUID()
+
+        // Direct assignment carrying a focus tag → seeds; a non-focus tag → excluded.
+        context.insert(DocumentTagAssignment(volumeId: "v1", documentId: "d1", tagId: tagA))
+        context.insert(DocumentTagAssignment(volumeId: "v1", documentId: "dX", tagId: otherTag))
+        // A note carrying a focus tag → its document seeds; a note with only a non-focus tag → excluded.
+        context.insert(ResearchNote(documentId: "d2", volumeId: "v2", userTagIds: [tagB]))
+        context.insert(ResearchNote(documentId: "dY", volumeId: "v2", userTagIds: [otherTag]))
+        // A blank-id assignment contributes nothing.
+        context.insert(DocumentTagAssignment(volumeId: "", documentId: "", tagId: tagA))
+        try context.save()
+
+        #expect(ProjectLeadsService.taggedSeedKeys(forTags: [tagA, tagB], in: context) == ["v1/d1", "v2/d2"])
+        // An empty focus set contributes nothing.
+        #expect(ProjectLeadsService.taggedSeedKeys(forTags: [], in: context).isEmpty)
+    }
+
     @Test("effectiveWeights: project override beats global preference beats default; missing axes default")
     func effectiveWeightsResolution() {
         let defaults = UserDefaults.standard
@@ -185,12 +206,14 @@ struct ProjectLeadsServiceTests {
         #expect(remaining.first { $0.documentKey == "v/b" }?.dismissed == true)
     }
 
-    @Test("gatherSeed unions collection + noted documents off a background context")
+    @Test("gatherSeed unions collection + noted + focus-tagged documents off a background context")
     func gatherSeedOffMain() async throws {
         let container = try ModelContainer.makeTestContainer()
         let context = ModelContext(container)
+        let focusTag = UUID()
         let project = Project(name: "P")
         project.leadAxisWeights = "crossReference:0.9"
+        project.defaultUserTagIds = [focusTag]
         context.insert(project)
 
         let c = Collection(name: "C", projectIds: [project.id])
@@ -202,12 +225,15 @@ struct ProjectLeadsServiceTests {
         }
         // A noted document not in any collection also seeds (deliberate engagement, unlike a visit).
         context.insert(ResearchNote(documentId: "d3", volumeId: "v2", projectIds: [project.id]))
+        // A document carrying the project's focus tag also seeds (the project's lens over a global tag).
+        context.insert(DocumentTagAssignment(volumeId: "v3", documentId: "d4", tagId: focusTag))
         try context.save()
 
-        // The seed (collections ∪ notes) + raw weight string are read on a fresh background context.
+        // The seed (collections ∪ notes ∪ focus-tagged) + raw weight string are read on a fresh
+        // background context.
         let (seedKeys, raw) = await ProjectLeadsService.gatherSeed(
             forProject: project.id, container: container)
-        #expect(seedKeys == ["v1/d1", "v1/d2", "v2/d3"])
+        #expect(seedKeys == ["v1/d1", "v1/d2", "v2/d3", "v3/d4"])
         #expect(raw == "crossReference:0.9")
     }
 
