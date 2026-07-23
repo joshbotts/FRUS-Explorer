@@ -143,6 +143,9 @@ struct MacSearchWindowView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 10)
 
+            // #377 Phase 5: the ambient "Working on: <question>" lens (self-padded; zero height when inactive).
+            WorkingOnBanner()
+
             Divider()
 
             VStack(alignment: .leading, spacing: 8) {

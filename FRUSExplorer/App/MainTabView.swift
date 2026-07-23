@@ -298,6 +298,11 @@ struct BrowserTabView: View {
     // This wrapper remains only to give `BrowserView`'s `@State` stable identity across tab switches.
     var body: some View {
         BrowserView()
+            // #377 Phase 5: the ambient "Working on: <question>" lens, injected at the tab level —
+            // OUTSIDE BrowserView's NavigationStack/toolbar/breadcrumb, so it's visible at every
+            // Browse depth and never touches the #238/Session-121 top-inset occlusion math. Reserves
+            // zero height when no project with a research question is active.
+            .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
     }
 }
 

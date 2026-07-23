@@ -188,6 +188,8 @@ struct CorpusBrowserWindowView: View {
             consumePendingVolume()
         }
         .frame(minWidth: 540, minHeight: 440)
+        // #377 Phase 5: the ambient "Working on: <question>" lens across sidebar + detail.
+        .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
     }
 
     /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's

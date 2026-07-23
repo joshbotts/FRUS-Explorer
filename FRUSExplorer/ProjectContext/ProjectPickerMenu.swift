@@ -101,3 +101,59 @@ struct ProjectPickerMenu: View {
         appState.activeProjectId == nil ? "globe" : "folder"
     }
 }
+
+// MARK: - WorkingOnBanner
+
+/// An ambient "Working on: <research question>" line for the Browse and Search chrome (#377 Phase 5).
+///
+/// Renders only when a project is active AND has a non-empty research question — so Global Context
+/// and the silent default project (no question) show nothing, and single-project users are
+/// unbothered. Self-contained (`@Query` + `@Environment`), so all four surfaces (Browse / Search ×
+/// iOS / macOS) inject one view with a single source of truth for copy, gating, and style — rather
+/// than threading the question through the two separate search view-models.
+///
+/// Reactive with no `.onChange`: `@Query` re-renders when the question is edited, and
+/// `activeProjectId` is `@Observable`, so switching projects re-renders. Injected via
+/// `.safeAreaInset`, which reserves zero height when the banner is empty.
+///
+/// Version history:
+///   1.0 — #377 Phase 5: initial implementation
+struct WorkingOnBanner: View {
+
+    @Environment(AppState.self) private var appState
+    @Query(sort: \Project.name) private var projects: [Project]
+
+    var body: some View {
+        if let question = Self.resolvedQuestion(activeProjectId: appState.activeProjectId, projects: projects) {
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 6) {
+                    Image(systemName: "scope")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("\(Text(String(localized: "project.workingOn.prefix", defaultValue: "Working on:")).bold()) \(question)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.bar)
+            }
+        }
+    }
+
+    /// The active project's research question to surface, or `nil` when nothing should render: no
+    /// active project (Global Context), the active project is absent/deleted, or its research
+    /// question is unset/blank. Pure, so the gating is unit-testable without SwiftUI.
+    static func resolvedQuestion(activeProjectId: UUID?, projects: [Project]) -> String? {
+        guard let pid = activeProjectId,
+              let project = projects.first(where: { $0.id == pid }),
+              let question = project.researchQuestion?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !question.isEmpty
+        else { return nil }
+        return question
+    }
+}

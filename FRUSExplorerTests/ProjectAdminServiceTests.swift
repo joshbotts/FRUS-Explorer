@@ -257,4 +257,25 @@ struct ProjectHomeSummaryTests {
         #expect(!detached.contains(project))
         #expect(detached == [otherProject])
     }
+
+    // MARK: - Working-on chrome (#377 Phase 5)
+
+    @Test("WorkingOnBanner.resolvedQuestion gates on an active project with a non-empty question")
+    func workingOnResolvedQuestion() {
+        let cuba = Project(name: "Cuba"); cuba.researchQuestion = "How was ExComm briefed?"
+        let blank = Project(name: "Blank"); blank.researchQuestion = "   "
+        let noQuestion = Project(name: "NoQ")   // researchQuestion stays nil
+        let padded = Project(name: "Pad"); padded.researchQuestion = "  détente  "
+        let projects = [cuba, blank, noQuestion, padded]
+
+        // Active project with a real question → the trimmed question.
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: cuba.id, projects: projects) == "How was ExComm briefed?")
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: padded.id, projects: projects) == "détente")
+        // Global Context (nil), a question-less project, or a whitespace-only question → nothing.
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: nil, projects: projects) == nil)
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: noQuestion.id, projects: projects) == nil)
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: blank.id, projects: projects) == nil)
+        // A deleted/absent project id → nothing, no crash.
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: UUID(), projects: projects) == nil)
+    }
 }
