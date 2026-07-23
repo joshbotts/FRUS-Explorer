@@ -83,6 +83,34 @@ struct VolumeSubjectProfilesTests {
         #expect(p.otherVolumes(forSubjectRef: "warSpecific", excluding: "frus_v1").isEmpty)
     }
 
+    // MARK: Discovery vocabulary + resolver (#377 Phase 2b)
+
+    @Test("allSubjects lists every referenced subject once, category-ordered, with reach")
+    func allSubjectsVocabulary() throws {
+        let p = try decode()
+        // Ordered by category → subcategory → name: Bilateral Relations, Politico-Military, Warfare.
+        #expect(p.allSubjects.map(\.name) == ["Diplomacy", "Armistice", "Naval Blockade"])
+        #expect(p.allSubjects.map(\.ref) == ["shared", "peaceSpecific", "warSpecific"])
+        // 'shared' spans both volumes; the specifics span one each.
+        let byRef = Dictionary(uniqueKeysWithValues: p.allSubjects.map { ($0.ref, $0.volumeCount) })
+        #expect(byRef["shared"] == 2)
+        #expect(byRef["peaceSpecific"] == 1)
+        #expect(byRef["warSpecific"] == 1)
+    }
+
+    @Test("volumeIds(forSubjectRefs:) unions the covering volumes of every ref")
+    func volumeIdsForSubjectRefs() throws {
+        let p = try decode()
+        #expect(p.volumeIds(forSubjectRefs: ["warSpecific"]) == ["frus_v1"])
+        #expect(p.volumeIds(forSubjectRefs: ["peaceSpecific"]) == ["frus_v2"])
+        // 'shared' alone spans both; a union of the two specifics also spans both.
+        #expect(p.volumeIds(forSubjectRefs: ["shared"]) == ["frus_v1", "frus_v2"])
+        #expect(p.volumeIds(forSubjectRefs: ["warSpecific", "peaceSpecific"]) == ["frus_v1", "frus_v2"])
+        // Unknown refs contribute nothing.
+        #expect(p.volumeIds(forSubjectRefs: ["nope"]).isEmpty)
+        #expect(p.volumeIds(forSubjectRefs: [String]()).isEmpty)
+    }
+
     // MARK: Tolerance
 
     @Test("out-of-range vocab indices are skipped, not fatal")
