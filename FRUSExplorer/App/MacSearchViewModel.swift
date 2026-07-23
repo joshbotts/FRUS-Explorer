@@ -500,17 +500,13 @@ final class MacSearchViewModel {
         // User-tag filter (188-D parity, #212): write the selection back so a chosen tag
         // actually narrows the FTS query and drives the "Tagged" summary chip.
         parameters.userTagIds       = filterVM.selectedUserTagIds.map(\.uuidString)
-        // Volume/subseries scope: the filter VM unions the two pickers into
-        // `effectiveVolumeIds`, which is what the FTS5 layer filters on.
-        let effectiveVolumes = filterVM.effectiveVolumeIds
-        parameters.volumeIds        = effectiveVolumes.isEmpty ? nil : effectiveVolumes
-        // Project History scope (#377 Phase 2): `.history` gates to the active project's
-        // engaged documents (loaded into `filterVM` when the popover opens); `.off`
-        // leaves `documentIds` unset. An empty set under `.history` matches nothing,
-        // per the `documentIds` contract in `IndexingPipeline.filterConditions`.
-        parameters.documentIds      = filterVM.projectScope == .history
-            ? filterVM.projectEngagedDocumentKeys
-            : nil
+        // Volume scope + project History/Focus gates (#377 Phase 2): a single derivation
+        // from the filter VM's scope (see `scopeDerivedParams`) so `applyAdvancedFilters` and
+        // `applyProjectScope` never diverge.
+        let scoped = scopeDerivedParams()
+        parameters.volumeIds          = scoped.volumeIds
+        parameters.documentIds        = scoped.documentIds
+        parameters.excludeDocumentIds = scoped.excludeDocumentIds
 
         // Keep scope toggles in sync. Direct assignment to the backing storage
         // would skip the `didSet` observers (which bump `parametersVersion`), but
@@ -539,13 +535,15 @@ final class MacSearchViewModel {
         queryText = kw
         submittedQuery = kw
         parameters = params
-        // Project History scope is a live, manual choice — never inherited from a restored
-        // snapshot or a pending-search hand-off (#377 Phase 2a). Drop any `documentIds` the
+        // Project History/Focus scope is a live, manual choice — never inherited from a
+        // restored snapshot or a pending-search hand-off (#377 Phase 2). Drop any gates the
         // snapshot carried and clear the filter VM's selection so the picker matches, and so
         // a later unrelated filter edit (which re-runs `applyAdvancedFilters`) can't silently
-        // reintroduce the gate.
+        // reintroduce a gate.
         parameters.documentIds = nil
+        parameters.excludeDocumentIds = nil
         filterVM?.projectScope = .off
+        filterVM?.projectOnlyNew = false
         scopeDocuments = params.includeDocumentText
         scopeNotes     = params.includeNotes
         scopeSummaries = params.includeSummaries
@@ -563,12 +561,37 @@ final class MacSearchViewModel {
     /// `advancedFilterSignature` observer (which sees the scope flip to `.off`) can both fire
     /// — two re-searches for one switch, both correctly yielding the ungated result.
     func applyProjectScope() {
-        guard let fvm = filterVM else { return }
-        let newIds = fvm.projectScope == .history ? fvm.projectEngagedDocumentKeys : nil
-        if newIds != parameters.documentIds {
-            parameters.documentIds = newIds
+        guard filterVM != nil else { return }
+        let scoped = scopeDerivedParams()
+        if scoped.volumeIds != parameters.volumeIds
+            || scoped.documentIds != parameters.documentIds
+            || scoped.excludeDocumentIds != parameters.excludeDocumentIds {
+            parameters.volumeIds          = scoped.volumeIds
+            parameters.documentIds        = scoped.documentIds
+            parameters.excludeDocumentIds = scoped.excludeDocumentIds
             parametersVersion += 1
         }
+    }
+
+    /// The volume scope + project History/Focus gates derived from the filter VM's current
+    /// scope (#377 Phase 2). The single source both `applyAdvancedFilters` and
+    /// `applyProjectScope` use, so the executed `parameters` never disagree about the scope.
+    /// - Focus overrides the volume scope with the subject-derived focus volumes and,
+    ///   with "only new" on, excludes the engaged set; History gates to the engaged set;
+    ///   off uses the manual volume/subseries selection.
+    private func scopeDerivedParams() -> (volumeIds: [String]?, documentIds: [String]?, excludeDocumentIds: [String]?) {
+        guard let fvm = filterVM else { return (nil, nil, nil) }
+        let volumeIds: [String]?
+        if fvm.projectScope == .focus {
+            volumeIds = fvm.projectFocusVolumeIds.isEmpty ? nil : fvm.projectFocusVolumeIds
+        } else {
+            let effective = fvm.effectiveVolumeIds
+            volumeIds = effective.isEmpty ? nil : effective
+        }
+        let documentIds = fvm.projectScope == .history ? fvm.projectEngagedDocumentKeys : nil
+        let exclude = (fvm.projectScope == .focus && fvm.projectOnlyNew)
+            ? fvm.projectEngagedDocumentKeys : nil
+        return (volumeIds, documentIds, exclude)
     }
 
     // MARK: - Search

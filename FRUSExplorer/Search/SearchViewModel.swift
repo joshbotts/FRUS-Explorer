@@ -200,6 +200,29 @@ final class SearchViewModel {
     /// Context.
     var projectScopeName: String?
 
+    /// The volumes the active project's focus subjects are characteristic of (#377 Phase 2b),
+    /// resolved by the view from `Project.defaultSubjectTagIds` via `VolumeSubjectProfiles`.
+    /// When `projectScope == .focus`, this becomes `SearchParameters.volumeIds` — a discovery
+    /// scope over the corpus. Empty when the project has no focus subjects (then `.focus` is
+    /// not offered).
+    var projectFocusVolumeIds: [String] = []
+
+    /// The Focus-mode "only new to this project" toggle (#377 Phase 2b, default off): when on,
+    /// `projectEngagedDocumentKeys` becomes `SearchParameters.excludeDocumentIds`, dropping
+    /// documents already collected/annotated/visited so discovery emphasizes fresh material.
+    var projectOnlyNew: Bool = false
+
+    /// The volumes a project's focus subjects are characteristic of, resolved via the bundled
+    /// volume-subject profiles (#377 Phase 2b). Empty when the project has no focus subjects
+    /// or the profiles are unavailable. An in-memory lookup — safe to call synchronously.
+    /// Shared by the iOS `SearchView` and the macOS `SearchSheet` so Focus resolves the same
+    /// way on both.
+    static func focusVolumeIds(for project: Project?) -> [String] {
+        guard let project, !project.defaultSubjectTagIds.isEmpty,
+              let profiles = VolumeSubjectProfilesStore.shared else { return [] }
+        return profiles.volumeIds(forSubjectRefs: project.defaultSubjectTagIds).sorted()
+    }
+
     /// Equatable fingerprint of every advanced-filter field that
     /// `MacSearchViewModel.applyAdvancedFilters()` copies back into its parameters.
     ///
@@ -228,8 +251,9 @@ final class SearchViewModel {
         // does not observe this signature, so its behavior is unchanged.
         parts.append(selectedUserTagIds.map(\.uuidString).sorted().joined(separator: ","))
         // Project scope (#377 Phase 2): a scope change must perturb the signature so the
-        // macOS live-apply observer copies the resulting `documentIds` into `parameters`.
-        parts.append("ps|\(projectScope.rawValue)")
+        // macOS live-apply observer copies the resulting gates into `parameters`. Focus mode's
+        // "only new" toggle is part of the scope, so it joins the fingerprint too.
+        parts.append("ps|\(projectScope.rawValue)|\(projectOnlyNew ? 1 : 0)")
         return parts.joined(separator: "§")
     }
 
@@ -502,9 +526,11 @@ final class SearchViewModel {
         personRefText = ""
         personRollupId = nil
         personLabel = nil
-        // Reset the project scope selection (keep the loaded engaged-key set — it is
-        // context, not a user filter, and re-populates only when the project changes).
+        // Reset the project scope selection + Focus "only new" toggle (keep the loaded
+        // engaged-key/focus-volume sets — they are context, not user filters, and
+        // re-populate only when the project changes).
         projectScope = .off
+        projectOnlyNew = false
     }
 
     func clearAll() {
@@ -556,11 +582,20 @@ final class SearchViewModel {
             dateRange: range,
             subjectTagIds: [],
             userTagIds: selectedUserTagIds.map(\.uuidString),
-            volumeIds: effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds,
+            // Project Focus scope (#377 Phase 2b) overrides the volume scope with the
+            // subject-derived focus volumes; otherwise the manual volume/subseries selection
+            // applies. (Focus is only offered when `projectFocusVolumeIds` is non-empty.)
+            volumeIds: projectScope == .focus
+                ? (projectFocusVolumeIds.isEmpty ? nil : projectFocusVolumeIds)
+                : (effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds),
             // Project History scope (#377 Phase 2): `.history` gates to the project's
             // engaged documents (empty set = match nothing, per the `documentIds`
-            // contract); `.off` leaves the corpus unconstrained.
+            // contract); `.off`/`.focus` leave `documentIds` unset.
             documentIds: projectScope == .history ? projectEngagedDocumentKeys : nil,
+            // Project Focus "only new" (#377 Phase 2b): excludes the engaged set so discovery
+            // emphasizes fresh material. Only in `.focus` with the toggle on.
+            excludeDocumentIds: (projectScope == .focus && projectOnlyNew)
+                ? projectEngagedDocumentKeys : nil,
             includeDocumentText: includeDocumentText,
             includeSummaries: includeSummaries,
             includeNotes: includeNotes,
@@ -661,6 +696,7 @@ final class SearchViewModel {
         // `params.documentIds` is deliberately dropped: `searchParameters` re-derives
         // `documentIds` from `projectScope`, so clearing the scope fully clears the gate.
         projectScope          = .off
+        projectOnlyNew        = false
     }
 
     // MARK: - Scope Reconstruction

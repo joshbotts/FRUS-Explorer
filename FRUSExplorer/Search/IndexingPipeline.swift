@@ -2173,6 +2173,15 @@ public actor IndexingPipeline {
             }
         }
 
+        // Project Focus "only new" exclusion (#377 Phase 2b): drop already-engaged documents.
+        // Contract: `nil`/empty = exclude nothing (unlike `documentIds`, an empty *exclusion*
+        // is a no-op, not "match nothing").
+        if let excludeIds = filters.excludeDocumentIds, !excludeIds.isEmpty {
+            let placeholders = excludeIds.map { _ in "?" }.joined(separator: ", ")
+            conditions.append("(dc.volume_id || '/' || dc.document_id) NOT IN (\(placeholders))")
+            binds.append(contentsOf: excludeIds)
+        }
+
         if let range = filters.dateRange {
             // Interval overlap, matching documentKeysInDateRange: the document's
             // [date_iso, COALESCE(date_iso_max, date_iso)] range must intersect the
@@ -6546,6 +6555,9 @@ public struct SearchSQLFilters: Sendable {
     /// Restrict results to this explicit set of `"volumeId/documentId"` keys (Project History
     /// scope, #377 Phase 2). `nil` (or empty) = no document-set restriction.
     public var documentIds: [String]?
+    /// **Exclude** this explicit set of `"volumeId/documentId"` keys (Project Focus "only new"
+    /// option, #377 Phase 2b). `nil` (or empty) = exclude nothing.
+    public var excludeDocumentIds: [String]?
     /// Restrict results to documents whose date range overlaps this range.
     /// Undated documents are excluded when non-nil.
     public var dateRange: DateRange?
@@ -6567,6 +6579,7 @@ public struct SearchSQLFilters: Sendable {
     public init(
         volumeIds: [String]? = nil,
         documentIds: [String]? = nil,
+        excludeDocumentIds: [String]? = nil,
         dateRange: DateRange? = nil,
         includeFrontMatter: Bool = true,
         personRef: String? = nil,
@@ -6577,6 +6590,7 @@ public struct SearchSQLFilters: Sendable {
     ) {
         self.volumeIds = volumeIds
         self.documentIds = documentIds
+        self.excludeDocumentIds = excludeDocumentIds
         self.dateRange = dateRange
         self.includeFrontMatter = includeFrontMatter
         self.personRef = personRef

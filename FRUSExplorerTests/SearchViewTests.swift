@@ -198,6 +198,38 @@ struct SearchViewTests {
         #expect(vm.searchParameters.documentIds == nil)
     }
 
+    @Test("Project Focus scope emits the subject-derived volume scope + only-new exclusion")
+    @MainActor
+    func projectFocusScopeParameters() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchPF-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL = dir.appendingPathComponent("pf.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            concurrencyLimit: 1
+        )
+        let vm = SearchViewModel(searchService: SearchService(fts5Store: store, pipeline: pipeline))
+
+        vm.projectFocusVolumeIds = ["frus1969-76v01", "frus1969-76v02"]
+        vm.projectEngagedDocumentKeys = ["frus1969-76v01/d5"]
+
+        // Focus with "only new" off: volumeIds is the focus scope; no exclusion.
+        vm.projectScope = .focus
+        #expect(vm.searchParameters.volumeIds == ["frus1969-76v01", "frus1969-76v02"])
+        #expect(vm.searchParameters.excludeDocumentIds == nil)
+        #expect(vm.searchParameters.documentIds == nil)
+
+        // "Only new" on: the engaged set becomes the exclusion.
+        vm.projectOnlyNew = true
+        #expect(vm.searchParameters.excludeDocumentIds == ["frus1969-76v01/d5"])
+    }
+
     // MARK: - SubjectTagFilterTest
 
     @Test("Subject tag ids are inert: live parameters always emit an empty list (Session 09)")

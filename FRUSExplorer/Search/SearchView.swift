@@ -285,6 +285,7 @@ struct SearchView: View {
     private func applyActiveProject() {
         guard let pid = appState.activeProjectId else {
             vm.projectScope = .off
+            vm.projectOnlyNew = false
             refreshEngagedKeys()
             return
         }
@@ -294,6 +295,7 @@ struct SearchView: View {
         let project = try? modelContext.fetch(descriptor).first
         vm.applyProjectDefaults(project)
         vm.projectScope = .off
+        vm.projectOnlyNew = false
         refreshEngagedKeys()
     }
 
@@ -306,11 +308,16 @@ struct SearchView: View {
     private func refreshEngagedKeys() {
         guard let pid = appState.activeProjectId else {
             vm.projectEngagedDocumentKeys = []
+            vm.projectFocusVolumeIds = []
             vm.projectScopeName = nil
             return
         }
         let descriptor = FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })
-        vm.projectScopeName = (try? modelContext.fetch(descriptor).first)?.name
+        let project = try? modelContext.fetch(descriptor).first
+        vm.projectScopeName = project?.name
+        // Focus volumes resolve from the project's subjects via the bundled profiles — an
+        // in-memory lookup, so it's set synchronously (#377 Phase 2b).
+        vm.projectFocusVolumeIds = SearchViewModel.focusVolumeIds(for: project)
         // Compute the engaged set off the main thread so a large library never freezes the
         // UI when the filter panel opens or the project changes (#377 Phase 2a fix).
         let container = modelContext.container
@@ -319,6 +326,7 @@ struct SearchView: View {
             vm.projectEngagedDocumentKeys = keys.sorted()
         }
     }
+
 
     /// Placement for the `.searchable` field — a pinned drawer on iOS so the
     /// nav-bar toolbar stays reachable (see the `.searchable` call site), and the

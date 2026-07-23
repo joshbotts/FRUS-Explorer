@@ -580,6 +580,22 @@ struct SearchParametersTests {
                 parameters: SearchParameters(keywords: "detente", documentIds: [])
             )
             #expect(emptyGate.isEmpty)
+
+            // Project Focus "only new" (#377 Phase 2b): excludeDocumentIds drops the given
+            // documents via NOT IN — the complement of the documentIds gate.
+            let excluded = try await service.search(
+                parameters: SearchParameters(keywords: "detente",
+                                             excludeDocumentIds: ["frus1969-76v01/d1"])
+            )
+            #expect(!excluded.contains { $0.documentId == "d1" })
+            #expect(excluded.contains { $0.documentId == "d2" })
+
+            // Contract: an *empty* exclusion is a no-op (exclude nothing), unlike documentIds.
+            let emptyExclude = try await service.search(
+                parameters: SearchParameters(keywords: "detente", excludeDocumentIds: [])
+            )
+            #expect(emptyExclude.contains { $0.documentId == "d1" })
+            #expect(emptyExclude.contains { $0.documentId == "d2" })
         }
     }
 

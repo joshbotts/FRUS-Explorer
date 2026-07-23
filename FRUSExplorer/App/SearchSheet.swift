@@ -485,15 +485,24 @@ struct MacSearchWindowView: View {
     /// scope can be active and `parameters.documentIds` is already `nil`).
     private func refreshProjectScope(resetSelection: Bool) {
         guard let fvm = searchVM.filterVM else { return }
-        if resetSelection { fvm.projectScope = .off }
+        if resetSelection {
+            fvm.projectScope = .off
+            fvm.projectOnlyNew = false
+        }
         guard let pid = appState.activeProjectId else {
             fvm.projectScope = .off
+            fvm.projectOnlyNew = false
             fvm.projectEngagedDocumentKeys = []
+            fvm.projectFocusVolumeIds = []
             fvm.projectScopeName = nil
             searchVM.applyProjectScope()
             return
         }
-        fvm.projectScopeName = allProjects.first { $0.id == pid }?.name
+        let project = allProjects.first { $0.id == pid }
+        fvm.projectScopeName = project?.name
+        // Focus volumes resolve from the project's subjects via the bundled profiles — an
+        // in-memory lookup, so set synchronously (#377 Phase 2b).
+        fvm.projectFocusVolumeIds = SearchViewModel.focusVolumeIds(for: project)
         // Compute the engaged set on a background context so a large library never freezes
         // the UI (#377 Phase 2a fix). The scalar name is set synchronously (cheap); the
         // key set arrives asynchronously and re-applies the scope when ready. Sorted so an
