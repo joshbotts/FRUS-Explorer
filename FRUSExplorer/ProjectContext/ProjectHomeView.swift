@@ -785,7 +785,8 @@ struct ProjectCollectionsEditor: View {
     /// The project whose collection membership is being edited.
     let projectId: UUID
 
-    /// The project's name, for the sheet's explanatory footer.
+    /// The project's name, shown in the sheet title so concurrent Project Home windows (macOS) each
+    /// have a distinguishable "Manage collections" sheet.
     let projectName: String
 
     @Environment(\.dismiss) private var dismiss
@@ -798,9 +799,9 @@ struct ProjectCollectionsEditor: View {
             Group {
                 if allCollections.isEmpty {
                     ContentUnavailableView(
-                        String(localized: "project.collections.empty.title", defaultValue: "No Collections"),
+                        String(localized: "project.collections.manage.empty.title", defaultValue: "No Collections"),
                         systemImage: "tray",
-                        description: Text(String(localized: "project.collections.empty.detail",
+                        description: Text(String(localized: "project.collections.manage.empty.detail",
                                                  defaultValue: "Create a collection first, then attach it to this project here."))
                     )
                 } else {
@@ -808,7 +809,7 @@ struct ProjectCollectionsEditor: View {
                         let members = allCollections.filter { $0.projectIds.contains(projectId) }
                         let others = allCollections.filter { !$0.projectIds.contains(projectId) }
                         if !members.isEmpty {
-                            Section(String(localized: "project.collections.attached", defaultValue: "In this project")) {
+                            Section(String(localized: "project.collections.manage.attached", defaultValue: "In this project")) {
                                 ForEach(members) { collection in
                                     memberRow(collection)
                                 }
@@ -816,7 +817,7 @@ struct ProjectCollectionsEditor: View {
                         }
                         Section {
                             if others.isEmpty {
-                                Text(String(localized: "project.collections.allAttached",
+                                Text(String(localized: "project.collections.manage.allAttached",
                                             defaultValue: "Every collection is already in this project."))
                                     .foregroundStyle(.secondary)
                             } else {
@@ -825,21 +826,24 @@ struct ProjectCollectionsEditor: View {
                                 }
                             }
                         } header: {
-                            Text(String(localized: "project.collections.add", defaultValue: "Add collections"))
+                            Text(String(localized: "project.collections.manage.add", defaultValue: "Add collections"))
                         } footer: {
-                            Text(String(localized: "project.collections.footer",
+                            Text(String(localized: "project.collections.manage.footer",
                                         defaultValue: "A collection can belong to more than one project. Attaching it here doesn't remove it from any others."))
                         }
                     }
                 }
             }
-            .navigationTitle(String(localized: "project.collections.title", defaultValue: "Project Collections"))
+            .navigationTitle(projectName.isEmpty
+                             ? String(localized: "project.collections.manage.title", defaultValue: "Project Collections")
+                             : String(localized: "project.collections.manage.titleNamed",
+                                      defaultValue: "Collections · \(projectName)"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "project.collections.done", defaultValue: "Done")) { dismiss() }
+                    Button(String(localized: "project.collections.manage.done", defaultValue: "Done")) { dismiss() }
                 }
             }
         }
@@ -862,14 +866,13 @@ struct ProjectCollectionsEditor: View {
                     .foregroundStyle(.red)
             }
             .buttonStyle(.borderless)
-            .help(String(localized: "project.collections.remove.help", defaultValue: "Remove from this project"))
+            .help(String(localized: "project.collections.manage.remove.help", defaultValue: "Remove from this project"))
         }
-        .contentShape(Rectangle())
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 detach(collection)
             } label: {
-                Label(String(localized: "project.collections.remove", defaultValue: "Remove"),
+                Label(String(localized: "project.collections.manage.remove", defaultValue: "Remove"),
                       systemImage: "minus.circle")
             }
         }
@@ -891,18 +894,24 @@ struct ProjectCollectionsEditor: View {
         .buttonStyle(.plain)
     }
 
-    /// The shared name + document-count label for a collection row.
+    /// The shared name + document-count label for a collection row. The count matches what actually
+    /// seeds the leads engine (`ProjectLeadsService.collectionSeedKeys`): distinct document-kind
+    /// entries with non-empty ids, so malformed or duplicate entries don't inflate it.
     @ViewBuilder
     private func collectionInfo(_ collection: Collection) -> some View {
-        let docCount = (collection.documentEntries ?? []).filter { $0.entryKind == .document }.count
+        let docCount = Set(
+            (collection.documentEntries ?? [])
+                .filter { $0.entryKind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                .map { "\($0.volumeId)/\($0.documentId)" }
+        ).count
         VStack(alignment: .leading, spacing: 2) {
             Text(collection.name.isEmpty
-                 ? String(localized: "project.collections.untitled", defaultValue: "Untitled collection")
+                 ? String(localized: "project.collections.manage.untitled", defaultValue: "Untitled collection")
                  : collection.name)
                 .foregroundStyle(.primary)
             Text(docCount == 1
-                 ? String(localized: "project.collections.docCount.one", defaultValue: "1 document")
-                 : String(localized: "project.collections.docCount.other", defaultValue: "\(docCount) documents"))
+                 ? String(localized: "project.collections.manage.docCount.one", defaultValue: "1 document")
+                 : String(localized: "project.collections.manage.docCount.other", defaultValue: "\(docCount) documents"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
