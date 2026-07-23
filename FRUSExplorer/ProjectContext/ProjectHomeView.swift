@@ -48,6 +48,13 @@ struct ProjectHomeView: View {
     /// The project this dashboard shows.
     let projectId: UUID
 
+    /// Called just before this view hands off to another surface (opening a document, or a quick
+    /// action to Collections/Research/Search). A **modal** presenter — the iOS Research-tab sheet —
+    /// passes `{ dismiss the sheet }` so the hand-off isn't left invisibly behind the modal;
+    /// the non-modal presenters (the macOS `frus.projectHome` window and the Settings-tab push)
+    /// leave it `nil` and stay put. (#377 Phase 1 iOS follow-up.)
+    var onNavigateAway: (() -> Void)? = nil
+
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     #if os(macOS)
@@ -320,6 +327,7 @@ struct ProjectHomeView: View {
     // MARK: - Navigation actions
 
     private func openDocument(volumeId: String, documentId: String, title: String?) {
+        onNavigateAway?()   // dismiss a modal presenter (the iOS sheet) before navigating away
         let entry = DocumentBrowserEntry(
             documentId: documentId,
             volumeId: volumeId,
@@ -334,6 +342,7 @@ struct ProjectHomeView: View {
     }
 
     private func openSurface(_ windowId: String) {
+        onNavigateAway?()   // dismiss a modal presenter (the iOS sheet) before navigating away
         #if os(macOS)
         openWindow(id: windowId)
         bringMacWindowToFront(id: windowId)
