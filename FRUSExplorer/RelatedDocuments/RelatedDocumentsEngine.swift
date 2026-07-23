@@ -148,6 +148,7 @@ enum RelatedDocumentsEngine {
         weights: AxisWeights,
         scopeVolumeIds: Set<String>?,
         limit: Int,
+        includeSnippets: Bool = true,
         appState: AppState
     ) async -> RelatedDocumentsResult {
         guard appState.indexingPipeline != nil else { return .empty }
@@ -193,8 +194,11 @@ enum RelatedDocumentsEngine {
 
         // Fetch a context snippet for the SHOWN rows only (already limited — a bounded batch, not
         // the candidate universe) so the researcher can judge relevance without opening each (#362).
+        // Background callers that never read `.snippet` (e.g. the Project Leads aggregator, #377
+        // Phase 3, which runs this up to `seedCap` times per recompute) pass `includeSnippets: false`
+        // to skip the batched extraction entirely.
         var rows = ranked.rows
-        if let pipeline = appState.indexingPipeline, !rows.isEmpty {
+        if includeSnippets, let pipeline = appState.indexingPipeline, !rows.isEmpty {
             let keys = rows.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
             if let snippets = try? await pipeline.documentSnippets(forKeys: keys) {
                 for i in rows.indices { rows[i].snippet = snippets[rows[i].key.compositeString] }

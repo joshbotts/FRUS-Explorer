@@ -101,6 +101,30 @@ struct ProjectLeadsServiceTests {
         #expect(projectW[.archivalProvenance] == 1.0)   // not set by the project → default, not global 0.2
     }
 
+    @Test("gatherSeed returns the project's seed keys + weight string off a background context")
+    func gatherSeedOffMain() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let project = Project(name: "P")
+        project.leadAxisWeights = "crossReference:0.9"
+        context.insert(project)
+
+        let c = Collection(name: "C", projectIds: [project.id])
+        context.insert(c)
+        for (i, doc) in [("v1", "d1"), ("v1", "d2")].enumerated() {
+            let e = CollectionEntry(collectionId: c.id, documentId: doc.1, volumeId: doc.0, sortOrder: i)
+            e.collection = c
+            context.insert(e)
+        }
+        try context.save()
+
+        // The seed + raw weight string are read on a fresh background context (freeze lesson).
+        let (seedKeys, raw) = await ProjectLeadsService.gatherSeed(
+            forProject: project.id, container: container)
+        #expect(seedKeys == ["v1/d1", "v1/d2"])
+        #expect(raw == "crossReference:0.9")
+    }
+
     @Test("applyLeads captures the document's display fields from the record map")
     func applyLeadsDisplayFields() throws {
         let container = try ModelContainer.makeTestContainer()

@@ -68,6 +68,9 @@ struct ProjectHomeView: View {
     @Query(sort: \ReadingHistoryEntry.accessedAt, order: .reverse) private var allVisits: [ReadingHistoryEntry]
     @Query(sort: \SearchHistoryEntry.executedAt, order: .reverse) private var allSearches: [SearchHistoryEntry]
     @Query(sort: \ProjectLeadEntry.aggregateScore, order: .reverse) private var allLeads: [ProjectLeadEntry]
+    // A count-only reactive signal for the leads recompute trigger (see `seedSignature`) — its
+    // `.count` changes when any collection document is added/removed, without faulting relationships.
+    @Query private var allCollectionEntries: [CollectionEntry]
 
     /// Local draft of the research question, loaded from the model on appearance and
     /// saved live on every edit (like the collection editors) — so an in-progress edit
@@ -118,12 +121,18 @@ struct ProjectHomeView: View {
         }
         .navigationTitle(project?.name ?? String(localized: "project.home.title", defaultValue: "Project Home"))
         .task(id: projectId) {
+            // Reset per-project state — this view can be reused for a different project (the iOS
+            // sheet reuses identity when `activeProjectId` changes), so drop any in-flight recompute
+            // and its spinner from the previous project before starting this one's.
+            recomputeTask?.cancel()
+            isRecomputing = false
             questionDraft = project?.researchQuestion ?? ""
-            scheduleRecompute()
+            scheduleRecompute(immediate: true)   // no chatter to debounce on open / project switch
         }
         // Recompute leads when the project's collections (or their documents) change — the
         // discovery feedback loop (#377 Phase 3). Debounced inside `scheduleRecompute`.
         .onChange(of: seedSignature) { _, _ in scheduleRecompute() }
+        .onDisappear { recomputeTask?.cancel() }
         .sheet(isPresented: $showFocusEditor) {
             if let project {
                 ProjectFocusSubjectsEditor(project: project)
@@ -386,14 +395,25 @@ struct ProjectHomeView: View {
 
     /// A signature that changes when the project's collections or their documents change, so
     /// the leads recompute as the seed grows — the discovery feedback loop.
+    ///
+    /// Reads only scalars, so it can be re-evaluated on every `body` render (including every
+    /// keystroke in the research-question field) without faulting any relationship: the project
+    /// collections' ids + `lastModified` (which bumps on rename / retag and the
+    /// `documentEntries.append` add path), plus the app-wide `CollectionEntry` count as a coarse
+    /// reactive signal for the `entry.collection =` inverse-add path (which doesn't bump the
+    /// parent's `lastModified`). This only decides *when* to recompute; the real seed is derived
+    /// off-main inside `recompute`, and the open-time and Refresh recomputes backstop any coarse
+    /// miss (e.g. an add + remove that leaves the count unchanged).
     private var seedSignature: String {
-        summary.collections
-            .map { "\($0.id):\(($0.documentEntries ?? []).count):\($0.lastModified?.timeIntervalSince1970 ?? 0)" }
+        let collections = summary.collections
+            .map { "\($0.id.uuidString):\($0.lastModified?.timeIntervalSince1970 ?? 0)" }
             .sorted()
-            .joined(separator: "|")
+            .joined(separator: ",")
+        return "\(allCollectionEntries.count)|\(collections)"
     }
 
-    /// Schedules a debounced leads recompute. `immediate` skips the debounce (the Refresh button).
+    /// Schedules a debounced leads recompute. `immediate` skips the debounce (the Refresh button
+    /// and the open-time / project-switch recompute, which have no chatter to debounce against).
     /// The engine work is bounded and `async`, so it never blocks the UI.
     private func scheduleRecompute(immediate: Bool = false) {
         recomputeTask?.cancel()
@@ -402,6 +422,9 @@ struct ProjectHomeView: View {
             guard !Task.isCancelled else { return }
             isRecomputing = true
             await ProjectLeadsService.recompute(forProject: projectId, appState: appState, in: modelContext)
+            // A superseding schedule (or view teardown) cancelled us while `recompute` ran — leave
+            // the flag for the live task to own, so its spinner state isn't stomped by our exit.
+            guard !Task.isCancelled else { return }
             isRecomputing = false
         }
     }

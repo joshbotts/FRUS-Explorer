@@ -43,8 +43,15 @@ enum ProjectLeadsService {
     /// default — always overlaid onto the current defaults so a newly-added axis (e.g. a future
     /// semantic-proximity axis) inherits its default weight rather than an implicit 0.
     static func effectiveWeights(for project: Project?) -> AxisWeights {
-        let stored = project?.leadAxisWeights
-            ?? UserDefaults.standard.string(forKey: globalWeightsKey)
+        effectiveWeights(projectRaw: project?.leadAxisWeights)
+    }
+
+    /// The effective weights from a project's already-read raw weight string (the off-main path:
+    /// `gatherSeed` reads `Project.leadAxisWeights` on a background context, then `recompute`
+    /// resolves the weights on the main actor without re-touching the model). Same precedence and
+    /// forward-compatible default merge as `effectiveWeights(for:)`.
+    static func effectiveWeights(projectRaw: String?) -> AxisWeights {
+        let stored = projectRaw ?? UserDefaults.standard.string(forKey: globalWeightsKey)
         let base = stored.flatMap { AxisWeights(rawValue: $0) } ?? .default
         var merged: [SimilarityAxis: Double] = [:]
         for axis in SimilarityAxis.allCases {
@@ -54,8 +61,10 @@ enum ProjectLeadsService {
     }
 
     /// The project's seed: the `"volumeId/documentId"` keys of its collection documents,
-    /// de-duplicated and sorted.
-    static func collectionSeedKeys(forProject projectId: UUID, in context: ModelContext) -> [String] {
+    /// de-duplicated and sorted. `nonisolated` so `gatherSeed` can run it on a background context
+    /// off the main actor (the fetch pulls every collection and faults each one's `documentEntries`
+    /// relationship — the Phase-2a lesson is to never do that synchronously in a UI path).
+    nonisolated static func collectionSeedKeys(forProject projectId: UUID, in context: ModelContext) -> [String] {
         let collections = ((try? context.fetch(FetchDescriptor<Collection>())) ?? [])
             .filter { $0.projectIds.contains(projectId) }
         var keys = Set<String>()
@@ -69,14 +78,37 @@ enum ProjectLeadsService {
         return keys.sorted()
     }
 
+    /// Gathers the project's seed keys and its raw per-project weight string on a **background**
+    /// context, off the main actor. The seed fetch pulls every collection and faults each one's
+    /// `documentEntries` relationship (the `projectIds`-contains predicate is unreliable in
+    /// SwiftData, so it's a fetch-all-filter-in-memory); doing that synchronously on the main
+    /// thread froze the UI on a large library in Phase 2a, so it runs here on a detached task
+    /// and returns only Sendable values.
+    nonisolated static func gatherSeed(
+        forProject projectId: UUID, container: ModelContainer
+    ) async -> (seedKeys: [String], projectWeightsRaw: String?) {
+        await Task.detached {
+            let context = ModelContext(container)
+            let pid = projectId
+            let raw = (try? context.fetch(
+                FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })).first)?.leadAxisWeights
+            return (collectionSeedKeys(forProject: projectId, in: context), raw)
+        }.value
+    }
+
     /// Recomputes the project's leads end-to-end: gather the seed, rank each seed's related
     /// documents, aggregate, and upsert the top leads. Clears the leads when the seed is empty.
+    ///
+    /// The seed gathering runs off-main (`gatherSeed`); the per-seed ranking must stay on the main
+    /// actor (the engine reads `AppState`) but its heavy SQLite work happens inside the awaited
+    /// actor calls, so the loop yields. Honors `Task` cancellation between seeds and before the
+    /// upsert, so a superseding recompute (the debounce fired again) doesn't run to completion and
+    /// race the fresher pass's writes.
     static func recompute(forProject projectId: UUID, appState: AppState, in context: ModelContext) async {
-        let pid = projectId
-        let project = try? context.fetch(
-            FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })).first
-        let weights = effectiveWeights(for: project)
-        let seedKeys = collectionSeedKeys(forProject: projectId, in: context)
+        let (seedKeys, projectWeightsRaw) = await gatherSeed(
+            forProject: projectId, container: context.container)
+        if Task.isCancelled { return }
+        let weights = effectiveWeights(projectRaw: projectWeightsRaw)
         guard !seedKeys.isEmpty else {
             applyLeads([], forProject: projectId, in: context)
             return
@@ -85,16 +117,20 @@ enum ProjectLeadsService {
         var perSeed: [(seed: String, related: [(key: String, score: Double)])] = []
         var recordByKey: [String: CandidateRecord] = [:]   // display fields for the shown leads
         for seedKey in seedKeys.prefix(seedCap) {
+            if Task.isCancelled { return }
             guard let anchor = DocumentKey(compositeString: seedKey) else { continue }
+            // Leads never render the snippet, so skip the batched snippet extraction (× up to seedCap).
             let result = await RelatedDocumentsEngine.rank(
                 anchor: anchor, anchorYear: nil, weights: weights,
-                scopeVolumeIds: nil, limit: perSeedRelatedLimit, appState: appState)
+                scopeVolumeIds: nil, limit: perSeedRelatedLimit,
+                includeSnippets: false, appState: appState)
             perSeed.append((seed: seedKey,
                             related: result.rows.map { ($0.key.compositeString, $0.totalScore) }))
             for row in result.rows where recordByKey[row.key.compositeString] == nil {
                 recordByKey[row.key.compositeString] = row.record
             }
         }
+        if Task.isCancelled { return }
         let candidates = ProjectLeadsAggregator.aggregate(
             perSeedRelated: perSeed, seedKeys: seedSet, limit: leadLimit)
         applyLeads(candidates, records: recordByKey, forProject: projectId, in: context)
