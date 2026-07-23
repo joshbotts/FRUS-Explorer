@@ -23,11 +23,19 @@ import SwiftData
 ///   1.0 — #377 Phase 2b: initial implementation
 struct ProjectFocusSubjectsEditor: View {
 
-    /// The project whose focus is being edited; `defaultSubjectTagIds` is written live.
-    @Bindable var project: Project
+    /// The project whose focus is being edited; `defaultSubjectTagIds` is written live. Held by id
+    /// and re-resolved through `@Query` (not a live `@Bindable` reference), so a deletion from
+    /// another window/scene can't leave this sheet holding a deleted model to trap on.
+    let projectId: UUID
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+
+    /// All projects, filtered to `projectId` in `project`. Reactive: the row drops out on deletion.
+    @Query private var projects: [Project]
+
+    /// The project being edited, or `nil` if it was deleted while the sheet was open.
+    private var project: Project? { projects.first { $0.id == projectId } }
 
     /// The bundled subject vocabulary + resolver, or `nil` when unavailable.
     private let profiles = VolumeSubjectProfilesStore.shared
@@ -43,8 +51,8 @@ struct ProjectFocusSubjectsEditor: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let profiles {
-                    content(profiles)
+                if let project, let profiles {
+                    content(profiles, project)
                 } else {
                     ContentUnavailableView(
                         String(localized: "project.focus.unavailable.title",
@@ -68,14 +76,16 @@ struct ProjectFocusSubjectsEditor: View {
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 560)
         #endif
-        .task {
+        .task(id: projectId) {
             engagedVolumeIds = await ProjectEngagedDocuments.engagedVolumeIds(
-                forProject: project.id, container: modelContext.container)
+                forProject: projectId, container: modelContext.container)
         }
+        // Dismiss if the project is deleted from another window while this sheet is open.
+        .onChange(of: project?.id) { _, id in if id == nil { dismiss() } }
     }
 
     @ViewBuilder
-    private func content(_ profiles: VolumeSubjectProfiles) -> some View {
+    private func content(_ profiles: VolumeSubjectProfiles, _ project: Project) -> some View {
         let chosen = Set(project.defaultSubjectTagIds)
         let suggestions = ProjectFocusSuggestions.suggestions(
             engagedVolumeIds: engagedVolumeIds, profiles: profiles, excluding: chosen)
@@ -84,7 +94,7 @@ struct ProjectFocusSubjectsEditor: View {
             if !chosen.isEmpty {
                 Section(String(localized: "project.focus.selected", defaultValue: "Focus subjects")) {
                     ForEach(profiles.allSubjects.filter { chosen.contains($0.ref) }) { subject in
-                        subjectRow(subject, isSelected: true)
+                        subjectRow(subject, isSelected: true, project: project)
                     }
                 }
             }
@@ -92,7 +102,7 @@ struct ProjectFocusSubjectsEditor: View {
             if searchText.isEmpty && !suggestions.isEmpty {
                 Section {
                     ForEach(suggestions) { subject in
-                        subjectRow(subject, isSelected: false)
+                        subjectRow(subject, isSelected: false, project: project)
                     }
                 } header: {
                     Text(String(localized: "project.focus.suggested", defaultValue: "Suggested from your volumes"))
@@ -109,7 +119,7 @@ struct ProjectFocusSubjectsEditor: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(matches) { subject in
-                        subjectRow(subject, isSelected: chosen.contains(subject.ref))
+                        subjectRow(subject, isSelected: chosen.contains(subject.ref), project: project)
                     }
                 }
             }
@@ -131,9 +141,9 @@ struct ProjectFocusSubjectsEditor: View {
     }
 
     @ViewBuilder
-    private func subjectRow(_ subject: VolumeSubjectProfiles.SubjectOption, isSelected: Bool) -> some View {
+    private func subjectRow(_ subject: VolumeSubjectProfiles.SubjectOption, isSelected: Bool, project: Project) -> some View {
         Button {
-            toggle(subject.ref)
+            toggle(subject.ref, in: project)
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -158,7 +168,7 @@ struct ProjectFocusSubjectsEditor: View {
     }
 
     /// Adds or removes a subject ref from the project's focus (live save).
-    private func toggle(_ ref: String) {
+    private func toggle(_ ref: String, in project: Project) {
         // Reassign the whole array — Project's array `didSet` (and thus `lastModified` / CloudKit
         // last-write-wins) does NOT fire on an in-place `remove`/`append` (see Project.swift).
         var ids = project.defaultSubjectTagIds
