@@ -86,6 +86,16 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// Per-project **user-tag focus** (#377 Phase 3): the `UserTag.id`s whose tagged documents
+    /// should anchor this project's Project Leads, on top of its collection and noted documents.
+    /// User tags are otherwise global (project-agnostic); this is the project's chosen lens over
+    /// them. Empty (the default) = tags contribute nothing to this project's seed. Additive and
+    /// CloudKit-safe (an optional-defaulted array, like `defaultSubjectTagIds`), so no migration —
+    /// but the CloudKit schema must be deployed to Production before a synced build ships.
+    var defaultUserTagIds: [UUID] = [] {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Timestamps
 
     /// Set at creation; never mutated. Optional for CloudKit schema compatibility — always non-nil in practice.
