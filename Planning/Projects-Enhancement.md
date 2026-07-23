@@ -107,7 +107,7 @@ Turn `ProjectContextView`'s link-only "Activity" section into a real per-project
   visited, searches run — from the already-tagged records.
 - **Recent-in-this-project feed:** most-recent notes / visited documents / searches,
   each a jump.
-- **Frontier slot (filled by Phase 3):** reserve a "Suggested next / related to your
+- **Leads slot (filled by Phase 3):** reserve a "Suggested next / related to your
   collection" section — a placeholder in Phase 1, wired up in Phase 3.
 - **Quick actions:** New collection in project · Open Research (this project) · Search
   (this project, Phase 2).
@@ -162,17 +162,17 @@ Surfaces as a **two-way scope control** in Search when a project is active (Focu
 History / off), each clearly labeled so the researcher knows whether they're discovering
 or recalling.
 
-### Phase 3 — Project Frontier: a related-document discovery pipeline  *(effort L; the marquee idea)*
+### Phase 3 — Project Leads: a related-document discovery pipeline  *(effort L; the marquee idea)*
 
 The most powerful discovery signal isn't the project's *declared* focus (Mode A) — it's
 what emerges from what the researcher has *actually gathered*. As documents are added to
 a project's collections, this phase tracks their **top related documents** and turns the
 incremental changes into a **living research pipeline**.
 
-**Concept.** The project's collections are a growing **seed set**. The **Frontier** is the
+**Concept.** The project's collections are a growing **seed set**. The **Leads** are the
 ranked set of **related-but-uncollected** documents, aggregated across the seed. Add a
-document to a collection → it joins the seed → *its* related documents enter the Frontier
-→ the research snowballs outward. The Frontier's *changes over time* are the pipeline.
+document to a collection → it joins the seed → *its* related documents enter the Leads
+→ the research snowballs outward. The Leads' *changes over time* are the pipeline.
 
 **Mechanics** (reuses `RelatedDocuments/RelatedDocumentsEngine` — a pure multi-axis
 similarity ranker fed by the existing generators/scorers; no engine changes):
@@ -180,30 +180,30 @@ similarity ranker fed by the existing generators/scorers; no engine changes):
    noted/visited).
 2. For each seed doc, run the related engine → scored candidates (subjects, citations,
    persons, … axes).
-3. **Aggregate** across the seed: a candidate's Frontier score accumulates across the seed
+3. **Aggregate** across the seed: a candidate's Leads score accumulates across the seed
    docs it's related to, so a document related to *many* seed docs rises (consensus).
    Exclude anything already in the seed / engaged.
-4. **Static Frontier** (surfaced in Project Home's reserved slot): top-N "documents related
+4. **Static Leads** (surfaced in Project Home's reserved slot): top-N "documents related
    to your collection you haven't gathered," each showing *which* seed docs pulled it in and
    *why* (axes) — provenance for trust.
-5. **Incremental pipeline** — the novel part: persist the Frontier so newly-surfaced
+5. **Incremental pipeline** — the novel part: persist the Leads so newly-surfaced
    documents (ones that newly cleared the threshold as the collection grew) get a
    `firstSurfacedAt` stamp → a chronological "**new since you last looked**" feed. That feed
    *is* the research pipeline.
-6. **Actions** per frontier doc: open · **add to a collection** (feeds it back into the seed
+6. **Actions** per leads doc: open · **add to a collection** (feeds it back into the seed
    — the compounding loop) · **dismiss** (stops it resurfacing).
 
-**Persistence (the one new @Model in the whole program):** `ProjectFrontierEntry`
+**Persistence (the one new @Model in the whole program):** `ProjectLeadEntry`
 (`projectId`, `documentKey`, `aggregateScore`, `firstSurfacedAt`, `contributingSeedKeys`,
 `dismissed`). Additive and CloudKit-safe — a *new record type*, not a change to any existing
 record, so it stays within the "no migration" guardrail.
 
 **Cost control:** recompute on collection change, debounced + off the main actor; cache the
-Frontier; cap the seed and per-seed candidate counts so a large collection stays cheap. The
+Leads; cap the seed and per-seed candidate counts so a large collection stays cheap. The
 engine itself is I/O-free once fed.
 
 Depends on Phase 1 (Home surfaces it). Complements Phase 2: Mode A is top-down *declared*
-discovery; the Frontier is bottom-up *emergent* discovery.
+discovery; the Leads is bottom-up *emergent* discovery.
 
 ### Phase 4 — Project on export & citation  *(effort S–M)*
 Carry the project (name + research question) into collection / research-data exports as
@@ -229,7 +229,7 @@ subjects→volumes resolver — the project's subject focus can *propose* the vo
 
 ## 4. Non-goals / guardrails
 - **No CloudKit removal or migration.** This plan is additive. The only new persistence is
-  Phase 3's `ProjectFrontierEntry` — a *new* @Model record type (CloudKit-safe: adding a
+  Phase 3's `ProjectLeadEntry` — a *new* @Model record type (CloudKit-safe: adding a
   type never migrates existing records). `Project`, `projectIds`, and `projectId` are
   untouched on the shipped schema.
 - **Single-project users stay unbothered.** Every new surface is either behind the
@@ -241,8 +241,8 @@ subjects→volumes resolver — the project's subject focus can *propose* the vo
 1. **Project Home shortcut = ⌘P.** No document printing is planned, so ⌘P is free and is
    the "P for Project" mnemonic. (Add a `.printItem` `CommandGroup` guard so no system
    Print item claims ⌘P.)
-2. **Phase order:** 1 → 2 → **3 (Project Frontier — new marquee discovery phase)** → 4 →
-   5 → (6). The Frontier (owner idea, 2026-07-22) is bottom-up emergent discovery that
+2. **Phase order:** 1 → 2 → **3 (Project Leads — new marquee discovery phase)** → 4 →
+   5 → (6). The Leads (owner idea, 2026-07-22) is bottom-up emergent discovery that
    complements Phase 2's top-down declared discovery; slotted right after search.
 3. **Phase 2 = two modes** (see §3, Phase 2). The engaged-set scope is correct for
    **Project History** (recall) but wrong for research-phase **discovery**; discovery is a
@@ -258,11 +258,11 @@ subjects→volumes resolver — the project's subject focus can *propose* the vo
   — a tuning knob to settle during Phase 2 with real data.
 - **Mode-B doc-id gate**: add `SearchParameters.documentIds: [String]?` (clean, explicit)
   vs. a post-filter over ranked results (no schema touch). Recommend the field.
-- **Frontier seed** (Phase 3): collections only, or collections + noted/visited? (Recommend
+- **Leads seed** (Phase 3): collections only, or collections + noted/visited? (Recommend
   **collections only** to start — the most intentional signal — with noted/visited as a
   later toggle.)
-- **Frontier aggregation** (Phase 3): sum vs. max vs. count-weighted across seed docs, and
+- **Leads aggregation** (Phase 3): sum vs. max vs. count-weighted across seed docs, and
   how to weight the similarity axes for the *aggregate* (inherit the user's find-related
-  weights, or a Frontier-specific default). Settle with real data during Phase 3.
-- **Frontier surfacing**: is the "new since you last looked" pipeline a section of Project
+  weights, or a Leads-specific default). Settle with real data during Phase 3.
+- **Leads surfacing**: is the "new since you last looked" pipeline a section of Project
   Home, or does it also warrant a light notification/badge when fresh documents surface?
