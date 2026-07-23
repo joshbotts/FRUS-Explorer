@@ -92,6 +92,7 @@ struct ResearchNoteEditorView: View {
                     Button(String(localized: "note.editor.toolbar.delete", defaultValue: "Delete"),
                            role: .destructive) {
                         vm.delete(context: modelContext)
+                        try? modelContext.save()   // flush so cross-context @Query (Research window, Project Home seed) sees the removal promptly, mirroring Save
                         dismiss()
                     }
                     .foregroundStyle(.red)
@@ -331,6 +332,7 @@ struct ResearchNoteEditorView: View {
                     role: .destructive
                 ) {
                     vm.delete(context: modelContext)
+                    try? modelContext.save()   // flush so cross-context @Query (Research window, Project Home seed) sees the removal promptly, mirroring Save
                     dismiss()
                 }
             }

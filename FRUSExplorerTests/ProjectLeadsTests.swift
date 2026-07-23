@@ -225,6 +225,8 @@ struct ProjectLeadsServiceTests {
         }
         // A noted document not in any collection also seeds (deliberate engagement, unlike a visit).
         context.insert(ResearchNote(documentId: "d3", volumeId: "v2", projectIds: [project.id]))
+        // A document that is BOTH collected and noted must appear once (Set-union dedup).
+        context.insert(ResearchNote(documentId: "d1", volumeId: "v1", projectIds: [project.id]))
         // A document carrying the project's focus tag also seeds (the project's lens over a global tag).
         context.insert(DocumentTagAssignment(volumeId: "v3", documentId: "d4", tagId: focusTag))
         try context.save()
