@@ -116,6 +116,39 @@ Turn `ProjectContextView`'s link-only "Activity" section into a real per-project
 - Reuses `ProjectContextViewModel` / `GlobalContextViewModel` + `ResearchDocumentEntry`
   aggregation; no new persistence.
 
+> **Shipped state (2026-07-23):** Phase 1 landed as #430; macOS is complete (window +
+> `Research ▸ Project Home` ⌘P). iOS shipped a prominent **Research-tab row → sheet**
+> (#431) plus a **Settings → Active Project** switcher (#433), not the originally-planned
+> full Research-tab *landing* — the sheet was chosen to stay clear of the fragile
+> one-deep `[ResearchSidebarItem]` nav path (#272/#238). The iOS surface's remaining
+> rough edges are collected in Phase 1P below.
+
+### Phase 1P — iOS/iPadOS Project Home polish  *(deferrable; effort S–M; slot in after on-device feedback)*
+
+Refinements to the **iOS Project Home surface** after the Phase-1 ship (#430) + the
+prominent entry (#431) + the switcher / rename / nav-fix follow-ups (#432/#433). Kept as
+its own phase so Phase 1's dashboard logic stays done; this is presentation/routing polish
+driven by real iPad use.
+
+1. **Scene-aware routing** (already tracked): `ProjectHomeView`'s document/tab hand-offs
+   pass `from: nil` (→ `.anyWindow` first-wins) instead of the presenting surface's
+   `\.environment(\.sceneID)`. Under iPad multi-window / Stage Manager a document opened
+   from Project Home can land in the wrong window. Read `@Environment(\.sceneID)` and pass
+   it through. **Needs on-device multi-window/Stage-Manager verification** (inherited from
+   the already-shipped Settings entry too).
+2. **iPad sheet form-factor:** the dashboard is a wide-window layout (`maxWidth 760`,
+   multi-column stat grid) presented as a **sheet** from the Research tab. Tune the sheet
+   size/detents and the header / stat-grid / recent-feed typography for the sheet and
+   compact widths; decide sized-sheet vs. full-screen on iPad.
+3. **Recent searches → re-run:** display-only in Phase 1; wire tap-to-re-run once Phase 2's
+   project-scoped search lands (the two connect — a recent search re-runs *in its mode*).
+4. **Landing vs. sheet (revisit):** if on-device use shows the sheet reads as a detour,
+   reconsider a true Research-tab landing / push once the `[ResearchSidebarItem]` path is
+   safe to extend (e.g. add a `.projectHome` case) — deferred from Phase 1 for exactly that
+   fragility.
+5. **General visual polish** from on-device feedback: spacing, empty states, the Project
+   Leads placeholder copy, Dynamic Type, and VoiceOver on the dashboard.
+
 ### Phase 2 — Project-scoped search: two modes for two research phases  *(effort M–L)*
 
 A Project has a **dual nature**, and search must honor both. Collapsing them into one
