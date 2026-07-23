@@ -118,7 +118,13 @@ enum ProjectLeadsService {
         if Task.isCancelled { return }
         let weights = effectiveWeights(projectRaw: projectWeightsRaw)
         guard !seedKeys.isEmpty else {
-            applyLeads([], forProject: projectId, in: context)
+            // No seed → no basis to rank, so there are no visible suggestions. Clear the visible
+            // (non-dismissed) leads but KEEP the researcher's dismissed markers: an empty seed is a
+            // degenerate/transient state (a reorg, or a remove-then-re-add of the last collection
+            // document), and wiping every ProjectLeadEntry here — as a blunt `applyLeads([])` would,
+            // since its cleanup deletes any entry absent from an empty candidate set — would lose the
+            // dismissals and resurface those leads as NEW once the seed repopulates.
+            clearVisibleLeads(forProject: projectId, in: context)
             return
         }
         let seedSet = Set(seedKeys)
@@ -150,6 +156,17 @@ enum ProjectLeadsService {
         let candidates = ProjectLeadsAggregator.aggregate(
             perSeedRelated: perSeed, seedKeys: seedSet, dismissedKeys: dismissedKeys, limit: leadLimit)
         applyLeads(candidates, records: recordByKey, forProject: projectId, in: context)
+    }
+
+    /// Deletes a project's **visible** (non-dismissed) `ProjectLeadEntry` records, leaving its
+    /// dismissed markers intact. Used for the empty-seed case, so a transiently-empty collection
+    /// clears the suggestions on screen without discarding the researcher's dismissals (which would
+    /// otherwise resurface as new leads once the seed repopulated).
+    static func clearVisibleLeads(forProject projectId: UUID, in context: ModelContext) {
+        let pid = projectId
+        let visible = ((try? context.fetch(FetchDescriptor<ProjectLeadEntry>(
+            predicate: #Predicate { $0.projectId == pid && $0.dismissed == false }))) ?? [])
+        for entry in visible { context.delete(entry) }
     }
 
     /// Upserts the computed `candidates` into `ProjectLeadEntry` records for the project:

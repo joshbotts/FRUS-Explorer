@@ -140,6 +140,34 @@ struct ProjectLeadsServiceTests {
         #expect(resolved[.sharedPersons] == 0.7)
     }
 
+    @Test("clearVisibleLeads deletes non-dismissed leads but preserves dismissed markers")
+    func clearVisibleLeadsPreservesDismissed() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let project = UUID()
+
+        let visible = ProjectLeadEntry(
+            projectId: project, volumeId: "v", documentId: "a",
+            aggregateScore: 1, contributingSeedKeys: ["v/s"])
+        let dismissed = ProjectLeadEntry(
+            projectId: project, volumeId: "v", documentId: "b",
+            aggregateScore: 1, contributingSeedKeys: ["v/s"], dismissed: true)
+        // A different project's dismissed lead must be untouched.
+        let otherProjectDismissed = ProjectLeadEntry(
+            projectId: UUID(), volumeId: "v", documentId: "c",
+            aggregateScore: 1, contributingSeedKeys: ["v/s"], dismissed: true)
+        context.insert(visible); context.insert(dismissed); context.insert(otherProjectDismissed)
+        try context.save()
+
+        ProjectLeadsService.clearVisibleLeads(forProject: project, in: context)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<ProjectLeadEntry>())
+        // The project's dismissed marker survives (so it doesn't resurface); its visible lead is gone.
+        #expect(Set(remaining.map(\.documentKey)) == ["v/b", "v/c"])
+        #expect(remaining.first { $0.documentKey == "v/b" }?.dismissed == true)
+    }
+
     @Test("gatherSeed returns the project's seed keys + weight string off a background context")
     func gatherSeedOffMain() async throws {
         let container = try ModelContainer.makeTestContainer()
