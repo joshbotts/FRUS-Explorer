@@ -366,6 +366,7 @@ final class MacSearchViewModel {
         var parts: [String] = []
         if parameters.dateRange != nil           { parts.append("date") }
         if parameters.volumeIds != nil           { parts.append("volume") }
+        if parameters.documentIds != nil         { parts.append("project") }
         if !parameters.userTagIds.isEmpty        { parts.append("tags") }
         if parameters.phrase != nil              { parts.append("phrase") }
         if parameters.personRef != nil || parameters.personRollupId != nil { parts.append("person") }
@@ -503,6 +504,13 @@ final class MacSearchViewModel {
         // `effectiveVolumeIds`, which is what the FTS5 layer filters on.
         let effectiveVolumes = filterVM.effectiveVolumeIds
         parameters.volumeIds        = effectiveVolumes.isEmpty ? nil : effectiveVolumes
+        // Project History scope (#377 Phase 2): `.history` gates to the active project's
+        // engaged documents (loaded into `filterVM` when the popover opens); `.off`
+        // leaves `documentIds` unset. An empty set under `.history` matches nothing,
+        // per the `documentIds` contract in `IndexingPipeline.filterConditions`.
+        parameters.documentIds      = filterVM.projectScope == .history
+            ? filterVM.projectEngagedDocumentKeys
+            : nil
 
         // Keep scope toggles in sync. Direct assignment to the backing storage
         // would skip the `didSet` observers (which bump `parametersVersion`), but

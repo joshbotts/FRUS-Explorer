@@ -177,6 +177,29 @@ final class SearchViewModel {
     /// users cannot scope to a volume that can never return results.
     var availableVolumes: [VolumeManifestEntry] = []
 
+    // MARK: - Project Scope (#377 Phase 2)
+
+    /// How the active project constrains this search. `.off` (the default) ignores the
+    /// project; `.history` gates results to `projectEngagedDocumentKeys`.
+    ///
+    /// The filter panel exposes the picker only when `projectEngagedDocumentKeys` is
+    /// non-empty (i.e. a project is active and has engaged documents), so this stays
+    /// `.off` and inert in Global Context.
+    var projectScope: ProjectSearchScope = .off
+
+    /// The active project's engaged `"volumeId/documentId"` keys, loaded by the view
+    /// from live project activity (`ProjectEngagedDocuments`). Empty when no project is
+    /// active or the project has engaged no documents.
+    ///
+    /// When `projectScope == .history`, this becomes `SearchParameters.documentIds`: a
+    /// non-empty set gates the FTS query to exactly these documents, and an empty set
+    /// (History chosen for a project with no history yet) matches nothing.
+    var projectEngagedDocumentKeys: [String] = []
+
+    /// The active project's display name, for the scope picker's label. `nil` in Global
+    /// Context.
+    var projectScopeName: String?
+
     /// Equatable fingerprint of every advanced-filter field that
     /// `MacSearchViewModel.applyAdvancedFilters()` copies back into its parameters.
     ///
@@ -204,6 +227,9 @@ final class SearchViewModel {
         // signature deterministically, which drives the macOS live-apply observer (#212). iOS
         // does not observe this signature, so its behavior is unchanged.
         parts.append(selectedUserTagIds.map(\.uuidString).sorted().joined(separator: ","))
+        // Project scope (#377 Phase 2): a scope change must perturb the signature so the
+        // macOS live-apply observer copies the resulting `documentIds` into `parameters`.
+        parts.append("ps|\(projectScope.rawValue)")
         return parts.joined(separator: "§")
     }
 
@@ -476,6 +502,9 @@ final class SearchViewModel {
         personRefText = ""
         personRollupId = nil
         personLabel = nil
+        // Reset the project scope selection (keep the loaded engaged-key set — it is
+        // context, not a user filter, and re-populates only when the project changes).
+        projectScope = .off
     }
 
     func clearAll() {
@@ -528,6 +557,10 @@ final class SearchViewModel {
             subjectTagIds: [],
             userTagIds: selectedUserTagIds.map(\.uuidString),
             volumeIds: effectiveVolumeIds.isEmpty ? nil : effectiveVolumeIds,
+            // Project History scope (#377 Phase 2): `.history` gates to the project's
+            // engaged documents (empty set = match nothing, per the `documentIds`
+            // contract); `.off` leaves the corpus unconstrained.
+            documentIds: projectScope == .history ? projectEngagedDocumentKeys : nil,
             includeDocumentText: includeDocumentText,
             includeSummaries: includeSummaries,
             includeNotes: includeNotes,
@@ -568,6 +601,7 @@ final class SearchViewModel {
         if !prefixWildcard.isEmpty { return true }
         if !includeDocumentText || !includeSummaries || !includeNotes { return true }
         if !includeFrontMatter { return true }
+        if projectScope != .off { return true }
         switch booleanMode {
         case .or: return true
         case .and: return false

@@ -573,6 +573,13 @@ struct SearchParametersTests {
             let all = try await service.search(parameters: SearchParameters(keywords: "detente"))
             #expect(all.contains { $0.documentId == "d1" })
             #expect(all.contains { $0.documentId == "d2" })
+
+            // Contract: an *empty* documentIds set (History scope on a project with no
+            // engaged documents) matches nothing — it must NOT degrade to "all".
+            let emptyGate = try await service.search(
+                parameters: SearchParameters(keywords: "detente", documentIds: [])
+            )
+            #expect(emptyGate.isEmpty)
         }
     }
 

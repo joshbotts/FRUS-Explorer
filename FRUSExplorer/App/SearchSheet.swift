@@ -120,6 +120,10 @@ struct MacSearchWindowView: View {
     /// strings in results can be resolved to human-readable names.
     @Query private var allUserTags: [UserTag]
 
+    /// All known projects, for resolving the active project's name in the advanced
+    /// filter panel's project-scope picker (#377 Phase 2).
+    @Query private var allProjects: [Project]
+
     var body: some View {
         VStack(spacing: 0) {
 
@@ -506,6 +510,20 @@ struct MacSearchWindowView: View {
                     indexedVolumeIds: appState.indexedVolumeIds,
                     userTags: allUserTags
                 )
+                // Project History scope (#377 Phase 2): refresh the engaged-document set
+                // each time the panel opens so the scope reflects the project's current
+                // collections/notes/visits. Clears (and drops the scope) in Global Context.
+                if let fvm = searchVM.filterVM {
+                    if let pid = appState.activeProjectId {
+                        fvm.projectScopeName = allProjects.first { $0.id == pid }?.name
+                        fvm.projectEngagedDocumentKeys =
+                            Array(ProjectEngagedDocuments.keys(forProject: pid, in: modelContext))
+                    } else {
+                        fvm.projectScope = .off
+                        fvm.projectEngagedDocumentKeys = []
+                        fvm.projectScopeName = nil
+                    }
+                }
                 showAdvancedFilters = true
             } label: {
                 HStack(spacing: 3) {

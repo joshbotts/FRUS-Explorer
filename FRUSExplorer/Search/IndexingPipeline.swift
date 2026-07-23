@@ -2160,10 +2160,17 @@ public actor IndexingPipeline {
         }
 
         // Project History scope (#377 Phase 2): restrict to an explicit `"volumeId/documentId"` set.
-        if let docIds = filters.documentIds, !docIds.isEmpty {
-            let placeholders = docIds.map { _ in "?" }.joined(separator: ", ")
-            conditions.append("(dc.volume_id || '/' || dc.document_id) IN (\(placeholders))")
-            binds.append(contentsOf: docIds)
+        // Contract: `nil` = no document gate (the default). A non-nil array gates to exactly
+        // that set — so an *empty* array (a History scope whose project has engaged no documents
+        // yet) matches nothing, rather than silently degrading to "search the whole corpus".
+        if let docIds = filters.documentIds {
+            if docIds.isEmpty {
+                conditions.append("1 = 0")
+            } else {
+                let placeholders = docIds.map { _ in "?" }.joined(separator: ", ")
+                conditions.append("(dc.volume_id || '/' || dc.document_id) IN (\(placeholders))")
+                binds.append(contentsOf: docIds)
+            }
         }
 
         if let range = filters.dateRange {

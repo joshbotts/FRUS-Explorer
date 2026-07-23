@@ -123,6 +123,7 @@ struct SearchFilterView: View {
             Divider()
 
             Form {
+                if !vm.projectEngagedDocumentKeys.isEmpty { projectScopeSection }
                 dateRangeSection
                 if !vm.availableVolumes.isEmpty     { customScopeSection }
                 if !vm.availableVolumes.isEmpty     { subjectFacetSection }
@@ -167,6 +168,7 @@ struct SearchFilterView: View {
     private var iOSBody: some View {
         NavigationStack {
             Form {
+                if !vm.projectEngagedDocumentKeys.isEmpty { projectScopeSection }
                 dateRangeSection
                 if !vm.availableVolumes.isEmpty     { customScopeSection }
                 if !vm.availableVolumes.isEmpty     { subjectFacetSection }
@@ -237,6 +239,45 @@ struct SearchFilterView: View {
     }
 
     // MARK: - Date Range
+
+    // MARK: - Project Scope (#377 Phase 2)
+
+    /// Restricts the search to the active project's engaged documents (its collected,
+    /// annotated, and visited documents). Shown only when `projectEngagedDocumentKeys`
+    /// is non-empty — i.e. a project is active and has engaged at least one document.
+    private var projectScopeSection: some View {
+        Section {
+            Picker(
+                String(localized: "search.projectscope.label",
+                       defaultValue: "Scope"),
+                selection: $vm.projectScope
+            ) {
+                Text(String(localized: "search.projectscope.off",
+                            defaultValue: "Entire corpus"))
+                    .tag(ProjectSearchScope.off)
+                Text(String(localized: "search.projectscope.history",
+                            defaultValue: "This project's documents"))
+                    .tag(ProjectSearchScope.history)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel(
+                String(localized: "search.projectscope.a11y",
+                       defaultValue: "Project search scope")
+            )
+        } header: {
+            if let name = vm.projectScopeName {
+                Text(name)
+            } else {
+                Text(String(localized: "search.section.projectscope",
+                            defaultValue: "Project"))
+            }
+        } footer: {
+            Text(String(
+                localized: "search.projectscope.footer",
+                defaultValue: "“This project's documents” limits results to the \(vm.projectEngagedDocumentKeys.count) documents you've collected, annotated, or opened in this project."
+            ))
+        }
+    }
 
     private var dateRangeSection: some View {
         Section {
