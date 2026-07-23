@@ -83,6 +83,7 @@ enum ProjectLeadsService {
         }
         let seedSet = Set(seedKeys)
         var perSeed: [(seed: String, related: [(key: String, score: Double)])] = []
+        var recordByKey: [String: CandidateRecord] = [:]   // display fields for the shown leads
         for seedKey in seedKeys.prefix(seedCap) {
             guard let anchor = DocumentKey(compositeString: seedKey) else { continue }
             let result = await RelatedDocumentsEngine.rank(
@@ -90,10 +91,13 @@ enum ProjectLeadsService {
                 scopeVolumeIds: nil, limit: perSeedRelatedLimit, appState: appState)
             perSeed.append((seed: seedKey,
                             related: result.rows.map { ($0.key.compositeString, $0.totalScore) }))
+            for row in result.rows where recordByKey[row.key.compositeString] == nil {
+                recordByKey[row.key.compositeString] = row.record
+            }
         }
         let candidates = ProjectLeadsAggregator.aggregate(
             perSeedRelated: perSeed, seedKeys: seedSet, limit: leadLimit)
-        applyLeads(candidates, forProject: projectId, in: context)
+        applyLeads(candidates, records: recordByKey, forProject: projectId, in: context)
     }
 
     /// Upserts the computed `candidates` into `ProjectLeadEntry` records for the project:
@@ -102,6 +106,7 @@ enum ProjectLeadsService {
     /// ranking is left untouched (so it stays hidden), and it is deleted only when it drops out
     /// of the candidate set entirely.
     static func applyLeads(_ candidates: [ProjectLeadCandidate],
+                           records: [String: CandidateRecord] = [:],
                            forProject projectId: UUID,
                            in context: ModelContext,
                            now: Date = .now) {
@@ -113,10 +118,16 @@ enum ProjectLeadsService {
         let candidateKeys = Set(candidates.map(\.key))
 
         for candidate in candidates {
+            let record = records[candidate.key]
             if let entry = existingByKey[candidate.key] {
                 if !entry.dismissed {
                     entry.aggregateScore = candidate.aggregateScore
                     entry.contributingSeedKeys = candidate.contributingSeedKeys
+                    if let record {
+                        entry.header = record.header
+                        entry.documentNumber = record.documentNumber
+                        entry.isEditorialNote = record.isEditorialNote
+                    }
                 }
                 entry.lastComputedAt = now
             } else if let key = DocumentKey(compositeString: candidate.key) {
@@ -124,6 +135,9 @@ enum ProjectLeadsService {
                     projectId: pid, volumeId: key.volumeId, documentId: key.documentId,
                     aggregateScore: candidate.aggregateScore,
                     contributingSeedKeys: candidate.contributingSeedKeys,
+                    header: record?.header ?? "",
+                    documentNumber: record?.documentNumber,
+                    isEditorialNote: record?.isEditorialNote ?? false,
                     firstSurfacedAt: now, lastComputedAt: now))
             }
         }

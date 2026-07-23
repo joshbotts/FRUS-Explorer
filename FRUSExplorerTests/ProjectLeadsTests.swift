@@ -101,6 +101,25 @@ struct ProjectLeadsServiceTests {
         #expect(projectW[.archivalProvenance] == 1.0)   // not set by the project → default, not global 0.2
     }
 
+    @Test("applyLeads captures the document's display fields from the record map")
+    func applyLeadsDisplayFields() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let project = UUID()
+
+        let records = ["v/a": CandidateRecord(
+            header: "The Memo", dateline: "Washington, 1964", documentNumber: "42", isEditorialNote: true)]
+        ProjectLeadsService.applyLeads(
+            [ProjectLeadCandidate(key: "v/a", aggregateScore: 1.0, contributingSeedKeys: ["v/s"])],
+            records: records, forProject: project, in: context)
+        try context.save()
+
+        let entry = try #require(try context.fetch(FetchDescriptor<ProjectLeadEntry>()).first)
+        #expect(entry.header == "The Memo")
+        #expect(entry.documentNumber == "42")
+        #expect(entry.isEditorialNote == true)
+    }
+
     @Test("applyLeads upserts: preserves firstSurfacedAt + dismissed, deletes stale")
     func applyLeadsUpsert() throws {
         let container = try ModelContainer.makeTestContainer()

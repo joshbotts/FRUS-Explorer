@@ -67,6 +67,7 @@ struct ProjectHomeView: View {
     @Query(sort: \Collection.lastModified, order: .reverse) private var allCollections: [Collection]
     @Query(sort: \ReadingHistoryEntry.accessedAt, order: .reverse) private var allVisits: [ReadingHistoryEntry]
     @Query(sort: \SearchHistoryEntry.executedAt, order: .reverse) private var allSearches: [SearchHistoryEntry]
+    @Query(sort: \ProjectLeadEntry.aggregateScore, order: .reverse) private var allLeads: [ProjectLeadEntry]
 
     /// Local draft of the research question, loaded from the model on appearance and
     /// saved live on every edit (like the collection editors) — so an in-progress edit
@@ -75,6 +76,10 @@ struct ProjectHomeView: View {
 
     /// Whether the focus-subjects editor sheet is presented (#377 Phase 2b).
     @State private var showFocusEditor = false
+
+    /// The in-flight (debounced) leads recompute, and whether one is running (#377 Phase 3).
+    @State private var recomputeTask: Task<Void, Never>?
+    @State private var isRecomputing = false
 
     private var project: Project? { projects.first { $0.id == projectId } }
 
@@ -112,7 +117,13 @@ struct ProjectHomeView: View {
             }
         }
         .navigationTitle(project?.name ?? String(localized: "project.home.title", defaultValue: "Project Home"))
-        .task(id: projectId) { questionDraft = project?.researchQuestion ?? "" }
+        .task(id: projectId) {
+            questionDraft = project?.researchQuestion ?? ""
+            scheduleRecompute()
+        }
+        // Recompute leads when the project's collections (or their documents) change — the
+        // discovery feedback loop (#377 Phase 3). Debounced inside `scheduleRecompute`.
+        .onChange(of: seedSignature) { _, _ in scheduleRecompute() }
         .sheet(isPresented: $showFocusEditor) {
             if let project {
                 ProjectFocusSubjectsEditor(project: project)
@@ -258,17 +269,140 @@ struct ProjectHomeView: View {
 
     // MARK: - Project Leads slot (Phase 3 placeholder)
 
+    /// The project's non-dismissed leads, ranked by aggregate relatedness (#377 Phase 3).
+    private var projectLeads: [ProjectLeadEntry] {
+        allLeads.filter { $0.projectId == projectId && !$0.dismissed }
+    }
+
+    @ViewBuilder
     private var leadsSection: some View {
+        let leads = projectLeads
         sectionCard(String(localized: "project.home.leads.title", defaultValue: "Suggested Next")) {
-            Label {
-                Text(String(localized: "project.home.leads.placeholder",
-                            defaultValue: "As you add documents to this project's collections, related documents you haven't gathered yet will surface here."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: "sparkles").foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 10) {
+                if leads.isEmpty {
+                    Label {
+                        Text(String(localized: "project.home.leads.placeholder",
+                                    defaultValue: "As you add documents to this project's collections, related documents you haven't gathered yet will surface here."))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: "sparkles").foregroundStyle(.secondary)
+                    }
+                } else {
+                    ForEach(leads) { leadRow($0) }
+                }
+                leadsFooter
             }
+        }
+    }
+
+    /// The refresh control / recompute status under the leads.
+    @ViewBuilder
+    private var leadsFooter: some View {
+        HStack(spacing: 8) {
+            if isRecomputing {
+                ProgressView().controlSize(.small)
+                Text(String(localized: "project.home.leads.computing", defaultValue: "Finding leads…"))
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Button {
+                    scheduleRecompute(immediate: true)
+                } label: {
+                    Label(String(localized: "project.home.leads.refresh", defaultValue: "Refresh"),
+                          systemImage: "arrow.clockwise")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+            }
+            Spacer()
+        }
+        .padding(.top, 2)
+    }
+
+    private func leadRow(_ lead: ProjectLeadEntry) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Button {
+                openDocument(volumeId: lead.volumeId, documentId: lead.documentId,
+                             title: lead.header.isEmpty ? nil : lead.header)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(lead.header.isEmpty ? lead.documentKey : lead.header)
+                            .lineLimit(2)
+                            .foregroundStyle(.primary)
+                        if isNewLead(lead) {
+                            Text(String(localized: "project.home.leads.new", defaultValue: "NEW"))
+                                .font(.caption2.weight(.semibold))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Capsule().fill(Color.accentColor.opacity(0.18)))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    Text(leadContext(lead))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                dismissLead(lead)
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+            }
+            .buttonStyle(.plain)
+            .help(String(localized: "project.home.leads.dismiss.help", defaultValue: "Dismiss this lead"))
+        }
+        .padding(.vertical, 3)
+    }
+
+    /// "Related to N of your documents" (+ an editorial-note marker).
+    private func leadContext(_ lead: ProjectLeadEntry) -> String {
+        let n = lead.contributingSeedKeys.count
+        let related = n == 1
+            ? String(localized: "project.home.leads.related.one",
+                     defaultValue: "Related to 1 of your documents")
+            : String(localized: "project.home.leads.related.other",
+                     defaultValue: "Related to \(n) of your documents")
+        guard lead.isEditorialNote else { return related }
+        return related + " · " + String(localized: "project.home.leads.editorial", defaultValue: "Editorial note")
+    }
+
+    /// A lead surfaced within the last week reads as new.
+    private func isNewLead(_ lead: ProjectLeadEntry) -> Bool {
+        lead.firstSurfacedAt > Date.now.addingTimeInterval(-7 * 24 * 3600)
+    }
+
+    /// Marks a lead dismissed so it stops surfacing (the reactive `@Query` removes it).
+    private func dismissLead(_ lead: ProjectLeadEntry) {
+        lead.dismissed = true
+    }
+
+    // MARK: - Leads recompute (debounced)
+
+    /// A signature that changes when the project's collections or their documents change, so
+    /// the leads recompute as the seed grows — the discovery feedback loop.
+    private var seedSignature: String {
+        summary.collections
+            .map { "\($0.id):\(($0.documentEntries ?? []).count):\($0.lastModified?.timeIntervalSince1970 ?? 0)" }
+            .sorted()
+            .joined(separator: "|")
+    }
+
+    /// Schedules a debounced leads recompute. `immediate` skips the debounce (the Refresh button).
+    /// The engine work is bounded and `async`, so it never blocks the UI.
+    private func scheduleRecompute(immediate: Bool = false) {
+        recomputeTask?.cancel()
+        recomputeTask = Task { @MainActor in
+            if !immediate { try? await Task.sleep(for: .milliseconds(800)) }
+            guard !Task.isCancelled else { return }
+            isRecomputing = true
+            await ProjectLeadsService.recompute(forProject: projectId, appState: appState, in: modelContext)
+            isRecomputing = false
         }
     }
 

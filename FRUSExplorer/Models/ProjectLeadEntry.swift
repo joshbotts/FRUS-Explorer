@@ -48,6 +48,16 @@ import SwiftData
     /// The `"volumeId/documentId"` seed documents that surfaced this lead.
     var contributingSeedKeys: [String] = []
 
+    /// The lead document's header (title), captured at compute time so the leads list renders
+    /// without a re-fetch. May be empty; the row falls back to the document key.
+    var header: String = ""
+
+    /// The lead document's number within its volume, if known.
+    var documentNumber: String?
+
+    /// Whether the lead is an editorial note rather than a primary document.
+    var isEditorialNote: Bool = false
+
     /// When this lead first appeared — the anchor for the "new since you last looked" feed.
     var firstSurfacedAt: Date = Date.now
 
@@ -63,6 +73,9 @@ import SwiftData
          documentId: String,
          aggregateScore: Double,
          contributingSeedKeys: [String],
+         header: String = "",
+         documentNumber: String? = nil,
+         isEditorialNote: Bool = false,
          firstSurfacedAt: Date = .now,
          lastComputedAt: Date = .now,
          dismissed: Bool = false) {
@@ -72,6 +85,9 @@ import SwiftData
         self.documentId = documentId
         self.aggregateScore = aggregateScore
         self.contributingSeedKeys = contributingSeedKeys
+        self.header = header
+        self.documentNumber = documentNumber
+        self.isEditorialNote = isEditorialNote
         self.firstSurfacedAt = firstSurfacedAt
         self.lastComputedAt = lastComputedAt
         self.dismissed = dismissed
