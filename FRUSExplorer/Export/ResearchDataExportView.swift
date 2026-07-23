@@ -227,7 +227,8 @@ struct ResearchDataExportView: View {
         do {
             let envelope = try ResearchDataExporter.makeEnvelope(
                 modelContext: modelContext,
-                includeGeneratedSummaries: includeGeneratedSummaries
+                includeGeneratedSummaries: includeGeneratedSummaries,
+                activeProjectId: appState.activeProjectId
             )
             let data = try ResearchDataExporter.exportJSONData(envelope)
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("frus-research-export.json")

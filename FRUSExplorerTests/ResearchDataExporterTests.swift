@@ -172,6 +172,48 @@ struct ResearchDataExporterTests {
         #expect(decodedAgain == decoded)
     }
 
+    // MARK: - #377 Phase 4: active-project header
+
+    @Test("makeEnvelope stamps the active project's name/question header; nil/non-matching id → none; projects[] unchanged")
+    func makeEnvelopeStampsActiveProject() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        _ = seedFixtures(in: context)
+        let project = try #require(try context.fetch(FetchDescriptor<Project>()).first)
+        project.researchQuestion = "How did détente evolve?"
+        try context.save()
+
+        // With the active project id → the header carries its name + question…
+        let withProject = try ResearchDataExporter.makeEnvelope(
+            modelContext: context, includeGeneratedSummaries: false, activeProjectId: project.id)
+        #expect(withProject.exportedForProjectName == "Cold War Diplomacy")
+        #expect(withProject.exportedForProjectResearchQuestion == "How did détente evolve?")
+        #expect(withProject.projects.count == 1)   // …and the full project backup array is unchanged.
+
+        // No active project (Global Context) → no header project.
+        let noProject = try ResearchDataExporter.makeEnvelope(
+            modelContext: context, includeGeneratedSummaries: false, activeProjectId: nil)
+        #expect(noProject.exportedForProjectName == nil)
+        #expect(noProject.exportedForProjectResearchQuestion == nil)
+        #expect(noProject.projects.count == 1)
+
+        // A stale/non-matching id → no header project (not a crash).
+        let bad = try ResearchDataExporter.makeEnvelope(
+            modelContext: context, includeGeneratedSummaries: false, activeProjectId: UUID())
+        #expect(bad.exportedForProjectName == nil)
+    }
+
+    @Test("A pre-Phase-4 JSON (no header-project keys) still decodes")
+    func legacyJSONDecodes() throws {
+        let json = Data(#"{"formatVersion":1,"exportedAt":"2024-01-01T00:00:00Z","notes":[],"tags":[],"tagAssignments":[],"highlights":[],"collections":[],"prompts":[],"projects":[],"summaries":[]}"#.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(ResearchDataEnvelope.self, from: json)
+        #expect(decoded.formatVersion == 1)
+        #expect(decoded.exportedForProjectName == nil)
+        #expect(decoded.exportedForProjectResearchQuestion == nil)
+    }
+
     @Test("exportJSONData top-level keys match the documented envelope schema")
     func exportJSONDataKeysMatchSchema() throws {
         let container = try makeContainer()

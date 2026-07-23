@@ -3356,7 +3356,8 @@ private struct SettingsDataPane: View {
         do {
             let envelope = try ResearchDataExporter.makeEnvelope(
                 modelContext: modelContext,
-                includeGeneratedSummaries: includeGeneratedSummaries
+                includeGeneratedSummaries: includeGeneratedSummaries,
+                activeProjectId: appState.activeProjectId
             )
             let data = try ResearchDataExporter.exportJSONData(envelope)
 

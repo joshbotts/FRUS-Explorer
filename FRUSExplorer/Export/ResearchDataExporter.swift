@@ -20,6 +20,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 154: initial implementation
+///   2.0 — #377 Phase 4: `exportedForProjectName` / `exportedForProjectResearchQuestion`
+///          (the active project this backup was generated under; both optional, so pre-Phase-4
+///          files still decode)
 struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataExporter.currentFormatVersion`.
@@ -27,6 +30,14 @@ struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// When this export was generated.
     var exportedAt: Date
+
+    /// The name of the project active when this export was generated, if any (#377 Phase 4) — a
+    /// convenience pointer to *which* project this backup was made under. `nil` in Global Context.
+    /// Distinct from the full `projects` array below (which is the complete project backup, always
+    /// present); this is just a header. Optional so pre-Phase-4 files still decode.
+    var exportedForProjectName: String?
+    /// The research question of that active project, if it has one set (#377 Phase 4).
+    var exportedForProjectResearchQuestion: String?
 
     var notes: [ResearchNoteExport]
     var tags: [UserTagExport]
@@ -212,7 +223,9 @@ enum ResearchDataExporter {
 
     /// Current `ResearchDataEnvelope.formatVersion`. Bump when making a breaking
     /// change to the export schema; a future importer can branch on this value.
-    static let currentFormatVersion = 1
+    /// (No importer exists yet — the added Phase-4 header fields are optional, so a hypothetical
+    /// reader of a v1 file, or a v2-file reader that ignores them, is unaffected.)
+    static let currentFormatVersion = 2
 
     /// Builds an envelope from the current contents of `modelContext`.
     ///
@@ -220,9 +233,12 @@ enum ResearchDataExporter {
     ///   - modelContext: The SwiftData context to read from.
     ///   - includeGeneratedSummaries: When `true`, populates `summaries` from
     ///     all `GeneratedSummary` records.
+    ///   - activeProjectId: The active project (#377 Phase 4), recorded in the envelope header as
+    ///     the project this backup was generated under. `nil` (Global Context) → no header project.
     static func makeEnvelope(
         modelContext: ModelContext,
-        includeGeneratedSummaries: Bool
+        includeGeneratedSummaries: Bool,
+        activeProjectId: UUID? = nil
     ) throws -> ResearchDataEnvelope {
         let notes = try modelContext.fetch(FetchDescriptor<ResearchNote>())
         let tags = try modelContext.fetch(FetchDescriptor<UserTag>())
@@ -237,9 +253,15 @@ enum ResearchDataExporter {
 
         let highlightsByNoteId = Dictionary(grouping: highlights, by: \.noteId)
 
+        // The active project's header pointer (#377 Phase 4) — resolved against the already-fetched
+        // `projects`, so no extra fetch. `nil` id or no match → no header project.
+        let activeProject = activeProjectId.flatMap { id in projects.first { $0.id == id } }
+
         return ResearchDataEnvelope(
             formatVersion: currentFormatVersion,
             exportedAt: .now,
+            exportedForProjectName: activeProject?.name,
+            exportedForProjectResearchQuestion: activeProject?.researchQuestion,
             notes: notes.map { note in
                 ResearchNoteExport(
                     id: note.id,
