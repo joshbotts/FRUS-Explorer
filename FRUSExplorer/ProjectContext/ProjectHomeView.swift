@@ -90,6 +90,9 @@ struct ProjectHomeView: View {
     /// `Project.leadAxisWeights` and re-ranked only when the drag settles.
     @State private var draftWeights = AxisWeights.default
 
+    /// Whether the inline weight-tuning sliders are expanded (they appear above the leads list).
+    @State private var showWeightTuning = false
+
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
@@ -109,7 +112,6 @@ struct ProjectHomeView: View {
                     summarySection
                     focusSubjectsSection(project)
                     leadsSection
-                    weightTuningSection(project)
                     recentSection
                     quickActions
                 }
@@ -294,24 +296,48 @@ struct ProjectHomeView: View {
     @ViewBuilder
     private var leadsSection: some View {
         let leads = projectLeads
-        sectionCard(String(localized: "project.home.leads.title", defaultValue: "Suggested Next")) {
-            VStack(alignment: .leading, spacing: 10) {
-                if leads.isEmpty {
-                    Label {
-                        Text(String(localized: "project.home.leads.placeholder",
-                                    defaultValue: "As you add documents to this project's collections, related documents you haven't gathered yet will surface here."))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } icon: {
-                        Image(systemName: "sparkles").foregroundStyle(.secondary)
+        let canTune = !summary.collections.isEmpty
+        VStack(alignment: .leading, spacing: 10) {
+            // Title line with the inline "Adjust weighting" toggle (only when there's a seed to tune).
+            HStack(spacing: 8) {
+                Text(String(localized: "project.home.leads.title", defaultValue: "Suggested Next"))
+                    .font(.headline)
+                Spacer()
+                if canTune {
+                    Button {
+                        withAnimation(.snappy) { showWeightTuning.toggle() }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "slider.horizontal.3")
+                            Text(String(localized: "project.home.leads.tune", defaultValue: "Adjust weighting"))
+                            Image(systemName: showWeightTuning ? "chevron.up" : "chevron.down")
+                                .font(.caption2)
+                        }
+                        .font(.caption)
                     }
-                } else {
-                    ForEach(leads) { leadRow($0) }
+                    .buttonStyle(.borderless)
                 }
-                leadsFooter
             }
+            // Sliders expand ABOVE the list.
+            if showWeightTuning, canTune, let project {
+                weightTuningPanel(project)
+            }
+            if leads.isEmpty {
+                Label {
+                    Text(String(localized: "project.home.leads.placeholder",
+                                defaultValue: "As you add documents to this project's collections, related documents you haven't gathered yet will surface here."))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "sparkles").foregroundStyle(.secondary)
+                }
+            } else {
+                ForEach(leads) { leadRow($0) }
+            }
+            leadsFooter
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The refresh control / recompute status under the leads.
@@ -439,38 +465,33 @@ struct ProjectHomeView: View {
 
     // MARK: - Lead weight tuning (#377 Phase 3b)
 
-    /// A collapsible panel to tune how much each similarity axis influences *this project's*
-    /// suggestions — the per-project override of the global related-documents weighting. Shown only
-    /// once the project has a collection (a seed to rank against). Mirrors the document-view Related
-    /// panel's weight sliders (same axes, same `0…1` range, same persist-on-release behaviour), but
-    /// writes to `Project.leadAxisWeights` and re-ranks the leads instead of the panel.
+    /// The inline weight-tuning panel that expands above the leads list — the per-project override of
+    /// the global related-documents weighting. Mirrors the document-view Related panel's weight
+    /// sliders (same axes, same `0…1` range, same persist-on-release behaviour), but writes to
+    /// `Project.leadAxisWeights` and re-ranks the leads instead of the panel.
     @ViewBuilder
-    private func weightTuningSection(_ project: Project) -> some View {
-        if !summary.collections.isEmpty {
-            DisclosureGroup(String(localized: "project.home.leads.tune", defaultValue: "Adjust weighting")) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(String(localized: "project.home.leads.tune.detail",
-                                defaultValue: "Set how much each kind of connection shapes this project's suggestions."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    ForEach(SimilarityAxis.allCases) { axis in
-                        weightRow(axis, project)
-                    }
-                    HStack {
-                        Spacer()
-                        Button(String(localized: "project.home.leads.tune.reset", defaultValue: "Reset to default")) {
-                            resetWeights(project)
-                        }
-                        .buttonStyle(.borderless)
-                        .font(.caption)
-                        .disabled(project.leadAxisWeights == nil)
-                    }
-                }
-                .padding(.top, 6)
+    private func weightTuningPanel(_ project: Project) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "project.home.leads.tune.detail",
+                        defaultValue: "Set how much each kind of connection shapes this project's suggestions."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(SimilarityAxis.allCases) { axis in
+                weightRow(axis, project)
             }
-            .font(.subheadline)
+            HStack {
+                Spacer()
+                Button(String(localized: "project.home.leads.tune.reset", defaultValue: "Reset to global default")) {
+                    resetWeights(project)
+                }
+                .buttonStyle(.borderless)
+                .font(.caption)
+                .disabled(project.leadAxisWeights == nil)
+            }
         }
+        .padding(12)
+        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
     }
 
     /// One axis's weight slider. The value updates live for feedback; the persist + re-rank happens
@@ -508,9 +529,15 @@ struct ProjectHomeView: View {
     }
 
     /// Persists the drafted weights to the project (its per-project override) and re-ranks the leads.
+    /// No-ops when the released value matches what's stored (a tap, or a drag back to the start), and
+    /// uses the *debounced* recompute so tuning several axes in a row coalesces into one re-rank
+    /// (matching the `seedSignature` path — an immediate recompute per release would cancel-and-restart
+    /// the up-to-`seedCap` ranking pass on every axis).
     private func commitWeights(_ project: Project) {
-        project.leadAxisWeights = draftWeights.rawValue
-        scheduleRecompute(immediate: true)
+        let raw = draftWeights.rawValue
+        guard raw != project.leadAxisWeights else { return }
+        project.leadAxisWeights = raw
+        scheduleRecompute()
     }
 
     /// Clears the per-project override (falling back to the global preference / default), re-seeds the
