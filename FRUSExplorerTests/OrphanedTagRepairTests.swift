@@ -149,6 +149,51 @@ struct OrphanedTagRepairTests {
         #expect(OrphanedTagRepair.run(context: context) == 0)
     }
 
+    // MARK: - Project tag-focus hygiene (#377 Phase 3)
+
+    @Test("deleteCascading strips the deleted tag from every project's tag focus")
+    func deleteCascadingStripsProjectFocus() throws {
+        let context = try makeContext()
+        let victim = UserTag(name: "Doomed")
+        let keep   = UserTag(name: "Keep")
+        context.insert(victim); context.insert(keep)
+        let project = Project(name: "P")
+        project.defaultUserTagIds = [victim.id, keep.id]
+        context.insert(project)
+        try context.save()
+
+        UserTagAdmin.deleteCascading(victim, context: context)
+
+        let p = try #require(try context.fetch(FetchDescriptor<Project>()).first)
+        #expect(p.defaultUserTagIds == [keep.id])   // victim stripped, keep survives
+    }
+
+    @Test("repointTagInProjectFocus re-points a merged tag's focus id to the target (deduped)")
+    func repointProjectFocusOnMerge() throws {
+        let context = try makeContext()
+        let source = UUID(); let target = UUID(); let other = UUID()
+        let onlySource = Project(name: "A"); onlySource.defaultUserTagIds = [source, other]
+        let bothAlready = Project(name: "B"); bothAlready.defaultUserTagIds = [source, target]
+        context.insert(onlySource); context.insert(bothAlready)
+        try context.save()
+
+        UserTagAdmin.repointTagInProjectFocus(from: source, to: target, in: context)
+
+        let byName = Dictionary(uniqueKeysWithValues:
+            (try context.fetch(FetchDescriptor<Project>())).map { ($0.name, $0) })
+        #expect(Set(byName["A"]!.defaultUserTagIds) == [other, target])   // source → target
+        #expect(byName["B"]!.defaultUserTagIds == [target])               // already had target: no dup
+    }
+
+    @Test("placeholders reconstructs an orphan referenced only by a project's tag focus")
+    func placeholdersFromProjectOnlyOrphan() throws {
+        let project = Project(name: "P")
+        project.defaultUserTagIds = [Self.orphanB]
+        let result = OrphanedTagRepair.placeholders(
+            assignments: [], notes: [], existingTagIds: [], projects: [project])
+        #expect(result.map(\.id) == [Self.orphanB])
+    }
+
     // MARK: - DuplicateRecordCleanup keeper preference
 
     @Test("dedupe: a real UserTag always wins over a placeholder that shares its id")

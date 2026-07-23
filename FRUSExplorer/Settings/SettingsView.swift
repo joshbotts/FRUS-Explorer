@@ -2272,7 +2272,11 @@ private struct UserTagsView: View {
             assignmentCount += 1
         }
 
-        // 3. Delete the source tag last, after all references have been updated.
+        // 3. Re-point any project tag focus (#377 Phase 3) from source → target, so a merged tag
+        //    doesn't strand a project's focus on the now-deleted source id.
+        UserTagAdmin.repointTagInProjectFocus(from: sourceId, to: targetId, in: modelContext)
+
+        // 4. Delete the source tag last, after all references have been updated.
         modelContext.delete(source)
 
         #if DEBUG

@@ -14,13 +14,15 @@ import SwiftData
 /// Shared, referential-integrity-preserving administration of `UserTag` records.
 ///
 /// ## Why this exists (issue #406)
-/// A `UserTag`'s associations live in two places that SwiftData cannot see as a relationship:
-/// `DocumentTagAssignment.tagId` (a plain `UUID`) and `ResearchNote.userTagIds` (a plain
-/// `[UUID]`). Deleting a tag with a bare `modelContext.delete(tag)` therefore leaves those
-/// references dangling — the exact orphaned-association state reported in #406. The two Settings
-/// delete affordances used to do exactly that (the macOS delete dialog even *promised* cleanup
-/// it never performed). The *merge* path already re-points both reference kinds before deleting;
-/// deletion never did. `deleteCascading` closes that gap so tag deletion can never orphan.
+/// A `UserTag`'s associations live in places that SwiftData cannot see as a relationship:
+/// `DocumentTagAssignment.tagId` (a plain `UUID`), `ResearchNote.userTagIds` (a plain `[UUID]`),
+/// and — since #377 Phase 3 — `Project.defaultUserTagIds` (a plain `[UUID]` tag-focus). Deleting a
+/// tag with a bare `modelContext.delete(tag)` therefore leaves those references dangling — the exact
+/// orphaned-association state reported in #406. The two Settings delete affordances used to do
+/// exactly that (the macOS delete dialog even *promised* cleanup it never performed). The *merge*
+/// path already re-points the note/assignment reference kinds before deleting; deletion never did.
+/// `deleteCascading` closes that gap — including the project-focus reference — so tag deletion can
+/// never orphan.
 ///
 /// ## Relationship to `OrphanedTagRepair`
 /// These are complementary: `deleteCascading` prevents *new* orphans at the delete site;
@@ -64,7 +66,34 @@ enum UserTagAdmin {
             context.delete(assignment)
         }
 
+        // Remove the id from every project's tag focus (#377 Phase 3), so a deleted tag can't linger
+        // as a dead focus id (which would silently stop contributing to that project's leads seed).
+        stripTagFromProjectFocus(id, in: context)
+
         context.delete(tag)
         try? context.save()
+    }
+
+    /// Removes `tagId` from every `Project.defaultUserTagIds` (#377 Phase 3 tag focus). Reassigns the
+    /// array (not an in-place `removeAll`) so `Project.lastModified` / CloudKit conflict resolution
+    /// fires (see `Project.swift`). Does **not** save — the caller batches the save.
+    static func stripTagFromProjectFocus(_ tagId: UUID, in context: ModelContext) {
+        let projects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
+        for project in projects where project.defaultUserTagIds.contains(tagId) {
+            project.defaultUserTagIds = project.defaultUserTagIds.filter { $0 != tagId }
+        }
+    }
+
+    /// Re-points a project tag focus from `sourceId` to `targetId` in every `Project.defaultUserTagIds`
+    /// (#377 Phase 3) — the merge counterpart of `stripTagFromProjectFocus`, so merging a tag doesn't
+    /// strand a project's focus on the now-deleted source id. Reassigns the array (didSet / CloudKit).
+    /// De-duplicates when the project already focuses on the target. Does **not** save.
+    static func repointTagInProjectFocus(from sourceId: UUID, to targetId: UUID, in context: ModelContext) {
+        let projects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
+        for project in projects where project.defaultUserTagIds.contains(sourceId) {
+            var ids = project.defaultUserTagIds.filter { $0 != sourceId }
+            if !ids.contains(targetId) { ids.append(targetId) }
+            project.defaultUserTagIds = ids
+        }
     }
 }

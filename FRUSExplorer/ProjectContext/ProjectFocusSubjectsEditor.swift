@@ -159,10 +159,14 @@ struct ProjectFocusSubjectsEditor: View {
 
     /// Adds or removes a subject ref from the project's focus (live save).
     private func toggle(_ ref: String) {
-        if let index = project.defaultSubjectTagIds.firstIndex(of: ref) {
-            project.defaultSubjectTagIds.remove(at: index)
+        // Reassign the whole array — Project's array `didSet` (and thus `lastModified` / CloudKit
+        // last-write-wins) does NOT fire on an in-place `remove`/`append` (see Project.swift).
+        var ids = project.defaultSubjectTagIds
+        if let index = ids.firstIndex(of: ref) {
+            ids.remove(at: index)
         } else {
-            project.defaultSubjectTagIds.append(ref)
+            ids.append(ref)
         }
+        project.defaultSubjectTagIds = ids
     }
 }

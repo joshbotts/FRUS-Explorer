@@ -1067,6 +1067,10 @@ private struct SettingsTagsPane: View {
             assignmentCount += 1
         }
 
+        // Re-point any project tag focus (#377 Phase 3) from source → target, so a merged tag doesn't
+        // strand a project's focus on the now-deleted source id.
+        UserTagAdmin.repointTagInProjectFocus(from: sourceId, to: targetId, in: modelContext)
+
         modelContext.delete(source)
 
         #if DEBUG
