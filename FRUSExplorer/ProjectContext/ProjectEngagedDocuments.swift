@@ -118,4 +118,12 @@ enum ProjectEngagedDocuments {
             return computeKeys(forProject: projectId, in: context)
         }.value
     }
+
+    /// The distinct volumes the project engages, computed off the main thread (#377 Phase 2b,
+    /// the focus-subject suggestion seed). Derived from the engaged doc keys — a
+    /// `"volumeId/documentId"` key's volume is the segment before the first `/`.
+    static func engagedVolumeIds(forProject projectId: UUID, container: ModelContainer) async -> Set<String> {
+        let keys = await keys(forProject: projectId, container: container)
+        return Set(keys.compactMap { $0.split(separator: "/", maxSplits: 1).first.map(String.init) })
+    }
 }

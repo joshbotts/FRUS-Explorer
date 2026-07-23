@@ -110,5 +110,9 @@ struct ProjectEngagedDocumentsTests {
         let async = await ProjectEngagedDocuments.keys(forProject: project, container: container)
         #expect(sync == ["v1/d1", "v1/d2", "v1/d3"])
         #expect(async == sync)
+
+        // engagedVolumeIds derives the distinct volumes from those keys.
+        let volumes = await ProjectEngagedDocuments.engagedVolumeIds(forProject: project, container: container)
+        #expect(volumes == ["v1"])
     }
 }
