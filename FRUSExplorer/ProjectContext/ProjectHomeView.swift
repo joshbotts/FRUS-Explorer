@@ -45,8 +45,12 @@ struct ProjectHomeRequest: Codable, Hashable {
 ///   1.0 — #377 Phase 1: initial implementation
 struct ProjectHomeView: View {
 
-    /// The project this dashboard shows.
-    let projectId: UUID
+    /// The project the caller opened this dashboard for — the macOS window's request value or the
+    /// presenting view's active project. Immutable per presentation. The in-place title-bar switcher
+    /// (#377 Phase 5) overrides which project is *displayed* via `switchedProjectId` without changing
+    /// this; a fresh `requestedProjectId` (e.g. the iOS sheet re-presented for another project) clears
+    /// that override so an external switch always wins. The effective id is the computed `projectId`.
+    let requestedProjectId: UUID
 
     /// Called just before this view hands off to another surface (opening a document, or a quick
     /// action to Collections/Research/Search). A **modal** presenter — the iOS Research-tab sheet —
@@ -103,6 +107,21 @@ struct ProjectHomeView: View {
     /// Whether the focus-tags editor sheet is presented (#377 Phase 3 — tag focus).
     @State private var showTagsEditor = false
 
+    /// The in-place project switch (#377 Phase 5): the title-bar switcher sets this to view a
+    /// different project without leaving Project Home; `nil` = show `requestedProjectId`.
+    @State private var switchedProjectId: UUID? = nil
+
+    /// Whether the "New Project" editor sheet (from the title-bar switcher) is presented (#377 Phase 5).
+    @State private var showEditor = false
+
+    init(projectId: UUID, onNavigateAway: (() -> Void)? = nil) {
+        self.requestedProjectId = projectId
+        self.onNavigateAway = onNavigateAway
+    }
+
+    /// The project currently displayed — the in-place switch selection, else the requested project.
+    private var projectId: UUID { switchedProjectId ?? requestedProjectId }
+
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
@@ -141,6 +160,11 @@ struct ProjectHomeView: View {
             }
         }
         .navigationTitle(project?.name ?? String(localized: "project.home.title", defaultValue: "Project Home"))
+        #if os(iOS)
+        // The switcher lives in a `.principal` toolbar item; pair it with inline title mode (the
+        // codebase convention for principal-placement views) so the nav bar stays compact.
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task(id: projectId) {
             // Reset per-project state — this view can be reused for a different project (the iOS
             // sheet reuses identity when `activeProjectId` changes), so drop any in-flight recompute
@@ -166,6 +190,87 @@ struct ProjectHomeView: View {
         .sheet(isPresented: $showTagsEditor) {
             ProjectFocusTagsEditor(projectId: projectId)
         }
+        // #377 Phase 5: a fresh requested project (the iOS sheet re-presented for a different active
+        // project) clears the in-place switch so the caller's choice wins over a stale switcher pick.
+        .onChange(of: requestedProjectId) { _, _ in switchedProjectId = nil }
+        .sheet(isPresented: $showEditor) {
+            // New Project (create mode). Re-inject AppState — ProjectEditorView reads it for the
+            // #377 Phase-5 second-project nudge signal and a sheet doesn't reliably inherit it.
+            ProjectEditorView(projectToEdit: nil)
+                .environment(appState)
+        }
+        .toolbar {
+            // The title-bar project switcher (#377 Phase 5), mirroring the macOS Collections manager's
+            // collection menu. macOS: leading `.navigation` (matches Collections); iOS: `.principal`,
+            // so the project name becomes a tappable title.
+            #if os(macOS)
+            ToolbarItem(placement: .navigation) { projectSwitcherMenu }
+            #else
+            ToolbarItem(placement: .principal) { projectSwitcherMenu }
+            #endif
+        }
+    }
+
+    // MARK: - Project switcher (#377 Phase 5)
+
+    /// The active project the switcher's inline picker binds to. Setting it switches the displayed
+    /// project in place AND re-scopes the whole app (the app-wide active-project lens) — the one
+    /// deliberate divergence from the Collections manager, whose selection is window-local.
+    private var switchSelection: Binding<UUID> {
+        Binding(
+            get: { projectId },
+            set: { newId in
+                guard newId != projectId else { return }
+                appState.activeProjectId = newId
+                #if os(macOS)
+                // Project Home is a per-project value-based window (`WindowGroup(for: ProjectHomeRequest)`).
+                // Open/focus the target project's OWN window (value dedup) rather than repainting this one
+                // in place — otherwise the window's scene identity (its original request id) would diverge
+                // from its displayed content, and pressing ⌘P again (which routes off the now-updated active
+                // project) would orphan this window under a stale request and open a duplicate.
+                openWindow(value: ProjectHomeRequest(projectId: newId))
+                #else
+                // iOS presents Project Home as a single sheet/push with no per-project window identity, and
+                // the Settings-push / nudge contexts won't re-present on an active-project change — so switch
+                // in place. (The Research-tab sheet also re-presents, which `.onChange(requestedProjectId)`
+                // reconciles by clearing this override.)
+                switchedProjectId = newId
+                #endif
+            }
+        )
+    }
+
+    /// A title-bar `Menu` listing every project (switch in place) plus a "New Project…" action —
+    /// the Project Home analogue of the Collections manager's collection menu.
+    private var projectSwitcherMenu: some View {
+        Menu {
+            if !projects.isEmpty {
+                Picker(selection: switchSelection) {
+                    ForEach(projects) { candidate in
+                        Text(candidate.name).tag(candidate.id)
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.inline)
+                Divider()
+            }
+            Button {
+                showEditor = true
+            } label: {
+                Label(String(localized: "project.home.switcher.new", defaultValue: "New Project…"),
+                      systemImage: "plus")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "folder")
+                Text(project?.name ?? String(localized: "project.home.title", defaultValue: "Project Home"))
+                    .fontWeight(.semibold)
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityLabel(String(localized: "project.home.switcher.a11y",
+                                   defaultValue: "Switch project or create a new one"))
     }
 
     // MARK: - Focus tags (#377 Phase 3 — tag focus)
