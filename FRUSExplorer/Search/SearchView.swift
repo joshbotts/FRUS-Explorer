@@ -168,7 +168,12 @@ struct SearchView: View {
                 // results. `.safeAreaInset` reserves no height when no scope is
                 // active because `volumeScopeBanner` resolves to `EmptyView`.
                 .safeAreaInset(edge: .top, spacing: 0) {
-                    volumeScopeBanner
+                    // #377 Phase 5: the ambient "Working on: <question>" lens above the (transient)
+                    // volume-scope banner. Both reserve zero height when inactive.
+                    VStack(spacing: 0) {
+                        WorkingOnBanner()
+                        volumeScopeBanner
+                    }
                 }
                 // macOS keeps the search actions in the inspector toolbar (where `.searchable` does
                 // not suppress them). iOS uses the persistent `searchActionsBar` content row below —

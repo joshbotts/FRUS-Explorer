@@ -257,4 +257,70 @@ struct ProjectHomeSummaryTests {
         #expect(!detached.contains(project))
         #expect(detached == [otherProject])
     }
+
+    // MARK: - Working-on chrome (#377 Phase 5)
+
+    @Test("WorkingOnBanner.resolvedQuestion gates on an active project with a non-empty question")
+    func workingOnResolvedQuestion() {
+        let cuba = Project(name: "Cuba"); cuba.researchQuestion = "How was ExComm briefed?"
+        let blank = Project(name: "Blank"); blank.researchQuestion = "   "
+        let noQuestion = Project(name: "NoQ")   // researchQuestion stays nil
+        let padded = Project(name: "Pad"); padded.researchQuestion = "  détente  "
+        let projects = [cuba, blank, noQuestion, padded]
+
+        // Active project with a real question → the trimmed question.
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: cuba.id, projects: projects) == "How was ExComm briefed?")
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: padded.id, projects: projects) == "détente")
+        // Global Context (nil), a question-less project, or a whitespace-only question → nothing.
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: nil, projects: projects) == nil)
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: noQuestion.id, projects: projects) == nil)
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: blank.id, projects: projects) == nil)
+        // A deleted/absent project id → nothing, no crash.
+        #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: UUID(), projects: projects) == nil)
+    }
+
+    @Test("SecondProjectNudge.shouldNudge fires only at ≥ 2 projects and only when not already shown")
+    func secondProjectNudgeShouldNudge() {
+        // The 1 → 2 transition is the trigger; a single project never nudges.
+        #expect(SecondProjectNudge.shouldNudge(projectCount: 0, alreadyShown: false) == false)
+        #expect(SecondProjectNudge.shouldNudge(projectCount: 1, alreadyShown: false) == false)
+        #expect(SecondProjectNudge.shouldNudge(projectCount: 2, alreadyShown: false) == true)
+        #expect(SecondProjectNudge.shouldNudge(projectCount: 5, alreadyShown: false) == true)
+        // Once shown, it never fires again regardless of count.
+        #expect(SecondProjectNudge.shouldNudge(projectCount: 2, alreadyShown: true) == false)
+        #expect(SecondProjectNudge.shouldNudge(projectCount: 9, alreadyShown: true) == false)
+    }
+
+    @Test("SecondProjectNudge.seedAlreadyShown marks pre-existing multi-project users so they are never retro-nudged")
+    func secondProjectNudgeSeedAlreadyShown() {
+        // A user who already has ≥ 2 projects when the feature ships is seeded as shown.
+        #expect(SecondProjectNudge.seedAlreadyShown(projectCount: 2, currentlyShown: false) == true)
+        #expect(SecondProjectNudge.seedAlreadyShown(projectCount: 7, currentlyShown: false) == true)
+        // A user below the threshold is NOT seeded — a genuine 1 → 2 transition can still nudge them.
+        #expect(SecondProjectNudge.seedAlreadyShown(projectCount: 0, currentlyShown: false) == false)
+        #expect(SecondProjectNudge.seedAlreadyShown(projectCount: 1, currentlyShown: false) == false)
+        // An already-shown flag is preserved (idempotent) regardless of count.
+        #expect(SecondProjectNudge.seedAlreadyShown(projectCount: 0, currentlyShown: true) == true)
+        #expect(SecondProjectNudge.seedAlreadyShown(projectCount: 5, currentlyShown: true) == true)
+    }
+
+    @Test("A local fetch reflects a just-inserted, pre-save project (the nudge count-timing contract)")
+    func secondProjectNudgeCountSeesPendingInsert() throws {
+        // ProjectEditorView.saveProject counts projects immediately after inserting the new one,
+        // BEFORE the autosave — so the count must include the pending insert. SwiftData's
+        // FetchDescriptor includes pending changes by default; pin that so the nudge never
+        // under-counts and silently no-ops at the true 1 → 2 transition.
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        context.insert(Project(name: "First"))
+        let afterFirst = try context.fetch(FetchDescriptor<Project>()).count
+        #expect(afterFirst == 1)
+        #expect(SecondProjectNudge.shouldNudge(projectCount: afterFirst, alreadyShown: false) == false)
+
+        context.insert(Project(name: "Second"))
+        let afterSecond = try context.fetch(FetchDescriptor<Project>()).count
+        #expect(afterSecond == 2)
+        #expect(SecondProjectNudge.shouldNudge(projectCount: afterSecond, alreadyShown: false) == true)
+    }
 }

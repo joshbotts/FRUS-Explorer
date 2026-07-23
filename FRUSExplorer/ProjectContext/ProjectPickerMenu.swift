@@ -101,3 +101,161 @@ struct ProjectPickerMenu: View {
         appState.activeProjectId == nil ? "globe" : "folder"
     }
 }
+
+// MARK: - WorkingOnBanner
+
+/// An ambient "Working on: <research question>" line for the Browse and Search chrome (#377 Phase 5).
+///
+/// Renders only when a project is active AND has a non-empty research question — so Global Context
+/// and the silent default project (no question) show nothing, and single-project users are
+/// unbothered. Self-contained (`@Query` + `@Environment`), so all four surfaces (Browse / Search ×
+/// iOS / macOS) inject one view with a single source of truth for copy, gating, and style — rather
+/// than threading the question through the two separate search view-models.
+///
+/// Reactive with no `.onChange`: `@Query` re-renders when the question is edited, and
+/// `activeProjectId` is `@Observable`, so switching projects re-renders. Injected via
+/// `.safeAreaInset`, which reserves zero height when the banner is empty.
+///
+/// Version history:
+///   1.0 — #377 Phase 5: initial implementation
+struct WorkingOnBanner: View {
+
+    @Environment(AppState.self) private var appState
+    @Query(sort: \Project.name) private var projects: [Project]
+
+    var body: some View {
+        if let question = Self.resolvedQuestion(activeProjectId: appState.activeProjectId, projects: projects) {
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 6) {
+                    Image(systemName: "scope")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("\(Text(String(localized: "project.workingOn.prefix", defaultValue: "Working on:")).bold()) \(question)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.bar)
+            }
+        }
+    }
+
+    /// The active project's research question to surface, or `nil` when nothing should render: no
+    /// active project (Global Context), the active project is absent/deleted, or its research
+    /// question is unset/blank. Pure, so the gating is unit-testable without SwiftUI.
+    static func resolvedQuestion(activeProjectId: UUID?, projects: [Project]) -> String? {
+        guard let pid = activeProjectId,
+              let project = projects.first(where: { $0.id == pid }),
+              let question = project.researchQuestion?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !question.isEmpty
+        else { return nil }
+        return question
+    }
+}
+
+// MARK: - SecondProjectNudge (pure decisions)
+
+/// Pure decision helpers for the one-time second-project nudge (#377 Phase 5) — testable without UI.
+enum SecondProjectNudge {
+    /// The nudge fires when the researcher has reached ≥ 2 projects and hasn't been shown it yet.
+    static func shouldNudge(projectCount: Int, alreadyShown: Bool) -> Bool {
+        projectCount >= 2 && !alreadyShown
+    }
+
+    /// The migration seed: a researcher who ALREADY has ≥ 2 projects when the feature first ships is
+    /// marked already-shown, so only a genuine 1 → 2 transition ever nudges (no retro-nudge on the
+    /// next project they create).
+    static func seedAlreadyShown(projectCount: Int, currentlyShown: Bool) -> Bool {
+        currentlyShown || projectCount >= 2
+    }
+}
+
+// MARK: - SecondProjectNudgeModifier
+
+/// Presents the one-time "you now have a second project — open Project Home?" nudge (#377 Phase 5).
+///
+/// Applied to the two surfaces that are on screen when a project is created — the iOS tab shell and
+/// the macOS Settings window. Driven by the transient `AppState.pendingSecondProjectNudge` signal
+/// (set by `ProjectEditorView.saveProject` on reaching the 2nd project) and gated to once-ever by
+/// `@AppStorage`. On appear it seeds the flag for pre-existing multi-project users so they are never
+/// retro-nudged (only a genuine 1 → 2 transition prompts).
+struct SecondProjectNudgeModifier: ViewModifier {
+
+    @Environment(AppState.self) private var appState
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+    @Query private var allProjects: [Project]
+    @AppStorage("frus.hasShownSecondProjectNudge") private var hasShown = false
+    #if os(iOS)
+    @State private var homeSheetProjectId: UUID?
+    #endif
+
+    func body(content: Content) -> some View {
+        content
+            .task {
+                // Migration seed — don't retro-nudge a user who already has multiple projects.
+                if SecondProjectNudge.seedAlreadyShown(projectCount: allProjects.count, currentlyShown: hasShown) {
+                    hasShown = true
+                }
+            }
+            .alert(
+                String(localized: "project.nudge.secondProject.title", defaultValue: "You have a second project"),
+                isPresented: nudgePresented
+            ) {
+                Button(String(localized: "project.nudge.secondProject.open", defaultValue: "Open Project Home")) {
+                    let id = appState.pendingSecondProjectNudge
+                    hasShown = true
+                    if let id { openProjectHome(id) }
+                }
+                Button(String(localized: "project.nudge.secondProject.dismiss", defaultValue: "Not now"),
+                       role: .cancel) {
+                    hasShown = true
+                }
+            } message: {
+                Text(String(localized: "project.nudge.secondProject.message",
+                            defaultValue: "Projects keep separate research threads — each with its own collections, notes, and suggestions. Project Home is where you steer one; switch between them from the project menu."))
+            }
+            #if os(iOS)
+            .sheet(isPresented: Binding(
+                get: { homeSheetProjectId != nil },
+                set: { if !$0 { homeSheetProjectId = nil } }
+            )) {
+                if let id = homeSheetProjectId {
+                    NavigationStack {
+                        ProjectHomeView(projectId: id, onNavigateAway: { homeSheetProjectId = nil })
+                    }
+                }
+            }
+            #endif
+    }
+
+    /// True while the transient signal is set and the nudge hasn't been shown; clearing it (alert
+    /// dismissed by either button) consumes the signal.
+    private var nudgePresented: Binding<Bool> {
+        Binding(
+            get: { appState.pendingSecondProjectNudge != nil && !hasShown },
+            set: { presented in if !presented { appState.pendingSecondProjectNudge = nil } }
+        )
+    }
+
+    /// Makes the new project active and opens its Project Home — a fresh window on macOS, a sheet on iOS.
+    private func openProjectHome(_ id: UUID) {
+        appState.activeProjectId = id
+        #if os(macOS)
+        openWindow(value: ProjectHomeRequest(projectId: id))
+        #else
+        homeSheetProjectId = id
+        #endif
+    }
+}
+
+extension View {
+    /// Attaches the one-time second-project nudge (#377 Phase 5).
+    func secondProjectNudge() -> some View { modifier(SecondProjectNudgeModifier()) }
+}

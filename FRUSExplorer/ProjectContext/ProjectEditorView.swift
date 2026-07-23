@@ -39,6 +39,10 @@ struct ProjectEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppState.self) private var appState
+    /// The once-ever gate for the second-project nudge (#377 Phase 5), read here so the signal is
+    /// set ONLY when the nudge would actually show — never left stale after it has already fired.
+    @AppStorage("frus.hasShownSecondProjectNudge") private var hasShownSecondProjectNudge = false
 
     let projectToEdit: Project?
     let onSaved: (() -> Void)?
@@ -190,6 +194,16 @@ struct ProjectEditorView: View {
                 researchQuestion: trimmedQ.isEmpty ? nil : trimmedQ
             )
             modelContext.insert(project)
+            // #377 Phase 5: on reaching a 2nd project (and only if the nudge hasn't already been
+            // shown), signal the one-time "open Project Home?" nudge, carrying the new project's id.
+            // The local-context fetch reflects the just-inserted, pre-autosave project. `shouldNudge`
+            // is the single, unit-tested decision; checking `hasShown` here means the signal is never
+            // left set after the nudge has fired.
+            let projectCount = (try? modelContext.fetch(FetchDescriptor<Project>()).count) ?? 0
+            if SecondProjectNudge.shouldNudge(projectCount: projectCount,
+                                              alreadyShown: hasShownSecondProjectNudge) {
+                appState.pendingSecondProjectNudge = project.id
+            }
         }
         onSaved?()
         #if DEBUG

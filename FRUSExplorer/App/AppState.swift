@@ -634,6 +634,13 @@ final class AppState {
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingWordCloud: Handoff<WordCloudScope>? = nil
 
+    /// One-shot hand-off for the second-project nudge (#377 Phase 5): the id of a project the
+    /// researcher just created that brought their project count to ≥ 2. Set by
+    /// `ProjectEditorView.saveProject`; the nudge host (iOS `MainTabView` / macOS Settings) presents
+    /// a one-time "open Project Home?" prompt for it and clears it. Transient (never persisted) —
+    /// the *once-only* gate is the `@AppStorage("frus.hasShownSecondProjectNudge")` flag at the host.
+    var pendingSecondProjectNudge: UUID? = nil
+
     /// Cross-window hand-off into the Collections manager: the id of a collection
     /// another surface wants selected there.
     ///
