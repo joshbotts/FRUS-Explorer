@@ -114,6 +114,12 @@ public struct SearchParameters: Sendable, Equatable {
     /// visited + tagged). Applied as an SQL `IN (…)`, so keep the set to a sane size.
     public var documentIds: [String]?
 
+    /// **Exclude** this explicit set of documents, each keyed `"volumeId/documentId"`.
+    /// `nil` or empty = exclude nothing. Powers the **Project Focus** search scope's "only
+    /// new to this project" option (#377 Phase 2b): the caller supplies the engaged set, and
+    /// results drop anything already engaged. Applied as an SQL `NOT IN (…)`.
+    public var excludeDocumentIds: [String]?
+
     // MARK: - Content scope
 
     /// Whether document body text (header, dateline, source note, body) should be searched.
@@ -185,6 +191,7 @@ public struct SearchParameters: Sendable, Equatable {
         userTagIds: [String] = [],
         volumeIds: [String]? = nil,
         documentIds: [String]? = nil,
+        excludeDocumentIds: [String]? = nil,
         includeDocumentText: Bool = true,
         includeSummaries: Bool = true,
         includeNotes: Bool = true,
@@ -205,6 +212,7 @@ public struct SearchParameters: Sendable, Equatable {
         self.userTagIds = userTagIds
         self.volumeIds = volumeIds
         self.documentIds = documentIds
+        self.excludeDocumentIds = excludeDocumentIds
         self.includeDocumentText = includeDocumentText
         self.includeSummaries = includeSummaries
         self.includeNotes = includeNotes

@@ -13,18 +13,23 @@ import SwiftData
 
 /// How an active project constrains a search (#377 Phase 2).
 ///
-/// The search filter panel exposes this as a picker, shown only when a project is
-/// active *and* has engaged at least one document. It grows in Phase 2b with a
-/// `.focus` (discovery) mode; for now it is a two-way choice.
+/// The search filter panel exposes this as a picker. Each mode is offered only when it can
+/// do something for the active project: `.history` when the project has engaged documents;
+/// `.focus` when the project has focus subjects that resolve to volumes.
 ///
 /// Version history:
 ///   1.0 — #377 Phase 2a: `.off` / `.history`
+///   1.1 — #377 Phase 2b: added `.focus` (discovery)
 enum ProjectSearchScope: String, CaseIterable, Identifiable, Sendable {
     /// Search the whole indexed corpus; the active project does not constrain results.
     case off
     /// Restrict results to the documents the active project has engaged — its
     /// collected, annotated, and visited documents (the "History / recall" mode).
     case history
+    /// Scope the search to the volumes the project's focus subjects are characteristic of —
+    /// a discovery lens over the corpus (the "Focus" mode). Optionally excludes already-
+    /// engaged documents ("only new").
+    case focus
 
     /// Stable identity for `Picker` selection.
     var id: String { rawValue }

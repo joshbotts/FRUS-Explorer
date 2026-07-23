@@ -125,9 +125,9 @@ struct SearchFilterView: View {
             Form {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
-                if !vm.availableVolumes.isEmpty     { customScopeSection }
-                if !vm.availableVolumes.isEmpty     { subjectFacetSection }
-                if !vm.availableVolumes.isEmpty     { volumeScopeSectionMac }
+                if showVolumeScopeSections          { customScopeSection }
+                if showVolumeScopeSections          { subjectFacetSection }
+                if showVolumeScopeSections          { volumeScopeSectionMac }
                 documentTypeSection
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
@@ -170,9 +170,9 @@ struct SearchFilterView: View {
             Form {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
-                if !vm.availableVolumes.isEmpty     { customScopeSection }
-                if !vm.availableVolumes.isEmpty     { subjectFacetSection }
-                if !vm.availableVolumes.isEmpty     { volumeScopeSectioniOS }
+                if showVolumeScopeSections          { customScopeSection }
+                if showVolumeScopeSections          { subjectFacetSection }
+                if showVolumeScopeSections          { volumeScopeSectioniOS }
                 documentTypeSection
                 personSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
@@ -242,53 +242,100 @@ struct SearchFilterView: View {
 
     // MARK: - Project Scope (#377 Phase 2)
 
-    /// Whether to show the project-scope picker. Visible when the active project has
-    /// engaged documents **or** the History scope is currently selected — the latter
-    /// guarantees the control never vanishes while it is the reason results are gated
-    /// (e.g. after switching to a project whose engaged set is momentarily empty), so
-    /// the user always has an in-place way back to "Entire corpus".
-    private var showProjectScopeSection: Bool {
-        vm.projectScope == .history || !vm.projectEngagedDocumentKeys.isEmpty
+    /// Whether the **History** scope option is offered — the active project has engaged
+    /// documents, or History is currently selected (so the control never vanishes while it
+    /// is the reason results are gated).
+    private var showHistoryOption: Bool {
+        !vm.projectEngagedDocumentKeys.isEmpty || vm.projectScope == .history
     }
 
-    /// Restricts the search to the active project's engaged documents (its collected,
-    /// annotated, and visited documents). See `showProjectScopeSection` for visibility.
+    /// Whether the **Focus** scope option is offered — the active project has focus subjects
+    /// that resolve to volumes, or Focus is currently selected (#377 Phase 2b).
+    private var showFocusOption: Bool {
+        !vm.projectFocusVolumeIds.isEmpty || vm.projectScope == .focus
+    }
+
+    /// Whether to show the project-scope picker at all: whenever either project mode is
+    /// available, or a non-`off` scope is active (so the way back to "Entire corpus" is
+    /// always in reach).
+    private var showProjectScopeSection: Bool {
+        showHistoryOption || showFocusOption || vm.projectScope != .off
+    }
+
+    /// The manual volume-scoping sections (custom scope, subject facet, volume/subseries
+    /// pickers) are hidden in **Focus** mode — Focus derives the volume scope from the
+    /// project's subjects, so a manual selection would have no effect (#377 Phase 2b).
+    private var showVolumeScopeSections: Bool {
+        !vm.availableVolumes.isEmpty && vm.projectScope != .focus
+    }
+
+    /// Scopes the search to the active project — **History** (its engaged documents) or
+    /// **Focus** (the volumes its subjects define, optionally excluding already-engaged
+    /// documents). See the `show*Option` helpers for which modes are offered.
     private var projectScopeSection: some View {
         Section {
             Picker(
-                String(localized: "search.projectscope.label",
-                       defaultValue: "Scope"),
+                String(localized: "search.projectscope.label", defaultValue: "Scope"),
                 selection: $vm.projectScope
             ) {
                 Text(String(localized: "search.projectscope.off",
                             defaultValue: "Entire corpus"))
                     .tag(ProjectSearchScope.off)
-                Text(String(localized: "search.projectscope.history",
-                            defaultValue: "This project's documents"))
-                    .tag(ProjectSearchScope.history)
+                if showHistoryOption {
+                    Text(String(localized: "search.projectscope.history", defaultValue: "History"))
+                        .tag(ProjectSearchScope.history)
+                }
+                if showFocusOption {
+                    Text(String(localized: "search.projectscope.focus", defaultValue: "Focus"))
+                        .tag(ProjectSearchScope.focus)
+                }
             }
             .pickerStyle(.segmented)
             .accessibilityLabel(
-                String(localized: "search.projectscope.a11y",
-                       defaultValue: "Project search scope")
+                String(localized: "search.projectscope.a11y", defaultValue: "Project search scope")
             )
-        } header: {
-            if let name = vm.projectScopeName {
-                Text(name)
-            } else {
-                Text(String(localized: "search.section.projectscope",
-                            defaultValue: "Project"))
+
+            if vm.projectScope == .focus {
+                Toggle(
+                    String(localized: "search.projectscope.onlynew",
+                           defaultValue: "Only new to this project"),
+                    isOn: $vm.projectOnlyNew
+                )
             }
+        } header: {
+            Text(vm.projectScopeName
+                 ?? String(localized: "search.section.projectscope", defaultValue: "Project"))
         } footer: {
-            // Plain conditional pluralization — the `^[...](inflect:true)` markup is not
-            // resolved through this app's default-value localization, so it rendered
-            // literally in the UI.
+            projectScopeFooter
+        }
+    }
+
+    /// A scope-specific explanation under the picker.
+    @ViewBuilder
+    private var projectScopeFooter: some View {
+        switch vm.projectScope {
+        case .history:
             let n = vm.projectEngagedDocumentKeys.count
             Text(n == 1
-                ? String(localized: "search.projectscope.footer.one",
-                         defaultValue: "“This project's documents” limits results to the 1 document you've collected, annotated, or opened in this project.")
-                : String(localized: "search.projectscope.footer.other",
-                         defaultValue: "“This project's documents” limits results to the \(n) documents you've collected, annotated, or opened in this project."))
+                ? String(localized: "search.projectscope.footer.history.one",
+                         defaultValue: "History limits results to the 1 document you've collected, annotated, or opened in this project.")
+                : String(localized: "search.projectscope.footer.history.other",
+                         defaultValue: "History limits results to the \(n) documents you've collected, annotated, or opened in this project."))
+        case .focus:
+            let v = vm.projectFocusVolumeIds.count
+            let volumesClause = v == 1
+                ? String(localized: "search.projectscope.focus.volumes.one",
+                         defaultValue: "1 volume your project's subjects define")
+                : String(localized: "search.projectscope.focus.volumes.other",
+                         defaultValue: "\(v) volumes your project's subjects define")
+            Text(vm.projectOnlyNew
+                 ? String(localized: "search.projectscope.footer.focus.onlynew",
+                          defaultValue: "Focus searches the \(volumesClause), excluding documents you've already engaged.")
+                 : String(localized: "search.projectscope.footer.focus",
+                          defaultValue: "Focus searches the \(volumesClause)."))
+        case .off:
+            Text(String(localized: "search.projectscope.footer.off",
+                        defaultValue: "Choose History to search only what you've engaged, or Focus to discover across the volumes your project's subjects define."))
         }
     }
 
