@@ -71,6 +71,9 @@ extension ModelContainer {
             // #258 Phase 1 — NEW CloudKit record type: deploy the schema to Production
             // (CloudKit Dashboard -> Schema -> Deploy) before shipping, per the note above.
             CustomVolumeScope.self,
+            // #377 Phase 3 — NEW CloudKit record type (project discovery leads): deploy the
+            // schema to Production before shipping, per the note above.
+            ProjectLeadEntry.self,
         ]
     }
 
