@@ -2297,12 +2297,14 @@ private struct UserTagsView: View {
 /// `SettingsProjectsPane`. Delete and merge mutations are shared with macOS
 /// via `ProjectAdminService`.
 ///
-/// Project creation and active-project switching are handled elsewhere
-/// (`ProjectPickerMenu`, `ProjectEditorView`); this view is solely for
-/// administering existing projects.
+/// Also hosts the iOS active-project switcher and a "New Project" toolbar
+/// button — the in-app project-creation entry point on iOS (opens
+/// `ProjectEditorView` in create mode) — alongside administering existing
+/// projects (rename, merge, delete).
 ///
 /// Version history:
 ///   1.0 — Session 153: initial implementation (closes the iOS delete/merge gap)
+///   1.1 — #377 Phase 5 follow-up: New Project toolbar button (iOS project creation)
 private struct ProjectsSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -2314,6 +2316,8 @@ private struct ProjectsSettingsView: View {
     @State private var mergingProject: Project? = nil
     @State private var projectToDelete: Project? = nil
     @State private var showDeleteConfirmation = false
+    /// Presents `ProjectEditorView` in create mode — the iOS in-app "New Project" entry point (#377).
+    @State private var showEditor = false
 
     var body: some View {
         Form {
@@ -2466,6 +2470,23 @@ private struct ProjectsSettingsView: View {
                     }
                 }
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showEditor = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel(
+                    String(localized: "settings.projects.new.a11y", defaultValue: "New Project")
+                )
+            }
+        }
+        .sheet(isPresented: $showEditor) {
+            // Create mode (projectToEdit: nil). Re-inject AppState: ProjectEditorView reads it for
+            // the #377 Phase-5 second-project nudge signal, and a sheet doesn't reliably inherit it
+            // (mirrors the macOS SettingsProjectsPane create sheet).
+            ProjectEditorView(projectToEdit: nil)
+                .environment(appState)
         }
         .sheet(item: $mergingProject) { sourceProject in
             MergeProjectSheet(
