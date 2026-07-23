@@ -488,8 +488,11 @@ struct MacSearchWindowView: View {
         if resetSelection { fvm.projectScope = .off }
         if let pid = appState.activeProjectId {
             fvm.projectScopeName = allProjects.first { $0.id == pid }?.name
+            // Sorted so an unchanged engaged set produces an identically-ordered array —
+            // `applyProjectScope`'s change check is order-sensitive, so this avoids a
+            // spurious re-search when merely reopening the panel for the same project.
             fvm.projectEngagedDocumentKeys =
-                Array(ProjectEngagedDocuments.keys(forProject: pid, in: modelContext))
+                ProjectEngagedDocuments.keys(forProject: pid, in: modelContext).sorted()
         } else {
             fvm.projectScope = .off
             fvm.projectEngagedDocumentKeys = []

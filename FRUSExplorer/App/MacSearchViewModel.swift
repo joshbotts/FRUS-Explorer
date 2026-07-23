@@ -556,8 +556,12 @@ final class MacSearchViewModel {
     /// engaged-key set and re-runs the search **only if the effective gate changed**
     /// (#377 Phase 2a). Called by `SearchSheet` after it (re)loads the engaged set — on
     /// opening Advanced filters and on an active-project change — so the executed query
-    /// always reflects the live project scope without a spurious re-search when nothing
-    /// actually changed (e.g. merely opening the panel with no scope active).
+    /// always reflects the live project scope without re-searching when nothing changed
+    /// (e.g. merely opening the panel with no scope active; the engaged set is stored sorted
+    /// so an unchanged set compares equal). Note: if the active project changes *while* the
+    /// Advanced popover is open with History active, this bump plus the popover's own
+    /// `advancedFilterSignature` observer (which sees the scope flip to `.off`) can both fire
+    /// — two re-searches for one switch, both correctly yielding the ungated result.
     func applyProjectScope() {
         guard let fvm = filterVM else { return }
         let newIds = fvm.projectScope == .history ? fvm.projectEngagedDocumentKeys : nil
