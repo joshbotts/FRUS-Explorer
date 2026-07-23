@@ -194,6 +194,12 @@ struct SearchView: View {
                         .environment(appState)
                         .modelContainer(modelContext.container)
                 }
+                // Refresh the project's engaged-document set as the filter panel opens, so
+                // the History scope reflects documents engaged since the tab was shown (#377
+                // Phase 2a) — parity with the macOS Advanced panel, which reloads on open.
+                .onChange(of: vm.showFilterPanel) { _, isOpen in
+                    if isOpen { refreshEngagedKeys() }
+                }
                 .sheet(isPresented: $showSaveSearchSheet) {
                     saveSearchSheet
                 }
@@ -241,13 +247,7 @@ struct SearchView: View {
             if let params = initialParameters {
                 vm.applyParameters(params)
             }
-            if let pid = appState.activeProjectId {
-                let descriptor = FetchDescriptor<Project>(
-                    predicate: #Predicate { $0.id == pid }
-                )
-                let project = try? modelContext.fetch(descriptor).first
-                vm.applyProjectDefaults(project)
-            }
+            applyActiveProject()
             // Consume a handoff that was already pending when this tab first
             // appeared (e.g. the user opened Analytics, tapped "open matching
             // documents", and the Search tab is being created for the first time).
@@ -269,6 +269,50 @@ struct SearchView: View {
         .onChange(of: appState.pendingSearch) { _, params in
             if params != nil { consumePendingSearch() }
         }
+        // Re-apply project context when the active project changes: refresh the date
+        // defaults and the engaged-document set that backs the History search scope
+        // (#377 Phase 2). Resets the scope to `.off` so a prior selection can't silently
+        // gate results to a different project's history.
+        .onChange(of: appState.activeProjectId) { _, _ in
+            applyActiveProject()
+        }
+    }
+
+    /// Loads the active project's search context into the view model: date defaults,
+    /// the project name (for the scope picker's label), and the engaged
+    /// `"volumeId/documentId"` set that the History scope gates on (#377 Phase 2).
+    /// Clears everything and resets the scope in Global Context.
+    private func applyActiveProject() {
+        guard let pid = appState.activeProjectId else {
+            vm.projectScope = .off
+            refreshEngagedKeys()
+            return
+        }
+        let descriptor = FetchDescriptor<Project>(
+            predicate: #Predicate { $0.id == pid }
+        )
+        let project = try? modelContext.fetch(descriptor).first
+        vm.applyProjectDefaults(project)
+        vm.projectScope = .off
+        refreshEngagedKeys()
+    }
+
+    /// Reloads the active project's engaged-document set (+ display name) into the VM
+    /// **without** touching the current scope selection (#377 Phase 2a). Called on active-
+    /// project change (via `applyActiveProject`) and whenever the filter panel opens, so the
+    /// History scope reflects documents engaged since the Search tab was first shown — the
+    /// macOS panel already reloads on every open; this gives iOS the same freshness. Keys are
+    /// sorted so the set has a stable order.
+    private func refreshEngagedKeys() {
+        guard let pid = appState.activeProjectId else {
+            vm.projectEngagedDocumentKeys = []
+            vm.projectScopeName = nil
+            return
+        }
+        let descriptor = FetchDescriptor<Project>(predicate: #Predicate { $0.id == pid })
+        vm.projectScopeName = (try? modelContext.fetch(descriptor).first)?.name
+        vm.projectEngagedDocumentKeys =
+            ProjectEngagedDocuments.keys(forProject: pid, in: modelContext).sorted()
     }
 
     /// Placement for the `.searchable` field — a pinned drawer on iOS so the

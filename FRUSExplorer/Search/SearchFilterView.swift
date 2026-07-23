@@ -123,6 +123,7 @@ struct SearchFilterView: View {
             Divider()
 
             Form {
+                if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
                 if !vm.availableVolumes.isEmpty     { customScopeSection }
                 if !vm.availableVolumes.isEmpty     { subjectFacetSection }
@@ -167,6 +168,7 @@ struct SearchFilterView: View {
     private var iOSBody: some View {
         NavigationStack {
             Form {
+                if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
                 if !vm.availableVolumes.isEmpty     { customScopeSection }
                 if !vm.availableVolumes.isEmpty     { subjectFacetSection }
@@ -237,6 +239,55 @@ struct SearchFilterView: View {
     }
 
     // MARK: - Date Range
+
+    // MARK: - Project Scope (#377 Phase 2)
+
+    /// Whether to show the project-scope picker. Visible when the active project has
+    /// engaged documents **or** the History scope is currently selected — the latter
+    /// guarantees the control never vanishes while it is the reason results are gated
+    /// (e.g. after switching to a project whose engaged set is momentarily empty), so
+    /// the user always has an in-place way back to "Entire corpus".
+    private var showProjectScopeSection: Bool {
+        vm.projectScope == .history || !vm.projectEngagedDocumentKeys.isEmpty
+    }
+
+    /// Restricts the search to the active project's engaged documents (its collected,
+    /// annotated, and visited documents). See `showProjectScopeSection` for visibility.
+    private var projectScopeSection: some View {
+        Section {
+            Picker(
+                String(localized: "search.projectscope.label",
+                       defaultValue: "Scope"),
+                selection: $vm.projectScope
+            ) {
+                Text(String(localized: "search.projectscope.off",
+                            defaultValue: "Entire corpus"))
+                    .tag(ProjectSearchScope.off)
+                Text(String(localized: "search.projectscope.history",
+                            defaultValue: "This project's documents"))
+                    .tag(ProjectSearchScope.history)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel(
+                String(localized: "search.projectscope.a11y",
+                       defaultValue: "Project search scope")
+            )
+        } header: {
+            if let name = vm.projectScopeName {
+                Text(name)
+            } else {
+                Text(String(localized: "search.section.projectscope",
+                            defaultValue: "Project"))
+            }
+        } footer: {
+            // `^[...](inflect: true)` makes "document" agree with the count, so a project
+            // with exactly one engaged document doesn't read "1 documents".
+            Text(String(
+                localized: "search.projectscope.footer",
+                defaultValue: "“This project's documents” limits results to ^[\(vm.projectEngagedDocumentKeys.count) document](inflect: true) you've collected, annotated, or opened in this project."
+            ))
+        }
+    }
 
     private var dateRangeSection: some View {
         Section {

@@ -366,6 +366,7 @@ final class MacSearchViewModel {
         var parts: [String] = []
         if parameters.dateRange != nil           { parts.append("date") }
         if parameters.volumeIds != nil           { parts.append("volume") }
+        if parameters.documentIds != nil         { parts.append("project") }
         if !parameters.userTagIds.isEmpty        { parts.append("tags") }
         if parameters.phrase != nil              { parts.append("phrase") }
         if parameters.personRef != nil || parameters.personRollupId != nil { parts.append("person") }
@@ -503,6 +504,13 @@ final class MacSearchViewModel {
         // `effectiveVolumeIds`, which is what the FTS5 layer filters on.
         let effectiveVolumes = filterVM.effectiveVolumeIds
         parameters.volumeIds        = effectiveVolumes.isEmpty ? nil : effectiveVolumes
+        // Project History scope (#377 Phase 2): `.history` gates to the active project's
+        // engaged documents (loaded into `filterVM` when the popover opens); `.off`
+        // leaves `documentIds` unset. An empty set under `.history` matches nothing,
+        // per the `documentIds` contract in `IndexingPipeline.filterConditions`.
+        parameters.documentIds      = filterVM.projectScope == .history
+            ? filterVM.projectEngagedDocumentKeys
+            : nil
 
         // Keep scope toggles in sync. Direct assignment to the backing storage
         // would skip the `didSet` observers (which bump `parametersVersion`), but
@@ -531,10 +539,36 @@ final class MacSearchViewModel {
         queryText = kw
         submittedQuery = kw
         parameters = params
+        // Project History scope is a live, manual choice — never inherited from a restored
+        // snapshot or a pending-search hand-off (#377 Phase 2a). Drop any `documentIds` the
+        // snapshot carried and clear the filter VM's selection so the picker matches, and so
+        // a later unrelated filter edit (which re-runs `applyAdvancedFilters`) can't silently
+        // reintroduce the gate.
+        parameters.documentIds = nil
+        filterVM?.projectScope = .off
         scopeDocuments = params.includeDocumentText
         scopeNotes     = params.includeNotes
         scopeSummaries = params.includeSummaries
         parametersVersion += 1
+    }
+
+    /// Re-derives `parameters.documentIds` from the filter VM's current project scope +
+    /// engaged-key set and re-runs the search **only if the effective gate changed**
+    /// (#377 Phase 2a). Called by `SearchSheet` after it (re)loads the engaged set — on
+    /// opening Advanced filters and on an active-project change — so the executed query
+    /// always reflects the live project scope without re-searching when nothing changed
+    /// (e.g. merely opening the panel with no scope active; the engaged set is stored sorted
+    /// so an unchanged set compares equal). Note: if the active project changes *while* the
+    /// Advanced popover is open with History active, this bump plus the popover's own
+    /// `advancedFilterSignature` observer (which sees the scope flip to `.off`) can both fire
+    /// — two re-searches for one switch, both correctly yielding the ungated result.
+    func applyProjectScope() {
+        guard let fvm = filterVM else { return }
+        let newIds = fvm.projectScope == .history ? fvm.projectEngagedDocumentKeys : nil
+        if newIds != parameters.documentIds {
+            parameters.documentIds = newIds
+            parametersVersion += 1
+        }
     }
 
     // MARK: - Search

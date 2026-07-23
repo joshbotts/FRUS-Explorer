@@ -120,6 +120,10 @@ struct MacSearchWindowView: View {
     /// strings in results can be resolved to human-readable names.
     @Query private var allUserTags: [UserTag]
 
+    /// All known projects, for resolving the active project's name in the advanced
+    /// filter panel's project-scope picker (#377 Phase 2).
+    @Query private var allProjects: [Project]
+
     var body: some View {
         VStack(spacing: 0) {
 
@@ -208,6 +212,13 @@ struct MacSearchWindowView: View {
         .onChange(of: appState.indexGeneration) { _, _ in
             searchVM.results = []
             searchVM.queryText = ""
+        }
+        // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
+        // Window scene, so an active-project change must reset the scope and drop any stale
+        // `documentIds` gate — otherwise a search picked to "this project's documents" for
+        // project A would keep gating results to A's set after the user switched to B.
+        .onChange(of: appState.activeProjectId) { _, _ in
+            refreshProjectScope(resetSelection: true)
         }
         .sheet(isPresented: $showSaveSearchSheet) {
             saveSearchSheet
@@ -458,6 +469,38 @@ struct MacSearchWindowView: View {
         }
     }
 
+    // MARK: - Project Scope (#377 Phase 2a)
+
+    /// (Re)loads the active project's engaged-document set into the advanced-filter VM and
+    /// re-applies the resulting `documentIds` gate to the executed query. The single path
+    /// for keeping the macOS project scope live — called both when the Advanced-filter
+    /// panel opens and when the active project changes.
+    ///
+    /// - Parameter resetSelection: when `true`, first resets the scope to `.off` (used on an
+    ///   active-project change, so a History selection never silently carries to a different
+    ///   project); when `false`, preserves the current selection (used when merely reopening
+    ///   the panel for the same project).
+    ///
+    /// No-ops when the filter VM does not yet exist (the panel has never been opened, so no
+    /// scope can be active and `parameters.documentIds` is already `nil`).
+    private func refreshProjectScope(resetSelection: Bool) {
+        guard let fvm = searchVM.filterVM else { return }
+        if resetSelection { fvm.projectScope = .off }
+        if let pid = appState.activeProjectId {
+            fvm.projectScopeName = allProjects.first { $0.id == pid }?.name
+            // Sorted so an unchanged engaged set produces an identically-ordered array —
+            // `applyProjectScope`'s change check is order-sensitive, so this avoids a
+            // spurious re-search when merely reopening the panel for the same project.
+            fvm.projectEngagedDocumentKeys =
+                ProjectEngagedDocuments.keys(forProject: pid, in: modelContext).sorted()
+        } else {
+            fvm.projectScope = .off
+            fvm.projectEngagedDocumentKeys = []
+            fvm.projectScopeName = nil
+        }
+        searchVM.applyProjectScope()
+    }
+
     // MARK: - Filter Row
 
     private var filterRow: some View {
@@ -506,6 +549,9 @@ struct MacSearchWindowView: View {
                     indexedVolumeIds: appState.indexedVolumeIds,
                     userTags: allUserTags
                 )
+                // Refresh the project-scope engaged set as the panel opens, preserving the
+                // user's current scope selection (#377 Phase 2a).
+                refreshProjectScope(resetSelection: false)
                 showAdvancedFilters = true
             } label: {
                 HStack(spacing: 3) {
