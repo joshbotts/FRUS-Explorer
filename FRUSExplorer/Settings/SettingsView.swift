@@ -2313,6 +2313,20 @@ private struct ProjectsSettingsView: View {
 
     var body: some View {
         Form {
+            // #377 Phase 1: the active project's Project Home (the iOS entry point — macOS uses
+            // Research ▸ Project Home / ⌘P). Hidden in Global Context, where there's no one project.
+            if let pid = appState.activeProjectId, projects.contains(where: { $0.id == pid }) {
+                Section {
+                    NavigationLink {
+                        ProjectHomeView(projectId: pid)
+                    } label: {
+                        Label(String(localized: "settings.projects.home",
+                                     defaultValue: "Project Home"),
+                              systemImage: "square.grid.2x2")
+                    }
+                }
+            }
+
             Section {
                 if projects.isEmpty {
                     Text(String(localized: "settings.projects.empty",

@@ -174,3 +174,69 @@ struct ProjectAdminServiceTests {
         #expect(appState.activeProjectId == project.id)
     }
 }
+
+// MARK: - ProjectHomeSummaryTests (#377 Phase 1)
+
+/// Pure-logic tests for the Project Home dashboard's activity summary. No SwiftData
+/// container is needed: the summary only reads stored properties off model objects.
+@MainActor
+struct ProjectHomeSummaryTests {
+
+    private func note(_ vol: String, _ doc: String) -> ResearchNote {
+        ResearchNote(documentId: doc, volumeId: vol)
+    }
+    private func visit(_ vol: String, _ doc: String) -> ReadingHistoryEntry {
+        ReadingHistoryEntry(documentId: doc, volumeId: vol)
+    }
+
+    @Test("Counts reflect the supplied records")
+    func counts() {
+        let s = ProjectHomeSummary(
+            notes: [note("v1", "d1"), note("v1", "d2")],
+            collections: [Collection(name: "A"), Collection(name: "B"), Collection(name: "C")],
+            visits: [visit("v1", "d1")],
+            searches: [SearchHistoryEntry(queryText: "détente")]
+        )
+        #expect(s.noteCount == 2)
+        #expect(s.collectionCount == 3)
+        #expect(s.searchCount == 1)
+        #expect(!s.isEmpty)
+    }
+
+    @Test("documentsVisitedCount counts DISTINCT documents (re-reads don't inflate)")
+    func distinctVisits() {
+        let s = ProjectHomeSummary(
+            notes: [], collections: [],
+            visits: [visit("v1", "d1"), visit("v1", "d1"), visit("v1", "d2"), visit("v2", "d1")],
+            searches: []
+        )
+        // (v1/d1 twice), v1/d2, v2/d1 → 3 distinct.
+        #expect(s.documentsVisitedCount == 3)
+    }
+
+    @Test("recentVisits de-duplicates by document and caps at recentLimit")
+    func recentVisitsDedupAndCap() {
+        // A duplicate of the newest doc at the front, then 7 distinct docs.
+        var visits = [visit("v1", "dup"), visit("v1", "dup")]
+        for i in 0..<7 { visits.append(visit("v1", "d\(i)")) }
+        let s = ProjectHomeSummary(notes: [], collections: [], visits: visits, searches: [])
+        let recent = s.recentVisits
+        #expect(recent.count == ProjectHomeSummary.recentLimit)
+        // The duplicate collapses to one entry, and it's first (newest).
+        #expect(recent.first?.documentId == "dup")
+        let keys = recent.map { "\($0.volumeId)/\($0.documentId)" }
+        #expect(Set(keys).count == keys.count)   // no duplicates survive
+    }
+
+    @Test("Recent feeds cap notes/searches at recentLimit; isEmpty when nothing tagged")
+    func recentCapsAndEmpty() {
+        let manyNotes = (0..<9).map { note("v1", "n\($0)") }
+        let manySearches = (0..<9).map { SearchHistoryEntry(queryText: "q\($0)") }
+        let s = ProjectHomeSummary(notes: manyNotes, collections: [], visits: [], searches: manySearches)
+        #expect(s.recentNotes.count == ProjectHomeSummary.recentLimit)
+        #expect(s.recentSearches.count == ProjectHomeSummary.recentLimit)
+
+        let empty = ProjectHomeSummary(notes: [], collections: [], visits: [], searches: [])
+        #expect(empty.isEmpty)
+    }
+}
