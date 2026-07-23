@@ -116,6 +116,22 @@ struct ResearchView: View {
     /// Saved highlights — the fourth annotation source; newest-first for display ordering.
     @Query(sort: \DocumentHighlight.createdAt, order: .reverse) private var allHighlights: [DocumentHighlight]
 
+    /// Projects — used to surface the active project's Project Home entry (#377 Phase 1 iOS follow-up).
+    @Query(sort: \Project.name) private var allProjects: [Project]
+
+    #if os(iOS)
+    /// iOS/iPadOS presents Project Home as a sheet from the prominent Research-tab entry. macOS uses
+    /// the `frus.projectHome` window (Research ▸ Project Home / ⌘P), so this is iOS-only. Presenting
+    /// via a sheet keeps it decoupled from the typed `researchNavigationPath` (#272/#238).
+    @State private var showProjectHome = false
+    #endif
+
+    /// The active project, if one is selected (Global Context = nil).
+    private var activeProject: Project? {
+        guard let pid = appState.activeProjectId else { return nil }
+        return allProjects.first { $0.id == pid }
+    }
+
     /// The selected category. **The default is platform-specific — do not unify it.**
     ///
     /// macOS defaults to `.allNotes` so the `NavigationSplitView` detail column opens populated
@@ -154,6 +170,25 @@ struct ResearchView: View {
             .onChange(of: allNotes.first?.lastModified){ _, _ in Task { await loadHeaders() } }
             // directlyTaggedDocs is now derived from @Query allTagAssignments which is
             // reactive natively — no explicit reload needed.
+            #if os(iOS)
+            // #377 Phase 1 iOS follow-up: Project Home as a sheet (decoupled from the typed nav path).
+            .sheet(isPresented: $showProjectHome) {
+                if let pid = appState.activeProjectId {
+                    NavigationStack {
+                        // Dismiss the sheet when Project Home hands off (open a doc / switch tab),
+                        // otherwise the navigation happens invisibly behind the modal.
+                        ProjectHomeView(projectId: pid, onNavigateAway: { showProjectHome = false })
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button(String(localized: "research.projectHome.done", defaultValue: "Done")) {
+                                        showProjectHome = false
+                                    }
+                                }
+                            }
+                    }
+                }
+            }
+            #endif
     }
 
     /// The navigation container. macOS keeps the two-column `NavigationSplitView`; iOS flattens to a
@@ -218,6 +253,33 @@ struct ResearchView: View {
 
     private var sidebar: some View {
         List(selection: $selectedItem) {
+            #if os(iOS)
+            // #377 Phase 1 iOS follow-up: the active project's Project Home, pinned at the top of the
+            // Research tab so it's the prominent landing on iPad. Presented as a sheet (see `body`) to
+            // stay clear of the typed `researchNavigationPath`. Hidden in Global Context.
+            if let project = activeProject {
+                Section {
+                    Button {
+                        showProjectHome = true
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(String(localized: "research.sidebar.projectHome",
+                                            defaultValue: "Project Home"))
+                                    .foregroundStyle(.primary)
+                                Text(project.name)
+                                    .font(FRUSTheme.captionFont)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        } icon: {
+                            Image(systemName: "square.grid.2x2")
+                        }
+                    }
+                }
+            }
+            #endif
+
             // Synthetic "all notes" entry
             Section {
                 sidebarRow(.allNotes) {
