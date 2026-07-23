@@ -50,6 +50,24 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
         var id: String { ref }
     }
 
+    /// One entry in the corpus-wide subject vocabulary — a subject a project can adopt as a
+    /// discovery focus (#377 Phase 2b). Unlike ``ResolvedSubject`` it carries no per-volume
+    /// score; `volumeCount` is how many volumes' profiles rank the subject (its reach).
+    struct SubjectOption: Sendable, Equatable, Identifiable {
+        /// The stable subject ref (matches `Project.defaultSubjectTagIds`).
+        let ref: String
+        /// Display name.
+        let name: String
+        /// Top-level category.
+        let category: String
+        /// Second-level subcategory.
+        let subcategory: String
+        /// How many volumes' profiles carry this subject.
+        let volumeCount: Int
+
+        var id: String { ref }
+    }
+
     /// The artifact's own `yyyy-MM-dd` generation stamp (when the bundled index was
     /// built — the source drop's date and MD5 live in `provenance`).
     let generated: String
@@ -65,6 +83,11 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
     /// `subjectRef → [volumeId]` — the volumes whose profile carries the subject,
     /// sorted, for the cross-volume "other volumes covering this subject" pivot.
     let volumesBySubjectRef: [String: [String]]
+
+    /// The corpus-wide subject vocabulary (subjects that carry at least one volume),
+    /// de-duplicated by ref and ordered by category → subcategory → name (#377 Phase 2b).
+    /// This is the picker vocabulary a project's discovery focus is chosen from.
+    let allSubjects: [SubjectOption]
 
     // MARK: Decoding
 
@@ -117,6 +140,20 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
         }
         resolvedByVolume = byVolume
         volumesBySubjectRef = bySubject.mapValues { $0.sorted() }
+
+        // Corpus-wide subject vocabulary for the discovery picker: keep the source vocab
+        // order-independent by sorting, and only include subjects that carry ≥1 volume
+        // (an unreferenced vocab entry would resolve to nothing).
+        allSubjects = vocab.compactMap { entry -> SubjectOption? in
+            guard let volumes = bySubject[entry.ref], !volumes.isEmpty else { return nil }
+            return SubjectOption(ref: entry.ref, name: entry.name,
+                                 category: entry.category, subcategory: entry.subcategory,
+                                 volumeCount: Set(volumes).count)
+        }.sorted { lhs, rhs in
+            if lhs.category != rhs.category { return lhs.category < rhs.category }
+            if lhs.subcategory != rhs.subcategory { return lhs.subcategory < rhs.subcategory }
+            return lhs.name < rhs.name
+        }
     }
 
     // MARK: Queries
@@ -163,6 +200,21 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
     /// - Returns: The other volume ids sharing the subject, sorted.
     func otherVolumes(forSubjectRef ref: String, excluding currentVolumeId: String) -> [String] {
         (volumesBySubjectRef[ref] ?? []).filter { $0 != currentVolumeId }
+    }
+
+    /// The union of volumes whose profiles carry **any** of the given subject refs — the
+    /// discovery scope for a project's subject focus (#377 Phase 2b Mode A). A project's
+    /// `defaultSubjectTagIds` resolve through this to `SearchParameters.volumeIds`.
+    ///
+    /// - Parameter refs: Subject refs (e.g. a project's `defaultSubjectTagIds`).
+    /// - Returns: The de-duplicated set of volume ids covering at least one ref; empty when
+    ///   no ref resolves.
+    func volumeIds(forSubjectRefs refs: some Sequence<String>) -> Set<String> {
+        var result = Set<String>()
+        for ref in refs {
+            if let volumes = volumesBySubjectRef[ref] { result.formUnion(volumes) }
+        }
+        return result
     }
 }
 
