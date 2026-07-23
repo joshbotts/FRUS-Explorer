@@ -2313,6 +2313,27 @@ private struct ProjectsSettingsView: View {
 
     var body: some View {
         Form {
+            // #377 Phase 1 follow-up: the active-project switcher. Previously the ONLY way to switch
+            // project context on iOS was the easily-missed picker in the Browse toolbar; Settings —
+            // where users look to set such context — had no control. This puts it front-and-center.
+            Section {
+                Picker(selection: Binding(get: { appState.activeProjectId },
+                                          set: { appState.activeProjectId = $0 })) {
+                    Text(String(localized: "settings.projects.active.global",
+                                defaultValue: "Global Context")).tag(UUID?.none)
+                    ForEach(projects) { project in
+                        Text(project.name).tag(UUID?.some(project.id))
+                    }
+                } label: {
+                    Label(String(localized: "settings.projects.active.label",
+                                 defaultValue: "Active Project"),
+                          systemImage: appState.activeProjectId == nil ? "globe" : "folder")
+                }
+            } footer: {
+                Text(String(localized: "settings.projects.active.footer",
+                            defaultValue: "The active project scopes the notes, collections, history, and searches you see. Global Context shows everything."))
+            }
+
             // #377 Phase 1: the active project's Project Home (the iOS entry point — macOS uses
             // Research ▸ Project Home / ⌘P). Hidden in Global Context, where there's no one project.
             if let pid = appState.activeProjectId, projects.contains(where: { $0.id == pid }) {
