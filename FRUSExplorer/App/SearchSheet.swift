@@ -486,19 +486,24 @@ struct MacSearchWindowView: View {
     private func refreshProjectScope(resetSelection: Bool) {
         guard let fvm = searchVM.filterVM else { return }
         if resetSelection { fvm.projectScope = .off }
-        if let pid = appState.activeProjectId {
-            fvm.projectScopeName = allProjects.first { $0.id == pid }?.name
-            // Sorted so an unchanged engaged set produces an identically-ordered array —
-            // `applyProjectScope`'s change check is order-sensitive, so this avoids a
-            // spurious re-search when merely reopening the panel for the same project.
-            fvm.projectEngagedDocumentKeys =
-                ProjectEngagedDocuments.keys(forProject: pid, in: modelContext).sorted()
-        } else {
+        guard let pid = appState.activeProjectId else {
             fvm.projectScope = .off
             fvm.projectEngagedDocumentKeys = []
             fvm.projectScopeName = nil
+            searchVM.applyProjectScope()
+            return
         }
-        searchVM.applyProjectScope()
+        fvm.projectScopeName = allProjects.first { $0.id == pid }?.name
+        // Compute the engaged set on a background context so a large library never freezes
+        // the UI (#377 Phase 2a fix). The scalar name is set synchronously (cheap); the
+        // key set arrives asynchronously and re-applies the scope when ready. Sorted so an
+        // unchanged set compares equal in `applyProjectScope` (no spurious re-search).
+        let container = modelContext.container
+        Task {
+            let keys = await ProjectEngagedDocuments.keys(forProject: pid, container: container)
+            fvm.projectEngagedDocumentKeys = keys.sorted()
+            searchVM.applyProjectScope()
+        }
     }
 
     // MARK: - Filter Row
@@ -549,10 +554,12 @@ struct MacSearchWindowView: View {
                     indexedVolumeIds: appState.indexedVolumeIds,
                     userTags: allUserTags
                 )
-                // Refresh the project-scope engaged set as the panel opens, preserving the
-                // user's current scope selection (#377 Phase 2a).
-                refreshProjectScope(resetSelection: false)
+                // Open the popover IMMEDIATELY, then load the project-scope engaged set
+                // off the main thread (#377 Phase 2a fix). Doing the fetch synchronously
+                // here froze the UI on a large library and made the popover appear not to
+                // display at all.
                 showAdvancedFilters = true
+                refreshProjectScope(resetSelection: false)
             } label: {
                 HStack(spacing: 3) {
                     if searchVM.activeFilterSummary != nil {

@@ -280,12 +280,15 @@ struct SearchFilterView: View {
                             defaultValue: "Project"))
             }
         } footer: {
-            // `^[...](inflect: true)` makes "document" agree with the count, so a project
-            // with exactly one engaged document doesn't read "1 documents".
-            Text(String(
-                localized: "search.projectscope.footer",
-                defaultValue: "“This project's documents” limits results to ^[\(vm.projectEngagedDocumentKeys.count) document](inflect: true) you've collected, annotated, or opened in this project."
-            ))
+            // Plain conditional pluralization — the `^[...](inflect:true)` markup is not
+            // resolved through this app's default-value localization, so it rendered
+            // literally in the UI.
+            let n = vm.projectEngagedDocumentKeys.count
+            Text(n == 1
+                ? String(localized: "search.projectscope.footer.one",
+                         defaultValue: "“This project's documents” limits results to the 1 document you've collected, annotated, or opened in this project.")
+                : String(localized: "search.projectscope.footer.other",
+                         defaultValue: "“This project's documents” limits results to the \(n) documents you've collected, annotated, or opened in this project."))
         }
     }
 

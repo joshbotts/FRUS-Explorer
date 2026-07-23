@@ -54,12 +54,14 @@ enum ProjectEngagedDocuments {
     /// `heading`/`prose` collection entries — carry blank ids and are skipped, so the
     /// set contains only real documents.
     ///
-    /// Marked `@MainActor` because it reads SwiftData `@Model` relationships
-    /// (`Collection.documentEntries`).
-    @MainActor
-    static func keys(collections: [Collection],
-                     notes: [ResearchNote],
-                     visits: [ReadingHistoryEntry]) -> Set<String> {
+    /// `nonisolated` and reads SwiftData `@Model` relationships
+    /// (`Collection.documentEntries`), so it must run on the actor/thread that owns the
+    /// passed model objects — either the main context (via `keys(forProject:in:)`) or a
+    /// private background context (via the async `keys(forProject:container:)`). Never
+    /// pass it objects fetched on a different context.
+    nonisolated static func keys(collections: [Collection],
+                                 notes: [ResearchNote],
+                                 visits: [ReadingHistoryEntry]) -> Set<String> {
         var result = Set<String>()
         for note in notes where !note.volumeId.isEmpty && !note.documentId.isEmpty {
             result.insert(key(note.volumeId, note.documentId))
@@ -77,15 +79,16 @@ enum ProjectEngagedDocuments {
         return result
     }
 
-    /// Fetch convenience for the search stacks: loads the project's collections, notes,
-    /// and visits, then extracts their engaged document keys.
+    /// Fetches the project's collections/notes/visits from `context` and extracts their
+    /// engaged document keys. `nonisolated` so it can run on either the main context or a
+    /// background context; callers must invoke it on the context's own actor/thread.
     ///
     /// Collections and notes are filtered on their `projectIds` **array** in memory —
     /// SwiftData array-membership (`.contains`) predicates are unreliable, so the
     /// dashboard and this helper both fetch-then-filter. Visits carry a **scalar**
     /// `projectId`, which filters reliably in the fetch predicate.
-    @MainActor
-    static func keys(forProject projectId: UUID, in context: ModelContext) -> Set<String> {
+    nonisolated static func computeKeys(forProject projectId: UUID,
+                                        in context: ModelContext) -> Set<String> {
         let pid = projectId
         let notes = ((try? context.fetch(FetchDescriptor<ResearchNote>())) ?? [])
             .filter { $0.projectIds.contains(pid) }
@@ -95,5 +98,24 @@ enum ProjectEngagedDocuments {
             predicate: #Predicate { $0.projectId == pid }
         ))) ?? []
         return keys(collections: collections, notes: notes, visits: visits)
+    }
+
+    /// Main-context fetch convenience (synchronous). Prefer the async
+    /// `keys(forProject:container:)` on UI paths that must not block the main thread on a
+    /// large library.
+    @MainActor
+    static func keys(forProject projectId: UUID, in context: ModelContext) -> Set<String> {
+        computeKeys(forProject: projectId, in: context)
+    }
+
+    /// Off-main-thread fetch (#377 Phase 2a follow-up): computes the engaged key set on a
+    /// **private background `ModelContext`** so a large library can't freeze the UI. Only
+    /// the `Sendable` `Set<String>` crosses back to the caller — no `@Model` objects
+    /// escape the background context.
+    static func keys(forProject projectId: UUID, container: ModelContainer) async -> Set<String> {
+        await Task.detached(priority: .userInitiated) {
+            let context = ModelContext(container)
+            return computeKeys(forProject: projectId, in: context)
+        }.value
     }
 }

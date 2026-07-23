@@ -88,4 +88,27 @@ struct ProjectEngagedDocumentsTests {
         let keys = ProjectEngagedDocuments.keys(forProject: UUID(), in: context)
         #expect(keys.isEmpty)
     }
+
+    /// The off-main-thread variant (used by the search UIs so a large library can't freeze
+    /// the panel) returns the same engaged set as the synchronous main-context path.
+    @Test("keys(forProject:container:) computes the same set off the main thread")
+    func engagedKeysBackgroundVariantMatches() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let project = UUID()
+        let c = Collection(name: "C", projectIds: [project])
+        context.insert(c)
+        let e = CollectionEntry(collectionId: c.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        e.collection = c
+        context.insert(e)
+        context.insert(ResearchNote(documentId: "d2", volumeId: "v1", projectIds: [project]))
+        context.insert(ReadingHistoryEntry(documentId: "d3", volumeId: "v1", projectId: project))
+        try context.save()
+
+        let sync = ProjectEngagedDocuments.keys(forProject: project, in: context)
+        let async = await ProjectEngagedDocuments.keys(forProject: project, container: container)
+        #expect(sync == ["v1/d1", "v1/d2", "v1/d3"])
+        #expect(async == sync)
+    }
 }
