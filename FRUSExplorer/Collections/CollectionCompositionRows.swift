@@ -364,5 +364,9 @@ struct CollectionAttributesRows: View {
         Toggle(String(localized: "collection.attributes.colophon",
                       defaultValue: "Append colophon page on export"),
                isOn: $collection.includeColophon)
+
+        Toggle(String(localized: "collection.attributes.projectProvenance",
+                      defaultValue: "Stamp active project on export"),
+               isOn: $collection.includeProjectProvenance)
     }
 }

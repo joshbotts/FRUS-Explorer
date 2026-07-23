@@ -610,6 +610,8 @@ private struct CollectionDetailPane: View {
     @State private var authorLine: String
     /// Front matter: whether exports end with the colophon (default off).
     @State private var includeColophon: Bool
+    /// Front matter: whether exports stamp the active project on the title page (#377 Phase 4, default off).
+    @State private var includeProjectProvenance: Bool
     /// Headings whose sections are collapsed in the outline — VIEW STATE only (Phase 4):
     /// never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
@@ -664,6 +666,7 @@ private struct CollectionDetailPane: View {
         _subtitle = State(initialValue: collection.subtitle ?? "")
         _authorLine = State(initialValue: collection.authorLine ?? "")
         _includeColophon = State(initialValue: collection.includeColophon)
+        _includeProjectProvenance = State(initialValue: collection.includeProjectProvenance)
         _sortedEntries = State(initialValue:
             (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
     }
@@ -697,6 +700,7 @@ private struct CollectionDetailPane: View {
         .onChange(of: subtitle) { _, _ in saveMetadata() }
         .onChange(of: authorLine) { _, _ in saveMetadata() }
         .onChange(of: includeColophon) { _, _ in saveMetadata() }
+        .onChange(of: includeProjectProvenance) { _, _ in saveMetadata() }
         // Composer v2 (§B): the Manage Collections sheet renames the model directly
         // (`$collection.name`), a second writer of `collection.name` besides this pane's one-time
         // `@State name` snapshot. Follow that external rename so the title / settings-popover field
@@ -900,6 +904,8 @@ private struct CollectionDetailPane: View {
                 .frame(minHeight: 80, maxHeight: 180)
                 Toggle(String(localized: "collection.frontmatter.colophon.toggle",
                               defaultValue: "Include colophon"), isOn: $includeColophon)
+                Toggle(String(localized: "collection.frontmatter.projectProvenance.toggle",
+                              defaultValue: "Stamp active project on export"), isOn: $includeProjectProvenance)
             } header: {
                 Text(String(localized: "collection.frontmatter.titlePage",
                             defaultValue: "Title Page & Introduction"))
@@ -1475,6 +1481,7 @@ private struct CollectionDetailPane: View {
         let trimmedAuthor = authorLine.trimmingCharacters(in: .whitespacesAndNewlines)
         collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
         collection.includeColophon = includeColophon
+        collection.includeProjectProvenance = includeProjectProvenance
     }
 }
 

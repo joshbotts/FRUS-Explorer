@@ -508,6 +508,23 @@ final class PDFCollectionExporter: CollectionExporter {
             y -= authorH + 12
         }
 
+        // Project provenance (#377 Phase 4) — drawn only when the collection opted in and a
+        // project was active at export time, so an unset collection's cover is unchanged.
+        if let projectName = collection.projectName, !projectName.isEmpty {
+            let label = String(localized: "export.frontmatter.project", defaultValue: "Project")
+            let projAttr = noteAttributedString("\(label): \(projectName)", fontSize: 11, gray: 0.35)
+            let projH = measureHeight(projAttr, width: cw)
+            draw(projAttr, in: ctx, rect: CGRect(x: M, y: y - projH, width: cw, height: projH))
+            y -= projH + 4
+            if let question = collection.projectResearchQuestion, !question.isEmpty {
+                let qAttr = noteAttributedString(question, fontSize: 11, gray: 0.4)
+                let qH = measureHeight(qAttr, width: cw)
+                draw(qAttr, in: ctx, rect: CGRect(x: M, y: y - qH, width: cw, height: qH))
+                y -= qH
+            }
+            y -= 12
+        }
+
         // Collection note — _text_ spans rendered as italic
         if let note = collection.note, !note.isEmpty {
             let noteAttr = noteAttributedString(note, fontSize: 12, gray: 0.3)

@@ -97,6 +97,15 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// When `true`, exports stamp the **active project**'s name (and research question, if any) onto
+    /// the title page (#377 Phase 4). Off by default so the project — and especially the research
+    /// question — is never disclosed on a shared/published artifact unless the researcher opts in.
+    /// The toggle is persisted per-collection, but the *value* stamped is the project active at
+    /// export time (like the `authorLine` placeholder), not a value stored here.
+    var includeProjectProvenance: Bool = false {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Project Tags
 
     /// IDs of `Project` records this collection is visible in.

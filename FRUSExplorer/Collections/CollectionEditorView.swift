@@ -165,6 +165,8 @@ struct CollectionEditorView: View {
     @State private var collectionAuthorLine: String
     /// Front matter: whether exports end with the colophon page/footer (default off).
     @State private var includeColophon: Bool
+    /// Front matter: whether exports stamp the active project on the title page (#377 Phase 4, default off).
+    @State private var includeProjectProvenance: Bool
     /// Headings whose sections are currently collapsed in the outline — VIEW STATE only
     /// (Phase 4): never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
@@ -247,6 +249,7 @@ struct CollectionEditorView: View {
             _collectionSubtitle = State(initialValue: c.subtitle ?? "")
             _collectionAuthorLine = State(initialValue: c.authorLine ?? "")
             _includeColophon = State(initialValue: c.includeColophon)
+            _includeProjectProvenance = State(initialValue: c.includeProjectProvenance)
             isNewCollection = false
         } else {
             let c = Collection(name: "")
@@ -258,6 +261,7 @@ struct CollectionEditorView: View {
             _collectionSubtitle = State(initialValue: "")
             _collectionAuthorLine = State(initialValue: "")
             _includeColophon = State(initialValue: false)
+            _includeProjectProvenance = State(initialValue: false)
             isNewCollection = true
         }
     }
@@ -287,6 +291,17 @@ struct CollectionEditorView: View {
         .onChange(of: collectionSubtitle) { _, _ in saveLive() }
         .onChange(of: collectionAuthorLine) { _, _ in saveLive() }
         .onChange(of: includeColophon) { _, _ in saveLive() }
+        .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
+        // Follow the model when a heading row's "Section defaults" inspector (`CollectionAttributesRows`)
+        // toggles these front-matter flags directly on `$collection`, a second writer besides this
+        // view's one-time `@State` snapshots. Without this resync the next `saveLive()` would clobber
+        // the inspector's change back to the stale snapshot — for `includeProjectProvenance` that could
+        // silently re-enable stamping the research question after the user turned it off to share.
+        // (A `ViewModifier` so the two `.onChange`s don't overflow the body's type-checker.)
+        .modifier(FrontMatterModelSync(
+            includeColophon: $includeColophon,
+            includeProjectProvenance: $includeProjectProvenance,
+            collection: collection))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row.
@@ -296,6 +311,7 @@ struct CollectionEditorView: View {
                 && sortedEntries.isEmpty && collection.savedSearchId == nil
                 && collection.subtitle == nil && collection.authorLine == nil
                 && collection.introductionText == nil && !collection.includeColophon
+                && !collection.includeProjectProvenance
             if untouched {
                 modelContext.delete(collection)
             } else if collection.name.isEmpty {
@@ -1039,6 +1055,10 @@ struct CollectionEditorView: View {
         Toggle(isOn: $includeColophon) {
             Text(String(localized: "collection.frontmatter.colophon.toggle",
                         defaultValue: "Include colophon"))
+        }
+        Toggle(isOn: $includeProjectProvenance) {
+            Text(String(localized: "collection.frontmatter.projectProvenance.toggle",
+                        defaultValue: "Stamp active project on export"))
         }
         #if os(macOS)
         .toggleStyle(.checkbox)
@@ -1841,9 +1861,34 @@ struct CollectionEditorView: View {
         let trimmedAuthor = collectionAuthorLine.trimmingCharacters(in: .whitespacesAndNewlines)
         collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
         collection.includeColophon = includeColophon
+        collection.includeProjectProvenance = includeProjectProvenance
         if let projectId = appState.activeProjectId, !collection.projectIds.contains(projectId) {
             collection.projectIds.append(projectId)
         }
         try? modelContext.save()
+    }
+}
+
+// MARK: - FrontMatterModelSync
+
+/// Keeps `CollectionEditorView`'s one-time front-matter `@State` snapshots in sync with the model
+/// when another surface (a heading row's "Section defaults" inspector, via `CollectionAttributesRows`)
+/// writes `collection.includeColophon` / `collection.includeProjectProvenance` directly on the model.
+/// Without it, the editor's next `saveLive()` clobbers the inspector's change back to the stale
+/// snapshot. Extracted as a `ViewModifier` so its two `.onChange`s are type-checked apart from the
+/// (long) editor body. The `!=` guard stops a feedback loop when `saveLive()` rewrites the same value.
+private struct FrontMatterModelSync: ViewModifier {
+    @Binding var includeColophon: Bool
+    @Binding var includeProjectProvenance: Bool
+    let collection: Collection
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: collection.includeColophon) { _, newValue in
+                if newValue != includeColophon { includeColophon = newValue }
+            }
+            .onChange(of: collection.includeProjectProvenance) { _, newValue in
+                if newValue != includeProjectProvenance { includeProjectProvenance = newValue }
+            }
     }
 }

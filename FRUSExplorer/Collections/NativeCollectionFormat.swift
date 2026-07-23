@@ -114,6 +114,9 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     var introductionRichText: Data?
     /// Whether exports append a colophon. Emitted only when `true`; `nil` means `false`.
     var includeColophon: Bool?
+    /// Whether exports stamp the active project's provenance on the title page (#377 Phase 4).
+    /// Emitted only when `true`; `nil` means `false`.
+    var includeProjectProvenance: Bool?
     /// The persisted composition settings (what an export of this collection contains).
     var composition: Composition
     /// The ordered structural entries. Array order *is* the collection order.
@@ -526,6 +529,7 @@ enum NativeCollectionSerializer {
             || introductionText != nil
             || introductionRichText != nil
             || collection.includeColophon
+            || collection.includeProjectProvenance
             || entries.contains { $0.level != nil }
             || composition.includeFootnotes != nil
             || composition.includeSourceNote != nil
@@ -571,6 +575,7 @@ enum NativeCollectionSerializer {
             introductionText: introductionText,
             introductionRichText: introductionRichText,
             includeColophon: collection.includeColophon ? true : nil,
+            includeProjectProvenance: collection.includeProjectProvenance ? true : nil,
             composition: composition,
             entries: entries
         )
@@ -607,6 +612,7 @@ enum NativeCollectionSerializer {
         collection.introductionText = file.introductionText
         collection.introductionRichText = file.introductionRichText
         collection.includeColophon = file.includeColophon ?? false
+        collection.includeProjectProvenance = file.includeProjectProvenance ?? false
         context.insert(collection)
 
         for (index, dto) in file.entries.enumerated() {

@@ -441,6 +441,13 @@ struct CollectionItemHTMLRenderer {
         if let author = metadata.authorLine, !author.isEmpty {
             body += "  <p class=\"collection-author\">\(escaped(author))</p>\n"
         }
+        if let projectName = metadata.projectName, !projectName.isEmpty {
+            let label = String(localized: "export.frontmatter.project", defaultValue: "Project")
+            body += "  <p class=\"collection-project\">\(escaped(label)): \(escaped(projectName))</p>\n"
+            if let question = metadata.projectResearchQuestion, !question.isEmpty {
+                body += "  <p class=\"collection-project-question\">\(markdownItalics(escaped(question)))</p>\n"
+            }
+        }
         if let note = metadata.note, !note.isEmpty {
             body += "  <p class=\"collection-note\">\(markdownItalics(escaped(note)))</p>\n"
         }
@@ -820,6 +827,17 @@ struct CollectionItemHTMLRenderer {
       margin-top: 0.4rem;
       font-size: 0.95rem;
       color: #555;
+    }
+    .collection-project {
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .collection-project-question {
+      margin-top: 0.1rem;
+      font-size: 0.9rem;
+      font-style: italic;
+      color: #666;
     }
     nav li.toc-sub { list-style: none; }
     nav .toc-sub > ol { padding-left: 1.25rem; margin-top: 0.3rem; }

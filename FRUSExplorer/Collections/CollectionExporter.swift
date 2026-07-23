@@ -798,6 +798,8 @@ struct CollectionExportDocument: Sendable {
 ///   1.0 — Session 32: introduced to satisfy Swift 6 Sendable requirements
 ///   1.1 — Authoring Phase 4: `subtitle`, `authorLine`, `includeColophon` (defaulted so
 ///          every existing construction site and no-frame collection is unchanged)
+///   1.2 — #377 Phase 4: `projectName`, `projectResearchQuestion` (the active project's
+///          provenance, opt-in per `Collection.includeProjectProvenance`; defaulted `nil`)
 struct CollectionExportMetadata: Sendable {
     /// The collection's display name — the export title.
     let name: String
@@ -808,6 +810,15 @@ struct CollectionExportMetadata: Sendable {
     let subtitle: String?
     /// Optional title-page author/byline (Authoring Phase 4). `nil`/empty renders nothing.
     let authorLine: String?
+    /// Optional project provenance — the name of the project this export was generated under
+    /// (#377 Phase 4). `nil` unless the collection opts in (`includeProjectProvenance`) *and* a
+    /// project is active; renders a "Project: …" line between the author and the note. The value
+    /// is the **live** active project at export time (like `authorLine`'s placeholder), not a
+    /// value stored on the collection.
+    let projectName: String?
+    /// Optional project research question, rendered under the project name (#377 Phase 4). `nil`
+    /// unless a project is active with a non-empty question and the collection opts in.
+    let projectResearchQuestion: String?
     /// When `true`, renderers append a trailing colophon (`CollectionColophon`).
     /// Defaults to `false`, so collections that never opt in export exactly as today.
     let includeColophon: Bool
@@ -815,12 +826,29 @@ struct CollectionExportMetadata: Sendable {
     /// Creates a metadata snapshot. The Phase 4 parameters default to "feature unused"
     /// so pre-Phase-4 call sites compile — and render — unchanged.
     init(name: String, note: String?, subtitle: String? = nil,
-         authorLine: String? = nil, includeColophon: Bool = false) {
+         authorLine: String? = nil, projectName: String? = nil,
+         projectResearchQuestion: String? = nil, includeColophon: Bool = false) {
         self.name = name
         self.note = note
         self.subtitle = subtitle
         self.authorLine = authorLine
+        self.projectName = projectName
+        self.projectResearchQuestion = projectResearchQuestion
         self.includeColophon = includeColophon
+    }
+
+    /// Resolves the export's project provenance from the toggle + the active project's fields —
+    /// pure, so the gating is unit-testable without the SwiftData `@Query` lookup at the call site.
+    /// Returns `(nil, nil)` when disabled or when there's no active project with a non-empty name;
+    /// the research question is dropped when blank. The name is the anchor: no name → no provenance.
+    static func projectProvenance(enabled: Bool, projectName: String?, researchQuestion: String?)
+        -> (name: String?, question: String?) {
+        guard enabled,
+              let name = projectName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !name.isEmpty
+        else { return (nil, nil) }
+        let question = researchQuestion?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (name, (question?.isEmpty == false) ? question : nil)
     }
 }
 

@@ -116,6 +116,13 @@ struct CollectionPreviewView: View {
     /// SwiftData context handed to the resolver for user-data lookups.
     @Environment(\.modelContext) private var modelContext
 
+    /// All projects, to resolve the active project for the preview's export provenance (#377
+    /// Phase 4) — the live preview must match the exported file.
+    @Query(sort: \Project.name) private var allProjects: [Project]
+
+    /// The active project (the source of export provenance), or `nil` in Global Context.
+    private var activeProject: Project? { allProjects.first { $0.id == appState.activeProjectId } }
+
     // MARK: - Constants
 
     /// Maximum number of document items resolved/rendered before the user asks for all.
@@ -443,6 +450,10 @@ struct CollectionPreviewView: View {
             var renderer = CollectionItemHTMLRenderer(options: previewOptions())
             renderer.citationOnlyVolumeIds = missing
             renderer.showsSummaryPlaceholders = true
+            let provenance = CollectionExportMetadata.projectProvenance(
+                enabled: collection.includeProjectProvenance,
+                projectName: activeProject?.name,
+                researchQuestion: activeProject?.researchQuestion)
             let metadata = CollectionExportMetadata(
                 name: collection.name.isEmpty
                     ? String(localized: "collection.editor.untitled",
@@ -451,6 +462,8 @@ struct CollectionPreviewView: View {
                 note: collection.note,
                 subtitle: collection.subtitle,
                 authorLine: collection.authorLine,
+                projectName: provenance.name,
+                projectResearchQuestion: provenance.question,
                 includeColophon: collection.includeColophon)
             let page = renderer.pageHTML(metadata: metadata, items: items)
             if Task.isCancelled { return }
