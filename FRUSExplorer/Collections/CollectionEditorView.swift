@@ -292,6 +292,16 @@ struct CollectionEditorView: View {
         .onChange(of: collectionAuthorLine) { _, _ in saveLive() }
         .onChange(of: includeColophon) { _, _ in saveLive() }
         .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
+        // Follow the model when a heading row's "Section defaults" inspector (`CollectionAttributesRows`)
+        // toggles these front-matter flags directly on `$collection`, a second writer besides this
+        // view's one-time `@State` snapshots. Without this resync the next `saveLive()` would clobber
+        // the inspector's change back to the stale snapshot — for `includeProjectProvenance` that could
+        // silently re-enable stamping the research question after the user turned it off to share.
+        // (A `ViewModifier` so the two `.onChange`s don't overflow the body's type-checker.)
+        .modifier(FrontMatterModelSync(
+            includeColophon: $includeColophon,
+            includeProjectProvenance: $includeProjectProvenance,
+            collection: collection))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row.
@@ -1856,5 +1866,29 @@ struct CollectionEditorView: View {
             collection.projectIds.append(projectId)
         }
         try? modelContext.save()
+    }
+}
+
+// MARK: - FrontMatterModelSync
+
+/// Keeps `CollectionEditorView`'s one-time front-matter `@State` snapshots in sync with the model
+/// when another surface (a heading row's "Section defaults" inspector, via `CollectionAttributesRows`)
+/// writes `collection.includeColophon` / `collection.includeProjectProvenance` directly on the model.
+/// Without it, the editor's next `saveLive()` clobbers the inspector's change back to the stale
+/// snapshot. Extracted as a `ViewModifier` so its two `.onChange`s are type-checked apart from the
+/// (long) editor body. The `!=` guard stops a feedback loop when `saveLive()` rewrites the same value.
+private struct FrontMatterModelSync: ViewModifier {
+    @Binding var includeColophon: Bool
+    @Binding var includeProjectProvenance: Bool
+    let collection: Collection
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: collection.includeColophon) { _, newValue in
+                if newValue != includeColophon { includeColophon = newValue }
+            }
+            .onChange(of: collection.includeProjectProvenance) { _, newValue in
+                if newValue != includeProjectProvenance { includeProjectProvenance = newValue }
+            }
     }
 }
