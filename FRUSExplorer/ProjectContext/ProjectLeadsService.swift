@@ -139,8 +139,16 @@ enum ProjectLeadsService {
             }
         }
         if Task.isCancelled { return }
+        // The keys the researcher has dismissed from Suggested Next — so the aggregator can backfill
+        // their display slots with the next-best leads while keeping the dismissed ones hidden. A
+        // small scoped fetch on the main context (it sees the just-dismissed state, saved above).
+        let pid = projectId
+        let dismissedKeys = Set(
+            ((try? context.fetch(FetchDescriptor<ProjectLeadEntry>(
+                predicate: #Predicate { $0.projectId == pid && $0.dismissed == true }))) ?? [])
+                .map(\.documentKey))
         let candidates = ProjectLeadsAggregator.aggregate(
-            perSeedRelated: perSeed, seedKeys: seedSet, limit: leadLimit)
+            perSeedRelated: perSeed, seedKeys: seedSet, dismissedKeys: dismissedKeys, limit: leadLimit)
         applyLeads(candidates, records: recordByKey, forProject: projectId, in: context)
     }
 
