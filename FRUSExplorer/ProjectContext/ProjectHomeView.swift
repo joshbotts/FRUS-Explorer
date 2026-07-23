@@ -805,10 +805,27 @@ struct ProjectCollectionsEditor: View {
                     )
                 } else {
                     List {
-                        Section {
-                            ForEach(allCollections) { collection in
-                                row(collection)
+                        let members = allCollections.filter { $0.projectIds.contains(projectId) }
+                        let others = allCollections.filter { !$0.projectIds.contains(projectId) }
+                        if !members.isEmpty {
+                            Section(String(localized: "project.collections.attached", defaultValue: "In this project")) {
+                                ForEach(members) { collection in
+                                    memberRow(collection)
+                                }
                             }
+                        }
+                        Section {
+                            if others.isEmpty {
+                                Text(String(localized: "project.collections.allAttached",
+                                            defaultValue: "Every collection is already in this project."))
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                ForEach(others) { collection in
+                                    addRow(collection)
+                                }
+                            }
+                        } header: {
+                            Text(String(localized: "project.collections.add", defaultValue: "Add collections"))
                         } footer: {
                             Text(String(localized: "project.collections.footer",
                                         defaultValue: "A collection can belong to more than one project. Attaching it here doesn't remove it from any others."))
@@ -831,32 +848,76 @@ struct ProjectCollectionsEditor: View {
         #endif
     }
 
+    /// A row for a collection already in this project: its name + document count, with a destructive
+    /// **minus** button and a trailing swipe-to-remove — both detach it from the project.
     @ViewBuilder
-    private func row(_ collection: Collection) -> some View {
-        let isMember = collection.projectIds.contains(projectId)
-        let docCount = (collection.documentEntries ?? []).filter { $0.entryKind == .document }.count
+    private func memberRow(_ collection: Collection) -> some View {
+        HStack(spacing: 10) {
+            collectionInfo(collection)
+            Spacer()
+            Button {
+                detach(collection)
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+            .help(String(localized: "project.collections.remove.help", defaultValue: "Remove from this project"))
+        }
+        .contentShape(Rectangle())
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                detach(collection)
+            } label: {
+                Label(String(localized: "project.collections.remove", defaultValue: "Remove"),
+                      systemImage: "minus.circle")
+            }
+        }
+    }
+
+    /// A row for a collection not yet in this project: tapping it (or its leading plus) attaches it.
+    private func addRow(_ collection: Collection) -> some View {
         Button {
-            collection.projectIds = Self.toggledMembership(projectId, in: collection.projectIds)
+            attach(collection)
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: isMember ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isMember ? Color.accentColor : Color.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(collection.name.isEmpty
-                         ? String(localized: "project.collections.untitled", defaultValue: "Untitled collection")
-                         : collection.name)
-                        .foregroundStyle(.primary)
-                    Text(docCount == 1
-                         ? String(localized: "project.collections.docCount.one", defaultValue: "1 document")
-                         : String(localized: "project.collections.docCount.other", defaultValue: "\(docCount) documents"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Image(systemName: "plus.circle")
+                    .foregroundStyle(Color.accentColor)
+                collectionInfo(collection)
                 Spacer()
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The shared name + document-count label for a collection row.
+    @ViewBuilder
+    private func collectionInfo(_ collection: Collection) -> some View {
+        let docCount = (collection.documentEntries ?? []).filter { $0.entryKind == .document }.count
+        VStack(alignment: .leading, spacing: 2) {
+            Text(collection.name.isEmpty
+                 ? String(localized: "project.collections.untitled", defaultValue: "Untitled collection")
+                 : collection.name)
+                .foregroundStyle(.primary)
+            Text(docCount == 1
+                 ? String(localized: "project.collections.docCount.one", defaultValue: "1 document")
+                 : String(localized: "project.collections.docCount.other", defaultValue: "\(docCount) documents"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Attaches the collection to this project (idempotent).
+    private func attach(_ collection: Collection) {
+        guard !collection.projectIds.contains(projectId) else { return }
+        collection.projectIds = Self.toggledMembership(projectId, in: collection.projectIds)
+    }
+
+    /// Detaches the collection from this project (idempotent), preserving its other projects.
+    private func detach(_ collection: Collection) {
+        guard collection.projectIds.contains(projectId) else { return }
+        collection.projectIds = Self.toggledMembership(projectId, in: collection.projectIds)
     }
 
     /// Returns `ids` with `projectId` toggled — removed if present, appended if absent. Pure so the
