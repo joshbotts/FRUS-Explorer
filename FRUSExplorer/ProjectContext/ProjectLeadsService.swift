@@ -105,6 +105,14 @@ enum ProjectLeadsService {
     /// upsert, so a superseding recompute (the debounce fired again) doesn't run to completion and
     /// race the fresher pass's writes.
     static func recompute(forProject projectId: UUID, appState: AppState, in context: ModelContext) async {
+        // Flush pending main-context edits before reading the seed on a *separate* background
+        // context: a document just added to (or removed from) a collection is only in the main
+        // context's memory until the app autosaves, and `gatherSeed`'s fresh `ModelContext` sees
+        // only the persisted store. Without this, a just-added seed document wouldn't be excluded
+        // from the leads — the discovery feedback loop would appear broken (it wouldn't recover
+        // until some later save *and* another recompute trigger). Cheap for a small changeset,
+        // a no-op when clean.
+        try? context.save()
         let (seedKeys, projectWeightsRaw) = await gatherSeed(
             forProject: projectId, container: context.container)
         if Task.isCancelled { return }
