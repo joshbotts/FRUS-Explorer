@@ -93,6 +93,9 @@ struct ProjectHomeView: View {
     /// Whether the inline weight-tuning sliders are expanded (they appear above the leads list).
     @State private var showWeightTuning = false
 
+    /// Whether the "manage collections" editor sheet is presented (#377 Phase 5 polish).
+    @State private var showCollectionsEditor = false
+
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
@@ -110,6 +113,7 @@ struct ProjectHomeView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     header(project)
                     summarySection
+                    collectionsSection(project)
                     focusSubjectsSection(project)
                     leadsSection
                     recentSection
@@ -148,6 +152,56 @@ struct ProjectHomeView: View {
                 ProjectFocusSubjectsEditor(project: project)
             }
         }
+        .sheet(isPresented: $showCollectionsEditor) {
+            if let project {
+                ProjectCollectionsEditor(projectId: project.id, projectName: project.name)
+            }
+        }
+    }
+
+    // MARK: - Collections (#377 Phase 5 polish)
+
+    /// The project's collections: which ones are attached, plus a "Manage" entry to attach or detach
+    /// existing collections. A collection belongs to a project via `Collection.projectIds`, which was
+    /// previously set only implicitly (when a collection was created while the project was active);
+    /// this gives an explicit control.
+    @ViewBuilder
+    private func collectionsSection(_ project: Project) -> some View {
+        let members = summary.collections
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(String(localized: "project.home.collections.title", defaultValue: "Collections"))
+                    .font(.headline)
+                Spacer()
+                Button {
+                    showCollectionsEditor = true
+                } label: {
+                    Label(String(localized: "project.home.collections.manage", defaultValue: "Manage"),
+                          systemImage: "folder.badge.gearshape")
+                }
+                .buttonStyle(.borderless)
+            }
+            if members.isEmpty {
+                Text(String(localized: "project.home.collections.empty",
+                            defaultValue: "Attach collections to fold their documents into this project's activity and suggestions."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ForEach(members) { collection in
+                    Label {
+                        Text(collection.name.isEmpty
+                             ? String(localized: "project.home.collections.untitled", defaultValue: "Untitled collection")
+                             : collection.name)
+                            .lineLimit(1)
+                    } icon: {
+                        Image(systemName: "tray.2").foregroundStyle(.secondary)
+                    }
+                    .font(.callout)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Focus subjects (#377 Phase 2b)
@@ -709,5 +763,110 @@ struct ProjectHomeView: View {
         }
         onNavigateAway()
         Task { @MainActor in handoff() }
+    }
+}
+
+// MARK: - ProjectCollectionsEditor
+
+/// Attaches existing collections to a project (or detaches them) — #377 Phase 5 polish.
+///
+/// A collection belongs to a project through `Collection.projectIds` (an array — a collection can
+/// belong to several projects at once). Previously that was set only implicitly, when a collection
+/// was *created* while the project was active; this sheet makes it explicit. Toggling membership
+/// writes straight to the model (its `projectIds` `didSet` bumps `lastModified`), so the project's
+/// activity summary, engaged set, and leads seed all update reactively.
+///
+/// Presented as a sheet from Project Home; shared by both platforms.
+///
+/// Version history:
+///   1.0 — #377 Phase 5: initial implementation
+struct ProjectCollectionsEditor: View {
+
+    /// The project whose collection membership is being edited.
+    let projectId: UUID
+
+    /// The project's name, for the sheet's explanatory footer.
+    let projectName: String
+
+    @Environment(\.dismiss) private var dismiss
+
+    /// Every collection, so the researcher can attach any of them (member or not).
+    @Query(sort: \Collection.name) private var allCollections: [Collection]
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if allCollections.isEmpty {
+                    ContentUnavailableView(
+                        String(localized: "project.collections.empty.title", defaultValue: "No Collections"),
+                        systemImage: "tray",
+                        description: Text(String(localized: "project.collections.empty.detail",
+                                                 defaultValue: "Create a collection first, then attach it to this project here."))
+                    )
+                } else {
+                    List {
+                        Section {
+                            ForEach(allCollections) { collection in
+                                row(collection)
+                            }
+                        } footer: {
+                            Text(String(localized: "project.collections.footer",
+                                        defaultValue: "A collection can belong to more than one project. Attaching it here doesn't remove it from any others."))
+                        }
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "project.collections.title", defaultValue: "Project Collections"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "project.collections.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 460, minHeight: 560)
+        #endif
+    }
+
+    @ViewBuilder
+    private func row(_ collection: Collection) -> some View {
+        let isMember = collection.projectIds.contains(projectId)
+        let docCount = (collection.documentEntries ?? []).filter { $0.entryKind == .document }.count
+        Button {
+            collection.projectIds = Self.toggledMembership(projectId, in: collection.projectIds)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isMember ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isMember ? Color.accentColor : Color.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(collection.name.isEmpty
+                         ? String(localized: "project.collections.untitled", defaultValue: "Untitled collection")
+                         : collection.name)
+                        .foregroundStyle(.primary)
+                    Text(docCount == 1
+                         ? String(localized: "project.collections.docCount.one", defaultValue: "1 document")
+                         : String(localized: "project.collections.docCount.other", defaultValue: "\(docCount) documents"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Returns `ids` with `projectId` toggled — removed if present, appended if absent. Pure so the
+    /// add/remove (and its preservation of the collection's other projects) is unit-testable.
+    static func toggledMembership(_ projectId: UUID, in ids: [UUID]) -> [UUID] {
+        if let index = ids.firstIndex(of: projectId) {
+            var updated = ids
+            updated.remove(at: index)
+            return updated
+        }
+        return ids + [projectId]
     }
 }
