@@ -38,11 +38,16 @@ enum ProjectLeadsAggregator {
     ///   - perSeedRelated: For each seed key, its ranked related documents as
     ///     `(key, score)` pairs (from `RelatedDocumentRow.compositeString` / `.totalScore`).
     ///   - seedKeys: The project's full seed set — leads in this set are dropped.
-    ///   - limit: Maximum leads to return.
-    /// - Returns: Leads ranked by `aggregateScore` descending (key ascending as a stable
-    ///   tie-break), capped to `limit`.
+    ///   - dismissedKeys: Leads the researcher has dismissed. A dismissed lead no longer consumes a
+    ///     display slot (so dismissing one lets the next-best backfill), but it is still *returned*
+    ///     while it remains in the ranking so `applyLeads` keeps it hidden and it doesn't resurface;
+    ///     it is dropped only once it leaves the ranking entirely.
+    ///   - limit: Maximum **visible** (non-dismissed) leads to return.
+    /// - Returns: Up to `limit` non-dismissed leads (ranked by `aggregateScore` descending, key
+    ///   ascending as a stable tie-break), followed by every dismissed lead still in the ranking.
     static func aggregate(perSeedRelated: [(seed: String, related: [(key: String, score: Double)])],
                           seedKeys: Set<String>,
+                          dismissedKeys: Set<String> = [],
                           limit: Int) -> [ProjectLeadCandidate] {
         var scoreByKey: [String: Double] = [:]
         var seedsByKey: [String: Set<String>] = [:]
@@ -52,7 +57,7 @@ enum ProjectLeadsAggregator {
                 seedsByKey[candidate.key, default: []].insert(seed)
             }
         }
-        return scoreByKey.keys
+        let ranked = scoreByKey.keys
             .map { key in
                 ProjectLeadCandidate(
                     key: key,
@@ -64,7 +69,18 @@ enum ProjectLeadsAggregator {
                     ? lhs.aggregateScore > rhs.aggregateScore
                     : lhs.key < rhs.key
             }
-            .prefix(max(0, limit))
-            .map { $0 }
+        // Fill `limit` with the top-ranked NON-dismissed leads (so a dismissed slot backfills with the
+        // next-best), and retain every dismissed lead still in the ranking (hidden, non-resurfacing).
+        let cap = max(0, limit)
+        var visible: [ProjectLeadCandidate] = []
+        var retainedDismissed: [ProjectLeadCandidate] = []
+        for candidate in ranked {
+            if dismissedKeys.contains(candidate.key) {
+                retainedDismissed.append(candidate)
+            } else if visible.count < cap {
+                visible.append(candidate)
+            }
+        }
+        return visible + retainedDismissed
     }
 }

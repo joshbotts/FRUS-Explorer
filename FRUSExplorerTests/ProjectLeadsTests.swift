@@ -35,6 +35,24 @@ struct ProjectLeadsAggregatorTests {
         #expect(ProjectLeadsAggregator.aggregate(
             perSeedRelated: perSeed, seedKeys: seeds, limit: 1).count == 1)
     }
+
+    @Test("aggregate: a dismissed lead frees its slot (backfill) yet stays retained + hidden")
+    func aggregateBackfillsDismissed() {
+        let perSeed: [(seed: String, related: [(key: String, score: Double)])] = [
+            ("v/s", [("v/a", 4.0), ("v/b", 3.0), ("v/c", 2.0), ("v/d", 1.0)]),
+        ]
+        let seeds: Set<String> = ["v/s"]
+
+        // No dismissals: the top-2 visible leads are a, b.
+        #expect(ProjectLeadsAggregator.aggregate(
+            perSeedRelated: perSeed, seedKeys: seeds, limit: 2).map(\.key) == ["v/a", "v/b"])
+
+        // Dismiss 'a': its freed slot backfills with the next-best 'c' (b, c visible), and 'a' is
+        // still returned (at the end) so `applyLeads` keeps it hidden — it must not resurface.
+        let withDismiss = ProjectLeadsAggregator.aggregate(
+            perSeedRelated: perSeed, seedKeys: seeds, dismissedKeys: ["v/a"], limit: 2)
+        #expect(withDismiss.map(\.key) == ["v/b", "v/c", "v/a"])
+    }
 }
 
 // MARK: - ProjectLeadsServiceTests
