@@ -33,7 +33,7 @@ struct ProjectHomeRequest: Codable, Hashable {
 ///
 /// Surfaces the project's research question (inline-editable) and date focus, a live
 /// activity summary (collections / notes / documents visited / searches), a reserved
-/// slot for the Phase-3 "Frontier" discovery feed, recent activity, and quick jumps.
+/// slot for the Phase-3 "Project Leads" discovery feed, recent activity, and quick jumps.
 ///
 /// Data comes from reactive `@Query`s filtered to the active project in memory (the
 /// same approach `GlobalContextViewModel` uses, since SwiftData `#Predicate` support
@@ -90,7 +90,7 @@ struct ProjectHomeView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     header(project)
                     summarySection
-                    frontierSection
+                    leadsSection
                     recentSection
                     quickActions
                 }
@@ -199,12 +199,12 @@ struct ProjectHomeView: View {
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    // MARK: - Frontier slot (Phase 3 placeholder)
+    // MARK: - Project Leads slot (Phase 3 placeholder)
 
-    private var frontierSection: some View {
-        sectionCard(String(localized: "project.home.frontier.title", defaultValue: "Suggested Next")) {
+    private var leadsSection: some View {
+        sectionCard(String(localized: "project.home.leads.title", defaultValue: "Suggested Next")) {
             Label {
-                Text(String(localized: "project.home.frontier.placeholder",
+                Text(String(localized: "project.home.leads.placeholder",
                             defaultValue: "As you add documents to this project's collections, related documents you haven't gathered yet will surface here."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -327,35 +327,54 @@ struct ProjectHomeView: View {
     // MARK: - Navigation actions
 
     private func openDocument(volumeId: String, documentId: String, title: String?) {
-        onNavigateAway?()   // dismiss a modal presenter (the iOS sheet) before navigating away
         let entry = DocumentBrowserEntry(
             documentId: documentId,
             volumeId: volumeId,
             header: title ?? "\(volumeId) · \(documentId)"
         )
-        #if os(iOS)
-        // The document lands in the Browse tab's stack; bring that tab forward so the tap isn't a
-        // silent no-op (Project Home is reached from the Settings tab). Mirrors the other callers.
-        appState.openTab(.browse, from: nil)
-        #endif
-        appState.openBrowseDocument(entry, from: nil)
+        performNavigation {
+            #if os(iOS)
+            // The document lands in the Browse tab's stack; bring that tab forward so the tap isn't a
+            // silent no-op (Project Home is reached from the Settings tab). Mirrors the other callers.
+            appState.openTab(.browse, from: nil)
+            #endif
+            appState.openBrowseDocument(entry, from: nil)
+        }
     }
 
     private func openSurface(_ windowId: String) {
-        onNavigateAway?()   // dismiss a modal presenter (the iOS sheet) before navigating away
-        #if os(macOS)
-        openWindow(id: windowId)
-        bringMacWindowToFront(id: windowId)
-        #else
-        // AppTab is iOS-only; map the shared window id to the matching tab.
-        let tab: AppTab
-        switch windowId {
-        case "frus.collections": tab = .collections
-        case "frus.research":    tab = .research
-        case "frus.search":      tab = .search
-        default:                 tab = .browse
+        performNavigation {
+            #if os(macOS)
+            openWindow(id: windowId)
+            bringMacWindowToFront(id: windowId)
+            #else
+            // AppTab is iOS-only; map the shared window id to the matching tab.
+            let tab: AppTab
+            switch windowId {
+            case "frus.collections": tab = .collections
+            case "frus.research":    tab = .research
+            case "frus.search":      tab = .search
+            default:                 tab = .browse
+            }
+            appState.openTab(tab, from: nil)
+            #endif
         }
-        appState.openTab(tab, from: nil)
-        #endif
+    }
+
+    /// Runs a navigation hand-off, dismissing a modal presenter first (if any).
+    ///
+    /// When there IS a modal presenter (the iOS Research-tab sheet passes `onNavigateAway`), the
+    /// hand-off is deferred one main-actor tick so the sheet's dismissal and the tab-switch/document
+    /// push don't land in a single SwiftUI update — doing both in one frame trips
+    /// "NavigationRequestObserver tried to update multiple times per frame" and the push is dropped
+    /// (#431 on-device). The non-modal presenters (macOS window, Settings push) have no dismissal to
+    /// collide with, so they run the hand-off synchronously as before.
+    private func performNavigation(_ handoff: @escaping @MainActor () -> Void) {
+        guard let onNavigateAway else {
+            handoff()
+            return
+        }
+        onNavigateAway()
+        Task { @MainActor in handoff() }
     }
 }
