@@ -811,6 +811,30 @@ struct FRUSExplorerApp: App {
         // #363 #2: ⌘⌥R now lives solely on the Research command menu (ResearchMenuContent) —
         // it was previously declared here AND on the toolbar button, a duplicate key equivalent.
 
+        // MARK: - Project Home Window (#377 Phase 1)
+        //
+        // The per-project research workspace. Value-based on `ProjectHomeRequest` (the project id)
+        // so it stays off the Window menu and a multi-project researcher can keep several open;
+        // opened from Research ▸ Project Home (⌘P). A request-less restored window shows a picker hint.
+        WindowGroup(String(localized: "project.home.window.title", defaultValue: "Project Home"),
+                    for: ProjectHomeRequest.self) { $request in
+            NavigationStack {
+                if let request {
+                    ProjectHomeView(projectId: request.projectId)
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "project.home.missing.title", defaultValue: "No Project Selected"),
+                        systemImage: "folder",
+                        description: Text(String(localized: "project.home.missing.detail",
+                                                 defaultValue: "Choose a project from the project picker to see its workspace."))
+                    )
+                }
+            }
+            .environment(appState)
+            .modelContainer(modelContainer)
+        }
+        .defaultSize(width: 720, height: 720)
+
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {
             MacCollectionManagerView()
@@ -1060,6 +1084,11 @@ struct FRUSExplorerApp: App {
             CommandGroup(after: .newItem) {
                 OpenDocumentInNewWindowMenuItem()
             }
+
+            // #377 Phase 1: the app implements no document printing, and ⌘P is used for
+            // Research ▸ Project Home. Remove the system Print menu items so nothing else
+            // claims ⌘P (an empty replacement drops the group).
+            CommandGroup(replacing: .printItem) { }
 
             // Append a "FRUS Research Guide" item to the Help menu (after the
             // system search field) so the standalone primer is reachable
@@ -2554,6 +2583,19 @@ struct ResearchMenuContent: View {
     let openWindow: OpenWindowAction
 
     var body: some View {
+        // #377 Phase 1: Project Home for the ACTIVE project (⌘P — printing isn't implemented, so it's
+        // free). Disabled in Global Context (no active project). Value-based, so a distinct project
+        // opens its own window and the same project focuses the one already open.
+        Button(String(localized: "menu.research.projectHome", defaultValue: "Project Home")) {
+            if let pid = appState.activeProjectId {
+                openWindow(value: ProjectHomeRequest(projectId: pid))
+            }
+        }
+        .keyboardShortcut("p", modifiers: .command)
+        .disabled(appState.activeProjectId == nil)
+
+        Divider()
+
         Button(String(localized: "menu.research.research", defaultValue: "Research")) {
             appState.bindTool(.research, to: nil)   // clear stale provenance → recency fallback
             openWindow(id: "frus.research")
