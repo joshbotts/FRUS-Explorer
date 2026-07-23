@@ -156,9 +156,7 @@ struct ProjectHomeView: View {
         .onChange(of: seedSignature) { _, _ in scheduleRecompute() }
         .onDisappear { recomputeTask?.cancel() }
         .sheet(isPresented: $showFocusEditor) {
-            if let project {
-                ProjectFocusSubjectsEditor(project: project)
-            }
+            ProjectFocusSubjectsEditor(projectId: projectId)
         }
         .sheet(isPresented: $showCollectionsEditor) {
             if let project {
@@ -166,9 +164,7 @@ struct ProjectHomeView: View {
             }
         }
         .sheet(isPresented: $showTagsEditor) {
-            if let project {
-                ProjectFocusTagsEditor(project: project)
-            }
+            ProjectFocusTagsEditor(projectId: projectId)
         }
     }
 
@@ -1040,35 +1036,52 @@ struct ProjectCollectionsEditor: View {
 ///   1.0 — #377 Phase 3: initial implementation
 struct ProjectFocusTagsEditor: View {
 
-    /// The project whose tag focus is being edited; `defaultUserTagIds` is written live.
-    @Bindable var project: Project
+    /// The project whose tag focus is being edited; `defaultUserTagIds` is written live. Held by id
+    /// and re-resolved through `@Query` (not a live `@Bindable` reference), so a deletion from
+    /// another window/scene can't leave this sheet holding a deleted model to trap on.
+    let projectId: UUID
 
     @Environment(\.dismiss) private var dismiss
 
     /// The researcher's user tags (a small, free-form set — no search needed).
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
 
+    /// All projects, filtered to `projectId` in `project`. Reactive: the row drops out on deletion.
+    @Query private var projects: [Project]
+
+    /// The project being edited, or `nil` if it was deleted while the sheet was open.
+    private var project: Project? { projects.first { $0.id == projectId } }
+
     var body: some View {
         NavigationStack {
             Group {
-                if allTags.isEmpty {
-                    ContentUnavailableView(
-                        String(localized: "project.focusTags.empty.title", defaultValue: "No Tags"),
-                        systemImage: "tag.slash",
-                        description: Text(String(localized: "project.focusTags.empty.detail",
-                                                 defaultValue: "Tag documents while you research, then choose which tags focus this project's suggestions here."))
-                    )
-                } else {
-                    List {
-                        Section {
-                            ForEach(allTags) { tag in
-                                row(tag)
+                if let project {
+                    if allTags.isEmpty {
+                        ContentUnavailableView(
+                            String(localized: "project.focusTags.empty.title", defaultValue: "No Tags"),
+                            systemImage: "tag.slash",
+                            description: Text(String(localized: "project.focusTags.empty.detail",
+                                                     defaultValue: "Tag documents while you research, then choose which tags focus this project's suggestions here."))
+                        )
+                    } else {
+                        List {
+                            Section {
+                                ForEach(allTags) { tag in
+                                    row(tag, project: project)
+                                }
+                            } footer: {
+                                Text(String(localized: "project.focusTags.footer",
+                                            defaultValue: "Documents you've tagged with the chosen tags anchor this project's Suggested Next."))
                             }
-                        } footer: {
-                            Text(String(localized: "project.focusTags.footer",
-                                        defaultValue: "Documents you've tagged with the chosen tags anchor this project's Suggested Next."))
                         }
                     }
+                } else {
+                    ContentUnavailableView(
+                        String(localized: "project.focusTags.missing.title", defaultValue: "Project Unavailable"),
+                        systemImage: "folder",
+                        description: Text(String(localized: "project.focusTags.missing.detail",
+                                                 defaultValue: "This project is no longer available."))
+                    )
                 }
             }
             .navigationTitle(String(localized: "project.focusTags.title", defaultValue: "Focus Tags"))
@@ -1084,13 +1097,15 @@ struct ProjectFocusTagsEditor: View {
         #if os(macOS)
         .frame(minWidth: 420, minHeight: 520)
         #endif
+        // Dismiss if the project is deleted from another window while this sheet is open.
+        .onChange(of: project?.id) { _, id in if id == nil { dismiss() } }
     }
 
     @ViewBuilder
-    private func row(_ tag: UserTag) -> some View {
+    private func row(_ tag: UserTag, project: Project) -> some View {
         let isChosen = project.defaultUserTagIds.contains(tag.id)
         Button {
-            toggle(tag.id)
+            toggle(tag.id, in: project)
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: isChosen ? "checkmark.circle.fill" : "circle")
@@ -1107,7 +1122,7 @@ struct ProjectFocusTagsEditor: View {
     }
 
     /// Adds or removes a tag id from the project's focus (live save).
-    private func toggle(_ tagId: UUID) {
+    private func toggle(_ tagId: UUID, in project: Project) {
         // Reassign the whole array — Project's array `didSet` (and thus `lastModified` / CloudKit
         // last-write-wins) does NOT fire on an in-place `remove`/`append` (see Project.swift).
         var ids = project.defaultUserTagIds
