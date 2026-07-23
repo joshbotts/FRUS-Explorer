@@ -239,4 +239,22 @@ struct ProjectHomeSummaryTests {
         let empty = ProjectHomeSummary(notes: [], collections: [], visits: [], searches: [])
         #expect(empty.isEmpty)
     }
+
+    // MARK: - Collection membership (#377 Phase 5)
+
+    @Test("toggledMembership attaches then detaches a project, preserving other projects")
+    func collectionMembershipToggle() {
+        let project = UUID()
+        let otherProject = UUID()
+
+        // Absent → appended.
+        let attached = ProjectCollectionsEditor.toggledMembership(project, in: [otherProject])
+        #expect(attached.contains(project))
+        #expect(attached.contains(otherProject))   // the collection's other project is untouched
+
+        // Present → removed, leaving the other project.
+        let detached = ProjectCollectionsEditor.toggledMembership(project, in: attached)
+        #expect(!detached.contains(project))
+        #expect(detached == [otherProject])
+    }
 }
