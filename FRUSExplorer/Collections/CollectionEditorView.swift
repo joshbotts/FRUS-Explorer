@@ -165,6 +165,8 @@ struct CollectionEditorView: View {
     @State private var collectionAuthorLine: String
     /// Front matter: whether exports end with the colophon page/footer (default off).
     @State private var includeColophon: Bool
+    /// Front matter: whether exports stamp the active project on the title page (#377 Phase 4, default off).
+    @State private var includeProjectProvenance: Bool
     /// Headings whose sections are currently collapsed in the outline — VIEW STATE only
     /// (Phase 4): never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
@@ -247,6 +249,7 @@ struct CollectionEditorView: View {
             _collectionSubtitle = State(initialValue: c.subtitle ?? "")
             _collectionAuthorLine = State(initialValue: c.authorLine ?? "")
             _includeColophon = State(initialValue: c.includeColophon)
+            _includeProjectProvenance = State(initialValue: c.includeProjectProvenance)
             isNewCollection = false
         } else {
             let c = Collection(name: "")
@@ -258,6 +261,7 @@ struct CollectionEditorView: View {
             _collectionSubtitle = State(initialValue: "")
             _collectionAuthorLine = State(initialValue: "")
             _includeColophon = State(initialValue: false)
+            _includeProjectProvenance = State(initialValue: false)
             isNewCollection = true
         }
     }
@@ -287,6 +291,7 @@ struct CollectionEditorView: View {
         .onChange(of: collectionSubtitle) { _, _ in saveLive() }
         .onChange(of: collectionAuthorLine) { _, _ in saveLive() }
         .onChange(of: includeColophon) { _, _ in saveLive() }
+        .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row.
@@ -296,6 +301,7 @@ struct CollectionEditorView: View {
                 && sortedEntries.isEmpty && collection.savedSearchId == nil
                 && collection.subtitle == nil && collection.authorLine == nil
                 && collection.introductionText == nil && !collection.includeColophon
+                && !collection.includeProjectProvenance
             if untouched {
                 modelContext.delete(collection)
             } else if collection.name.isEmpty {
@@ -1039,6 +1045,10 @@ struct CollectionEditorView: View {
         Toggle(isOn: $includeColophon) {
             Text(String(localized: "collection.frontmatter.colophon.toggle",
                         defaultValue: "Include colophon"))
+        }
+        Toggle(isOn: $includeProjectProvenance) {
+            Text(String(localized: "collection.frontmatter.projectProvenance.toggle",
+                        defaultValue: "Stamp active project on export"))
         }
         #if os(macOS)
         .toggleStyle(.checkbox)
@@ -1841,6 +1851,7 @@ struct CollectionEditorView: View {
         let trimmedAuthor = collectionAuthorLine.trimmingCharacters(in: .whitespacesAndNewlines)
         collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
         collection.includeColophon = includeColophon
+        collection.includeProjectProvenance = includeProjectProvenance
         if let projectId = appState.activeProjectId, !collection.projectIds.contains(projectId) {
             collection.projectIds.append(projectId)
         }

@@ -37,6 +37,13 @@ struct ExportSheetView: View {
     let allNotes: [ResearchNote]
     let appState: AppState
 
+    /// All projects, to resolve the active project for export provenance (#377 Phase 4) — mirrors
+    /// the `authorLine` placeholder lookup in the collection editors.
+    @Query(sort: \Project.name) private var allProjects: [Project]
+
+    /// The active project (the source of export provenance), or `nil` in Global Context.
+    private var activeProject: Project? { allProjects.first { $0.id == appState.activeProjectId } }
+
     @State private var selectedFormat: ExportFormat = .pdf
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
@@ -393,9 +400,14 @@ struct ExportSheetView: View {
         do {
             let items = try await makeResolver().resolve(
                 collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
+            let provenance = CollectionExportMetadata.projectProvenance(
+                enabled: collection.includeProjectProvenance,
+                projectName: activeProject?.name,
+                researchQuestion: activeProject?.researchQuestion)
             let metadata = CollectionExportMetadata(
                 name: collection.name, note: collection.note,
                 subtitle: collection.subtitle, authorLine: collection.authorLine,
+                projectName: provenance.name, projectResearchQuestion: provenance.question,
                 includeColophon: collection.includeColophon)
             guard let exporter = selectedFormat.makeExporter() else { return }
             let url = try await exporter.export(

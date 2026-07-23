@@ -1996,6 +1996,7 @@ struct CollectionTests {
         #expect(!page.contains("toc-sub"))
         #expect(!page.contains("collection-subtitle"))
         #expect(!page.contains("collection-author"))
+        #expect(!page.contains("collection-project"))   // #377 Phase 4 provenance layer stays dormant
         #expect(!page.contains("colophon"))
         #expect(!page.contains("headnote"))   // Phase 5 layer stays dormant too
         #expect(!page.contains("excerpt"))    // Phase 5 excerpt layer stays dormant too
@@ -2004,6 +2005,48 @@ struct CollectionTests {
         #expect(!page.contains("generated-block"))   // Phase 6 apparatus layer stays dormant too
         #expect(!page.contains("ai-attribution"))    // AI-attribution layer stays dormant too
         #expect(page.contains(CollectionItemHTMLRenderer.embeddedCSS + "\n  </style>"))
+    }
+
+    @Test("Phase4 provenance: projectProvenance gates on the toggle + a non-empty active project name")
+    func projectProvenanceGating() {
+        // Enabled + active project → name + question.
+        let on = CollectionExportMetadata.projectProvenance(
+            enabled: true, projectName: "Cuban Missile Crisis", researchQuestion: "How was ExComm briefed?")
+        #expect(on.name == "Cuban Missile Crisis")
+        #expect(on.question == "How was ExComm briefed?")
+        // Disabled → nothing, even with an active project.
+        let off = CollectionExportMetadata.projectProvenance(
+            enabled: false, projectName: "X", researchQuestion: "Q")
+        #expect(off.name == nil && off.question == nil)
+        // Enabled but no active project → nothing.
+        #expect(CollectionExportMetadata.projectProvenance(
+            enabled: true, projectName: nil, researchQuestion: nil).name == nil)
+        // Blank name → nothing (the name is the anchor).
+        #expect(CollectionExportMetadata.projectProvenance(
+            enabled: true, projectName: "   ", researchQuestion: "Q").name == nil)
+        // Blank question → dropped, but the name is kept.
+        let noQ = CollectionExportMetadata.projectProvenance(
+            enabled: true, projectName: "P", researchQuestion: "  ")
+        #expect(noQ.name == "P" && noQ.question == nil)
+    }
+
+    @Test("Phase4 provenance: headerHTML places the project line after the author, before the note")
+    func htmlProjectProvenancePlacement() {
+        let metadata = CollectionExportMetadata(
+            name: "Berlin", note: "A note.", authorLine: "The Researcher",
+            projectName: "Berlin Crisis", projectResearchQuestion: "Who decided?")
+        let html = CollectionItemHTMLRenderer().headerHTML(metadata: metadata)
+        #expect(html.contains("<p class=\"collection-project\">Project: Berlin Crisis</p>"))
+        #expect(html.contains("<p class=\"collection-project-question\">Who decided?</p>"))
+        // Order: author < project < question < note.
+        let iAuthor = html.range(of: "collection-author")!.lowerBound
+        let iProject = html.range(of: "collection-project\"")!.lowerBound
+        let iQuestion = html.range(of: "collection-project-question")!.lowerBound
+        let iNote = html.range(of: "collection-note")!.lowerBound
+        #expect(iAuthor < iProject && iProject < iQuestion && iQuestion < iNote)
+        // No project markup when the name is absent (matches the dormant byte-compat contract).
+        let bare = CollectionExportMetadata(name: "Berlin", note: "A note.")
+        #expect(!CollectionItemHTMLRenderer().headerHTML(metadata: bare).contains("collection-project"))
     }
 
     @Test("Phase4 frame: nested headings produce nested ToC lists and stepped heading tags")
@@ -2603,6 +2646,7 @@ struct CollectionTests {
         coll.introductionText = "Why these cables matter."
         coll.introductionRichText = Data("{\\rtf1 intro}".utf8)
         coll.includeColophon = true
+        coll.includeProjectProvenance = true
         sourceCtx.insert(coll)
 
         let h1 = CollectionEntry(collectionId: coll.id, documentId: "", volumeId: "", sortOrder: 0)
@@ -2636,6 +2680,7 @@ struct CollectionTests {
         #expect(imported.introductionText == "Why these cables matter.")
         #expect(imported.introductionRichText == Data("{\\rtf1 intro}".utf8))
         #expect(imported.includeColophon == true)
+        #expect(imported.includeProjectProvenance == true)
         let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
         try #require(entries.count == 3)
         #expect(entries[0].level == 1)
@@ -2650,6 +2695,7 @@ struct CollectionTests {
         #expect(old.introductionText == nil)
         #expect(old.introductionRichText == nil)
         #expect(old.includeColophon == false)
+        #expect(old.includeProjectProvenance == false)
         #expect((old.documentEntries ?? []).first?.level == 1)
     }
 
@@ -2681,7 +2727,8 @@ struct CollectionTests {
         let data = try NativeCollectionSerializer.encode(file)
         let json = String(decoding: data, as: UTF8.self)
         for v2Key in ["minimumReaderVersion", "subtitle", "authorLine",
-                      "introductionText", "introductionRichText", "includeColophon", "level",
+                      "introductionText", "introductionRichText", "includeColophon",
+                      "includeProjectProvenance", "level",
                       // Phase 5 optional keys — absent from a write-minimum file.
                       "includeFootnotes", "includeSourceNote",
                       "includeHeadnote", "headnoteSummaryId",
@@ -2802,6 +2849,7 @@ struct CollectionTests {
         #expect(collection.introductionText == nil)
         #expect(collection.introductionRichText == nil)
         #expect(collection.includeColophon == false)
+        #expect(collection.includeProjectProvenance == false)
         let entry = CollectionEntry(collectionId: collection.id, documentId: "d1",
                                     volumeId: "v1", sortOrder: 0)
         #expect(entry.level == 1)

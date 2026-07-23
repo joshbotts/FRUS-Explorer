@@ -442,6 +442,17 @@ final class DocxCollectionExporter: CollectionExporter {
             body += styledPara(escaped(author), styleId: "CollectionAuthor")
         }
 
+        // Cover: project provenance (#377 Phase 4) — emitted only when the collection opted in and
+        // a project was active; reuses the CollectionAuthor/CollectionNote styles (no styles-part
+        // change). Unset collections' covers are unchanged.
+        if let projectName = collection.projectName, !projectName.isEmpty {
+            let label = String(localized: "export.frontmatter.project", defaultValue: "Project")
+            body += styledPara(escaped("\(label): \(projectName)"), styleId: "CollectionAuthor")
+            if let question = collection.projectResearchQuestion, !question.isEmpty {
+                body += markdownItalicRuns(question, styleId: "CollectionNote")
+            }
+        }
+
         // Cover: optional note — markdownItalicRuns converts _text_ to italic Word runs.
         if let note = collection.note, !note.isEmpty {
             body += markdownItalicRuns(note, styleId: "CollectionNote")
