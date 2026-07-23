@@ -219,6 +219,9 @@ struct MainTabView: View {
                 // reliably inherit `\.sceneID`).
                 .environment(\.sceneID, SceneID(sceneIDToken))
         }
+        // #377 Phase 5: the tab shell is always on screen when a project is created (in the
+        // Research tab), so it hosts the one-time second-project nudge.
+        .secondProjectNudge()
     }
 
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.

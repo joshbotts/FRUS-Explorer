@@ -604,6 +604,9 @@ private struct SettingsProjectsPane: View {
         }
         .sheet(isPresented: $showEditor) {
             ProjectEditorView(projectToEdit: projectToEdit)
+                // ProjectEditorView reads AppState (the second-project nudge signal, #377 Phase 5);
+                // re-inject it since a sheet doesn't reliably inherit it.
+                .environment(appState)
         }
         .sheet(item: $projectToMerge) { sourceProject in
             MergeProjectSheet(
@@ -629,6 +632,9 @@ private struct SettingsProjectsPane: View {
         } message: {
             Text("Activity records are kept but unlinked from this project.")
         }
+        // #377 Phase 5: the Projects settings pane is on screen when a project is created on
+        // macOS, so it hosts the one-time second-project nudge.
+        .secondProjectNudge()
     }
 
     private func mergeProject(source: Project, into target: Project) {

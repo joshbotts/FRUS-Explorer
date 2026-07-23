@@ -90,6 +90,9 @@ struct ProjectContextView: View {
                 ProjectEditorView(projectToEdit: vm.projectToEdit) {
                     vm.load(context: modelContext)
                 }
+                // ProjectEditorView reads AppState (the second-project nudge signal, #377 Phase 5);
+                // re-inject it since a sheet doesn't reliably inherit it (mirrors the word-cloud sheet).
+                .environment(appState)
             }
             #if !os(iOS)
             .sheet(isPresented: $showGlobalContext) {
