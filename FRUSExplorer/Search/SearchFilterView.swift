@@ -262,11 +262,13 @@ struct SearchFilterView: View {
         showHistoryOption || showFocusOption || vm.projectScope != .off
     }
 
-    /// The manual volume-scoping sections (custom scope, subject facet, volume/subseries
-    /// pickers) are hidden in **Focus** mode — Focus derives the volume scope from the
-    /// project's subjects, so a manual selection would have no effect (#377 Phase 2b).
+    /// Whether the manual volume-scoping sections (custom scope, subject facet, volume/
+    /// subseries pickers) show. They appear in every scope, including **Focus** — a manual
+    /// volume selection (or an applied custom scope) *overrides* the subject-derived Focus
+    /// scope, so the researcher can steer discovery by their own volumes instead of the
+    /// project's subjects (#377 Phase 2b, owner refinement).
     private var showVolumeScopeSections: Bool {
-        !vm.availableVolumes.isEmpty && vm.projectScope != .focus
+        !vm.availableVolumes.isEmpty
     }
 
     /// Scopes the search to the active project — **History** (its engaged documents) or
@@ -322,17 +324,26 @@ struct SearchFilterView: View {
                 : String(localized: "search.projectscope.footer.history.other",
                          defaultValue: "History limits results to the \(n) documents you've collected, annotated, or opened in this project."))
         case .focus:
-            let v = vm.projectFocusVolumeIds.count
-            let volumesClause = v == 1
-                ? String(localized: "search.projectscope.focus.volumes.one",
-                         defaultValue: "1 volume your project's subjects define")
-                : String(localized: "search.projectscope.focus.volumes.other",
-                         defaultValue: "\(v) volumes your project's subjects define")
+            // A manual volume selection overrides the subject-derived scope (owner
+            // refinement); the footer names whichever is driving the search.
+            let usingManual = !vm.effectiveVolumeIds.isEmpty
+            let count = usingManual ? vm.effectiveVolumeIds.count : vm.projectFocusVolumeIds.count
+            let volumesClause: String = usingManual
+                ? (count == 1
+                    ? String(localized: "search.projectscope.focus.manual.one",
+                             defaultValue: "your 1 selected volume")
+                    : String(localized: "search.projectscope.focus.manual.other",
+                             defaultValue: "your \(count) selected volumes"))
+                : (count == 1
+                    ? String(localized: "search.projectscope.focus.subjects.one",
+                             defaultValue: "the 1 volume your project's subjects define")
+                    : String(localized: "search.projectscope.focus.subjects.other",
+                             defaultValue: "the \(count) volumes your project's subjects define"))
             Text(vm.projectOnlyNew
                  ? String(localized: "search.projectscope.footer.focus.onlynew",
-                          defaultValue: "Focus searches the \(volumesClause), excluding documents you've already engaged.")
+                          defaultValue: "Focus searches \(volumesClause), excluding documents you've already engaged.")
                  : String(localized: "search.projectscope.footer.focus",
-                          defaultValue: "Focus searches the \(volumesClause)."))
+                          defaultValue: "Focus searches \(volumesClause)."))
         case .off:
             Text(String(localized: "search.projectscope.footer.off",
                         defaultValue: "Choose History to search only what you've engaged, or Focus to discover across the volumes your project's subjects define."))

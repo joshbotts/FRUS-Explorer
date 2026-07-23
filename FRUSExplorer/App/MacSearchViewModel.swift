@@ -390,15 +390,18 @@ final class MacSearchViewModel {
     }
 
     func clearVolumeFilter() {
-        parameters.volumeIds = nil
-        // In Focus mode the volume scope IS the focus, so clearing the Volume chip exits
-        // Focus — otherwise reopening the Advanced panel would silently reinstate the
-        // focus volumes via `applyProjectScope` (#377 Phase 2b).
-        if filterVM?.projectScope == .focus {
-            filterVM?.projectScope = .off
-            filterVM?.projectOnlyNew = false
+        // Clear the manual volume/subseries selection, then re-derive the scope so the
+        // executed gate matches: in Focus this falls back to the subject-derived volumes
+        // (the manual selection was overriding them, #377 Phase 2b); off/History simply
+        // drop the volume constraint. `applyProjectScope` bumps only if the gate changed.
+        if let fvm = filterVM {
+            fvm.selectedVolumeIds = []
+            fvm.selectedSubseriesIds = []
+            applyProjectScope()
+        } else {
+            parameters.volumeIds = nil
+            parametersVersion += 1
         }
-        parametersVersion += 1
     }
 
     func clearTagFilter() {
@@ -599,10 +602,19 @@ final class MacSearchViewModel {
             volumeIds = manualVolumes
             documentIds = fvm.projectEngagedDocumentKeys
         case .focus:
-            // A Focus scope whose subjects resolve to no volumes matches nothing (empty
-            // `documentIds`, per the History contract), not the whole corpus.
-            volumeIds = fvm.projectFocusVolumeIds.isEmpty ? nil : fvm.projectFocusVolumeIds
-            documentIds = fvm.projectFocusVolumeIds.isEmpty ? [] : nil
+            // A manual volume selection (or applied custom scope) overrides the subject-
+            // derived focus volumes; with neither, Focus matches nothing (empty
+            // `documentIds`, per the History contract) rather than the whole corpus.
+            if let manual = manualVolumes {
+                volumeIds = manual
+                documentIds = nil
+            } else if fvm.projectFocusVolumeIds.isEmpty {
+                volumeIds = nil
+                documentIds = []
+            } else {
+                volumeIds = fvm.projectFocusVolumeIds
+                documentIds = nil
+            }
         }
         let exclude = (fvm.projectScope == .focus && fvm.projectOnlyNew)
             ? fvm.projectEngagedDocumentKeys : nil
