@@ -162,6 +162,42 @@ struct SearchViewTests {
         #expect(range.latest   == "1972-12-31")
     }
 
+    // MARK: - ProjectScopeTest (#377 Phase 2a)
+
+    @Test("Project History scope emits documentIds, and applyParameters clears it")
+    @MainActor
+    func projectHistoryScopeAndReset() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchPS-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL = dir.appendingPathComponent("ps.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+            concurrencyLimit: 1
+        )
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        let vm = SearchViewModel(searchService: service)
+
+        // Off by default → no documentIds gate.
+        #expect(vm.searchParameters.documentIds == nil)
+
+        // History scope emits the engaged set as documentIds.
+        vm.projectEngagedDocumentKeys = ["v1/d1", "v1/d2"]
+        vm.projectScope = .history
+        #expect(vm.searchParameters.documentIds == ["v1/d1", "v1/d2"])
+
+        // A pending-search / saved-search snapshot resets the live scope, so the gate
+        // does not silently carry into an unrelated hand-off search.
+        vm.applyParameters(SearchParameters(keywords: "detente"))
+        #expect(vm.projectScope == .off)
+        #expect(vm.searchParameters.documentIds == nil)
+    }
+
     // MARK: - SubjectTagFilterTest
 
     @Test("Subject tag ids are inert: live parameters always emit an empty list (Session 09)")

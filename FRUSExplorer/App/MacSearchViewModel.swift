@@ -539,10 +539,32 @@ final class MacSearchViewModel {
         queryText = kw
         submittedQuery = kw
         parameters = params
+        // Project History scope is a live, manual choice — never inherited from a restored
+        // snapshot or a pending-search hand-off (#377 Phase 2a). Drop any `documentIds` the
+        // snapshot carried and clear the filter VM's selection so the picker matches, and so
+        // a later unrelated filter edit (which re-runs `applyAdvancedFilters`) can't silently
+        // reintroduce the gate.
+        parameters.documentIds = nil
+        filterVM?.projectScope = .off
         scopeDocuments = params.includeDocumentText
         scopeNotes     = params.includeNotes
         scopeSummaries = params.includeSummaries
         parametersVersion += 1
+    }
+
+    /// Re-derives `parameters.documentIds` from the filter VM's current project scope +
+    /// engaged-key set and re-runs the search **only if the effective gate changed**
+    /// (#377 Phase 2a). Called by `SearchSheet` after it (re)loads the engaged set — on
+    /// opening Advanced filters and on an active-project change — so the executed query
+    /// always reflects the live project scope without a spurious re-search when nothing
+    /// actually changed (e.g. merely opening the panel with no scope active).
+    func applyProjectScope() {
+        guard let fvm = filterVM else { return }
+        let newIds = fvm.projectScope == .history ? fvm.projectEngagedDocumentKeys : nil
+        if newIds != parameters.documentIds {
+            parameters.documentIds = newIds
+            parametersVersion += 1
+        }
     }
 
     // MARK: - Search

@@ -654,6 +654,13 @@ final class SearchViewModel {
         includeNotes          = params.includeNotes
         includeFrontMatter    = params.includeFrontMatter
         documentTypeFilter    = params.documentTypeFilter
+        // Project History scope is a live, manual choice — never inherited from a restored
+        // snapshot or a pending-search hand-off (Analytics drill-in, "Find all mentions",
+        // indexing banners). Without this reset a History scope selected earlier in the
+        // session would silently keep gating unrelated hand-off searches (#377 Phase 2a).
+        // `params.documentIds` is deliberately dropped: `searchParameters` re-derives
+        // `documentIds` from `projectScope`, so clearing the scope fully clears the gate.
+        projectScope          = .off
     }
 
     // MARK: - Scope Reconstruction
