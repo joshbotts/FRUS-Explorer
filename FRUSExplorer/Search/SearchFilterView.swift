@@ -89,6 +89,11 @@ struct SearchFilterView: View {
     /// This surface's persisted snippet-length override (#189-C); `0` follows the global default.
     @AppStorage(SearchDefaults.snippetLineCountMainOverrideKey) private var mainSnippetOverride = 0
 
+    /// Sort direction for the *unselected* portion of the volume/subseries pickers (#377).
+    /// Volume/subseries ids are year-prefixed, so ascending = oldest first. Selected items
+    /// always float to the top (in chronological order) regardless.
+    @State private var volumeSortAscending = true
+
     var body: some View {
         #if os(macOS)
         macBody
@@ -733,6 +738,41 @@ struct SearchFilterView: View {
             .sorted { $0.subseries < $1.subseries }
     }
 
+    /// Subseries ordered for the picker (#377): selected first (chronological), then
+    /// unselected in the current sort direction — so the volumes you've chosen are always at
+    /// the top, easy to review or remove.
+    private var orderedSubseries: [(subseries: String, volumes: [VolumeManifestEntry])] {
+        let groups = subseriesGroups   // already chronological
+        let selected = groups.filter { vm.selectedSubseriesIds.contains($0.subseries) }
+        let unselected = groups.filter { !vm.selectedSubseriesIds.contains($0.subseries) }
+        return selected + (volumeSortAscending ? unselected : unselected.reversed())
+    }
+
+    /// Volumes ordered for the picker (#377), flattened across subseries: selected first
+    /// (chronological), then unselected in the current sort direction. Floating the selected
+    /// volumes to the top makes a large scope (e.g. a just-applied custom scope) reviewable
+    /// without scrolling the whole indexed corpus.
+    private var orderedVolumes: [VolumeManifestEntry] {
+        let all = vm.availableVolumes.sorted { $0.volumeId < $1.volumeId }
+        let selected = all.filter { vm.selectedVolumeIds.contains($0.volumeId) }
+        let unselected = all.filter { !vm.selectedVolumeIds.contains($0.volumeId) }
+        return selected + (volumeSortAscending ? unselected : unselected.reversed())
+    }
+
+    /// A compact control flipping the picker sort direction (oldest ⇄ newest first).
+    private var volumeSortControl: some View {
+        Picker(
+            String(localized: "search.scope.sort.label", defaultValue: "Order"),
+            selection: $volumeSortAscending
+        ) {
+            Text(String(localized: "search.scope.sort.oldest", defaultValue: "Oldest first")).tag(true)
+            Text(String(localized: "search.scope.sort.newest", defaultValue: "Newest first")).tag(false)
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel(String(localized: "search.scope.sort.a11y",
+                                   defaultValue: "Sort order for unselected volumes"))
+    }
+
     /// "<n> selected" / "Any" trailing summary for a picker row.
     private func selectionSummary(_ count: Int) -> String {
         count == 0
@@ -780,10 +820,12 @@ struct SearchFilterView: View {
         }
     }
 
-    /// Pushed multi-select list of subseries (each toggles a whole subseries).
+    /// Pushed multi-select list of subseries (each toggles a whole subseries). Selected
+    /// subseries float to the top; the rest follow the sort control (#377).
     private var subseriesSelectionList: some View {
         List {
-            ForEach(subseriesGroups, id: \.subseries) { group in
+            Section { volumeSortControl }
+            ForEach(orderedSubseries, id: \.subseries) { group in
                 Button {
                     toggleSubseries(group.subseries)
                 } label: {
@@ -815,34 +857,39 @@ struct SearchFilterView: View {
         .navigationTitle(String(localized: "search.section.subseries", defaultValue: "Subseries"))
     }
 
-    /// Pushed multi-select list of individual volumes, grouped under subseries headers.
+    /// Pushed multi-select list of individual volumes (#377): selected volumes float to the
+    /// top, the rest follow the sort control. Flattened across subseries (each row captions
+    /// its subseries) so the chosen volumes are always reviewable without hunting through the
+    /// whole indexed corpus.
     private var volumeSelectionList: some View {
         List {
-            ForEach(subseriesGroups, id: \.subseries) { group in
-                Section(group.subseries) {
-                    ForEach(group.volumes) { volume in
-                        Button {
-                            toggleVolume(volume.volumeId)
-                        } label: {
-                            HStack {
-                                Text(volume.title)
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(2)
-                                Spacer()
-                                if vm.selectedVolumeIds.contains(volume.volumeId) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(Color.accentColor)
-                                }
-                            }
-                            .contentShape(Rectangle())
+            Section { volumeSortControl }
+            ForEach(orderedVolumes) { volume in
+                Button {
+                    toggleVolume(volume.volumeId)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(volume.title)
+                                .foregroundStyle(.primary)
+                                .lineLimit(2)
+                            Text(volume.subseries)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(volume.title)
-                        .accessibilityAddTraits(
-                            vm.selectedVolumeIds.contains(volume.volumeId) ? .isSelected : []
-                        )
+                        Spacer()
+                        if vm.selectedVolumeIds.contains(volume.volumeId) {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(Color.accentColor)
+                        }
                     }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(volume.title)
+                .accessibilityAddTraits(
+                    vm.selectedVolumeIds.contains(volume.volumeId) ? .isSelected : []
+                )
             }
         }
         .navigationTitle(String(localized: "search.section.volumes", defaultValue: "Volumes"))
@@ -855,8 +902,10 @@ struct SearchFilterView: View {
     /// inline within the fixed-frame sheet instead of pushing.
     private var volumeScopeSectionMac: some View {
         Section {
+            volumeSortControl
+
             DisclosureGroup {
-                ForEach(subseriesGroups, id: \.subseries) { group in
+                ForEach(orderedSubseries, id: \.subseries) { group in
                     Toggle(isOn: subseriesBinding(group.subseries)) {
                         Text(verbatim: "\(group.subseries) (\(group.volumes.count))")
                     }
@@ -871,10 +920,13 @@ struct SearchFilterView: View {
             }
 
             DisclosureGroup {
-                ForEach(subseriesGroups, id: \.subseries) { group in
-                    ForEach(group.volumes) { volume in
-                        Toggle(isOn: volumeBinding(volume.volumeId)) {
+                ForEach(orderedVolumes) { volume in
+                    Toggle(isOn: volumeBinding(volume.volumeId)) {
+                        VStack(alignment: .leading, spacing: 1) {
                             Text(volume.title)
+                            Text(volume.subseries)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
