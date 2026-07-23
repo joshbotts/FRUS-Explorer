@@ -482,7 +482,7 @@ struct ProjectHomeView: View {
             }
             HStack {
                 Spacer()
-                Button(String(localized: "project.home.leads.tune.reset", defaultValue: "Reset to default")) {
+                Button(String(localized: "project.home.leads.tune.reset", defaultValue: "Reset to global default")) {
                     resetWeights(project)
                 }
                 .buttonStyle(.borderless)
@@ -529,9 +529,15 @@ struct ProjectHomeView: View {
     }
 
     /// Persists the drafted weights to the project (its per-project override) and re-ranks the leads.
+    /// No-ops when the released value matches what's stored (a tap, or a drag back to the start), and
+    /// uses the *debounced* recompute so tuning several axes in a row coalesces into one re-rank
+    /// (matching the `seedSignature` path — an immediate recompute per release would cancel-and-restart
+    /// the up-to-`seedCap` ranking pass on every axis).
     private func commitWeights(_ project: Project) {
-        project.leadAxisWeights = draftWeights.rawValue
-        scheduleRecompute(immediate: true)
+        let raw = draftWeights.rawValue
+        guard raw != project.leadAxisWeights else { return }
+        project.leadAxisWeights = raw
+        scheduleRecompute()
     }
 
     /// Clears the per-project override (falling back to the global preference / default), re-seeds the

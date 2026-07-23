@@ -114,7 +114,10 @@ struct ProjectLeadsServiceTests {
         let resolved = ProjectLeadsService.effectiveWeights(for: project)
         #expect(resolved[.crossReference] == 0.2)
         #expect(resolved[.dateProximity] == 0.9)
-        // Axes the researcher didn't touch keep their default weight.
+        // The panel serializes every axis (`rawValue` iterates allCases), so the axes the researcher
+        // left alone are persisted at — and resolve back to — their default value.
+        // (The partial-string forward-compat merge, where an axis is *absent* from the raw string, is
+        // covered separately by `effectiveWeightsResolution`.)
         #expect(resolved[.archivalProvenance] == 1.0)
         #expect(resolved[.sharedPersons] == 0.7)
     }
