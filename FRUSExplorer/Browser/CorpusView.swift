@@ -79,6 +79,9 @@ struct CorpusView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
+        // #377 Phase 5: on regular-width iPad the top-inset "Working on:" banner is suppressed (it
+        // collides with the floating tab bar, #238); surface the research question here instead.
+        .workingOnSubtitle()
     }
 }
 

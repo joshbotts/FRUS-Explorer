@@ -136,6 +136,9 @@ struct SearchView: View {
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
+                // #377 Phase 5: on regular-width iPad the top-inset "Working on:" banner is suppressed
+                // (floating tab bar overlay, #238); surface the research question as a subtitle instead.
+                .workingOnSubtitle()
                 // System search bar — integrates with the navigation bar on iOS
                 // and the toolbar area on macOS (inspector context).
                 // `.navigationBarDrawer(.always)` pins the search field in its own

@@ -119,7 +119,9 @@ struct ProjectPickerMenu: View {
 /// Version history:
 ///   1.0 — #377 Phase 5: initial implementation
 ///   1.1 — #377 Phase 5 fix: suppressed on regular-width iPad, where a pinned top inset is
-///          occluded by the iPadOS floating top tab bar (same as the browser breadcrumb, #238).
+///          occluded by the iPadOS floating top tab bar (same as the browser breadcrumb, #238);
+///          the research question is surfaced there as a navigation subtitle instead — see
+///          `WorkingOnSubtitleModifier` / `View.workingOnSubtitle()`.
 struct WorkingOnBanner: View {
 
     @Environment(AppState.self) private var appState
@@ -176,6 +178,44 @@ struct WorkingOnBanner: View {
         else { return nil }
         return question
     }
+}
+
+// MARK: - WorkingOnSubtitle (regular-width iPad)
+
+/// Surfaces the active project's research question as a **navigation subtitle** on regular-width iPad
+/// — where the pinned top-inset `WorkingOnBanner` is suppressed because the `.sidebarAdaptable`
+/// floating top tab bar overlays it (#238). A subtitle rides in the title area, which renders cleanly
+/// under the floating tab bar, so the "Working on:" context is preserved on iPad without the overlay.
+/// No-op on compact iOS and macOS (the banner renders there) and when no project/question is active.
+/// Apply it next to the `.navigationTitle` of each surface that hosts the banner (Browse, Search).
+private struct WorkingOnSubtitleModifier: ViewModifier {
+
+    @Environment(AppState.self) private var appState
+    @Query(sort: \Project.name) private var projects: [Project]
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        if UIDevice.current.userInterfaceIdiom == .pad,
+           sizeClass == .regular,
+           let question = WorkingOnBanner.resolvedQuestion(activeProjectId: appState.activeProjectId,
+                                                           projects: projects) {
+            content.navigationSubtitle(question)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}
+
+extension View {
+    /// On regular-width iPad, show the active project's research question as a navigation subtitle in
+    /// place of the (suppressed) top-inset "Working on:" banner. See `WorkingOnSubtitleModifier`.
+    func workingOnSubtitle() -> some View { modifier(WorkingOnSubtitleModifier()) }
 }
 
 // MARK: - SecondProjectNudge (pure decisions)
