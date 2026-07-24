@@ -59,7 +59,8 @@ enum AnalyticsNormalizationMode: String, CaseIterable {
 ///   1.0 — Session 99: initial implementation
 ///   1.1 — Session 121: add `byDecade`, `byMonth`, and `byDay` granularity options
 ///   1.2 — Session 163: add `byVolume` axis (per-individual-volume breakdown)
-enum AnalyticsChartAxis: String, CaseIterable {
+///   1.3 — D1 Phase 3: `Codable` so it can persist inside a saved analytics query
+enum AnalyticsChartAxis: String, CaseIterable, Codable {
     case byDecade, byYear, byMonth, byDay, bySubseries, byVolume
 
     /// Short label for the toolbar picker.
@@ -85,6 +86,53 @@ enum AnalyticsChartAxis: String, CaseIterable {
     /// be tapped to open Search scoped to that subseries or volume.
     var isCategorical: Bool {
         self == .bySubseries || self == .byVolume
+    }
+}
+
+// MARK: - SavedAnalyticsQuery
+
+/// A persisted Corpus Analytics query (D1 Phase 3): the term(s), axis, year range, and volume scope,
+/// so a user can save a comparison and jump back to it, and recent queries are remembered per window.
+///
+/// Persisted as JSON under a plain `UserDefaults` key (never a `RawRepresentable` `@AppStorage`, which
+/// crashes when `rawValue` re-encodes `self` — see the codable-rawrepresentable-recursion note).
+/// Normalization mode is intentionally NOT captured (it's forced to % while comparing anyway).
+///
+/// Version history:
+///   1.0 — D1 Phase 3: initial implementation
+struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
+    /// Stable identity for `ForEach` / list membership (not part of query equality).
+    let id: UUID
+    /// The compared terms, in chip order.
+    var terms: [String]
+    /// The active chart axis.
+    var axis: AnalyticsChartAxis
+    /// Year-range bounds.
+    var yearStart: Int
+    var yearEnd: Int
+    /// Volume scope (`nil` = whole corpus) and its display label.
+    var scopeVolumeIds: [String]?
+    var scopeLabel: String?
+    /// When the query was last saved / viewed (drives recents ordering; not part of equality).
+    var savedAt: Date
+
+    /// Query equality ignoring `id`/`savedAt` — used for de-duplication and the "is the current
+    /// query already saved?" check. Scope identity is the volume-id set; `scopeLabel` is derived.
+    func matchesQuery(_ other: SavedAnalyticsQuery) -> Bool {
+        terms == other.terms
+            && axis == other.axis
+            && yearStart == other.yearStart
+            && yearEnd == other.yearEnd
+            && scopeVolumeIds == other.scopeVolumeIds
+    }
+
+    /// A one-line menu label: the terms joined, then the axis (and scope when narrowed).
+    var menuLabel: String {
+        let joined = terms.joined(separator: ", ")
+        if let scope = scopeLabel, !scope.isEmpty {
+            return "\(joined) · \(axis.pickerLabel) · \(scope)"
+        }
+        return "\(joined) · \(axis.pickerLabel)"
     }
 }
 
@@ -179,6 +227,11 @@ struct AnalyticsView: View {
     @State private var volumeDataByTerm: [String: [VolumeFrequency]] = [:]
     /// Monotonic token that discards a stale `reloadData` run when the term set changes mid-fetch (D1).
     @State private var fetchToken: Int = 0
+
+    /// Saved and recent analytics queries (D1 Phase 3). Held per window in `@State`, loaded from and
+    /// written back to `UserDefaults` as JSON (see `loadQueries()` / `persistQueries()`).
+    @State private var savedQueries: [SavedAnalyticsQuery] = []
+    @State private var recentQueries: [SavedAnalyticsQuery] = []
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var viewMode: AnalyticsViewMode = .chart
@@ -436,6 +489,88 @@ struct AnalyticsView: View {
         reloadData()
     }
 
+    // MARK: - Saved & recent queries (D1 Phase 3)
+
+    private static let maxRecentQueries = 10
+    private static let savedQueriesKey = "frus.analytics.savedQueries"
+    private static let recentQueriesKey = "frus.analytics.recentQueries"
+
+    /// A snapshot of the current committed query (terms · axis · range · scope).
+    private func currentQuery() -> SavedAnalyticsQuery {
+        SavedAnalyticsQuery(id: UUID(), terms: committedTerms, axis: chartAxis,
+                            yearStart: yearRangeStart, yearEnd: yearRangeEnd,
+                            scopeVolumeIds: scopeVolumeIds, scopeLabel: scopeLabel, savedAt: Date())
+    }
+
+    /// `true` when the current query is already in the saved list (drives the star's filled state).
+    private var isCurrentQuerySaved: Bool {
+        guard !committedTerms.isEmpty else { return false }
+        let q = currentQuery()
+        return savedQueries.contains { $0.matchesQuery(q) }
+    }
+
+    /// Stars / un-stars the current query.
+    private func toggleSaveCurrentQuery() {
+        guard !committedTerms.isEmpty else { return }
+        let q = currentQuery()
+        if let idx = savedQueries.firstIndex(where: { $0.matchesQuery(q) }) {
+            savedQueries.remove(at: idx)
+        } else {
+            savedQueries.insert(q, at: 0)
+        }
+        persistQueries()
+    }
+
+    /// Records the current committed query as the most-recent (de-duplicated, capped). Called from
+    /// `reloadData` on each committed search.
+    private func recordRecentQuery() {
+        guard !committedTerms.isEmpty else { return }
+        let q = currentQuery()
+        recentQueries.removeAll { $0.matchesQuery(q) }
+        recentQueries.insert(q, at: 0)
+        if recentQueries.count > Self.maxRecentQueries {
+            recentQueries = Array(recentQueries.prefix(Self.maxRecentQueries))
+        }
+        persistQueries()
+    }
+
+    /// Restores a saved/recent query — terms, axis, year range, and scope together — then re-runs.
+    private func restoreQuery(_ q: SavedAnalyticsQuery) {
+        committedTerms = q.terms
+        chartAxis = q.axis
+        yearRangeStart = q.yearStart
+        yearRangeEnd = q.yearEnd
+        scopeVolumeIds = (q.scopeVolumeIds?.isEmpty == true) ? nil : q.scopeVolumeIds
+        scopeLabel = scopeVolumeIds == nil ? nil : q.scopeLabel
+        termInput = ""
+        reloadData()
+    }
+
+    /// Loads saved + recent queries from `UserDefaults` (JSON). Called once on appearance.
+    private func loadQueries() {
+        let decoder = JSONDecoder()
+        if let data = UserDefaults.standard.data(forKey: Self.savedQueriesKey),
+           let queries = try? decoder.decode([SavedAnalyticsQuery].self, from: data) {
+            savedQueries = queries
+        }
+        if let data = UserDefaults.standard.data(forKey: Self.recentQueriesKey),
+           let queries = try? decoder.decode([SavedAnalyticsQuery].self, from: data) {
+            recentQueries = queries
+        }
+    }
+
+    /// Writes saved + recent queries back to `UserDefaults` as JSON (plain data, NOT a
+    /// `RawRepresentable` `@AppStorage`).
+    private func persistQueries() {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(savedQueries) {
+            UserDefaults.standard.set(data, forKey: Self.savedQueriesKey)
+        }
+        if let data = try? encoder.encode(recentQueries) {
+            UserDefaults.standard.set(data, forKey: Self.recentQueriesKey)
+        }
+    }
+
     /// `true` on a compact-width layout (iPhone portrait, and most iPhones in
     /// landscape) — used to tighten the year-range bar where horizontal space is scarce.
     /// Always `false` on macOS / regular-width iPad.
@@ -509,6 +644,7 @@ struct AnalyticsView: View {
         // instance is created each time the sheet opens).
         .task {
             seriesCount = defaultSeriesCount
+            loadQueries()   // D1 Phase 3: saved + recent queries
             seedDefaultYearRange()
             applyAnalyticsParameters(initialParameters)
             #if os(macOS)
@@ -2079,6 +2215,47 @@ struct AnalyticsView: View {
             }
         }
 
+        // D1 Phase 3: star the current query, and a menu of saved + recent queries.
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                toggleSaveCurrentQuery()
+            } label: {
+                Label(isCurrentQuerySaved
+                      ? String(localized: "analytics.saved.starred", defaultValue: "Saved")
+                      : String(localized: "analytics.saved.save", defaultValue: "Save query"),
+                      systemImage: isCurrentQuerySaved ? "star.fill" : "star")
+            }
+            .disabled(committedTerms.isEmpty)
+            .help(String(localized: "analytics.saved.star.help",
+                         defaultValue: "Save this query (terms, axis, year range, and scope) to revisit later"))
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                if savedQueries.isEmpty && recentQueries.isEmpty {
+                    Text(String(localized: "analytics.saved.empty", defaultValue: "No saved or recent queries"))
+                } else {
+                    if !savedQueries.isEmpty {
+                        Section(String(localized: "analytics.saved.section.saved", defaultValue: "Saved")) {
+                            ForEach(savedQueries) { q in
+                                Button(q.menuLabel) { restoreQuery(q) }
+                            }
+                        }
+                    }
+                    if !recentQueries.isEmpty {
+                        Section(String(localized: "analytics.saved.section.recent", defaultValue: "Recent")) {
+                            ForEach(recentQueries) { q in
+                                Button(q.menuLabel) { restoreQuery(q) }
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Label(String(localized: "analytics.saved.menu", defaultValue: "Saved queries"),
+                      systemImage: "bookmark")
+            }
+            .help(String(localized: "analytics.saved.menu.help", defaultValue: "Jump to a saved or recent query"))
+        }
+
         // Info button — explains metric semantics, query syntax, and stemming. Win 7: now the
         // shared FeatureInfoButton (copy preserved verbatim via `analytics.info.*` keys), matching
         // Person and Cross-Reference Analytics.
@@ -2164,6 +2341,7 @@ struct AnalyticsView: View {
             isLoading = false
             return
         }
+        recordRecentQuery()   // D1 Phase 3: remember this committed query
         isLoading = true
         errorMessage = nil
         yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
