@@ -201,6 +201,12 @@ struct ProjectEditorView: View {
                 researchQuestion: trimmedQ.isEmpty ? nil : trimmedQ
             )
             modelContext.insert(project)
+            // #377 Phase 5 follow-up: make the newly created project the active one — creating a
+            // project is an act of switching to it (most visible from the macOS Research ▸ New Project
+            // command, which sits beside Switch Project). Only the create branch activates; editing an
+            // existing project leaves the active project unchanged, and onboarding's default project
+            // is created on a separate path.
+            appState.activeProjectId = project.id
             // #377 Phase 5: on reaching a 2nd project (and only if the nudge hasn't already been
             // shown), signal the one-time "open Project Home?" nudge, carrying the new project's id.
             // The local-context fetch reflects the just-inserted, pre-autosave project. `shouldNudge`
