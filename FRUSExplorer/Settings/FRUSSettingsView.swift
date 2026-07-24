@@ -143,6 +143,22 @@ struct FRUSSettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 680, minHeight: 520)
+        // #377 Phase 5: land on a specific pane when a menu command asks (e.g. Research ▸ Switch
+        // Project ▸ Manage Projects…). `.task` covers a freshly-opened window; `.onChange` covers a
+        // Settings window already open behind another. Mirrors MacCollectionManagerView's
+        // pendingCollectionSelection idiom. Clearing the field stops a later plain ⌘, re-jumping.
+        .task { consumePendingSettingsPane() }
+        .onChange(of: appState.pendingSettingsPaneRaw) { _, raw in
+            if raw != nil { consumePendingSettingsPane() }
+        }
+    }
+
+    /// Consumes `AppState.pendingSettingsPaneRaw`, selecting that pane once.
+    private func consumePendingSettingsPane() {
+        guard let raw = appState.pendingSettingsPaneRaw,
+              let pane = SettingsPane(rawValue: raw) else { return }
+        selection = pane
+        appState.pendingSettingsPaneRaw = nil
     }
 }
 

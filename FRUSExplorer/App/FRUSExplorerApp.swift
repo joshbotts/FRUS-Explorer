@@ -221,6 +221,9 @@ struct FRUSExplorerApp: App {
     #endif
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
+    /// Opens the Settings scene (macOS 14+). Threaded into the Research menu so "Manage Projects…"
+    /// can land on the Projects pane; the app has no prior `openSettings` call site. (#377 Phase 5)
+    @Environment(\.openSettings) private var openSettings
     #endif
 
     /// Non-nil to present an alert for a failed open-with `.fruscollection` import.
@@ -835,6 +838,24 @@ struct FRUSExplorerApp: App {
         }
         .defaultSize(width: 720, height: 720)
 
+        // MARK: - New Project Window (#377 Phase 5)
+        // Hosts the create editor for the Research ▸ New Project… command — a menu command can't
+        // present a sheet, so it opens this small singleton window. `showsInlineHeader: false` drops
+        // the editor's internal title (the window titlebar already reads "New Project"). Injects
+        // AppState (the second-project nudge signal) + the container (the editor's modelContext).
+        // NOTE: the once-ever second-project nudge does NOT fire from here — this transient window
+        // dismisses on Save before it could present, and it isn't a `.secondProjectNudge()` host (the
+        // hosts are the iOS tab shell and the macOS Settings pane). This matches the Project Home
+        // create path; the nudge stays best-effort/host-dependent by design rather than adding a
+        // multi-instance main-window host, which would reintroduce the multi-fire the #456 review guarded.
+        Window(String(localized: "project.new.window.title", defaultValue: "New Project"),
+               id: "frus.newProject") {
+            ProjectEditorView(showsInlineHeader: false)
+                .environment(appState)
+                .modelContainer(modelContainer)
+        }
+        .windowResizability(.contentSize)
+
         // MARK: - Collections Window
         Window("Collections", id: "frus.collections") {
             MacCollectionManagerView()
@@ -1160,7 +1181,7 @@ struct FRUSExplorerApp: App {
             // openWindow are explicit init params (mirroring the surrounding CommandGroup
             // blocks) rather than relying on @Environment propagation into .commands.
             CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
-                ResearchMenuContent(appState: appState, openWindow: openWindow)
+                ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
                     .modelContainer(modelContainer)
             }
         }
@@ -2581,6 +2602,9 @@ struct ResearchMenuContent: View {
     let appState: AppState
     /// The scene's window opener.
     let openWindow: OpenWindowAction
+    /// Opens the Settings scene for the "Manage Projects…" item (macOS 14+). Threaded explicitly
+    /// like `openWindow` rather than via `@Environment`, which doesn't fully propagate into `.commands`.
+    let openSettings: OpenSettingsAction
 
     var body: some View {
         // #377 Phase 1: Project Home for the ACTIVE project (⌘P — printing isn't implemented, so it's
@@ -2593,6 +2617,19 @@ struct ResearchMenuContent: View {
         }
         .keyboardShortcut("p", modifiers: .command)
         .disabled(appState.activeProjectId == nil)
+
+        // #377 Phase 5: create a project from the menu bar (works from any window). Opens the small
+        // New Project window (a menu command can't present a sheet).
+        Button(String(localized: "menu.research.newProject", defaultValue: "New Project…")) {
+            openWindow(id: "frus.newProject")
+            bringMacWindowToFront(id: "frus.newProject")
+        }
+
+        // #377 Phase 5: switch the app-wide active project from anywhere — a live, checkmarked list.
+        // Pure re-scope (no window opened); "Manage Projects…" opens the Settings Projects pane.
+        Menu(String(localized: "menu.research.switchProject", defaultValue: "Switch Project")) {
+            ProjectSwitcherMenuContent(appState: appState, openSettings: openSettings)
+        }
 
         Divider()
 
@@ -2614,6 +2651,60 @@ struct ResearchMenuContent: View {
 
         Menu(String(localized: "menu.research.history", defaultValue: "History")) {
             HistoryMenuContent(appState: appState, openWindow: openWindow)
+        }
+    }
+}
+
+/// The live, checkmarked project list for the Research ▸ Switch Project submenu (#377 Phase 5).
+///
+/// Picking an entry is a PURE re-scope — it sets `appState.activeProjectId` and opens no window
+/// (Working-on chrome, search scope, and leads elsewhere follow the active project). The `@Query`
+/// resolves via the `.modelContainer(modelContainer)` attached to `ResearchMenuContent` at the
+/// CommandMenu site, exactly as the sibling History submenu's `@Query` does, so the list stays live
+/// (re-renders on create/rename/delete) with no `AppState` project cache. The checkmark idiom mirrors
+/// `ProjectPickerMenu`; "Manage Projects…" hands off to the Settings Projects pane.
+struct ProjectSwitcherMenuContent: View {
+
+    /// Shared app state — the active-project lens this submenu reads and writes.
+    let appState: AppState
+    /// Opens the Settings scene for "Manage Projects…".
+    let openSettings: OpenSettingsAction
+
+    @Query(sort: \Project.name) private var projects: [Project]
+
+    var body: some View {
+        Button {
+            appState.activeProjectId = nil
+        } label: {
+            if appState.activeProjectId == nil {
+                Label(String(localized: "menu.research.switchProject.global", defaultValue: "Global Context"),
+                      systemImage: "checkmark")
+            } else {
+                Label(String(localized: "menu.research.switchProject.global", defaultValue: "Global Context"),
+                      systemImage: "globe")
+            }
+        }
+
+        if !projects.isEmpty {
+            Divider()
+            ForEach(projects) { project in
+                Button {
+                    appState.activeProjectId = project.id
+                } label: {
+                    if appState.activeProjectId == project.id {
+                        Label(project.name, systemImage: "checkmark")
+                    } else {
+                        Text(project.name)
+                    }
+                }
+            }
+        }
+
+        Divider()
+        Button(String(localized: "menu.research.switchProject.manage", defaultValue: "Manage Projects…")) {
+            // Set the pending pane BEFORE opening Settings so FRUSSettingsView lands on Projects.
+            appState.pendingSettingsPaneRaw = SettingsPane.projects.rawValue
+            openSettings()
         }
     }
 }

@@ -886,6 +886,13 @@ final class AppState {
     /// Source Note segment).
     var pendingNARALookup: NARALookupRequest? = nil
 
+    /// `SettingsPane` rawValue to auto-select when the macOS Settings window opens (or is already
+    /// open). Set by the Research ▸ Switch Project ▸ "Manage Projects…" command immediately BEFORE
+    /// `openSettings()`, then consumed and cleared by `FRUSSettingsView`. Stored as a raw `String`
+    /// (not the macOS-only `SettingsPane` type) so `AppState` stays platform-agnostic, mirroring
+    /// `pendingVolumeGraph` / `pendingNARALookup`. macOS-only in practice. (#377 Phase 5)
+    var pendingSettingsPaneRaw: String? = nil
+
     // (#363) The research-note composer is now a value-based `WindowGroup(for: NoteComposerRequest.self)`
     // opened via `openWindow(value:)`, so the old `pendingNoteComposer` hand-off field was removed.
 
