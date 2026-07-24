@@ -160,16 +160,25 @@ struct AnalyticsView: View {
     // MARK: - State
 
     @State private var termInput: String = ""
-    @State private var committedTerm: String = ""
-    @State private var yearData: [YearFrequency] = []
-    /// Per-`(year, volume)` breakdown driving the source color-coding of the By-Year
-    /// and By-Decade charts. Fetched alongside `yearData` so the two stay consistent.
+    /// The committed comparison terms, in chip order — the source of both iteration order and the
+    /// per-term color index (D1). Phase 1 keeps this at 0 or 1 element (a Search press replaces it);
+    /// a later phase lets the user add up to five. The single-term `committedTerm` shim below feeds
+    /// the existing call sites and chart headings unchanged.
+    @State private var committedTerms: [String] = []
+    /// Per-term By-Year data, keyed by the committed term (D1). Read through the `yearData` shim in
+    /// single-term mode; the compare charts iterate all terms in a later phase.
+    @State private var yearDataByTerm: [String: [YearFrequency]] = [:]
+    /// Per-`(year, volume)` breakdown driving the source color-coding of the By-Year and By-Decade
+    /// charts. Stays SINGLE (not per-term): source coloring is dropped while comparing, so this is
+    /// fetched only for a single committed term.
     @State private var yearVolumeData: [YearVolumeFrequency] = []
-    @State private var decadeData: [DecadeFrequency] = []
-    @State private var monthData: [MonthFrequency] = []
-    @State private var dayData: [DayFrequency] = []
-    @State private var subseriesData: [SubseriesFrequency] = []
-    @State private var volumeData: [VolumeFrequency] = []
+    @State private var decadeDataByTerm: [String: [DecadeFrequency]] = [:]
+    @State private var monthDataByTerm: [String: [MonthFrequency]] = [:]
+    @State private var dayDataByTerm: [String: [DayFrequency]] = [:]
+    @State private var subseriesDataByTerm: [String: [SubseriesFrequency]] = [:]
+    @State private var volumeDataByTerm: [String: [VolumeFrequency]] = [:]
+    /// Monotonic token that discards a stale `reloadData` run when the term set changes mid-fetch (D1).
+    @State private var fetchToken: Int = 0
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var viewMode: AnalyticsViewMode = .chart
@@ -227,6 +236,21 @@ struct AnalyticsView: View {
     /// once on appearance via `seedFromInitialParameters()`. `nil` for the normal
     /// toolbar-button / menu-command presentation paths.
     private let initialParameters: AnalyticsParameters?
+
+    // MARK: - Single-term shims (D1)
+
+    /// The primary committed term (first chip) or `""` — the single-term value behind the existing
+    /// `.isEmpty` gates and chart headings, so they keep working unchanged while storage moved to
+    /// `committedTerms`. Empty exactly when nothing is committed.
+    private var committedTerm: String { committedTerms.first ?? "" }
+    /// The primary term's per-axis data — the single-term view the existing chart code reads. The
+    /// compare charts (a later phase) read the `*DataByTerm` dictionaries directly.
+    private var yearData: [YearFrequency] { yearDataByTerm[committedTerm] ?? [] }
+    private var decadeData: [DecadeFrequency] { decadeDataByTerm[committedTerm] ?? [] }
+    private var monthData: [MonthFrequency] { monthDataByTerm[committedTerm] ?? [] }
+    private var dayData: [DayFrequency] { dayDataByTerm[committedTerm] ?? [] }
+    private var subseriesData: [SubseriesFrequency] { subseriesDataByTerm[committedTerm] ?? [] }
+    private var volumeData: [VolumeFrequency] { volumeDataByTerm[committedTerm] ?? [] }
 
     // MARK: - Initialisation
 
@@ -618,8 +642,8 @@ struct AnalyticsView: View {
             scopeVolumeIds: $scopeVolumeIds,
             scopeLabel: $scopeLabel,
             onChange: {
-                guard !committedTerm.isEmpty else { return }
-                runSearch(term: committedTerm)
+                guard !committedTerms.isEmpty else { return }
+                reloadData()
             },
             presentation: .chip
         )
@@ -1826,58 +1850,98 @@ struct AnalyticsView: View {
 
     // MARK: - Search Action
 
-    /// Runs the analytics query. Defaults to the live text field (`termInput`) for the
-    /// user-typed Search / Return path; callers re-running for a state change (e.g. a scope
-    /// change) pass the already-committed term explicitly so they never depend on the field's
-    /// current contents.
+    /// Commits a search term and loads its data. Defaults to the live text field (`termInput`) for
+    /// the user-typed Search / Return path; callers re-running for a state change (e.g. a scope
+    /// change) call `reloadData()` directly so they never depend on the field's current contents.
+    ///
+    /// D1 Phase 1: a Search press commits exactly one term (a later phase lets the user add up to
+    /// five). The fan-out over `committedTerms` in `reloadData()` already handles a multi-term set.
     private func runSearch(term explicitTerm: String? = nil) {
         let term = (explicitTerm ?? termInput).trimmingCharacters(in: .whitespaces)
-        guard !term.isEmpty, let service = appState.analyticsService else { return }
-        committedTerm = term
+        guard !term.isEmpty else { return }
+        committedTerms = [term]
+        reloadData()
+    }
+
+    /// Fetches the per-axis chart data for every committed term (D1). The term-independent document
+    /// totals (the % denominator) are fetched once, and the per-volume source-color breakdown only
+    /// for a single term (it drives coloring that is dropped while comparing). A monotonic
+    /// `fetchToken` discards a stale run when the term set changes mid-fetch.
+    private func reloadData() {
+        guard let service = appState.analyticsService else { return }
+        fetchToken &+= 1
+        let token = fetchToken
+        let terms = committedTerms
+        guard !terms.isEmpty else {
+            // Nothing committed — clear every result surface.
+            yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
+            dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
+            yearVolumeData = []; documentTotalsByYear = [:]; documentTotalsByDecade = [:]
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
-        yearData = []
+        yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
+        dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
         yearVolumeData = []
-        decadeData = []
-        monthData = []
-        dayData = []
-        subseriesData = []
-        volumeData = []
-        documentTotalsByYear = [:]
-        documentTotalsByDecade = [:]
-        // Restrict every axis to the active volume-ID scope (Word Cloud → Analytics
-        // handoff); `nil`/empty means the whole corpus, the default presentation.
+        documentTotalsByYear = [:]; documentTotalsByDecade = [:]
+        // Restrict every axis to the active volume-ID scope (Word Cloud → Analytics handoff);
+        // `nil`/empty means the whole corpus, the default presentation.
         let scope: Set<String>? = scopeVolumeIds.map(Set.init)
+        let singleTerm = terms.count == 1
         Task {
             do {
-                // Fetch every granularity in parallel so switching between
-                // Year / Decade / Month / Day / Subseries is instantaneous after
-                // the initial Search press.
-                async let years       = service.termFrequencyByYear(term: term, volumeIds: scope)
-                async let yearVolumes = service.termFrequencyByYearAndVolume(term: term, volumeIds: scope)
-                async let decades     = service.termFrequencyByDecade(term: term, volumeIds: scope)
-                async let months      = service.termFrequencyByMonth(term: term, volumeIds: scope)
-                async let days        = service.termFrequencyByDay(term: term, volumeIds: scope)
-                async let subseries   = service.termFrequencyBySubseries(term: term, volumeIds: scope)
-                async let volumes     = service.termFrequencyByVolume(term: term, volumeIds: scope)
-                // Corpus document totals (the % of documents denominator, CA-4) —
-                // fetched with the same scope as the numerator so a scoped share is a
-                // correct within-scope proportion.
+                // Term-independent corpus document totals (the % of documents denominator, CA-4),
+                // fetched once with the same scope as the numerator so a scoped share is a correct
+                // within-scope proportion.
                 async let totalsYear   = service.documentTotalsByYear(volumeIds: scope)
                 async let totalsDecade = service.documentTotalsByDecade(volumeIds: scope)
-                yearData      = try await years
-                yearVolumeData = try await yearVolumes
-                decadeData    = try await decades
-                monthData     = try await months
-                dayData       = try await days
-                subseriesData = try await subseries
-                volumeData    = try await volumes
-                documentTotalsByYear   = try await totalsYear
-                documentTotalsByDecade = try await totalsDecade
+                // Per-volume source-color breakdown drives single-term coloring only (dropped while
+                // comparing), so fetch it only for a lone committed term.
+                let yearVolumes = singleTerm
+                    ? try await service.termFrequencyByYearAndVolume(term: terms[0], volumeIds: scope)
+                    : []
+                // Per-term axis data. The service methods are already single-term and per-term
+                // cached, so re-running after adding a term only re-hits the DB for the new term.
+                var years:     [String: [YearFrequency]]      = [:]
+                var decades:   [String: [DecadeFrequency]]    = [:]
+                var months:    [String: [MonthFrequency]]     = [:]
+                var days:      [String: [DayFrequency]]       = [:]
+                var subseries: [String: [SubseriesFrequency]] = [:]
+                var volumes:   [String: [VolumeFrequency]]    = [:]
+                for term in terms {
+                    async let y  = service.termFrequencyByYear(term: term, volumeIds: scope)
+                    async let d  = service.termFrequencyByDecade(term: term, volumeIds: scope)
+                    async let m  = service.termFrequencyByMonth(term: term, volumeIds: scope)
+                    async let dd = service.termFrequencyByDay(term: term, volumeIds: scope)
+                    async let s  = service.termFrequencyBySubseries(term: term, volumeIds: scope)
+                    async let v  = service.termFrequencyByVolume(term: term, volumeIds: scope)
+                    years[term]     = try await y
+                    decades[term]   = try await d
+                    months[term]    = try await m
+                    days[term]      = try await dd
+                    subseries[term] = try await s
+                    volumes[term]   = try await v
+                }
+                let ty = try await totalsYear
+                let td = try await totalsDecade
+                // Discard this run if a newer term set superseded it mid-fetch.
+                guard token == fetchToken else { return }
+                yearDataByTerm = years
+                decadeDataByTerm = decades
+                monthDataByTerm = months
+                dayDataByTerm = days
+                subseriesDataByTerm = subseries
+                volumeDataByTerm = volumes
+                yearVolumeData = yearVolumes
+                documentTotalsByYear = ty
+                documentTotalsByDecade = td
             } catch {
+                guard token == fetchToken else { return }
                 errorMessage = error.localizedDescription
             }
-            isLoading = false
+            if token == fetchToken { isLoading = false }
         }
     }
 }
