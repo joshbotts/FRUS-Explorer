@@ -353,7 +353,13 @@ struct AnalyticsView: View {
                         if showsLandscapeHint && !committedTerm.isEmpty && viewMode == .chart {
                             landscapeHint
                         }
+                        // Fill the space below the filter row so the VStack takes the whole
+                        // window/sheet height and `filterRow` pins to the top. Without this the
+                        // VStack shrink-wraps and the macOS window centers it — floating the term
+                        // field mid-window (Wave B made this prominent: one compact row replaced the
+                        // four tall bars that used to mask the missing greedy frame).
                         contentArea
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
             }
@@ -690,9 +696,14 @@ struct AnalyticsView: View {
                 }
             }
         } label: {
+            // Icon + bare axis label (no "Group by:" prefix) — parallels the sibling scope/year
+            // chips' icon+value shape and is ~65pt narrower, which lets all four chips share one
+            // un-clipped row on the narrow iPad sheet. The menu's sections carry the "group by"
+            // meaning; `.help`/`.accessibilityLabel` restate it for pointer and VoiceOver users.
             HStack(spacing: 4) {
-                Text(String(format: String(localized: "analytics.axis.chip %@",
-                                           defaultValue: "Group by: %@"), chartAxis.pickerLabel))
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.caption2)
+                Text(chartAxis.pickerLabel)
                     .font(.caption)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
@@ -704,6 +715,9 @@ struct AnalyticsView: View {
         .buttonStyle(.bordered)
         .controlSize(.small)
         .disabled(committedTerm.isEmpty)
+        .help(String(localized: "analytics.axis.help", defaultValue: "Group the chart"))
+        .accessibilityLabel(String(format: String(localized: "analytics.axis.a11y %@",
+                                                  defaultValue: "Group by: %@"), chartAxis.pickerLabel))
     }
 
     /// Footnote under the filter row on the categorical axes, explaining the dimmed year chip.
@@ -718,43 +732,45 @@ struct AnalyticsView: View {
     }
 
     /// The consolidated filter row (Wave B): term field + Search, then the scope / year-range /
-    /// group-by / administration chips — one row on regular width, a term row plus a horizontally
-    /// scrolling chip cluster on compact width. Replaces the four stacked filter bars so the chart
-    /// lands above the fold on the iPad sheet.
+    /// group-by / administration chips — `ViewThatFits` keeps everything on one row wherever the
+    /// actual width allows (macOS window, `.page`-sized iPad sheet), and falls back to a term row
+    /// plus a horizontally scrolling chip cluster only when genuinely narrow (iPhone). Replaces the
+    /// four stacked filter bars so the chart lands above the fold on the iPad sheet.
     private var filterRow: some View {
-        Group {
-            if isCompactWidth {
-                VStack(spacing: 6) {
-                    HStack(spacing: 8) {
-                        termField.frame(maxWidth: .infinity)
-                        searchButton
-                    }
-                    if !committedTerm.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                scopeChip
-                                yearChip
-                                groupByChip
-                                adminPresetChip
-                            }
-                            .padding(.vertical, 1)
-                        }
-                    }
+        // Decide one-row vs. two-row by ACTUAL available width, not size class — an iPad sheet reports
+        // compact width yet is wide enough for one row (that mismatch put the chips below the field).
+        ViewThatFits(in: .horizontal) {
+            // Preferred: everything on one row (iPad sheet, macOS window, regular-width iPad).
+            HStack(spacing: 8) {
+                termField.frame(minWidth: 150, maxWidth: 260)
+                searchButton
+                if !committedTerm.isEmpty {
+                    scopeChip
+                    yearChip
+                    groupByChip
+                    adminPresetChip
                 }
-            } else {
+            }
+            // Fallback (iPhone / genuinely narrow): term row, then a horizontally scrolling chip cluster.
+            VStack(spacing: 6) {
                 HStack(spacing: 8) {
-                    termField.frame(minWidth: 150, maxWidth: 260)
+                    termField.frame(maxWidth: .infinity)
                     searchButton
-                    if !committedTerm.isEmpty {
-                        scopeChip
-                        yearChip
-                        groupByChip
-                        adminPresetChip
+                }
+                if !committedTerm.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            scopeChip
+                            yearChip
+                            groupByChip
+                            adminPresetChip
+                        }
+                        .padding(.vertical, 1)
                     }
-                    Spacer(minLength: 0)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
