@@ -217,6 +217,12 @@ struct AnalyticsView: View {
     /// behavior). Only consulted for the date-based By-Year / By-Decade axes.
     @AppStorage(AnalyticsNormalizationMode.storageKey) private var normalizationMode: AnalyticsNormalizationMode = .raw
 
+    /// The normalization mode used **while comparing** (D1). Defaults to `.percentOfDocuments` so
+    /// several terms are comparable regardless of absolute frequency, but the Raw/% toggle still
+    /// drives it — kept separate from `normalizationMode` so the compare default never persists into
+    /// the single-term `@AppStorage` preference.
+    @State private var compareNormalizationMode: AnalyticsNormalizationMode = .percentOfDocuments
+
     /// Corpus document totals per year — the `% of documents` denominator (CA-4),
     /// fetched (scoped to `scopeVolumeIds`) alongside the term data in `runSearch()`.
     @State private var documentTotalsByYear: [Int: Int] = [:]
@@ -332,10 +338,102 @@ struct AnalyticsView: View {
         chartAxis == .byYear || chartAxis == .byDecade
     }
 
-    /// `true` when normalized (`% of documents`) plotting is active for the current
-    /// axis — the preference is on AND the axis supports it.
+    /// `true` when normalized (`% of documents`) plotting is active for the current axis — the
+    /// effective preference is on AND the axis supports it. While comparing, the effective mode is
+    /// `compareNormalizationMode` (default %) rather than the persisted single-term preference.
     private var isNormalized: Bool {
-        normalizationApplies && normalizationMode == .percentOfDocuments
+        normalizationApplies && effectiveNormalizationMode == .percentOfDocuments
+    }
+
+    // MARK: - Compare terms (D1)
+
+    /// The maximum number of terms compared at once (owner decision: 5, matching Person Analytics and
+    /// staying under the palette's 6-color floor so series colors never wrap).
+    private static let maxCompareTerms = 5
+
+    /// `true` once two or more terms are committed — the compare charts (per-term line marks) replace
+    /// the single-term source-colored bars.
+    private var isComparing: Bool { committedTerms.count >= 2 }
+
+    /// `true` when the committed set has reached `maxCompareTerms` (disables the add affordance).
+    private var atCompareCap: Bool { committedTerms.count >= Self.maxCompareTerms }
+
+    /// The palette color for a term's series — its chip-order index into the shared palette.
+    private func termColor(_ term: String) -> Color {
+        ChartSeriesPalette.color(at: max(0, committedTerms.firstIndex(of: term) ?? 0))
+    }
+
+    /// The normalization mode actually in effect: `compareNormalizationMode` while comparing, the
+    /// persisted `normalizationMode` otherwise.
+    private var effectiveNormalizationMode: AnalyticsNormalizationMode {
+        isComparing ? compareNormalizationMode : normalizationMode
+    }
+
+    /// Binding for the Raw/% picker that routes to the compare mode while comparing (so the toggle
+    /// stays live without persisting the compare default into the single-term `@AppStorage`).
+    private var normalizationBinding: Binding<AnalyticsNormalizationMode> {
+        Binding(
+            get: { isComparing ? compareNormalizationMode : normalizationMode },
+            set: { newValue in
+                if isComparing { compareNormalizationMode = newValue } else { normalizationMode = newValue }
+            }
+        )
+    }
+
+    /// The per-term color scale for the compare charts — domain = committed terms (chip order),
+    /// range = the palette colors at those indices.
+    private var compareColorScale: (domain: [String], range: [Color]) {
+        (committedTerms, committedTerms.indices.map { ChartSeriesPalette.color(at: $0) })
+    }
+
+    /// The chart heading's quoted term(s): `"term"` for one, `"a", "b"` for a comparison.
+    private var chartHeadingTerms: String {
+        committedTerms.map { "\"\($0)\"" }.joined(separator: ", ")
+    }
+
+    /// One committed term's By-Year data, filtered to the active year range.
+    private func filteredYearData(for term: String) -> [YearFrequency] {
+        (yearDataByTerm[term] ?? []).filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
+    }
+    /// One committed term's By-Decade data, filtered to decades intersecting the active range.
+    private func filteredDecadeData(for term: String) -> [DecadeFrequency] {
+        (decadeDataByTerm[term] ?? []).filter { $0.decadeStart + 9 >= yearRangeStart && $0.decadeStart <= yearRangeEnd }
+    }
+    /// One committed term's By-Month data, filtered to the active year range.
+    private func filteredMonthData(for term: String) -> [MonthFrequency] {
+        let cal = Calendar(identifier: .gregorian)
+        return (monthDataByTerm[term] ?? []).filter {
+            let y = cal.component(.year, from: $0.date); return y >= yearRangeStart && y <= yearRangeEnd
+        }
+    }
+    /// One committed term's By-Day data, filtered to the active year range.
+    private func filteredDayData(for term: String) -> [DayFrequency] {
+        let cal = Calendar(identifier: .gregorian)
+        return (dayDataByTerm[term] ?? []).filter {
+            let y = cal.component(.year, from: $0.date); return y >= yearRangeStart && y <= yearRangeEnd
+        }
+    }
+
+    /// Appends the live `termInput` as a comparison term (Return / ＋): trims, de-dups
+    /// case-insensitively, enforces `maxCompareTerms`, clears the field, and reloads.
+    private func addTerm() {
+        let term = termInput.trimmingCharacters(in: .whitespaces)
+        guard !term.isEmpty, !atCompareCap else { return }
+        guard !committedTerms.contains(where: { $0.caseInsensitiveCompare(term) == .orderedSame }) else {
+            termInput = ""
+            return
+        }
+        committedTerms.append(term)
+        termInput = ""
+        // A categorical axis can't compare (owner decision A) — fall back to By-Year on the 2nd term.
+        if isComparing && chartAxis.isCategorical { chartAxis = .byYear }
+        reloadData()
+    }
+
+    /// Removes a comparison term (chip ✕) and reloads (or clears when the last term goes).
+    private func removeTerm(_ term: String) {
+        committedTerms.removeAll { $0 == term }
+        reloadData()
     }
 
     /// `true` on a compact-width layout (iPhone portrait, and most iPhones in
@@ -358,6 +456,8 @@ struct AnalyticsView: View {
                     unavailablePlaceholder
                 } else {
                     VStack(spacing: 0) {
+                        // D1: the comparison-term chips sit above the consolidated filter row.
+                        termChipsRow
                         // Wave B: one consolidated filter row (term + scope / range / group-by chips)
                         // replaces the four stacked bars, so the chart lands above the fold.
                         filterRow
@@ -365,9 +465,11 @@ struct AnalyticsView: View {
                             categoricalYearNote
                         }
                         Divider()
-                        // Hide the hand-off link when there's nothing to view — during the async
-                        // fetch (data arrays momentarily empty) or a genuine zero-match term (Win 3).
-                        if !committedTerm.isEmpty && matchedDocumentCount > 0 {
+                        // Hide the hand-off link when there's nothing to view — during the async fetch
+                        // (data arrays momentarily empty) or a genuine zero-match term (Win 3) — and
+                        // while comparing (owner decision C): a per-term overlay has no single
+                        // "these documents" population to drill into.
+                        if !isComparing && !committedTerm.isEmpty && matchedDocumentCount > 0 {
                             searchHandoffBar
                             Divider()
                         }
@@ -614,23 +716,69 @@ struct AnalyticsView: View {
 
     // MARK: - Consolidated filter row (Wave B)
 
-    /// The term entry field (split out of the old `searchBar` so it can sit in the filter row).
+    /// The term entry field. D1: an "Add a term…" field that appends on Return (each committed term
+    /// becomes a chip); the placeholder reads "Term…" for the first, then "Add a term…".
     private var termField: some View {
-        TextField(
-            String(localized: "analytics.term.placeholder", defaultValue: "Term…"),
-            text: $termInput
-        )
-        .textFieldStyle(.roundedBorder)
-        .onSubmit { runSearch() }
+        TextField(termFieldPlaceholder, text: $termInput)
+            .textFieldStyle(.roundedBorder)
+            .onSubmit { addTerm() }
+            .disabled(atCompareCap)
     }
 
-    /// The Search trigger button.
+    private var termFieldPlaceholder: String {
+        committedTerms.isEmpty
+            ? String(localized: "analytics.term.placeholder", defaultValue: "Term…")
+            : String(localized: "analytics.term.addPlaceholder", defaultValue: "Add a term…")
+    }
+
+    /// The Search / Add trigger — commits the field as a comparison term (D1). Labelled "Search" for
+    /// the first term, "Add" thereafter; disabled when empty or at the term cap.
     private var searchButton: some View {
-        Button(String(localized: "analytics.search.button", defaultValue: "Search")) {
-            runSearch()
+        Button(committedTerms.isEmpty
+               ? String(localized: "analytics.search.button", defaultValue: "Search")
+               : String(localized: "analytics.addTerm.button", defaultValue: "Add")) {
+            addTerm()
         }
         .buttonStyle(.borderedProminent)
-        .disabled(termInput.trimmingCharacters(in: .whitespaces).isEmpty)
+        .disabled(atCompareCap || termInput.trimmingCharacters(in: .whitespaces).isEmpty)
+    }
+
+    /// The comparison-term chips (D1) — one per committed term, colored by its series and removable
+    /// with a ≥44pt ✕. Sits on its own row above the filter chips (owner decision D).
+    @ViewBuilder
+    private var termChipsRow: some View {
+        if !committedTerms.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(committedTerms, id: \.self) { term in
+                        HStack(spacing: 6) {
+                            Circle().fill(termColor(term)).frame(width: 9, height: 9)
+                            Text(term).font(.caption).lineLimit(1)
+                            Button {
+                                removeTerm(term)
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(String(format: String(localized: "analytics.compare.chip.remove.a11y %@",
+                                                                      defaultValue: "Remove %@ from comparison"), term))
+                        }
+                        .padding(.leading, 10)
+                        .background(Capsule().fill(.quaternary.opacity(0.4)))
+                    }
+                    if atCompareCap {
+                        Text(String(format: String(localized: "analytics.compare.cap %lld",
+                                                   defaultValue: "Comparing %lld terms (the maximum)."),
+                                    Int64(Self.maxCompareTerms)))
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
     }
 
     /// The compact scope chip — the shared `AnalyticsScopeBar` in its `.chip` presentation,
@@ -714,6 +862,9 @@ struct AnalyticsView: View {
                             Text(axis.pickerLabel)
                         }
                     }
+                    // The categorical breakdowns can't compare multiple terms (owner decision A) —
+                    // disabled while comparing; the date axes carry the per-term line comparison.
+                    .disabled(isComparing)
                 }
             }
         } label: {
@@ -1052,6 +1203,70 @@ struct AnalyticsView: View {
         }
     }
 
+    // MARK: - Compare charts (D1)
+
+    /// Per-term line chart over an Int period axis (By-Year / By-Decade) for compare mode: one line
+    /// per committed term colored by term, y respecting the active (compare-defaulted %) normalization.
+    private func compareIntChart(seriesByTerm: [(term: String, points: [(period: Int, count: Int)])],
+                                 xLabel: String, xDomain: ClosedRange<Int>, totals: [Int: Int],
+                                 decadeStride: Bool) -> some View {
+        Chart {
+            ForEach(seriesByTerm, id: \.term) { series in
+                ForEach(series.points, id: \.period) { pt in
+                    if let y = normalizedValue(count: pt.count, period: pt.period, totals: totals) {
+                        LineMark(x: .value(xLabel, pt.period), y: .value(valueAxisLabel, y))
+                            .foregroundStyle(by: .value(
+                                String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
+                            .interpolationMethod(.catmullRom)
+                            .accessibilityLabel(Text(verbatim: "\(series.term), \(pt.period)"))
+                            .accessibilityValue(Text(sourceValueA11y(count: pt.count, plotted: y)))
+                    }
+                }
+            }
+        }
+        .chartForegroundStyleScale(domain: compareColorScale.domain, range: compareColorScale.range)
+        .chartLegend(.visible)
+        .chartXScale(domain: xDomain)
+        .chartYAxis { valueAxisMarks }
+        .chartXAxis {
+            if decadeStride {
+                AxisMarks(values: .stride(by: 10)) { _ in AxisGridLine(); AxisTick(); AxisValueLabel(format: integerNoGroupingFormat) }
+            } else {
+                AxisMarks { _ in AxisGridLine(); AxisTick(); AxisValueLabel(format: integerNoGroupingFormat) }
+            }
+        }
+        .chartXAxisLabel(xLabel, alignment: .center)
+        .chartYAxisLabel(valueAxisLabel)
+        .frame(height: 280)
+        .padding(.horizontal)
+    }
+
+    /// Per-term line chart over a Date axis (By-Month / By-Day) for compare mode. These axes have no
+    /// corpus denominator, so values are raw counts; one line per committed term, colored by term.
+    private func compareDateChart(seriesByTerm: [(term: String, points: [(date: Date, count: Int)])],
+                                  xLabel: String, xDomain: ClosedRange<Date>) -> some View {
+        Chart {
+            ForEach(seriesByTerm, id: \.term) { series in
+                ForEach(series.points, id: \.date) { pt in
+                    LineMark(x: .value(xLabel, pt.date),
+                             y: .value(String(localized: "analytics.axis.documents", defaultValue: "Documents"), pt.count))
+                        .foregroundStyle(by: .value(
+                            String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
+                        .interpolationMethod(.catmullRom)
+                        .accessibilityLabel(Text(verbatim: series.term))
+                        .accessibilityValue(Text(verbatim: "\(pt.count)"))
+                }
+            }
+        }
+        .chartForegroundStyleScale(domain: compareColorScale.domain, range: compareColorScale.range)
+        .chartLegend(.visible)
+        .chartXScale(domain: xDomain)
+        .chartXAxisLabel(xLabel, alignment: .center)
+        .chartYAxisLabel(String(localized: "analytics.axis.documents", defaultValue: "Documents"))
+        .frame(height: 280)
+        .padding(.horizontal)
+    }
+
     // MARK: - Year Chart
 
     private var yearChartSection: some View {
@@ -1067,11 +1282,23 @@ struct AnalyticsView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.year.heading",
-                       defaultValue: "\"\(committedTerm)\" \u{2014} by Year")
+                       defaultValue: "\(chartHeadingTerms) \u{2014} by Year")
             )
             .font(.headline)
             .padding(.horizontal)
 
+            if isComparing {
+                compareIntChart(
+                    seriesByTerm: committedTerms.map { term in
+                        (term: term, points: filteredYearData(for: term).map { (period: $0.year, count: $0.count) })
+                    },
+                    xLabel: String(localized: "analytics.axis.year", defaultValue: "Year"),
+                    xDomain: yearRangeStart...yearRangeEnd,
+                    totals: documentTotalsByYear,
+                    decadeStride: false
+                )
+                normalizationCaption.padding(.horizontal)
+            } else {
             if !coloring.series.isEmpty {
                 sourceLegend(coloring.series)
             }
@@ -1137,6 +1364,7 @@ struct AnalyticsView: View {
 
             totalsFootnote(filtered: totalFiltered, total: totalAllYears)
                 .padding(.horizontal)
+            }
         }
         .padding(.vertical)
     }
@@ -1159,11 +1387,23 @@ struct AnalyticsView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.decade.heading",
-                       defaultValue: "\"\(committedTerm)\" \u{2014} by Decade")
+                       defaultValue: "\(chartHeadingTerms) \u{2014} by Decade")
             )
             .font(.headline)
             .padding(.horizontal)
 
+            if isComparing {
+                compareIntChart(
+                    seriesByTerm: committedTerms.map { term in
+                        (term: term, points: filteredDecadeData(for: term).map { (period: $0.decadeStart, count: $0.count) })
+                    },
+                    xLabel: String(localized: "analytics.axis.decade", defaultValue: "Decade"),
+                    xDomain: yearRangeStart...yearRangeEnd,
+                    totals: documentTotalsByDecade,
+                    decadeStride: true
+                )
+                normalizationCaption.padding(.horizontal)
+            } else {
             if !coloring.series.isEmpty {
                 sourceLegend(coloring.series)
             }
@@ -1229,6 +1469,7 @@ struct AnalyticsView: View {
 
             totalsFootnote(filtered: totalFiltered, total: totalAll)
                 .padding(.horizontal)
+            }
         }
         .padding(.vertical)
     }
@@ -1245,11 +1486,23 @@ struct AnalyticsView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.month.heading",
-                       defaultValue: "\"\(committedTerm)\" \u{2014} by Month")
+                       defaultValue: "\(chartHeadingTerms) \u{2014} by Month")
             )
             .font(.headline)
             .padding(.horizontal)
 
+            if isComparing {
+                let series = committedTerms.map { term in
+                    (term: term, points: filteredMonthData(for: term).map { (date: $0.date, count: $0.count) })
+                }
+                if series.allSatisfy({ $0.points.isEmpty }) {
+                    noMonthDataNotice.padding(.horizontal)
+                } else {
+                    compareDateChart(seriesByTerm: series,
+                                     xLabel: String(localized: "analytics.axis.month", defaultValue: "Month"),
+                                     xDomain: startDate...endDate)
+                }
+            } else {
             if data.isEmpty {
                 noMonthDataNotice
                     .padding(.horizontal)
@@ -1300,6 +1553,7 @@ struct AnalyticsView: View {
 
             totalsFootnote(filtered: totalFiltered, total: totalAll)
                 .padding(.horizontal)
+            }
         }
         .padding(.vertical)
     }
@@ -1316,11 +1570,23 @@ struct AnalyticsView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.day.heading",
-                       defaultValue: "\"\(committedTerm)\" \u{2014} by Day")
+                       defaultValue: "\(chartHeadingTerms) \u{2014} by Day")
             )
             .font(.headline)
             .padding(.horizontal)
 
+            if isComparing {
+                let series = committedTerms.map { term in
+                    (term: term, points: filteredDayData(for: term).map { (date: $0.date, count: $0.count) })
+                }
+                if series.allSatisfy({ $0.points.isEmpty }) {
+                    noDayDataNotice.padding(.horizontal)
+                } else {
+                    compareDateChart(seriesByTerm: series,
+                                     xLabel: String(localized: "analytics.axis.date", defaultValue: "Date"),
+                                     xDomain: startDate...endDate)
+                }
+            } else {
             if data.isEmpty {
                 noDayDataNotice
                     .padding(.horizontal)
@@ -1371,6 +1637,7 @@ struct AnalyticsView: View {
 
             totalsFootnote(filtered: totalFiltered, total: totalAll)
                 .padding(.horizontal)
+            }
         }
         .padding(.vertical)
     }
@@ -1739,7 +2006,7 @@ struct AnalyticsView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Picker(
                         String(localized: "analytics.normalize.picker", defaultValue: "Values"),
-                        selection: $normalizationMode
+                        selection: normalizationBinding
                     ) {
                         ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
                             Text(mode.pickerLabel).tag(mode)
@@ -1822,7 +2089,7 @@ struct AnalyticsView: View {
     private var compactChartOptionsMenu: some View {
         // Axis granularity moved to the filter row's "Group by" chip (Wave B).
         if normalizationApplies {
-            Picker(selection: $normalizationMode) {
+            Picker(selection: normalizationBinding) {
                 ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
                     Text(mode.pickerLabel).tag(mode)
                 }
