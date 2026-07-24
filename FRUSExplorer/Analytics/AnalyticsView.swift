@@ -346,7 +346,9 @@ struct AnalyticsView: View {
                             Divider()
                             yearRangeBar
                         }
-                        if !committedTerm.isEmpty {
+                        // Hide the hand-off link when there's nothing to view — during the async
+                        // fetch (data arrays momentarily empty) or a genuine zero-match term (Win 3).
+                        if !committedTerm.isEmpty && matchedDocumentCount > 0 {
                             Divider()
                             searchHandoffBar
                         }
@@ -606,32 +608,45 @@ struct AnalyticsView: View {
     /// distributed across the corpus?" to "show me the matching documents" —
     /// carrying the term and (for date-based axes) the current year-range filter
     /// along as `pendingSearch` so Search lands pre-filled and ready to run.
+    /// The number of documents matched by the current term/scope/range on the active axis — the sum
+    /// of the plotted series, mirroring each chart section's own footnote math. Surfaced in the
+    /// "View N documents" hand-off link so the affordance carries the count (design Win 3).
+    private var matchedDocumentCount: Int {
+        switch chartAxis {
+        case .byYear:      return filteredYearData.reduce(0) { $0 + $1.count }
+        case .byDecade:    return filteredDecadeData.reduce(0) { $0 + $1.count }
+        case .byMonth:     return filteredMonthData.reduce(0) { $0 + $1.count }
+        case .byDay:       return filteredDayData.reduce(0) { $0 + $1.count }
+        case .bySubseries: return subseriesData.reduce(0) { $0 + $1.count }
+        case .byVolume:    return volumeData.reduce(0) { $0 + $1.count }
+        }
+    }
+
+    /// The single document hand-off affordance (design Win 3): one "View N documents ↗" link
+    /// carrying the matched count, replacing the redundant two-part bar ("See the documents behind
+    /// this chart" + a separate "View in Search" button). The `openMatchingDocumentsInSearch()`
+    /// `pendingSearch` hand-off is unchanged — only the entry point is consolidated.
     private var searchHandoffBar: some View {
         HStack(spacing: 8) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.caption)
-
-            Text(String(localized: "analytics.handoff.prompt.plain",
-                        defaultValue: "See the documents behind this chart"))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-
-            Spacer(minLength: 8)
-
             Button {
                 openMatchingDocumentsInSearch()
             } label: {
-                Text(String(localized: "analytics.handoff.button",
-                            defaultValue: "View in Search"))
-                    .font(.caption.weight(.medium))
+                HStack(spacing: 4) {
+                    Text(String(format: String(localized: "analytics.handoff.viewDocuments %lld",
+                                               defaultValue: "View %lld documents"),
+                                Int64(matchedDocumentCount)))
+                        .font(.caption.weight(.medium))
+                    Image(systemName: "arrow.up.forward")
+                        .font(.caption2)
+                }
             }
             .buttonStyle(.borderless)
             .help(String(
                 localized: "analytics.handoff.help",
                 defaultValue: "Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents"
             ))
+
+            Spacer(minLength: 0)
         }
         .padding(.horizontal)
         .padding(.vertical, 6)

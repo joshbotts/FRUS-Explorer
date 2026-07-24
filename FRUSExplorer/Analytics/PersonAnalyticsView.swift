@@ -610,11 +610,20 @@ struct PersonAnalyticsView: View {
                 y: .value(String(localized: "personAnalytics.axis.person", defaultValue: "Person"),
                           rowKey(row))
             )
-            .foregroundStyle(Color.accentColor)
+            // The chart now matches the table's selection state (design Win 4): full accent when
+            // nothing is selected (the default view stays crisp) or this row IS selected; dimmed only
+            // when a DIFFERENT row is selected, so the comparison set stands out.
+            .foregroundStyle((selectedPeople.isEmpty || isSelected(row))
+                             ? Color.accentColor : Color.accentColor.opacity(0.5))
             .annotation(position: .trailing) {
-                Text(row.mentionCount, format: .number)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 5) {
+                    Image(systemName: isSelected(row) ? "checkmark.circle.fill" : "circle")
+                        .font(.caption2)
+                        .foregroundStyle(isSelected(row) ? Color.accentColor : Color.secondary)
+                    Text(row.mentionCount, format: .number)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .accessibilityLabel(Text(axisLabels[rowKey(row)] ?? row.canonicalName))
             .accessibilityValue(Text(String(localized: "personAnalytics.axis.mentionsValue",
@@ -630,6 +639,24 @@ struct PersonAnalyticsView: View {
                         Text(axisLabels[id] ?? id)
                     }
                 }
+            }
+        }
+        // Make the bars tappable (design Win 4): a tap maps to the row under it via its rollup-id
+        // y-value and toggles the SAME comparison selection the table rows use — pure parity, no new
+        // data. The whole plot width is the target, so the tap area is far larger than the bar height.
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture { location in
+                        guard let plotAnchor = proxy.plotFrame else { return }
+                        let plotRect = geo[plotAnchor]
+                        let relativeY = location.y - plotRect.origin.y
+                        guard let id = proxy.value(atY: relativeY, as: String.self),
+                              let row = ranking.first(where: { rowKey($0) == id }) else { return }
+                        toggleSelection(row)
+                    }
             }
         }
         .frame(height: CGFloat(ranking.count) * 30 + 40)

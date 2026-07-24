@@ -701,12 +701,18 @@ struct CrossReferenceAnalyticsView: View {
                     openDocument(volumeId: row.volumeId, documentId: row.documentId,
                                  header: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
                 } label: {
-                    HStack {
-                        Text("\(index + 1).")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .frame(width: 28, alignment: .trailing)
-                        VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .top, spacing: 12) {
+                        // Rank chip (design Win 9) — the ordinal position, replacing the plain "1."
+                        // number and (with the bar below) the raw PageRank decimal ("0.0042") that
+                        // meant nothing to a reader.
+                        Text("\(index + 1)")
+                            .font(.caption.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(index == 0 ? Color.white : Color.accentColor)
+                            .frame(width: 26, height: 26)
+                            .background(Circle().fill(index == 0
+                                                      ? Color.accentColor
+                                                      : Color.accentColor.opacity(0.15)))
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
                                 .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
@@ -716,20 +722,39 @@ struct CrossReferenceAnalyticsView: View {
                                             defaultValue: "In a volume you haven't downloaded"))
                                     .font(.caption2).foregroundStyle(.tertiary)
                             }
+                            // Relative influence bar — width ∝ score / max landmark score.
+                            influenceBar(fraction: maxLandmarkScore > 0 ? row.score / maxLandmarkScore : 0)
+                                .padding(.top, 2)
                         }
-                        Spacer()
-                        Text(row.score, format: .number.precision(.significantDigits(2)))
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
                     }
                     .contentShape(Rectangle())
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 8)
                     .padding(.horizontal)
+                    // The exact PageRank score is kept for VoiceOver, per the design.
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue(Text(row.score, format: .number.precision(.significantDigits(2))))
                 }
                 .buttonStyle(.plain)
                 Divider()
             }
         }
+    }
+
+    /// The largest landmark PageRank score — the denominator for the influence bars (design Win 9).
+    private var maxLandmarkScore: Double { landmarks.map(\.score).max() ?? 1 }
+
+    /// A thin relative-influence bar whose filled width is `fraction` of the track. Decorative — the
+    /// exact PageRank value lives on each row's `accessibilityValue`, so the bar is hidden from a11y.
+    private func influenceBar(fraction: Double) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.secondary.opacity(0.15))
+                Capsule().fill(Color.accentColor)
+                    .frame(width: max(4, geo.size.width * min(max(fraction, 0), 1)))
+            }
+        }
+        .frame(height: 6)
+        .accessibilityHidden(true)
     }
 
     // MARK: - Shared row chrome
