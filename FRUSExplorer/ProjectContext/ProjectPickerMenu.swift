@@ -202,7 +202,9 @@ private struct WorkingOnSubtitleModifier: ViewModifier {
            sizeClass == .regular,
            let question = WorkingOnBanner.resolvedQuestion(activeProjectId: appState.activeProjectId,
                                                            projects: projects) {
-            content.navigationSubtitle(question)
+            // "Working on: <question>" — reuse the banner's prefix so iPad matches the other surfaces.
+            let prefix = String(localized: "project.workingOn.prefix", defaultValue: "Working on:")
+            content.navigationSubtitle("\(prefix) \(question)")
         } else {
             content
         }
