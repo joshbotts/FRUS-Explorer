@@ -150,6 +150,10 @@ struct BrowserView: View {
                 // hand-off targets THIS window (a sheet doesn't reliably inherit `\.sceneID`) —
                 // matching the sibling CrossRef-Analytics / Chronology sheets below.
                 .environment(\.sceneID, sceneID)
+                // Wave B fix: the default form sheet (~540pt) is too narrow for the consolidated
+                // filter row and cramps the chart. `.page` sizing gives the sheet a wider canvas on
+                // iPad (a no-op on compact iPhone, which uses the full-height sheet regardless).
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showPersonAnalytics) {
             PersonAnalyticsView()
