@@ -118,12 +118,17 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 
     /// Query equality ignoring `id`/`savedAt` — used for de-duplication and the "is the current
     /// query already saved?" check. Scope identity is the volume-id set; `scopeLabel` is derived.
+    ///
+    /// The year range is compared only on the **date-based** axes: the categorical breakdowns
+    /// (By Subseries / By Volume) ignore it entirely when computing results, so including it would
+    /// make the star read "unsaved" — and let the user pile up duplicate entries — for queries that
+    /// render an identical chart (review fix).
     func matchesQuery(_ other: SavedAnalyticsQuery) -> Bool {
-        terms == other.terms
-            && axis == other.axis
-            && yearStart == other.yearStart
-            && yearEnd == other.yearEnd
-            && scopeVolumeIds == other.scopeVolumeIds
+        guard terms == other.terms, axis == other.axis, scopeVolumeIds == other.scopeVolumeIds else {
+            return false
+        }
+        guard !axis.isCategorical else { return true }
+        return yearStart == other.yearStart && yearEnd == other.yearEnd
     }
 
     /// A one-line menu label: the terms joined, then the axis (and scope when narrowed).
@@ -510,28 +515,38 @@ struct AnalyticsView: View {
     }
 
     /// Stars / un-stars the current query.
+    ///
+    /// Re-reads the stored list first so a concurrent Analytics window's saves survive: these lists
+    /// live in per-window `@State` over one shared `UserDefaults` key, so writing this window's
+    /// (possibly stale) copy wholesale would silently drop the other window's entries (review fix).
     private func toggleSaveCurrentQuery() {
         guard !committedTerms.isEmpty else { return }
         let q = currentQuery()
-        if let idx = savedQueries.firstIndex(where: { $0.matchesQuery(q) }) {
-            savedQueries.remove(at: idx)
+        var merged = storedQueries(forKey: Self.savedQueriesKey)
+        if let idx = merged.firstIndex(where: { $0.matchesQuery(q) }) {
+            merged.remove(at: idx)
         } else {
-            savedQueries.insert(q, at: 0)
+            merged.insert(q, at: 0)
         }
-        persistQueries()
+        savedQueries = merged
+        persist(merged, forKey: Self.savedQueriesKey)
     }
 
     /// Records the current committed query as the most-recent (de-duplicated, capped). Called from
-    /// `reloadData` on each committed search.
+    /// `reloadData` on each committed search. Re-reads the stored list first (see
+    /// `toggleSaveCurrentQuery`) and writes ONLY the recents key, so recording a recent can never
+    /// clobber another window's saved queries.
     private func recordRecentQuery() {
         guard !committedTerms.isEmpty else { return }
         let q = currentQuery()
-        recentQueries.removeAll { $0.matchesQuery(q) }
-        recentQueries.insert(q, at: 0)
-        if recentQueries.count > Self.maxRecentQueries {
-            recentQueries = Array(recentQueries.prefix(Self.maxRecentQueries))
+        var merged = storedQueries(forKey: Self.recentQueriesKey)
+        merged.removeAll { $0.matchesQuery(q) }
+        merged.insert(q, at: 0)
+        if merged.count > Self.maxRecentQueries {
+            merged = Array(merged.prefix(Self.maxRecentQueries))
         }
-        persistQueries()
+        recentQueries = merged
+        persist(merged, forKey: Self.recentQueriesKey)
     }
 
     /// Restores a saved/recent query — terms, axis, year range, and scope together — then re-runs.
@@ -546,29 +561,31 @@ struct AnalyticsView: View {
         reloadData()
     }
 
-    /// Loads saved + recent queries from `UserDefaults` (JSON). Called once on appearance.
+    /// Loads saved + recent queries from `UserDefaults` (JSON). Called once on appearance. A
+    /// concurrent window's later changes are not observed here, but they are never *lost*: both
+    /// mutators re-read the stored list before writing, so this window's list is at worst visually
+    /// stale until it is next mounted.
     private func loadQueries() {
-        let decoder = JSONDecoder()
-        if let data = UserDefaults.standard.data(forKey: Self.savedQueriesKey),
-           let queries = try? decoder.decode([SavedAnalyticsQuery].self, from: data) {
-            savedQueries = queries
-        }
-        if let data = UserDefaults.standard.data(forKey: Self.recentQueriesKey),
-           let queries = try? decoder.decode([SavedAnalyticsQuery].self, from: data) {
-            recentQueries = queries
-        }
+        savedQueries = storedQueries(forKey: Self.savedQueriesKey)
+        recentQueries = storedQueries(forKey: Self.recentQueriesKey)
     }
 
-    /// Writes saved + recent queries back to `UserDefaults` as JSON (plain data, NOT a
-    /// `RawRepresentable` `@AppStorage`).
-    private func persistQueries() {
-        let encoder = JSONEncoder()
-        if let data = try? encoder.encode(savedQueries) {
-            UserDefaults.standard.set(data, forKey: Self.savedQueriesKey)
+    /// The queries currently stored under `key`, or `[]` when absent/undecodable (a decode failure —
+    /// e.g. data written by a future schema — degrades to an empty list rather than throwing).
+    private func storedQueries(forKey key: String) -> [SavedAnalyticsQuery] {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let queries = try? JSONDecoder().decode([SavedAnalyticsQuery].self, from: data) else {
+            return []
         }
-        if let data = try? encoder.encode(recentQueries) {
-            UserDefaults.standard.set(data, forKey: Self.recentQueriesKey)
-        }
+        return queries
+    }
+
+    /// Writes one query list back to `UserDefaults` as JSON (plain data, NOT a `RawRepresentable`
+    /// `@AppStorage`, which crashes when `rawValue` re-encodes `self`). Each list is written under
+    /// its own key so one list's update never rewrites the other.
+    private func persist(_ queries: [SavedAnalyticsQuery], forKey key: String) {
+        guard let data = try? JSONEncoder().encode(queries) else { return }
+        UserDefaults.standard.set(data, forKey: key)
     }
 
     /// `true` on a compact-width layout (iPhone portrait, and most iPhones in
@@ -2215,45 +2232,21 @@ struct AnalyticsView: View {
             }
         }
 
-        // D1 Phase 3: star the current query, and a menu of saved + recent queries.
-        ToolbarItem(placement: .primaryAction) {
-            Button {
-                toggleSaveCurrentQuery()
-            } label: {
-                Label(isCurrentQuerySaved
-                      ? String(localized: "analytics.saved.starred", defaultValue: "Saved")
-                      : String(localized: "analytics.saved.save", defaultValue: "Save query"),
-                      systemImage: isCurrentQuerySaved ? "star.fill" : "star")
+        // D1 Phase 3: star the current query, and a menu of saved + recent queries. On compact
+        // width the two fold into ONE menu (the save toggle becomes its first item) — the iPhone
+        // nav bar already sheds its title to fit the existing controls (#219), so adding two more
+        // items would crowd the view-mode picker (review fix).
+        if horizontalSizeClass == .compact {
+            ToolbarItem(placement: .primaryAction) {
+                savedQueriesMenu(includingSaveToggle: true)
             }
-            .disabled(committedTerms.isEmpty)
-            .help(String(localized: "analytics.saved.star.help",
-                         defaultValue: "Save this query (terms, axis, year range, and scope) to revisit later"))
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                if savedQueries.isEmpty && recentQueries.isEmpty {
-                    Text(String(localized: "analytics.saved.empty", defaultValue: "No saved or recent queries"))
-                } else {
-                    if !savedQueries.isEmpty {
-                        Section(String(localized: "analytics.saved.section.saved", defaultValue: "Saved")) {
-                            ForEach(savedQueries) { q in
-                                Button(q.menuLabel) { restoreQuery(q) }
-                            }
-                        }
-                    }
-                    if !recentQueries.isEmpty {
-                        Section(String(localized: "analytics.saved.section.recent", defaultValue: "Recent")) {
-                            ForEach(recentQueries) { q in
-                                Button(q.menuLabel) { restoreQuery(q) }
-                            }
-                        }
-                    }
-                }
-            } label: {
-                Label(String(localized: "analytics.saved.menu", defaultValue: "Saved queries"),
-                      systemImage: "bookmark")
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                saveQueryButton
             }
-            .help(String(localized: "analytics.saved.menu.help", defaultValue: "Jump to a saved or recent query"))
+            ToolbarItem(placement: .primaryAction) {
+                savedQueriesMenu(includingSaveToggle: false)
+            }
         }
 
         // Info button — explains metric semantics, query syntax, and stemming. Win 7: now the
@@ -2271,6 +2264,58 @@ struct AnalyticsView: View {
             }
         }
         #endif
+    }
+
+    /// The star that saves / un-saves the current query (D1 Phase 3). Filled once the current
+    /// terms · axis · range · scope match a saved entry.
+    private var saveQueryButton: some View {
+        Button {
+            toggleSaveCurrentQuery()
+        } label: {
+            Label(isCurrentQuerySaved
+                  ? String(localized: "analytics.saved.starred", defaultValue: "Saved")
+                  : String(localized: "analytics.saved.save", defaultValue: "Save query"),
+                  systemImage: isCurrentQuerySaved ? "star.fill" : "star")
+        }
+        .disabled(committedTerms.isEmpty)
+        .help(String(localized: "analytics.saved.star.help",
+                     defaultValue: "Save this query (terms, axis, year range, and scope) to revisit later"))
+    }
+
+    /// The saved / recent queries menu (D1 Phase 3). Each entry restores the whole query — terms,
+    /// axis, year range, and scope — and re-runs it.
+    ///
+    /// - Parameter includingSaveToggle: When `true` (compact width) the save/un-save action leads the
+    ///   menu, so the two controls occupy a single nav-bar slot.
+    private func savedQueriesMenu(includingSaveToggle: Bool) -> some View {
+        Menu {
+            if includingSaveToggle {
+                saveQueryButton
+                Divider()
+            }
+            if savedQueries.isEmpty && recentQueries.isEmpty {
+                Text(String(localized: "analytics.saved.empty", defaultValue: "No saved or recent queries"))
+            } else {
+                if !savedQueries.isEmpty {
+                    Section(String(localized: "analytics.saved.section.saved", defaultValue: "Saved")) {
+                        ForEach(savedQueries) { q in
+                            Button(q.menuLabel) { restoreQuery(q) }
+                        }
+                    }
+                }
+                if !recentQueries.isEmpty {
+                    Section(String(localized: "analytics.saved.section.recent", defaultValue: "Recent")) {
+                        ForEach(recentQueries) { q in
+                            Button(q.menuLabel) { restoreQuery(q) }
+                        }
+                    }
+                }
+            }
+        } label: {
+            Label(String(localized: "analytics.saved.menu", defaultValue: "Saved queries"),
+                  systemImage: "bookmark")
+        }
+        .help(String(localized: "analytics.saved.menu.help", defaultValue: "Jump to a saved or recent query"))
     }
 
     /// The secondary chart controls, folded into the toolbar's "Options" menu on compact
