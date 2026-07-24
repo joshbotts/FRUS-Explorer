@@ -973,11 +973,16 @@ struct AnalyticsView: View {
             ContentUnavailableView(
                 String(localized: "analytics.empty.title", defaultValue: "No Results"),
                 systemImage: "chart.bar",
-                description: Text(
-                    String(localized: "analytics.empty.detail",
-                           defaultValue: "No indexed documents match \"\(committedTerm)\".")
-                )
+                description: Text(isComparing
+                    ? String(localized: "analytics.empty.detail.compare",
+                             defaultValue: "None of these terms match any indexed documents.")
+                    : String(localized: "analytics.empty.detail",
+                             defaultValue: "No indexed documents match \"\(committedTerm)\"."))
             )
+        } else if isComparing {
+            // Compare mode is chart-only — the table shows a single term (D1 review fix); the
+            // view-mode toggle is disabled while comparing.
+            chartContent
         } else {
             switch viewMode {
             case .chart:
@@ -988,10 +993,21 @@ struct AnalyticsView: View {
         }
     }
 
-    /// `true` iff every backing data array is empty — used for the "No Results"
-    /// state regardless of which granularity is currently selected.
+    /// `true` iff every backing data array is empty — used for the "No Results" state regardless of
+    /// which granularity is selected. While comparing, checks EVERY committed term (a zero-match term
+    /// in any position must not hide the other terms' lines — D1 review fix).
     private var isAllResultDataEmpty: Bool {
-        yearData.isEmpty
+        if isComparing {
+            return committedTerms.allSatisfy { term in
+                (yearDataByTerm[term]?.isEmpty ?? true)
+                    && (decadeDataByTerm[term]?.isEmpty ?? true)
+                    && (monthDataByTerm[term]?.isEmpty ?? true)
+                    && (dayDataByTerm[term]?.isEmpty ?? true)
+                    && (subseriesDataByTerm[term]?.isEmpty ?? true)
+                    && (volumeDataByTerm[term]?.isEmpty ?? true)
+            }
+        }
+        return yearData.isEmpty
             && decadeData.isEmpty
             && monthData.isEmpty
             && dayData.isEmpty
@@ -1977,7 +1993,7 @@ struct AnalyticsView: View {
     private var toolbarContent: some ToolbarContent {
         // View mode: chart vs table (reusable chrome component, Prep-B).
         ToolbarItem(placement: .primaryAction) {
-            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty)
+            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty || isComparing)
         }
 
         if horizontalSizeClass == .compact {
@@ -2035,7 +2051,7 @@ struct AnalyticsView: View {
                         systemImage: showFitLine ? "chart.line.uptrend.xyaxis" : "chart.bar"
                     )
                 }
-                .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
+                .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart || isComparing)
                 .help(
                     String(localized: "analytics.fitLine.help",
                            defaultValue: "Toggle the smoothed trend line overlay on the chart.")
@@ -2057,7 +2073,7 @@ struct AnalyticsView: View {
                     Label(String(localized: "analytics.colors.menu", defaultValue: "Chart colors"),
                           systemImage: "paintpalette")
                 }
-                .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart)
+                .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart || isComparing)
                 .help(String(localized: "analytics.colors.help",
                              defaultValue: "How many source volumes appear as distinct colors before the rest fold into “Other”"))
             }
@@ -2099,7 +2115,7 @@ struct AnalyticsView: View {
             .disabled(viewMode != .chart)
         }
 
-        if chartAxis.isDateBased && viewMode == .chart {
+        if chartAxis.isDateBased && viewMode == .chart && !isComparing {
             Divider()
             Toggle(isOn: $showFitLine) {
                 Label(String(localized: "analytics.fitLine.toggle", defaultValue: "Fit line"),
@@ -2144,6 +2160,7 @@ struct AnalyticsView: View {
             yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
             dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
             yearVolumeData = []; documentTotalsByYear = [:]; documentTotalsByDecade = [:]
+            errorMessage = nil   // clear a stale error so removing the last term shows the empty state
             isLoading = false
             return
         }
