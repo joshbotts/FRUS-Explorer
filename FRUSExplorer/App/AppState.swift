@@ -267,6 +267,15 @@ final class AppState {
     /// developers and users can see exactly what is preventing data from syncing.
     var cloudKitSyncState: CloudKitSyncState = .unknown
 
+    /// True once the first CloudKit **import** has finished this launch, so the local `Project`
+    /// store is stable. Until then the macOS "Switch Project" menu shows a "Syncing…" placeholder
+    /// instead of a list that would churn/reshuffle as records arrive one batch at a time — a native
+    /// menu handles live content mutation poorly, which made the menu hard to use during the initial
+    /// sync of a fresh launch. Session-only (not persisted): a relaunch re-shows the placeholder only
+    /// while its own import runs, and an already-synced launch (no import work) never shows it because
+    /// the sync state never reaches `.syncing`. (#377 Phase 5)
+    var hasInitialProjectSyncSettled = false
+
     /// Debounce handle for the boot-time orphaned-tag repair (#406).
     ///
     /// `FRUSExplorerApp.bootApp()`'s CloudKit event observer reschedules this on every successful

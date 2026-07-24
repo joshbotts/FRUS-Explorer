@@ -1687,6 +1687,13 @@ struct FRUSExplorerApp: App {
                                                           defaultValue: "Unknown sync error")
                         appState.cloudKitSyncState = .failed(msg)
                     }
+                    // #377 Phase 5: once the first IMPORT ends (success or failure), the local Project
+                    // store reflects whatever CloudKit brought, so the Switch Project menu can reveal
+                    // its list instead of the "Syncing…" placeholder. Gated to `import` so an earlier
+                    // `setup`/`export` completion doesn't reveal a still-empty list mid-import.
+                    if hasEnded && phase == "import" {
+                        appState.hasInitialProjectSyncSettled = true
+                    }
                 }
 
                 // Record a redacted telemetry row for every *ended* event (success or failure),
@@ -2672,7 +2679,25 @@ struct ProjectSwitcherMenuContent: View {
 
     @Query(sort: \Project.name) private var projects: [Project]
 
+    /// While the first CloudKit import is still populating projects — AND we have none to show yet —
+    /// show a "Syncing…" placeholder instead of a list that would churn as records arrive one batch at
+    /// a time (a native menu re-lays-out on every change, which made it hard to land a selection on a
+    /// fresh launch). Gated on `projects.isEmpty` so an already-populated local store (a second launch,
+    /// or a steady-state export) always shows its list immediately and never flashes the placeholder;
+    /// the one-shot `AppState.hasInitialProjectSyncSettled` then stops even a still-empty account from
+    /// re-showing it on later syncs.
+    private var showSyncingPlaceholder: Bool {
+        guard projects.isEmpty, !appState.hasInitialProjectSyncSettled else { return false }
+        if case .syncing = appState.cloudKitSyncState { return true }
+        return false
+    }
+
     var body: some View {
+        #if DEBUG
+        // Confirms the initial-sync flicker hypothesis: on a fresh launch this prints projects=0,1,2…
+        // climbing as CloudKit imports; on an already-synced launch it prints the full count at once.
+        let _ = print("[ProjectSwitcher] projects=\(projects.count) settled=\(appState.hasInitialProjectSyncSettled) placeholder=\(showSyncingPlaceholder)")
+        #endif
         Button {
             appState.activeProjectId = nil
         } label: {
@@ -2685,7 +2710,14 @@ struct ProjectSwitcherMenuContent: View {
             }
         }
 
-        if !projects.isEmpty {
+        if showSyncingPlaceholder {
+            Divider()
+            Button {} label: {
+                Label(String(localized: "menu.research.switchProject.syncing", defaultValue: "Syncing projects…"),
+                      systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(true)
+        } else if !projects.isEmpty {
             Divider()
             ForEach(projects) { project in
                 Button {
