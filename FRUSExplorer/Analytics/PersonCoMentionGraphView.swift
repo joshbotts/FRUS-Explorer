@@ -504,7 +504,34 @@ struct PersonCoMentionGraphView: View {
 
     // MARK: - Graph Content
 
+    /// Graph + a PERMANENTLY-reserved info dock (Win 6). Reserving the dock at all times — an
+    /// empty-state placeholder when nothing is selected — keeps the graph canvas region a constant
+    /// size, so selecting/deselecting a node never resizes the canvas. That matters because a canvas
+    /// resize fires `onCanvasSizeChanged` → the spring layout re-runs and nodes visibly jump; a fixed
+    /// region avoids it. A side dock on wide layouts (≥640pt), a bottom dock when narrow.
     private var graphContent: some View {
+        GeometryReader { outer in
+            let sideDock = outer.size.width >= 640
+            if sideDock {
+                HStack(spacing: 0) {
+                    graphRegion
+                    Divider()
+                    infoDock.frame(width: 300)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    graphRegion
+                    Divider()
+                    infoDock.frame(height: 190)
+                }
+            }
+        }
+    }
+
+    /// The graph canvas plus its floating viewport buttons, occupying all space not taken by the
+    /// info dock. The inner `GeometryReader` measures ONLY this reduced region, so the layout settles
+    /// into it from the first frame (no post-hoc shrink) and is stable across selection changes.
+    private var graphRegion: some View {
         ZStack(alignment: .topLeading) {
             GeometryReader { geo in
                 ZStack(alignment: .topLeading) {
@@ -532,7 +559,7 @@ struct PersonCoMentionGraphView: View {
                 }
                 #endif
             }
-            overlayControls
+            viewportControls
                 .padding()
         }
     }
@@ -654,10 +681,13 @@ struct PersonCoMentionGraphView: View {
         }
     }
 
-    // MARK: - Overlay Controls
+    // MARK: - Viewport Controls
 
+    /// The small floating viewport buttons (Reset View / Back) pinned at the graph's top-leading
+    /// corner. The selected-person info no longer lives here — it moved to the docked panel (Win 6) —
+    /// so these buttons never obscure a node's neighbourhood.
     @ViewBuilder
-    private var overlayControls: some View {
+    private var viewportControls: some View {
         VStack(alignment: .leading, spacing: 8) {
             if vm.scale != 1.0 || vm.panOffset != .zero {
                 Button {
@@ -686,47 +716,84 @@ struct PersonCoMentionGraphView: View {
                 .buttonStyle(.plain)
                 .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .topLeading)))
             }
-
-            if let sel = vm.selectedPartnerId {
-                infoPanel(for: sel)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
-            }
         }
         .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.canNavigateBack)
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.selectedPartnerId)
     }
 
-    @ViewBuilder
-    private func infoPanel(for partnerId: Int) -> some View {
-        let name = vm.name(for: partnerId)
-        let shared = vm.sharedWithFocus(for: partnerId)
-        GroupBox {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(name).font(.headline).lineLimit(3)
-                Divider()
-                Label(String(localized: "personCoMention.info.shared",
-                             defaultValue: "\(shared) shared document\(shared == 1 ? "" : "s") with \(vm.focusName)"),
-                      systemImage: "doc.on.doc")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    Button(String(localized: "personCoMention.info.explore",
-                                  defaultValue: "Explore connections")) {
-                        vm.recenterOn(rollupId: partnerId)
-                    }
-                    .buttonStyle(.bordered)
-                    Button(String(localized: "personCoMention.info.openSearch",
-                                  defaultValue: "Open in Search")) {
-                        onOpenPerson(partnerId, name)
-                    }
-                    .buttonStyle(.bordered)
-                }
-                .font(.caption)
-                .padding(.top, 2)
+    // MARK: - Info Dock
+
+    /// The permanently-reserved info region beside (wide) or below (narrow) the graph. It shows the
+    /// selected partner's card, or a prompt when nothing is selected — the placeholder is what keeps
+    /// the graph canvas a constant size across selection changes (see `graphContent`). Only the dock
+    /// CONTENT cross-fades; its frame never changes.
+    private var infoDock: some View {
+        ZStack {
+            if let sel = vm.selectedPartnerId {
+                // Scroll within the fixed-height reserve so the action buttons stay reachable when the
+                // card exceeds the dock — a long name, or large Dynamic Type in the ~190pt bottom dock
+                // (which would otherwise overflow past the panel onto the legend). The dock FRAME stays
+                // fixed; only its content scrolls, so the canvas-stability reservation is preserved.
+                ScrollView { dockedInfoPanel(for: sel) }
+            } else {
+                infoDockEmptyState
             }
         }
-        .frame(maxWidth: 280)
-        .fixedSize()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(.regularMaterial)
+        .animation(.easeInOut(duration: 0.2), value: vm.selectedPartnerId)
+    }
+
+    /// The selected partner's card — name, shared-document count, and the Explore/Open actions —
+    /// filling the dock width (no fixed 280pt frame, unlike the former floating panel).
+    @ViewBuilder
+    private func dockedInfoPanel(for partnerId: Int) -> some View {
+        let name = vm.name(for: partnerId)
+        let shared = vm.sharedWithFocus(for: partnerId)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(name).font(.headline).lineLimit(3)
+            Divider()
+            Label(String(localized: "personCoMention.info.shared",
+                         defaultValue: "\(shared) shared document\(shared == 1 ? "" : "s") with \(vm.focusName)"),
+                  systemImage: "doc.on.doc")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            // Full-width stacked buttons so the titles never truncate at any Dynamic Type size or
+            // dock width (the old side-by-side HStack was ~7pt from clipping in the 300pt side dock).
+            VStack(spacing: 6) {
+                Button(String(localized: "personCoMention.info.explore",
+                              defaultValue: "Explore connections")) {
+                    vm.recenterOn(rollupId: partnerId)
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
+                Button(String(localized: "personCoMention.info.openSearch",
+                              defaultValue: "Open in Search")) {
+                    onOpenPerson(partnerId, name)
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
+            }
+            .font(.caption)
+            .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+    }
+
+    /// The dock's empty state, shown while no partner is selected.
+    private var infoDockEmptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "hand.tap")
+                .font(.title2)
+                .foregroundStyle(.tertiary)
+            Text(String(localized: "personCoMention.dock.empty",
+                        defaultValue: "Select a person to see their shared documents and connections."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Legend / Disclosure
