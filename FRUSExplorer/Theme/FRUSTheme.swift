@@ -90,15 +90,25 @@ struct FeatureInfoItem: Identifiable {
 }
 
 /// A toolbar "info" button that presents a popover explaining a feature's semantics —
-/// the shared version of the info affordance already used in Corpus Analytics and the
-/// Cross-Reference Graph, so Source Explorer, the Word Cloud, and Chronology can offer
-/// the same help. Place inside a `ToolbarItem`.
+/// the shared info affordance used across the analytics views (Corpus, Person,
+/// Cross-Reference), Source Explorer, the Word Cloud, and Chronology. Place inside a
+/// `ToolbarItem`.
 ///
 /// Version history:
 ///   1.0 — Session 169: shared feature info popover
+///   1.1 — Analytics Wave C (Win 7): added `corpusAnalytics` (replacing Corpus's
+///         hand-rolled popover, copy preserved verbatim), `personAnalytics`, and
+///         `crossReferenceAnalytics` factories so all three analytics views share one
+///         info affordance.
 struct FeatureInfoButton: View {
-    /// Popover heading and the button's accessibility label / tooltip.
+    /// Popover heading and the button's accessibility label.
     let heading: String
+    /// Optional richer pointer tooltip (macOS `.help`). Defaults to `heading` when nil, so most
+    /// callers need not set it; a caller with a more descriptive one-liner (e.g. Corpus Analytics'
+    /// "What do the numbers mean? …") passes it to preserve that hover text. Declared before `items`
+    /// so the synthesized memberwise init keeps both `(heading:items:)` and `(heading:helpText:items:)`
+    /// call shapes valid.
+    var helpText: String? = nil
     /// The titled explanation rows.
     let items: [FeatureInfoItem]
 
@@ -111,7 +121,7 @@ struct FeatureInfoButton: View {
             Image(systemName: "info.circle")
                 .accessibilityLabel(heading)
         }
-        .help(heading)
+        .help(helpText ?? heading)
         .popover(isPresented: $isPresented, arrowEdge: .top) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(heading).font(.headline)
@@ -150,6 +160,84 @@ struct FeatureInfoButton: View {
                     title: String(localized: "source.explorer.info.catalog.title", defaultValue: "Links to the National Archives"),
                     detail: String(localized: "source.explorer.info.catalog.detail",
                                    defaultValue: "Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.")),
+            ]
+        )
+    }
+
+    /// The Corpus Analytics info button — the shared replacement for that view's former
+    /// hand-rolled popover. The heading and the five explanation rows reuse the original
+    /// `analytics.info.*` keys and copy verbatim, so the shipped text (and String Catalog
+    /// entries) are unchanged.
+    static var corpusAnalytics: FeatureInfoButton {
+        FeatureInfoButton(
+            heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
+            helpText: String(localized: "analytics.info.help",
+                             defaultValue: "What do the numbers mean? Multi-word handling, phrases, stemming, and how dates are determined."),
+            items: [
+                FeatureInfoItem(
+                    title: String(localized: "analytics.info.metric.title", defaultValue: "What the numbers mean"),
+                    detail: String(localized: "analytics.info.metric.body",
+                                   defaultValue: "Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.")),
+                FeatureInfoItem(
+                    title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
+                    detail: String(localized: "analytics.info.multiword.body",
+                                   defaultValue: "Words separated by spaces are combined with AND: national security matches documents containing both words. OR (either term) and NOT / leading - (exclude a term) work too, exactly as in the Search box.")),
+                FeatureInfoItem(
+                    title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
+                    detail: String(localized: "analytics.info.phrase.body",
+                                   defaultValue: "Wrap words in quotes for an ordered phrase: \"missile crisis\" matches only documents where those words appear together, in that order. Analytics and Search interpret the same query identically, so the counts here match what Search returns.")),
+                FeatureInfoItem(
+                    title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
+                    detail: String(localized: "analytics.info.stemming.body",
+                                   defaultValue: "English stemming is applied: searching for \"negotiate\" also matches \"negotiating\", \"negotiated\", and \"negotiations\".")),
+                FeatureInfoItem(
+                    title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
+                    detail: String(localized: "analytics.info.dating.body",
+                                   defaultValue: "Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. Documents lacking month or day precision are excluded from the By Month and By Day charts.")),
+            ]
+        )
+    }
+
+    /// The Person Analytics info button — explains what the Trends and Network modes show
+    /// and how mentions are counted and merged. (Copy drafted in Wave C; pending owner review.)
+    static var personAnalytics: FeatureInfoButton {
+        FeatureInfoButton(
+            heading: String(localized: "personAnalytics.info.heading", defaultValue: "About Person Analytics"),
+            items: [
+                FeatureInfoItem(
+                    title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you're seeing"),
+                    detail: String(localized: "personAnalytics.info.shows.detail",
+                                   defaultValue: "Trends ranks the most-mentioned people in an era and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents.")),
+                FeatureInfoItem(
+                    title: String(localized: "personAnalytics.info.counting.title", defaultValue: "How people are counted"),
+                    detail: String(localized: "personAnalytics.info.counting.detail",
+                                   defaultValue: "Counts are mentions of a person across indexed documents, grouped by the app's person authority so spelling variants, honorifics, and name forms for the same individual merge into one identity rather than splitting into several.")),
+                FeatureInfoItem(
+                    title: String(localized: "personAnalytics.info.compare.title", defaultValue: "Comparing people"),
+                    detail: String(localized: "personAnalytics.info.compare.detail",
+                                   defaultValue: "Tap a ranking bar, or use \"Add a person to compare\", to plot several people's mention trajectories on one chart — each colored line is one person. Remove a person with the ✕ on its chip.")),
+            ]
+        )
+    }
+
+    /// The Cross-Reference Analytics info button — explains the ranking, the volume citation
+    /// heat matrix, and the PageRank influence score. (Copy drafted in Wave C; pending owner review.)
+    static var crossReferenceAnalytics: FeatureInfoButton {
+        FeatureInfoButton(
+            heading: String(localized: "crossRefAnalytics.info.heading", defaultValue: "About Cross-Reference Analytics"),
+            items: [
+                FeatureInfoItem(
+                    title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you're seeing"),
+                    detail: String(localized: "crossRefAnalytics.info.shows.detail",
+                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents; the heat matrix shows citation flow between whole volumes; landmarks are the documents a citation-following reader keeps returning to.")),
+                FeatureInfoItem(
+                    title: String(localized: "crossRefAnalytics.info.matrix.title", defaultValue: "Reading the heat matrix"),
+                    detail: String(localized: "crossRefAnalytics.info.matrix.detail",
+                                   defaultValue: "Rows cite columns — a darker cell means the row's volume cites the column's volume more often. Column labels are a short code of the volume's years and number (e.g. '55–57 II); hover, or use VoiceOver, for the full title on either axis.")),
+                FeatureInfoItem(
+                    title: String(localized: "crossRefAnalytics.info.influence.title", defaultValue: "About the influence score"),
+                    detail: String(localized: "crossRefAnalytics.info.influence.detail",
+                                   defaultValue: "Landmark documents are ranked by an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.")),
             ]
         )
     }

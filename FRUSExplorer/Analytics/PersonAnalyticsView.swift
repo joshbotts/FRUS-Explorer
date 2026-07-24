@@ -937,9 +937,12 @@ struct PersonAnalyticsView: View {
                                     .font(.caption.monospacedDigit())
                                     .foregroundStyle(.secondary)
                             }
-                            .contentShape(Rectangle())
-                            .padding(.vertical, 5)
                             .padding(.horizontal)
+                            // Win 5: full-width, ≥44pt row so a tap anywhere across it (including the
+                            // gap before the count) adds the person. contentShape must be OUTERMOST so
+                            // the whole padded/44pt area is hittable, not just the text glyphs.
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .disabled(isSelected(result))
@@ -955,6 +958,10 @@ struct PersonAnalyticsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(selectedPeople) { person in
+                    // Win 5: the name (open-mentions) and ✕ (remove) are SIBLING buttons — never wrap
+                    // the whole chip in one gesture or the ✕ gets swallowed. Each control enlarges its
+                    // OWN hit area to ≥44pt via a frame + contentShape; the chip settles at 44pt tall
+                    // (the old .padding(.vertical, 5) is dropped so it doesn't overshoot).
                     HStack(spacing: 6) {
                         Circle()
                             .fill(color(forRollupId: person.rollupId))
@@ -965,6 +972,8 @@ struct PersonAnalyticsView: View {
                             Text(person.canonicalName)
                                 .font(.caption)
                                 .lineLimit(1)
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         Button {
@@ -972,14 +981,15 @@ struct PersonAnalyticsView: View {
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundStyle(.secondary)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(String(
                             localized: "personAnalytics.chip.remove.a11y",
                             defaultValue: "Remove \(person.canonicalName) from comparison"))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                    .padding(.leading, 10)
                     .background(Capsule().fill(.quaternary.opacity(0.4)))
                 }
             }
@@ -1065,6 +1075,10 @@ struct PersonAnalyticsView: View {
             .pickerStyle(.segmented)
             .help(String(localized: "personAnalytics.mode.help",
                          defaultValue: "Switch between the trends dashboard (rankings, trajectories, relationship dynamics) and the co-mention network graph."))
+        }
+        // Win 7: the shared feature-info affordance, matching Corpus and Cross-Reference Analytics.
+        ToolbarItem(placement: .primaryAction) {
+            FeatureInfoButton.personAnalytics
         }
     }
 
