@@ -46,13 +46,18 @@ struct ProjectEditorView: View {
 
     let projectToEdit: Project?
     let onSaved: (() -> Void)?
+    /// Whether the macOS layout shows its own inline title row. True for sheet presentations (the
+    /// Settings pane); the macOS New Project *window* (#377 Phase 5) passes false because its window
+    /// titlebar already reads "New Project", so an inline headline would duplicate it.
+    let showsInlineHeader: Bool
 
     @State private var name: String
     @State private var researchQuestion: String
 
-    init(projectToEdit: Project? = nil, onSaved: (() -> Void)? = nil) {
+    init(projectToEdit: Project? = nil, onSaved: (() -> Void)? = nil, showsInlineHeader: Bool = true) {
         self.projectToEdit = projectToEdit
         self.onSaved = onSaved
+        self.showsInlineHeader = showsInlineHeader
         _name = State(initialValue: projectToEdit?.name ?? "")
         _researchQuestion = State(initialValue: projectToEdit?.researchQuestion ?? "")
     }
@@ -86,16 +91,18 @@ struct ProjectEditorView: View {
     /// bottom Cancel/Save bar — no `NavigationStack` chrome inside the sheet.
     private var macBody: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text(editorTitle)
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
+            if showsInlineHeader {
+                HStack {
+                    Text(editorTitle)
+                        .font(.headline)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 12)
 
-            Divider()
+                Divider()
+            }
 
             editorForm
                 .formStyle(.grouped)
