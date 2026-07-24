@@ -337,22 +337,19 @@ struct AnalyticsView: View {
                     unavailablePlaceholder
                 } else {
                     VStack(spacing: 0) {
-                        searchBar
-                        if !committedTerm.isEmpty {
-                            Divider()
-                            scopeBar
+                        // Wave B: one consolidated filter row (term + scope / range / group-by chips)
+                        // replaces the four stacked bars, so the chart lands above the fold.
+                        filterRow
+                        if chartAxis.isCategorical && !committedTerm.isEmpty {
+                            categoricalYearNote
                         }
-                        if chartAxis.isDateBased && !committedTerm.isEmpty {
-                            Divider()
-                            yearRangeBar
-                        }
+                        Divider()
                         // Hide the hand-off link when there's nothing to view — during the async
                         // fetch (data arrays momentarily empty) or a genuine zero-match term (Win 3).
                         if !committedTerm.isEmpty && matchedDocumentCount > 0 {
-                            Divider()
                             searchHandoffBar
+                            Divider()
                         }
-                        Divider()
                         if showsLandscapeHint && !committedTerm.isEmpty && viewMode == .chart {
                             landscapeHint
                         }
@@ -515,37 +512,7 @@ struct AnalyticsView: View {
         appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
     }
 
-    // MARK: - Scope Selector
-
-    /// Interactive scope selector shown under the search bar once a term is committed.
-    /// Names the active scope — the whole corpus, a subseries, or a single volume — and lets
-    /// the researcher change it from a menu, re-running the query so project-specific trends
-    /// (hidden by corpus-wide totals) become visible. Reuses the `scopeVolumeIds` plumbing
-    /// that every `CorpusAnalyticsService` query already honors, plus the same
-    /// `WordCloud → Analytics` handoff scope (#189-B).
-    ///
-    /// #258 Phase 3: the hand-rolled inline duplicate of `AnalyticsScopeBar` is FOLDED onto
-    /// the shared component (the census's de-dup win — the two were near-verbatim copies
-    /// with identical localization keys). The inline `setScope`'s committed-term guard
-    /// moves into `onChange`: the shared bar sets the binding first, so an early scope pick
-    /// now sticks and applies on the next search instead of the tap being silently ignored
-    /// (the bar is only shown while a term is committed, so the path is a stale-edit edge).
-    /// The inline bar's `.controlHelp` — the one divergence the #327 review found — now
-    /// lives on the shared bar, so all three hosts gain it.
-    private var scopeBar: some View {
-        AnalyticsScopeBar(
-            indexedVolumeIds: appState.indexedVolumeIds,
-            volumeTitle: volumeTitle,
-            scopeVolumeIds: $scopeVolumeIds,
-            scopeLabel: $scopeLabel,
-            onChange: {
-                // Re-run against the COMMITTED term only — never silently commit an
-                // unsubmitted field edit (the inline setScope's documented rule).
-                guard !committedTerm.isEmpty else { return }
-                runSearch(term: committedTerm)
-            }
-        )
-    }
+    // The scope selector is now the filter row's `scopeChip` (Wave B).
 
     /// Subtle one-line hint, shown only in iPhone portrait, that rotating the device
     /// widens the chart. Non-modal; disappears in landscape and on iPad / macOS.
@@ -562,42 +529,8 @@ struct AnalyticsView: View {
         .accessibilityHidden(true)
     }
 
-    // MARK: - Year Range Bar
-
-    /// Compact year-range filter shown below the search field when the "By Year"
-    /// axis is active. Delegates to the reusable `AnalyticsYearRangeBar` chrome
-    /// component (Prep-B), supplying the range bindings and bounds context; the
-    /// reset action restores the `1861...corpusMaxYear` default span.
-    private var yearRangeBar: some View {
-        VStack(spacing: 2) {
-            AnalyticsYearRangeBar(
-                start: $yearRangeStart,
-                end: $yearRangeEnd,
-                corpusMaxYear: corpusMaxYear,
-                isCompactWidth: isCompactWidth,
-                isCustom: yearRangeIsCustom,
-                onReset: {
-                    yearRangeStart = 1861
-                    yearRangeEnd = corpusMaxYear
-                }
-            )
-            // Administration presets (#236): one tap sets the year range to a president's
-            // term — the date-based analytics charts filter by the document's year.
-            let administrations = appState.administrationProfilesStore.index?.administrations ?? []
-            if !administrations.isEmpty {
-                HStack {
-                    AdministrationPresetMenu(
-                        administrations: administrations,
-                        corpusMaxYear: corpusMaxYear,
-                        yearStart: $yearRangeStart,
-                        yearEnd: $yearRangeEnd
-                    )
-                    Spacer()
-                }
-                .padding(.horizontal)
-            }
-        }
-    }
+    // The year-range control and administration presets are now the filter row's `yearChip` /
+    // `adminPresetChip` (Wave B).
 
     // MARK: - Search Handoff Bar
 
@@ -652,24 +585,178 @@ struct AnalyticsView: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: - Search Bar
+    // MARK: - Consolidated filter row (Wave B)
 
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            TextField(
-                String(localized: "analytics.term.placeholder", defaultValue: "Term…"),
-                text: $termInput
-            )
-            .textFieldStyle(.roundedBorder)
-            .onSubmit { runSearch() }
+    /// The term entry field (split out of the old `searchBar` so it can sit in the filter row).
+    private var termField: some View {
+        TextField(
+            String(localized: "analytics.term.placeholder", defaultValue: "Term…"),
+            text: $termInput
+        )
+        .textFieldStyle(.roundedBorder)
+        .onSubmit { runSearch() }
+    }
 
-            Button(String(localized: "analytics.search.button", defaultValue: "Search")) {
-                runSearch()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(termInput.trimmingCharacters(in: .whitespaces).isEmpty)
+    /// The Search trigger button.
+    private var searchButton: some View {
+        Button(String(localized: "analytics.search.button", defaultValue: "Search")) {
+            runSearch()
         }
-        .padding()
+        .buttonStyle(.borderedProminent)
+        .disabled(termInput.trimmingCharacters(in: .whitespaces).isEmpty)
+    }
+
+    /// The compact scope chip — the shared `AnalyticsScopeBar` in its `.chip` presentation,
+    /// re-running against the committed term on change (the old `scopeBar`'s behavior).
+    private var scopeChip: some View {
+        AnalyticsScopeBar(
+            indexedVolumeIds: appState.indexedVolumeIds,
+            volumeTitle: volumeTitle,
+            scopeVolumeIds: $scopeVolumeIds,
+            scopeLabel: $scopeLabel,
+            onChange: {
+                guard !committedTerm.isEmpty else { return }
+                runSearch(term: committedTerm)
+            },
+            presentation: .chip
+        )
+    }
+
+    /// The compact year-range chip, dimmed (not hidden) on the categorical axes whose breakdowns
+    /// ignore the range — `categoricalYearNote` below the row explains it (design decision, Wave B).
+    private var yearChip: some View {
+        AnalyticsYearRangeBar(
+            start: $yearRangeStart,
+            end: $yearRangeEnd,
+            corpusMaxYear: corpusMaxYear,
+            isCompactWidth: isCompactWidth,
+            isCustom: yearRangeIsCustom,
+            onReset: {
+                yearRangeStart = 1861
+                yearRangeEnd = corpusMaxYear
+            },
+            presentation: .chip
+        )
+        .controlSize(.small)   // match the sibling menu chips' height in the row
+        .disabled(chartAxis.isCategorical)
+        .opacity(chartAxis.isCategorical ? 0.45 : 1)
+    }
+
+    /// The Administration-preset menu (one tap sets the range to a president's term), re-homed from
+    /// the old year-range bar into the filter row as a chip; dimmed with the year chip on categorical
+    /// axes since it too only sets a year range. Absent until the profiles index loads.
+    @ViewBuilder private var adminPresetChip: some View {
+        let administrations = appState.administrationProfilesStore.index?.administrations ?? []
+        if !administrations.isEmpty {
+            AdministrationPresetMenu(
+                administrations: administrations,
+                corpusMaxYear: corpusMaxYear,
+                yearStart: $yearRangeStart,
+                yearEnd: $yearRangeEnd
+            )
+            .menuStyle(.button)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(chartAxis.isCategorical)
+            .opacity(chartAxis.isCategorical ? 0.45 : 1)
+        }
+    }
+
+    /// The "Group by" chip (Wave B) — replaces the toolbar axis picker. Opens a sectioned menu:
+    /// "Over time" (the date-based axes) and "Broken down by" (the categorical axes), driven off the
+    /// axis enum so the sections can't drift. Binds `$chartAxis`; no new state.
+    private var groupByChip: some View {
+        Menu {
+            Section(String(localized: "analytics.axis.section.overTime", defaultValue: "Over time")) {
+                ForEach(AnalyticsChartAxis.allCases.filter { $0.isDateBased }, id: \.self) { axis in
+                    Button { chartAxis = axis } label: {
+                        if axis == chartAxis {
+                            Label(axis.pickerLabel, systemImage: "checkmark")
+                        } else {
+                            Text(axis.pickerLabel)
+                        }
+                    }
+                }
+            }
+            Section(String(localized: "analytics.axis.section.brokenDown", defaultValue: "Broken down by")) {
+                ForEach(AnalyticsChartAxis.allCases.filter { $0.isCategorical }, id: \.self) { axis in
+                    Button { chartAxis = axis } label: {
+                        if axis == chartAxis {
+                            Label(axis.pickerLabel, systemImage: "checkmark")
+                        } else {
+                            Text(axis.pickerLabel)
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(String(format: String(localized: "analytics.axis.chip %@",
+                                           defaultValue: "Group by: %@"), chartAxis.pickerLabel))
+                    .font(.caption)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(committedTerm.isEmpty)
+    }
+
+    /// Footnote under the filter row on the categorical axes, explaining the dimmed year chip.
+    private var categoricalYearNote: some View {
+        Text(String(localized: "analytics.yearRange.categoricalNote",
+                    defaultValue: "The year range applies to the time views; the breakdowns show the whole span."))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.bottom, 4)
+    }
+
+    /// The consolidated filter row (Wave B): term field + Search, then the scope / year-range /
+    /// group-by / administration chips — one row on regular width, a term row plus a horizontally
+    /// scrolling chip cluster on compact width. Replaces the four stacked filter bars so the chart
+    /// lands above the fold on the iPad sheet.
+    private var filterRow: some View {
+        Group {
+            if isCompactWidth {
+                VStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        termField.frame(maxWidth: .infinity)
+                        searchButton
+                    }
+                    if !committedTerm.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                scopeChip
+                                yearChip
+                                groupByChip
+                                adminPresetChip
+                            }
+                            .padding(.vertical, 1)
+                        }
+                    }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    termField.frame(minWidth: 150, maxWidth: 260)
+                    searchButton
+                    if !committedTerm.isEmpty {
+                        scopeChip
+                        yearChip
+                        groupByChip
+                        adminPresetChip
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Content Area
@@ -1590,19 +1677,23 @@ struct AnalyticsView: View {
         }
 
         if horizontalSizeClass == .compact {
-            // iPhone: fold the four secondary chart controls into a single "Options"
-            // menu so the nav bar doesn't cram or truncate them (mirrors WordCloudView).
-            // On regular width (iPad / macOS) they render inline below (#188-A).
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    compactChartOptionsMenu
-                } label: {
-                    Label(String(localized: "analytics.options.menu", defaultValue: "Options"),
-                          systemImage: "ellipsis.circle")
+            // iPhone: fold the secondary chart controls into a single "Options" menu (mirrors
+            // WordCloudView). On regular width they render inline below (#188-A). Shown only when the
+            // menu would have content — after Wave B moved axis granularity to the filter row's
+            // "Group by" chip, a categorical axis leaves normalization + fit-line/colors all
+            // inapplicable, so an un-gated button would open an empty menu (R3).
+            if normalizationApplies || (chartAxis.isDateBased && viewMode == .chart) {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        compactChartOptionsMenu
+                    } label: {
+                        Label(String(localized: "analytics.options.menu", defaultValue: "Options"),
+                              systemImage: "ellipsis.circle")
+                    }
+                    .disabled(committedTerm.isEmpty)
+                    .help(String(localized: "analytics.options.help",
+                                 defaultValue: "Values, fit line, and chart colors."))
                 }
-                .disabled(committedTerm.isEmpty)
-                .help(String(localized: "analytics.options.help",
-                             defaultValue: "Grouping, values, fit line, and chart colors."))
             }
         } else {
             // Normalization: raw count vs % of documents (CA-4). Only meaningful for the
@@ -1626,22 +1717,7 @@ struct AnalyticsView: View {
                 }
             }
 
-            // Axis: granularity picker (decade / year / month / day / subseries)
-            ToolbarItem(placement: .primaryAction) {
-                Picker(
-                    String(localized: "analytics.axis.picker", defaultValue: "Group by"),
-                    selection: $chartAxis
-                ) {
-                    ForEach(AnalyticsChartAxis.allCases, id: \.self) { axis in
-                        Text(axis.pickerLabel).tag(axis)
-                    }
-                }
-                .disabled(committedTerm.isEmpty)
-                .help(String(
-                    localized: "analytics.axis.picker.help",
-                    defaultValue: "Choose how to bucket results: by decade, year, month, day, or subseries"
-                ))
-            }
+            // Axis granularity moved to the "Group by" chip in the consolidated filter row (Wave B).
 
             // Fit-line toggle. Only meaningful on date-based charts.
             ToolbarItem(placement: .primaryAction) {
@@ -1719,14 +1795,7 @@ struct AnalyticsView: View {
     /// menu concise (#188-A).
     @ViewBuilder
     private var compactChartOptionsMenu: some View {
-        Picker(selection: $chartAxis) {
-            ForEach(AnalyticsChartAxis.allCases, id: \.self) { axis in
-                Text(axis.pickerLabel).tag(axis)
-            }
-        } label: {
-            Text(String(localized: "analytics.axis.picker", defaultValue: "Group by"))
-        }
-
+        // Axis granularity moved to the filter row's "Group by" chip (Wave B).
         if normalizationApplies {
             Picker(selection: $normalizationMode) {
                 ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in

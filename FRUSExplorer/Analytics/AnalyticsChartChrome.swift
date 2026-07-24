@@ -52,16 +52,27 @@ struct AnalyticsYearRangeBar: View {
     /// parent so the default constants live in one place.
     let onReset: () -> Void
 
+    /// How the control presents: `.bar` (default) keeps the full-width HStack+padding wrapper the six
+    /// existing callers rely on; `.chip` renders just the 44pt `rangeChip` for the Corpus consolidated
+    /// filter row (Wave B).
+    enum Presentation { case bar, chip }
+    var presentation: Presentation = .bar
+
     /// Whether the range-picker popover is presented.
     @State private var isRangePopoverPresented = false
 
     var body: some View {
-        HStack(spacing: 10) {
+        switch presentation {
+        case .bar:
+            HStack(spacing: 10) {
+                rangeChip
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+        case .chip:
             rangeChip
-            Spacer()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
     }
 
     /// The tappable range chip (design Win 2): a single 44pt tabular readout
@@ -82,7 +93,9 @@ struct AnalyticsYearRangeBar: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            .frame(minHeight: 44)
+            // 44pt as a standalone bar (the 7 `.bar` callers); in the consolidated filter row the
+            // chip sizes with its `.controlSize(.small)` siblings instead (Wave B).
+            .frame(minHeight: presentation == .bar ? 44 : nil)
             .contentShape(Rectangle())
         }
         .buttonStyle(.bordered)
@@ -376,62 +389,81 @@ struct AnalyticsScopeBar: View {
         }
     }
 
+    /// How the selector presents: `.bar` (default) is the full-width labelled bar the existing
+    /// callers use; `.chip` is a compact bordered menu chip for the Corpus consolidated filter row.
+    enum Presentation { case bar, chip }
+    var presentation: Presentation = .bar
+
     var body: some View {
+        switch presentation {
+        case .bar:  barBody
+        case .chip: chipBody
+        }
+    }
+
+    /// The scope selector's menu items — the whole-corpus / By-Subseries / By-Volume / My Volume
+    /// Scopes / By-Detected-Topic tree — shared verbatim by both presentations.
+    @ViewBuilder private var scopeMenuItems: some View {
+        Button {
+            setScope(nil, label: nil)
+        } label: {
+            Label(String(localized: "analytics.scope.wholeCorpus", defaultValue: "Whole corpus"),
+                  systemImage: scopeVolumeIds == nil ? "checkmark" : "globe")
+        }
+        let subseries = indexedSubseries
+        if !subseries.isEmpty {
+            Divider()
+            Menu(String(localized: "analytics.scope.bySubseries", defaultValue: "By Subseries")) {
+                ForEach(subseries, id: \.self) { sub in
+                    Button(sub) { setScope(volumes(inSubseries: sub), label: sub) }
+                }
+            }
+            Menu(String(localized: "analytics.scope.byVolume", defaultValue: "By Volume")) {
+                ForEach(subseries, id: \.self) { sub in
+                    Menu(sub) {
+                        ForEach(volumes(inSubseries: sub), id: \.self) { volumeId in
+                            Button(volumeTitle(volumeId)) {
+                                setScope([volumeId], label: volumeTitle(volumeId))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // #258 Phase 3 — user-defined scopes as a third section. The invariant:
+        // only a NON-EMPTY resolved set may reach setScope (whose empty→nil guard
+        // would otherwise invert an empty scope into whole-corpus). Zero-indexed
+        // scopes render disabled with an honest count — they cannot seed anything.
+        if !customScopes.isEmpty {
+            Divider()
+            Menu(String(localized: "analytics.scope.customScopes",
+                        defaultValue: "My Volume Scopes")) {
+                ForEach(customScopes) { scope in
+                    customScopeItem(scope)
+                }
+            }
+        }
+        // #308 Phase 1 — subject category / sub-category facet (volume-grain, from the
+        // bundled profiles). Each item intersects its profile volume set with
+        // `indexedVolumeIds` and disables at zero (the custom-scope idiom above), so
+        // every set reaching `setScope` is non-empty AND indexed — the empty→nil
+        // "no filter" inversion cannot fire, and no dashboard is scoped to volumes it
+        // has no data for. Content is built lazily when the sub-menu opens.
+        if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
+           !resolved.isEmpty {
+            Divider()
+            subjectScopeMenu(resolved)
+        }
+    }
+
+    /// Full-width labelled bar (default): leading icon, the menu, and a trailing clear button.
+    private var barBody: some View {
         HStack(spacing: 8) {
             Image(systemName: "scope")
                 .foregroundStyle(.secondary)
                 .font(.caption)
             Menu {
-                Button {
-                    setScope(nil, label: nil)
-                } label: {
-                    Label(String(localized: "analytics.scope.wholeCorpus", defaultValue: "Whole corpus"),
-                          systemImage: scopeVolumeIds == nil ? "checkmark" : "globe")
-                }
-                let subseries = indexedSubseries
-                if !subseries.isEmpty {
-                    Divider()
-                    Menu(String(localized: "analytics.scope.bySubseries", defaultValue: "By Subseries")) {
-                        ForEach(subseries, id: \.self) { sub in
-                            Button(sub) { setScope(volumes(inSubseries: sub), label: sub) }
-                        }
-                    }
-                    Menu(String(localized: "analytics.scope.byVolume", defaultValue: "By Volume")) {
-                        ForEach(subseries, id: \.self) { sub in
-                            Menu(sub) {
-                                ForEach(volumes(inSubseries: sub), id: \.self) { volumeId in
-                                    Button(volumeTitle(volumeId)) {
-                                        setScope([volumeId], label: volumeTitle(volumeId))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                // #258 Phase 3 — user-defined scopes as a third section. The invariant:
-                // only a NON-EMPTY resolved set may reach setScope (whose empty→nil guard
-                // would otherwise invert an empty scope into whole-corpus). Zero-indexed
-                // scopes render disabled with an honest count — they cannot seed anything.
-                if !customScopes.isEmpty {
-                    Divider()
-                    Menu(String(localized: "analytics.scope.customScopes",
-                                defaultValue: "My Volume Scopes")) {
-                        ForEach(customScopes) { scope in
-                            customScopeItem(scope)
-                        }
-                    }
-                }
-                // #308 Phase 1 — subject category / sub-category facet (volume-grain, from the
-                // bundled profiles). Each item intersects its profile volume set with
-                // `indexedVolumeIds` and disables at zero (the custom-scope idiom above), so
-                // every set reaching `setScope` is non-empty AND indexed — the empty→nil
-                // "no filter" inversion cannot fire, and no dashboard is scoped to volumes it
-                // has no data for. Content is built lazily when the sub-menu opens.
-                if let resolved = VolumeSubjectProfilesStore.shared?.resolvedByVolume,
-                   !resolved.isEmpty {
-                    Divider()
-                    subjectScopeMenu(resolved)
-                }
+                scopeMenuItems
             } label: {
                 HStack(spacing: 4) {
                     Text(String(format: String(localized: "analytics.scope.label %@",
@@ -462,6 +494,35 @@ struct AnalyticsScopeBar: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    /// Compact bordered menu chip (Wave B) for the consolidated filter row: scope name + chevron.
+    /// The "Whole corpus" clear action stays reachable via the menu's own first item.
+    private var chipBody: some View {
+        Menu {
+            scopeMenuItems
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "scope")
+                    .font(.caption2)
+                Text(currentLabel)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .controlHelp(
+            String(localized: "analytics.scope.menu.a11y", defaultValue: "Analysis scope"),
+            detail: String(localized: "analytics.scope.menu.help",
+                           defaultValue: "Restrict the analysis to a subseries or a single volume, or chart the whole corpus."),
+            systemImage: "scope"
+        )
     }
 }
 
