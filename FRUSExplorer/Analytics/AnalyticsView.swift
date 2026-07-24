@@ -202,9 +202,6 @@ struct AnalyticsView: View {
     /// bar chart, which never plots a line.
     @State private var showFitLine: Bool = true
 
-    /// Drives the info popover next to the toolbar pickers.
-    @State private var showInfoPopover: Bool = false
-
     /// User preference (CA-4): whether the date-based charts plot raw matching-document
     /// counts or each period's matches as a **share of all indexed documents** in that
     /// period. Persisted per-user; defaults to `raw` (byte-for-byte the original
@@ -1775,23 +1772,11 @@ struct AnalyticsView: View {
             }
         }
 
-        // Info button — explains metric semantics, query syntax, and stemming.
+        // Info button — explains metric semantics, query syntax, and stemming. Win 7: now the
+        // shared FeatureInfoButton (copy preserved verbatim via `analytics.info.*` keys), matching
+        // Person and Cross-Reference Analytics.
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                showInfoPopover.toggle()
-            } label: {
-                Image(systemName: "info.circle")
-                    .accessibilityLabel(
-                        String(localized: "analytics.info.a11y", defaultValue: "About these results")
-                    )
-            }
-            .help(String(
-                localized: "analytics.info.help",
-                defaultValue: "What do the numbers mean? Multi-word handling, phrases, stemming, and how dates are determined."
-            ))
-            .popover(isPresented: $showInfoPopover, arrowEdge: .top) {
-                infoPopoverContent
-            }
+            FeatureInfoButton.corpusAnalytics
         }
 
         // Done button — iOS sheet only; macOS windows use the close button.
@@ -1836,71 +1821,6 @@ struct AnalyticsView: View {
             } label: {
                 Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
             }
-        }
-    }
-
-    // MARK: - Info Popover
-
-    /// Content of the info popover. Explains:
-    /// - What the bar height represents (unique documents containing the term,
-    ///   not total mentions)
-    /// - How multi-word queries are interpreted (whitespace-AND, individual
-    ///   Porter stemming)
-    /// - That quoted phrases, `OR` / `NOT`, and `term*` wildcards are supported and
-    ///   interpreted identically to the Search box (via `FTS5InlineQueryParser`)
-    /// - That the chart bucket is the document date (TEI `<date>`), not the
-    ///   volume publication date
-    private var infoPopoverContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(String(localized: "analytics.info.heading",
-                        defaultValue: "About these results"))
-                .font(.headline)
-
-            infoRow(
-                title: String(localized: "analytics.info.metric.title",
-                              defaultValue: "What the numbers mean"),
-                body:  String(localized: "analytics.info.metric.body",
-                              defaultValue: "Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.")
-            )
-            infoRow(
-                title: String(localized: "analytics.info.multiword.title",
-                              defaultValue: "Multiple words"),
-                body:  String(localized: "analytics.info.multiword.body",
-                              defaultValue: "Words separated by spaces are combined with AND: national security matches documents containing both words. OR (either term) and NOT / leading - (exclude a term) work too, exactly as in the Search box.")
-            )
-            infoRow(
-                title: String(localized: "analytics.info.phrase.title",
-                              defaultValue: "Phrases"),
-                body:  String(localized: "analytics.info.phrase.body",
-                              defaultValue: "Wrap words in quotes for an ordered phrase: \"missile crisis\" matches only documents where those words appear together, in that order. Analytics and Search interpret the same query identically, so the counts here match what Search returns.")
-            )
-            infoRow(
-                title: String(localized: "analytics.info.stemming.title",
-                              defaultValue: "Stemming"),
-                body:  String(localized: "analytics.info.stemming.body",
-                              defaultValue: "English stemming is applied: searching for \"negotiate\" also matches \"negotiating\", \"negotiated\", and \"negotiations\".")
-            )
-            infoRow(
-                title: String(localized: "analytics.info.dating.title",
-                              defaultValue: "How dates are determined"),
-                body:  String(localized: "analytics.info.dating.body",
-                              defaultValue: "Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. Documents lacking month or day precision are excluded from the By Month and By Day charts.")
-            )
-        }
-        .padding(16)
-        .frame(width: 360)
-    }
-
-    @ViewBuilder
-    private func infoRow(title: String, body: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.primary)
-            Text(body)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

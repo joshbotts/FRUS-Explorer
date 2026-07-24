@@ -199,8 +199,14 @@ struct CrossReferenceAnalyticsView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "crossRefAnalytics.title", defaultValue: "Cross-Reference Analytics"))
             #endif
-            // Toolbar removed (#209): the chart/table picker and out-degree toggle moved into
-            // their own collapsible sections, so nothing chart-specific remains here.
+            // The chart/table picker and out-degree toggle moved into their own collapsible sections
+            // (#209). Win 7 restores a single toolbar affordance: the shared feature-info button,
+            // matching Corpus and Person Analytics.
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    FeatureInfoButton.crossReferenceAnalytics
+                }
+            }
         }
         #if os(macOS)
         .frame(minWidth: 720, minHeight: 600)
@@ -592,24 +598,45 @@ struct CrossReferenceAnalyticsView: View {
     }
 
     private var heatMatrix: some View {
-        let cellSize: CGFloat = 22
-        let labelWidth: CGFloat = 92
+        // Win 8: larger cells (was 22pt) and HORIZONTAL short column codes (were rotated, truncated
+        // ids) so the column axis reads left-to-right. Rows keep the fuller descriptive label.
+        let cellSize: CGFloat = 34
+        let headerHeight: CGFloat = 40
+        let rowLabelWidth: CGFloat = 120
+        // Resolve each column's manifest metadata once, then derive the collision-free codes (column
+        // axis) and the descriptive labels (row axis).
+        let columns: [(id: String, subseries: String, title: String, topic: String)] = matrixVolumes.map { id in
+            let entry = appState.manifestStore.entry(forVolumeId: id)
+            let subseries = entry?.subseries ?? ""
+            let title = entry?.title ?? id
+            let distilled = ChronologyViewModel.distilledVolumeLabel(volumeId: id, subseries: subseries, title: title)
+            // distilledVolumeLabel is "Topic · tag" (topic present) or just "tag"; take the topic half.
+            let topic = distilled.contains(" · ") ? String(distilled.components(separatedBy: " · ").first ?? "") : ""
+            return (id: id, subseries: subseries, title: title, topic: topic)
+        }
+        let codes = matrixColumnCodes(columns)
+        let rowLabels = Dictionary(uniqueKeysWithValues: columns.map { c in
+            (c.id, ChronologyViewModel.distilledVolumeLabel(volumeId: c.id, subseries: c.subseries, title: c.title))
+        })
         return ScrollView([.horizontal, .vertical]) {
             Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-                // Header row: corner + column (target) labels.
+                // Header row: corner + column (target) codes — horizontal, up to two lines.
                 GridRow {
-                    Color.clear.frame(width: labelWidth, height: cellSize)
+                    Color.clear.frame(width: rowLabelWidth, height: headerHeight)
                     ForEach(matrixVolumes, id: \.self) { target in
                         Button {
                             openVolume(target)
                         } label: {
-                            Text(shortVolumeLabel(target))
-                                .font(.system(size: 8).monospaced())
-                                .rotationEffect(.degrees(-90))
-                                .frame(width: cellSize, height: labelWidth, alignment: .leading)
+                            Text(codes[target] ?? shortVolumeLabel(target))
+                                .font(.system(size: 10).monospaced())
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.7)
+                                .multilineTextAlignment(.center)
+                                .frame(width: cellSize, height: headerHeight, alignment: .center)
                         }
                         .buttonStyle(.plain)
                         .help(volumeTitle(target))
+                        .accessibilityLabel(Text(volumeTitle(target)))
                     }
                 }
                 ForEach(matrixVolumes, id: \.self) { source in
@@ -617,13 +644,15 @@ struct CrossReferenceAnalyticsView: View {
                         Button {
                             openVolume(source)
                         } label: {
-                            Text(shortVolumeLabel(source))
-                                .font(.system(size: 9).monospaced())
+                            Text(rowLabels[source] ?? shortVolumeLabel(source))
+                                .font(.system(size: 10))
                                 .lineLimit(1)
-                                .frame(width: labelWidth, height: cellSize, alignment: .trailing)
+                                .truncationMode(.tail)
+                                .frame(width: rowLabelWidth, height: cellSize, alignment: .trailing)
                         }
                         .buttonStyle(.plain)
                         .help(volumeTitle(source))
+                        .accessibilityLabel(Text(volumeTitle(source)))
                         ForEach(matrixVolumes, id: \.self) { target in
                             heatCellView(source: source, target: target, size: cellSize)
                         }
@@ -632,7 +661,7 @@ struct CrossReferenceAnalyticsView: View {
             }
             .padding(.horizontal)
         }
-        .frame(maxHeight: 420)
+        .frame(maxHeight: 480)
     }
 
     private func heatCellView(source: String, target: String, size: CGFloat) -> some View {
