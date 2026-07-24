@@ -42,8 +42,8 @@ struct AnalyticsYearRangeBar: View {
 
     /// Most recent corpus year — the upper bound and the reset target for `end`.
     let corpusMaxYear: Int
-    /// `true` on a compact-width layout (iPhone), where the "Year range:" label is
-    /// dropped so the space goes to the fields.
+    /// Retained for API stability across the seven `AnalyticsYearRangeBar` call sites (the chip
+    /// presentation no longer varies by width); previously dropped the "Year range:" label on iPhone.
     let isCompactWidth: Bool
     /// `true` when the range has been narrowed away from the `1861...corpusMaxYear`
     /// default; drives the "Reset" button's visibility.
@@ -52,38 +52,78 @@ struct AnalyticsYearRangeBar: View {
     /// parent so the default constants live in one place.
     let onReset: () -> Void
 
+    /// Whether the range-picker popover is presented.
+    @State private var isRangePopoverPresented = false
+
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "calendar")
-                .foregroundStyle(.secondary)
-                .font(.caption)
+            rangeChip
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+    }
 
-            // The "Year range:" label is dropped on compact width (iPhone): the
-            // calendar icon carries the meaning and the space goes to the fields.
-            if !isCompactWidth {
-                Text(String(localized: "analytics.yearRange.label",
-                            defaultValue: "Year range:"))
+    /// The tappable range chip (design Win 2): a single 44pt tabular readout
+    /// ("1914–1953 ⌄") that opens the range picker in a popover, replacing the two
+    /// inline steppers whose ▲▼ hit areas were well under the 44pt touch target. The
+    /// chip doubles as the at-a-glance readout of the active range.
+    private var rangeChip: some View {
+        Button {
+            isRangePopoverPresented = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "calendar")
                     .font(.caption)
+                Text(verbatim: "\(start)–\(end)")
+                    .font(.caption.monospacedDigit())
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel(String(localized: "analytics.yearRange.chip.a11y",
+                                   defaultValue: "Year range"))
+        .accessibilityValue(Text(verbatim: "\(start)–\(end)"))
+        .popover(isPresented: $isRangePopoverPresented) {
+            rangePickerPopover
+                // Keep it a popover (not an adapted sheet) on iPhone too.
+                .presentationCompactAdaptation(.popover)
+        }
+    }
 
-            yearEntryField(
-                value: $start,
-                bounds: 1776...end,
-                accessibilityLabel: String(localized: "analytics.yearRange.start.a11y",
-                                           defaultValue: "Start year")
-            )
+    /// The popover content — the two clamped stepper fields plus Reset (the controls
+    /// that were formerly inline). A popover here is deliberate: fine adjustment lives
+    /// behind the chip rather than crowding the filter row.
+    private var rangePickerPopover: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "analytics.yearRange.label",
+                        defaultValue: "Year range:"))
+                .font(.headline)
 
-            Text(verbatim: "–")
-                .foregroundStyle(.tertiary)
-                .font(.caption)
+            HStack(spacing: 10) {
+                yearEntryField(
+                    value: $start,
+                    bounds: 1776...end,
+                    accessibilityLabel: String(localized: "analytics.yearRange.start.a11y",
+                                               defaultValue: "Start year")
+                )
 
-            yearEntryField(
-                value: $end,
-                bounds: start...corpusMaxYear,
-                accessibilityLabel: String(localized: "analytics.yearRange.end.a11y",
-                                           defaultValue: "End year")
-            )
+                Text(verbatim: "–")
+                    .foregroundStyle(.tertiary)
+                    .font(.caption)
+
+                yearEntryField(
+                    value: $end,
+                    bounds: start...corpusMaxYear,
+                    accessibilityLabel: String(localized: "analytics.yearRange.end.a11y",
+                                               defaultValue: "End year")
+                )
+            }
 
             if isCustom {
                 Button {
@@ -100,11 +140,9 @@ struct AnalyticsYearRangeBar: View {
                     defaultValue: "Reset the year range to 1861 – current year (the full FRUS corpus span)"
                 ))
             }
-
-            Spacer()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
+        .padding()
+        .frame(minWidth: 260)
     }
 
     /// A year value rendered as an editable, clamped text field paired with an
