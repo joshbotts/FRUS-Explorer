@@ -416,6 +416,11 @@ struct BrowserView: View {
             case .people:            PersonIndexView()
             }
         }
+        // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every
+        // pushed Browse depth on regular-width iPad (each level sets its own navigationTitle; this
+        // pairs the subtitle to it). The corpus root is rendered directly in `stackLayout`, so it
+        // carries its own `.workingOnSubtitle()`; no level view sets a subtitle of its own to clobber.
+        .workingOnSubtitle()
         .safeAreaInset(edge: .top, spacing: 0) {
             // Breadcrumb suppression (see doc comment above):
             //  - iPad (#238): a pinned `.safeAreaInset` breadcrumb is occluded by the iPadOS
