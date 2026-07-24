@@ -602,7 +602,7 @@ struct CrossReferenceAnalyticsView: View {
         // ids) so the column axis reads left-to-right. Rows keep the fuller descriptive label.
         let cellSize: CGFloat = 34
         let headerHeight: CGFloat = 40
-        let rowLabelWidth: CGFloat = 120
+        let rowLabelWidth: CGFloat = 150
         // Resolve each column's manifest metadata once, then derive the collision-free codes (column
         // axis) and the descriptive labels (row axis).
         let columns: [(id: String, subseries: String, title: String, topic: String)] = matrixVolumes.map { id in
@@ -647,7 +647,11 @@ struct CrossReferenceAnalyticsView: View {
                             Text(rowLabels[source] ?? shortVolumeLabel(source))
                                 .font(.system(size: 10))
                                 .lineLimit(1)
-                                .truncationMode(.tail)
+                                // Head-truncate: distilledVolumeLabel's uniqueness lives in its
+                                // trailing "· period vN" tag, so when the topic is too long keep the
+                                // tag (right-aligned, nearest the cells) visible rather than dropping
+                                // it — otherwise volumes sharing a topic prefix render identically.
+                                .truncationMode(.head)
                                 .frame(width: rowLabelWidth, height: cellSize, alignment: .trailing)
                         }
                         .buttonStyle(.plain)

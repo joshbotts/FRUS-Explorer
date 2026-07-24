@@ -101,8 +101,14 @@ struct FeatureInfoItem: Identifiable {
 ///         `crossReferenceAnalytics` factories so all three analytics views share one
 ///         info affordance.
 struct FeatureInfoButton: View {
-    /// Popover heading and the button's accessibility label / tooltip.
+    /// Popover heading and the button's accessibility label.
     let heading: String
+    /// Optional richer pointer tooltip (macOS `.help`). Defaults to `heading` when nil, so most
+    /// callers need not set it; a caller with a more descriptive one-liner (e.g. Corpus Analytics'
+    /// "What do the numbers mean? …") passes it to preserve that hover text. Declared before `items`
+    /// so the synthesized memberwise init keeps both `(heading:items:)` and `(heading:helpText:items:)`
+    /// call shapes valid.
+    var helpText: String? = nil
     /// The titled explanation rows.
     let items: [FeatureInfoItem]
 
@@ -115,7 +121,7 @@ struct FeatureInfoButton: View {
             Image(systemName: "info.circle")
                 .accessibilityLabel(heading)
         }
-        .help(heading)
+        .help(helpText ?? heading)
         .popover(isPresented: $isPresented, arrowEdge: .top) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(heading).font(.headline)
@@ -165,6 +171,8 @@ struct FeatureInfoButton: View {
     static var corpusAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
+            helpText: String(localized: "analytics.info.help",
+                             defaultValue: "What do the numbers mean? Multi-word handling, phrases, stemming, and how dates are determined."),
             items: [
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.metric.title", defaultValue: "What the numbers mean"),
