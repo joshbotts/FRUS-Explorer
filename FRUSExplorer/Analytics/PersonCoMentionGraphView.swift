@@ -729,7 +729,11 @@ struct PersonCoMentionGraphView: View {
     private var infoDock: some View {
         ZStack {
             if let sel = vm.selectedPartnerId {
-                dockedInfoPanel(for: sel)
+                // Scroll within the fixed-height reserve so the action buttons stay reachable when the
+                // card exceeds the dock — a long name, or large Dynamic Type in the ~190pt bottom dock
+                // (which would otherwise overflow past the panel onto the legend). The dock FRAME stays
+                // fixed; only its content scrolls, so the canvas-stability reservation is preserved.
+                ScrollView { dockedInfoPanel(for: sel) }
             } else {
                 infoDockEmptyState
             }
@@ -753,21 +757,24 @@ struct PersonCoMentionGraphView: View {
                   systemImage: "doc.on.doc")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
+            // Full-width stacked buttons so the titles never truncate at any Dynamic Type size or
+            // dock width (the old side-by-side HStack was ~7pt from clipping in the 300pt side dock).
+            VStack(spacing: 6) {
                 Button(String(localized: "personCoMention.info.explore",
                               defaultValue: "Explore connections")) {
                     vm.recenterOn(rollupId: partnerId)
                 }
                 .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
                 Button(String(localized: "personCoMention.info.openSearch",
                               defaultValue: "Open in Search")) {
                     onOpenPerson(partnerId, name)
                 }
                 .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
             }
             .font(.caption)
             .padding(.top, 2)
-            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
