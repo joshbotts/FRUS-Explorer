@@ -186,6 +186,9 @@ struct ResearchView: View {
                                 }
                             }
                     }
+                    // #377 follow-up (#338): a sheet doesn't reliably inherit `\.sceneID`, so re-inject
+                    // this window's id — Project Home's hand-offs target THIS window on iPad multi-window.
+                    .environment(\.sceneID, sceneID)
                 }
             }
             #endif

@@ -252,6 +252,11 @@ struct SecondProjectNudgeModifier: ViewModifier {
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
+    #if os(iOS)
+    /// This window's scene id, re-injected into the nudge's Project Home sheet so its hand-offs
+    /// target this window on iPad multi-window (#377 follow-up / #338).
+    @Environment(\.sceneID) private var sceneID
+    #endif
     @Query private var allProjects: [Project]
     @AppStorage("frus.hasShownSecondProjectNudge") private var hasShown = false
     #if os(iOS)
@@ -292,6 +297,9 @@ struct SecondProjectNudgeModifier: ViewModifier {
                     NavigationStack {
                         ProjectHomeView(projectId: id, onNavigateAway: { homeSheetProjectId = nil })
                     }
+                    // A sheet doesn't reliably inherit `\.sceneID`; re-inject so Project Home's
+                    // hand-offs target this window on iPad multi-window (#338).
+                    .environment(\.sceneID, sceneID)
                 }
             }
             #endif

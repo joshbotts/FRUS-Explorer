@@ -57,6 +57,11 @@ struct ProjectHomeView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    /// The presenting window's scene id (#377 follow-up / #338): document and tab hand-offs from
+    /// Project Home target the window the researcher is looking at on iPad Stage-Manager multi-window
+    /// rather than `.anyWindow` (first-wins). Injected by the iOS sheet presenters (the Settings push
+    /// inherits it); macOS routes via fixed window ids and ignores it, so it stays nil there.
+    @Environment(\.sceneID) private var sceneID
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -805,9 +810,9 @@ struct ProjectHomeView: View {
             #if os(iOS)
             // The document lands in the Browse tab's stack; bring that tab forward so the tap isn't a
             // silent no-op (Project Home is reached from the Settings tab). Mirrors the other callers.
-            appState.openTab(.browse, from: nil)
+            appState.openTab(.browse, from: sceneID)
             #endif
-            appState.openBrowseDocument(entry, from: nil)
+            appState.openBrowseDocument(entry, from: sceneID)
         }
     }
 
@@ -825,7 +830,7 @@ struct ProjectHomeView: View {
             case "frus.search":      tab = .search
             default:                 tab = .browse
             }
-            appState.openTab(tab, from: nil)
+            appState.openTab(tab, from: sceneID)
             #endif
         }
     }

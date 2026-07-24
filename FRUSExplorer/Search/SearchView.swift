@@ -232,7 +232,10 @@ struct SearchView: View {
                 }
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
+                    // #377 Phase 5 follow-up: a document opened from Search results also keeps the
+                    // "Working on:" subtitle on regular-width iPad (no-op elsewhere).
                     DocumentView(entry: entry)
+                        .workingOnSubtitle()
                     #else
                     MacDocumentView(entry: entry, navigationPath: .constant([]), highlightCoordinator: HighlightCoordinator())
                     #endif
