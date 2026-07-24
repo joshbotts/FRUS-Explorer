@@ -118,13 +118,33 @@ struct ProjectPickerMenu: View {
 ///
 /// Version history:
 ///   1.0 — #377 Phase 5: initial implementation
+///   1.1 — #377 Phase 5 fix: suppressed on regular-width iPad, where a pinned top inset is
+///          occluded by the iPadOS floating top tab bar (same as the browser breadcrumb, #238).
 struct WorkingOnBanner: View {
 
     @Environment(AppState.self) private var appState
     @Query(sort: \Project.name) private var projects: [Project]
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
+
+    /// Whether this pinned top `.safeAreaInset` can render without being hidden by the platform's top
+    /// chrome. On **regular-width iPad** the `.sidebarAdaptable` TabView draws a floating top tab bar
+    /// that overlays a pinned top inset (it can't be scrolled clear) — the same reason #238 suppresses
+    /// the browser breadcrumb there — so the banner is dropped, matching that gate exactly (pad idiom
+    /// AND regular width, since a Plus/Max iPhone in landscape or a compact-width iPad keeps the bottom
+    /// tab bar). Compact iOS layouts and macOS (no floating tab bar) render it normally.
+    private var canRenderInTopInset: Bool {
+        #if os(iOS)
+        return !(UIDevice.current.userInterfaceIdiom == .pad && sizeClass == .regular)
+        #else
+        return true
+        #endif
+    }
 
     var body: some View {
-        if let question = Self.resolvedQuestion(activeProjectId: appState.activeProjectId, projects: projects) {
+        if canRenderInTopInset,
+           let question = Self.resolvedQuestion(activeProjectId: appState.activeProjectId, projects: projects) {
             VStack(spacing: 0) {
                 Divider()
                 HStack(spacing: 6) {
