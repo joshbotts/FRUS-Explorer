@@ -211,7 +211,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "personAnalytics.info.shows.detail",
-                                   defaultValue: "Trends ranks the most-mentioned people who were tagged by FRUS editors in an era and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.")),
+                                   defaultValue: "Trends ranks the people most mentioned in an era, as tagged by FRUS editors, and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.counting.title", defaultValue: "How people are counted"),
                     detail: String(localized: "personAnalytics.info.counting.detail",

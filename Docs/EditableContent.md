@@ -124,7 +124,7 @@ Today, the Office of the Historian at the Department of State produces the serie
 
 The statute requires that this work be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision should be omitted, and information should not be withheld to conceal a defect in policy. Volumes should be published within 30 years of the events they document.
 
-While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
+While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an invaluable resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
 
 FRUS Explorer provides a variety of research tools for using the series, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
 
@@ -483,6 +483,8 @@ Where the Person Index is an alphabetical directory for looking someone up, Pers
 
 Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
 
+Each chart in Trends carries its own Export button — chart data as CSV, or the chart itself as a PNG or PDF figure — and comparing exactly two people adds a relationship CSV. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.
+
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Person Analytics window (Mac).
 
 <!-- section-id: word-cloud -->
@@ -518,6 +520,8 @@ These are structural measures of how the editors linked documents, not a claim a
 Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.
 
 An Administration menu sets the document-year range to a president’s term in one tap; the same presets appear in Corpus Analytics.
+
+Each of the four charts carries its own Export button — chart data as CSV, or the chart as a PNG or PDF figure; the landmark ranking is a table, so it exports as CSV only. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
 
@@ -607,7 +611,7 @@ Your notes, highlights, tags, collections, and projects sync automatically throu
 
 **Your Data Stays Private**
 
-The application does not share any usage or research data with anyone. Users can export and share anonymized diagnostics data with the developer for troubleshooting if and when they choose. Users can also export all their research data.
+The app does not share any usage or research data with anyone. You can export and share anonymized diagnostic data with the developer for troubleshooting if and when you choose. You can also export all your research data.
 
 <!-- END SOURCE: page working-with-documents -->
 
@@ -1152,7 +1156,7 @@ Share of indexed documents per period. Only downloaded, indexed volumes are coun
 #### What you're seeing
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 209–210 | key: personAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-Trends ranks the most-mentioned people who were tagged by FRUS editors in an era and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.
+Trends ranks the people most mentioned in an era, as tagged by FRUS editors, and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.
 
 <!-- END SOURCE: personAnalytics.info.shows.detail -->
 

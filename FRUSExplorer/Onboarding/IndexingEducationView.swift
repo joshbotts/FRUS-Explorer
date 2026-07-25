@@ -964,6 +964,7 @@ private extension EducationPage {
                 paragraphs: [
                     "Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people that were tagged by Office of the Historian editors during production appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period\u{2019}s dated documents), and \u{2014} when exactly two people are selected \u{2014} draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.",
                     "Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record \u{2014} read these as who the published documents foreground, not a full census of who mattered.",
+                    "Each chart in Trends carries its own Export button — chart data as CSV, or the chart itself as a PNG or PDF figure — and comparing exactly two people adds a relationship CSV. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Person Analytics window (Mac)."
                 ]
             ),
@@ -997,6 +998,7 @@ private extension EducationPage {
                     "These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.",
                     "Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.",
                     "An Administration menu sets the document-year range to a president\u{2019}s term in one tap; the same presets appear in Corpus Analytics.",
+                    "Each of the four charts carries its own Export button — chart data as CSV, or the chart as a PNG or PDF figure; the landmark ranking is a table, so it exports as CSV only. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac)."
                 ]
             ),
@@ -1096,7 +1098,7 @@ private extension EducationPage {
                 heading: "Your Data Stays Private",
                 systemImage: "lock.shield",
                 paragraphs: [
-                    "The application does not share any usage or research data with anyone. Users can export and share anonymized diagnostics data with the developer for troubleshooting if and when they choose. Users can also export all their research data."
+                    "The app does not share any usage or research data with anyone. You can export and share anonymized diagnostic data with the developer for troubleshooting if and when you choose. You can also export all your research data."
                 ]
             ),
         ]
