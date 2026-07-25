@@ -214,4 +214,200 @@ struct AnalyticsExportDeliveryTests {
         let stem = AnalyticsExportDelivery.filenameStem(title: "—  …", date: date)
         #expect(stem.hasPrefix("FRUS-Analytics-chart-"))
     }
+
+    /// A word cloud is not a chart; filing both families under one prefix would make a download
+    /// folder unsortable (D3 Phase 4).
+    @Test("A caller can file an export under its own family prefix")
+    func customPrefix() {
+        let stem = AnalyticsExportDelivery.filenameStem(title: "Berlin Crisis",
+                                                        prefix: "FRUS-WordCloud", date: date)
+        #expect(stem.hasPrefix("FRUS-WordCloud-Berlin-Crisis-"))
+        #expect(!stem.contains("Analytics"))
+    }
+}
+
+// MARK: - PersonTrajectoryExportPeriodTests
+
+/// Tests the period→source-years mapping the Person trajectory CSV depends on (D3 Phase 4).
+///
+/// The bug this guards: in **By Decade** mode a plotted point is keyed by the decade's start, but the
+/// raw dictionaries are keyed by single year. Reading them with the decade start alone put a single
+/// year's Mentions / Documents / Dated-documents next to a whole-decade Plotted value, so a reader
+/// could not recompute the plotted share from the file — which is the entire reason those columns
+/// are exported.
+struct PersonTrajectoryExportPeriodTests {
+
+    @Test("Year mode maps a period to exactly its own year")
+    func yearMode() {
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1962, byDecade: false, range: 1861...1992)
+        #expect(years == [1962])
+    }
+
+    @Test("Decade mode spans the whole decade")
+    func decadeMode() {
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1960, byDecade: true, range: 1861...1992)
+        #expect(years == Array(1960...1969))
+    }
+
+    /// The plotted point was built from in-range years only, so a leading edge decade must not pick
+    /// up years the chart never counted — otherwise the summed columns overstate the plotted value.
+    @Test("A leading edge decade is clipped to the range start")
+    func clipsToRangeStart() {
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1960, byDecade: true, range: 1965...1992)
+        #expect(years == Array(1965...1969))
+    }
+
+    @Test("A trailing edge decade is clipped to the range end")
+    func clipsToRangeEnd() {
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1990, byDecade: true, range: 1861...1992)
+        #expect(years == Array(1990...1992))
+    }
+
+    /// A decade wholly outside the range cannot produce a plotted point, but the mapping must still
+    /// return something usable rather than trapping on an inverted range.
+    @Test("A decade outside the range degrades to the period itself, never an inverted range")
+    func outOfRangeDoesNotTrap() {
+        #expect(PersonAnalyticsMath.sourceYears(forPeriod: 1800, byDecade: true, range: 1861...1992) == [1800])
+        #expect(PersonAnalyticsMath.sourceYears(forPeriod: 2100, byDecade: true, range: 1861...1992) == [2100])
+    }
+
+    /// A decade's summed denominator has to be the sum of its years, not one year's — the concrete
+    /// arithmetic the export now performs.
+    @Test("Summing over the mapped years reproduces the decade, not its first year")
+    func summingOverSpan() {
+        let datedTotals = [1960: 100, 1961: 120, 1962: 140, 1963: 0, 1964: 90]
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1960, byDecade: true, range: 1960...1964)
+        let total = years.compactMap { datedTotals[$0] }.reduce(0, +)
+        #expect(total == 450)
+        #expect(total != datedTotals[1960])
+    }
+
+    /// Pins the behaviour the decade-share caveat describes, because a first attempt at that caveat
+    /// asserted the opposite and would have shipped a false methods statement.
+    ///
+    /// A decade's plotted share averages ONLY the years that produced a point. `sharePoints` emits
+    /// nothing for a year the person was not mentioned in (the store groups by year and returns no
+    /// zero rows), so those years never reach the divisor.
+    @Test("A decade's share averages only the mentioned years, not the decade's years")
+    func decadeShareAveragesMentionedYearsOnly() {
+        // 100 dated documents in every year of the 1960s; the person appears in 50 documents in
+        // 1961 and in no other year — so exactly one point exists for the decade.
+        let totals = Dictionary(uniqueKeysWithValues: (1960...1969).map { ($0, 100) })
+        let points = PersonAnalyticsMath.sharePoints(
+            mentioningDocs: [7: [1961: 50]], totals: totals, names: [7: "A"], range: 1861...1992)
+        #expect(points.count == 1)
+
+        let decade = PersonAnalyticsMath.bucketByDecade(points, isShare: true)
+        #expect(decade.count == 1)
+        // The mean over the ONE mentioned year — 50% — not the decade's own 50/1000 = 5%.
+        #expect(abs(decade[0].value - 0.5) < 0.0001)
+
+        // What a reader recomputing from the exported columns would get instead.
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1960, byDecade: true, range: 1861...1992)
+        let docs = years.compactMap { [1961: 50][$0] }.reduce(0, +)
+        let dated = years.compactMap { totals[$0] }.reduce(0, +)
+        #expect(dated == 1000)
+        #expect(abs(Double(docs) / Double(dated) - 0.05) < 0.0001)
+        // The two differ by 10x with IDENTICAL yearly denominators — which is why the caveat cannot
+        // blame the gap on uneven denominators.
+        #expect(decade[0].value > Double(docs) / Double(dated) * 9)
+    }
+
+    /// The raw path has no such asymmetry: a decade's raw value is a plain sum, so the exported
+    /// column and the plotted value agree exactly.
+    @Test("A decade's raw value equals the sum of its mapped years")
+    func decadeRawIsExact() {
+        let points = PersonAnalyticsMath.rawPoints(
+            trajectories: [7: [1961: 12, 1965: 7, 1969: 31]], names: [7: "A"], range: 1861...1992)
+        let decade = PersonAnalyticsMath.bucketByDecade(points, isShare: false)
+        #expect(decade.count == 1)
+        #expect(decade[0].value == 50)
+    }
+}
+
+// MARK: - AnalyticsWordCloudExportTests
+
+/// Tests the word cloud's D3 Phase 4 export surface — the one analytics artifact that is **not**
+/// date-based, and whose table has to carry a denominator the picture cannot.
+struct AnalyticsWordCloudExportTests {
+
+    private func cloudProvenance(caveats: [String] = []) -> AnalyticsProvenance {
+        AnalyticsProvenance(
+            figureTitle: "Berlin Crisis",
+            axisLabel: "Ranked by frequency across the scope's documents",
+            scopeLabel: "Berlin Crisis",
+            indexedVolumeCount: 552,
+            yearRange: nil,
+            appliesDocumentDating: false,
+            valueMode: nil,
+            extraCaveats: caveats,
+            exportDate: Date(timeIntervalSince1970: 0)
+        )
+    }
+
+    /// The point of the flag: a word cloud never reads a document date, so claiming the TEI dating
+    /// rule — or reporting a year range — would describe work the export did not do.
+    @Test("A non-dating export omits the dating rule and the year-range line")
+    func nonDatingOmitsDateClaims() {
+        let lines = cloudProvenance().csvPreambleLines
+        #expect(!lines.contains { $0.contains("TEI <date>") })
+        #expect(!lines.contains { $0.contains("Year range") })
+        // Everything not about dating still has to be there.
+        #expect(lines.contains { $0.contains("552") })
+        #expect(lines.contains { $0.contains("Scope: Berlin Crisis") })
+    }
+
+    /// Guards the default: every dashboard chart IS date-based and must keep both disclosures.
+    @Test("A dating export still carries both date disclosures")
+    func datingKeepsDateClaims() {
+        var dated = cloudProvenance()
+        dated.appliesDocumentDating = true
+        dated.yearRange = 1945...1949
+        let lines = dated.csvPreambleLines
+        #expect(lines.contains { $0.contains("TEI <date>") })
+        #expect(lines.contains { $0.contains("Year range") && $0.contains("1945") })
+    }
+
+    /// Hand-hidden words are the user's own editorial judgement; a reader cannot infer them from
+    /// anything else in the file, so the caveat has to survive into the preamble verbatim.
+    @Test("View-supplied caveats reach the preamble")
+    func caveatsReachPreamble() {
+        let lines = cloudProvenance(caveats: ["Hidden words: 3 word(s) were hidden by hand in this cloud and are absent from this export."]).csvPreambleLines
+        #expect(lines.contains { $0.contains("Hidden words: 3") })
+    }
+
+    /// The share column carries the denominator a picture cannot: a word's size is relative to the
+    /// other words and says nothing about how much of the scope it accounts for.
+    @Test("The term table ranks, counts, and shares against the token total")
+    func tableShape() {
+        let table = AnalyticsChartTables.wordCloudTable(
+            title: "Berlin Crisis",
+            terms: [(term: "berlin", count: 250), (term: "soviet", count: 125)],
+            totalTokens: 1000)
+        #expect(table.columns.count == 4)
+        #expect(table.columns.last?.contains("%") == true)
+        #expect(table.rows[0].cells == ["1", "berlin", "250", "25"])
+        #expect(table.rows[1].cells == ["2", "soviet", "125", "12.5"])
+    }
+
+    /// With no token total there is nothing honest to divide by, so the column is dropped rather
+    /// than filled with zeros or a division by zero.
+    @Test("An unknown token total drops the share column entirely")
+    func tableWithoutDenominator() {
+        let table = AnalyticsChartTables.wordCloudTable(
+            title: "Berlin Crisis",
+            terms: [(term: "berlin", count: 250)],
+            totalTokens: 0)
+        #expect(table.columns.count == 3)
+        #expect(!table.columns.contains { $0.contains("%") })
+        #expect(table.rows[0].cells == ["1", "berlin", "250"])
+    }
+
+    /// A term containing a comma or a quote must survive into the CSV as one field.
+    @Test("Term text is CSV-escaped, not concatenated into neighbouring columns")
+    func termEscaping() {
+        let csv = AnalyticsChartTables.wordCloudTable(
+            title: "T", terms: [(term: "a,b\"c", count: 1)], totalTokens: 0).csv
+        #expect(csv.contains("\"a,b\"\"c\""))
+    }
 }

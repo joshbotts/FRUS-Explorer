@@ -113,10 +113,39 @@ enum PersonAnalyticsMath {
         return points.sorted { $0.rollupId != $1.rollupId ? $0.rollupId < $1.rollupId : $0.year < $1.year }
     }
 
+    /// The source years a plotted trajectory period aggregates.
+    ///
+    /// In **By Decade** mode `bucketByDecade` keys a point by the decade's start, while the raw
+    /// per-person dictionaries stay keyed by single year. An exporter that looks those up by the
+    /// decade start alone prints the first year's numbers beside a whole-decade plotted value — a
+    /// file whose own columns contradict each other. The span is clipped to `range`, because the
+    /// plotted point was built from in-range years only, so an edge decade must not pick up years
+    /// the chart never counted.
+    ///
+    /// - Parameters:
+    ///   - period: The plotted point's period key (a year, or a decade's start year).
+    ///   - byDecade: Whether the chart is bucketing by decade.
+    ///   - range: The chart's year range.
+    /// - Returns: Every source year that period aggregates, ascending.
+    static func sourceYears(forPeriod period: Int, byDecade: Bool, range: ClosedRange<Int>) -> [Int] {
+        guard byDecade else { return [period] }
+        let lower = max(period, range.lowerBound)
+        let upper = min(period + 9, range.upperBound)
+        guard lower <= upper else { return [period] }
+        return Array(lower...upper)
+    }
+
     /// Buckets year-keyed points into decades (year floored to the nearest ten), summing
     /// raw values and averaging shares. Used by the decade toggle. `isShare` selects the
     /// aggregation: raw counts sum, document shares are averaged across the decade's years
     /// (a share can't be summed without exceeding 100%).
+    ///
+    /// One property of the share path is load-bearing for anything that describes this number:
+    /// the divisor is the count of points that **reached** the bucket, and `sharePoints` emits a
+    /// point only for years the person was actually mentioned in (the underlying query groups by
+    /// year and returns no row for a zero-mention year). So a decade's share is the mean over the
+    /// years with mentions, not over the decade's ten years — a person mentioned in one year of a
+    /// decade plots that year's share for the whole decade.
     static func bucketByDecade(_ points: [PersonTrajectoryPoint], isShare: Bool) -> [PersonTrajectoryPoint] {
         struct Key: Hashable { let rollupId: Int; let decade: Int }
         var sums: [Key: Double] = [:]
@@ -408,7 +437,8 @@ struct PersonAnalyticsView: View {
     /// - Returns: The provenance to stamp on the export.
     private func personProvenance(figureTitle: String,
                                   periodGrain: String?,
-                                  valueMode: String?) -> AnalyticsProvenance {
+                                  valueMode: String?,
+                                  extra: [String] = []) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: figureTitle,
             axisLabel: periodGrain ?? String(localized: "personAnalytics.export.axis.ranking",
@@ -422,8 +452,23 @@ struct PersonAnalyticsView: View {
                        defaultValue: "Population: person mentions are counted over DATED documents only — unlike the Corpus Analytics charts, no volume-start-year fallback is applied, so absolute counts are not directly comparable between the two views."),
                 String(localized: "personAnalytics.export.caveat.identity",
                        defaultValue: "Identity: mentions are grouped by the app's person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity."),
-            ]
+            ] + extra
         )
+    }
+
+    /// The caveat a decade-grained **share** trajectory needs, and only that combination.
+    ///
+    /// A decade's plotted share is the mean of the yearly shares **for the years this person was
+    /// mentioned in**. A year with no mentions produces no point at all (the store's query groups
+    /// by year and emits no zero row), so it is dropped from the average rather than entered as a
+    /// zero — while the file's `Dated documents in period` column sums every year of the decade.
+    /// The gap is not a rounding difference: someone mentioned in one year of a decade plots that
+    /// single year's share for the whole decade, which against even denominators is ten times the
+    /// decade's own share. A reader dividing this file's columns must be told exactly that.
+    private var decadeShareCaveat: [String] {
+        guard byDecade, isNormalized else { return [] }
+        return [String(localized: "personAnalytics.export.caveat.decadeShare",
+                       defaultValue: "Decade shares: a decade's plotted share is the MEAN of the yearly shares for the years in which this person was mentioned. Years with no mentions are omitted from that average rather than counted as zero, while the \"Dated documents in period\" column sums every year of the decade. Dividing this file's columns therefore gives the decade's own share, which can be far LOWER than the plotted value — a person mentioned in only one year of a decade plots that year's share for the whole decade. Use the columns for the decade's share and the plotted value for the mentioned years' average; they answer different questions.")]
     }
 
     /// The period grain label for the trajectory/relationship charts.
@@ -470,11 +515,18 @@ struct PersonAnalyticsView: View {
         let plottedByPerson = Dictionary(grouping: trajectoryPoints, by: { $0.rollupId })
         let series = selectedPeople.map { person -> (rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)]) in
             let points = (plottedByPerson[person.rollupId] ?? []).sorted { $0.year < $1.year }.map { point in
-                (period: point.year,
-                 mentions: rawTrajectories[person.rollupId]?[point.year] ?? 0,
-                 mentioningDocs: mentioningDocs[person.rollupId]?[point.year],
-                 datedTotal: datedTotals[point.year],
-                 plotted: point.value)
+                let years = PersonAnalyticsMath.sourceYears(
+                    forPeriod: point.year, byDecade: byDecade, range: yearRange)
+                let mentions = years.reduce(0) { $0 + (rawTrajectories[person.rollupId]?[$1] ?? 0) }
+                // A document carries one date, so it falls in exactly one year — summing the
+                // per-year distinct-document counts across a decade cannot double-count.
+                let docs = years.compactMap { mentioningDocs[person.rollupId]?[$0] }
+                let totals = years.compactMap { datedTotals[$0] }
+                return (period: point.year,
+                        mentions: mentions,
+                        mentioningDocs: docs.isEmpty ? nil : docs.reduce(0, +),
+                        datedTotal: totals.isEmpty ? nil : totals.reduce(0, +),
+                        plotted: point.value)
             }
             return (rollupId: person.rollupId, name: person.canonicalName, points: points)
         }
@@ -482,7 +534,8 @@ struct PersonAnalyticsView: View {
             title: title, periodColumn: periodGrainLabel, series: series, isNormalized: isNormalized)
         deliver(table, personProvenance(figureTitle: title,
                                         periodGrain: periodGrainLabel,
-                                        valueMode: normalization.pickerLabel))
+                                        valueMode: normalization.pickerLabel,
+                                        extra: decadeShareCaveat))
     }
 
     /// Renders one Person chart as a publication figure and shares (iOS) or saves (macOS).

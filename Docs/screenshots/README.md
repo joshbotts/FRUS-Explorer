@@ -123,6 +123,14 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
   Analysis Tools → Cross-Reference Analytics.
 - 🆕 `analytics-table-popup` — the per-chart **"View as table"** pop-up in iPhone **list** mode with
   the Copy-CSV control (shown from any analytics chart).
+- 🆕 `analytics-export-menu` (§13.7) — Corpus Analytics' **Options (•••)** menu open on the **Export**
+  heading, showing Chart data (CSV)…, Figure (PNG)…, and Figure (PDF)…. Capture on a **time** axis
+  (Decade / Year / Month / Day) so the two figure items are enabled — on **By Subseries** / **By
+  Volume** they appear dimmed.
+- 🆕 `analytics-figure-png` (§13.7) — **the exported file itself, not a device capture**: run
+  Figure (PNG)… on a By-Year chart and commit the resulting 1,200-pt white plate, so the caption
+  strip (scope · year range · value mode · app version · date, plus the pointer to the CSV) is
+  legible. Downscale for the manual if needed; do not crop the strip away.
 - ⚙️ `analytics` (re-capture optional) — existing By-Year term-frequency chart showing the new
   **"% of documents"** normalization toggle enabled.
 
@@ -137,6 +145,9 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
 - 🆕 `crossref-analytics` — Cross-Reference Analytics on iPad (heat matrix + PageRank landmarks).
 - 🆕 `analytics-table-popup` — the per-chart "View as table" pop-up rendered as a native **Table** on
   iPad, with Copy-CSV.
+- 🆕 `analytics-export-menu` — the Corpus Analytics **Export** menu open in the iPad **toolbar** (the
+  iPhone shot shows it nested in the Options ••• menu instead, so both placements are on record). No
+  manual placeholder — §13.7's iOS shots are iPhone-worded.
 - 🆕 `collection-sort-menu` — the Sort-by-Date two-mode menu ("Across the Whole Collection" vs "Within
   Each Section") in the iPad Collections toolbar.
 - 🆕 `collection-note-collapsed` — the collapsed "Add a note" affordance in the iPad collection editor
@@ -153,6 +164,14 @@ shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture t
   volume citation heat matrix + PageRank influence landmarks (and/or degree-distribution histogram).
 - 🆕 `analytics-table-popup` — the per-chart "View as table" pop-up as a native macOS **Table** with
   Copy-CSV.
+- 🆕 `analytics-export-menu` (§13.7) — the **Export** menu open in the Corpus Analytics window
+  toolbar: Chart data (CSV)… · Figure (PNG)… · Figure (PDF)…. Capture on a **time** axis so both
+  figure items are enabled (**By Subseries** / **By Volume** dim them).
+- 🆕 `analytics-figure-heatmap` (§13.7) — **the exported file itself, not a window capture**: from
+  Cross-Reference Analytics, export the volume-to-volume heat matrix via Figure (PNG)…. The plate
+  renders the whole grid at once with **each cell's count printed**, the shading legend, and the
+  caption strip — all three must stay visible. The matrix shades with the **system accent colour**,
+  so capture under the default accent for a reproducible figure.
 - 🆕 `collections-ribbon` — the consolidated Collections manager ribbon: Add ▾ (Documents / Section
   Heading / Note Block / Passages / Apparatus) · Sort by Date ▾ · View ▾ (Composition / Front Matter
   / Preview) · Export….

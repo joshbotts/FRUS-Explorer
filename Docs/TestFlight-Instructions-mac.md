@@ -24,6 +24,7 @@ Hide the rail for distraction-free reading; **hover the left/right edges** of th
 - **Source Explorer** — resolved collections show the **HMS/MLR Entry** number NARA staff ask for.
 - **Cross-reference graph** — scroll-wheel zoom and right-click node menus (Recenter, Open in Main Window, Archival Neighbors).
 - **Zotero** — connect in **Settings → Integrations**, then **Share** a document (with tags and notes) to your library.
+- **Analytics exports** — charts now leave the app as **Chart data (CSV)**, **Figure (PNG)**, or **Figure (PDF)** through a standard **save panel**: one **Export** menu in the **Corpus Analytics** toolbar, a per-section **Export** button in **Person** and **Cross-Reference** Analytics, and **Options (…) → Export** on a word cloud. Try exporting a figure *and* its CSV together and confirm the pair saves where you named it (`FRUS-Analytics-…`); **Landmark Documents** and the **By Subseries / By Volume** axes are CSV-only by design.
 
 ## Fixes
 - **Research window** — fixed a list that could reorder/jump just after opening.

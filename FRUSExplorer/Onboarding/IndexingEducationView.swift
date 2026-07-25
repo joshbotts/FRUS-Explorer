@@ -97,6 +97,11 @@ import SwiftUI
 ///          adds the detected-topic scope, Cross-Reference Graph notes macOS
 ///          scroll-wheel zoom + node context menus, and Source Explorer notes
 ///          the file-series name + HMS/MLR entry identifiers (#315)
+///   1.16 — Analytics D3 (research-grade export): page 6 Corpus Analytics gains an
+///          export paragraph (figure PNG/PDF vs. CSV, per-section Export in Person
+///          and Cross-Reference Analytics, method travels in the CSV); Word Cloud
+///          copy names the Options menu and the CSV's ranked terms, shares, and
+///          hidden-word disclosure
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -940,6 +945,7 @@ private extension EducationPage {
                     "A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The \u{201C}% of documents\u{201D} toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count \u{2014} the percentage of that period\u{2019}s documents that contain it \u{2014} so a term doesn\u{2019}t look like it is surging simply because the series published more in later decades.",
                     "On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into \u{201C}Other.\u{201D}",
                     "The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.",
+                    "An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only, and Person Analytics and Cross-Reference Analytics put an Export button on each of their charts. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.",
                     "Analytics runs entirely on your local index; no network connection is required.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
                 ]
@@ -960,7 +966,7 @@ private extension EducationPage {
                 systemImage: WordCloudGlyph.symbol,
                 paragraphs: [
                     "See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a detected topic, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.",
-                    "Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don\u{2019}t want to see, or compare two scopes side by side; export the cloud as a PNG, PDF, or CSV. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud\u{2019}s typeface and density in Settings.",
+                    "Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don\u{2019}t want to see, or compare two scopes side by side; from the Options menu, export the cloud as a PNG, PDF, or CSV, where the CSV ranks every visible term with its count and its share of the words counted and records your settings — including how many words you hid by hand. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud\u{2019}s typeface and density in Settings.",
                     "Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Word Cloud window (Mac), plus the word-cloud buttons on documents, volumes, subseries, collections, tags, saved searches, and your custom volume scopes (Settings → Volume Scopes)."
                 ]
