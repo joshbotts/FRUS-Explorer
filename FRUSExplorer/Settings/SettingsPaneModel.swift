@@ -84,12 +84,13 @@ enum SettingsPlatform: Hashable, Sendable {
 ///   1.0 — S-1: promoted from the macOS-only sidebar enum to the shared cross-platform model;
 ///          gained `group`, `keywords`, and `platforms`
 ///   1.1 — S-2b: `.volumesStorage`, the merged macOS Library destination. `.storage` and
-///          `.downloads` narrow to `[.iOS]` for the duration; S-2c merges the iOS side and
-///          retires all three of the old cases
+///          `.downloads` narrow to `[.iOS]` for the duration
+///   1.2 — S-2c: the iOS hub lands, so `.volumesStorage` renders on both platforms and
+///          `.storage`, `.downloads`, and `.sideload` are deleted. Library is one row now.
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
 
     // Library
-    case volumesStorage, storage, downloads, sideload
+    case volumesStorage
     // Research
     case projects, tags, scopes, summarization, wordCloud, notes
     // Reading & Search
@@ -105,9 +106,6 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     var label: String {
         switch self {
         case .volumesStorage:  return String(localized: "settings.pane.volumesStorage", defaultValue: "Volumes & Storage")
-        case .storage:         return String(localized: "settings.pane.storage", defaultValue: "Storage & Index")
-        case .downloads:       return String(localized: "settings.pane.downloads", defaultValue: "Add Volumes")
-        case .sideload:        return String(localized: "settings.pane.sideload", defaultValue: "Sideload Volume")
         case .projects:        return String(localized: "settings.pane.projects", defaultValue: "Projects")
         case .tags:            return String(localized: "settings.pane.tags", defaultValue: "Tags")
         case .scopes:          return String(localized: "settings.pane.scopes", defaultValue: "Volume Scopes")
@@ -131,9 +129,6 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     var icon: String {
         switch self {
         case .volumesStorage:  return "internaldrive"
-        case .storage:         return "internaldrive"
-        case .downloads:       return "plus.circle"
-        case .sideload:        return "square.and.arrow.down"
         case .projects:        return "folder"
         case .tags:            return "tag"
         case .scopes:          return "square.stack.3d.up"
@@ -158,7 +153,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// Which of the four `1c` groups this pane belongs to.
     var group: SettingsGroup {
         switch self {
-        case .volumesStorage, .storage, .downloads, .sideload:
+        case .volumesStorage:
             return .library
         case .projects, .tags, .scopes, .summarization, .wordCloud, .notes:
             return .research
@@ -170,16 +165,11 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     }
 
     /// Which renderers show this pane. See `SettingsPlatform` for why the two differ today.
+    ///
+    /// After S-2c the Library group holds exactly one pane on both platforms; the remaining
+    /// asymmetries are all in Research and System.
     var platforms: Set<SettingsPlatform> {
         switch self {
-        // The merged Library destination (S-2). macOS has it; iOS still reaches the same jobs
-        // through the three separate rows below until S-2c merges them there too. When it does,
-        // `.volumesStorage` gains `.iOS` and `.storage` / `.downloads` / `.sideload` are deleted.
-        case .volumesStorage: return [.macOS]
-        // Superseded on macOS by `.volumesStorage`; still the iOS rows.
-        case .storage, .downloads: return [.iOS]
-        // macOS sideloads from inside the hub; iOS has a dedicated row.
-        case .sideload:      return [.iOS]
         // The in-app guide is a Window scene on macOS, opened from a menu rather than Settings.
         case .researchGuide: return [.iOS]
         // iOS has no standalone Notes pane; its note settings live with the research surfaces.
@@ -200,10 +190,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         switch self {
         case .volumesStorage:  return ["index", "reindex", "disk", "space", "free up", "rebuild",
                                        "spotlight", "download", "github", "volumes", "corpus",
-                                       "sideload", "xml", "import", "updates", "corrections"]
-        case .storage:         return ["index", "reindex", "disk", "space", "free up", "rebuild", "spotlight"]
-        case .downloads:       return ["download", "github", "volumes", "corpus", "fetch", "updates", "corrections"]
-        case .sideload:        return ["xml", "import", "tei", "local file"]
+                                       "fetch", "sideload", "xml", "import", "tei", "local file",
+                                       "updates", "corrections", "storage"]
         case .projects:        return ["project", "research question", "active project"]
         case .tags:            return ["user tags", "labels", "merge", "rename"]
         case .scopes:          return ["volume scope", "custom scope", "my volume scopes", "subset"]

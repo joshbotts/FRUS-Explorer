@@ -78,8 +78,6 @@ struct SettingsPaneModelTests {
     @Test("Cross-platform panes land in the expected groups")
     func groupAssignments() {
         #expect(SettingsPane.volumesStorage.group == .library)
-        #expect(SettingsPane.storage.group == .library)
-        #expect(SettingsPane.downloads.group == .library)
         #expect(SettingsPane.projects.group == .research)
         #expect(SettingsPane.wordCloud.group == .research)
         #expect(SettingsPane.display.group == .readingAndSearch)
@@ -94,37 +92,24 @@ struct SettingsPaneModelTests {
     func platformAsymmetry() {
         #expect(SettingsPane.notes.platforms == [.macOS])
         #expect(SettingsPane.sync.platforms == [.macOS])
-        #expect(SettingsPane.sideload.platforms == [.iOS])
         #expect(SettingsPane.researchGuide.platforms == [.iOS])
         #expect(SettingsPane.display.platforms == [.iOS, .macOS])
     }
 
-    /// S-2b merged Storage + Add Volumes into one macOS destination. Until S-2c does the same on
-    /// iOS, the merged pane and the panes it supersedes must be on **opposite** platforms — if
-    /// both ever rendered on one platform the Library group would offer the same job twice.
-    @Test("The merged Library destination never coexists with the rows it supersedes")
-    func mergedLibraryDestinationIsExclusive() {
-        for platform in [SettingsPlatform.iOS, .macOS] {
-            let library = SettingsPane.panes(in: .library, on: platform)
-            if library.contains(.volumesStorage) {
-                #expect(!library.contains(.storage))
-                #expect(!library.contains(.downloads))
-                #expect(!library.contains(.sideload))
-            } else {
-                #expect(library.contains(.storage))
-                #expect(library.contains(.downloads))
-            }
-        }
-        #expect(SettingsPane.volumesStorage.platforms == [.macOS])
-        #expect(SettingsPane.storage.platforms == [.iOS])
-        #expect(SettingsPane.downloads.platforms == [.iOS])
+    /// S-2 merged Storage + Add Volumes + Sideload into one destination on each platform. The
+    /// Library group is now a single row everywhere; a second one would mean the merge had come
+    /// undone on one side.
+    @Test("Library is one destination on both platforms", arguments: [SettingsPlatform.iOS, .macOS])
+    func libraryIsOneDestination(platform: SettingsPlatform) {
+        #expect(SettingsPane.panes(in: .library, on: platform) == [.volumesStorage])
     }
 
-    /// The merged pane has to answer every query that used to find one of the three it replaces —
+    /// The merged pane has to answer every query that used to find one of the three it replaced —
     /// a reader who searched "sideload" or "github" must still land somewhere.
-    @Test("The merged destination inherits the search terms of the panes it absorbs")
+    @Test("The merged destination inherits the search terms of the panes it absorbed")
     func mergedDestinationKeywords() {
-        for query in ["download", "github", "sideload", "xml", "reindex", "free up", "corrections"] {
+        for query in ["download", "github", "sideload", "xml", "tei", "reindex", "free up",
+                      "corrections", "storage", "spotlight", "disk"] {
             #expect(SettingsPane.volumesStorage.matches(query), "no match for \(query)")
         }
     }
@@ -158,7 +143,7 @@ struct SettingsPaneModelTests {
         #expect(SettingsPane.display.matches("font"))
         #expect(SettingsPane.data.matches("export"))
         #expect(SettingsPane.reset.matches("erase"))
-        #expect(SettingsPane.storage.matches("reindex"))
+        #expect(SettingsPane.volumesStorage.matches("reindex"))
     }
 
     /// The group name is searchable too, so "research" surfaces the whole research group.

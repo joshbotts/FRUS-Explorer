@@ -107,12 +107,11 @@ struct FRUSSettingsView: View {
                 case .summarization:  SettingsSummarizationPane()
                 case .data:           SettingsDataPane()
                 case .reset:          SettingsResetPane()
-                // iOS-only panes (see `SettingsPane.platforms`): the sidebar never offers these,
-                // so they are unreachable here — but the switch must stay exhaustive over the
-                // shared enum, and an empty view is the honest thing to render if one is ever
-                // selected programmatically. `.storage` and `.downloads` joined this list in
-                // S-2b, when `MacVolumesStorageHub` absorbed both on this platform.
-                case .storage, .downloads, .sideload, .researchGuide: EmptyView()
+                // iOS-only panes (see `SettingsPane.platforms`): the sidebar never offers this,
+                // so it is unreachable here — but the switch must stay exhaustive over the shared
+                // enum, and an empty view is the honest thing to render if one is ever selected
+                // programmatically.
+                case .researchGuide: EmptyView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
