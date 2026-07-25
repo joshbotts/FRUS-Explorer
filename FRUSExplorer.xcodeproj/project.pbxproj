@@ -489,6 +489,7 @@
 		B72DF8B6CFFEA31016B26B0F /* SearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8327430EB70882B55BC015 /* SearchSheet.swift */; };
 		B74E9C5AC523DAD937CBBD72 /* person-authority-index.json in Resources */ = {isa = PBXBuildFile; fileRef = D5F8698F22479B30B2FFFB1F /* person-authority-index.json */; };
 		B78ECD58EA453D397B3D1808 /* ProjectAdminServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2253915E5BB1A073BECE1CBD /* ProjectAdminServiceTests.swift */; };
+		B867CFCF66DA9E326B3126B8 /* AnalyticsFigureExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA68BE5B1301B47853D393FE /* AnalyticsFigureExport.swift */; };
 		B86E6FBB2D2367EC117B568D /* AdministrationProfilesData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372BB4C61D106424E71DD51B /* AdministrationProfilesData.swift */; };
 		B8C370E4638C2FA0A4E92779 /* CorpusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF3800E6EA9F402E0F8B123 /* CorpusView.swift */; };
 		B8E4870D78DC1A83F0B49528 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69230EB5695AC63BFDB59149 /* RISExporter.swift */; };
@@ -626,6 +627,7 @@
 		E4FC895CBDD334DC57DE801D /* ChronologyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F77CF7607C21F1182A75699 /* ChronologyModels.swift */; };
 		E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */; };
 		E53C5727E7ABEE6F54A55308 /* ProjectContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1ACCE2EDE0DFEC2D2850F /* ProjectContextTests.swift */; };
+		E5FAFAFD35125C07270E56DD /* AnalyticsFigureExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA68BE5B1301B47853D393FE /* AnalyticsFigureExport.swift */; };
 		E69E1D10C09ABA8D2058E992 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9948E709929FAB592E9B615E /* KeychainStoreTests.swift */; };
 		E6B2C68CDC074332936054D4 /* FrontMatterPersonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D4101100CE5F1F5C3C9024 /* FrontMatterPersonsView.swift */; };
 		E6C50E1B03AC075844389DF2 /* RelatedDocumentsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAF5353C2A01C28B87BC8E46 /* RelatedDocumentsEngine.swift */; };
@@ -1053,6 +1055,7 @@
 		C8DF61F3D994D634101C919B /* word-cloud-lexicons.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "word-cloud-lexicons.json"; sourceTree = "<group>"; };
 		C9B92FF355B906D07F1DE187 /* IndexingContextCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingContextCard.swift; sourceTree = "<group>"; };
 		CA286AC3CE197B6146D6092A /* SearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
+		CA68BE5B1301B47853D393FE /* AnalyticsFigureExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsFigureExport.swift; sourceTree = "<group>"; };
 		CAEE237AF15C7ADA946E1472 /* BrokenRefsReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokenRefsReportExporter.swift; sourceTree = "<group>"; };
 		CAF0799F904BBDF8A9C941F5 /* FTS5Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Types.swift; sourceTree = "<group>"; };
 		CB1A5A1728E756D28973BD54 /* ProjectLeadsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectLeadsTests.swift; sourceTree = "<group>"; };
@@ -1550,6 +1553,7 @@
 			children = (
 				9E3DCC71337106388B5176A6 /* AnalyticsChartTables.swift */,
 				5C1B3C9EA4795837E7228864 /* AnalyticsExportDelivery.swift */,
+				CA68BE5B1301B47853D393FE /* AnalyticsFigureExport.swift */,
 				4F8F7A1ADE8D3AFF2A2A9CF4 /* AnalyticsProvenance.swift */,
 			);
 			path = Export;
@@ -2093,6 +2097,7 @@
 				28786B9066AC58AD643271D4 /* AnalyticsChartChrome.swift in Sources */,
 				9D74970211EC26E5B3FB5324 /* AnalyticsChartTables.swift in Sources */,
 				37A50312D842442B2FA0E6A5 /* AnalyticsExportDelivery.swift in Sources */,
+				E5FAFAFD35125C07270E56DD /* AnalyticsFigureExport.swift in Sources */,
 				D4C45C8289166F8B496C2972 /* AnalyticsProvenance.swift in Sources */,
 				7A4DA8F373E105A7D7B1AD67 /* AnalyticsView.swift in Sources */,
 				8F3D9F3C141FC7964A2CFA28 /* AppActivityTypes.swift in Sources */,
@@ -2377,6 +2382,7 @@
 				8B11B2DE0CA496427B6E7D5C /* AnalyticsChartChrome.swift in Sources */,
 				A7DB9174F877184EC5912669 /* AnalyticsChartTables.swift in Sources */,
 				721F8658D14EC927C5FBD650 /* AnalyticsExportDelivery.swift in Sources */,
+				B867CFCF66DA9E326B3126B8 /* AnalyticsFigureExport.swift in Sources */,
 				E03623115A2DF3722B6DB806 /* AnalyticsProvenance.swift in Sources */,
 				10FAB1ECDC714881F88C8095 /* AnalyticsView.swift in Sources */,
 				65B60DD5E9810F0D554339A1 /* AppActivityTypes.swift in Sources */,

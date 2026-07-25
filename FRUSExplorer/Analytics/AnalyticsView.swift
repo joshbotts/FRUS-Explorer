@@ -686,6 +686,118 @@ struct AnalyticsView: View {
         !committedTerms.isEmpty && !isAllResultDataEmpty
     }
 
+    /// `true` when the active axis can be rendered as a figure (D3 Phase 1 covers the date axes; the
+    /// categorical breakdowns and the heat matrix follow).
+    private var canExportFigure: Bool {
+        canExport && chartAxis.isDateBased
+    }
+
+    /// The chart drawn onto an exported figure — the SAME builders the screen uses, with every label
+    /// pre-resolved here (exported content is environment-detached and cannot reach `appState`).
+    @ViewBuilder
+    private var exportFigureChart: some View {
+        let xLabel = exportPeriodColumn
+        if isComparing {
+            switch chartAxis {
+            case .byYear, .byDecade:
+                compareIntChart(
+                    seriesByTerm: committedTerms.map { term in
+                        chartAxis == .byYear
+                            ? (term: term, points: filteredYearData(for: term).map { (period: $0.year, count: $0.count) })
+                            : (term: term, points: filteredDecadeData(for: term).map { (period: $0.decadeStart, count: $0.count) })
+                    },
+                    xLabel: xLabel,
+                    xDomain: yearRangeStart...yearRangeEnd,
+                    totals: chartAxis == .byYear ? documentTotalsByYear : documentTotalsByDecade,
+                    decadeStride: chartAxis == .byDecade
+                )
+            default:
+                compareDateChart(
+                    seriesByTerm: committedTerms.map { term in
+                        chartAxis == .byMonth
+                            ? (term: term, points: filteredMonthData(for: term).map { (date: $0.date, count: $0.count) })
+                            : (term: term, points: filteredDayData(for: term).map { (date: $0.date, count: $0.count) })
+                    },
+                    xLabel: xLabel,
+                    xDomain: exportDateDomain
+                )
+            }
+        } else {
+            switch chartAxis {
+            case .byYear, .byDecade:
+                let raw: [(period: Int, volumeId: String, count: Int)] = chartAxis == .byYear
+                    ? yearVolumeData.filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
+                        .map { (period: $0.year, volumeId: $0.volumeId, count: $0.count) }
+                    : yearVolumeData.compactMap {
+                        let decade = ($0.year / 10) * 10
+                        guard decade + 9 >= yearRangeStart && decade <= yearRangeEnd else { return nil }
+                        return (period: decade, volumeId: $0.volumeId, count: $0.count)
+                    }
+                let coloring = sourceColoring(raw)
+                let titles = resolvedSourceTitles(coloring.series)
+                VStack(alignment: .leading, spacing: 10) {
+                    // The chart hides Swift Charts' legend, so the figure must carry the color key
+                    // itself or its colored segments mean nothing to a reader.
+                    if !coloring.series.isEmpty {
+                        figureSourceLegend(coloring.series, titles: titles)
+                    }
+                    singleTermDateChart(
+                        segments: coloring.segments,
+                        scale: sourceScale(coloring.series),
+                        fitPoints: chartAxis == .byYear
+                            ? filteredYearData.map { (period: $0.year, count: $0.count) }
+                            : filteredDecadeData.map { (period: $0.decadeStart, count: $0.count) },
+                        totals: chartAxis == .byYear ? documentTotalsByYear : documentTotalsByDecade,
+                        xLabel: xLabel,
+                        sourceTitles: titles,
+                        decadeStride: chartAxis == .byDecade,
+                        showsFitLine: showFitLine
+                    )
+                }
+            default:
+                // Month/Day single-term: one series, so the compare builder renders it identically
+                // without the per-volume coloring those axes never had.
+                compareDateChart(
+                    seriesByTerm: [(term: committedTerm,
+                                    points: (chartAxis == .byMonth
+                                             ? filteredMonthData.map { (date: $0.date, count: $0.count) }
+                                             : filteredDayData.map { (date: $0.date, count: $0.count) }))],
+                    xLabel: xLabel,
+                    xDomain: exportDateDomain
+                )
+            }
+        }
+    }
+
+    /// The date domain for the Month/Day figures, matching the on-screen charts.
+    private var exportDateDomain: ClosedRange<Date> {
+        let cal = Calendar(identifier: .gregorian)
+        let start = cal.date(from: DateComponents(year: yearRangeStart, month: 1, day: 1)) ?? .distantPast
+        let end = cal.date(from: DateComponents(year: yearRangeEnd, month: 12, day: 31)) ?? .distantFuture
+        return start...end
+    }
+
+    /// Renders the active chart as a publication figure and shares (iOS) or saves (macOS).
+    ///
+    /// - Parameter format: PNG or PDF.
+    private func exportFigure(_ format: AnalyticsFigureFormat) {
+        guard canExportFigure else { return }
+        let provenance = exportProvenance
+        let canvas = AnalyticsFigureCanvas(provenance: provenance) { exportFigureChart }
+        guard let data = AnalyticsFigureExporter.render(canvas, format: format) else {
+            exportError = String(localized: "analytics.export.error.render",
+                                 defaultValue: "The figure could not be rendered.")
+            return
+        }
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle)
+            + "." + format.pathExtension
+        switch AnalyticsExportDelivery.deliver(data: data, filename: filename, contentType: format.contentType) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
     /// Writes the active chart's provenance-stamped CSV, then shares (iOS) or saves (macOS).
     private func exportCSV() {
         guard let table = exportTable else { return }
@@ -1492,6 +1604,125 @@ struct AnalyticsView: View {
         }
     }
 
+    // MARK: - Single-term date chart (shared by the screen and the D3 figure export)
+
+    /// The source-colored bar chart for the By-Year / By-Decade axes.
+    ///
+    /// Called by both the on-screen section and the exported figure, so the published image cannot
+    /// drift from what the app shows. It takes **pre-resolved** `sourceTitles` rather than calling
+    /// `sourceTitle` itself: exported content is detached from the view hierarchy and inherits no
+    /// environment, so a builder that reached for `appState` here would fail at render time (D3).
+    ///
+    /// - Parameters:
+    ///   - segments: The stacked per-(period, source) segments.
+    ///   - scale: The color scale's domain and range.
+    ///   - fitPoints: The per-period totals backing the smoothed fit line.
+    ///   - totals: The corpus denominator for the axis.
+    ///   - xLabel: The x-axis title.
+    ///   - sourceTitles: Series key → display title, resolved by the caller.
+    ///   - decadeStride: Whether to tick the x-axis every ten years.
+    ///   - showsFitLine: Whether to overlay the smoothed trend line.
+    private func singleTermDateChart(
+        segments: [SourceSegment],
+        scale: (domain: [String], range: [Color]),
+        fitPoints: [(period: Int, count: Int)],
+        totals: [Int: Int],
+        xLabel: String,
+        sourceTitles: [String: String],
+        decadeStride: Bool,
+        showsFitLine: Bool
+    ) -> some View {
+        Chart {
+            ForEach(segments) { seg in
+                // In `% of documents` mode the segment height is its share of the period's corpus
+                // total; a period with a missing/zero total is omitted (divide-by-zero guard). Raw
+                // mode plots the count unchanged.
+                if let y = normalizedValue(count: seg.count, period: seg.period, totals: totals) {
+                    BarMark(
+                        x: .value(xLabel, seg.period),
+                        y: .value(valueAxisLabel, y),
+                        width: decadeStride ? .ratio(0.8) : .automatic
+                    )
+                    .foregroundStyle(by: .value(
+                        String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
+                        seg.seriesKey
+                    ))
+                    .accessibilityLabel(Text(verbatim: "\(seg.period), \(sourceTitles[seg.seriesKey] ?? seg.seriesKey)"))
+                    .accessibilityValue(Text(sourceValueA11y(count: seg.count, plotted: y)))
+                }
+            }
+            if showsFitLine {
+                ForEach(fitPoints, id: \.period) { point in
+                    if let y = normalizedValue(count: point.count, period: point.period, totals: totals) {
+                        LineMark(x: .value(xLabel, point.period), y: .value(valueAxisLabel, y))
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(Color.primary.opacity(0.5))
+                    }
+                }
+            }
+        }
+        .chartForegroundStyleScale(domain: scale.domain, range: scale.range)
+        .chartLegend(.hidden)
+        .chartXScale(domain: yearRangeStart...yearRangeEnd)
+        .chartXAxis {
+            if decadeStride {
+                AxisMarks(values: .stride(by: 10)) { _ in
+                    AxisGridLine(); AxisTick(); AxisValueLabel(format: integerNoGroupingFormat)
+                }
+            } else {
+                AxisMarks { _ in
+                    AxisGridLine(); AxisTick(); AxisValueLabel(format: integerNoGroupingFormat)
+                }
+            }
+        }
+        .chartYAxis { valueAxisMarks }
+        .chartXAxisLabel(xLabel, alignment: .center)
+        .chartYAxisLabel(valueAxisLabel)
+    }
+
+    /// Display titles for the source series currently colored, resolved here (where `appState` is
+    /// available) so the detached export content never has to.
+    ///
+    /// - Parameter series: The ranked source series.
+    /// - Returns: Series key → display title.
+    private func resolvedSourceTitles(_ series: [SourceSeries]) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: series.map { ($0.key, sourceTitle($0.key)) })
+    }
+
+    /// The source-color key drawn onto an exported figure (D3).
+    ///
+    /// The By-Year / By-Decade charts hide Swift Charts' own legend and draw a hand-rolled one, so
+    /// without this an exported figure would show colored segments whose meaning is nowhere stated —
+    /// unusable in a publication. Takes pre-resolved titles because export content is detached.
+    ///
+    /// - Parameters:
+    ///   - series: The ranked source series.
+    ///   - titles: Series key → display title, resolved by the caller.
+    private func figureSourceLegend(_ series: [SourceSeries], titles: [String: String]) -> some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), alignment: .leading),
+                      GridItem(.flexible(), alignment: .leading),
+                      GridItem(.flexible(), alignment: .leading)],
+            alignment: .leading, spacing: 4
+        ) {
+            ForEach(Array(series.enumerated()), id: \.element.id) { index, s in
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(sourceColor(s.key, index: index))
+                        .frame(width: 10, height: 10)
+                    Text(titles[s.key] ?? s.key)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.black.opacity(0.7))
+                        .lineLimit(1)
+                    Text(verbatim: "\(s.total)")
+                        .font(.system(size: 10).monospacedDigit())
+                        .foregroundStyle(Color.black.opacity(0.45))
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+    }
+
     // MARK: - Compare charts (D1)
 
     /// Per-term line chart over an Int period axis (By-Year / By-Decade) for compare mode: one line
@@ -1592,59 +1823,18 @@ struct AnalyticsView: View {
                 sourceLegend(coloring.series)
             }
 
-            Chart {
-                ForEach(coloring.segments) { seg in
-                    // In `% of documents` mode the segment height is its share of the
-                    // year's corpus total; a year with a missing/zero total is omitted
-                    // (divide-by-zero guard). Raw mode plots the count unchanged.
-                    if let y = normalizedValue(count: seg.count, period: seg.period, totals: documentTotalsByYear) {
-                        BarMark(
-                            x: .value(
-                                String(localized: "analytics.axis.year", defaultValue: "Year"),
-                                seg.period
-                            ),
-                            y: .value(valueAxisLabel, y)
-                        )
-                        .foregroundStyle(by: .value(
-                            String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
-                            seg.seriesKey
-                        ))
-                        .accessibilityLabel(Text(verbatim: "\(seg.period), \(sourceTitle(seg.seriesKey))"))
-                        .accessibilityValue(Text(sourceValueA11y(count: seg.count, plotted: y)))
-                    }
-                }
-                if showFitLine {
-                    ForEach(data) { point in
-                        if let y = normalizedValue(count: point.count, period: point.year, totals: documentTotalsByYear) {
-                            LineMark(
-                                x: .value(
-                                    String(localized: "analytics.axis.year", defaultValue: "Year"),
-                                    point.year
-                                ),
-                                y: .value(valueAxisLabel, y)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(Color.primary.opacity(0.5))
-                        }
-                    }
-                }
-            }
-            .chartForegroundStyleScale(domain: scale.domain, range: scale.range)
-            .chartLegend(.hidden)
-            .chartXScale(domain: yearRangeStart...yearRangeEnd)
-            .chartXAxis {
-                AxisMarks { value in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel(format: integerNoGroupingFormat)
-                }
-            }
-            .chartYAxis { valueAxisMarks }
-            .chartXAxisLabel(
-                String(localized: "analytics.axis.year", defaultValue: "Year"),
-                alignment: .center
+            // D3: the same builder the exported figure uses, so the published image cannot drift
+            // from what the app shows.
+            singleTermDateChart(
+                segments: coloring.segments,
+                scale: scale,
+                fitPoints: data.map { (period: $0.year, count: $0.count) },
+                totals: documentTotalsByYear,
+                xLabel: String(localized: "analytics.axis.year", defaultValue: "Year"),
+                sourceTitles: resolvedSourceTitles(coloring.series),
+                decadeStride: false,
+                showsFitLine: showFitLine
             )
-            .chartYAxisLabel(valueAxisLabel)
             .frame(height: 280)
             .padding(.horizontal)
 
@@ -1697,59 +1887,17 @@ struct AnalyticsView: View {
                 sourceLegend(coloring.series)
             }
 
-            Chart {
-                ForEach(coloring.segments) { seg in
-                    // Normalized: the segment's share of the decade's corpus total (a
-                    // decade with a missing/zero total is omitted). Raw: the count.
-                    if let y = normalizedValue(count: seg.count, period: seg.period, totals: documentTotalsByDecade) {
-                        BarMark(
-                            x: .value(
-                                String(localized: "analytics.axis.decade", defaultValue: "Decade"),
-                                seg.period
-                            ),
-                            y: .value(valueAxisLabel, y),
-                            width: .ratio(0.8)
-                        )
-                        .foregroundStyle(by: .value(
-                            String(localized: "analytics.chart.source.series", defaultValue: "Volume"),
-                            seg.seriesKey
-                        ))
-                        .accessibilityLabel(Text(verbatim: "\(seg.period)s, \(sourceTitle(seg.seriesKey))"))
-                        .accessibilityValue(Text(sourceValueA11y(count: seg.count, plotted: y)))
-                    }
-                }
-                if showFitLine {
-                    ForEach(data) { point in
-                        if let y = normalizedValue(count: point.count, period: point.decadeStart, totals: documentTotalsByDecade) {
-                            LineMark(
-                                x: .value(
-                                    String(localized: "analytics.axis.decade", defaultValue: "Decade"),
-                                    point.decadeStart
-                                ),
-                                y: .value(valueAxisLabel, y)
-                            )
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(Color.primary.opacity(0.5))
-                        }
-                    }
-                }
-            }
-            .chartForegroundStyleScale(domain: scale.domain, range: scale.range)
-            .chartLegend(.hidden)
-            .chartXScale(domain: yearRangeStart...yearRangeEnd)
-            .chartYAxis { valueAxisMarks }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: 10)) { value in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel(format: integerNoGroupingFormat)
-                }
-            }
-            .chartXAxisLabel(
-                String(localized: "analytics.axis.decade", defaultValue: "Decade"),
-                alignment: .center
+            // D3: the same builder the exported figure uses (see `singleTermDateChart`).
+            singleTermDateChart(
+                segments: coloring.segments,
+                scale: scale,
+                fitPoints: data.map { (period: $0.decadeStart, count: $0.count) },
+                totals: documentTotalsByDecade,
+                xLabel: String(localized: "analytics.axis.decade", defaultValue: "Decade"),
+                sourceTitles: resolvedSourceTitles(coloring.series),
+                decadeStride: true,
+                showsFitLine: showFitLine
             )
-            .chartYAxisLabel(valueAxisLabel)
             .frame(height: 280)
             .padding(.horizontal)
 
@@ -2416,6 +2564,20 @@ struct AnalyticsView: View {
                   systemImage: "tablecells")
         }
         .disabled(!canExport)
+        Button {
+            exportFigure(.png)
+        } label: {
+            Label(String(localized: "analytics.export.png", defaultValue: "Figure (PNG)…"),
+                  systemImage: "photo")
+        }
+        .disabled(!canExportFigure)
+        Button {
+            exportFigure(.pdf)
+        } label: {
+            Label(String(localized: "analytics.export.pdf", defaultValue: "Figure (PDF)…"),
+                  systemImage: "doc.richtext")
+        }
+        .disabled(!canExportFigure)
     }
 
     /// The star that saves / un-saves the current query (D1 Phase 3). Filled once the current
