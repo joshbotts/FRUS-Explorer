@@ -117,6 +117,28 @@ enum PersonAnalyticsMath {
     /// raw values and averaging shares. Used by the decade toggle. `isShare` selects the
     /// aggregation: raw counts sum, document shares are averaged across the decade's years
     /// (a share can't be summed without exceeding 100%).
+    /// The source years a plotted trajectory period aggregates.
+    ///
+    /// In **By Decade** mode `bucketByDecade` keys a point by the decade's start, while the raw
+    /// per-person dictionaries stay keyed by single year. An exporter that looks those up by the
+    /// decade start alone prints the first year's numbers beside a whole-decade plotted value — a
+    /// file whose own columns contradict each other. The span is clipped to `range`, because the
+    /// plotted point was built from in-range years only, so an edge decade must not pick up years
+    /// the chart never counted.
+    ///
+    /// - Parameters:
+    ///   - period: The plotted point's period key (a year, or a decade's start year).
+    ///   - byDecade: Whether the chart is bucketing by decade.
+    ///   - range: The chart's year range.
+    /// - Returns: Every source year that period aggregates, ascending.
+    static func sourceYears(forPeriod period: Int, byDecade: Bool, range: ClosedRange<Int>) -> [Int] {
+        guard byDecade else { return [period] }
+        let lower = max(period, range.lowerBound)
+        let upper = min(period + 9, range.upperBound)
+        guard lower <= upper else { return [period] }
+        return Array(lower...upper)
+    }
+
     static func bucketByDecade(_ points: [PersonTrajectoryPoint], isShare: Bool) -> [PersonTrajectoryPoint] {
         struct Key: Hashable { let rollupId: Int; let decade: Int }
         var sums: [Key: Double] = [:]
@@ -408,7 +430,8 @@ struct PersonAnalyticsView: View {
     /// - Returns: The provenance to stamp on the export.
     private func personProvenance(figureTitle: String,
                                   periodGrain: String?,
-                                  valueMode: String?) -> AnalyticsProvenance {
+                                  valueMode: String?,
+                                  extra: [String] = []) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: figureTitle,
             axisLabel: periodGrain ?? String(localized: "personAnalytics.export.axis.ranking",
@@ -422,8 +445,20 @@ struct PersonAnalyticsView: View {
                        defaultValue: "Population: person mentions are counted over DATED documents only — unlike the Corpus Analytics charts, no volume-start-year fallback is applied, so absolute counts are not directly comparable between the two views."),
                 String(localized: "personAnalytics.export.caveat.identity",
                        defaultValue: "Identity: mentions are grouped by the app's person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity."),
-            ]
+            ] + extra
         )
+    }
+
+    /// The caveat a decade-grained **share** trajectory needs, and only that combination.
+    ///
+    /// A decade's plotted share is the mean of that decade's yearly shares, not the decade's
+    /// documents divided by the decade's dated documents. Those differ whenever the yearly
+    /// denominators differ — which is most of the corpus — so a reader dividing the file's own
+    /// summed columns will not land back on the plotted number, and has to be told why.
+    private var decadeShareCaveat: [String] {
+        guard byDecade, isNormalized else { return [] }
+        return [String(localized: "personAnalytics.export.caveat.decadeShare",
+                       defaultValue: "Decade shares: a decade's plotted share is the MEAN of that decade's yearly shares, not the decade's mentioning documents divided by its dated documents. The two differ when the yearly denominators differ, so dividing this file's summed columns will not reproduce the plotted value exactly; the summed columns describe the decade, the plotted value averages its years.")]
     }
 
     /// The period grain label for the trajectory/relationship charts.
@@ -470,11 +505,18 @@ struct PersonAnalyticsView: View {
         let plottedByPerson = Dictionary(grouping: trajectoryPoints, by: { $0.rollupId })
         let series = selectedPeople.map { person -> (rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)]) in
             let points = (plottedByPerson[person.rollupId] ?? []).sorted { $0.year < $1.year }.map { point in
-                (period: point.year,
-                 mentions: rawTrajectories[person.rollupId]?[point.year] ?? 0,
-                 mentioningDocs: mentioningDocs[person.rollupId]?[point.year],
-                 datedTotal: datedTotals[point.year],
-                 plotted: point.value)
+                let years = PersonAnalyticsMath.sourceYears(
+                    forPeriod: point.year, byDecade: byDecade, range: yearRange)
+                let mentions = years.reduce(0) { $0 + (rawTrajectories[person.rollupId]?[$1] ?? 0) }
+                // A document carries one date, so it falls in exactly one year — summing the
+                // per-year distinct-document counts across a decade cannot double-count.
+                let docs = years.compactMap { mentioningDocs[person.rollupId]?[$0] }
+                let totals = years.compactMap { datedTotals[$0] }
+                return (period: point.year,
+                        mentions: mentions,
+                        mentioningDocs: docs.isEmpty ? nil : docs.reduce(0, +),
+                        datedTotal: totals.isEmpty ? nil : totals.reduce(0, +),
+                        plotted: point.value)
             }
             return (rollupId: person.rollupId, name: person.canonicalName, points: points)
         }
@@ -482,7 +524,8 @@ struct PersonAnalyticsView: View {
             title: title, periodColumn: periodGrainLabel, series: series, isNormalized: isNormalized)
         deliver(table, personProvenance(figureTitle: title,
                                         periodGrain: periodGrainLabel,
-                                        valueMode: normalization.pickerLabel))
+                                        valueMode: normalization.pickerLabel,
+                                        extra: decadeShareCaveat))
     }
 
     /// Renders one Person chart as a publication figure and shares (iOS) or saves (macOS).

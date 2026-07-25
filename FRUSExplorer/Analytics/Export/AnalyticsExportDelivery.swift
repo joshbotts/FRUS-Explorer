@@ -121,9 +121,12 @@ enum AnalyticsExportDelivery {
     ///
     /// - Parameters:
     ///   - title: The chart's title.
+    ///   - prefix: The filename family, so a word cloud is not filed as a chart.
     ///   - date: The export date (injected for testability).
     /// - Returns: A sanitized stem, e.g. `FRUS-Analytics-sovereignty-by-Year-2026-07-24`.
-    nonisolated static func filenameStem(title: String, date: Date = Date()) -> String {
+    nonisolated static func filenameStem(title: String,
+                                         prefix: String = "FRUS-Analytics",
+                                         date: Date = Date()) -> String {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_ "))
         let cleaned = title.unicodeScalars.map { allowed.contains($0) ? Character($0) : " " }
         var stem = String(cleaned)
@@ -132,7 +135,7 @@ enum AnalyticsExportDelivery {
             .replacingOccurrences(of: " ", with: "-")
         if stem.isEmpty { stem = "chart" }
         let stamp = date.formatted(.iso8601.year().month().day().dateSeparator(.dash))
-        return "FRUS-Analytics-\(stem)-\(stamp)"
+        return "\(prefix)-\(stem)-\(stamp)"
     }
 }
 

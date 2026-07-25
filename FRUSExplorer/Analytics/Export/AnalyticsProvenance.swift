@@ -54,6 +54,15 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var indexedVolumeCount: Int
     /// The applied year range, or `nil` when the chart ignores it (the categorical breakdowns).
     var yearRange: ClosedRange<Int>?
+    /// Whether this artifact places documents on a timeline at all.
+    ///
+    /// `true` for every chart in the three analytics dashboards, which is why the dating rule and the
+    /// year-range line are otherwise emitted unconditionally. A **word cloud** sets this `false`: it
+    /// counts tokens across whatever documents its scope resolves to and never reads a date, so
+    /// printing "each document is placed at its TEI `<date>`…" above its terms would be a methods
+    /// statement about work the export did not do — worse than omitting one, because a reader has no
+    /// way to tell a boilerplate caveat from a true one.
+    var appliesDocumentDating: Bool = true
     /// The value mode, e.g. `Raw count` / `% of documents`; `nil` where normalization never applies.
     var valueMode: String?
     /// View-specific caveats appended verbatim (e.g. the cross-reference excluded-references note).
@@ -154,14 +163,16 @@ struct AnalyticsProvenance: Sendable, Equatable {
         }
         lines.append("\(String(localized: "analytics.export.field.groupedBy", defaultValue: "Grouped by")): \(axisLabel)")
         lines.append("\(String(localized: "analytics.export.field.scope", defaultValue: "Scope")): \(scopeDescription)")
-        lines.append("\(String(localized: "analytics.export.field.yearRange", defaultValue: "Year range")): \(yearRangeDescription)")
+        if appliesDocumentDating {
+            lines.append("\(String(localized: "analytics.export.field.yearRange", defaultValue: "Year range")): \(yearRangeDescription)")
+        }
         if let valueMode {
             lines.append("\(String(localized: "analytics.export.field.values", defaultValue: "Values")): \(valueMode)")
         }
         lines.append("\(String(localized: "analytics.export.field.exported", defaultValue: "Exported")): \(Self.appCredit), \(formattedDate)")
         lines.append("")
         lines.append(String(localized: "analytics.export.preamble.method", defaultValue: "Method and caveats"))
-        lines.append(datingCaveat)
+        if appliesDocumentDating { lines.append(datingCaveat) }
         lines.append(corpusCaveat)
         if let valueModeCaveat { lines.append(valueModeCaveat) }
         for caveat in extraCaveats { lines.append(caveat) }

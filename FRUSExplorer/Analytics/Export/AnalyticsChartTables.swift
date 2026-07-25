@@ -313,4 +313,45 @@ enum AnalyticsChartTables {
         }
         return ChartInspectorData(id: "crossref.landmarks", title: title, columns: columns, rowCells: cells)
     }
+
+    // MARK: - Word Cloud
+
+    /// The word-cloud term table (D3 Phase 4).
+    ///
+    /// Replaces the cloud's old bare `term,count` file. Two additions earn their place: the **rank**
+    /// makes the ordering explicit once a reader sorts the file, and the **share** column carries the
+    /// denominator the visual silently encodes — a word's size is relative to the other words, and
+    /// nothing in a PNG says how much of the scope's text it accounts for.
+    ///
+    /// - Parameters:
+    ///   - title: The cloud's scope title.
+    ///   - terms: The visible ranked terms — i.e. exactly what the cloud drew, hidden words already
+    ///     removed (the omission is disclosed in the provenance, not silently absorbed here).
+    ///   - totalTokens: Every non-stopword token counted in the scope, the share's denominator, or
+    ///     `0` when it is unknown (the share column is then omitted rather than divided by zero).
+    /// - Returns: The table backing the cloud.
+    static func wordCloudTable(
+        title: String,
+        terms: [(term: String, count: Int)],
+        totalTokens: Int
+    ) -> ChartInspectorData {
+        var columns = [
+            String(localized: "analytics.export.column.rank", defaultValue: "Rank"),
+            String(localized: "analytics.export.column.term", defaultValue: "Term"),
+            String(localized: "analytics.export.column.occurrences", defaultValue: "Occurrences"),
+        ]
+        if totalTokens > 0 {
+            columns.append(String(localized: "analytics.export.column.shareOfTokens",
+                                  defaultValue: "Share of counted words (%)"))
+        }
+        let cells = terms.enumerated().map { index, row -> [String] in
+            var cell = ["\(index + 1)", row.term, "\(row.count)"]
+            if totalTokens > 0 {
+                let share = Double(row.count) / Double(totalTokens) * 100
+                cell.append(share.formatted(.number.precision(.fractionLength(0...4))))
+            }
+            return cell
+        }
+        return ChartInspectorData(id: "wordcloud.terms", title: title, columns: columns, rowCells: cells)
+    }
 }

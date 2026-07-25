@@ -132,7 +132,10 @@ struct WordCloudView: View {
     @State private var errorMessage: String?
     @State private var placements: [PlacedWord] = []
     @State private var loadTask: Task<Void, Never>?
-    @State private var exportItem: WordCloudExportItem?
+    /// The written export awaiting an iOS share sheet; always `nil` on macOS, which saves directly.
+    @State private var exportShareItem: AnalyticsExportFile?
+    /// A human-readable export failure, surfaced in an alert.
+    @State private var exportError: String?
     @State private var progressModel = WordCloudProgressModel()
     @State private var hiddenWords: Set<String> = []
     /// Words hidden **only** for this open cloud (#233): non-persistent, per-view-instance,
@@ -191,8 +194,17 @@ struct WordCloudView: View {
             loadTask = nil
             await load()
         }
-        .sheet(item: $exportItem) { item in
-            WordCloudShareSheet(item: item)
+        .sheet(item: $exportShareItem) { item in
+            AnalyticsExportShareSheet(item: item)
+        }
+        // D3 Phase 4: a failed export used to be a silent no-op — the exporter returned nil, the
+        // sheet never presented, and the menu click simply did nothing.
+        .alert(String(localized: "analytics.export.error.title", defaultValue: "Export Failed"),
+               isPresented: Binding(get: { exportError != nil },
+                                    set: { if !$0 { exportError = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { exportError = nil }
+        } message: {
+            Text(exportError ?? "")
         }
     }
 
@@ -306,6 +318,121 @@ struct WordCloudView: View {
     private var useSentimentMarks: Bool {
         differentiateWithoutColor && lens.colorsBySentiment
     }
+
+    // MARK: - Research-grade export (D3 Phase 4)
+
+    /// The methods statement for a word-cloud export.
+    ///
+    /// `appliesDocumentDating` is **false**: a cloud counts tokens across whatever documents its
+    /// scope resolves to and never reads a date, so the shared dating rule and the year-range line
+    /// would both describe work this export did not do.
+    ///
+    /// The caveats disclose what the picture cannot: which stop lists ran, the tuning floors that
+    /// silently removed terms, and — the one that most affects a reader's trust — how many words the
+    /// user hid by hand before exporting.
+    private var cloudProvenance: AnalyticsProvenance {
+        let tuning = WordCloudSettings.tuning
+        var caveats: [String] = [
+            String(format: String(localized: "wordcloud.export.caveat.population %lld %lld",
+                                  defaultValue: "Population: counts cover the %lld document(s) this scope resolved to and %lld counted word(s) after stopword removal — the share column's denominator."),
+                   Int64(result.documentCount), Int64(result.totalTokenCount)),
+            String(format: String(localized: "wordcloud.export.caveat.stopwords %@",
+                                  defaultValue: "Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@."),
+                   excludeBoilerplate
+                   ? String(localized: "wordcloud.export.caveat.stopwords.excluded", defaultValue: "also removed")
+                   : String(localized: "wordcloud.export.caveat.stopwords.kept", defaultValue: "kept")),
+            String(format: String(localized: "wordcloud.export.caveat.tuning %lld %lld %@",
+                                  defaultValue: "Tuning: words shorter than %lld character(s) and words occurring fewer than %lld time(s) are excluded; plural folding is %@."),
+                   Int64(tuning.minimumLength), Int64(tuning.minimumCount),
+                   tuning.foldPlurals
+                   ? String(localized: "common.on", defaultValue: "on")
+                   : String(localized: "common.off", defaultValue: "off")),
+        ]
+        // The hides are the most consequential omission in the file, because they are the user's own
+        // editorial judgement rather than a rule — a reader cannot infer them from anything else.
+        let hidden = hiddenWords.union(sessionHiddenWords).count
+        if hidden > 0 {
+            caveats.append(String(format: String(localized: "wordcloud.export.caveat.hidden %lld",
+                                                 defaultValue: "Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from this export."),
+                                  Int64(hidden)))
+        }
+        if lens != .allTerms {
+            caveats.append(String(format: String(localized: "wordcloud.export.caveat.lens %@",
+                                                 defaultValue: "Lens: the cloud is filtered to the \"%@\" word list, so this is a subset of the scope's vocabulary, not its whole frequency ranking."),
+                                  lens.label))
+        }
+        return AnalyticsProvenance(
+            // Named rather than reusing the bare scope title, which is also the Scope: line — a
+            // preamble that prints the same long volume title twice reads like a bug.
+            figureTitle: String(format: String(localized: "wordcloud.export.figureTitle %@",
+                                               defaultValue: "Word Cloud — %@"), title),
+            axisLabel: String(localized: "wordcloud.export.axis",
+                              defaultValue: "Ranked by frequency across the scope's documents"),
+            scopeLabel: title,
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            yearRange: nil,
+            appliesDocumentDating: false,
+            valueMode: nil,
+            extraCaveats: caveats
+        )
+    }
+
+    /// Exports the cloud's terms as a provenance-stamped CSV.
+    private func exportCSV() {
+        let table = AnalyticsChartTables.wordCloudTable(
+            title: title,
+            terms: visibleTerms.map { (term: $0.term, count: $0.count) },
+            totalTokens: result.totalTokenCount)
+        let filename = AnalyticsExportDelivery.filenameStem(title: title, prefix: Self.filenamePrefix) + ".csv"
+        report(AnalyticsExportDelivery.deliver(text: table.provenancedCSV(cloudProvenance),
+                                               filename: filename))
+    }
+
+    /// The identifying facts printed under the cloud's title in an exported image.
+    ///
+    /// Deliberately **not** the shared `captionLines`, whose second line leads with the scope — on a
+    /// cloud the scope is already the heading directly above, so repeating it wasted the line and
+    /// pushed the export date off the end. These are the facts the picture itself cannot carry.
+    private var cloudFigureCaption: String {
+        [
+            String(format: String(localized: "wordcloud.export.caption.documents %lld",
+                                  defaultValue: "%lld documents"), Int64(result.documentCount)),
+            String(format: String(localized: "wordcloud.export.caption.terms %lld",
+                                  defaultValue: "%lld terms shown"), Int64(visibleTerms.count)),
+            AnalyticsProvenance.appCredit,
+            cloudProvenance.formattedDate,
+        ].joined(separator: " · ")
+    }
+
+    /// Exports the cloud artwork as a PNG or PDF.
+    private func exportImage(_ format: AnalyticsFigureFormat) {
+        guard let data = WordCloudExporter.imageData(
+            terms: visibleTerms, title: title,
+            provenanceLine: cloudFigureCaption,
+            format: format, palette: Self.palette,
+            sentimentColors: lens.colorsBySentiment, sentimentMarks: useSentimentMarks
+        ) else {
+            exportError = String(localized: "analytics.export.error.render",
+                                 defaultValue: "The figure could not be rendered.")
+            return
+        }
+        let filename = AnalyticsExportDelivery.filenameStem(title: title, prefix: Self.filenamePrefix)
+            + "." + format.pathExtension
+        report(AnalyticsExportDelivery.deliver(data: data, filename: filename,
+                                               contentType: format.contentType))
+    }
+
+    /// Surfaces an export outcome: present the iOS share sheet, or report a failure.
+    private func report(_ outcome: AnalyticsExportOutcome) {
+        switch outcome {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// Word-cloud exports are filed under their own name, not as analytics charts.
+    private static let filenamePrefix = "FRUS-WordCloud"
 
     /// The colour for a word: sentiment polarity under the sentiment lens, otherwise
     /// the rank-based palette.
@@ -584,32 +711,25 @@ struct WordCloudView: View {
                 Divider()
                 Section(String(localized: "wordcloud.export.section", defaultValue: "Export")) {
                     Button {
-                        exportItem = WordCloudExporter.csv(terms: visibleTerms, title: title)
+                        exportCSV()
                     } label: {
                         Label(String(localized: "wordcloud.export.csv", defaultValue: "CSV…"),
                               systemImage: "tablecells")
                     }
                     Button {
-                        exportItem = WordCloudExporter.image(
-                            terms: visibleTerms, title: title, format: .png,
-                            palette: Self.palette, sentimentColors: lens.colorsBySentiment,
-                            sentimentMarks: useSentimentMarks
-                        )
+                        exportImage(.png)
                     } label: {
                         Label(String(localized: "wordcloud.export.png", defaultValue: "Image (PNG)…"),
                               systemImage: "photo")
                     }
                     Button {
-                        exportItem = WordCloudExporter.image(
-                            terms: visibleTerms, title: title, format: .pdf,
-                            palette: Self.palette, sentimentColors: lens.colorsBySentiment,
-                            sentimentMarks: useSentimentMarks
-                        )
+                        exportImage(.pdf)
                     } label: {
                         Label(String(localized: "wordcloud.export.pdf", defaultValue: "PDF…"),
                               systemImage: "doc.richtext")
                     }
                 }
+                .disabled(visibleTerms.isEmpty)
             } label: {
                 Label(String(localized: "wordcloud.menu", defaultValue: "Options"),
                       systemImage: "ellipsis.circle")

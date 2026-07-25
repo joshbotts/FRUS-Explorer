@@ -10,75 +10,32 @@ import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// A generated export artifact ready to share or save.
-///
-/// Version history:
-///   1.0 — Word Cloud feature: initial implementation
-struct WordCloudExportItem: Identifiable {
-    /// Stable identity for `.sheet(item:)`.
-    let id = UUID()
-    /// Location of the written file in the temporary directory.
-    let url: URL
-    /// Display filename (with extension).
-    let filename: String
-}
-
-/// Image output formats for a word-cloud export.
-///
-/// Version history:
-///   1.0 — Word Cloud feature: initial implementation
-enum WordCloudImageFormat {
-    /// Rasterised PNG.
-    case png
-    /// Vector PDF.
-    case pdf
-}
-
-/// Renders word-cloud exports (PNG, PDF, CSV) to temporary files.
+/// Renders word-cloud artwork for export.
 ///
 /// Image exports use SwiftUI `ImageRenderer` over a non-interactive
 /// `WordCloudImageContent`, so the exported artwork matches the on-screen cloud
 /// layout. All entry points run on the main actor because `ImageRenderer` does.
 ///
+/// Since D3 Phase 4 the image entry point returns **bytes**, not a written file, so it composes with
+/// `AnalyticsExportDelivery` — the macOS save panel and the per-export iOS temp directory the rest of
+/// the analytics exports already use — and so a failure can be reported rather than swallowed.
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — D3 Phase 4: `csv` removed (the view builds a provenance-stamped table instead);
+///          `image` returns `Data?` and takes an optional provenance caption line
 enum WordCloudExporter {
 
     /// Fixed export canvas size (4:3, comfortable for slides and print).
     private static let canvas = CGSize(width: 1200, height: 900)
 
-    /// Writes a `term,count` CSV for the cloud's terms.
+    /// Renders the cloud to PNG or PDF bytes.
     ///
     /// - Parameters:
     ///   - terms: The ranked terms.
-    ///   - title: Scope title, used for the filename.
-    /// - Returns: The written export item, or `nil` on failure.
-    static func csv(terms: [TermCount], title: String) -> WordCloudExportItem? {
-        var lines = ["term,count"]
-        for term in terms {
-            // Quote the term and escape embedded quotes for CSV safety.
-            let escaped = term.term.replacingOccurrences(of: "\"", with: "\"\"")
-            lines.append("\"\(escaped)\",\(term.count)")
-        }
-        let csv = lines.joined(separator: "\n").appending("\n")
-        let filename = "\(safeName(title)).csv"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-        do {
-            try csv.data(using: .utf8)?.write(to: url, options: .atomic)
-            return WordCloudExportItem(url: url, filename: filename)
-        } catch {
-            #if DEBUG
-            print("[WordCloudExporter] CSV write failed: \(error)")
-            #endif
-            return nil
-        }
-    }
-
-    /// Renders the cloud to a PNG or PDF file.
-    ///
-    /// - Parameters:
-    ///   - terms: The ranked terms.
-    ///   - title: Scope title, drawn as a caption and used for the filename.
+    ///   - title: Scope title, drawn in the caption band.
+    ///   - provenanceLine: The identifying facts drawn under the title (scope, document count, app
+    ///     version, export date), or `nil` to leave the band as title-only.
     ///   - format: PNG or PDF.
     ///   - palette: The colour palette to draw words with.
     ///   - sentimentColors: When `true`, words are coloured by sentiment polarity
@@ -86,18 +43,21 @@ enum WordCloudExporter {
     ///   - sentimentMarks: When `true`, words are prefixed with a polarity mark
     ///     (`+`/`−`) so the sentiment lens reads without colour (A8 —
     ///     `differentiateWithoutColor`), matching the on-screen marked terms.
-    /// - Returns: The written export item, or `nil` on failure.
+    /// - Returns: The encoded bytes, or `nil` when the renderer produced nothing (the caller turns
+    ///   that into a user-visible failure).
     @MainActor
-    static func image(
+    static func imageData(
         terms: [TermCount],
         title: String,
-        format: WordCloudImageFormat,
+        provenanceLine: String? = nil,
+        format: AnalyticsFigureFormat,
         palette: [Color],
         sentimentColors: Bool = false,
         sentimentMarks: Bool = false
-    ) -> WordCloudExportItem? {
-        // Leave a caption band at the bottom; lay words out above it.
-        let captionBand: CGFloat = 56
+    ) -> Data? {
+        // Leave a caption band at the bottom; lay words out above it. The provenance variant is
+        // sized for a two-line title (FRUS volume titles routinely wrap) plus the facts line.
+        let captionBand: CGFloat = provenanceLine == nil ? 56 : 92
         let layoutSize = CGSize(width: canvas.width, height: canvas.height - captionBand)
         let design = WordCloudSettings.fontDesign
         // A8: lay out the marked display terms so the polarity prefixes get the
@@ -112,7 +72,7 @@ enum WordCloudExporter {
         let content = WordCloudImageContent(
             placements: placements, title: title, size: canvas,
             captionBand: captionBand, palette: palette, sentimentColors: sentimentColors,
-            fontDesign: design.swiftUIDesign
+            fontDesign: design.swiftUIDesign, provenanceLine: provenanceLine
         )
 
         let renderer = ImageRenderer(content: content)
@@ -121,29 +81,28 @@ enum WordCloudExporter {
         switch format {
         case .png:
             guard let cgImage = renderer.cgImage else { return nil }
-            let filename = "\(safeName(title)).png"
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-            guard let destination = CGImageDestinationCreateWithURL(
-                url as CFURL, UTType.png.identifier as CFString, 1, nil
+            let data = NSMutableData()
+            guard let destination = CGImageDestinationCreateWithData(
+                data as CFMutableData, UTType.png.identifier as CFString, 1, nil
             ) else { return nil }
             CGImageDestinationAddImage(destination, cgImage, nil)
             guard CGImageDestinationFinalize(destination) else { return nil }
-            return WordCloudExportItem(url: url, filename: filename)
+            return data as Data
 
         case .pdf:
-            let filename = "\(safeName(title)).pdf"
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            let data = NSMutableData()
             var wrote = false
             renderer.render { size, draw in
                 var box = CGRect(origin: .zero, size: size)
-                guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else { return }
+                guard let consumer = CGDataConsumer(data: data as CFMutableData),
+                      let pdf = CGContext(consumer: consumer, mediaBox: &box, nil) else { return }
                 pdf.beginPDFPage(nil)
                 draw(pdf)
                 pdf.endPDFPage()
                 pdf.closePDF()
                 wrote = true
             }
-            return wrote ? WordCloudExportItem(url: url, filename: filename) : nil
+            return wrote ? data as Data : nil
         }
     }
 
@@ -211,15 +170,6 @@ enum WordCloudExporter {
         return (cgImage, (mutable as Data).base64EncodedString())
     }
 
-    /// Sanitises a scope title into a filesystem-safe base filename.
-    private static func safeName(_ title: String) -> String {
-        let base = title.isEmpty ? "word-cloud" : title
-        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_ "))
-        let cleaned = String(base.unicodeScalars.filter { allowed.contains($0) })
-            .trimmingCharacters(in: .whitespaces)
-            .replacingOccurrences(of: " ", with: "-")
-        return cleaned.isEmpty ? "word-cloud" : "FRUS-WordCloud-\(cleaned)"
-    }
 }
 
 /// Non-interactive word-cloud artwork used as the source for image exports.
@@ -241,6 +191,13 @@ struct WordCloudImageContent: View {
     var sentimentColors: Bool = false
     /// Typeface family for the rendered words (mirrors the user's cloud preference).
     var fontDesign: Font.Design = .rounded
+    /// The identifying facts drawn beneath the title — scope, documents counted, app version, export
+    /// date — or `nil` for a title-only band.
+    ///
+    /// Defaults to `nil` **deliberately**: the collection-embedded cloud
+    /// (`WordCloudExporter.collectionCloudImage`) renders inside a document that carries its own
+    /// provenance, so it must keep the band it has always had.
+    var provenanceLine: String?
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -255,10 +212,21 @@ struct WordCloudImageContent: View {
             }
             VStack(spacing: 0) {
                 Spacer()
-                HStack {
-                    Text(title)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.black)
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(title)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.black)
+                            // FRUS volume titles are long enough to need a second line; without this
+                            // a wrapped title squeezes the provenance line out of the band.
+                            .lineLimit(2)
+                        if let provenanceLine {
+                            Text(provenanceLine)
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.black.opacity(0.6))
+                                .lineLimit(1)
+                        }
+                    }
                     Spacer()
                     Text(verbatim: "FRUS Explorer")
                         .font(.system(size: 14))
@@ -285,50 +253,7 @@ struct WordCloudImageContent: View {
     }
 }
 
-/// A sheet presenting a generated export with a system share control.
-///
-/// Uses `ShareLink`, which presents the platform share sheet on iOS and the
-/// share picker on macOS, so one implementation covers both.
-///
-/// Version history:
-///   1.0 — Word Cloud feature: initial implementation
-struct WordCloudShareSheet: View {
-    /// The artifact to share.
-    let item: WordCloudExportItem
-
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 44))
-                    .foregroundStyle(.tint)
-                Text(item.filename)
-                    .font(.headline)
-                    .lineLimit(1)
-                ShareLink(item: item.url) {
-                    Label(String(localized: "wordcloud.share.button", defaultValue: "Share…"),
-                          systemImage: "square.and.arrow.up")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                Spacer()
-            }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle(String(localized: "wordcloud.share.title", defaultValue: "Export"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
-            }
-        }
-        #if os(macOS)
-        .frame(minWidth: 360, minHeight: 280)
-        #endif
-    }
-}
+// `WordCloudShareSheet` and `WordCloudExportItem` were removed in D3 Phase 4. The cloud now delivers
+// through `AnalyticsExportDelivery` / `AnalyticsExportShareSheet` alongside the rest of the analytics
+// exports, which gets it the macOS save panel it never had, a per-export iOS temp directory instead
+// of flat writes that overwrote one another, and a reported failure instead of a silent no-op.
