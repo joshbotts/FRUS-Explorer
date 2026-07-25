@@ -544,7 +544,7 @@ struct PersonIndexDetailSheet: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .help(String(localized: "people.detail.reconciled.help",
-                                         defaultValue: "Matched to the Office of the Historian's person registry"))
+                                         defaultValue: "Matched to the bundled name-authority data"))
                         }
                     }
                     .padding(.vertical, 4)
@@ -897,7 +897,7 @@ struct PersonIndexDetailSheet: View {
             target.entry.name, indexEntry.entry.name)
         if let mine = effectiveAuthorityId, let theirs = target.authorityId, mine != theirs {
             message += "\n\n" + String(localized: "people.detail.mergeConfirm.authorityWarning",
-                defaultValue: "These records are matched to different people in the Office of the Historian's registry, so they may be distinct. Merge only if you're sure.")
+                defaultValue: "These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you're sure.")
         }
         return message
     }

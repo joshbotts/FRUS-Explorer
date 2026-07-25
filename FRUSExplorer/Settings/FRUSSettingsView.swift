@@ -3344,7 +3344,7 @@ private struct SettingsDataPane: View {
                 if BrokenRefsIndexStore.shared != nil {
                     PaneSectionHeader(title: "Broken Cross-References Report")
                         .padding(.top, 16)
-                    Text("The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus — for reporting to the Office of the Historian. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline.")
+                    Text("The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline.")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .padding(.bottom, 8)

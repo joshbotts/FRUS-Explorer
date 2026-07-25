@@ -103,7 +103,7 @@ struct ResearchDataExportView: View {
                 } footer: {
                     Text(String(
                         localized: "settings.export.brokenRefs.footer",
-                        defaultValue: "The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus — for reporting to the Office of the Historian. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline."
+                        defaultValue: "The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline."
                     ))
                 }
             }

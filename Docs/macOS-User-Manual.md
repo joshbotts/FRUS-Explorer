@@ -208,7 +208,7 @@ Open the **Corpus Browser** (⇧⌘B) to navigate the FRUS series as a hierarchy
 
 **Volume view** — Click a volume to see its front matter, chapters, and appendices. Each chapter entry shows the number of documents it contains.
 
-A **Top subjects** section on the volume view lists the subjects most characteristic of that volume — derived from the Office of the Historian's subject data and grouped by category — and it appears even before the volume is downloaded, so you can size up an unfamiliar volume's themes before committing to it. Click a subject to see the *other* FRUS volumes across the whole corpus that cover the same subject (downloaded or not) and jump straight to any of them in the browser. (These are automatically detected topics, and the profiles behind them — which also power the detected-topic filters in Search, Analytics, and the Word Cloud — were vetted for era consistency in this update, removing a handful of anachronistic mistags.)
+A **Top subjects** section on the volume view lists the subjects most characteristic of that volume — derived from experimental subject data and grouped by category — and it appears even before the volume is downloaded, so you can size up an unfamiliar volume's themes before committing to it. Click a subject to see the *other* FRUS volumes across the whole corpus that cover the same subject (downloaded or not) and jump straight to any of them in the browser. (These are automatically detected topics, and the profiles behind them — which also power the detected-topic filters in Search, Analytics, and the Word Cloud — were vetted for era consistency in this update, removing a handful of anachronistic mistags.)
 
 `[SCREENSHOT: Volume detail view showing chapter list with document counts]`
 
@@ -244,7 +244,7 @@ The same person frequently appears across many volumes under slightly different 
 - the person's **canonical name**;
 - a subtitle combining their **role** and **active years** (e.g. *Secretary of State · 1973–1977*) where the volume's List of Persons supplied them;
 - a **mention count** — the number of distinct documents referencing this identity across the whole corpus;
-- a **reconciled-identity** seal when the entry has been matched to the Office of the Historian's people authority file.
+- a **reconciled-identity** seal when the entry has been matched to the bundled name-authority data.
 
 Use the **search field** to filter the list by name; click a person to open their detail panel.
 
@@ -254,7 +254,7 @@ Use the **search field** to filter the list by name; click a person to open thei
 - **Find all mentions** runs a person-scoped search returning every document that references this identity (see Section 5).
 - **Records in This Identity** lists each underlying `(volume, ref)` record that was folded into this person; click **Separate** on any record that is actually a different person to split it out. Your correction syncs across your devices via iCloud and is reapplied whenever the index is rebuilt.
 - When the app is uncertain whether two identities are the same person, it surfaces a **"possibly the same person"** suggestion with a **Merge** action.
-- You can also merge any two people **yourself**, for cases the cautious automatic grouping keeps apart: choose **Merge with another person…** in a person's detail panel — or right-click the person's row for the same command — and pick the other person from a searchable list. A confirmation names both people before anything changes, and warns you when they look like genuinely different people (each matched to a distinct Office of the Historian identity).
+- You can also merge any two people **yourself**, for cases the cautious automatic grouping keeps apart: choose **Merge with another person…** in a person's detail panel — or right-click the person's row for the same command — and pick the other person from a searchable list. A confirmation names both people before anything changes, and warns you when they look like genuinely different people (each matched to a distinct entry in the bundled name-authority data).
 - A **Corrections** toolbar button in the People browser lists every merge and separation you've made and lets you **undo** any of them. Corrections sync across your devices via iCloud.
 - Reconciled identities that carry an authority id show a **View on VIAF** link to the external authority record.
 
@@ -394,7 +394,7 @@ Each rendered document shows:
 
 `[SCREENSHOT: Document close-up showing a person reference, glossary term, and cross-reference link all visible]`
 
-**Unresolvable cross-references.** Not every printed cross-reference can be followed: occasionally the printed volume cites a page, document, or volume that does not exist in the digital corpus. FRUS Explorer ships a corpus-wide validation dataset of these, and a reference it confirms cannot be followed renders in **muted grey with a dotted underline and a small dagger (†) marker** instead of looking like a working link. Click one to open an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. Valid references are unchanged, and the printed text is always preserved — nothing is removed from the document. (These errors can be exported for reporting to the Office of the Historian — see Section 16.)
+**Unresolvable cross-references.** Not every printed cross-reference can be followed: occasionally the printed volume cites a page, document, or volume that does not exist in the digital corpus. FRUS Explorer ships a corpus-wide validation dataset of these, and a reference it confirms cannot be followed renders in **muted grey with a dotted underline and a small dagger (†) marker** instead of looking like a working link. Click one to open an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. Valid references are unchanged, and the printed text is always preserved — nothing is removed from the document. (This list can also be exported as CSV or JSON — see Section 16.)
 
 `[SCREENSHOT: A document with an unresolvable cross-reference in muted grey with the dagger marker, and the Unresolved Reference sheet open explaining why it can't be followed]`
 
@@ -1111,7 +1111,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | **NARA API** | API key entry (stored in iCloud Keychain); *Need a Key?* link |
 | **Zotero** | Connect your Zotero account with a Web API key (stored in iCloud Keychain, so the connection follows you to your other devices) so **Send to Zotero Library** can push documents and collections straight into your library; a link creates a key with the right permissions |
 | **Summarization** | Prompt management, summary browser, background summarizer |
-| **Data** | Research-data export: a summary of everything you've created (notes, tags, highlights, collections, prompts, projects) with **Export as JSON…** and **Export Notes as Markdown…** buttons. A **Broken Cross-References Report** section exports the corpus-wide list of unresolvable cross-references (Section 6.2) — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus — via **Export CSV…** / **Export JSON…**, for reporting to the Office of the Historian |
+| **Data** | Research-data export: a summary of everything you've created (notes, tags, highlights, collections, prompts, projects) with **Export as JSON…** and **Export Notes as Markdown…** buttons. A **Broken Cross-References Report** section exports the corpus-wide list of unresolvable cross-references (Section 6.2) — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus — via **Export CSV…** / **Export JSON…** |
 
 ### Reset
 
