@@ -358,7 +358,8 @@ struct CrossReferenceAnalyticsView: View {
                         HStack {
                             Spacer()
                             AnalyticsSectionExportControl(isEnabled: !matrixCells.isEmpty,
-                                                          exportCSV: exportMatrixCSV)
+                                                          exportCSV: exportMatrixCSV,
+                                                          exportFigure: exportMatrixFigure)
                         }
                         .padding(.horizontal)
                     },
@@ -547,10 +548,61 @@ struct CrossReferenceAnalyticsView: View {
             figureTitle: title,
             axisLabel: String(localized: "crossRefAnalytics.export.axis.matrix",
                               defaultValue: "Cross-volume citation counts"),
-            extra: [String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
-                                          defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references; pairs with no references between them are omitted from this file."),
-                           Int64(Self.matrixVolumeLimit))]))
+            extra: matrixCaveats))
     }
+
+    /// The caveats every heat-matrix export carries, CSV and figure alike.
+    ///
+    /// Shared rather than duplicated because the two artifacts represent the same selection
+    /// differently — the CSV is an edge list that simply omits zero pairs, the figure draws the full
+    /// grid and leaves them blank — and a reader holding both must not be told two different things.
+    /// Only `csvPreambleLines` renders these today; the figure's caption strip is deliberately two
+    /// lines and points at the CSV for the rest.
+    private var matrixCaveats: [String] {
+        [
+            String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
+                                  defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references. The CSV lists only pairs that have references between them; the figure draws the whole grid and leaves those pairs blank."),
+                   Int64(Self.matrixVolumeLimit)),
+            String(localized: "crossRefAnalytics.export.caveat.matrixAxes",
+                   defaultValue: "Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes' full titles appear in this CSV.")
+        ]
+    }
+
+    /// Exports the volume heat matrix as a figure.
+    ///
+    /// Two departures from the on-screen matrix, both forced by what a static image can carry:
+    ///  - the grid renders **outside** its `ScrollView` at natural size, since rasterizing a scroll
+    ///    view captures only its visible clip;
+    ///  - each cell **prints its count** (owner decision G) on a larger cell, because a figure has
+    ///    neither the hover tooltip nor the scroll context that make an opacity-only cell readable.
+    private func exportMatrixFigure(_ format: AnalyticsFigureFormat) {
+        let title = String(localized: "crossRefAnalytics.matrix.heading", defaultValue: "Volume Citation Heat Matrix")
+        let labels = matrixLabels
+        let cellSize: CGFloat = 44
+        // Header row + one row per volume (each with its 1pt grid spacing), plus the legend strip.
+        let gridHeight = Self.matrixFigureHeaderHeight + CGFloat(matrixVolumes.count) * (cellSize + 1)
+        deliverFigure(format,
+                      provenance: crossRefProvenance(
+                        figureTitle: title,
+                        axisLabel: String(localized: "crossRefAnalytics.export.axis.matrix",
+                                          defaultValue: "Cross-volume citation counts"),
+                        extra: matrixCaveats),
+                      chartHeight: gridHeight + 40) {
+            VStack(alignment: .leading, spacing: 12) {
+                heatMatrixGrid(labels: labels, cellSize: cellSize, showsCounts: true, interactive: false,
+                               rowLabelWidth: Self.matrixFigureRowLabelWidth, rowLabelLines: 2)
+                matrixLegend
+            }
+        }
+    }
+
+    /// The heat matrix's header-row height, shared by the on-screen grid and the figure's height
+    /// calculation so the exported plate cannot crop its own top row.
+    private static let matrixFigureHeaderHeight: CGFloat = 40
+
+    /// The row-label width the exported figure uses. Sized so the grid still fits the plate:
+    /// 15 columns × 45pt + 320pt ≈ 995pt, inside the canvas's 1,144pt content width.
+    private static let matrixFigureRowLabelWidth: CGFloat = 320
 
     /// Exports the PageRank landmarks — the scores are otherwise reachable only through the chart's
     /// VoiceOver value.
@@ -803,14 +855,21 @@ struct CrossReferenceAnalyticsView: View {
         }
     }
 
-    private var heatMatrix: some View {
-        // Win 8: larger cells (was 22pt) and HORIZONTAL short column codes (were rotated, truncated
-        // ids) so the column axis reads left-to-right. Rows keep the fuller descriptive label.
-        let cellSize: CGFloat = 34
-        let headerHeight: CGFloat = 40
-        let rowLabelWidth: CGFloat = 150
-        // Resolve each column's manifest metadata once, then derive the collision-free codes (column
-        // axis) and the descriptive labels (row axis).
+    /// The matrix's pre-resolved axis labels (D3).
+    ///
+    /// Every one of these reads `appState`, so they must be resolved on this side of the render
+    /// boundary — exported figure content is environment-detached and cannot reach it.
+    private struct MatrixLabels {
+        /// Volume id → short column code (`'55–57 II`).
+        var codes: [String: String] = [:]
+        /// Volume id → descriptive row label.
+        var rows: [String: String] = [:]
+        /// Volume id → full manifest title (tooltips / VoiceOver).
+        var titles: [String: String] = [:]
+    }
+
+    /// Resolves the matrix's column codes, row labels, and full titles from the manifest.
+    private var matrixLabels: MatrixLabels {
         let columns: [(id: String, subseries: String, title: String, topic: String)] = matrixVolumes.map { id in
             let entry = appState.manifestStore.entry(forVolumeId: id)
             let subseries = entry?.subseries ?? ""
@@ -820,69 +879,117 @@ struct CrossReferenceAnalyticsView: View {
             let topic = distilled.contains(" · ") ? String(distilled.components(separatedBy: " · ").first ?? "") : ""
             return (id: id, subseries: subseries, title: title, topic: topic)
         }
-        let codes = matrixColumnCodes(columns)
-        let rowLabels = Dictionary(uniqueKeysWithValues: columns.map { c in
-            (c.id, ChronologyViewModel.distilledVolumeLabel(volumeId: c.id, subseries: c.subseries, title: c.title))
-        })
-        return ScrollView([.horizontal, .vertical]) {
-            Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-                // Header row: corner + column (target) codes — horizontal, up to two lines.
-                GridRow {
-                    Color.clear.frame(width: rowLabelWidth, height: headerHeight)
-                    ForEach(matrixVolumes, id: \.self) { target in
-                        Button {
-                            openVolume(target)
-                        } label: {
-                            Text(codes[target] ?? shortVolumeLabel(target))
-                                .font(.system(size: 10).monospaced())
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.7)
-                                .multilineTextAlignment(.center)
-                                .frame(width: cellSize, height: headerHeight, alignment: .center)
-                        }
-                        .buttonStyle(.plain)
-                        .help(volumeTitle(target))
-                        .accessibilityLabel(Text(volumeTitle(target)))
-                    }
-                }
-                ForEach(matrixVolumes, id: \.self) { source in
-                    GridRow {
-                        Button {
-                            openVolume(source)
-                        } label: {
-                            Text(rowLabels[source] ?? shortVolumeLabel(source))
-                                .font(.system(size: 10))
-                                .lineLimit(1)
-                                // Head-truncate: distilledVolumeLabel's uniqueness lives in its
-                                // trailing "· period vN" tag, so when the topic is too long keep the
-                                // tag (right-aligned, nearest the cells) visible rather than dropping
-                                // it — otherwise volumes sharing a topic prefix render identically.
-                                .truncationMode(.head)
-                                .frame(width: rowLabelWidth, height: cellSize, alignment: .trailing)
-                        }
-                        .buttonStyle(.plain)
-                        .help(volumeTitle(source))
-                        .accessibilityLabel(Text(volumeTitle(source)))
-                        ForEach(matrixVolumes, id: \.self) { target in
-                            heatCellView(source: source, target: target, size: cellSize)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal)
+        return MatrixLabels(
+            codes: matrixColumnCodes(columns),
+            rows: Dictionary(uniqueKeysWithValues: columns.map { c in
+                (c.id, ChronologyViewModel.distilledVolumeLabel(volumeId: c.id, subseries: c.subseries, title: c.title))
+            }),
+            titles: Dictionary(uniqueKeysWithValues: matrixVolumes.map { ($0, volumeTitle($0)) })
+        )
+    }
+
+    private var heatMatrix: some View {
+        // The on-screen matrix scrolls in both axes; the exported figure renders the SAME grid
+        // without the ScrollView, since rasterizing a scroll view captures only its visible clip.
+        ScrollView([.horizontal, .vertical]) {
+            heatMatrixGrid(labels: matrixLabels, cellSize: 34, showsCounts: false, interactive: true)
+                .padding(.horizontal)
         }
         .frame(maxHeight: 480)
     }
 
-    private func heatCellView(source: String, target: String, size: CGFloat) -> some View {
+    /// The heat-matrix grid, shared by the on-screen scroll view and the D3 figure export.
+    ///
+    /// - Parameters:
+    ///   - labels: Pre-resolved column codes, row labels, and full titles.
+    ///   - cellSize: The square cell edge (the export uses a larger cell so a count fits).
+    ///   - showsCounts: Whether to print each cell's reference count. **The exported figure sets
+    ///     this**: on screen a cell's value is carried by opacity plus a hover tooltip, neither of
+    ///     which survives into a static image, so an exported matrix without numbers would be
+    ///     uncheckable.
+    ///   - interactive: Whether labels are tappable (screen only — a figure has no tap targets, and
+    ///     buttons would render with control styling).
+    ///   - rowLabelWidth: How much width the row axis gets. The figure spends more of its fixed
+    ///     plate here, since a head-truncated row label ("…rlin (The Potsdam…") is a tolerable
+    ///     space trade in a scrollable view and an unusable one in a published figure.
+    ///   - rowLabelLines: How many lines a row label may wrap to.
+    private func heatMatrixGrid(labels: MatrixLabels,
+                                cellSize: CGFloat,
+                                showsCounts: Bool,
+                                interactive: Bool,
+                                rowLabelWidth: CGFloat = 150,
+                                rowLabelLines: Int = 1) -> some View {
+        let headerHeight = Self.matrixFigureHeaderHeight
+        return Grid(horizontalSpacing: 1, verticalSpacing: 1) {
+            // Header row: corner + column (target) codes — horizontal, up to two lines.
+            GridRow {
+                Color.clear.frame(width: rowLabelWidth, height: headerHeight)
+                ForEach(matrixVolumes, id: \.self) { target in
+                    let code = Text(labels.codes[target] ?? shortVolumeLabel(target))
+                        .font(.system(size: 10).monospaced())
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
+                        .multilineTextAlignment(.center)
+                        .frame(width: cellSize, height: headerHeight, alignment: .center)
+                    if interactive {
+                        Button { openVolume(target) } label: { code }
+                            .buttonStyle(.plain)
+                            .help(labels.titles[target] ?? target)
+                            .accessibilityLabel(Text(labels.titles[target] ?? target))
+                    } else {
+                        code
+                    }
+                }
+            }
+            ForEach(matrixVolumes, id: \.self) { source in
+                GridRow {
+                    let rowLabel = Text(labels.rows[source] ?? shortVolumeLabel(source))
+                        .font(.system(size: 10))
+                        .lineLimit(rowLabelLines)
+                        .multilineTextAlignment(.trailing)
+                        // Head-truncate: distilledVolumeLabel's uniqueness lives in its trailing
+                        // "· period vN" tag, so when the topic is too long keep the tag
+                        // (right-aligned, nearest the cells) visible rather than dropping it —
+                        // otherwise volumes sharing a topic prefix render identically.
+                        .truncationMode(.head)
+                        .frame(width: rowLabelWidth, height: cellSize, alignment: .trailing)
+                    if interactive {
+                        Button { openVolume(source) } label: { rowLabel }
+                            .buttonStyle(.plain)
+                            .help(labels.titles[source] ?? source)
+                            .accessibilityLabel(Text(labels.titles[source] ?? source))
+                    } else {
+                        rowLabel
+                    }
+                    ForEach(matrixVolumes, id: \.self) { target in
+                        heatCellView(source: source, target: target, size: cellSize,
+                                     labels: labels, showsCount: showsCounts)
+                    }
+                }
+            }
+        }
+    }
+
+    private func heatCellView(source: String, target: String, size: CGFloat,
+                              labels: MatrixLabels, showsCount: Bool) -> some View {
         let count = cellCount(source: source, target: target)
+        let isDiagonal = source == target
         return RoundedRectangle(cornerRadius: 2)
             .fill(heatColor(for: count))
             .frame(width: size, height: size)
             .overlay {
-                if source == target {
+                if isDiagonal {
                     // Diagonal (self) — no cross-volume value; mark it neutral.
                     Rectangle().fill(Color.secondary.opacity(0.12))
+                } else if showsCount && count > 0 {
+                    // The exported figure prints the value: on screen a cell's number is carried by
+                    // opacity plus a hover tooltip, and neither survives into a static image.
+                    Text("\(count)")
+                        .font(.system(size: size * 0.3).monospacedDigit())
+                        .foregroundStyle(Self.heatCountInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                        .padding(.horizontal, 1)
                 }
             }
             .help(count > 0
@@ -890,7 +997,28 @@ struct CrossReferenceAnalyticsView: View {
                            defaultValue: "\(shortVolumeLabel(source)) → \(shortVolumeLabel(target)): \(count) references")
                   : String(localized: "crossRefAnalytics.matrix.cell.none",
                            defaultValue: "\(shortVolumeLabel(source)) → \(shortVolumeLabel(target)): no references"))
+            // Distinct keys from the `.help` tooltip above: same fact, but spoken with the volumes'
+            // full titles rather than their compact ids (reusing the tooltip's key with different
+            // text would be a silent localization collision).
+            .accessibilityLabel(Text(count > 0
+                  ? String(localized: "crossRefAnalytics.matrix.cell.axLabel",
+                           defaultValue: "\(labels.titles[source] ?? source) cites \(labels.titles[target] ?? target): \(count) references")
+                  : String(localized: "crossRefAnalytics.matrix.cell.axLabel.none",
+                           defaultValue: "\(labels.titles[source] ?? source) cites \(labels.titles[target] ?? target): no references")))
     }
+
+    /// The ink for a printed cell count in the exported figure — one dark tone for every cell, never
+    /// a light-on-dark flip.
+    ///
+    /// The obvious heat-map treatment (dark ink on pale cells, white ink on saturated ones) is wrong
+    /// here, because `heatColor` ramps **alpha**, not lightness: it tops out at `.opacity(0.95)` over
+    /// the plate's white, so even the maximum cell stays a tint rather than becoming dark. Measured
+    /// against that ramp on a white plate, dark ink beats white at *every* reachable count ratio —
+    /// 6.3:1 vs 2.3:1 just past a mid-range flip, and still 4.7:1 vs 4.0:1 at the maximum. The app
+    /// also ships no `AccentColor` asset, so on macOS the fill is the reader's own system accent
+    /// (yellow, orange, graphite…), against which white digits measure below 2.5:1. There is no
+    /// crossover to switch at.
+    private static let heatCountInk = Color.black.opacity(0.85)
 
     private var matrixLegend: some View {
         HStack(spacing: 8) {
