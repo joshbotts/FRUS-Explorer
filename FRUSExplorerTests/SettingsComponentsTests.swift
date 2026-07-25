@@ -118,9 +118,21 @@ struct LibraryStatusSummaryTests {
     func interrupted() {
         let s = LibraryStatusSummary(downloadedCount: 12, catalogCount: 540,
                                      indexedCount: 10, interruptedCount: 2)
-        #expect(s.text.contains("2 needs attention"))
+        #expect(s.text.contains("2 need attention"))
         #expect(!s.text.contains("nothing needs attention"))
         #expect(s.needsAttention)
+    }
+
+    /// The clause has to agree in number — a single interrupted volume is by far the likeliest
+    /// count, and "1 need attention" is what the plural-only form produced.
+    @Test("The attention clause agrees in number")
+    func attentionNumberAgreement() {
+        let one = LibraryStatusSummary(downloadedCount: 12, catalogCount: 540,
+                                       indexedCount: 11, interruptedCount: 1)
+        #expect(one.text.contains("1 needs attention"))
+        let many = LibraryStatusSummary(downloadedCount: 12, catalogCount: 540,
+                                        indexedCount: 9, interruptedCount: 3)
+        #expect(many.text.contains("3 need attention"))
     }
 
     /// Indexed can legitimately exceed downloaded (a volume removed while its index rows linger

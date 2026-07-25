@@ -231,7 +231,9 @@ struct SettingsView: View {
             NavigationLink { ResetView() } label: { paneLabel(pane) }
                 .foregroundStyle(.red)
         // macOS-only panes (see `SettingsPane.platforms`) — never listed on iOS.
-        case .notes, .sync:
+        // `.volumesStorage` is the merged macOS Library destination; S-2c builds the iOS hub,
+        // at which point this row replaces `.storage` / `.downloads` / `.sideload` above.
+        case .notes, .sync, .volumesStorage:
             EmptyView()
         }
     }
@@ -1074,7 +1076,7 @@ private struct DownloadsSettingsView: View {
 ///
 /// ## Indexing Parity (Session 2026-06-08)
 /// Adds "Index Remaining" (index only unindexed volumes) and "Delete Index & Rebuild"
-/// (wipe FTS5 index + reindex from scratch) to match the macOS `SettingsStoragePane`.
+/// (wipe FTS5 index + reindex from scratch) to match the macOS `MacVolumesStorageHub`.
 /// A `BatchKind`-driven queue progress card shows live progress during any batch.
 ///
 /// ## Scroll Affordance (Session 67)
@@ -1455,7 +1457,7 @@ private struct StorageManagementView: View {
     // MARK: - Indexing Queue Card
 
     /// Inline progress card shown inside the Reindex section while a Settings-triggered
-    /// batch is running. Mirrors the macOS `SettingsStoragePane.indexingQueueCard`.
+    /// batch is running. Mirrors the macOS `MacVolumesStorageHub.indexingQueueCard`.
     @ViewBuilder
     private var indexingQueueCard: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -1734,7 +1736,7 @@ private struct StorageManagementView: View {
     /// Indexes only the downloaded volumes that have not been indexed yet,
     /// iterating one by one with `BatchKind.indexRemaining` progress tracking.
     ///
-    /// Mirrors `SettingsStoragePane.indexRemaining()` on macOS.
+    /// Mirrors `MacVolumesStorageHub.indexRemaining()` on macOS.
     private func indexRemaining() async {
         guard let pipeline = appState.indexingPipeline,
               let rep = report else { return }
@@ -1771,7 +1773,7 @@ private struct StorageManagementView: View {
     /// `storeIndexData`), this issues a single `removeAllVolumesFromIndex()` first,
     /// guaranteeing a fully clean state before the rebuild begins.
     ///
-    /// Mirrors `SettingsStoragePane.rebuildIndex()` on macOS.
+    /// Mirrors `MacVolumesStorageHub.rebuildIndex()` on macOS.
     private func rebuildIndex() async {
         guard let pipeline = appState.indexingPipeline else { return }
         let total = report?.perVolume.count ?? 0
@@ -1920,6 +1922,11 @@ struct SideloadValidator {
             try FileManager.default.createDirectory(
                 at: volumesDirectory, withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: url, to: dest)
+            // Match downloaded volumes: keep the XML out of iCloud Backup / Time Machine, since
+            // it is re-obtainable and bulky. The old macOS sideload path set this and the
+            // validator did not, so which of the two you used decided whether your copy got
+            // backed up (S-2b routed macOS through the validator, so it belongs here now).
+            try? (dest as NSURL).setResourceValue(true, forKey: .isExcludedFromBackupKey)
         } catch {
             throw SideloadError.copyFailed(underlying: error)
         }
