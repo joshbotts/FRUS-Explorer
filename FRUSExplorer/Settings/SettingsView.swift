@@ -517,6 +517,8 @@ private struct UserTagsView: View {
     @State private var renameText = ""
     @State private var mergingTag: UserTag? = nil
     @State private var mergeTargetId: UUID? = nil
+    /// How much is attached to each tag, fetched once per appearance rather than per row.
+    @State private var counts: ResearchItemCounts = .empty
 
     var body: some View {
         Form {
@@ -542,7 +544,12 @@ private struct UserTagsView: View {
                                            defaultValue: "Rename tag \(tag.name)")
                                 )
                             } else {
-                                Text(tag.name)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(tag.name)
+                                    Text(counts.tag(tag.id).summary)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                             Spacer()
                             if !isRenaming {
@@ -594,6 +601,7 @@ private struct UserTagsView: View {
                         for index in offsets {
                             UserTagAdmin.deleteCascading(tags[index], context: modelContext)
                         }
+                        counts = ResearchItemCounts.fetch(from: modelContext)
                     }
                 }
             } header: {
@@ -626,11 +634,13 @@ private struct UserTagsView: View {
                 sourceTag: sourceTag,
                 allTags: tags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
-                    mergeTag(source: sourceTag, into: targetTag)
+                    UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
                     mergingTag = nil
+                    counts = ResearchItemCounts.fetch(from: modelContext)
                 }
             )
         }
+        .task { counts = ResearchItemCounts.fetch(from: modelContext) }
     }
 
     private func commitRename() {
@@ -642,43 +652,6 @@ private struct UserTagsView: View {
         renameText = ""
     }
 
-    func mergeTag(source: UserTag, into target: UserTag) {
-        // Capture IDs before any modification.
-        let sourceId = source.id
-        let targetId = target.id
-
-        // 1. Re-tag ResearchNotes.
-        // Using a #Predicate with array.contains on a transformable [UUID] column
-        // crashes on SwiftData — fetch all notes and filter in memory instead.
-        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
-        var noteCount = 0
-        for note in allNotes where note.userTagIds.contains(sourceId) {
-            var ids = note.userTagIds.filter { $0 != sourceId }
-            if !ids.contains(targetId) { ids.append(targetId) }
-            note.userTagIds = ids
-            noteCount += 1
-        }
-
-        // 2. Re-tag DocumentTagAssignments (previously omitted — caused orphaned assignments).
-        let allAssignments = (try? modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
-        var assignmentCount = 0
-        for assignment in allAssignments where assignment.tagId == sourceId {
-            assignment.tagId = targetId
-            assignmentCount += 1
-        }
-
-        // 3. Re-point any project tag focus (#377 Phase 3) from source → target, so a merged tag
-        //    doesn't strand a project's focus on the now-deleted source id.
-        UserTagAdmin.repointTagInProjectFocus(from: sourceId, to: targetId, in: modelContext)
-
-        // 4. Delete the source tag last, after all references have been updated.
-        modelContext.delete(source)
-
-        #if DEBUG
-        print("[Settings] Merged '\(source.name)' → '\(target.name)': "
-              + "\(noteCount) notes, \(assignmentCount) assignments updated")
-        #endif
-    }
 }
 
 // MARK: - ProjectsSettingsView

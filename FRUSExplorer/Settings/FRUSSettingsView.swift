@@ -843,6 +843,8 @@ private struct SettingsTagsPane: View {
     @State private var tagToDelete: UserTag? = nil
     @State private var showDeleteConfirmation = false
     @State private var tagToMerge: UserTag? = nil
+    /// How much is attached to each tag. See `noteCount(for:)`'s replacement note below.
+    @State private var counts: ResearchItemCounts = .empty
 
     var body: some View {
         ScrollView {
@@ -892,6 +894,7 @@ private struct SettingsTagsPane: View {
             }
             .padding(24)
         }
+        .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(item: $tagToRename) { tag in
             TagRenameSheet(tag: tag)
         }
@@ -900,8 +903,9 @@ private struct SettingsTagsPane: View {
                 sourceTag: sourceTag,
                 allTags: tags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
-                    mergeTag(source: sourceTag, into: targetTag)
+                    UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
                     tagToMerge = nil
+                    counts = ResearchItemCounts.fetch(from: modelContext)
                 }
             )
         }
@@ -915,6 +919,7 @@ private struct SettingsTagsPane: View {
                 // DocumentTagAssignment rows so deletion never leaves orphaned associations —
                 // and so the message below is actually true.
                 if let tag = tagToDelete { UserTagAdmin.deleteCascading(tag, context: modelContext) }
+                counts = ResearchItemCounts.fetch(from: modelContext)
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -930,7 +935,7 @@ private struct SettingsTagsPane: View {
             Text(tag.name)
                 .font(.system(size: 13))
             Spacer()
-            noteCount(for: tag)
+            attachmentSummary(for: tag)
             Menu {
                 Button {
                     tagToRename = tag
@@ -964,11 +969,14 @@ private struct SettingsTagsPane: View {
         .padding(.vertical, 9)
     }
 
-    private func noteCount(for tag: UserTag) -> some View {
-        let descriptor = FetchDescriptor<ResearchNote>()
-        let all = (try? modelContext.fetch(descriptor)) ?? []
-        let count = all.filter { $0.userTagIds.contains(tag.id) }.count
-        return Text("\(count) note\(count == 1 ? "" : "s")")
+    /// The row's attachment summary, read from the one-shot `counts` snapshot.
+    ///
+    /// This used to fetch **every** `ResearchNote` and filter it, once per row, inside the view
+    /// body — so ten tags meant ten full-table scans on every SwiftUI render pass. That is the same
+    /// shape of mistake that pegged a CPU core in the Storage pane (Session 160). `ResearchItemCounts`
+    /// does it once (S-3a).
+    private func attachmentSummary(for tag: UserTag) -> some View {
+        Text(counts.tag(tag.id).summary)
             .font(.system(size: 11))
             .foregroundStyle(.tertiary)
     }
@@ -981,39 +989,6 @@ private struct SettingsTagsPane: View {
         newTagName = ""
     }
 
-    private func mergeTag(source: UserTag, into target: UserTag) {
-        let sourceId = source.id
-        let targetId = target.id
-
-        // Re-tag ResearchNotes (fetch all; #Predicate with array.contains crashes on transformable columns).
-        let allNotes = (try? modelContext.fetch(FetchDescriptor<ResearchNote>())) ?? []
-        var noteCount = 0
-        for note in allNotes where note.userTagIds.contains(sourceId) {
-            var ids = note.userTagIds.filter { $0 != sourceId }
-            if !ids.contains(targetId) { ids.append(targetId) }
-            note.userTagIds = ids
-            noteCount += 1
-        }
-
-        // Re-tag DocumentTagAssignments.
-        let allAssignments = (try? modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
-        var assignmentCount = 0
-        for assignment in allAssignments where assignment.tagId == sourceId {
-            assignment.tagId = targetId
-            assignmentCount += 1
-        }
-
-        // Re-point any project tag focus (#377 Phase 3) from source → target, so a merged tag doesn't
-        // strand a project's focus on the now-deleted source id.
-        UserTagAdmin.repointTagInProjectFocus(from: sourceId, to: targetId, in: modelContext)
-
-        modelContext.delete(source)
-
-        #if DEBUG
-        print("[macSettings] Merged '\(source.name)' → '\(target.name)': "
-              + "\(noteCount) notes, \(assignmentCount) assignments updated")
-        #endif
-    }
 }
 
 // MARK: - TagRenameSheet
