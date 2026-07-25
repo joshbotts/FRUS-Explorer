@@ -548,9 +548,24 @@ struct CrossReferenceAnalyticsView: View {
             figureTitle: title,
             axisLabel: String(localized: "crossRefAnalytics.export.axis.matrix",
                               defaultValue: "Cross-volume citation counts"),
-            extra: [String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
-                                          defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references; pairs with no references between them are omitted from this file."),
-                           Int64(Self.matrixVolumeLimit))]))
+            extra: matrixCaveats))
+    }
+
+    /// The caveats every heat-matrix export carries, CSV and figure alike.
+    ///
+    /// Shared rather than duplicated because the two artifacts represent the same selection
+    /// differently — the CSV is an edge list that simply omits zero pairs, the figure draws the full
+    /// grid and leaves them blank — and a reader holding both must not be told two different things.
+    /// Only `csvPreambleLines` renders these today; the figure's caption strip is deliberately two
+    /// lines and points at the CSV for the rest.
+    private var matrixCaveats: [String] {
+        [
+            String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
+                                  defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references. The CSV lists only pairs that have references between them; the figure draws the whole grid and leaves those pairs blank."),
+                   Int64(Self.matrixVolumeLimit)),
+            String(localized: "crossRefAnalytics.export.caveat.matrixAxes",
+                   defaultValue: "Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes' full titles appear in this CSV.")
+        ]
     }
 
     /// Exports the volume heat matrix as a figure.
@@ -571,11 +586,7 @@ struct CrossReferenceAnalyticsView: View {
                         figureTitle: title,
                         axisLabel: String(localized: "crossRefAnalytics.export.axis.matrix",
                                           defaultValue: "Cross-volume citation counts"),
-                        extra: [String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
-                                                      defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references; pairs with no references between them are omitted from this file."),
-                                       Int64(Self.matrixVolumeLimit)),
-                                String(localized: "crossRefAnalytics.export.caveat.matrixCodes",
-                                       defaultValue: "Axes: rows cite columns. Column headings are abbreviated volume codes; the row labels give each volume's fuller descriptive label, and the CSV export carries both volumes' full titles.")]),
+                        extra: matrixCaveats),
                       chartHeight: gridHeight + 40) {
             VStack(alignment: .leading, spacing: 12) {
                 heatMatrixGrid(labels: labels, cellSize: cellSize, showsCounts: true, interactive: false,
@@ -975,7 +986,7 @@ struct CrossReferenceAnalyticsView: View {
                     // opacity plus a hover tooltip, and neither survives into a static image.
                     Text("\(count)")
                         .font(.system(size: size * 0.3).monospacedDigit())
-                        .foregroundStyle(heatLabelColor(for: count))
+                        .foregroundStyle(Self.heatCountInk)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                         .padding(.horizontal, 1)
@@ -996,13 +1007,18 @@ struct CrossReferenceAnalyticsView: View {
                            defaultValue: "\(labels.titles[source] ?? source) cites \(labels.titles[target] ?? target): no references")))
     }
 
-    /// The ink color for a printed cell count — white once the cell's fill is dark enough that dark
-    /// text would stop reading.
-    private func heatLabelColor(for count: Int) -> Color {
-        guard matrixMaxCount > 0 else { return .primary }
-        let ratio = Double(count) / Double(matrixMaxCount)
-        return ratio > 0.55 ? Color.white : Color.black.opacity(0.75)
-    }
+    /// The ink for a printed cell count in the exported figure — one dark tone for every cell, never
+    /// a light-on-dark flip.
+    ///
+    /// The obvious heat-map treatment (dark ink on pale cells, white ink on saturated ones) is wrong
+    /// here, because `heatColor` ramps **alpha**, not lightness: it tops out at `.opacity(0.95)` over
+    /// the plate's white, so even the maximum cell stays a tint rather than becoming dark. Measured
+    /// against that ramp on a white plate, dark ink beats white at *every* reachable count ratio —
+    /// 6.3:1 vs 2.3:1 just past a mid-range flip, and still 4.7:1 vs 4.0:1 at the maximum. The app
+    /// also ships no `AccentColor` asset, so on macOS the fill is the reader's own system accent
+    /// (yellow, orange, graphite…), against which white digits measure below 2.5:1. There is no
+    /// crossover to switch at.
+    private static let heatCountInk = Color.black.opacity(0.85)
 
     private var matrixLegend: some View {
         HStack(spacing: 8) {
