@@ -27,6 +27,10 @@ import SwiftData
 ///   1.1 — #367: "My Volume Scopes" scope — summarize a saved `CustomVolumeScope`'s
 ///          downloaded member volumes (a snapshot; summarization reads the TEI, not the
 ///          FTS index, so the gate is downloaded rather than indexed)
+///   1.2 — S-3c: `canStart` becomes `BatchRunReadiness`, which names the obstacle instead of
+///          returning a bare false; the reason renders as the control section's footer. Fixes a
+///          Start that stayed enabled and did nothing after its selected prompt was deleted.
+///          `ScopeType` moves to `BatchRunReadiness.swift` so the pure model can name it.
 struct BackgroundSummarizationSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -410,6 +414,15 @@ struct BackgroundSummarizationSettingsView: View {
                 .foregroundStyle(isRunning ? .red : (canStart ? Color.accentColor : Color.secondary))
             }
             .disabled(!canStart && !isRunning)
+        } footer: {
+            // The North Star's rule: a start-disabled state surfaces as a footer reason, not as a
+            // silently dimmed button. A reader could previously see that Start was unavailable and
+            // had no way to learn what was missing.
+            if !isRunning, let blocker = readiness.blocker {
+                Label(blocker.reason, systemImage: "exclamationmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -478,20 +491,40 @@ struct BackgroundSummarizationSettingsView: View {
         return seen.sorted()
     }
 
-    private var canStart: Bool {
-        guard !allPrompts.isEmpty, selectedPromptId != nil else { return false }
+    /// Every precondition the start path actually needs, gathered for `BatchRunReadiness` (S-3c).
+    ///
+    /// The old `canStart` checked a subset — notably `selectedPromptId != nil` rather than
+    /// "the selected prompt still exists" — while `startSummarization()` guarded the rest and
+    /// silently returned. Deleting the selected prompt therefore left Start live and inert.
+    private var readiness: BatchRunReadiness {
+        BatchRunReadiness(
+            modelAvailable: AppleIntelligenceProvider.shared.isAvailable,
+            serviceAvailable: appState.backgroundSummarizationService != nil,
+            downloadManagerAvailable: appState.downloadManager != nil,
+            promptCount: allPrompts.count,
+            selectedPromptExists: selectedPromptId.map { id in
+                allPrompts.contains { $0.id == id }
+            } ?? false,
+            downloadedVolumeCount: downloadedVolumes.count,
+            scopeType: scopeType,
+            scopeSelectionComplete: scopeSelectionComplete,
+            customScopeDownloadedCount: selectedCustomScopeDownloadedIds.count
+        )
+    }
+
+    /// Whether the chosen scope's own inputs are filled in — the scope-shaped half of readiness.
+    private var scopeSelectionComplete: Bool {
         switch scopeType {
         case .volume:       return !selectedVolumeId.isEmpty
         case .subseries:    return !selectedSubseries.isEmpty
         case .userTag:      return selectedUserTagId != nil && !allUserTags.isEmpty
         case .savedSearch:  return selectedSavedSearchId != nil && !allSavedSearches.isEmpty
         case .dateRange:    return !dateRangeEarliest.isEmpty && !dateRangeLatest.isEmpty
-        // Require at least one downloaded member — an all-un-downloaded scope would
-        // enumerate nothing, so block Start (with the picker's "none downloaded" note)
-        // rather than silently no-op the run.
-        case .customScope:  return !selectedCustomScopeDownloadedIds.isEmpty
+        case .customScope:  return selectedCustomScopeId != nil
         }
     }
+
+    private var canStart: Bool { readiness.canStart }
 
     private func progressLabel(processed: Int, total: Int, currentId: String?) -> String {
         if total == 0 {
@@ -591,20 +624,4 @@ struct BackgroundSummarizationSettingsView: View {
         }
     }
 
-    // MARK: - ScopeType
-
-    private enum ScopeType: String, CaseIterable, Identifiable {
-        case volume, subseries, userTag, savedSearch, dateRange, customScope
-        var id: String { rawValue }
-        var displayName: String {
-            switch self {
-            case .volume:       return String(localized: "bg.summarizer.scope.type.volume",      defaultValue: "Volume")
-            case .subseries:    return String(localized: "bg.summarizer.scope.type.subseries",   defaultValue: "Subseries")
-            case .userTag:      return String(localized: "bg.summarizer.scope.type.userTag",     defaultValue: "User Tag")
-            case .savedSearch:  return String(localized: "bg.summarizer.scope.type.savedSearch", defaultValue: "Saved Search")
-            case .dateRange:    return String(localized: "bg.summarizer.scope.type.dateRange",   defaultValue: "Date Range")
-            case .customScope:  return String(localized: "bg.summarizer.scope.type.customScope", defaultValue: "My Volume Scopes")
-            }
-        }
-    }
 }
