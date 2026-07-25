@@ -442,6 +442,15 @@ enum FRUSTheme {
 
     // MARK: Chrome
 
+    // MARK: - Settings chrome (S-2)
+
+    /// Corner radius for a settings card. Before S-2 the app hard-coded 6/7/8/10/12/16 at
+    /// different sites; the settings surfaces standardise here so the hub reads as one system.
+    static let settingsCardCornerRadius: CGFloat = 10
+
+    /// Fill for a settings card. Quaternary rather than a fixed grey so it adapts with the OS.
+    static let settingsCardFill: some ShapeStyle = .quaternary
+
     static let stripHeight: CGFloat = 32
     static let statusBarHeight: CGFloat = 24
 

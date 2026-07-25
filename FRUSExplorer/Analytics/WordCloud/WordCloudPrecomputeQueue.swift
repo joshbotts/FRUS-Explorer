@@ -24,7 +24,7 @@ enum WordCloudPrecomputeQueue {
     /// UserDefaults key for the pending-signature list.
     private static let queueKey = "frus.wordcloud.precomputeQueue"
     /// UserDefaults key for the user's background-precompute preference.
-    private static let enabledKey = "frus.wordcloud.backgroundPrecompute"
+    private static let enabledKey = WordCloudSettings.Keys.backgroundPrecompute
 
     /// Whether background precomputation is enabled. Defaults to `true`.
     static var isEnabled: Bool {

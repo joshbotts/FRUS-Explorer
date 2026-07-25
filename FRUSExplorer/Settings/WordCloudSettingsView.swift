@@ -27,6 +27,7 @@ struct WordCloudSettingsView: View {
     @AppStorage(WordCloudSettings.Keys.minCount) private var minCount = WordCloudSettings.defaultMinCount
     @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
     @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
+    @AppStorage(WordCloudSettings.Keys.backgroundPrecompute) private var precomputeWordClouds = true
 
     @State private var globalWords: [String] = []
     @State private var newGlobalWord = ""
@@ -41,6 +42,7 @@ struct WordCloudSettingsView: View {
             appearanceSection
             globalStopwordsSection
             lensStopwordsSection
+            performanceSection
         }
         #if os(macOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -54,6 +56,24 @@ struct WordCloudSettingsView: View {
         .onChange(of: selectedLens) { _, lens in
             lensWords = WordCloudSettings.lensStopwords(lens)
             newLensWord = ""
+        }
+    }
+
+    // MARK: - Performance
+
+    /// Precompute heavy clouds (corpus/subseries) in the background after indexing so they open
+    /// instantly. Moved here from Storage in S-2a — it is a word-cloud behaviour, not a storage
+    /// one — which also gives macOS a control it never had.
+    private var performanceSection: some View {
+        Section {
+            Toggle(String(localized: "settings.wordcloud.precompute",
+                          defaultValue: "Precompute word clouds in background"),
+                   isOn: $precomputeWordClouds)
+        } header: {
+            Text(String(localized: "settings.wordcloud.performance.header", defaultValue: "Performance"))
+        } footer: {
+            Text(String(localized: "settings.wordcloud.precompute.footer",
+                        defaultValue: "When enabled, the most demanding clouds — the whole corpus, a subseries — are computed in the background after indexing, so they open instantly. Runs only while the device is idle."))
         }
     }
 

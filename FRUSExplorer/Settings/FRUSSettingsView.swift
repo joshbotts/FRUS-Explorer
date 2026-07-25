@@ -1245,7 +1245,7 @@ private struct SettingsNotesPane: View {
 
 /// Storage pane for the macOS Settings window.
 ///
-/// Displays per-volume download/index status, storage usage bar, and bulk indexing actions.
+/// Displays per-volume download/index status, storage breakdown, and bulk indexing actions.
 /// An inline queue-progress card (`indexingQueueCard`) appears between the volume table and
 /// the action buttons while a Settings-triggered batch is running.
 ///
@@ -2045,10 +2045,13 @@ private struct SettingsStoragePane: View {
 /// the index file; a note explains the estimate and timing limitations.
 ///
 /// ## Index size estimates
-/// Per-volume index contribution is estimated as 40% of the XML file size
-/// (`SettingsStoragePane.indexOverheadFactor`). This is the mean for the FRUS corpus;
-/// individual volumes vary from roughly 30% (short volumes) to 50% (long ones). The UI
-/// uses "~" prefix throughout and includes an explanation of the methodology.
+/// Per-volume index contribution is estimated at **2.8x** the XML file size
+/// (`StorageReport.indexOverheadFactor`) — the cross-platform mean measured against a full
+/// 552-volume download; individual volumes range from roughly 2.5x (short) to 3.0x (long).
+/// The UI prefixes every estimate with "~" and explains the methodology.
+///
+/// This doc previously said "40% of the XML file size", which was never what the code did —
+/// the constant has been 2.8 and the user-visible banner has said 2.8x. Corrected in S-2a.
 private struct ManageStorageSheet: View {
 
     let report: StorageReport
