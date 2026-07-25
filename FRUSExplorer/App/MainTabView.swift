@@ -220,12 +220,12 @@ struct MainTabView: View {
                 .environment(\.sceneID, SceneID(sceneIDToken))
         }
         // #377 Phase 5: the tab shell is the correct host for the one-time second-project nudge on
-        // iOS — it's always on screen, so it covers whatever surface creates a project. Note this is
-        // inert on iOS *today*: the app currently has no live in-app "New Project" entry point on iOS
-        // (the old `ProjectContextView` create sheet is unreferenced), so the signal only fires on
-        // macOS via the Settings pane. Wiring an iOS create button (tracked separately) lights this
-        // up; when it does, address the signal per-scene (`Handoff`/`\.sceneID`, cf. #338) so an iPad
-        // Stage-Manager multi-window setup shows the alert in one window, not all of them.
+        // iOS — it's always on screen, so it covers whatever surface creates a project. Today that
+        // means the "New Project…" row in the Settings tab's Projects pane (`ProjectsSettingsView`),
+        // which is a child of this shell. The signal is still addressed app-wide rather than
+        // per-scene; if more create surfaces appear, route it per-scene (`Handoff`/`\.sceneID`,
+        // cf. #338) so an iPad Stage-Manager multi-window setup shows the alert in one window,
+        // not all of them.
         .secondProjectNudge()
     }
 

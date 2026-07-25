@@ -15,7 +15,9 @@ import SwiftData
 ///
 /// Shows a `Menu` listing the global context ("Global") plus all user-created
 /// projects. A checkmark indicates the current selection. The menu also provides
-/// a "Manage Projects" action that opens `ProjectContextView`.
+/// a "Manage Projects" action, whose destination is the host's to decide via
+/// `onManageProjects` — `BrowserView` opens the Research tab on iOS, and the
+/// macOS menu bar hands off to the Settings Projects pane.
 ///
 /// Uses `@Query` so the list stays in sync without manual reloads.
 ///
