@@ -12,14 +12,15 @@ import Foundation
 
 // MARK: - DownloadsSettingsViewTests
 
-/// Data-layer tests for the merged Downloads settings pane (Session 117).
+/// Data-layer tests for download-scope resolution, written for the Session-117 Downloads pane
+/// and still true of the Volumes & Storage hub's browser, which resolves scopes the same way.
 ///
 /// Tests cover:
 /// - Active Downloads section visibility (suppressed when queue empty)
 /// - Enqueue scope resolution for all three `DownloadScope` cases
 /// - `DownloadScope` equality (corpus, subseries, volume)
 /// - Subseries deduplication and sort order
-@Suite("DownloadsSettingsView — section logic (Session 117)")
+@Suite("Volumes & Storage hub — download scope resolution")
 struct DownloadsSettingsViewTests {
 
     // MARK: - Helpers
@@ -45,7 +46,7 @@ struct DownloadsSettingsViewTests {
         )
     }
 
-    /// Mirrors the `enqueue()` helper's scope-resolution logic from `DownloadsSettingsView`.
+    /// Mirrors the scope-resolution logic the Volumes & Storage hub's download browser uses.
     private func resolveToEnqueue(
         scope: DownloadScope,
         source: [VolumeManifestEntry]

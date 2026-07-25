@@ -11,7 +11,7 @@ import SwiftUI
 // MARK: - IndexHealthView
 
 /// Compact "Index Health" block for the Storage settings pane, shared by the
-/// iOS `StorageManagementView` and the macOS Storage pane.
+/// iOS `VolumesStorageHubView` and the macOS `MacVolumesStorageHub`.
 ///
 /// Merges three previously disconnected facts about the search index into one
 /// display (Session 162, user request):

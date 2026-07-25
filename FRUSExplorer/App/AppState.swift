@@ -605,7 +605,7 @@ final class AppState {
     }
 
     /// Directory containing the SQLite index databases (frus.db). Set at boot;
-    /// used by `StorageManagementView` to report index disk usage.
+    /// used by the Volumes & Storage hub to report index disk usage.
     var indexDirectory: URL?
 
     /// Set by "Find all mentions", Corpus Analytics, indexing banners, … to open Search pre-filled.
