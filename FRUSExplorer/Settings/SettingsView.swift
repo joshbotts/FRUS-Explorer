@@ -124,7 +124,7 @@ struct SettingsView: View {
                         DisplaySettingsView()
                     }
                     NavigationLink(String(localized: "settings.row.searchDefaults",
-                                         defaultValue: "Search Defaults")) {
+                                         defaultValue: "Search")) {
                         SearchDefaultsView()
                     }
                 }
@@ -152,7 +152,7 @@ struct SettingsView: View {
                         CustomScopesView()
                     }
                     NavigationLink(String(localized: "settings.row.tags",
-                                         defaultValue: "User Tags")) {
+                                         defaultValue: "Tags")) {
                         UserTagsView()
                     }
                     NavigationLink(String(localized: "settings.row.projects",
@@ -177,7 +177,7 @@ struct SettingsView: View {
                 Section(String(localized: "settings.section.integrations",
                                defaultValue: "Integrations")) {
                     NavigationLink(String(localized: "settings.row.naraKey",
-                                         defaultValue: "NARA Catalog API Key")) {
+                                         defaultValue: "NARA API")) {
                         NARAKeyView()
                     }
                     NavigationLink(String(localized: "settings.row.zotero",
@@ -2209,7 +2209,7 @@ private struct UserTagsView: View {
                     .font(.caption)
             }
         }
-        .navigationTitle(String(localized: "settings.tags.title", defaultValue: "User Tags"))
+        .navigationTitle(String(localized: "settings.tags.title", defaultValue: "Tags"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -3599,33 +3599,58 @@ private struct SearchDefaultsView: View {
     @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
     @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
 
+    /// Whether `scope` is the only search scope still enabled.
+    ///
+    /// Its toggle is then disabled: with all three off, `SearchService.makeMatchExpressions`
+    /// renders no expression for either table and throws `FTS5Error.emptyQuery`, so every search
+    /// would fail rather than return an honest empty result. Guarding the last one keeps the
+    /// setting in a state the search path can actually execute.
+    private func isOnlyEnabledScope(_ scope: Bool) -> Bool {
+        scope && [scopeDocuments, scopeNotes, scopeSummaries].filter { $0 }.count == 1
+    }
+
     var body: some View {
         Form {
             Section(header: Text(String(localized: "settings.search.scope.header",
                                         defaultValue: "Default Search Scope")),
                     footer: Text(String(localized: "settings.search.scope.footer",
-                                        defaultValue: "These defaults can be overridden per-session in the Search filter panel."))) {
+                                        defaultValue: "These defaults can be overridden per-session in the Search filter panel. At least one scope stays on — searching nothing has no result to show."))) {
                 Toggle(String(localized: "settings.search.scope.documents",
                               defaultValue: "Documents"),
                        isOn: $scopeDocuments)
+                .disabled(isOnlyEnabledScope(scopeDocuments))
                 .accessibilityLabel(
                     String(localized: "settings.search.scope.documents.a11y",
                            defaultValue: "Search FRUS document text by default")
                 )
+                Text(String(localized: "settings.search.scope.documents.detail",
+                            defaultValue: "Search indexed FRUS document text."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle(String(localized: "settings.search.scope.notes",
                               defaultValue: "Research Notes"),
                        isOn: $scopeNotes)
+                .disabled(isOnlyEnabledScope(scopeNotes))
                 .accessibilityLabel(
                     String(localized: "settings.search.scope.notes.a11y",
                            defaultValue: "Include research notes in search results by default")
                 )
+                Text(String(localized: "settings.search.scope.notes.detail",
+                            defaultValue: "Include your research notes in search results."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle(String(localized: "settings.search.scope.summaries",
                               defaultValue: "AI Summaries"),
                        isOn: $scopeSummaries)
+                .disabled(isOnlyEnabledScope(scopeSummaries))
                 .accessibilityLabel(
                     String(localized: "settings.search.scope.summaries.a11y",
                            defaultValue: "Include AI summaries in search results by default")
                 )
+                Text(String(localized: "settings.search.scope.summaries.detail",
+                            defaultValue: "Include generated summary text in search results."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section(String(localized: "settings.search.typeFilter.header",
@@ -3634,7 +3659,7 @@ private struct SearchDefaultsView: View {
                               defaultValue: "Default type filter"),
                        selection: $defaultTypeFilter) {
                     Text(String(localized: "settings.search.typeFilter.all",
-                                defaultValue: "Both")).tag("all")
+                                defaultValue: "Documents & Editorial Notes")).tag("all")
                     Text(String(localized: "settings.search.typeFilter.docs",
                                 defaultValue: "Primary Documents Only")).tag("documentsOnly")
                     Text(String(localized: "settings.search.typeFilter.editorialNotes",
