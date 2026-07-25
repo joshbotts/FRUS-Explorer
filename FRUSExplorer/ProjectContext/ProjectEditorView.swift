@@ -35,6 +35,9 @@ import SwiftData
 ///   1.0 — Session 15: initial implementation
 ///   1.1 — Session 2026-07-04 (macOS UI audit gap 11): macOS body normalized to
 ///          VStack + bottom button bar; shared `editorForm` extracted
+///   1.2 — S-3b: a "Manage" section carries Merge and Delete as visible rows, so the two
+///          destructive project actions stop being swipe- and long-press-only on iOS and
+///          ellipsis-menu-only on macOS. The host still presents the merge picker.
 struct ProjectEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -50,14 +53,32 @@ struct ProjectEditorView: View {
     /// Settings pane); the macOS New Project *window* (#377 Phase 5) passes false because its window
     /// titlebar already reads "New Project", so an inline headline would duplicate it.
     let showsInlineHeader: Bool
+    /// Asked to merge this project into another (S-3b). The editor dismisses first and the host
+    /// presents the picker — a sheet presented from inside a sheet is a layout hazard on macOS, and
+    /// the host already owns `MergeProjectSheet`. `nil` hides the row.
+    let onMergeRequested: ((Project) -> Void)?
+    /// Called after the project has been deleted, so the host can clear its selection (S-3b).
+    /// `nil` hides the Delete row.
+    let onDeleted: (() -> Void)?
+    /// How many projects exist, so Merge can disable itself when there is nothing to merge into.
+    let peerProjectCount: Int
 
     @State private var name: String
     @State private var researchQuestion: String
+    @State private var showDeleteConfirmation = false
 
-    init(projectToEdit: Project? = nil, onSaved: (() -> Void)? = nil, showsInlineHeader: Bool = true) {
+    init(projectToEdit: Project? = nil,
+         onSaved: (() -> Void)? = nil,
+         showsInlineHeader: Bool = true,
+         onMergeRequested: ((Project) -> Void)? = nil,
+         onDeleted: (() -> Void)? = nil,
+         peerProjectCount: Int = 0) {
         self.projectToEdit = projectToEdit
         self.onSaved = onSaved
         self.showsInlineHeader = showsInlineHeader
+        self.onMergeRequested = onMergeRequested
+        self.onDeleted = onDeleted
+        self.peerProjectCount = peerProjectCount
         _name = State(initialValue: projectToEdit?.name ?? "")
         _researchQuestion = State(initialValue: projectToEdit?.researchQuestion ?? "")
     }
@@ -183,6 +204,69 @@ struct ProjectEditorView: View {
                         String(localized: "project.editor.question.a11y",
                                defaultValue: "Research question")
                     )
+            }
+
+            manageSection
+        }
+        .confirmationDialog(
+            String(localized: "settings.projects.delete.title", defaultValue: "Delete Project?"),
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.projects.delete.confirm", defaultValue: "Delete"),
+                   role: .destructive) {
+                if let project = projectToEdit {
+                    ProjectAdminService.delete(project, context: modelContext, appState: appState)
+                }
+                onDeleted?()
+                dismiss()
+            }
+            Button(String(localized: "settings.projects.delete.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "settings.projects.delete.message",
+                        defaultValue: "Activity records are kept but unlinked from this project."))
+        }
+    }
+
+    /// Merge and Delete, as visible rows rather than a swipe or a context menu (S-3b).
+    ///
+    /// Before this, deleting a project on iOS meant knowing to swipe a row, and merging meant
+    /// knowing to touch and hold it; the list's own footer had to explain both gestures. An action
+    /// a footer has to teach is an action nobody finds. Shown only when editing an existing
+    /// project — there is nothing to merge or delete while creating one.
+    @ViewBuilder
+    private var manageSection: some View {
+        if let project = projectToEdit, onMergeRequested != nil || onDeleted != nil {
+            Section {
+                if let onMergeRequested {
+                    Button {
+                        dismiss()
+                        onMergeRequested(project)
+                    } label: {
+                        Label(String(localized: "project.editor.merge",
+                                     defaultValue: "Merge into Another Project…"),
+                              systemImage: "arrow.triangle.merge")
+                    }
+                    .disabled(peerProjectCount < 2)
+                }
+                if onDeleted != nil {
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Label(String(localized: "project.editor.delete",
+                                     defaultValue: "Delete Project"),
+                              systemImage: "trash")
+                    }
+                }
+            } header: {
+                Text(String(localized: "project.editor.manage.header", defaultValue: "Manage"))
+            } footer: {
+                Text(peerProjectCount < 2
+                     ? String(localized: "project.editor.manage.footer.only",
+                              defaultValue: "Merging needs a second project to merge into. Deleting keeps your notes, collections, and history — it only unlinks them from this project.")
+                     : String(localized: "project.editor.manage.footer",
+                              defaultValue: "Merging moves everything filed here into the project you choose. Deleting keeps your notes, collections, and history — it only unlinks them from this project."))
             }
         }
     }

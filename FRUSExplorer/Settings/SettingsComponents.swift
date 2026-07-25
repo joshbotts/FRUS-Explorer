@@ -382,6 +382,37 @@ extension SettingsStatusRow where Action == EmptyView {
     }
 }
 
+// MARK: - SettingsNewItemRow
+
+/// The "New …" row that ends every settings list (S-3b).
+///
+/// The North Star's list grammar puts creation at the *end of the list it creates into*, not in a
+/// toolbar. A "+" in the navigation bar is invisible to anyone who has never gone looking for it,
+/// and on macOS it had drifted into a bordered button in a pane header — a different control, in a
+/// different place, doing the same job. One row, both platforms, always last.
+///
+/// Version history:
+///   1.0 — S-3b: initial implementation
+struct SettingsNewItemRow: View {
+
+    /// The row's title, e.g. "New Project…".
+    let label: String
+    /// SF Symbol; defaults to a plus.
+    var systemImage: String = "plus.circle"
+    /// What creating does.
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(label, systemImage: systemImage)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Color.accentColor)
+    }
+}
+
 // MARK: - SettingsNavRow
 
 /// Label · optional detail line · optional trailing value (S-2).

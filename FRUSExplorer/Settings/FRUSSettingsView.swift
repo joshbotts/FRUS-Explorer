@@ -476,188 +476,243 @@ private struct SettingsSearchPane: View {
 
 // MARK: - Projects Pane
 
+/// macOS Settings → Research → Projects — the hub for the research trio (S-3b).
+///
+/// The macOS twin of `ProjectsSettingsView`, in the same order and the same words: context first
+/// (Active Project + Project Home), then the list, then the two sibling lists.
+///
+/// ## What changed in S-3b
+/// - The symbol-swap radio that set the active project becomes a **picker**. A column of
+///   `checkmark.circle` glyphs beside every row read as selection state, not as a control, and it
+///   put "switch context" and "delete this project" a few pixels apart.
+/// - The unlabelled `•••` menu becomes the row itself: clicking a row opens `ProjectEditorView`,
+///   where rename, merge and delete are visible rows with footers that say what each costs.
+/// - "New project" moves out of the pane header into a row at the end of the list it creates into.
+/// - Rows carry their tally, so the cost of a delete is visible before it is chosen.
+/// - Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + `PaneHeader` + card stack.
+///   S-5 was going to convert this pane anyway; doing it here means not building it twice.
 private struct SettingsProjectsPane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openWindow) private var openWindow
 
     @Query(sort: \Project.name) private var projects: [Project]
+    @Query(sort: \UserTag.name) private var tags: [UserTag]
+    @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
 
     @State private var showEditor = false
-    @State private var projectToEdit: Project? = nil
-    @State private var projectToDelete: Project? = nil
-    @State private var showDeleteConfirmation = false
-    @State private var projectToMerge: Project? = nil
+    @State private var editingProject: Project? = nil
+    @State private var mergingProject: Project? = nil
+    /// How much is filed under each project, fetched once per appearance rather than per row.
+    @State private var counts: ResearchItemCounts = .empty
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    PaneHeader(
-                        title: "Projects",
-                        subtitle: "Projects let you maintain separate research contexts. Switching projects filters your notes, collections, and reading history."
-                    )
-                    Spacer()
-                    Button {
-                        projectToEdit = nil
-                        showEditor = true
-                    } label: {
-                        Label("New project", systemImage: "plus")
-                            .font(.system(size: 12))
+        Form {
+            Section {
+                PaneHeader(
+                    title: String(localized: "settings.projects.title", defaultValue: "Projects"),
+                    subtitle: String(localized: "settings.projects.pane.subtitle",
+                                     defaultValue: "Switch context up top; manage the list below.")
+                )
+
+                Picker(selection: Binding(get: { appState.activeProjectId },
+                                          set: { appState.activeProjectId = $0 })) {
+                    Text(String(localized: "settings.projects.active.global",
+                                defaultValue: "Global Context")).tag(UUID?.none)
+                    ForEach(projects) { project in
+                        Text(project.name).tag(UUID?.some(project.id))
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                } label: {
+                    Label(String(localized: "settings.projects.active.label",
+                                 defaultValue: "Active Project"),
+                          systemImage: appState.activeProjectId == nil ? "globe" : "folder")
+                        .labelStyle(.titleAndIcon)
                 }
 
-                PaneSectionHeader(title: "Active context")
-                activeContextRow
-                    .padding(.bottom, 12)
+                if let pid = appState.activeProjectId, projects.contains(where: { $0.id == pid }) {
+                    Button {
+                        // Same call the Browse-toolbar project picker uses; `openWindow(value:)`
+                        // on a `WindowGroup(for:)` raises the window itself.
+                        openWindow(value: ProjectHomeRequest(projectId: pid))
+                    } label: {
+                        HStack {
+                            Label(String(localized: "settings.projects.home",
+                                         defaultValue: "Project Home"),
+                                  systemImage: "square.grid.2x2")
+                                .labelStyle(.titleAndIcon)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.square")
+                                .foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            } footer: {
+                Text(String(localized: "settings.projects.active.footer",
+                            defaultValue: "The active project scopes the notes, collections, history, and searches you see. Global Context shows everything."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
-                if !projects.isEmpty {
-                    PaneSectionHeader(title: "Projects")
-                    VStack(spacing: 0) {
-                        ForEach(projects) { project in
-                            projectRow(project)
-                            if project.id != projects.last?.id {
-                                Divider().padding(.leading, 16)
+            Section {
+                if projects.isEmpty {
+                    Text(String(localized: "settings.projects.empty.where",
+                                defaultValue: "No projects yet. A project keeps one line of research — its notes, collections, history and searches — separate from the rest."))
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(projects) { project in
+                        Button {
+                            editingProject = project
+                        } label: {
+                            HStack {
+                                SettingsNavRow(label: project.name, detail: rowDetail(project))
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.tertiary)
                             }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                editingProject = project
+                            } label: {
+                                Label(String(localized: "common.edit", defaultValue: "Edit"),
+                                      systemImage: "pencil")
+                            }
+                            Button {
+                                mergingProject = project
+                            } label: {
+                                Label(String(localized: "project.editor.merge.short",
+                                             defaultValue: "Merge into…"),
+                                      systemImage: "arrow.triangle.merge")
+                            }
+                            .disabled(projects.count < 2)
                         }
                     }
-                    .background(Color.secondary.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 0.5)
-                    )
                 }
+
+                SettingsNewItemRow(label: String(localized: "settings.projects.new",
+                                                 defaultValue: "New Project…")) {
+                    showEditor = true
+                }
+            } header: {
+                Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
             }
-            .padding(24)
+
+            Section {
+                Button {
+                    appState.pendingSettingsPaneRaw = SettingsPane.tags.rawValue
+                } label: {
+                    relatedRow(label: String(localized: "settings.pane.tags", defaultValue: "Tags"),
+                               systemImage: "tag", detail: tagsDetail)
+                }
+                .buttonStyle(.plain)
+                Button {
+                    appState.pendingSettingsPaneRaw = SettingsPane.scopes.rawValue
+                } label: {
+                    relatedRow(label: String(localized: "settings.pane.scopes",
+                                             defaultValue: "Volume Scopes"),
+                               systemImage: "square.stack.3d.up", detail: scopesDetail)
+                }
+                .buttonStyle(.plain)
+            } header: {
+                Text(String(localized: "settings.projects.related.header", defaultValue: "Related"))
+            } footer: {
+                Text(String(localized: "settings.projects.related.footer",
+                            defaultValue: "Tags and scopes work the same way: tap a row to rename, merge or delete it."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .formStyle(.grouped)
+        .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(isPresented: $showEditor) {
-            ProjectEditorView(projectToEdit: projectToEdit)
+            ProjectEditorView(projectToEdit: nil,
+                              onSaved: { counts = ResearchItemCounts.fetch(from: modelContext) })
                 // ProjectEditorView reads AppState (the second-project nudge signal, #377 Phase 5);
                 // re-inject it since a sheet doesn't reliably inherit it.
                 .environment(appState)
         }
-        .sheet(item: $projectToMerge) { sourceProject in
+        .sheet(item: $editingProject) { project in
+            ProjectEditorView(
+                projectToEdit: project,
+                onSaved: { counts = ResearchItemCounts.fetch(from: modelContext) },
+                onMergeRequested: { source in mergingProject = source },
+                onDeleted: { counts = ResearchItemCounts.fetch(from: modelContext) },
+                peerProjectCount: projects.count
+            )
+            .environment(appState)
+        }
+        .sheet(item: $mergingProject) { sourceProject in
             MergeProjectSheet(
                 sourceProject: sourceProject,
                 allProjects: projects.filter { $0.id != sourceProject.id },
                 onMerge: { targetProject in
-                    mergeProject(source: sourceProject, into: targetProject)
-                    projectToMerge = nil
+                    ProjectAdminService.merge(sourceProject, into: targetProject,
+                                              context: modelContext, appState: appState)
+                    mergingProject = nil
+                    counts = ResearchItemCounts.fetch(from: modelContext)
                 }
             )
-        }
-        .confirmationDialog(
-            "Delete Project?",
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                if let p = projectToDelete {
-                    ProjectAdminService.delete(p, context: modelContext, appState: appState)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Activity records are kept but unlinked from this project.")
         }
         // #377 Phase 5: the Projects settings pane is on screen when a project is created on
         // macOS, so it hosts the one-time second-project nudge.
         .secondProjectNudge()
     }
 
-    private func mergeProject(source: Project, into target: Project) {
-        ProjectAdminService.merge(source, into: target, context: modelContext, appState: appState)
-    }
+    // MARK: - Rows
 
-    private var activeContextRow: some View {
+    @ViewBuilder
+    private func relatedRow(label: String, systemImage: String, detail: String) -> some View {
         HStack {
-            Image(systemName: appState.activeProjectId == nil ? "globe" : "folder")
-                .foregroundStyle(.secondary)
-                .frame(width: 20)
-            if let pid = appState.activeProjectId,
-               let project = projects.first(where: { $0.id == pid }) {
-                Text(project.name)
-                    .font(.system(size: 13))
-            } else {
-                Text("Global Context")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            if appState.activeProjectId != nil {
-                Button("Switch to global") {
-                    appState.activeProjectId = nil
-                }
-                .font(.system(size: 11))
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-            }
+            SettingsNavRow(label: label, systemImage: systemImage, detail: detail)
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .foregroundStyle(.tertiary)
         }
-        .padding(10)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 7))
+        .contentShape(Rectangle())
     }
 
-    private func projectRow(_ project: Project) -> some View {
-        HStack(spacing: 10) {
-            Button {
-                appState.activeProjectId = project.id
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: appState.activeProjectId == project.id ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(appState.activeProjectId == project.id ? Color.accentColor : Color.secondary)
-                        .font(.system(size: 15))
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(project.name)
-                            .font(.system(size: 13))
-                        if let q = project.researchQuestion, !q.isEmpty {
-                            Text(q)
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    Spacer()
-                }
-            }
-            .buttonStyle(.plain)
-            // A5: expose the active project as a trait, not just the symbol swap.
-            .accessibilityAddTraits(appState.activeProjectId == project.id ? .isSelected : [])
-
-            Menu {
-                Button {
-                    projectToEdit = project
-                    showEditor = true
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                Button {
-                    projectToMerge = project
-                } label: {
-                    Label("Merge into…", systemImage: "arrow.triangle.merge")
-                }
-                .disabled(projects.count < 2)
-                Divider()
-                Button(role: .destructive) {
-                    projectToDelete = project
-                    showDeleteConfirmation = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            } label: {
-                // "ellipsis" (three dots) + the borderless-button disclosure chevron
-                // together form a single "more options" affordance (•••▾).
-                Image(systemName: "ellipsis")
-                    .foregroundStyle(.tertiary)
-                    .font(.system(size: 14))
-            }
-            .menuStyle(.borderlessButton)
-            .frame(width: 24)
+    /// "12 notes · 3 collections · active", plus the research question when there is one.
+    private func rowDetail(_ project: Project) -> String {
+        var line = counts.project(project.id).summary
+        if appState.activeProjectId == project.id {
+            line += " · " + String(localized: "settings.projects.row.active", defaultValue: "active")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        if let question = project.researchQuestion, !question.isEmpty {
+            line += "\n" + question
+        }
+        return line
+    }
+
+    private var tagsDetail: String {
+        tags.isEmpty
+            ? String(localized: "settings.projects.related.tags.none", defaultValue: "None yet")
+            : (tags.count == 1
+               ? String(localized: "settings.projects.related.tags.one", defaultValue: "1 tag")
+               : String(format: String(localized: "settings.projects.related.tags.many %lld",
+                                       defaultValue: "%lld tags"), Int64(tags.count)))
+    }
+
+    private var scopesDetail: String {
+        guard !scopes.isEmpty else {
+            return String(localized: "settings.projects.related.scopes.none", defaultValue: "None yet")
+        }
+        let unindexed = scopes.filter {
+            CustomScopeResolver.indexedResolution(memberVolumeIds: $0.volumeIds,
+                                                  indexed: appState.indexedVolumeIds)
+                == .noIndexedMembers
+        }.count
+        let base = scopes.count == 1
+            ? String(localized: "settings.projects.related.scopes.one", defaultValue: "1 scope")
+            : String(format: String(localized: "settings.projects.related.scopes.many %lld",
+                                    defaultValue: "%lld scopes"), Int64(scopes.count))
+        guard unindexed > 0 else { return base }
+        return base + " · " + String(format: String(
+            localized: "settings.projects.related.scopes.unindexed %lld",
+            defaultValue: "%lld not yet indexed"), Int64(unindexed))
     }
 }
 
@@ -685,54 +740,39 @@ private struct SettingsScopesPane: View {
     @State private var scopeToDelete: CustomVolumeScope?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+        Form {
+            Section {
                 PaneHeader(
                     title: String(localized: "settings.scopes.title",
                                   defaultValue: "Volume Scopes"),
                     subtitle: String(localized: "settings.scopes.pane.subtitle",
                                      defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed.")
                 )
+            }
 
-                Button {
-                    editorIsDraft = true
-                    editorTarget = CustomVolumeScope(name: "")
-                } label: {
-                    Label(String(localized: "settings.scopes.add", defaultValue: "New Scope"),
-                          systemImage: "plus")
-                }
-                .buttonStyle(.bordered)
-                .padding(.bottom, 16)
-
-                PaneSectionHeader(title: String(format: String(
-                    localized: "settings.scopes.pane.count %lld",
-                    defaultValue: "%lld scope(s)"), Int64(scopes.count)))
-
+            Section {
                 if scopes.isEmpty {
                     Text(String(localized: "settings.scopes.empty.detail",
                                 defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                        .padding(.top, 8)
+                        .foregroundStyle(.secondary)
                 } else {
-                    VStack(spacing: 0) {
-                        ForEach(scopes) { scope in
-                            scopeRow(scope)
-                            if scope.id != scopes.last?.id {
-                                Divider().padding(.leading, 12)
-                            }
-                        }
+                    ForEach(scopes) { scope in
+                        scopeRow(scope)
                     }
-                    .background(Color.secondary.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 0.5)
-                    )
                 }
+
+                // S-3b: creation moves out of the pane header into a row at the end of the list it
+                // creates into, matching Projects and Tags on both platforms.
+                SettingsNewItemRow(label: String(localized: "settings.scopes.new",
+                                                 defaultValue: "New Scope…")) {
+                    editorIsDraft = true
+                    editorTarget = CustomVolumeScope(name: "")
+                }
+            } header: {
+                Text(String(localized: "settings.scopes.title", defaultValue: "Volume Scopes"))
             }
-            .padding(24)
         }
+        .formStyle(.grouped)
         .sheet(item: $editorTarget) { target in
             CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
                 .environment(appState)
@@ -768,7 +808,6 @@ private struct SettingsScopesPane: View {
                 Text(scope.name.isEmpty
                      ? String(localized: "settings.scopes.unnamed", defaultValue: "Untitled Scope")
                      : scope.name)
-                    .font(.system(size: 13))
                 Group {
                     if case .resolved(let ids) = resolution {
                         Text(String(format: String(
@@ -782,7 +821,7 @@ private struct SettingsScopesPane: View {
                             Int64(scope.volumeIds.count)))
                     }
                 }
-                .font(.system(size: 11))
+                .font(.caption)
                 .foregroundStyle(.secondary)
             }
             Spacer()
@@ -827,208 +866,120 @@ private struct SettingsScopesPane: View {
                 localized: "settings.scopes.delete.a11y %@",
                 defaultValue: "Delete %@"), scope.name))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
     }
 }
 
 // MARK: - Tags Pane
 
+/// macOS Settings → Research → Tags — the same list grammar as Projects (S-3b).
+///
+/// ## What changed in S-3b
+/// - The unlabelled `•••` menu becomes the row: clicking a row opens the shared `TagEditorView`,
+///   where rename, merge and delete are visible rows with footers that state what each costs. The
+///   menu survives as a right-click context menu for people who reach for one.
+/// - The "Create tag" text field + Add button at the top of the pane becomes a "New Tag…" row at
+///   the end of the list it creates into, matching iOS and Projects.
+/// - Rows carry their attachment tally from `ResearchItemCounts` (S-3a) instead of the old
+///   per-row full-table fetch.
+/// - Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + card stack (S-5's list drops
+///   this pane with it).
+/// - `TagRenameSheet` retires: a rename-only sheet is exactly the single-purpose affordance the
+///   editor replaces.
 private struct SettingsTagsPane: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \UserTag.name) private var tags: [UserTag]
 
-    @State private var newTagName: String = ""
-    @State private var tagToRename: UserTag? = nil
-    @State private var tagToDelete: UserTag? = nil
-    @State private var showDeleteConfirmation = false
-    @State private var tagToMerge: UserTag? = nil
-    /// How much is attached to each tag. See `noteCount(for:)`'s replacement note below.
+    @State private var editingTag: UserTag? = nil
+    @State private var mergingTag: UserTag? = nil
+    /// A freshly created tag, opened straight into the editor so it can be named.
+    @State private var pendingNewTag: UserTag? = nil
+    /// How much is attached to each tag, fetched once per appearance rather than per row.
     @State private var counts: ResearchItemCounts = .empty
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+        Form {
+            Section {
                 PaneHeader(
-                    title: "Tags",
-                    subtitle: "User tags are global labels you apply to research notes. They are not scoped to a project."
+                    title: String(localized: "settings.pane.tags", defaultValue: "Tags"),
+                    subtitle: String(localized: "settings.tags.pane.subtitle",
+                                     defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project.")
                 )
+            }
 
-                // New tag creation
-                PaneSectionHeader(title: "Create tag")
-                HStack(spacing: 8) {
-                    TextField("Tag name", text: $newTagName)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 240)
-                        .onSubmit { createTag() }
-                    Button("Add") { createTag() }
-                        .buttonStyle(.bordered)
-                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .padding(.bottom, 16)
-
-                // Tag list
-                PaneSectionHeader(title: "\(tags.count) tag\(tags.count == 1 ? "" : "s")")
-
+            Section {
                 if tags.isEmpty {
-                    Text("No tags yet. Create your first tag above.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
-                        .padding(.top, 8)
+                    Text(String(localized: "settings.tags.empty.where",
+                                defaultValue: "No tags yet. Tags are the labels you apply to research notes and documents as you read — create one here, or from any note."))
+                        .foregroundStyle(.secondary)
                 } else {
-                    VStack(spacing: 0) {
-                        ForEach(tags) { tag in
-                            tagRow(tag)
-                            if tag.id != tags.last?.id {
-                                Divider().padding(.leading, 12)
+                    ForEach(tags) { tag in
+                        Button {
+                            editingTag = tag
+                        } label: {
+                            HStack {
+                                SettingsNavRow(label: tag.name, detail: counts.tag(tag.id).summary)
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.tertiary)
                             }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                editingTag = tag
+                            } label: {
+                                Label(String(localized: "common.edit", defaultValue: "Edit"),
+                                      systemImage: "pencil")
+                            }
+                            Button {
+                                mergingTag = tag
+                            } label: {
+                                Label(String(localized: "tag.editor.merge.short",
+                                             defaultValue: "Merge into…"),
+                                      systemImage: "arrow.triangle.merge")
+                            }
+                            .disabled(tags.count < 2)
                         }
                     }
-                    .background(Color.secondary.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 0.5)
-                    )
                 }
+
+                SettingsNewItemRow(label: String(localized: "settings.tags.new",
+                                                 defaultValue: "New Tag…")) {
+                    let tag = UserTag(name: String(localized: "settings.tags.new.default",
+                                                   defaultValue: "New Tag"))
+                    modelContext.insert(tag)
+                    pendingNewTag = tag
+                }
+            } header: {
+                Text(String(localized: "settings.tags.list.header", defaultValue: "Tags"))
             }
-            .padding(24)
         }
+        .formStyle(.grouped)
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
-        .sheet(item: $tagToRename) { tag in
-            TagRenameSheet(tag: tag)
+        .sheet(item: $editingTag) { tag in
+            TagEditorView(
+                tag: tag,
+                tally: counts.tag(tag.id),
+                peerTagCount: tags.count,
+                onMergeRequested: { source in mergingTag = source },
+                onDeleted: { counts = ResearchItemCounts.fetch(from: modelContext) }
+            )
         }
-        .sheet(item: $tagToMerge) { sourceTag in
+        .sheet(item: $pendingNewTag) { tag in
+            TagEditorView(tag: tag)
+        }
+        .sheet(item: $mergingTag) { sourceTag in
             MergeTagSheet(
                 sourceTag: sourceTag,
                 allTags: tags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
                     UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
-                    tagToMerge = nil
+                    mergingTag = nil
                     counts = ResearchItemCounts.fetch(from: modelContext)
                 }
             )
         }
-        .confirmationDialog(
-            "Delete Tag?",
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                // Cascading delete (#406): strip the id from notes and delete its
-                // DocumentTagAssignment rows so deletion never leaves orphaned associations —
-                // and so the message below is actually true.
-                if let tag = tagToDelete { UserTagAdmin.deleteCascading(tag, context: modelContext) }
-                counts = ResearchItemCounts.fetch(from: modelContext)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Notes and documents tagged with this tag will no longer have it applied.")
-        }
-    }
-
-    private func tagRow(_ tag: UserTag) -> some View {
-        HStack {
-            Text("◆")
-                .font(.system(size: 11))
-                .foregroundStyle(Color.accentColor)
-            Text(tag.name)
-                .font(.system(size: 13))
-            Spacer()
-            attachmentSummary(for: tag)
-            Menu {
-                Button {
-                    tagToRename = tag
-                } label: {
-                    Label("Rename", systemImage: "pencil")
-                }
-                Button {
-                    tagToMerge = tag
-                } label: {
-                    Label("Merge into…", systemImage: "arrow.triangle.merge")
-                }
-                .disabled(tags.count < 2)
-                Divider()
-                Button(role: .destructive) {
-                    tagToDelete = tag
-                    showDeleteConfirmation = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            } label: {
-                // "ellipsis" (three dots) + the borderless-button disclosure chevron
-                // together form a single "more options" affordance (•••▾).
-                Image(systemName: "ellipsis")
-                    .foregroundStyle(.tertiary)
-                    .font(.system(size: 14))
-            }
-            .menuStyle(.borderlessButton)
-            .frame(width: 24)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-    }
-
-    /// The row's attachment summary, read from the one-shot `counts` snapshot.
-    ///
-    /// This used to fetch **every** `ResearchNote` and filter it, once per row, inside the view
-    /// body — so ten tags meant ten full-table scans on every SwiftUI render pass. That is the same
-    /// shape of mistake that pegged a CPU core in the Storage pane (Session 160). `ResearchItemCounts`
-    /// does it once (S-3a).
-    private func attachmentSummary(for tag: UserTag) -> some View {
-        Text(counts.tag(tag.id).summary)
-            .font(.system(size: 11))
-            .foregroundStyle(.tertiary)
-    }
-
-    private func createTag() {
-        let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        let tag = UserTag(name: name)
-        modelContext.insert(tag)
-        newTagName = ""
-    }
-
-}
-
-// MARK: - TagRenameSheet
-
-private struct TagRenameSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let tag: UserTag
-    @State private var name: String
-
-    init(tag: UserTag) {
-        self.tag = tag
-        _name = State(initialValue: tag.name)
-    }
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Rename Tag")
-                .font(.system(size: 14, weight: .medium))
-            TextField("Tag name", text: $name)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 240)
-                .onSubmit { save() }
-            HStack(spacing: 8) {
-                Button("Cancel") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("Rename") { save() }
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(24)
-        .frame(width: 320)
-    }
-
-    private func save() {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        tag.name = trimmed
-        dismiss()
     }
 }
 
