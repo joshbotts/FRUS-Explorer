@@ -25,9 +25,11 @@ import SwiftData
 /// use AND logic. Either filter can be cleared to "All" independently.
 ///
 /// ## Navigation
-/// Presented modally from `ProjectContextView` when the user selects
-/// "View All Activity" or from `BrowserView` in the toolbar when no project is active.
-/// Within the view, a `NavigationStack` supports push navigation to document views.
+/// **Currently unpresented.** Its only construction site was `ProjectContextView`, which
+/// was deleted as dead code; the `BrowserView` toolbar entry point this comment used to
+/// claim never existed. Kept for a future re-entry point — `GlobalContextViewModel` is
+/// still exercised by `GlobalContextTests`. Within the view, a `NavigationStack` supports
+/// push navigation to document views.
 ///
 /// ## Log prefix
 /// `[GlobalContext]`

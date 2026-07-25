@@ -126,8 +126,7 @@ struct HistoryWindowView: View {
     private func documentRow(_ entry: ReadingHistoryEntry) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             // Captured display title preferred; pre-1.1 entries fall back to
-            // "volumeId · documentId" (mirrors ReadingHistoryListView in
-            // ProjectContextView).
+            // "volumeId · documentId" (F-021).
             Text(entry.displayTitle ?? "\(entry.volumeId) · \(entry.documentId)")
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(2)
