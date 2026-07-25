@@ -414,7 +414,7 @@ Find it in the Search screen's overflow (More) menu.
 
 ### 3.6 Page 6 — Seeing the Bigger Picture
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 870–948 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 933–1016 -->
 
 **Title:** Seeing the Bigger Picture
 
@@ -429,6 +429,10 @@ Chart how often a term or phrase appears across the indexed corpus, broken down 
 A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The "% of documents" toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count — the percentage of that period's documents that contain it — so a term doesn't look like it is surging simply because the series published more in later decades.
 
 On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into "Other."
+
+The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.
+
+An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only, and Person Analytics and Cross-Reference Analytics put an Export button on each of their charts. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.
 
 Analytics runs entirely on your local index; no network connection is required.
 
@@ -448,9 +452,9 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Person Analytics 
 
 **Word Cloud**
 
-See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.
+See the most frequent terms across any slice of the corpus — a single document, a volume or subseries, a collection, a tag, a saved search, a custom volume scope, a detected topic, a date range, or the whole corpus — with each word sized by how often it appears. Semantic lenses narrow the cloud to people, places, organizations, topics, actions, descriptors, concepts, or sentiment, all recognised on-device.
 
-Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don't want to see, or compare two scopes side by side; export the cloud as a PNG, PDF, or CSV. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud's typeface and density in Settings.
+Tap any word to chart its frequency across the whole series in Corpus Analytics, hide words you don't want to see, or compare two scopes side by side; from the Options menu, export the cloud as a PNG, PDF, or CSV, where the CSV ranks every visible term with its count and its share of the words counted and records your settings — including how many words you hid by hand. A date-range cloud and the Chronology browser hand off to each other — build a cloud from the dates you are viewing in Chronology, or jump from a date-range cloud back into Chronology for the same span. Tune the cloud's typeface and density in Settings.
 
 Like Analytics, a word cloud reflects what FRUS editors chose to publish, not the full archival record — read it as a finding aid, not as direct evidence.
 
@@ -461,6 +465,8 @@ Find it from the Browse tab's Analysis Tools menu (iOS) or the Word Cloud window
 **Cross-Reference Graph**
 
 Visualise the web of footnote cross-references the editors drew between documents and volumes. Choose how far to expand the graph — direct connections only, or one or two degrees of neighbors — to trace how a decision was informed by, or fed into, the surrounding record.
+
+Pinch to zoom and drag to pan — on the Mac the scroll wheel zooms too — and right-click (or long-press) a node to recenter the graph on that document or open it.
 
 Find it from the Research rail's Graph tile (it opens in its own window on Mac and on iPad with Stage Manager).
 
@@ -488,7 +494,7 @@ You can also select any text — a lot file number, a decimal file identifier, a
 
 From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same detected archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document's row in a volume's sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.
 
-More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — becomes linked straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app's cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series.
+More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app's cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, worth quoting alongside the lot number when you request the original records.
 
 <!-- section-id: timeline -->
 
@@ -831,49 +837,49 @@ Production figures reflect only published, digitized volumes. Publication year i
 
 ## 5. Analytics — Explanatory Captions & Info Popovers
 
-*The "About …" info popovers and figure captions across the analytics features. Multi-sentence explanatory copy that teaches how to read each visualization.*
+*The "About …" info popovers and figure captions across the analytics features, plus the methods statement that travels inside an exported chart's CSV. Multi-sentence explanatory copy that teaches how to read each visualization.*
 
 ---
 
 ### About the Graph popover
 
 #### What the graph shows
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1337–1338 | key: graph.info.what.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1358–1359 | key: graph.info.what.body -->
 
 Each node is a FRUS document. Blue nodes cite the central document; orange nodes are cited by it. Grey nodes are 2nd- or 3rd-degree neighbours. Larger nodes have more connections across the corpus, and each arrow points at the document being cited.
 
 <!-- END SOURCE: graph.info.what.body -->
 
 #### Edge context
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1343–1344 | key: graph.info.edges.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1364–1365 | key: graph.info.edges.body -->
 
 Many edges carry the original footnote or editorial-note text where the reference appeared — hover over (or tap) the middle of a line to read it. Thicker lines mean the pair is linked by several separate references.
 
 <!-- END SOURCE: graph.info.edges.body -->
 
 #### Timeline and Network layouts
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1349–1350 | key: graph.info.timeline.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1370–1371 | key: graph.info.timeline.body -->
 
 Timeline places each document at its date along a time axis — documents this one cites usually sit to the left (earlier), documents citing it to the right (later). Documents without a recorded date park in the Undated column. Network uses a spring layout based purely on connections.
 
 <!-- END SOURCE: graph.info.timeline.body -->
 
 #### Neighbourhood degree
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1355–1356 | key: graph.info.degree.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1376–1377 | key: graph.info.degree.body -->
 
 1° shows only direct neighbours of the central document. 2° adds neighbours of those neighbours. 3° extends one further hop. Resize the window to see denser graphs more clearly.
 
 <!-- END SOURCE: graph.info.degree.body -->
 
 #### Navigating the graph
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1361–1362 | key: graph.info.interact.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1382–1383 | key: graph.info.interact.body -->
 
 Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
 
 <!-- END SOURCE: graph.info.interact.body -->
 
 #### Undownloaded volumes
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1367–1368 | key: graph.info.undownloaded.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1388–1389 | key: graph.info.undownloaded.body -->
 
 References pointing to documents in volumes you haven't downloaded are still shown — the connection was recorded when the source volume was indexed. Those nodes appear with a dashed border and a struck-through cloud icon; select one to download its volume directly from the info panel.
 
@@ -885,7 +891,7 @@ References from volumes you haven't indexed yet are not shown at all, because th
 
 #### Word Cloud info — What you're seeing
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 492–493 | key: wordcloud.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 665–666 | key: wordcloud.info.shows.detail -->
 
 The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus — each sized by how often it appears.
 
@@ -893,7 +899,7 @@ The most frequent meaningful terms in the chosen scope — a document, volume, s
 
 #### Word Cloud info — Lenses
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 496–497 | key: wordcloud.info.lenses.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 669–670 | key: wordcloud.info.lenses.detail -->
 
 The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
 
@@ -901,15 +907,15 @@ The lens chips narrow the cloud to a kind of term — People, Places, Organizati
 
 #### Word Cloud info — What's filtered out
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 500–501 | key: wordcloud.info.filters.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 673–674 | key: wordcloud.info.filters.detail -->
 
-Common stopwords are always removed. You can also hide diplomatic boilerplate and maintain your own hidden-word lists (globally or per lens) in Settings → Word Cloud.
+Common stopwords are always removed. A word's menu can hide it just from this cloud (temporary — it comes back next time), or add it to your hidden-word lists (globally or per lens) that you manage in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.
 
 <!-- END SOURCE: wordcloud.info.filters.detail -->
 
 #### Word Cloud info — Tapping a word
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 504–505 | key: wordcloud.info.tap.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 677–678 | key: wordcloud.info.tap.detail -->
 
 Charts how often that term appears across the whole corpus in Corpus Analytics; the word's menu also offers a scoped chart and a direct Search.
 
@@ -965,28 +971,28 @@ Words hidden only when the selected lens is active — useful for trimming a rec
 <!-- Toolbar info popover; iOS+macOS use the same ChronologyView.swift toolbar (one file, shared across platforms). -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1063–1066 | key: chronology.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1078–1079 | key: chronology.info.shows.detail -->
 
 Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.
 
 <!-- END SOURCE: chronology.info.shows.detail -->
 
 #### How dates work
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1067–1070 | key: chronology.info.dates.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1082–1083 | key: chronology.info.dates.detail -->
 
 Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
 <!-- END SOURCE: chronology.info.dates.detail -->
 
 #### The distribution chart
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1071–1074 | key: chronology.info.chart.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1086–1087 | key: chronology.info.chart.detail -->
 
 The stacked chart colour-codes documents by source volume (the top volumes, then a grey “Other”). Use the chart-colours menu to choose how many volumes get a distinct colour.
 
 <!-- END SOURCE: chronology.info.chart.detail -->
 
 #### Wide ranges
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1075–1078 | key: chronology.info.cap.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1090–1091 | key: chronology.info.cap.detail -->
 
 The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
 
@@ -996,21 +1002,21 @@ The document list is capped at 5,000, but the chart still reflects the whole ran
 <!-- Shared static FeatureInfoButton.sourceExplorer in FRUSTheme; consumed by both SourceExplorerView (iOS) and MacSourceExplorerView (macOS). Edit once in FRUSTheme.swift to change both. -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 136–139 | key: source.explorer.info.shows.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 153–154 | key: source.explorer.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
 A structured breakdown of one document's source note — the State Department editors' record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.
 
 <!-- END SOURCE: source.explorer.info.shows.detail -->
 
 #### Why it matters
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 140–143 | key: source.explorer.info.why.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 157–158 | key: source.explorer.info.why.detail | shared: iOS+macOS (single edit point) -->
 
 Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and judge its provenance at a glance.
 
 <!-- END SOURCE: source.explorer.info.why.detail -->
 
 #### Links to the National Archives
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 144–147 | key: source.explorer.info.catalog.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 161–162 | key: source.explorer.info.catalog.detail | shared: iOS+macOS (single edit point) -->
 
 Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.
 
@@ -1018,49 +1024,50 @@ Where a note resolves to a NARA series or file unit, the explorer links straight
 
 ---
 
-The PageRank hedge is the `landmarkSection` subtitle at line 530 (key `crossRefAnalytics.landmarks.subtitle`), not the ranking subtitle. Corrected output below.
+The PageRank hedge is the `landmarkSection` subtitle at line 1051 (key `crossRefAnalytics.landmarks.subtitle`), not the ranking subtitle. Corrected output below.
 
 ### Corpus Analytics — Info Popover ("About these results")
+<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What the numbers mean
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1793–1794 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 179–180 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
 
 Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.
 
 <!-- END SOURCE: analytics.info.metric.body -->
 
 #### Multiple words
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1799–1800 | key: analytics.info.multiword.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 183–184 | key: analytics.info.multiword.body | shared: iOS+macOS (single edit point) -->
 
 Words separated by spaces are combined with AND: national security matches documents containing both words. OR (either term) and NOT / leading - (exclude a term) work too, exactly as in the Search box.
 
 <!-- END SOURCE: analytics.info.multiword.body -->
 
 #### Phrases
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1805–1806 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 187–188 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
 
 Wrap words in quotes for an ordered phrase: "missile crisis" matches only documents where those words appear together, in that order. Analytics and Search interpret the same query identically, so the counts here match what Search returns.
 
 <!-- END SOURCE: analytics.info.phrase.body -->
 
 #### Stemming
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1811–1812 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 191–192 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
 
 English stemming is applied: searching for "negotiate" also matches "negotiating", "negotiated", and "negotiations".
 
 <!-- END SOURCE: analytics.info.stemming.body -->
 
 #### How dates are determined
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.infoPopoverContent | lines: 1817–1818 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 195–196 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
 
-Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. Documents lacking month or day precision are excluded from the By Month and By Day charts.
+Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. Documents lacking month or day precision are excluded from the By Month and By Day charts.
 
 <!-- END SOURCE: analytics.info.dating.body -->
 
 ### Corpus Analytics — Normalization Caption
 
 #### Share-of-corpus caveat (% of documents mode)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 939–940 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 1599–1600 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
 
 Share of indexed documents per period. Only downloaded, indexed volumes are counted, so this is a share of your local corpus, not the entire FRUS series.
 
@@ -1069,18 +1076,186 @@ Share of indexed documents per period. Only downloaded, indexed volumes are coun
 ### Cross-Reference Analytics — Captions
 
 #### Scope-of-figures caveat
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 263–264 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 646–647 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
 
 The most-referenced, degree, and PageRank figures attribute same-volume references (including resolved page references) to their own volume; when a year range or scope is set they count citations made by documents in that era/scope. The volume heat matrix counts connections between different volumes, so it excludes same-volume citations.
 
 <!-- END SOURCE: crossRefAnalytics.resolvedCaption -->
 
 #### Landmark Documents (Influence) — PageRank hedge subtitle
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 529–530 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 1050–1051 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
 
 Ranked by an offline PageRank influence score over the resolved citation graph — documents a citation-following reader keeps returning to. This is a structural influence measure, not a claim of historical importance. Tap to open.
 
 <!-- END SOURCE: crossRefAnalytics.landmarks.subtitle -->
+
+---
+
+### Analytics Export — Methods Statement (D3)
+
+*The prose that leaves the app inside an exported chart. Every CSV carries a `#`-commented preamble — the figure, terms, grouping, scope, year range, values, app version and export date, then the method and caveats below, then the corpus attribution. An exported PNG or PDF carries only a two-line caption plus the pointer to the CSV, so these sentences are where a reader finds the method. Menu labels, CSV column headings, and export-failure messages are functional strings and are intentionally excluded.*
+
+<!-- Placeholder note: `%lld` (a number) and `%@` (a word or phrase) are filled in at export time. Keep them intact and in order — removing one will break the string. -->
+
+#### Corpus attribution — closes every export
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusAttribution | lines: 88–89 | key: analytics.export.attribution | shared: iOS+macOS (single edit point) -->
+
+Foreign Relations of the United States corpus published by the Office of the Historian, U.S. Department of State (history.state.gov). The corpus is in the public domain.
+
+<!-- END SOURCE: analytics.export.attribution -->
+
+#### Dating rule
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 114–115 | key: analytics.export.caveat.dating | shared: iOS+macOS (single edit point) -->
+
+Dating: each document is placed at its TEI <date> (the date of authorship). A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. Documents lacking month or day precision are excluded from the By Month and By Day charts.
+
+<!-- END SOURCE: analytics.export.caveat.dating -->
+
+#### Corpus-coverage caveat
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusCaveat | lines: 120–121 | key: analytics.export.caveat.corpus %lld | shared: iOS+macOS (single edit point) -->
+
+Corpus: counts cover only the %lld volume(s) indexed on this device, not the entire FRUS series.
+
+<!-- END SOURCE: analytics.export.caveat.corpus -->
+
+#### Value-mode caveat
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.valueModeCaveat | lines: 128–129 | key: analytics.export.caveat.values %@ | shared: iOS+macOS (single edit point) -->
+
+Values: %@. A share is that period's matching documents divided by all indexed documents in the same period, so a growing corpus does not read as a rising term.
+
+<!-- END SOURCE: analytics.export.caveat.values -->
+
+#### Year range — when the chart ignores it
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.yearRangeDescription | lines: 103–104 | key: analytics.export.range.notApplied | shared: iOS+macOS (single edit point) -->
+
+Not applied — this breakdown covers the whole corpus span
+
+<!-- END SOURCE: analytics.export.range.notApplied -->
+
+#### Figure caption — pointer to the CSV
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsFigureExport.swift | AnalyticsFigureCanvas.body | lines: 79–80 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
+
+Full method, caveats, and the underlying numbers accompany this figure in its CSV export.
+
+<!-- END SOURCE: analytics.export.figure.seeData -->
+
+### Analytics Export — Person Analytics caveats
+
+#### Dated-documents population
+
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.personProvenance | lines: 444–445 | key: personAnalytics.export.caveat.dated | shared: iOS+macOS (single edit point) -->
+
+Population: person mentions are counted over DATED documents only — unlike the Corpus Analytics charts, no volume-start-year fallback is applied, so absolute counts are not directly comparable between the two views.
+
+<!-- END SOURCE: personAnalytics.export.caveat.dated -->
+
+#### Identity grouping
+
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.personProvenance | lines: 446–447 | key: personAnalytics.export.caveat.identity | shared: iOS+macOS (single edit point) -->
+
+Identity: mentions are grouped by the app's person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity.
+
+<!-- END SOURCE: personAnalytics.export.caveat.identity -->
+
+#### Decade shares (By Decade in % mode only)
+
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.decadeShareCaveat | lines: 460–461 | key: personAnalytics.export.caveat.decadeShare | shared: iOS+macOS (single edit point) -->
+
+Decade shares: a decade's plotted share is the MEAN of that decade's yearly shares, not the decade's mentioning documents divided by its dated documents. The two differ when the yearly denominators differ, so dividing this file's summed columns will not reproduce the plotted value exactly; the summed columns describe the decade, the plotted value averages its years.
+
+<!-- END SOURCE: personAnalytics.export.caveat.decadeShare -->
+
+### Analytics Export — Cross-Reference Analytics caveats
+
+#### Unresolvable references
+
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 425–426 | key: crossRefAnalytics.export.caveat.excluded %lld | shared: iOS+macOS (single edit point) -->
+
+Unresolvable references: %lld cross-reference(s) are excluded from this analysis — references in the printed volumes that point to a document, page, or volume not present in this corpus.
+
+<!-- END SOURCE: crossRefAnalytics.export.caveat.excluded -->
+
+#### Same-volume attribution
+
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 429–430 | key: crossRefAnalytics.export.caveat.sameVolume | shared: iOS+macOS (single edit point) -->
+
+Attribution: the document-level figures attribute same-volume references (including resolved page references) to the document's own volume. The volume heat matrix is inherently cross-volume and excludes same-volume citations.
+
+<!-- END SOURCE: crossRefAnalytics.export.caveat.sameVolume -->
+
+#### Heat matrix — which volumes it covers
+
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 563–564 | key: crossRefAnalytics.export.caveat.matrixLimit %lld | shared: iOS+macOS (single edit point) -->
+
+Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references. The CSV lists only pairs that have references between them; the figure draws the whole grid and leaves those pairs blank.
+
+<!-- END SOURCE: crossRefAnalytics.export.caveat.matrixLimit -->
+
+#### Heat matrix — axes and labels
+
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 566–567 | key: crossRefAnalytics.export.caveat.matrixAxes | shared: iOS+macOS (single edit point) -->
+
+Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes' full titles appear in this CSV.
+
+<!-- END SOURCE: crossRefAnalytics.export.caveat.matrixAxes -->
+
+#### Landmark Documents — what the score is
+
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.exportLandmarksCSV | lines: 619–620 | key: crossRefAnalytics.export.caveat.pageRank | shared: iOS+macOS (single edit point) -->
+
+Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.
+
+<!-- END SOURCE: crossRefAnalytics.export.caveat.pageRank -->
+
+### Analytics Export — Word Cloud caveats
+
+<!-- A cloud never reads a document date, so its export deliberately carries no dating rule and no year-range line. -->
+
+#### Population
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 336–337 | key: wordcloud.export.caveat.population %lld %lld | shared: iOS+macOS (single edit point) -->
+
+Population: counts cover the %lld document(s) this scope resolved to and %lld counted word(s) after stopword removal — the share column's denominator.
+
+<!-- END SOURCE: wordcloud.export.caveat.population -->
+
+#### Stopwords
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 339–340 | key: wordcloud.export.caveat.stopwords %@ | shared: iOS+macOS (single edit point) -->
+
+Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@.
+
+<!-- END SOURCE: wordcloud.export.caveat.stopwords -->
+
+#### Tuning thresholds
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 344–345 | key: wordcloud.export.caveat.tuning %lld %lld %@ | shared: iOS+macOS (single edit point) -->
+
+Tuning: words shorter than %lld character(s) and words occurring fewer than %lld time(s) are excluded; plural folding is %@.
+
+<!-- END SOURCE: wordcloud.export.caveat.tuning -->
+
+#### Words hidden by hand
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 355–356 | key: wordcloud.export.caveat.hidden %lld | shared: iOS+macOS (single edit point) -->
+
+Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from this export.
+
+<!-- END SOURCE: wordcloud.export.caveat.hidden -->
+
+#### Active lens
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 360–361 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
+
+Lens: the cloud is filtered to the "%@" word list, so this is a subset of the scope's vocabulary, not its whole frequency ranking.
+
+<!-- END SOURCE: wordcloud.export.caveat.lens -->
 
 ---
 

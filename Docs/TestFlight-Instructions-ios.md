@@ -22,6 +22,7 @@ Hide the rail for distraction-free reading. In Read mode, **tap near the left or
 - **Source Explorer** — resolved collections now show the **HMS/MLR Entry** number NARA staff ask for when you request original records.
 - **People** — a person's detail sheet gains **Subjects** chips (the detected topics of the volumes where they're mentioned).
 - **Zotero** — connect in **Settings → Integrations**, then the rail's **Share** menu can send a document (with your tags and notes) to your library.
+- **Analytics exports** — charts now leave the app as **Chart data (CSV)**, **Figure (PNG)**, or **Figure (PDF)** through the **share sheet**: an **Export** menu in **Corpus Analytics** (iPad toolbar; on iPhone under **Export** in the **Options (…)** menu), a per-section **Export** button in **Person** and **Cross-Reference** Analytics, and **Options (…) → Export** on a word cloud. Try saving a figure *and* its CSV to Files, then check that the CSV's `#`-commented preamble describes the chart you were actually looking at — on **By Subseries** / **By Volume** the figure items are dimmed by design.
 
 ## Fixes
 - **Research tab** — fixed a list that could briefly reorder/jump right after opening.
