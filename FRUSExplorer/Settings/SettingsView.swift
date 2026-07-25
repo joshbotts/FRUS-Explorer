@@ -1002,12 +1002,27 @@ struct MergeTagSheet: View {
 
 // MARK: - SummarizationPromptsSettingsView
 
+/// iOS Settings → Research → Summarization (S-3d).
+///
+/// ## Availability first, receipt last
+/// The pane answers two questions without anyone keeping a progress screen open: *can it work?* —
+/// the Apple Intelligence row at the top — and *did it work?* — the Last run row at the bottom.
+/// Between them sit the prompts, which are the pane's one job.
+///
+/// The batch-run form used to live here, embedded below the prompt lists and (on this platform)
+/// nested inside another `Section`, which is malformed. It is now a door: "New Batch Run…" opens
+/// `BatchRunSheet`. The pane stopped having two jobs, and a running batch's progress ticks stopped
+/// re-rendering the prompt list.
+///
+/// Version history:
+///   1.0 — Session 20: initial implementation
+///   1.1 — S-3d: availability row, run form moves to a sheet, per-prompt counts come from a
+///          one-shot `PromptSummaryTally` rather than a per-row scan of every summary
 private struct SummarizationPromptsSettingsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
-    @Query(sort: \GeneratedSummary.lastModified, order: .reverse) private var allSummaries: [GeneratedSummary]
 
     /// Non-nil when editing an existing user prompt.
     @State private var editingPrompt: SummarizationPrompt? = nil
@@ -1016,47 +1031,67 @@ private struct SummarizationPromptsSettingsView: View {
     /// When set, the new-prompt sheet opens pre-populated from this template
     /// (used by "Use as Template" on standard prompts and "Duplicate" on user prompts).
     @State private var newPromptInitialTemplate: PromptTemplate? = nil
+    /// Controls the batch-run sheet.
+    @State private var showRunSheet = false
+    /// Per-prompt summary counts, tallied once per appearance rather than per row.
+    @State private var tally: PromptSummaryTally = .empty
 
     var body: some View {
         Form {
+            availabilitySection
             promptsSection
-            summaryCountsSection
-            backgroundSection
+            generateSection
         }
-        .navigationTitle(String(localized: "settings.summarization.title",
-                                defaultValue: "Summarization Prompts"))
+        .navigationTitle(String(localized: "settings.pane.summarization",
+                                defaultValue: "Summarization"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    newPromptInitialTemplate = nil
-                    showNewPromptSheet = true
-                } label: {
-                    Label(String(localized: "settings.summarization.newPrompt.button",
-                                 defaultValue: "New Prompt"),
-                          systemImage: "plus")
-                }
-                .accessibilityLabel(
-                    String(localized: "settings.summarization.newPrompt.a11y",
-                           defaultValue: "Create a new summarization prompt")
+        .task { tally = SummarizationPaneTally.fetch(from: modelContext) }
+        .sheet(item: $editingPrompt, onDismiss: refreshTally) { prompt in
+            PromptEditorView(promptToEdit: prompt)
+        }
+        .sheet(isPresented: $showNewPromptSheet, onDismiss: {
+            newPromptInitialTemplate = nil
+            refreshTally()
+        }) {
+            PromptEditorView(initialTemplate: newPromptInitialTemplate)
+        }
+        .sheet(isPresented: $showRunSheet, onDismiss: refreshTally) {
+            BatchRunSheet().environment(appState)
+        }
+    }
+
+    private func refreshTally() {
+        tally = SummarizationPaneTally.fetch(from: modelContext)
+    }
+
+    // MARK: - Availability
+
+    @ViewBuilder
+    private var availabilitySection: some View {
+        Section {
+            if AppleIntelligenceProvider.shared.isAvailable {
+                SettingsStatusRow(
+                    label: String(localized: "settings.summarization.availability.label",
+                                  defaultValue: "Apple Intelligence"),
+                    detail: String(localized: "settings.summarization.availability.ready",
+                                   defaultValue: "Ready — summaries generate on this device."),
+                    state: .ok
+                )
+            } else {
+                SettingsStatusRow(
+                    label: String(localized: "settings.summarization.availability.label",
+                                  defaultValue: "Apple Intelligence"),
+                    detail: String(localized: "settings.summarization.availability.unavailable",
+                                   defaultValue: "Not available on this device. Prompts still edit and sync to your other devices, where they are used for generation."),
+                    state: .warning
                 )
             }
         }
-        // Sheet for editing an existing user prompt
-        .sheet(item: $editingPrompt) { prompt in
-            PromptEditorView(promptToEdit: prompt)
-        }
-        // Sheet for creating a new prompt (optionally pre-seeded from a template)
-        .sheet(isPresented: $showNewPromptSheet, onDismiss: { newPromptInitialTemplate = nil }) {
-            PromptEditorView(initialTemplate: newPromptInitialTemplate)
-        }
     }
+
+    // MARK: - Prompts
 
     @ViewBuilder
     private var promptsSection: some View {
@@ -1064,17 +1099,11 @@ private struct SummarizationPromptsSettingsView: View {
         let user = allPrompts.filter { !$0.isStandard }
 
         if !standard.isEmpty {
-            Section(String(localized: "settings.summarization.standard.header",
-                           defaultValue: "Standard Prompts")) {
+            Section {
                 ForEach(standard) { prompt in
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(prompt.name).font(.callout)
-                            Text(summaryCountLabel(for: prompt))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
+                        SettingsNavRow(label: prompt.name, detail: tally.rowSummary(for: prompt.id))
+                        Spacer(minLength: 8)
                         Button {
                             newPromptInitialTemplate = templateFrom(prompt)
                             showNewPromptSheet = true
@@ -1084,21 +1113,25 @@ private struct SummarizationPromptsSettingsView: View {
                                 .font(.caption)
                         }
                         .buttonStyle(.borderless)
-                        .foregroundStyle(Color.accentColor)
                         .accessibilityLabel(
                             String(localized: "settings.summarization.useAsTemplate.a11y",
                                    defaultValue: "Use \(prompt.name) as a template for a new prompt")
                         )
                     }
                 }
+            } header: {
+                Text(String(localized: "settings.summarization.standard.header",
+                            defaultValue: "Standard Prompts"))
+            } footer: {
+                Text(String(localized: "settings.summarization.standard.footer",
+                            defaultValue: "The prompts the app ships with. They can't be edited — start from one with Use as Template."))
             }
         }
 
-        Section(String(localized: "settings.summarization.user.header",
-                       defaultValue: "Your Prompts")) {
+        Section {
             if user.isEmpty {
-                Text(String(localized: "settings.summarization.user.empty",
-                            defaultValue: "No custom prompts yet. Tap + to create one."))
+                Text(String(localized: "settings.summarization.user.empty.where",
+                            defaultValue: "No prompts of your own yet. Prompts you create appear here and sync to your other devices via iCloud."))
                     .foregroundStyle(.secondary)
                     .font(.callout)
             } else {
@@ -1107,25 +1140,17 @@ private struct SummarizationPromptsSettingsView: View {
                         editingPrompt = prompt
                     } label: {
                         HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(prompt.name)
-                                    .font(.callout)
-                                    .foregroundStyle(.primary)
-                                Text(summaryCountLabel(for: prompt))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
+                            SettingsNavRow(label: prompt.name,
+                                           detail: tally.rowSummary(for: prompt.id))
+                            Spacer(minLength: 8)
                             Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.tertiary)
                         }
+                        .contentShape(Rectangle())
                     }
-                    .accessibilityLabel(
-                        String(localized: "settings.summarization.prompt.a11y",
-                               defaultValue: "Edit prompt \(prompt.name)")
-                    )
-                    // Leading swipe: Duplicate (creates new prompt pre-seeded from this one)
+                    .buttonStyle(.plain)
+                    // Swipes stay as shortcuts; everything they do is also reachable from the row.
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         Button {
                             newPromptInitialTemplate = templateFrom(prompt)
@@ -1140,10 +1165,79 @@ private struct SummarizationPromptsSettingsView: View {
                 }
                 .onDelete { offsets in
                     for i in offsets { modelContext.delete(user[i]) }
+                    refreshTally()
                 }
             }
+
+            SettingsNewItemRow(label: String(localized: "settings.summarization.newPrompt",
+                                             defaultValue: "New Prompt…")) {
+                newPromptInitialTemplate = nil
+                showNewPromptSheet = true
+            }
+        } header: {
+            Text(String(localized: "settings.summarization.user.header",
+                        defaultValue: "Your Prompts"))
         }
     }
+
+    // MARK: - Generate
+
+    @ViewBuilder
+    private var generateSection: some View {
+        let runState = appState.backgroundSummarizationProgress.state
+        Section {
+            Button {
+                showRunSheet = true
+            } label: {
+                SettingsNavRow(
+                    label: String(localized: "settings.summarization.newRun",
+                                  defaultValue: "New Batch Run…"),
+                    systemImage: "sparkles",
+                    detail: String(localized: "settings.summarization.newRun.detail",
+                                   defaultValue: "Scope, prompt and progress.")
+                )
+            }
+            .buttonStyle(.plain)
+
+            SettingsNavRow(
+                label: String(localized: "settings.summarization.generated",
+                              defaultValue: "Generated so far"),
+                value: "\(tally.documentSummaries)"
+            )
+
+            SettingsStatusRow(
+                label: String(localized: "settings.summarization.lastRun",
+                              defaultValue: "Last run"),
+                detail: BatchRunReceipt.text(for: runState),
+                state: BatchRunReceipt.isFailure(runState)
+                    ? .error
+                    : (BatchRunReceipt.isCancelled(runState) ? .warning : .ok)
+            )
+        } header: {
+            Text(String(localized: "settings.summarization.generate.header",
+                        defaultValue: "Generate"))
+        } footer: {
+            Text(headnoteFooter)
+        }
+    }
+
+    /// The count's caveat. Headnote drafts are `GeneratedSummary` rows too but are excluded from
+    /// every summary query in the app, so the figure above counts document summaries only — and
+    /// says so when there are drafts that would otherwise appear to be missing from it.
+    private var headnoteFooter: String {
+        let base = String(localized: "settings.summarization.generate.footer",
+                          defaultValue: "Runs continue in the background if you allow it — set per run.")
+        guard tally.headnoteDrafts > 0 else { return base }
+        let drafts = tally.headnoteDrafts == 1
+            ? String(localized: "settings.summarization.headnotes.one",
+                     defaultValue: "1 collection headnote draft isn't counted above.")
+            : String(format: String(localized: "settings.summarization.headnotes.many %lld",
+                                    defaultValue: "%lld collection headnote drafts aren't counted above."),
+                     Int64(tally.headnoteDrafts))
+        return base + " " + drafts
+    }
+
+    // MARK: - Helpers
 
     /// Builds a `PromptTemplate` value from any `SummarizationPrompt` for use-as-template flows.
     private func templateFrom(_ prompt: SummarizationPrompt) -> PromptTemplate {
@@ -1160,31 +1254,6 @@ private struct SummarizationPromptsSettingsView: View {
             promptText: prompt.promptText,
             fields: fields
         )
-    }
-
-    @ViewBuilder
-    private var summaryCountsSection: some View {
-        Section(String(localized: "settings.summarization.counts.header",
-                       defaultValue: "Summaries")) {
-            LabeledContent(
-                String(localized: "settings.summarization.counts.total", defaultValue: "Total Summaries"),
-                value: "\(allSummaries.count)"
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var backgroundSection: some View {
-        Section(String(localized: "settings.summarization.background.header",
-                       defaultValue: "Background Summarization")) {
-            BackgroundSummarizationSettingsView()
-        }
-    }
-
-    private func summaryCountLabel(for prompt: SummarizationPrompt) -> String {
-        let count = allSummaries.filter { $0.promptId == prompt.id }.count
-        return String(localized: "settings.summarization.prompt.count",
-                      defaultValue: "\(count) \(count == 1 ? "summary" : "summaries") generated")
     }
 }
 
