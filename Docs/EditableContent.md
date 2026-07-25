@@ -30,7 +30,7 @@ lists, and changing headings.
 
 The **Foreign Relations of the United States** (FRUS) series is the official documentary record of U.S. foreign policy. The Department of State has published FRUS continuously since 1861. The series now comprises more than 550 volumes covering U.S. foreign policy from 1861 through the early 1990s.
 
-While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
+While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an invaluable resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
 
 <!-- END SOURCE: about.frus.description -->
 
@@ -88,7 +88,7 @@ FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National 
 
 <!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | property: dosDisclaimerSection | lines: 438–448 | key: about.dos.disclaimer -->
 
-FRUS Explorer is an independently-developed research tool and is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is a public domain resource.
+FRUS Explorer is an independently-developed research tool and is not an official product of the Office of the Historian or the U.S. Department of State. Commentary, advice, and guidance about the FRUS series contained in the application reflect personal views and not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is a public domain resource.
 
 <!-- END SOURCE: about.dos.disclaimer -->
 
@@ -124,9 +124,9 @@ Today, the Office of the Historian at the Department of State produces the serie
 
 The statute requires that this work be guided by historical objectivity: records may not be altered without acknowledgment, no fact of major importance in reaching a decision should be omitted, and information should not be withheld to conceal a defect in policy. Volumes should be published within 30 years of the events they document.
 
-While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
+While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an invaluable resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
 
-FRUS Explorer provides full-text search, document browsing, AI-assisted summarization, NARA Catalog integration, and a variety of other research and citation tools to researchers using all or part of the FRUS series corpus, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
+FRUS Explorer provides a variety of research tools for using the series, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
 
 <!-- END SOURCE: bundledIntroText -->
 
@@ -291,7 +291,7 @@ The app also ships a corpus-wide authority of the archival collections FRUS cite
 
 The printed volumes cite each other constantly — "see page 700," "see Document 42." Because pre-digital volumes were retyped from the printed books and their cross-references retroactively tagged, a small number cite a page, document, or volume that does not exist in the digital corpus. The app ships a corpus-wide validation of every cross-reference (about 2.7 million checked), so it knows exactly which ones cannot be followed.
 
-A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many). From Settings you can export the full Broken Cross-References Report — the same dataset is reported to the Office of the Historian to support corrections to the digital editions.
+A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many).
 
 <!-- section-id: classifications -->
 
@@ -321,7 +321,7 @@ FRUS publishes thousands of documents for every administration's foreign policy,
 
 <!-- section-id: intro -->
 
-FRUS rewards researchers who read across documents, not just within them, and who squeeze valuable information about both historical and archival context from the editorial annotation added to documents. Here are strategies that experienced historians use.
+FRUS rewards researchers who read across documents, not just within them, and who squeeze valuable information about both historical and archival context from the editorial annotation added to documents. Here are strategies that experienced historians have used with printed and online volumes (later pages will address how this app builds on these tried-and-true methods).
 
 <!-- section-id: introduction -->
 
@@ -401,7 +401,7 @@ Find it on the Browse tab (iOS) or the Corpus Browser window, ⇧⌘B (Mac).
 
 **Top Subjects on Volumes**
 
-Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category.
+Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from experimental subject data and grouped by category.
 
 Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.
 
@@ -441,7 +441,7 @@ Find it in the Search screen's overflow (More) menu.
 
 From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, the same volume or subseries, and shared people. Small icon chips on each result show why it matched.
 
-A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until detected-topic document data ships.
+A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until experimental detected-topic document data is ready to include in the app.
 
 Find it in the Research rail's Related tile. On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results.
 
@@ -469,7 +469,7 @@ On those same two charts, the top source volumes are color-coded; you can choose
 
 The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.
 
-An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only, and Person Analytics and Cross-Reference Analytics put an Export button on each of their charts. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.
+An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.
 
 Analytics runs entirely on your local index; no network connection is required.
 
@@ -482,6 +482,8 @@ Find it from the Browse tab’s Analysis Tools menu (iOS) or the Corpus Analytic
 Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people that were tagged by Office of the Historian editors during production appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period’s dated documents), and — when exactly two people are selected — draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.
 
 Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
+
+Each chart in Trends carries its own Export button — chart data as CSV, or the chart itself as a PNG or PDF figure — and comparing exactly two people adds a relationship CSV. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Person Analytics window (Mac).
 
@@ -513,11 +515,13 @@ Find it from the Research rail's Graph tile (it opens in its own window on Mac a
 
 Where the graph traces one document’s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network’s shape — a few heavily-cited landmarks and a long tail — a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of “landmark” documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.
 
-These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record.
+These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.
 
 Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.
 
 An Administration menu sets the document-year range to a president’s term in one tap; the same presets appear in Corpus Analytics.
+
+Each of the four charts carries its own Export button — chart data as CSV, or the chart as a PNG or PDF figure; the landmark ranking is a table, so it exports as CSV only. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
 
@@ -531,7 +535,7 @@ You can also select any text — a lot file number, a decimal file identifier, a
 
 From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same detected archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document’s row in a volume’s sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.
 
-More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app’s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, worth quoting alongside the lot number when you request the original records.
+More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app’s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, and the value you will need when you request the original records.
 
 <!-- section-id: timeline -->
 
@@ -549,7 +553,7 @@ Turn any set of results into a timeline. From a search result list or a collecti
 
 **Title:** Working With Documents
 
-**Subtitle:** Reading, annotating, organising, and exporting
+**Subtitle:** Reading, annotating, organizing, and exporting
 
 <!-- section-id: document -->
 
@@ -602,6 +606,12 @@ To summarize a large body of material at once, the background summarizer works t
 **Syncing Across Devices**
 
 Your notes, highlights, tags, collections, and projects sync automatically through iCloud, so your research follows you between iPhone, iPad, and Mac. Downloaded volumes and the search index are stored per-device and are not synced.
+
+<!-- section-id: privacy -->
+
+**Your Data Stays Private**
+
+The app does not share any usage or research data with anyone. You can export and share anonymized diagnostic data with the developer for troubleshooting if and when you choose. You can also export all your research data.
 
 <!-- END SOURCE: page working-with-documents -->
 
@@ -811,7 +821,7 @@ Documents are attributed to an administration by any overlap between the documen
 #### Intro paragraph
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.intro | lines: 142–143 | key: series.geography.intro -->
 
-Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most.
+Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve approximately to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most.
 
 <!-- END SOURCE: series.geography.intro -->
 
@@ -839,7 +849,7 @@ The individual place tags carried by the most volumes — the concrete detail be
 #### Regional-bureau mapping footnote
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 328–329 | key: series.geography.caveats.body -->
 
-Place tags are volume-level editorial tags: a volume "touches" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear.
+Place tags are volume-level editorial tags: a volume "touches" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear.
 
 <!-- END SOURCE: series.geography.caveats.body -->
 Note: while a subseries scope is active, this dashboard's caveats block also shows the shared scope line `series.caveats.scope %@` (`SeriesGeographyDashboard.swift` lines 321–322). Its canonical block lives in the Production & Timeliness subsection below; the same key and defaultValue appear in both files, so edit both occurrences together.
@@ -1146,7 +1156,7 @@ Share of indexed documents per period. Only downloaded, indexed volumes are coun
 #### What you're seeing
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 209–210 | key: personAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-Trends ranks the most-mentioned people in an era and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents.
+Trends ranks the people most mentioned in an era, as tagged by FRUS editors, and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.
 
 <!-- END SOURCE: personAnalytics.info.shows.detail -->
 
@@ -1170,7 +1180,7 @@ Tap a ranking bar, or use "Add a person to compare", to plot several people's me
 #### What you're seeing
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 231–232 | key: crossRefAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-How FRUS documents cite one another. The ranking lists the most-referenced documents; the heat matrix shows citation flow between whole volumes; landmarks are the documents a citation-following reader keeps returning to.
+How FRUS documents cite one another. The ranking lists the most-referenced documents; the heat matrix shows citation flow between whole volumes; landmarks are the documents a citation-following reader keeps returning to. Remember that FRUS editorial practices around cross-referencing have evolved over time. Subseries or administration-level scoping will carry a more consistent signal than broader scopes that reflect more diverse editorial practices.
 
 <!-- END SOURCE: crossRefAnalytics.info.shows.detail -->
 

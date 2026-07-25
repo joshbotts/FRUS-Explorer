@@ -220,7 +220,7 @@ cover U.S. bilateral and regional relations across the globe; U.S. \
 policymakers' responses to unfolding crises; engagement with global issues \
 like human rights, terrorism, narcotics, health, and the environment; and \
 thematic topics including national security policy, foreign economic policy, \
-and foreign affairs organization and management. It is an essential resource \
+and foreign affairs organization and management. It is an invaluable resource \
 for scholars, policymakers, and citizens seeking to understand the origins of \
 contemporary challenges and the United States's role in the world.
 """)
@@ -441,7 +441,10 @@ to their terms of use.
                         defaultValue: """
 FRUS Explorer is an independently-developed research tool and is not an \
 official product of the Office of the Historian or the U.S. Department of \
-State. The FRUS series itself is a public domain resource.
+State. Commentary, advice, and guidance about the FRUS series contained in \
+the application reflect personal views and not necessarily those of the \
+Department of State or the U.S. Government. The FRUS series itself is a \
+public domain resource.
 """))
             .font(.caption)
             .foregroundStyle(.secondary)
