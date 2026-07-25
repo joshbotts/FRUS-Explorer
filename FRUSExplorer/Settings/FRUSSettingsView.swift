@@ -500,6 +500,13 @@ private struct SettingsSearchPane: View {
     @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
     @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
 
+    /// Whether `scope` is the only search scope still enabled — see the iOS twin in
+    /// `SearchDefaultsView`. With all three off, `SearchService.makeMatchExpressions` throws
+    /// `FTS5Error.emptyQuery`, so every search fails instead of returning an honest empty result.
+    private func isOnlyEnabledScope(_ scope: Bool) -> Bool {
+        scope && [scopeDocuments, scopeNotes, scopeSummaries].filter { $0 }.count == 1
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -509,7 +516,7 @@ private struct SettingsSearchPane: View {
                 )
 
                 PaneSectionHeader(title: "Default search scope")
-                Text("These toggles control which content types are searched by default. They can be overridden per-session in the Search sheet.")
+                Text("These toggles control which content types are searched by default. They can be overridden per-session in the Search sheet. At least one scope stays on — searching nothing has no result to show.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
@@ -518,22 +525,25 @@ private struct SettingsSearchPane: View {
                 settingsPaneToggleRow(
                     label: "Documents",
                     detail: "Search indexed FRUS document text.",
-                    isOn: $scopeDocuments
+                    isOn: $scopeDocuments,
+                    isDisabled: isOnlyEnabledScope(scopeDocuments)
                 )
                 settingsPaneToggleRow(
                     label: "Research notes",
                     detail: "Include your research notes in search results.",
-                    isOn: $scopeNotes
+                    isOn: $scopeNotes,
+                    isDisabled: isOnlyEnabledScope(scopeNotes)
                 )
                 settingsPaneToggleRow(
                     label: "AI summaries",
                     detail: "Include generated summary text in search results.",
-                    isOn: $scopeSummaries
+                    isOn: $scopeSummaries,
+                    isDisabled: isOnlyEnabledScope(scopeSummaries)
                 )
 
                 PaneSectionHeader(title: "Default document type")
                 Picker("Default document type filter", selection: $defaultTypeFilter) {
-                    Text("Both").tag("all")
+                    Text("Documents & Editorial Notes").tag("all")
                     Text("Primary documents only").tag("documentsOnly")
                     Text("Editorial notes only").tag("editorialNotesOnly")
                 }
@@ -2951,7 +2961,7 @@ private struct SettingsNARAPane: View {
                 )
 
                 PaneSectionHeader(title: "API key")
-                Text("The NARA API key is stored securely in the macOS Keychain and never leaves this device. The Source Explorer toolbar button is only shown when a key is configured.")
+                Text("The NARA API key is stored securely in iCloud Keychain and synced across your devices. The Source Explorer toolbar button is only shown when a key is configured.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
@@ -3019,7 +3029,7 @@ private struct SettingsNARAPane: View {
                 .background(Color.secondary.opacity(0.06))
                 .clipShape(RoundedRectangle(cornerRadius: 7))
 
-                Link("Get a NARA API key", destination: URL(string: "https://catalog.archives.gov/api/v2")!)
+                Link("Get a NARA API key", destination: URL(string: "https://www.archives.gov/research/catalog/help/api")!)
                     .font(.system(size: 12))
                     .padding(.top, 12)
             }
@@ -3732,7 +3742,10 @@ private struct SettingsResetPane: View {
 /// Toggle row used across multiple settings panes.
 /// Named `settingsPaneToggleRow` to avoid collision with `settingsToggleRow` in SettingsView.swift.
 @ViewBuilder
-private func settingsPaneToggleRow(label: String, detail: String, isOn: Binding<Bool>) -> some View {
+private func settingsPaneToggleRow(label: String,
+                                   detail: String,
+                                   isOn: Binding<Bool>,
+                                   isDisabled: Bool = false) -> some View {
     HStack(alignment: .top, spacing: 12) {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
@@ -3744,6 +3757,7 @@ private func settingsPaneToggleRow(label: String, detail: String, isOn: Binding<
         Spacer()
         Toggle("", isOn: isOn)
             .labelsHidden()
+            .disabled(isDisabled)
     }
     .padding(10)
     .background(Color.secondary.opacity(0.06))

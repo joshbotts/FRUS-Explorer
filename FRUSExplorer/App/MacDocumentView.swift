@@ -44,8 +44,9 @@ import WebKit
 ///          ASTToRenderNodeConverter.renderingVersion(for:)
 ///   1.5 — Session 106: @Query for stored highlights; overlay rendering; stale warning banner;
 ///          note anchoring
-///   1.6 — Highlight controls + Sources moved to ResearchStripView; state managed via
-///          HighlightCoordinator passed from MainWindowView
+///   1.6 — Highlight controls + Sources moved out of this view; state managed via
+///          HighlightCoordinator passed from MainWindowView (the host was the
+///          research strip, retired in the rail redesign)
 ///   1.7 — Session 154: applies the default document mode preference
 ///          (Read/Research/remember-last) to `panelVisible` once per document open
 ///   1.8 — Authoring Phase 5 (excerpts): publishes the loaded document's rendering
@@ -113,8 +114,8 @@ struct MacDocumentView: View {
     /// live web view for `WKWebView.find`. One per document surface (main window + each
     /// standalone document window), so each searches its own document.
     @State private var findController = DocumentFindController()
-    /// Excerpt capture pending presentation in the bar's Excerpt flow (mirrors ResearchStripView's
-    /// own picker state — C1 unifies the two).
+    /// Excerpt capture pending presentation in the bar's Excerpt flow (unified with the
+    /// research rail's picker state in C1).
     @State private var pendingExcerptCapture: CollectionExcerptCapture? = nil
     /// Presents the collection picker in excerpt mode for `pendingExcerptCapture`.
     @State private var showAddExcerpt = false

@@ -17,15 +17,8 @@ import UniformTypeIdentifiers
 
 /// Shared observable state for the document highlight workflow on macOS.
 ///
-/// Owned by `MainWindowView` and passed by reference to both `ResearchStripView`
-/// (which hosts the toolbar buttons) and `MacDocumentView` (which performs text
-/// selection and SwiftData insertion). Resetting on document navigation is handled
-/// by `MainWindowView.onChange(of: currentEntry)`.
-@Observable
-/// Shared observable state for the document highlight workflow on macOS.
-///
-/// Owned by `MainWindowView` and passed by reference to both `ResearchStripView`
-/// (which hosts the toolbar buttons) and `MacDocumentView` (which performs text
+/// Owned by `MainWindowView` and passed by reference to both `ResearchRailView`
+/// (which hosts the highlight affordances) and `MacDocumentView` (which performs text
 /// selection and SwiftData insertion). Resetting on document navigation is handled
 /// by `MainWindowView.onChange(of: currentEntry)`.
 ///
@@ -35,6 +28,9 @@ import UniformTypeIdentifiers
 /// Authoring Phase 5 review fixes: `currentRenderingVersion` removed in favour of
 /// `makeExcerptCaptureAction` — MacDocumentView builds the whole excerpt capture,
 /// re-extracting the frozen passage from the flat text next to its anchors.
+///
+/// Research-rail redesign: `ResearchStripView` was retired; the rail is the host.
+@Observable
 final class HighlightCoordinator {
 
     /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
