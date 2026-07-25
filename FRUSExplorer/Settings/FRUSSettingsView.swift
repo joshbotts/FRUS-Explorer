@@ -78,41 +78,21 @@ struct FRUSSettingsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
-    @State private var selection: SettingsPane = .display
+    @State private var selection: SettingsPane = .storage
 
     var body: some View {
-        SettingsPane.assertSidebarCoverage()
+        SettingsPane.assertCoverage()
         return NavigationSplitView {
             List(selection: $selection) {
-                Section("General") {
-                    ForEach(SettingsPane.general) { pane in
-                        Label(pane.label, systemImage: pane.icon)
-                            .tag(pane)
-                    }
-                }
-                Section("Research") {
-                    ForEach(SettingsPane.research) { pane in
-                        Label(pane.label, systemImage: pane.icon)
-                            .tag(pane)
-                    }
-                }
-                Section("Corpus") {
-                    ForEach(SettingsPane.corpus) { pane in
-                        Label(pane.label, systemImage: pane.icon)
-                            .tag(pane)
-                    }
-                }
-                Section("Advanced") {
-                    ForEach(SettingsPane.advanced) { pane in
-                        Label(pane.label, systemImage: pane.icon)
-                            .tag(pane)
-                    }
-                }
-                Section("Reset") {
-                    ForEach(SettingsPane.resetSection) { pane in
-                        Label(pane.label, systemImage: pane.icon)
-                            .foregroundStyle(pane == .reset ? .red : .primary)
-                            .tag(pane)
+                // Sections come from the shared `SettingsPane` model (S-1), so the sidebar cannot
+                // disagree with the iOS root about a pane's name, icon, or group.
+                ForEach(SettingsPane.groupedPanes(on: .macOS), id: \.group) { entry in
+                    Section(entry.group.label) {
+                        ForEach(entry.panes) { pane in
+                            Label(pane.label, systemImage: pane.icon)
+                                .foregroundStyle(pane == .reset ? .red : .primary)
+                                .tag(pane)
+                        }
                     }
                 }
             }
@@ -138,6 +118,11 @@ struct FRUSSettingsView: View {
                 case .summarization:  SettingsSummarizationPane()
                 case .data:           SettingsDataPane()
                 case .reset:          SettingsResetPane()
+                // iOS-only panes (see `SettingsPane.platforms`): the sidebar never offers these,
+                // so they are unreachable here — but the switch must stay exhaustive over the
+                // shared enum, and an empty view is the honest thing to render if one is ever
+                // selected programmatically.
+                case .sideload, .researchGuide: EmptyView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -162,82 +147,9 @@ struct FRUSSettingsView: View {
     }
 }
 
-// MARK: - SettingsPane
-
-enum SettingsPane: String, Identifiable, Hashable, CaseIterable {
-    case sync, syncDiagnostics, about, display, search
-    case projects, tags, scopes, notes, wordCloud
-    case storage, downloads
-    case naraAPI, zotero, summarization, data
-    case reset
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .sync:            return "iCloud Sync"
-        case .syncDiagnostics: return "Sync Diagnostics"
-        case .about:          return "About"
-        case .display:       return "Display"
-        case .search:        return "Search"
-        case .projects:      return "Projects"
-        case .tags:          return "Tags"
-        case .scopes:        return "Volume Scopes"
-        case .notes:         return "Notes"
-        case .wordCloud:     return "Word Cloud"
-        case .storage:       return "Storage"
-        case .downloads:     return "Add Volumes"
-        case .naraAPI:       return "NARA API"
-        case .zotero:        return "Zotero"
-        case .summarization: return "Summarization"
-        case .data:          return "Data"
-        case .reset:         return "Reset"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .sync:            return "icloud"
-        case .syncDiagnostics: return "stethoscope"
-        case .about:          return "info.circle"
-        case .display:       return "textformat.size"
-        case .search:        return "magnifyingglass"
-        case .projects:      return "folder"
-        case .tags:          return "tag"
-        case .scopes:        return "square.stack.3d.up"
-        case .notes:         return "note.text"
-        case .wordCloud:     return "text.word.spacing"
-        case .storage:       return "internaldrive"
-        case .downloads:     return "plus.circle"
-        case .naraAPI:       return "key"
-        case .zotero:        return "books.vertical"
-        case .summarization: return "sparkles"
-        case .data:          return "square.and.arrow.up"
-        case .reset:         return "arrow.counterclockwise"
-        }
-    }
-
-    /// Every pane case must appear in exactly one sidebar section array below — the sidebar
-    /// is built from THESE, not from `allCases`, so a case added to the enum + label + icon +
-    /// detail switch but not to a section array compiles cleanly and ships UNREACHABLE (the
-    /// #258 Phase 2 pre-merge review caught exactly that with `.scopes`). Asserted in DEBUG
-    /// at sidebar construction because the alternative — a unit test — cannot execute: this
-    /// file is macOS-only and the FRUSExplorerMac scheme has no test action.
-    static func assertSidebarCoverage() {
-        #if DEBUG
-        let listed = Set(general + research + corpus + advanced + resetSection)
-        let missing = Set(SettingsPane.allCases).subtracting(listed)
-        assert(missing.isEmpty,
-               "SettingsPane case(s) unreachable — missing from the sidebar section arrays: \(missing)")
-        #endif
-    }
-
-    static let general:  [SettingsPane] = [.about, .sync, .syncDiagnostics, .display, .search]
-    static let research: [SettingsPane] = [.projects, .tags, .scopes, .notes, .wordCloud]
-    static let corpus:   [SettingsPane] = [.storage, .downloads]
-    static let advanced: [SettingsPane] = [.naraAPI, .zotero, .summarization, .data]
-    static let resetSection: [SettingsPane] = [.reset]
-}
+// `SettingsPane` and `SettingsGroup` now live in the cross-platform `SettingsPaneModel.swift`
+// (S-1) so both renderers share one declaration of every pane's label, icon, group, keywords, and
+// platform availability. The five hand-maintained sidebar section arrays are gone with it.
 
 // MARK: - Shared Pane Chrome
 
