@@ -1,5 +1,12 @@
 # Design Requirements — Query & Corpus Analysis UI
 
+> **RESOLVED for surfaces 1–5 (2026-07-25).** Claude Design returned
+> `design_handoff_qca/` with designs **1a–5a settled and accepted**;
+> `QCA-Design-Handoff-Assessment.md` verifies its premises and binds each design to
+> its session — implement from there, not from this brief. This document remains the
+> requirements source only for the **optional surfaces (§6–§10)**, which the handoff
+> left as unsettled sketches.
+
 **For:** Claude Design · **Date:** 2026-07-25 · **Commissioned by:**
 `Planning/Consolidated-Development-Plan-2026-08.md` (Workstream Q) · **Feature
 source:** `Planning/Query-And-Corpus-Analysis-Session-Plan.md` (read it first — every

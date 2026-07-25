@@ -152,12 +152,16 @@ Q-M1.
 
 **Cross-lane edges (the only ones):**
 
-1. **Design before build for the four design-heavy sessions.** Q-2 (inspector), R-1
-   (facet panel), R-3 (concordance), M-2 (query log/appendix) get their UI from the
-   Claude Design pass this plan commissions (see companion requirements doc). **Q-1
-   needs no design** — it is parser + syntax-table work — so the lane starts immediately
-   while design runs in parallel. Design returning before R-1 implementation is the
-   schedule-critical hand-back.
+1. **Design before build — ✅ CLEARED 2026-07-25.** The Claude Design hand-back
+   (`design_handoff_qca/`, designs 1a–5a settled and accepted) arrived before Q-1
+   started. `Planning/QCA-Design-Handoff-Assessment.md` is the binding: premises
+   verified clean, every open design decision settled (integration decision A =
+   promote-from-History ships in M-1's first cut), five minor flags folded into their
+   sessions — Q-2's stem line ships count-only until D-1's surface-forms map;
+   cross-session controls ("Pin as absence assertion", "Save as working corpus…")
+   stay hidden until M-2/M-1 respectively; M-1 must budget the scope-menu family
+   retrofit as its hidden bulk. Sessions Q-2/R-1/R-3/M-1/M-2 start from the
+   assessment, not a fresh handoff read.
 2. **M-1's settings surface lands in the new IA.** The working-corpus manager homes in
    Settings → Research beside Volume Scopes. Schedule M-1 **after S-1** (the regroup) so
    it is born into the 1c tree and the shared pane model, not re-homed later. M-1's
