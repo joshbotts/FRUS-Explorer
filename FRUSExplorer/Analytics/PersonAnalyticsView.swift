@@ -386,6 +386,118 @@ struct PersonAnalyticsView: View {
     /// Whether EXACTLY two people are selected — the trigger for relationship dynamics (CA-8).
     private var isTwoPersonComparison: Bool { selectedPeople.count == 2 }
 
+    // MARK: - Research-grade export (D3)
+
+    /// The written export awaiting an iOS share sheet; always `nil` on macOS (the save panel writes
+    /// straight to the chosen destination).
+    @State private var exportShareItem: AnalyticsExportFile?
+    /// A human-readable export failure, surfaced in an alert.
+    @State private var exportError: String?
+
+    /// The methods statement for a Person Analytics export.
+    ///
+    /// Carries the caveat that distinguishes this view from Corpus Analytics: person mentions are
+    /// counted over **dated documents only**, with no volume-start-year fallback, so a Person figure
+    /// and a Corpus figure are drawn from different document populations and their absolute counts
+    /// are not directly comparable.
+    ///
+    /// - Parameters:
+    ///   - figureTitle: The chart's title.
+    ///   - periodGrain: The period grain shown (`By Year` / `By Decade`), or `nil` for the ranking.
+    ///   - valueMode: The value mode, or `nil` where normalization does not apply.
+    /// - Returns: The provenance to stamp on the export.
+    private func personProvenance(figureTitle: String,
+                                  periodGrain: String?,
+                                  valueMode: String?) -> AnalyticsProvenance {
+        AnalyticsProvenance(
+            figureTitle: figureTitle,
+            axisLabel: periodGrain ?? String(localized: "personAnalytics.export.axis.ranking",
+                                             defaultValue: "Ranked by mentions"),
+            scopeLabel: scopeLabel,
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            yearRange: yearRangeStart...yearRangeEnd,
+            valueMode: valueMode,
+            extraCaveats: [
+                String(localized: "personAnalytics.export.caveat.dated",
+                       defaultValue: "Population: person mentions are counted over DATED documents only — unlike the Corpus Analytics charts, no volume-start-year fallback is applied, so absolute counts are not directly comparable between the two views."),
+                String(localized: "personAnalytics.export.caveat.identity",
+                       defaultValue: "Identity: mentions are grouped by the app's person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity."),
+            ]
+        )
+    }
+
+    /// The period grain label for the trajectory/relationship charts.
+    private var periodGrainLabel: String {
+        byDecade
+            ? String(localized: "analytics.axis.decade", defaultValue: "Decade")
+            : String(localized: "analytics.axis.year", defaultValue: "Year")
+    }
+
+    /// Delivers one chart's provenance-stamped CSV.
+    ///
+    /// - Parameters:
+    ///   - table: The chart's data table.
+    ///   - provenance: The methods statement to stamp above it.
+    private func deliver(_ table: ChartInspectorData, _ provenance: AnalyticsProvenance) {
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle) + ".csv"
+        switch AnalyticsExportDelivery.deliver(text: table.provenancedCSV(provenance), filename: filename) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// Exports the most-mentioned-people ranking.
+    private func exportRankingCSV() {
+        let title = String(localized: "personAnalytics.ranking.heading", defaultValue: "Most-Mentioned People")
+        // Same id/suffix pairing the chart uses (`rankingChart`'s local `rowKey`), so the exported
+        // "chart label" column matches the figure's y-axis text row for row.
+        let labels = disambiguatedRankingLabels(
+            ranking.map { (id: String($0.rollupId), name: $0.canonicalName, shortSuffix: String($0.rollupId)) })
+        let table = AnalyticsChartTables.personRankingTable(
+            title: title,
+            rows: ranking.map { (rollupId: $0.rollupId,
+                                 name: $0.canonicalName,
+                                 axisLabel: labels[String($0.rollupId)] ?? $0.canonicalName,
+                                 mentions: $0.mentionCount) })
+        deliver(table, personProvenance(figureTitle: title, periodGrain: nil, valueMode: nil))
+    }
+
+    /// Exports the mention-trajectory comparison, carrying both numerators and the denominator so the
+    /// plotted share can be recomputed from the file.
+    private func exportTrajectoryCSV() {
+        let title = String(localized: "personAnalytics.comparison.heading", defaultValue: "Mention Trajectories")
+        let plottedByPerson = Dictionary(grouping: trajectoryPoints, by: { $0.rollupId })
+        let series = selectedPeople.map { person -> (rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)]) in
+            let points = (plottedByPerson[person.rollupId] ?? []).sorted { $0.year < $1.year }.map { point in
+                (period: point.year,
+                 mentions: rawTrajectories[person.rollupId]?[point.year] ?? 0,
+                 mentioningDocs: mentioningDocs[person.rollupId]?[point.year],
+                 datedTotal: datedTotals[point.year],
+                 plotted: point.value)
+            }
+            return (rollupId: person.rollupId, name: person.canonicalName, points: points)
+        }
+        let table = AnalyticsChartTables.personTrajectoryTable(
+            title: title, periodColumn: periodGrainLabel, series: series, isNormalized: isNormalized)
+        deliver(table, personProvenance(figureTitle: title,
+                                        periodGrain: periodGrainLabel,
+                                        valueMode: normalization.pickerLabel))
+    }
+
+    /// Exports the two-person relationship series (only meaningful with exactly two people selected).
+    private func exportRelationshipCSV() {
+        guard isTwoPersonComparison else { return }
+        let title = String(localized: "personAnalytics.relationship.heading", defaultValue: "Relationship Dynamics")
+        let table = AnalyticsChartTables.personRelationshipTable(
+            title: title,
+            periodColumn: periodGrainLabel,
+            personA: selectedPeople[0].canonicalName,
+            personB: selectedPeople[1].canonicalName,
+            points: relationshipPoints.map { (period: $0.year, coMentions: $0.coMentions) })
+        deliver(table, personProvenance(figureTitle: title, periodGrain: periodGrainLabel, valueMode: nil))
+    }
+
     /// The relationship-dynamics chart points for the current year range + decade toggle (CA-8).
     private var relationshipPoints: [PersonRelationshipPoint] {
         let base = PersonRelationshipMath.points(timeline: relationshipTimeline, range: yearRange)
@@ -437,6 +549,17 @@ struct PersonAnalyticsView: View {
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 560)
         #endif
+        // D3: anchored on the outermost view (not the inner `Group`, which would apply the
+        // presentation per child — see the Group-modifier gotcha).
+        .sheet(item: $exportShareItem) { item in
+            AnalyticsExportShareSheet(item: item)
+        }
+        .alert(String(localized: "analytics.export.error.title", defaultValue: "Export Failed"),
+               isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { exportError = nil }
+        } message: {
+            Text(exportError ?? "")
+        }
         .task {
             seedDefaultYearRange()
             await loadRanking()
@@ -513,6 +636,9 @@ struct PersonAnalyticsView: View {
         HStack {
             AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty)
             Spacer()
+            // D3: per-section export — this view shows several charts, so a view-level control would
+            // be ambiguous about which one it acts on (owner decision H).
+            AnalyticsSectionExportControl(isEnabled: !ranking.isEmpty, exportCSV: exportRankingCSV)
         }
         .padding(.horizontal)
     }
@@ -543,6 +669,22 @@ struct PersonAnalyticsView: View {
             .help(String(localized: "personAnalytics.normalize.help",
                          defaultValue: "Plot raw mention counts, or each person's share of all dated documents in that period — so a growing corpus doesn't masquerade as a rising person."))
             Spacer()
+            // D3: the trajectory export, plus the relationship series when exactly two people are
+            // compared (that chart is nested in this section and appears only in that case).
+            AnalyticsSectionExportControl(isEnabled: !selectedPeople.isEmpty, exportCSV: exportTrajectoryCSV)
+            if isTwoPersonComparison {
+                Button {
+                    exportRelationshipCSV()
+                } label: {
+                    Label(String(localized: "personAnalytics.export.relationship",
+                                 defaultValue: "Export relationship CSV"),
+                          systemImage: "square.and.arrow.up.on.square")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help(String(localized: "personAnalytics.export.relationship.help",
+                             defaultValue: "Export the two-person co-mention series with its method and caveats"))
+            }
         }
         .padding(.horizontal)
     }

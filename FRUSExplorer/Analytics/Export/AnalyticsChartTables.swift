@@ -107,4 +107,210 @@ enum AnalyticsChartTables {
     static func formatShare(_ share: Double) -> String {
         share.formatted(.number.precision(.fractionLength(0...1)))
     }
+
+    // MARK: - Person Analytics
+
+    /// The most-mentioned-people ranking table.
+    ///
+    /// `axisLabel` is the chart's own y-axis text (`disambiguatedRankingLabels`), so a row whose
+    /// canonical name is shared by two unmerged rollups reads the same here as on the figure — and
+    /// the rollup id is carried so the two are still distinguishable.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - rows: Each ranked person's rollup id, canonical name, chart axis label, and mention count.
+    /// - Returns: The table backing the ranking chart.
+    static func personRankingTable(
+        title: String,
+        rows: [(rollupId: Int, name: String, axisLabel: String, mentions: Int)]
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.rank", defaultValue: "Rank"),
+            String(localized: "analytics.export.column.person", defaultValue: "Person"),
+            String(localized: "analytics.export.column.chartLabel", defaultValue: "Chart label"),
+            String(localized: "analytics.export.column.rollupId", defaultValue: "Person id"),
+            String(localized: "analytics.export.column.mentions", defaultValue: "Mentions in dated documents"),
+        ]
+        let cells = rows.enumerated().map { index, row in
+            ["\(index + 1)", row.name, row.axisLabel, "\(row.rollupId)", "\(row.mentions)"]
+        }
+        return ChartInspectorData(id: "person.ranking", title: title, columns: columns, rowCells: cells)
+    }
+
+    /// The mention-trajectory table — the one that genuinely lets a reader check the figure.
+    ///
+    /// Both numerators the view holds are carried (raw mentions **and** the distinct mentioning
+    /// documents that the share is actually computed from), alongside the dated-document
+    /// denominator, so the plotted share can be recomputed from the file rather than trusted.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - periodColumn: `Year` or `Decade`, matching the by-decade toggle.
+    ///   - series: Each compared person with their per-period values.
+    ///   - isNormalized: Whether the chart plots shares rather than raw mention counts.
+    /// - Returns: The table backing the trajectory chart.
+    static func personTrajectoryTable(
+        title: String,
+        periodColumn: String,
+        series: [(rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)])],
+        isNormalized: Bool
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.person", defaultValue: "Person"),
+            String(localized: "analytics.export.column.rollupId", defaultValue: "Person id"),
+            periodColumn,
+            String(localized: "analytics.export.column.mentions", defaultValue: "Mentions in dated documents"),
+            String(localized: "analytics.export.column.mentioningDocs", defaultValue: "Documents mentioning this person"),
+            String(localized: "analytics.export.column.datedTotal", defaultValue: "Dated documents in period"),
+            String(localized: "analytics.export.column.plotted", defaultValue: "Plotted value"),
+        ]
+        var cells: [[String]] = []
+        for person in series {
+            for point in person.points {
+                cells.append([
+                    person.name,
+                    "\(person.rollupId)",
+                    "\(point.period)",
+                    "\(point.mentions)",
+                    point.mentioningDocs.map(String.init) ?? "",
+                    point.datedTotal.map(String.init) ?? "",
+                    isNormalized ? formatShare(point.plotted * 100) : "\(Int(point.plotted))",
+                ])
+            }
+        }
+        return ChartInspectorData(id: "person.trajectory", title: title, columns: columns, rowCells: cells)
+    }
+
+    /// The two-person relationship table: documents co-mentioning both people, per period.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - periodColumn: `Year` or `Decade`.
+    ///   - personA: The first compared person's name.
+    ///   - personB: The second compared person's name.
+    ///   - points: Each period's co-mention document count.
+    /// - Returns: The table backing the relationship chart.
+    static func personRelationshipTable(
+        title: String,
+        periodColumn: String,
+        personA: String,
+        personB: String,
+        points: [(period: Int, coMentions: Int)]
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.personA", defaultValue: "Person A"),
+            String(localized: "analytics.export.column.personB", defaultValue: "Person B"),
+            periodColumn,
+            String(localized: "analytics.export.column.coMentions", defaultValue: "Documents mentioning both"),
+        ]
+        let cells = points.map { [personA, personB, "\($0.period)", "\($0.coMentions)"] }
+        return ChartInspectorData(id: "person.relationship", title: title, columns: columns, rowCells: cells)
+    }
+
+    // MARK: - Cross-Reference Analytics
+
+    /// The most-referenced-documents ranking table (in-degree).
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - rows: Each ranked document's volume, document id, display label, and inbound count.
+    /// - Returns: The table backing the ranking chart.
+    static func crossRefRankingTable(
+        title: String,
+        rows: [(volumeId: String, documentId: String, label: String, inDegree: Int)]
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.rank", defaultValue: "Rank"),
+            String(localized: "analytics.export.column.document", defaultValue: "Document"),
+            String(localized: "analytics.export.column.volumeId", defaultValue: "Volume id"),
+            String(localized: "analytics.export.column.documentId", defaultValue: "Document id"),
+            String(localized: "analytics.export.column.inDegree", defaultValue: "Inbound references"),
+        ]
+        let cells = rows.enumerated().map { index, row in
+            ["\(index + 1)", row.label, row.volumeId, row.documentId, "\(row.inDegree)"]
+        }
+        return ChartInspectorData(id: "crossref.ranking", title: title, columns: columns, rowCells: cells)
+    }
+
+    /// The citation-degree distribution table.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - rows: Each degree bucket's label, inbound document count, and optional outbound count.
+    /// - Returns: The table backing the histogram.
+    static func crossRefDistributionTable(
+        title: String,
+        rows: [(bucket: String, inDegreeDocuments: Int, outDegreeDocuments: Int?)]
+    ) -> ChartInspectorData {
+        var columns = [
+            String(localized: "analytics.export.column.degreeBucket", defaultValue: "References received"),
+            String(localized: "analytics.export.column.docsInBucket", defaultValue: "Documents (inbound)"),
+        ]
+        let hasOut = rows.contains { $0.outDegreeDocuments != nil }
+        if hasOut {
+            columns.append(String(localized: "analytics.export.column.docsOutBucket", defaultValue: "Documents (outbound)"))
+        }
+        let cells = rows.map { row -> [String] in
+            var cells = [row.bucket, "\(row.inDegreeDocuments)"]
+            if hasOut { cells.append(row.outDegreeDocuments.map(String.init) ?? "") }
+            return cells
+        }
+        return ChartInspectorData(id: "crossref.distribution", title: title, columns: columns, rowCells: cells)
+    }
+
+    /// The volume heat matrix as edge rows — one row per ordered (citing, cited) volume pair.
+    ///
+    /// A long edge list rather than a wide grid: it stays readable as a table, and it is the shape a
+    /// reader would load to reproduce the matrix. The on-screen matrix encodes a cell's value only as
+    /// opacity plus a tooltip, so these counts are otherwise unreadable.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - rows: Each cell's citing/cited volume (id, resolved title) and reference count.
+    ///   - includingZeroes: When `false`, pairs with no references are omitted.
+    /// - Returns: The table backing the heat matrix.
+    static func crossRefMatrixTable(
+        title: String,
+        rows: [(sourceId: String, sourceTitle: String, targetId: String, targetTitle: String, count: Int)],
+        includingZeroes: Bool = false
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.citingVolume", defaultValue: "Citing volume"),
+            String(localized: "analytics.export.column.citingVolumeId", defaultValue: "Citing volume id"),
+            String(localized: "analytics.export.column.citedVolume", defaultValue: "Cited volume"),
+            String(localized: "analytics.export.column.citedVolumeId", defaultValue: "Cited volume id"),
+            String(localized: "analytics.export.column.references", defaultValue: "References"),
+        ]
+        let cells = rows
+            .filter { includingZeroes || $0.count > 0 }
+            .map { [$0.sourceTitle, $0.sourceId, $0.targetTitle, $0.targetId, "\($0.count)"] }
+        return ChartInspectorData(id: "crossref.matrix", title: title, columns: columns, rowCells: cells)
+    }
+
+    /// The PageRank landmark table.
+    ///
+    /// The score is otherwise reachable only through the chart's `accessibilityValue`, so this is the
+    /// only way to read the actual influence numbers.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's title.
+    ///   - rows: Each landmark's volume, document id, display label, and PageRank score.
+    /// - Returns: The table backing the landmark chart.
+    static func crossRefLandmarkTable(
+        title: String,
+        rows: [(volumeId: String, documentId: String, label: String, score: Double)]
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.rank", defaultValue: "Rank"),
+            String(localized: "analytics.export.column.document", defaultValue: "Document"),
+            String(localized: "analytics.export.column.volumeId", defaultValue: "Volume id"),
+            String(localized: "analytics.export.column.documentId", defaultValue: "Document id"),
+            String(localized: "analytics.export.column.pageRank", defaultValue: "PageRank influence score"),
+        ]
+        let cells = rows.enumerated().map { index, row in
+            ["\(index + 1)", row.label, row.volumeId, row.documentId,
+             row.score.formatted(.number.precision(.significantDigits(1...6)))]
+        }
+        return ChartInspectorData(id: "crossref.landmarks", title: title, columns: columns, rowCells: cells)
+    }
 }

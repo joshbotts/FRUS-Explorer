@@ -136,6 +136,39 @@ enum AnalyticsExportDelivery {
     }
 }
 
+// MARK: - AnalyticsSectionExportControl
+
+/// The per-chart export control for the multi-chart analytics views (D3).
+///
+/// Person Analytics and Cross-Reference Analytics each show several charts at once, so a single
+/// view-level export button would be ambiguous about which chart it acts on — the ambiguity #209
+/// already moved controls into their sections to fix. This sits in a section's `controls` strip,
+/// never in the collapsible header (that header is itself a `Button`, so nesting a control inside it
+/// is a hit-test hazard).
+///
+/// Version history:
+///   1.0 — D3 Phase 0b: initial implementation
+struct AnalyticsSectionExportControl: View {
+    /// Whether this chart currently has data to export.
+    var isEnabled: Bool = true
+    /// Writes and delivers this chart's provenance-stamped CSV.
+    let exportCSV: () -> Void
+
+    var body: some View {
+        Button {
+            exportCSV()
+        } label: {
+            Label(String(localized: "analytics.export.section.button", defaultValue: "Export CSV"),
+                  systemImage: "square.and.arrow.up")
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(!isEnabled)
+        .help(String(localized: "analytics.export.section.help",
+                     defaultValue: "Export this chart's data with its method and caveats"))
+    }
+}
+
 // MARK: - AnalyticsExportShareSheet
 
 /// The iOS delivery sheet: names the written file and offers the system share sheet (D3).

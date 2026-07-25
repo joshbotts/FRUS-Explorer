@@ -208,6 +208,17 @@ struct CrossReferenceAnalyticsView: View {
                 }
             }
         }
+        // D3: anchored on the outermost view (not the inner `Group`, which would apply the
+        // presentation per child — see the Group-modifier gotcha).
+        .sheet(item: $exportShareItem) { item in
+            AnalyticsExportShareSheet(item: item)
+        }
+        .alert(String(localized: "analytics.export.error.title", defaultValue: "Export Failed"),
+               isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { exportError = nil }
+        } message: {
+            Text(exportError ?? "")
+        }
         #if os(macOS)
         .frame(minWidth: 720, minHeight: 600)
         #endif
@@ -336,10 +347,21 @@ struct CrossReferenceAnalyticsView: View {
                     content: { distributionSection }
                 )
                 Divider()
+                // D3: these two switch from the EmptyView convenience init to the `controls:`
+                // variant so each can host its own export button (never in the collapsible header,
+                // which is itself a Button).
                 AnalyticsCollapsibleSection(
                     title: String(localized: "crossRefAnalytics.matrix.heading",
                                   defaultValue: "Volume Citation Heat Matrix"),
                     isExpanded: $matrixExpanded,
+                    controls: {
+                        HStack {
+                            Spacer()
+                            AnalyticsSectionExportControl(isEnabled: !matrixCells.isEmpty,
+                                                          exportCSV: exportMatrixCSV)
+                        }
+                        .padding(.horizontal)
+                    },
                     content: { matrixSection }
                 )
                 Divider()
@@ -347,6 +369,14 @@ struct CrossReferenceAnalyticsView: View {
                     title: String(localized: "crossRefAnalytics.landmarks.heading",
                                   defaultValue: "Landmark Documents (Influence)"),
                     isExpanded: $landmarkExpanded,
+                    controls: {
+                        HStack {
+                            Spacer()
+                            AnalyticsSectionExportControl(isEnabled: !landmarks.isEmpty,
+                                                          exportCSV: exportLandmarkCSV)
+                        }
+                        .padding(.horizontal)
+                    },
                     content: { landmarkSection }
                 )
             }
@@ -361,8 +391,127 @@ struct CrossReferenceAnalyticsView: View {
         HStack {
             AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: ranking.isEmpty)
             Spacer()
+            // D3: per-section export — this view shows four artifacts, so a view-level control would
+            // be ambiguous about which one it acts on (owner decision H).
+            AnalyticsSectionExportControl(isEnabled: !ranking.isEmpty, exportCSV: exportRankingCSV)
         }
         .padding(.horizontal)
+    }
+
+    // MARK: - Research-grade export (D3)
+
+    /// The written export awaiting an iOS share sheet; always `nil` on macOS.
+    @State private var exportShareItem: AnalyticsExportFile?
+    /// A human-readable export failure, surfaced in an alert.
+    @State private var exportError: String?
+
+    /// The methods statement for a Cross-Reference Analytics export.
+    ///
+    /// Always discloses the unresolvable-reference exclusion — on screen that caption appears only
+    /// when the count is non-zero, but "none were excluded" is itself a fact a reader needs.
+    ///
+    /// - Parameters:
+    ///   - figureTitle: The chart's title.
+    ///   - axisLabel: What the chart is ranked/grouped by.
+    ///   - extra: Any further chart-specific caveats.
+    /// - Returns: The provenance to stamp on the export.
+    private func crossRefProvenance(figureTitle: String,
+                                    axisLabel: String,
+                                    extra: [String] = []) -> AnalyticsProvenance {
+        let excluded = String(
+            format: String(localized: "crossRefAnalytics.export.caveat.excluded %lld",
+                           defaultValue: "Unresolvable references: %lld cross-reference(s) are excluded from this analysis — references in the printed volumes that point to a document, page, or volume not present in this corpus."),
+            Int64(excludedBrokenCount))
+        let sameVolume = String(
+            localized: "crossRefAnalytics.export.caveat.sameVolume",
+            defaultValue: "Attribution: the document-level figures attribute same-volume references (including resolved page references) to the document's own volume. The volume heat matrix is inherently cross-volume and excludes same-volume citations.")
+        return AnalyticsProvenance(
+            figureTitle: figureTitle,
+            axisLabel: axisLabel,
+            scopeLabel: scopeLabel,
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            yearRange: yearRangeStart...yearRangeEnd,
+            valueMode: nil,
+            extraCaveats: [excluded, sameVolume] + extra
+        )
+    }
+
+    /// Delivers one chart's provenance-stamped CSV.
+    ///
+    /// - Parameters:
+    ///   - table: The chart's data table.
+    ///   - provenance: The methods statement to stamp above it.
+    private func deliver(_ table: ChartInspectorData, _ provenance: AnalyticsProvenance) {
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle) + ".csv"
+        switch AnalyticsExportDelivery.deliver(text: table.provenancedCSV(provenance), filename: filename) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// Exports the most-referenced-documents ranking.
+    private func exportRankingCSV() {
+        let title = String(localized: "crossRefAnalytics.ranking.heading", defaultValue: "Most-Referenced Documents")
+        let table = AnalyticsChartTables.crossRefRankingTable(
+            title: title,
+            rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId,
+                                 label: $0.displayLabel, inDegree: $0.inDegree) })
+        deliver(table, crossRefProvenance(
+            figureTitle: title,
+            axisLabel: String(localized: "crossRefAnalytics.export.axis.inDegree",
+                              defaultValue: "Ranked by inbound references")))
+    }
+
+    /// Exports the citation-degree distribution, including the out-degree overlay when shown.
+    private func exportDistributionCSV() {
+        let title = String(localized: "crossRefAnalytics.distribution.heading", defaultValue: "Citation Degree Distribution")
+        let outByLabel = Dictionary(outDistribution.map { ($0.label, $0.documentCount) },
+                                    uniquingKeysWith: { first, _ in first })
+        let table = AnalyticsChartTables.crossRefDistributionTable(
+            title: title,
+            rows: distribution.map { (bucket: $0.label,
+                                      inDegreeDocuments: $0.documentCount,
+                                      outDegreeDocuments: showOutDegree ? outByLabel[$0.label] : nil) })
+        deliver(table, crossRefProvenance(
+            figureTitle: title,
+            axisLabel: String(localized: "crossRefAnalytics.export.axis.degree",
+                              defaultValue: "Grouped by references received")))
+    }
+
+    /// Exports the volume heat matrix as an edge list — on screen a cell's value is encoded only as
+    /// opacity plus a tooltip, so these counts are otherwise unreadable.
+    private func exportMatrixCSV() {
+        let title = String(localized: "crossRefAnalytics.matrix.heading", defaultValue: "Volume Citation Heat Matrix")
+        let rows = matrixCells.map { cell in
+            (sourceId: cell.sourceVolumeId, sourceTitle: volumeTitle(cell.sourceVolumeId),
+             targetId: cell.targetVolumeId, targetTitle: volumeTitle(cell.targetVolumeId),
+             count: cell.count)
+        }
+        let table = AnalyticsChartTables.crossRefMatrixTable(title: title, rows: rows)
+        deliver(table, crossRefProvenance(
+            figureTitle: title,
+            axisLabel: String(localized: "crossRefAnalytics.export.axis.matrix",
+                              defaultValue: "Cross-volume citation counts"),
+            extra: [String(format: String(localized: "crossRefAnalytics.export.caveat.matrixLimit %lld",
+                                          defaultValue: "Selection: the matrix covers the %lld most-connected volumes by total inbound + outbound references; pairs with no references between them are omitted from this file."),
+                           Int64(Self.matrixVolumeLimit))]))
+    }
+
+    /// Exports the PageRank landmarks — the scores are otherwise reachable only through the chart's
+    /// VoiceOver value.
+    private func exportLandmarkCSV() {
+        let title = String(localized: "crossRefAnalytics.landmarks.heading", defaultValue: "Landmark Documents (Influence)")
+        let table = AnalyticsChartTables.crossRefLandmarkTable(
+            title: title,
+            rows: landmarks.map { (volumeId: $0.volumeId, documentId: $0.documentId,
+                                   label: $0.displayLabel, score: $0.score) })
+        deliver(table, crossRefProvenance(
+            figureTitle: title,
+            axisLabel: String(localized: "crossRefAnalytics.export.axis.pageRank",
+                              defaultValue: "Ranked by PageRank influence score"),
+            extra: [String(localized: "crossRefAnalytics.export.caveat.pageRank",
+                           defaultValue: "Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.")]))
     }
 
     /// Out-degree overlay toggle for the degree distribution — moved out of the shared toolbar
@@ -379,6 +528,7 @@ struct CrossReferenceAnalyticsView: View {
             .help(String(localized: "crossRefAnalytics.outDegree.help",
                          defaultValue: "Overlay the out-degree distribution (how many citations documents make) on the in-degree histogram."))
             Spacer()
+            AnalyticsSectionExportControl(isEnabled: !distribution.isEmpty, exportCSV: exportDistributionCSV)
         }
         .padding(.horizontal)
     }
