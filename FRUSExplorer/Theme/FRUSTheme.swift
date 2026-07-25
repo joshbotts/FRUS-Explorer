@@ -193,7 +193,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
                     detail: String(localized: "analytics.info.dating.body",
-                                   defaultValue: "Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. Documents lacking month or day precision are excluded from the By Month and By Day charts.")),
+                                   defaultValue: "Each document is placed at its TEI <date> attribute — the date of authorship, not the volume's publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. Documents lacking month or day precision are excluded from the By Month and By Day charts.")),
             ]
         )
     }

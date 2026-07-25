@@ -237,6 +237,12 @@ struct AnalyticsView: View {
     /// written back to `UserDefaults` as JSON (see `loadQueries()` / `persistQueries()`).
     @State private var savedQueries: [SavedAnalyticsQuery] = []
     @State private var recentQueries: [SavedAnalyticsQuery] = []
+
+    /// The written export awaiting an iOS share sheet (D3); always `nil` on macOS, where the save
+    /// panel writes straight to the user's chosen destination.
+    @State private var exportShareItem: AnalyticsExportFile?
+    /// A human-readable export failure, surfaced in an alert (the word-cloud exporter swallows these).
+    @State private var exportError: String?
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var viewMode: AnalyticsViewMode = .chart
@@ -588,6 +594,109 @@ struct AnalyticsView: View {
         UserDefaults.standard.set(data, forKey: key)
     }
 
+    // MARK: - Research-grade export (D3)
+
+    /// The methods statement stamped onto this chart's export — what was counted, over which corpus,
+    /// with which value mode, plus the caveats the view shows on screen only conditionally.
+    private var exportProvenance: AnalyticsProvenance {
+        AnalyticsProvenance(
+            figureTitle: exportFigureTitle,
+            terms: committedTerms,
+            axisLabel: chartAxis.pickerLabel,
+            scopeLabel: scopeLabel,
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            // The categorical breakdowns ignore the range entirely — say so rather than implying it applied.
+            yearRange: chartAxis.isCategorical ? nil : yearRangeStart...yearRangeEnd,
+            valueMode: normalizationApplies ? effectiveNormalizationMode.pickerLabel : nil
+        )
+    }
+
+    /// The export's figure title — the quoted term(s) and the active grouping, matching the heading
+    /// shown above the chart.
+    private var exportFigureTitle: String {
+        "\(chartHeadingTerms) — \(chartAxis.pickerLabel)"
+    }
+
+    /// The data table behind the active chart (D3), or `nil` when nothing is committed.
+    ///
+    /// Built for every committed term, so a D1 comparison exports the same shape as a single term.
+    private var exportTable: ChartInspectorData? {
+        guard !committedTerms.isEmpty else { return nil }
+        let dayFormat = Date.FormatStyle(date: .numeric, time: .omitted)
+        let series: [(term: String, points: [CorpusSeriesPoint])] = committedTerms.map { term in
+            let points: [CorpusSeriesPoint]
+            switch chartAxis {
+            case .byYear:
+                points = filteredYearData(for: term).map {
+                    CorpusSeriesPoint(periodLabel: "\($0.year)", denominatorKey: $0.year, count: $0.count)
+                }
+            case .byDecade:
+                points = filteredDecadeData(for: term).map {
+                    CorpusSeriesPoint(periodLabel: "\($0.decadeStart)s", denominatorKey: $0.decadeStart, count: $0.count)
+                }
+            case .byMonth:
+                points = filteredMonthData(for: term).map {
+                    CorpusSeriesPoint(periodLabel: $0.label, denominatorKey: nil, count: $0.count)
+                }
+            case .byDay:
+                points = filteredDayData(for: term).map {
+                    CorpusSeriesPoint(periodLabel: $0.date.formatted(dayFormat), denominatorKey: nil, count: $0.count)
+                }
+            case .bySubseries:
+                points = (subseriesDataByTerm[term] ?? []).map {
+                    CorpusSeriesPoint(periodLabel: $0.subseries, denominatorKey: nil, count: $0.count)
+                }
+            case .byVolume:
+                points = (volumeDataByTerm[term] ?? []).map {
+                    CorpusSeriesPoint(periodLabel: volumeTitle($0.volumeId), denominatorKey: nil, count: $0.count)
+                }
+            }
+            return (term: term, points: points)
+        }
+        let totals: [Int: Int]
+        switch chartAxis {
+        case .byYear:   totals = documentTotalsByYear
+        case .byDecade: totals = documentTotalsByDecade
+        default:        totals = [:]
+        }
+        return AnalyticsChartTables.corpusSeriesTable(
+            id: "corpus.\(chartAxis.rawValue)",
+            title: exportFigureTitle,
+            periodColumn: exportPeriodColumn,
+            seriesByTerm: series,
+            totals: totals,
+            isNormalized: isNormalized
+        )
+    }
+
+    /// The period column's header for the active axis.
+    private var exportPeriodColumn: String {
+        switch chartAxis {
+        case .byYear:      return String(localized: "analytics.axis.year", defaultValue: "Year")
+        case .byDecade:    return String(localized: "analytics.axis.decade", defaultValue: "Decade")
+        case .byMonth:     return String(localized: "analytics.axis.month", defaultValue: "Month")
+        case .byDay:       return String(localized: "analytics.axis.date", defaultValue: "Date")
+        case .bySubseries: return String(localized: "analytics.axis.subseries", defaultValue: "Subseries")
+        case .byVolume:    return String(localized: "analytics.axis.volume", defaultValue: "Volume")
+        }
+    }
+
+    /// `true` when there is committed data to export.
+    private var canExport: Bool {
+        !committedTerms.isEmpty && !isAllResultDataEmpty
+    }
+
+    /// Writes the active chart's provenance-stamped CSV, then shares (iOS) or saves (macOS).
+    private func exportCSV() {
+        guard let table = exportTable else { return }
+        let filename = AnalyticsExportDelivery.filenameStem(title: exportFigureTitle) + ".csv"
+        switch AnalyticsExportDelivery.deliver(text: table.provenancedCSV(exportProvenance), filename: filename) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
     /// `true` on a compact-width layout (iPhone portrait, and most iPhones in
     /// landscape) — used to tighten the year-range bar where horizontal space is scarce.
     /// Always `false` on macOS / regular-width iPad.
@@ -656,6 +765,17 @@ struct AnalyticsView: View {
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
         #endif
+        // D3: anchored on the outermost view (not the inner `Group`, which would apply the
+        // presentation per child — see the Group-modifier gotcha).
+        .sheet(item: $exportShareItem) { item in
+            AnalyticsExportShareSheet(item: item)
+        }
+        .alert(String(localized: "analytics.export.error.title", defaultValue: "Export Failed"),
+               isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) { exportError = nil }
+        } message: {
+            Text(exportError ?? "")
+        }
         // Seed the default year-range end from the corpus span, then apply any
         // constructor parameter (iOS sheet presentation — a fresh `AnalyticsView`
         // instance is created each time the sheet opens).
@@ -2155,7 +2275,9 @@ struct AnalyticsView: View {
             // menu would have content — after Wave B moved axis granularity to the filter row's
             // "Group by" chip, a categorical axis leaves normalization + fit-line/colors all
             // inapplicable, so an un-gated button would open an empty menu (R3).
-            if normalizationApplies || (chartAxis.isDateBased && viewMode == .chart) {
+            // D3 adds Export to this menu, so the gate gains `canExport` — still "shown only when the
+            // menu would have content" (never unconditionally), which is what R3 fixed.
+            if normalizationApplies || (chartAxis.isDateBased && viewMode == .chart) || canExport {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         compactChartOptionsMenu
@@ -2249,6 +2371,23 @@ struct AnalyticsView: View {
             }
         }
 
+        // D3: research-grade export. Corpus shows one chart at a time, so the control is view-level
+        // (owner decision H). At regular width it is its own toolbar menu; on compact width it folds
+        // into the existing Options menu instead of adding a nav-bar item (#219, D1 Phase 3).
+        if horizontalSizeClass != .compact {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    exportMenuItems
+                } label: {
+                    Label(String(localized: "analytics.export.menu", defaultValue: "Export"),
+                          systemImage: "square.and.arrow.up")
+                }
+                .disabled(!canExport)
+                .help(String(localized: "analytics.export.menu.help",
+                             defaultValue: "Export this chart's data with its method and caveats"))
+            }
+        }
+
         // Info button — explains metric semantics, query syntax, and stemming. Win 7: now the
         // shared FeatureInfoButton (copy preserved verbatim via `analytics.info.*` keys), matching
         // Person and Cross-Reference Analytics.
@@ -2264,6 +2403,19 @@ struct AnalyticsView: View {
             }
         }
         #endif
+    }
+
+    /// The export actions (D3), shared by the regular-width toolbar menu and the compact Options
+    /// menu. Phase 0 ships the data table; the figure formats join here in the figure phase.
+    @ViewBuilder
+    private var exportMenuItems: some View {
+        Button {
+            exportCSV()
+        } label: {
+            Label(String(localized: "analytics.export.csv", defaultValue: "Chart data (CSV)…"),
+                  systemImage: "tablecells")
+        }
+        .disabled(!canExport)
     }
 
     /// The star that saves / un-saves the current query (D1 Phase 3). Filled once the current
@@ -2325,6 +2477,12 @@ struct AnalyticsView: View {
     /// menu concise (#188-A).
     @ViewBuilder
     private var compactChartOptionsMenu: some View {
+        // D3: export leads the menu on compact width, where it has no nav-bar item of its own.
+        if canExport {
+            Section(String(localized: "analytics.export.section", defaultValue: "Export")) {
+                exportMenuItems
+            }
+        }
         // Axis granularity moved to the filter row's "Group by" chip (Wave B).
         if normalizationApplies {
             Picker(selection: normalizationBinding) {
