@@ -79,6 +79,10 @@ struct SettingsView: View {
     @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
     /// Device-local master toggle for optional cross-device settings sync.
     @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
+
+    /// Settings-search text (S-1). Matches panes through `SettingsPane.matches(_:)`, which reads
+    /// the shared model's keywords — so "stop words" finds Word Cloud and "api key" finds NARA.
+    @State private var paneQuery = ""
     @Environment(AppState.self) private var appState
 
     var body: some View {
@@ -117,117 +121,37 @@ struct SettingsView: View {
                                 defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
                 }
 
-                Section(String(localized: "settings.section.general",
-                               defaultValue: "General")) {
-                    NavigationLink(String(localized: "settings.row.display",
-                                         defaultValue: "Display")) {
-                        DisplaySettingsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.searchDefaults",
-                                         defaultValue: "Search")) {
-                        SearchDefaultsView()
-                    }
-                }
-
-                Section(String(localized: "settings.section.volumes",
-                               defaultValue: "Volumes")) {
-                    NavigationLink(String(localized: "settings.row.downloads",
-                                         defaultValue: "Downloads")) {
-                        DownloadsSettingsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.storage",
-                                         defaultValue: "Storage & Index")) {
-                        StorageManagementView()
-                    }
-                    NavigationLink(String(localized: "settings.row.sideload",
-                                         defaultValue: "Sideload Volume")) {
-                        SideloadView()
-                    }
-                }
-
-                Section(String(localized: "settings.section.research",
-                               defaultValue: "Research")) {
-                    NavigationLink(String(localized: "settings.row.scopes",
-                                         defaultValue: "Volume Scopes")) {
-                        CustomScopesView()
-                    }
-                    NavigationLink(String(localized: "settings.row.tags",
-                                         defaultValue: "Tags")) {
-                        UserTagsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.projects",
-                                         defaultValue: "Projects")) {
-                        ProjectsSettingsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.summarization",
-                                         defaultValue: "Summarization")) {
-                        SummarizationPromptsSettingsView()
-                    }
-                    NavigationLink(String(localized: "settings.row.wordCloud",
-                                         defaultValue: "Word Cloud")) {
-                        WordCloudSettingsView()
-                    }
-                    Toggle(
-                        String(localized: "settings.row.logSessions",
-                               defaultValue: "Log Research Sessions"),
-                        isOn: $loggingEnabled
-                    )
-                }
-
-                Section(String(localized: "settings.section.integrations",
-                               defaultValue: "Integrations")) {
-                    NavigationLink(String(localized: "settings.row.naraKey",
-                                         defaultValue: "NARA API")) {
-                        NARAKeyView()
-                    }
-                    NavigationLink(String(localized: "settings.row.zotero",
-                                         defaultValue: "Zotero")) {
-                        ZoteroIntegrationView()
-                    }
-                }
-
-                Section(String(localized: "settings.section.data",
-                               defaultValue: "Data")) {
-                    NavigationLink(String(localized: "settings.row.exportData",
-                                         defaultValue: "Export Research Data…")) {
-                        ResearchDataExportView()
-                    }
-                    NavigationLink(String(localized: "settings.row.syncDiagnostics",
-                                         defaultValue: "Sync Diagnostics")) {
-                        SyncDiagnosticsView()
+                // Rows come from the shared `SettingsPane` model (S-1) in the four task-first
+                // groups, so this root and the macOS sidebar cannot disagree about a pane's name,
+                // icon, or placement. `paneQuery` filters them through the model's keywords.
+                ForEach(SettingsPane.groupedPanes(on: .iOS), id: \.group) { entry in
+                    let visible = entry.panes.filter { $0.matches(paneQuery) }
+                    if !visible.isEmpty {
+                        Section(entry.group.label) {
+                            ForEach(visible) { pane in
+                                settingsRow(for: pane)
+                            }
+                        }
                     }
                 }
 
                 #if os(iOS) && DEBUG
-                Section("Diagnostics") {
-                    NavigationLink("Summarization Probe") {
-                        SummarizationProbeView()
-                    }
-                }
-                #endif
-
-                Section {
-                    NavigationLink(String(localized: "settings.row.reset",
-                                         defaultValue: "Reset App")) {
-                        ResetView()
-                    }
-                    .foregroundStyle(.red)
-                }
-
-                #if os(iOS)
-                Section {
-                    Button(String(localized: "settings.row.researchGuide",
-                                  defaultValue: "FRUS Research Guide")) {
-                        appState.showResearchGuide = true
-                    }
-                    NavigationLink(String(localized: "settings.row.about",
-                                         defaultValue: "About FRUS Explorer")) {
-                        AboutView()
+                if paneQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Section("Diagnostics") {
+                        NavigationLink("Summarization Probe") {
+                            SummarizationProbeView()
+                        }
                     }
                 }
                 #endif
             }
             .navigationTitle(String(localized: "settings.title", defaultValue: "Settings"))
+            #if os(iOS)
+            .searchable(text: $paneQuery,
+                        placement: .navigationBarDrawer(displayMode: .automatic),
+                        prompt: Text(String(localized: "settings.search.prompt",
+                                            defaultValue: "Search Settings")))
+            #endif
             // HIG: top-level destination screens use .large title to match system weight.
             // Child panes (VolumeManagementView, StorageManagementView, etc.) keep .inline.
             #if os(iOS)
@@ -258,6 +182,63 @@ struct SettingsView: View {
         // NavigationLink destinations inherit a proper sized container and render correctly.
         .frame(minWidth: 500, minHeight: 440)
         #endif
+    }
+
+    // MARK: - Pane Rows
+
+    /// The row for one shared-model pane, with its destination.
+    ///
+    /// The label and icon come from `SettingsPane` so they cannot drift from the macOS sidebar;
+    /// only the destination view is platform-local. A pane whose `platforms` excludes iOS never
+    /// reaches here, so the `EmptyView` arms are unreachable by construction.
+    @ViewBuilder
+    private func settingsRow(for pane: SettingsPane) -> some View {
+        switch pane {
+        case .storage:
+            NavigationLink { StorageManagementView() } label: { paneLabel(pane) }
+        case .downloads:
+            NavigationLink { DownloadsSettingsView() } label: { paneLabel(pane) }
+        case .sideload:
+            NavigationLink { SideloadView() } label: { paneLabel(pane) }
+        case .projects:
+            NavigationLink { ProjectsSettingsView() } label: { paneLabel(pane) }
+        case .tags:
+            NavigationLink { UserTagsView() } label: { paneLabel(pane) }
+        case .scopes:
+            NavigationLink { CustomScopesView() } label: { paneLabel(pane) }
+        case .summarization:
+            NavigationLink { SummarizationPromptsSettingsView() } label: { paneLabel(pane) }
+        case .wordCloud:
+            NavigationLink { WordCloudSettingsView() } label: { paneLabel(pane) }
+        case .display:
+            NavigationLink { DisplaySettingsView() } label: { paneLabel(pane) }
+        case .search:
+            NavigationLink { SearchDefaultsView() } label: { paneLabel(pane) }
+        case .syncDiagnostics:
+            NavigationLink { SyncDiagnosticsView() } label: { paneLabel(pane) }
+        case .naraAPI:
+            NavigationLink { NARAKeyView() } label: { paneLabel(pane) }
+        case .zotero:
+            NavigationLink { ZoteroIntegrationView() } label: { paneLabel(pane) }
+        case .data:
+            NavigationLink { ResearchDataExportView() } label: { paneLabel(pane) }
+        case .researchGuide:
+            Button { appState.showResearchGuide = true } label: { paneLabel(pane) }
+                .buttonStyle(.plain)
+        case .about:
+            NavigationLink { AboutView() } label: { paneLabel(pane) }
+        case .reset:
+            NavigationLink { ResetView() } label: { paneLabel(pane) }
+                .foregroundStyle(.red)
+        // macOS-only panes (see `SettingsPane.platforms`) — never listed on iOS.
+        case .notes, .sync:
+            EmptyView()
+        }
+    }
+
+    /// One row label, icon and title straight from the shared model.
+    private func paneLabel(_ pane: SettingsPane) -> some View {
+        Label(pane.label, systemImage: pane.icon)
     }
 
     // MARK: - iCloud Sync Status Row
