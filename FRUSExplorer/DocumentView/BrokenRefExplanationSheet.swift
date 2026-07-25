@@ -70,7 +70,7 @@ struct BrokenRefExplanationSheet: View {
                 }
 
                 Section {
-                    Text(String(localized: "Flagged by FRUS Explorer's corpus-wide cross-reference validation. These errors are reported to the Office of the Historian to support corrections."))
+                    Text(String(localized: "Flagged by FRUS Explorer's corpus-wide cross-reference validation."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
