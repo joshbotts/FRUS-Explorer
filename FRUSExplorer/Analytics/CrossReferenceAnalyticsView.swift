@@ -393,7 +393,9 @@ struct CrossReferenceAnalyticsView: View {
             Spacer()
             // D3: per-section export — this view shows four artifacts, so a view-level control would
             // be ambiguous about which one it acts on (owner decision H).
-            AnalyticsSectionExportControl(isEnabled: !ranking.isEmpty, exportCSV: exportRankingCSV)
+            AnalyticsSectionExportControl(isEnabled: !ranking.isEmpty,
+                                          exportCSV: exportRankingCSV,
+                                          exportFigure: exportRankingFigure)
         }
         .padding(.horizontal)
     }
@@ -463,6 +465,58 @@ struct CrossReferenceAnalyticsView: View {
                               defaultValue: "Ranked by inbound references")))
     }
 
+    /// Renders one Cross-Reference chart as a publication figure and shares (iOS) or saves (macOS).
+    ///
+    /// - Parameters:
+    ///   - format: PNG or PDF.
+    ///   - provenance: The methods statement printed on the plate.
+    ///   - chartHeight: The plate's chart area height.
+    ///   - chart: The chart, built from data already resolved on this side of the render boundary.
+    private func deliverFigure<Content: View>(_ format: AnalyticsFigureFormat,
+                                              provenance: AnalyticsProvenance,
+                                              chartHeight: CGFloat,
+                                              @ViewBuilder chart: @escaping () -> Content) {
+        let canvas = AnalyticsFigureCanvas(provenance: provenance, chartHeight: chartHeight, content: chart)
+        guard let data = AnalyticsFigureExporter.render(canvas, format: format) else {
+            exportError = String(localized: "analytics.export.error.render",
+                                 defaultValue: "The figure could not be rendered.")
+            return
+        }
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle)
+            + "." + format.pathExtension
+        switch AnalyticsExportDelivery.deliver(data: data, filename: filename, contentType: format.contentType) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// Exports the most-referenced ranking as a figure.
+    private func exportRankingFigure(_ format: AnalyticsFigureFormat) {
+        let title = String(localized: "crossRefAnalytics.ranking.heading", defaultValue: "Most-Referenced Documents")
+        deliverFigure(format,
+                      provenance: crossRefProvenance(
+                        figureTitle: title,
+                        axisLabel: String(localized: "crossRefAnalytics.export.axis.inDegree",
+                                          defaultValue: "Ranked by inbound references")),
+                      chartHeight: max(240, CGFloat(ranking.count) * 26 + 40)) {
+            rankingChart
+        }
+    }
+
+    /// Exports the citation-degree distribution as a figure.
+    private func exportDistributionFigure(_ format: AnalyticsFigureFormat) {
+        let title = String(localized: "crossRefAnalytics.distribution.heading", defaultValue: "Citation Degree Distribution")
+        deliverFigure(format,
+                      provenance: crossRefProvenance(
+                        figureTitle: title,
+                        axisLabel: String(localized: "crossRefAnalytics.export.axis.degree",
+                                          defaultValue: "Grouped by references received")),
+                      chartHeight: 380) {
+            distributionChart
+        }
+    }
+
     /// Exports the citation-degree distribution, including the out-degree overlay when shown.
     private func exportDistributionCSV() {
         let title = String(localized: "crossRefAnalytics.distribution.heading", defaultValue: "Citation Degree Distribution")
@@ -528,7 +582,9 @@ struct CrossReferenceAnalyticsView: View {
             .help(String(localized: "crossRefAnalytics.outDegree.help",
                          defaultValue: "Overlay the out-degree distribution (how many citations documents make) on the in-degree histogram."))
             Spacer()
-            AnalyticsSectionExportControl(isEnabled: !distribution.isEmpty, exportCSV: exportDistributionCSV)
+            AnalyticsSectionExportControl(isEnabled: !distribution.isEmpty,
+                                          exportCSV: exportDistributionCSV,
+                                          exportFigure: exportDistributionFigure)
         }
         .padding(.horizontal)
     }

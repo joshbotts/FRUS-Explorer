@@ -485,6 +485,55 @@ struct PersonAnalyticsView: View {
                                         valueMode: normalization.pickerLabel))
     }
 
+    /// Renders one Person chart as a publication figure and shares (iOS) or saves (macOS).
+    ///
+    /// - Parameters:
+    ///   - format: PNG or PDF.
+    ///   - provenance: The methods statement printed on the plate.
+    ///   - chartHeight: The plate's chart area height.
+    ///   - chart: The chart, built from data already resolved on this side of the render boundary.
+    private func deliverFigure<Content: View>(_ format: AnalyticsFigureFormat,
+                                              provenance: AnalyticsProvenance,
+                                              chartHeight: CGFloat,
+                                              @ViewBuilder chart: @escaping () -> Content) {
+        let canvas = AnalyticsFigureCanvas(provenance: provenance, chartHeight: chartHeight, content: chart)
+        guard let data = AnalyticsFigureExporter.render(canvas, format: format) else {
+            exportError = String(localized: "analytics.export.error.render",
+                                 defaultValue: "The figure could not be rendered.")
+            return
+        }
+        let filename = AnalyticsExportDelivery.filenameStem(title: provenance.figureTitle)
+            + "." + format.pathExtension
+        switch AnalyticsExportDelivery.deliver(data: data, filename: filename, contentType: format.contentType) {
+        case .share(let item): exportShareItem = item
+        case .saved, .cancelled: break
+        case .failed(let reason): exportError = reason
+        }
+    }
+
+    /// Exports the ranking as a figure — without the transient selection styling (see
+    /// `rankingChartBody(showsSelection:)`).
+    private func exportRankingFigure(_ format: AnalyticsFigureFormat) {
+        let title = String(localized: "personAnalytics.ranking.heading", defaultValue: "Most-Mentioned People")
+        deliverFigure(format,
+                      provenance: personProvenance(figureTitle: title, periodGrain: nil, valueMode: nil),
+                      chartHeight: max(240, CGFloat(ranking.count) * 26 + 40)) {
+            rankingChartBody(showsSelection: false)
+        }
+    }
+
+    /// Exports the mention-trajectory comparison as a figure.
+    private func exportTrajectoryFigure(_ format: AnalyticsFigureFormat) {
+        let title = String(localized: "personAnalytics.comparison.heading", defaultValue: "Mention Trajectories")
+        deliverFigure(format,
+                      provenance: personProvenance(figureTitle: title,
+                                                   periodGrain: periodGrainLabel,
+                                                   valueMode: normalization.pickerLabel),
+                      chartHeight: 420) {
+            trajectoryChart
+        }
+    }
+
     /// Exports the two-person relationship series (only meaningful with exactly two people selected).
     private func exportRelationshipCSV() {
         guard isTwoPersonComparison else { return }
@@ -638,7 +687,9 @@ struct PersonAnalyticsView: View {
             Spacer()
             // D3: per-section export — this view shows several charts, so a view-level control would
             // be ambiguous about which one it acts on (owner decision H).
-            AnalyticsSectionExportControl(isEnabled: !ranking.isEmpty, exportCSV: exportRankingCSV)
+            AnalyticsSectionExportControl(isEnabled: !ranking.isEmpty,
+                                          exportCSV: exportRankingCSV,
+                                          exportFigure: exportRankingFigure)
         }
         .padding(.horizontal)
     }
@@ -671,7 +722,9 @@ struct PersonAnalyticsView: View {
             Spacer()
             // D3: the trajectory export, plus the relationship series when exactly two people are
             // compared (that chart is nested in this section and appears only in that case).
-            AnalyticsSectionExportControl(isEnabled: !selectedPeople.isEmpty, exportCSV: exportTrajectoryCSV)
+            AnalyticsSectionExportControl(isEnabled: !selectedPeople.isEmpty,
+                                          exportCSV: exportTrajectoryCSV,
+                                          exportFigure: exportTrajectoryFigure)
             if isTwoPersonComparison {
                 Button {
                     exportRelationshipCSV()
@@ -735,12 +788,42 @@ struct PersonAnalyticsView: View {
     }
 
     private var rankingChart: some View {
+        rankingChartBody(showsSelection: true)
+            // Interaction belongs to the on-screen chart only; the exported figure omits it.
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard let plotAnchor = proxy.plotFrame else { return }
+                            let plotRect = geo[plotAnchor]
+                            let relativeY = location.y - plotRect.origin.y
+                            guard let id = proxy.value(atY: relativeY, as: String.self),
+                                  let row = ranking.first(where: { String($0.rollupId) == id }) else { return }
+                            toggleSelection(row)
+                        }
+                }
+            }
+            .frame(height: CGFloat(ranking.count) * 30 + 40)
+            .padding(.horizontal)
+    }
+
+    /// The most-mentioned ranking chart, shared by the screen and the D3 figure export.
+    ///
+    /// - Parameter showsSelection: `true` on screen, where bars dim and carry a checkmark to mirror
+    ///   the comparison set. The exported figure passes `false`: selection is transient UI, and a
+    ///   published figure showing half its bars dimmed for a reason it never states would be
+    ///   misleading.
+    private func rankingChartBody(showsSelection: Bool) -> some View {
         // Key each bar on the rollup's UNIQUE id (as a string), never the canonical name: two
         // distinct rollups can share a canonical name (homonymous or not-yet-merged people), and
         // Swift Charts SUMS a `BarMark`'s x-values whenever rows share a categorical y — which would
         // silently merge distinct people into one oversized bar (#275 follow-up, mirroring the
         // cross-reference ranking fix). Ids are unique → one bar per person; an explicit domain
         // preserves the mention-descending order, and a lookup renders the (disambiguated) name.
+        // This keying is kept verbatim in the export — re-keying on names for a published figure
+        // would reintroduce the merged-bar bug into the artifact of record.
         let rowKey: (PersonMentionRanking) -> String = { String($0.rollupId) }
         let axisLabels = disambiguatedRankingLabels(
             ranking.map { (id: rowKey($0), name: $0.canonicalName, shortSuffix: String($0.rollupId)) }
@@ -755,13 +838,15 @@ struct PersonAnalyticsView: View {
             // The chart now matches the table's selection state (design Win 4): full accent when
             // nothing is selected (the default view stays crisp) or this row IS selected; dimmed only
             // when a DIFFERENT row is selected, so the comparison set stands out.
-            .foregroundStyle((selectedPeople.isEmpty || isSelected(row))
+            .foregroundStyle((!showsSelection || selectedPeople.isEmpty || isSelected(row))
                              ? Color.accentColor : Color.accentColor.opacity(0.5))
             .annotation(position: .trailing) {
                 HStack(spacing: 5) {
-                    Image(systemName: isSelected(row) ? "checkmark.circle.fill" : "circle")
-                        .font(.caption2)
-                        .foregroundStyle(isSelected(row) ? Color.accentColor : Color.secondary)
+                    if showsSelection {
+                        Image(systemName: isSelected(row) ? "checkmark.circle.fill" : "circle")
+                            .font(.caption2)
+                            .foregroundStyle(isSelected(row) ? Color.accentColor : Color.secondary)
+                    }
                     Text(row.mentionCount, format: .number)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -783,26 +868,6 @@ struct PersonAnalyticsView: View {
                 }
             }
         }
-        // Make the bars tappable (design Win 4): a tap maps to the row under it via its rollup-id
-        // y-value and toggles the SAME comparison selection the table rows use — pure parity, no new
-        // data. The whole plot width is the target, so the tap area is far larger than the bar height.
-        .chartOverlay { proxy in
-            GeometryReader { geo in
-                Rectangle()
-                    .fill(Color.clear)
-                    .contentShape(Rectangle())
-                    .onTapGesture { location in
-                        guard let plotAnchor = proxy.plotFrame else { return }
-                        let plotRect = geo[plotAnchor]
-                        let relativeY = location.y - plotRect.origin.y
-                        guard let id = proxy.value(atY: relativeY, as: String.self),
-                              let row = ranking.first(where: { rowKey($0) == id }) else { return }
-                        toggleSelection(row)
-                    }
-            }
-        }
-        .frame(height: CGFloat(ranking.count) * 30 + 40)
-        .padding(.horizontal)
     }
 
     private var rankingTable: some View {
