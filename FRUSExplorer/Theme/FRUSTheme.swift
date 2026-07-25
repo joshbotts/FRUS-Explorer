@@ -100,6 +100,10 @@ struct FeatureInfoItem: Identifiable {
 ///         hand-rolled popover, copy preserved verbatim), `personAnalytics`, and
 ///         `crossReferenceAnalytics` factories so all three analytics views share one
 ///         info affordance.
+///   1.2 — Owner content revision (build 35): `personAnalytics` notes that the ranking
+///         covers editor-tagged people and that pre-WWII volumes carry no person
+///         tagging; `crossReferenceAnalytics` notes that scoping to a subseries or an
+///         administration carries a more consistent signal than a corpus-wide scope.
 struct FeatureInfoButton: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -207,7 +211,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "personAnalytics.info.shows.detail",
-                                   defaultValue: "Trends ranks the most-mentioned people in an era and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents.")),
+                                   defaultValue: "Trends ranks the most-mentioned people who were tagged by FRUS editors in an era and charts how often a person is mentioned across FRUS documents over time. Network maps who is co-mentioned with whom — people named together in the same documents. Volumes covering the period before World War II do not include editorial tagging of people, so they are out of scope for these tools.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.counting.title", defaultValue: "How people are counted"),
                     detail: String(localized: "personAnalytics.info.counting.detail",
@@ -229,7 +233,7 @@ struct FeatureInfoButton: View {
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you're seeing"),
                     detail: String(localized: "crossRefAnalytics.info.shows.detail",
-                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents; the heat matrix shows citation flow between whole volumes; landmarks are the documents a citation-following reader keeps returning to.")),
+                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents; the heat matrix shows citation flow between whole volumes; landmarks are the documents a citation-following reader keeps returning to. Remember that FRUS editorial practices around cross-referencing have evolved over time. Subseries or administration-level scoping will carry a more consistent signal than broader scopes that reflect more diverse editorial practices.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.matrix.title", defaultValue: "Reading the heat matrix"),
                     detail: String(localized: "crossRefAnalytics.info.matrix.detail",

@@ -245,7 +245,7 @@ final class OnboardingViewModel {
 
         While the content of the series has shifted over time, recent FRUS volumes cover U.S. bilateral and regional relations across the globe; U.S. policymakers' responses to unfolding crises; engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. It is an essential resource for scholars, policymakers, and citizens seeking to understand the origins of contemporary challenges and the United States's role in the world.
 
-        FRUS Explorer provides full-text search, document browsing, AI-assisted summarization, NARA Catalog integration, and a variety of other research and citation tools to researchers using all or part of the FRUS series corpus, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
+        FRUS Explorer provides a variety of research tools for using the series, which is freely available at [history.state.gov](https://history.state.gov/historicaldocuments/about-frus) and the [HistoryAtState](https://github.com/HistoryAtState/frus) GitHub repository.
         """
 
     // MARK: - Private Helpers

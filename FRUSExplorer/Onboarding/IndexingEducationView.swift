@@ -102,6 +102,13 @@ import SwiftUI
 ///          and Cross-Reference Analytics, method travels in the CSV); Word Cloud
 ///          copy names the Options menu and the CSV's ranked terms, shares, and
 ///          hidden-word disclosure
+///   1.17 — Owner content revision (build 35): new "Your Data Stays Private" section on
+///          page 7; page 4 intro frames the strategies as print-and-online practice the
+///          app builds on; subject data and the shared-topics signal described as
+///          experimental; broken-refs export and the per-chart analytics Export mention
+///          dropped; subseries-scope comparability note added to cross-reference
+///          analytics; HMS/MLR entry reframed as the value you will need; page 7
+///          subtitle Americanized ("organizing")
 struct IndexingEducationView: View {
 
     /// Distinguishes the two contexts in which these pages can appear, since
@@ -755,7 +762,7 @@ private extension EducationPage {
                 heading: "When a Cross-Reference Leads Nowhere",
                 paragraphs: [
                     "The printed volumes cite each other constantly — \"see page 700,\" \"see Document 42.\" Because pre-digital volumes were retyped from the printed books and their cross-references retroactively tagged, a small number cite a page, document, or volume that does not exist in the digital corpus. The app ships a corpus-wide validation of every cross-reference (about 2.7 million checked), so it knows exactly which ones cannot be followed.",
-                    "A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many). From Settings you can export the full Broken Cross-References Report — the same dataset is reported to the Office of the Historian to support corrections to the digital editions."
+                    "A confirmed-unresolvable reference appears in muted grey with a dotted underline and a small dagger instead of looking like a working link; tapping it explains why it can't be followed and what it apparently meant to point at. These references are also excluded from the cross-reference graph and analytics (the analytics caption discloses how many)."
                 ]
             ),
             EducationSection(
@@ -788,7 +795,7 @@ private extension EducationPage {
             EducationSection(
                 id: "intro",
                 paragraphs: [
-                    "FRUS rewards researchers who read across documents, not just within them, and who squeeze valuable information about both historical and archival context from the editorial annotation added to documents. Here are strategies that experienced historians use."
+                    "FRUS rewards researchers who read across documents, not just within them, and who squeeze valuable information about both historical and archival context from the editorial annotation added to documents. Here are strategies that experienced historians have used with printed and online volumes (later pages will address how this app builds on these tried-and-true methods)."
                 ]
             ),
             EducationSection(
@@ -881,7 +888,7 @@ private extension EducationPage {
                 heading: "Top Subjects on Volumes",
                 systemImage: "tag",
                 paragraphs: [
-                    "Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from the Office of the Historian's subject data and grouped by category.",
+                    "Every volume shows a Top Subjects section — the subjects most characteristic of that volume, drawn from experimental subject data and grouped by category.",
                     "Tap a subject to see the other FRUS volumes covering it across the entire series — including volumes you haven't downloaded — and jump straight to one. It works before downloading, so it doubles as a way to decide which volumes are worth adding to your library.",
                     "These are automatically detected topics, not editorial subject headings, so treat them as experimental — a few may be mistagged. The same topics also work as filters: Filter by detected topic… in the search filters, and the By Detected Topic scope menus in Analytics, the Word Cloud, and the About the Series dashboards, all narrow to the volumes where a topic is most characteristic. The same chips also appear on each volume's page, in its Top Subjects section."
                 ]
@@ -921,7 +928,7 @@ private extension EducationPage {
                 systemImage: "doc.on.doc",
                 paragraphs: [
                     "From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, the same volume or subseries, and shared people. Small icon chips on each result show why it matched.",
-                    "A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until detected-topic document data ships.",
+                    "A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until experimental detected-topic document data is ready to include in the app.",
                     "Find it in the Research rail's Related tile. On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results."
                 ]
             ),
@@ -945,7 +952,7 @@ private extension EducationPage {
                     "A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The \u{201C}% of documents\u{201D} toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count \u{2014} the percentage of that period\u{2019}s documents that contain it \u{2014} so a term doesn\u{2019}t look like it is surging simply because the series published more in later decades.",
                     "On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into \u{201C}Other.\u{201D}",
                     "The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.",
-                    "An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only, and Person Analytics and Cross-Reference Analytics put an Export button on each of their charts. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.",
+                    "An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.",
                     "Analytics runs entirely on your local index; no network connection is required.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
                 ]
@@ -987,7 +994,7 @@ private extension EducationPage {
                 systemImage: "point.3.connected.trianglepath.dotted",
                 paragraphs: [
                     "Where the graph traces one document\u{2019}s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network\u{2019}s shape \u{2014} a few heavily-cited landmarks and a long tail \u{2014} a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of \u{201C}landmark\u{201D} documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.",
-                    "These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record.",
+                    "These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.",
                     "Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.",
                     "An Administration menu sets the document-year range to a president\u{2019}s term in one tap; the same presets appear in Corpus Analytics.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac)."
@@ -1001,7 +1008,7 @@ private extension EducationPage {
                     "Open the Source Explorer from any document to read its source note broken into structured archival fields detected during indexing, and to follow citations into NARA's finding aids — the correct period-specific research page, relevant record groups, and related collections.",
                     "You can also select any text — a lot file number, a decimal file identifier, a collection name — and run a NARA Catalog Lookup directly: lot-file search, keyword search within a record group, or central-files period routing. Period routing needs no key; the other strategies rely on a free NARA Catalog API key you can request from the National Archives and then add in Settings.",
                     "From those same source notes, Archival Neighbors gathers other indexed documents drawn from the same detected archival source — the same lot file, central decimal file, record-group series, or presidential-library collection — so pieces of one file scattered across volumes come back together. Reach it from the Source Explorer, a document\u{2019}s row in a volume\u{2019}s sources list, a search result, or a node in the cross-reference graph; on the Mac each archival source opens its own Archival Neighbors window, so several can sit side by side. An empty list is an honest answer: no document in your indexed volumes cites that source — indexing more volumes may surface some.",
-                    "More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app\u{2019}s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, worth quoting alongside the lot number when you request the original records."
+                    "More recent volumes contain a front matter section on sources that provides an annotated list of archival collections its editors drew on. If a volume has a Sources section, it has been enriched so that each collection that resolves — a record group or a lot file — links straight to its record in the National Archives Catalog, each recognized entry shows how many of your indexed documents cite it (a count, or an honest zero), and a collection the app\u{2019}s cross-volume authority tracks opens its full Collection view — aliases, catalog record, and every citing volume — so you can follow a body of records across the series. Resolved collections also show the archival file series name and the HMS/MLR entry number — the identifier NARA staff use to locate a series, and the value you will need when you request the original records."
                 ]
             ),
             EducationSection(
@@ -1020,7 +1027,7 @@ private extension EducationPage {
     static let page7 = EducationPage(
         id: "working-with-documents",
         title: "Working With Documents",
-        subtitle: "Reading, annotating, organising, and exporting",
+        subtitle: "Reading, annotating, organizing, and exporting",
         category: .usingTheApp,
         sections: [
             EducationSection(
@@ -1082,6 +1089,14 @@ private extension EducationPage {
                 systemImage: "icloud",
                 paragraphs: [
                     "Your notes, highlights, tags, collections, and projects sync automatically through iCloud, so your research follows you between iPhone, iPad, and Mac. Downloaded volumes and the search index are stored per-device and are not synced."
+                ]
+            ),
+            EducationSection(
+                id: "privacy",
+                heading: "Your Data Stays Private",
+                systemImage: "lock.shield",
+                paragraphs: [
+                    "The application does not share any usage or research data with anyone. Users can export and share anonymized diagnostics data with the developer for troubleshooting if and when they choose. Users can also export all their research data."
                 ]
             ),
         ]

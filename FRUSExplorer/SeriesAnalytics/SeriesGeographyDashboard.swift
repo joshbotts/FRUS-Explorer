@@ -140,7 +140,7 @@ struct SeriesGeographyDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.geography.intro",
-                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most."))
+                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which resolve approximately to the State Department's six regional bureaus. These charts trace how the series' geographic emphasis shifted over time — from an early concentration on Europe and the Western Hemisphere toward the postwar diversification into Asia, the Near East, and Africa — and which regions and countries the corpus covers most."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -326,7 +326,7 @@ struct SeriesGeographyDashboard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(String(localized: "series.geography.caveats.body",
-                        defaultValue: "Place tags are volume-level editorial tags: a volume \"touches\" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions follow the State Department's six current regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear."))
+                        defaultValue: "Place tags are volume-level editorial tags: a volume \"touches\" a region if it carries a place tag mapped to that region — this is not a document count, and a volume commonly spans several regions. The stacked view uses per-volume fractional attribution, so a volume covering three regions contributes a third to each and every decade sums to 100%; the overall bars, by contrast, count a multi-region volume once in each region. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into \"Other.\" 551 of the 552 catalogued volumes carry at least one place tag. These figures reflect the volumes the app currently catalogs — the newest volumes may not yet appear."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
