@@ -153,14 +153,37 @@ struct AnalyticsSectionExportControl: View {
     var isEnabled: Bool = true
     /// Writes and delivers this chart's provenance-stamped CSV.
     let exportCSV: () -> Void
+    /// Renders and delivers this chart as a figure, or `nil` for a data-only chart (a table, or a
+    /// visual this wave does not rasterize).
+    var exportFigure: ((AnalyticsFigureFormat) -> Void)?
 
     var body: some View {
-        Button {
-            exportCSV()
+        Menu {
+            Button {
+                exportCSV()
+            } label: {
+                Label(String(localized: "analytics.export.csv", defaultValue: "Chart data (CSV)…"),
+                      systemImage: "tablecells")
+            }
+            if let exportFigure {
+                Button {
+                    exportFigure(.png)
+                } label: {
+                    Label(String(localized: "analytics.export.png", defaultValue: "Figure (PNG)…"),
+                          systemImage: "photo")
+                }
+                Button {
+                    exportFigure(.pdf)
+                } label: {
+                    Label(String(localized: "analytics.export.pdf", defaultValue: "Figure (PDF)…"),
+                          systemImage: "doc.richtext")
+                }
+            }
         } label: {
-            Label(String(localized: "analytics.export.section.button", defaultValue: "Export CSV"),
+            Label(String(localized: "analytics.export.section.button", defaultValue: "Export"),
                   systemImage: "square.and.arrow.up")
         }
+        .menuStyle(.button)
         .buttonStyle(.bordered)
         .controlSize(.small)
         .disabled(!isEnabled)
