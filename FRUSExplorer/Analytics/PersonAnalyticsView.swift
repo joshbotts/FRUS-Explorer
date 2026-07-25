@@ -113,10 +113,6 @@ enum PersonAnalyticsMath {
         return points.sorted { $0.rollupId != $1.rollupId ? $0.rollupId < $1.rollupId : $0.year < $1.year }
     }
 
-    /// Buckets year-keyed points into decades (year floored to the nearest ten), summing
-    /// raw values and averaging shares. Used by the decade toggle. `isShare` selects the
-    /// aggregation: raw counts sum, document shares are averaged across the decade's years
-    /// (a share can't be summed without exceeding 100%).
     /// The source years a plotted trajectory period aggregates.
     ///
     /// In **By Decade** mode `bucketByDecade` keys a point by the decade's start, while the raw
@@ -139,6 +135,17 @@ enum PersonAnalyticsMath {
         return Array(lower...upper)
     }
 
+    /// Buckets year-keyed points into decades (year floored to the nearest ten), summing
+    /// raw values and averaging shares. Used by the decade toggle. `isShare` selects the
+    /// aggregation: raw counts sum, document shares are averaged across the decade's years
+    /// (a share can't be summed without exceeding 100%).
+    ///
+    /// One property of the share path is load-bearing for anything that describes this number:
+    /// the divisor is the count of points that **reached** the bucket, and `sharePoints` emits a
+    /// point only for years the person was actually mentioned in (the underlying query groups by
+    /// year and returns no row for a zero-mention year). So a decade's share is the mean over the
+    /// years with mentions, not over the decade's ten years — a person mentioned in one year of a
+    /// decade plots that year's share for the whole decade.
     static func bucketByDecade(_ points: [PersonTrajectoryPoint], isShare: Bool) -> [PersonTrajectoryPoint] {
         struct Key: Hashable { let rollupId: Int; let decade: Int }
         var sums: [Key: Double] = [:]
@@ -451,14 +458,17 @@ struct PersonAnalyticsView: View {
 
     /// The caveat a decade-grained **share** trajectory needs, and only that combination.
     ///
-    /// A decade's plotted share is the mean of that decade's yearly shares, not the decade's
-    /// documents divided by the decade's dated documents. Those differ whenever the yearly
-    /// denominators differ — which is most of the corpus — so a reader dividing the file's own
-    /// summed columns will not land back on the plotted number, and has to be told why.
+    /// A decade's plotted share is the mean of the yearly shares **for the years this person was
+    /// mentioned in**. A year with no mentions produces no point at all (the store's query groups
+    /// by year and emits no zero row), so it is dropped from the average rather than entered as a
+    /// zero — while the file's `Dated documents in period` column sums every year of the decade.
+    /// The gap is not a rounding difference: someone mentioned in one year of a decade plots that
+    /// single year's share for the whole decade, which against even denominators is ten times the
+    /// decade's own share. A reader dividing this file's columns must be told exactly that.
     private var decadeShareCaveat: [String] {
         guard byDecade, isNormalized else { return [] }
         return [String(localized: "personAnalytics.export.caveat.decadeShare",
-                       defaultValue: "Decade shares: a decade's plotted share is the MEAN of that decade's yearly shares, not the decade's mentioning documents divided by its dated documents. The two differ when the yearly denominators differ, so dividing this file's summed columns will not reproduce the plotted value exactly; the summed columns describe the decade, the plotted value averages its years.")]
+                       defaultValue: "Decade shares: a decade's plotted share is the MEAN of the yearly shares for the years in which this person was mentioned. Years with no mentions are omitted from that average rather than counted as zero, while the \"Dated documents in period\" column sums every year of the decade. Dividing this file's columns therefore gives the decade's own share, which can be far LOWER than the plotted value — a person mentioned in only one year of a decade plots that year's share for the whole decade. Use the columns for the decade's share and the plotted value for the mentioned years' average; they answer different questions.")]
     }
 
     /// The period grain label for the trajectory/relationship charts.

@@ -29,13 +29,21 @@ enum WordCloudExporter {
     /// Fixed export canvas size (4:3, comfortable for slides and print).
     private static let canvas = CGSize(width: 1200, height: 900)
 
+    /// The most words the export layout will place. The cloud can hold many more ranked terms than
+    /// this — the CSV carries all of them — so anything the plate says about "terms shown" has to be
+    /// counted from the placements, not from the caller's list.
+    static let maxDrawnWords = 140
+
     /// Renders the cloud to PNG or PDF bytes.
     ///
     /// - Parameters:
     ///   - terms: The ranked terms.
     ///   - title: Scope title, drawn in the caption band.
-    ///   - provenanceLine: The identifying facts drawn under the title (scope, document count, app
-    ///     version, export date), or `nil` to leave the band as title-only.
+    ///   - provenanceLine: Builds the identifying facts drawn under the title, given **the number of
+    ///     words actually placed on the plate**. It takes that count rather than a finished string
+    ///     because the layout draws at most `maxDrawnWords` and can drop more that do not fit, so a
+    ///     caption built from the caller's term count would overstate what the reader can see. Pass
+    ///     `nil` to leave the band title-only.
     ///   - format: PNG or PDF.
     ///   - palette: The colour palette to draw words with.
     ///   - sentimentColors: When `true`, words are coloured by sentiment polarity
@@ -49,7 +57,7 @@ enum WordCloudExporter {
     static func imageData(
         terms: [TermCount],
         title: String,
-        provenanceLine: String? = nil,
+        provenanceLine: ((Int) -> String)? = nil,
         format: AnalyticsFigureFormat,
         palette: [Color],
         sentimentColors: Bool = false,
@@ -66,13 +74,13 @@ enum WordCloudExporter {
             ? terms.map { TermCount(term: WordCloudLexicons.markedTerm($0.term), count: $0.count) }
             : terms
         let placements = WordCloudLayout.place(
-            terms: layoutTerms, in: layoutSize, maxWords: 140, minFontSize: 16, maxFontSize: 96,
+            terms: layoutTerms, in: layoutSize, maxWords: maxDrawnWords, minFontSize: 16, maxFontSize: 96,
             spacingScale: WordCloudSettings.density.spacingScale, widthFactor: design.widthFactor
         )
         let content = WordCloudImageContent(
             placements: placements, title: title, size: canvas,
             captionBand: captionBand, palette: palette, sentimentColors: sentimentColors,
-            fontDesign: design.swiftUIDesign, provenanceLine: provenanceLine
+            fontDesign: design.swiftUIDesign, provenanceLine: provenanceLine?(placements.count)
         )
 
         let renderer = ImageRenderer(content: content)

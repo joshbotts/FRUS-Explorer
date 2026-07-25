@@ -281,6 +281,48 @@ struct PersonTrajectoryExportPeriodTests {
         #expect(total == 450)
         #expect(total != datedTotals[1960])
     }
+
+    /// Pins the behaviour the decade-share caveat describes, because a first attempt at that caveat
+    /// asserted the opposite and would have shipped a false methods statement.
+    ///
+    /// A decade's plotted share averages ONLY the years that produced a point. `sharePoints` emits
+    /// nothing for a year the person was not mentioned in (the store groups by year and returns no
+    /// zero rows), so those years never reach the divisor.
+    @Test("A decade's share averages only the mentioned years, not the decade's years")
+    func decadeShareAveragesMentionedYearsOnly() {
+        // 100 dated documents in every year of the 1960s; the person appears in 50 documents in
+        // 1961 and in no other year — so exactly one point exists for the decade.
+        let totals = Dictionary(uniqueKeysWithValues: (1960...1969).map { ($0, 100) })
+        let points = PersonAnalyticsMath.sharePoints(
+            mentioningDocs: [7: [1961: 50]], totals: totals, names: [7: "A"], range: 1861...1992)
+        #expect(points.count == 1)
+
+        let decade = PersonAnalyticsMath.bucketByDecade(points, isShare: true)
+        #expect(decade.count == 1)
+        // The mean over the ONE mentioned year — 50% — not the decade's own 50/1000 = 5%.
+        #expect(abs(decade[0].value - 0.5) < 0.0001)
+
+        // What a reader recomputing from the exported columns would get instead.
+        let years = PersonAnalyticsMath.sourceYears(forPeriod: 1960, byDecade: true, range: 1861...1992)
+        let docs = years.compactMap { [1961: 50][$0] }.reduce(0, +)
+        let dated = years.compactMap { totals[$0] }.reduce(0, +)
+        #expect(dated == 1000)
+        #expect(abs(Double(docs) / Double(dated) - 0.05) < 0.0001)
+        // The two differ by 10x with IDENTICAL yearly denominators — which is why the caveat cannot
+        // blame the gap on uneven denominators.
+        #expect(decade[0].value > Double(docs) / Double(dated) * 9)
+    }
+
+    /// The raw path has no such asymmetry: a decade's raw value is a plain sum, so the exported
+    /// column and the plotted value agree exactly.
+    @Test("A decade's raw value equals the sum of its mapped years")
+    func decadeRawIsExact() {
+        let points = PersonAnalyticsMath.rawPoints(
+            trajectories: [7: [1961: 12, 1965: 7, 1969: 31]], names: [7: "A"], range: 1861...1992)
+        let decade = PersonAnalyticsMath.bucketByDecade(points, isShare: false)
+        #expect(decade.count == 1)
+        #expect(decade[0].value == 50)
+    }
 }
 
 // MARK: - AnalyticsWordCloudExportTests

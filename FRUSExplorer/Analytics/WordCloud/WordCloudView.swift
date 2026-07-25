@@ -327,18 +327,31 @@ struct WordCloudView: View {
     /// scope resolves to and never reads a date, so the shared dating rule and the year-range line
     /// would both describe work this export did not do.
     ///
-    /// The caveats disclose what the picture cannot: which stop lists ran, the tuning floors that
-    /// silently removed terms, and — the one that most affects a reader's trust — how many words the
-    /// user hid by hand before exporting.
+    /// The caveats disclose what the picture cannot: **every** filter that removed a word before it
+    /// could be counted, and — the ones that most affect a reader's trust — the user's own hand
+    /// hides and personal stop lists.
+    ///
+    /// Getting this list complete matters more than usual, because a word never counted is also
+    /// absent from `totalTokenCount`, which is the share column's denominator. A caveat that names
+    /// only some of the filters therefore mis-describes the numbers themselves, not just the
+    /// selection.
     private var cloudProvenance: AnalyticsProvenance {
         let tuning = WordCloudSettings.tuning
+        let globalStops = WordCloudSettings.globalStopwords.count
+        let lensStops = WordCloudSettings.lensStopwords(lens).count
         var caveats: [String] = [
-            String(format: String(localized: "wordcloud.export.caveat.population %lld %lld",
-                                  defaultValue: "Population: counts cover the %lld document(s) this scope resolved to and %lld counted word(s) after stopword removal — the share column's denominator."),
-                   Int64(result.documentCount), Int64(result.totalTokenCount)),
-            String(format: String(localized: "wordcloud.export.caveat.stopwords %@",
-                                  defaultValue: "Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@."),
+            // The denominator is LENS-SCOPED: under every lens but "All terms" the tokenizer only
+            // counts words that pass the lens gate, so this total — and every share computed from
+            // it — describes that lens's vocabulary, not the scope's whole text.
+            String(format: String(localized: "wordcloud.export.caveat.population %lld %lld %@",
+                                  defaultValue: "Population: counts cover the %lld document(s) this scope resolved to. The share column's denominator is %lld — every word counted under the \"%@\" lens after all of the filters below. It is not the scope's total word count, and shares from two different lenses are not comparable."),
+                   Int64(result.documentCount), Int64(result.totalTokenCount), lens.label),
+            String(format: String(localized: "wordcloud.export.caveat.stopwords %@ %@",
+                                  defaultValue: "Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@."),
                    excludeBoilerplate
+                   ? String(localized: "wordcloud.export.caveat.stopwords.excluded", defaultValue: "also removed")
+                   : String(localized: "wordcloud.export.caveat.stopwords.kept", defaultValue: "kept"),
+                   tuning.filterMarkings
                    ? String(localized: "wordcloud.export.caveat.stopwords.excluded", defaultValue: "also removed")
                    : String(localized: "wordcloud.export.caveat.stopwords.kept", defaultValue: "kept")),
             String(format: String(localized: "wordcloud.export.caveat.tuning %lld %lld %@",
@@ -348,13 +361,22 @@ struct WordCloudView: View {
                    ? String(localized: "common.on", defaultValue: "on")
                    : String(localized: "common.off", defaultValue: "off")),
         ]
-        // The hides are the most consequential omission in the file, because they are the user's own
-        // editorial judgement rather than a rule — a reader cannot infer them from anything else.
-        let hidden = hiddenWords.union(sessionHiddenWords).count
-        if hidden > 0 {
+        // Two distinct kinds of user curation, and they act at different points, so they are stated
+        // separately rather than added together:
+        //  - the SESSION hide removes a word from an already-counted result, so it leaves the
+        //    denominator alone;
+        //  - a personal stop list removes the word BEFORE counting, so it also shrinks the
+        //    denominator. Nothing else in the file reveals either one.
+        let handHidden = hiddenWords.union(sessionHiddenWords).count
+        if handHidden > 0 {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.hidden %lld",
-                                                 defaultValue: "Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from this export."),
-                                  Int64(hidden)))
+                                                 defaultValue: "Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above."),
+                                  Int64(handHidden)))
+        }
+        if globalStops + lensStops > 0 {
+            caveats.append(String(format: String(localized: "wordcloud.export.caveat.stopLists %lld %lld %@",
+                                                 defaultValue: "Your stop lists: %lld word(s) on your global hidden-word list and %lld on your list for the \"%@\" lens were removed before counting, so they appear neither in this table nor in its denominator. Both lists are editable in Settings → Word Cloud."),
+                                  Int64(globalStops), Int64(lensStops), lens.label))
         }
         if lens != .allTerms {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.lens %@",
@@ -393,12 +415,18 @@ struct WordCloudView: View {
     /// Deliberately **not** the shared `captionLines`, whose second line leads with the scope — on a
     /// cloud the scope is already the heading directly above, so repeating it wasted the line and
     /// pushed the export date off the end. These are the facts the picture itself cannot carry.
-    private var cloudFigureCaption: String {
+    ///
+    /// - Parameter drawnTerms: How many words the layout actually placed. The cloud can rank many
+    ///   more than the plate draws, so this is counted from the placements — a caption built from
+    ///   `visibleTerms.count` would claim words the reader cannot find.
+    /// - Returns: The caption line.
+    private func cloudFigureCaption(drawnTerms: Int) -> String {
         [
             String(format: String(localized: "wordcloud.export.caption.documents %lld",
                                   defaultValue: "%lld documents"), Int64(result.documentCount)),
-            String(format: String(localized: "wordcloud.export.caption.terms %lld",
-                                  defaultValue: "%lld terms shown"), Int64(visibleTerms.count)),
+            String(format: String(localized: "wordcloud.export.caption.terms %lld %lld",
+                                  defaultValue: "%lld of %lld terms drawn"),
+                   Int64(drawnTerms), Int64(visibleTerms.count)),
             AnalyticsProvenance.appCredit,
             cloudProvenance.formattedDate,
         ].joined(separator: " · ")
@@ -408,7 +436,7 @@ struct WordCloudView: View {
     private func exportImage(_ format: AnalyticsFigureFormat) {
         guard let data = WordCloudExporter.imageData(
             terms: visibleTerms, title: title,
-            provenanceLine: cloudFigureCaption,
+            provenanceLine: { cloudFigureCaption(drawnTerms: $0) },
             format: format, palette: Self.palette,
             sentimentColors: lens.colorsBySentiment, sentimentMarks: useSentimentMarks
         ) else {
@@ -729,7 +757,10 @@ struct WordCloudView: View {
                               systemImage: "doc.richtext")
                     }
                 }
-                .disabled(visibleTerms.isEmpty)
+                // Gated on isLoading too: during a recompute `result` still holds the PREVIOUS
+                // criteria's terms and totals, while the provenance reads settings live — so an
+                // export taken mid-reload would stamp the new method onto the old numbers.
+                .disabled(visibleTerms.isEmpty || isLoading)
             } label: {
                 Label(String(localized: "wordcloud.menu", defaultValue: "Options"),
                       systemImage: "ellipsis.circle")
