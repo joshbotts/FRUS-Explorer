@@ -176,6 +176,7 @@
 		43271775F9297C6E750B28AD /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
 		44C38CF030971E130CB5C460 /* CollectionExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE13446F4368DB7721139BAE /* CollectionExportSheet.swift */; };
+		45AB710B07E4CE0F24DA7125 /* SettingsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8E5ACAE8EEC2B4C468C4D0 /* SettingsComponents.swift */; };
 		45FEBB7068690AC9F2D2CD31 /* FTS5Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80CF02342D779587705CA46F /* FTS5Store.swift */; };
 		470A4D77BF9307954B799E63 /* CollectionBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC39A86BEFED37BD150EA49F /* CollectionBrowserView.swift */; };
 		471940CFDDA2CA79596D0804 /* TEIRenderingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E7A25731DCFB6324657030 /* TEIRenderingConfig.swift */; };
@@ -385,6 +386,7 @@
 		937D55D24ABA92EF6609B8F2 /* WordCloudLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C62C528984EEA78DAF451E0 /* WordCloudLoader.swift */; };
 		93852FE2ABF03497440BB753 /* ProjectContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5427B5FF858A83768CB8A9F5 /* ProjectContextViewModel.swift */; };
 		93E8A1DFF9FE23F2B8304AA0 /* SourceProvenanceDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B3C989DE269DD1B5D99106 /* SourceProvenanceDashboard.swift */; };
+		946AA967DCEFE8A5B2525C0E /* SettingsComponentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1833B983A1F48A74A952442 /* SettingsComponentsTests.swift */; };
 		949DEFCEC1F6C0C25CBBD918 /* CustomScopesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2F9B965F27786F60BE298A /* CustomScopesView.swift */; };
 		94A856DF4268B8DE6596AEBB /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
 		9508E24FC4CA4A4009814881 /* OrphanedTagRepairTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8097E38779F64B29F7357C /* OrphanedTagRepairTests.swift */; };
@@ -506,6 +508,7 @@
 		BA1B3B4761551F64C8AF2B7B /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
 		BB3F91CEDDCDDC56D60B83E7 /* GeneratedSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */; };
 		BB7A80AC717AF28B15F04FAD /* BoundedTitleHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15B9610D9D49B92AB83023B2 /* BoundedTitleHeader.swift */; };
+		BBA2D76429D11023A11B36AA /* SettingsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8E5ACAE8EEC2B4C468C4D0 /* SettingsComponents.swift */; };
 		BCAD69DDEB470FDFE43EE409 /* PersonClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B5A5A124402AD0E8D4273E /* PersonClusterer.swift */; };
 		BD55B08ED972679C51571A58 /* WordCloudLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C62C528984EEA78DAF451E0 /* WordCloudLoader.swift */; };
 		BDBDB09BF4E2D5BE9036F398 /* HTMLCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1252D064E6BC3892ADE9BFBB /* HTMLCollectionExporter.swift */; };
@@ -886,6 +889,7 @@
 		5CC526B60C0D44514FDFC572 /* MacDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDocumentView.swift; sourceTree = "<group>"; };
 		5CCD4B79D4110F10E75A4E67 /* WordCloudModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudModels.swift; sourceTree = "<group>"; };
 		5E89F898CB2C6D4B3CCC410B /* ProjectEngagedDocumentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectEngagedDocumentsTests.swift; sourceTree = "<group>"; };
+		5E8E5ACAE8EEC2B4C468C4D0 /* SettingsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsComponents.swift; sourceTree = "<group>"; };
 		5ED9D81D04E002137249C19F /* IndexingStateTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingStateTracker.swift; sourceTree = "<group>"; };
 		5F862248B58178F5619CFDC6 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		6000E386B1EB64D795D8F282 /* IntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
@@ -1071,6 +1075,7 @@
 		D07C56177C2677EF390399D4 /* TEIParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TEIParserTests.swift; sourceTree = "<group>"; };
 		D07CD656E735173912D320E3 /* ResearchRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchRailView.swift; sourceTree = "<group>"; };
 		D0FB234387A3255640B79119 /* WordCloudDiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudDiskCache.swift; sourceTree = "<group>"; };
+		D1833B983A1F48A74A952442 /* SettingsComponentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsComponentsTests.swift; sourceTree = "<group>"; };
 		D1D169294121369DEF9DF3BB /* FRUSURLSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSURLSchemeHandler.swift; sourceTree = "<group>"; };
 		D22C46AA5003388AA9EC7A12 /* CitationMatchingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngine.swift; sourceTree = "<group>"; };
 		D2914FB296F951A74A8E2CE5 /* PromptEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptEditorView.swift; sourceTree = "<group>"; };
@@ -1381,6 +1386,7 @@
 				87C1CE86F4937BA9A1EAF837 /* FRUSSettingsView.swift */,
 				63BEBE77ECB0D5CB1DC46A17 /* IndexHealthView.swift */,
 				71424C2AA6C6C985A477647A /* ResetService.swift */,
+				5E8E5ACAE8EEC2B4C468C4D0 /* SettingsComponents.swift */,
 				C1C6F73D2CAF756132684C47 /* SettingsPaneModel.swift */,
 				A9A90A825EA2E648BD14AE48 /* SettingsSyncCoordinator.swift */,
 				3F3C065FBA889092972C1DBB /* SettingsView.swift */,
@@ -1499,6 +1505,7 @@
 				8F077149B3B7BF3606EA860D /* SeriesAxisRangeTests.swift */,
 				0DED2CFC2F10796AFA2F566D /* SeriesGeographyDataTests.swift */,
 				44B8F0DF7B2B2ABDF8953008 /* SeriesProductionDataTests.swift */,
+				D1833B983A1F48A74A952442 /* SettingsComponentsTests.swift */,
 				C3A8477AB4239575B61ACC61 /* SettingsPaneModelTests.swift */,
 				32440919C109648E8B09B0A4 /* SettingsSyncTests.swift */,
 				EF2FEA0287FE0753D0A87291 /* SettingsTests.swift */,
@@ -2315,6 +2322,7 @@
 				6424E30464B6040138BD6FE5 /* SeriesProductionData.swift in Sources */,
 				B3A294BE531652392CEEECD4 /* SeriesScopeBar.swift in Sources */,
 				67FD209B468290636592662C /* SessionLogView.swift in Sources */,
+				BBA2D76429D11023A11B36AA /* SettingsComponents.swift in Sources */,
 				5796E8C7F0E7CA9B72E08C18 /* SettingsPaneModel.swift in Sources */,
 				ECEC974318BC2D0655189761 /* SettingsSyncCoordinator.swift in Sources */,
 				99D0EF41B0EDD9F3D23D4D38 /* SettingsView.swift in Sources */,
@@ -2601,6 +2609,7 @@
 				7E0109CCA4010776ADC31F25 /* SeriesProductionData.swift in Sources */,
 				4F769B88B79255443A4F4744 /* SeriesScopeBar.swift in Sources */,
 				5BFC3C6762D54C63B9A529CC /* SessionLogView.swift in Sources */,
+				45AB710B07E4CE0F24DA7125 /* SettingsComponents.swift in Sources */,
 				56C7E19E8DE696F84A622960 /* SettingsPaneModel.swift in Sources */,
 				3D566F83817E3867DF018348 /* SettingsSyncCoordinator.swift in Sources */,
 				20FD93E148FBC9D2BA2F1C25 /* SettingsView.swift in Sources */,
@@ -2753,6 +2762,7 @@
 				7743954065C0E4CC0F39FAD3 /* SeriesAxisRangeTests.swift in Sources */,
 				C52CF58BDC380FDF7F87099B /* SeriesGeographyDataTests.swift in Sources */,
 				8ADE6F2938400C4AF779D6DF /* SeriesProductionDataTests.swift in Sources */,
+				946AA967DCEFE8A5B2525C0E /* SettingsComponentsTests.swift in Sources */,
 				AD3013180AA3377F3B999CB4 /* SettingsPaneModelTests.swift in Sources */,
 				BF3CD663B7A4DE5D6531BA22 /* SettingsSyncTests.swift in Sources */,
 				824B7511DCDA79B9F9653C55 /* SettingsTests.swift in Sources */,

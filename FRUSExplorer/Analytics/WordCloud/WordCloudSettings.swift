@@ -44,6 +44,10 @@ enum WordCloudSettings {
         static let density = "frus.wordcloud.density"
         /// Monotonic revision bumped whenever a stop list changes.
         static let revision = "frus.wordcloud.settingsRevision"
+        /// Background precompute of heavy clouds. Declared here (S-2a) because the literal was
+        /// previously written out in both the Settings toggle and `WordCloudPrecomputeQueue`,
+        /// where a one-sided edit would have silently decoupled the switch from the queue.
+        static let backgroundPrecompute = "frus.wordcloud.backgroundPrecompute"
     }
 
     /// Default minimum token length.
