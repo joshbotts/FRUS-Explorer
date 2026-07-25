@@ -38,6 +38,9 @@ import SwiftData
 ///   1.3 — #258 Phase 5: scope rows gain a "Word Cloud" context-menu launch
 ///          (`pendingWordCloud` hand-off, the SavedSearchesView row idiom; disabled
 ///          while no member volume is indexed)
+///   1.5 — S-3b: the "New Scope…" row ends the list on both platforms, replacing the navigation-bar
+///          "+" — which, with the old `ContentUnavailableView` filling the whole List, was the only
+///          way into an empty Scopes screen
 ///   1.4 — #366: the coverage facet accepts an editor name with no year range
 ///          (editor-only matching, ignoring coverage dates); a half-entered range gets a
 ///          targeted prompt; `save()` no longer swallows a throwing `modelContext.save()`
@@ -58,16 +61,13 @@ struct CustomScopesView: View {
 
     var body: some View {
         List {
-            if scopes.isEmpty {
-                ContentUnavailableView(
-                    String(localized: "settings.scopes.empty.title",
-                           defaultValue: "No Volume Scopes"),
-                    systemImage: "square.stack.3d.up",
-                    description: Text(String(localized: "settings.scopes.empty.detail",
-                                             defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))
-                )
-            } else {
-                Section {
+            Section {
+                if scopes.isEmpty {
+                    Text(String(localized: "settings.scopes.empty.detail",
+                                defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
                     ForEach(scopes) { scope in
                         Button {
                             editorIsDraft = false
@@ -84,25 +84,24 @@ struct CustomScopesView: View {
                         for index in offsets { modelContext.delete(scopes[index]) }
                         try? modelContext.save()
                     }
-                } footer: {
-                    Text(String(localized: "settings.scopes.footer",
-                                defaultValue: "Scopes sync to your other devices via iCloud. Deleting a scope does not affect searches already run with it."))
                 }
+
+                // S-3b: every list ends with its New row. The old "+" lived in the navigation bar,
+                // where a reader who had never gone looking for it never found it — and with the
+                // empty state occupying the whole List, an empty Scopes screen offered no way in
+                // at all except that "+".
+                SettingsNewItemRow(label: String(localized: "settings.scopes.new",
+                                                 defaultValue: "New Scope…")) {
+                    editorIsDraft = true
+                    editorTarget = CustomVolumeScope(name: "")
+                }
+            } footer: {
+                Text(String(localized: "settings.scopes.footer",
+                            defaultValue: "Scopes sync to your other devices via iCloud. Deleting a scope does not affect searches already run with it."))
             }
         }
         .navigationTitle(String(localized: "settings.scopes.title",
                                 defaultValue: "Volume Scopes"))
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    editorIsDraft = true
-                    editorTarget = CustomVolumeScope(name: "")
-                } label: {
-                    Label(String(localized: "settings.scopes.add", defaultValue: "New Scope"),
-                          systemImage: "plus")
-                }
-            }
-        }
         .sheet(item: $editorTarget) { target in
             CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
                 .environment(appState)

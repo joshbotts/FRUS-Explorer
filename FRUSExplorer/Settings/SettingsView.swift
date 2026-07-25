@@ -508,15 +508,29 @@ final class RootElementSnifferDelegate: NSObject, XMLParserDelegate {
 
 // MARK: - UserTagsView
 
+/// iOS Settings → Research → Tags — the list, in the shared row grammar (S-3b).
+///
+/// Every row states what the tag is attached to and opens `TagEditorView`, where rename, merge and
+/// delete are visible rows with footers that say what each costs. The swipes survive as shortcuts
+/// for people who already know them, but nothing is *only* reachable by gesture any more — the old
+/// footer that had to teach them ("Tap or swipe right to rename. Swipe left to delete.") is gone,
+/// and so is the tap-to-rename mode that made a plain tap destructive-adjacent.
+///
+/// Version history:
+///   1.0 — Session 24: initial implementation
+///   1.1 — S-3a: rows carry their attachment tally; merge moved to `UserTagAdmin`
+///   1.2 — S-3b: row → editor; "New Tag…" ends the list; the empty state says where tags come from
 private struct UserTagsView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \UserTag.name) private var tags: [UserTag]
 
-    @State private var renamingTag: UserTag? = nil
-    @State private var renameText = ""
+    /// The tag open in the editor sheet.
+    @State private var editingTag: UserTag? = nil
+    /// The tag whose merge picker the host is presenting.
     @State private var mergingTag: UserTag? = nil
-    @State private var mergeTargetId: UUID? = nil
+    /// A freshly created tag, opened straight into the editor so it can be named.
+    @State private var pendingNewTag: UserTag? = nil
     /// How much is attached to each tag, fetched once per appearance rather than per row.
     @State private var counts: ResearchItemCounts = .empty
 
@@ -524,110 +538,79 @@ private struct UserTagsView: View {
         Form {
             Section {
                 if tags.isEmpty {
-                    Text(String(localized: "settings.tags.empty",
-                                defaultValue: "No user tags created yet."))
+                    Text(String(localized: "settings.tags.empty.where",
+                                defaultValue: "No tags yet. Tags are the labels you apply to research notes and documents as you read — create one here, or from any note."))
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
                     ForEach(tags) { tag in
-                        let isRenaming = renamingTag?.id == tag.id
-                        HStack {
-                            if isRenaming {
-                                TextField(
-                                    String(localized: "settings.tags.rename.placeholder",
-                                           defaultValue: "Tag name"),
-                                    text: $renameText
-                                )
-                                .onSubmit { commitRename() }
-                                .accessibilityLabel(
-                                    String(localized: "settings.tags.rename.a11y",
-                                           defaultValue: "Rename tag \(tag.name)")
-                                )
-                            } else {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(tag.name)
-                                    Text(counts.tag(tag.id).summary)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                        Button {
+                            editingTag = tag
+                        } label: {
+                            HStack {
+                                SettingsNavRow(label: tag.name, detail: counts.tag(tag.id).summary)
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
                             }
-                            Spacer()
-                            if !isRenaming {
-                                Button(String(localized: "settings.tags.merge.button",
-                                              defaultValue: "Merge…")) {
-                                    mergingTag = tag
-                                    mergeTargetId = nil
-                                }
-                                .font(.caption)
-                                .buttonStyle(.borderless)
-                                .foregroundStyle(.secondary)
-                                .accessibilityLabel(
-                                    String(localized: "settings.tags.merge.a11y",
-                                           defaultValue: "Merge tag \(tag.name) into another")
-                                )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        // Swipes stay as shortcuts — everything they do is also a row in the editor.
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                UserTagAdmin.deleteCascading(tag, context: modelContext)
+                                counts = ResearchItemCounts.fetch(from: modelContext)
+                            } label: {
+                                Label(String(localized: "settings.tags.delete.swipe",
+                                             defaultValue: "Delete"), systemImage: "trash")
                             }
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            guard renamingTag == nil else { return }
-                            renamingTag = tag
-                            renameText = tag.name
-                        }
-                        // Leading swipe: Edit (rename). Makes the rename action discoverable
-                        // for users who may not know about tap-to-rename.
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if !isRenaming {
-                                Button {
-                                    renamingTag = tag
-                                    renameText = tag.name
-                                } label: {
-                                    Label(
-                                        String(localized: "settings.tags.rename.swipe",
-                                               defaultValue: "Rename"),
-                                        systemImage: "pencil"
-                                    )
-                                }
-                                .tint(.accentColor)
-                                .accessibilityLabel(
-                                    String(localized: "settings.tags.rename.swipe.a11y",
-                                           defaultValue: "Rename tag \(tag.name)")
-                                )
+                            Button {
+                                editingTag = tag
+                            } label: {
+                                Label(String(localized: "settings.tags.rename.swipe",
+                                             defaultValue: "Edit"), systemImage: "pencil")
                             }
+                            .tint(.accentColor)
                         }
                     }
-                    .onDelete { offsets in
-                        // Cascading delete (#406): strip the id from notes and delete its
-                        // DocumentTagAssignment rows so deletion never leaves orphaned associations.
-                        for index in offsets {
-                            UserTagAdmin.deleteCascading(tags[index], context: modelContext)
-                        }
-                        counts = ResearchItemCounts.fetch(from: modelContext)
-                    }
+                }
+
+                SettingsNewItemRow(label: String(localized: "settings.tags.new",
+                                                 defaultValue: "New Tag…")) {
+                    let tag = UserTag(name: String(localized: "settings.tags.new.default",
+                                                   defaultValue: "New Tag"))
+                    modelContext.insert(tag)
+                    pendingNewTag = tag
                 }
             } header: {
                 Text(String(localized: "settings.tags.list.header", defaultValue: "Tags"))
             } footer: {
-                Text(String(localized: "settings.tags.list.footer",
-                            defaultValue: "Tap or swipe right to rename. Swipe left to delete."))
-                    .font(.caption)
+                Text(String(localized: "settings.tags.list.footer.grammar",
+                            defaultValue: "Tags are global — they are not scoped to a project."))
             }
         }
         .navigationTitle(String(localized: "settings.tags.title", defaultValue: "Tags"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
-        .toolbar {
-            if renamingTag != nil {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "settings.tags.rename.done", defaultValue: "Done")) {
-                        commitRename()
-                    }
-                }
-            }
+        .task { counts = ResearchItemCounts.fetch(from: modelContext) }
+        .sheet(item: $editingTag) { tag in
+            TagEditorView(
+                tag: tag,
+                tally: counts.tag(tag.id),
+                peerTagCount: tags.count,
+                onMergeRequested: { source in mergingTag = source },
+                onDeleted: { counts = ResearchItemCounts.fetch(from: modelContext) }
+            )
+        }
+        .sheet(item: $pendingNewTag) { tag in
+            // A new tag opens straight into the editor so it can be named; Merge and Delete are
+            // hidden, because neither makes sense before it has been named or used.
+            TagEditorView(tag: tag)
         }
         .sheet(item: $mergingTag) { sourceTag in
             MergeTagSheet(
@@ -640,58 +623,51 @@ private struct UserTagsView: View {
                 }
             )
         }
-        .task { counts = ResearchItemCounts.fetch(from: modelContext) }
     }
-
-    private func commitRename() {
-        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty, let tag = renamingTag {
-            tag.name = trimmed
-        }
-        renamingTag = nil
-        renameText = ""
-    }
-
 }
 
 // MARK: - ProjectsSettingsView
 
-/// iOS Settings → Research → Projects: rename, merge, and delete `Project`
-/// records.
+/// iOS Settings → Research → Projects — the hub for the research trio (S-3b).
 ///
-/// Mirrors the `UserTagsView` interaction pattern (tap or leading swipe to
-/// rename, trailing swipe to delete) with a context menu "Merge into…" action
-/// in place of the always-visible merge button used by the macOS
-/// `SettingsProjectsPane`. Delete and merge mutations are shared with macOS
-/// via `ProjectAdminService`.
+/// ## Shape
+/// Context first, admin second, siblings last:
 ///
-/// Also hosts the iOS active-project switcher and a "New Project" toolbar
-/// button — the in-app project-creation entry point on iOS (opens
-/// `ProjectEditorView` in create mode) — alongside administering existing
-/// projects (rename, merge, delete).
+/// 1. **Active Project** + **Project Home**, pinned as their own group. Switching context is the
+///    thing a reader does most often here and it is not destructive; keeping it away from rename,
+///    merge and delete means a mis-tap can't be expensive.
+/// 2. **Projects** — one row each, stating what is filed under it, opening the editor. "New
+///    Project…" ends the list.
+/// 3. **Related** — Tags and Volume Scopes, with their counts. The three lists share one grammar,
+///    so the two siblings are reachable from the one a reader lands on.
+///
+/// Rename, merge and delete used to be a tap, a long-press and a swipe respectively, explained by a
+/// footer. They are now rows in `ProjectEditorView`; the swipes remain as shortcuts.
 ///
 /// Version history:
 ///   1.0 — Session 153: initial implementation (closes the iOS delete/merge gap)
 ///   1.1 — #377 Phase 5 follow-up: New Project toolbar button (iOS project creation)
+///   1.2 — S-3b: row → editor, counts on rows, "New Project…" ends the list, Related group
 private struct ProjectsSettingsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Project.name) private var projects: [Project]
+    @Query(sort: \UserTag.name) private var tags: [UserTag]
+    @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
 
-    @State private var renamingProject: Project? = nil
-    @State private var renameText = ""
+    /// The project open in the editor sheet.
+    @State private var editingProject: Project? = nil
+    /// The project whose merge picker is presented.
     @State private var mergingProject: Project? = nil
-    @State private var projectToDelete: Project? = nil
-    @State private var showDeleteConfirmation = false
-    /// Presents `ProjectEditorView` in create mode — the iOS in-app "New Project" entry point (#377).
+    /// Presents `ProjectEditorView` in create mode.
     @State private var showEditor = false
+    /// How much is filed under each project, fetched once per appearance rather than per row.
+    @State private var counts: ResearchItemCounts = .empty
 
     var body: some View {
         Form {
-            // #377 Phase 1 follow-up: the active-project switcher. Previously the ONLY way to switch
-            // project context on iOS was the easily-missed picker in the Browse toolbar; Settings —
-            // where users look to set such context — had no control. This puts it front-and-center.
+            // 1. Context — the non-destructive half, pinned above the admin list.
             Section {
                 Picker(selection: Binding(get: { appState.activeProjectId },
                                           set: { appState.activeProjectId = $0 })) {
@@ -705,15 +681,8 @@ private struct ProjectsSettingsView: View {
                                  defaultValue: "Active Project"),
                           systemImage: appState.activeProjectId == nil ? "globe" : "folder")
                 }
-            } footer: {
-                Text(String(localized: "settings.projects.active.footer",
-                            defaultValue: "The active project scopes the notes, collections, history, and searches you see. Global Context shows everything."))
-            }
 
-            // #377 Phase 1: the active project's Project Home (the iOS entry point — macOS uses
-            // Research ▸ Project Home / ⌘P). Hidden in Global Context, where there's no one project.
-            if let pid = appState.activeProjectId, projects.contains(where: { $0.id == pid }) {
-                Section {
+                if let pid = appState.activeProjectId, projects.contains(where: { $0.id == pid }) {
                     NavigationLink {
                         ProjectHomeView(projectId: pid)
                     } label: {
@@ -722,177 +691,166 @@ private struct ProjectsSettingsView: View {
                               systemImage: "square.grid.2x2")
                     }
                 }
+            } footer: {
+                Text(String(localized: "settings.projects.active.footer",
+                            defaultValue: "The active project scopes the notes, collections, history, and searches you see. Global Context shows everything."))
             }
 
+            // 2. The list itself.
             Section {
                 if projects.isEmpty {
-                    Text(String(localized: "settings.projects.empty",
-                                defaultValue: "No projects created yet."))
+                    Text(String(localized: "settings.projects.empty.where",
+                                defaultValue: "No projects yet. A project keeps one line of research — its notes, collections, history and searches — separate from the rest."))
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
                     ForEach(projects) { project in
-                        let isRenaming = renamingProject?.id == project.id
-                        Group {
-                            if isRenaming {
-                                TextField(
-                                    String(localized: "settings.projects.rename.placeholder",
-                                           defaultValue: "Project name"),
-                                    text: $renameText
-                                )
-                                .onSubmit { commitRename() }
-                                .accessibilityLabel(
-                                    String(localized: "settings.projects.rename.a11y",
-                                           defaultValue: "Rename project \(project.name)")
-                                )
-                            } else {
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(project.name)
-                                    if let question = project.researchQuestion, !question.isEmpty {
-                                        Text(question)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                }
+                        Button {
+                            editingProject = project
+                        } label: {
+                            HStack {
+                                SettingsNavRow(label: project.name, detail: rowDetail(project))
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
                             }
+                            // Without this the row is only tappable where its glyphs are — the
+                            // whole row has to be the target, or the grammar is a lie.
+                            .contentShape(Rectangle())
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            guard renamingProject == nil else { return }
-                            renamingProject = project
-                            renameText = project.name
-                        }
-                        // Leading swipe: Rename. Mirrors UserTagsView so the action is
-                        // discoverable for users unfamiliar with tap-to-rename.
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if !isRenaming {
-                                Button {
-                                    renamingProject = project
-                                    renameText = project.name
-                                } label: {
-                                    Label(
-                                        String(localized: "settings.projects.rename.swipe",
-                                               defaultValue: "Rename"),
-                                        systemImage: "pencil"
-                                    )
-                                }
-                                .tint(.accentColor)
-                                .accessibilityLabel(
-                                    String(localized: "settings.projects.rename.swipe.a11y",
-                                           defaultValue: "Rename project \(project.name)")
-                                )
-                            }
-                        }
+                        .buttonStyle(.plain)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                projectToDelete = project
-                                showDeleteConfirmation = true
+                                ProjectAdminService.delete(project, context: modelContext,
+                                                           appState: appState)
+                                counts = ResearchItemCounts.fetch(from: modelContext)
                             } label: {
-                                Label(
-                                    String(localized: "settings.projects.delete.swipe",
-                                           defaultValue: "Delete"),
-                                    systemImage: "trash"
-                                )
+                                Label(String(localized: "settings.projects.delete.swipe",
+                                             defaultValue: "Delete"), systemImage: "trash")
                             }
-                            .accessibilityLabel(
-                                String(localized: "settings.projects.delete.swipe.a11y",
-                                       defaultValue: "Delete project \(project.name)")
-                            )
                         }
-                        .contextMenu {
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
-                                mergingProject = project
+                                editingProject = project
                             } label: {
-                                Label(
-                                    String(localized: "settings.projects.merge.button",
-                                           defaultValue: "Merge into…"),
-                                    systemImage: "arrow.triangle.merge"
-                                )
+                                Label(String(localized: "settings.projects.rename.swipe",
+                                             defaultValue: "Edit"), systemImage: "pencil")
                             }
-                            .disabled(projects.count < 2)
+                            .tint(.accentColor)
                         }
                     }
                 }
+
+                SettingsNewItemRow(label: String(localized: "settings.projects.new",
+                                                 defaultValue: "New Project…")) {
+                    showEditor = true
+                }
             } header: {
                 Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
+            }
+
+            // 3. The two lists that share this grammar.
+            Section {
+                NavigationLink {
+                    UserTagsView()
+                } label: {
+                    SettingsNavRow(label: String(localized: "settings.pane.tags", defaultValue: "Tags"),
+                                   systemImage: "tag",
+                                   detail: tagsDetail)
+                }
+                NavigationLink {
+                    CustomScopesView()
+                } label: {
+                    SettingsNavRow(label: String(localized: "settings.pane.scopes",
+                                                 defaultValue: "Volume Scopes"),
+                                   systemImage: "square.stack.3d.up",
+                                   detail: scopesDetail)
+                }
+            } header: {
+                Text(String(localized: "settings.projects.related.header", defaultValue: "Related"))
             } footer: {
-                Text(String(localized: "settings.projects.list.footer",
-                            defaultValue: "Tap or swipe right to rename. Touch and hold for merge options. Swipe left to delete."))
-                    .font(.caption)
+                Text(String(localized: "settings.projects.related.footer",
+                            defaultValue: "Tags and scopes work the same way: tap a row to rename, merge or delete it."))
             }
         }
         .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
-        .toolbar {
-            if renamingProject != nil {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "settings.projects.rename.done", defaultValue: "Done")) {
-                        commitRename()
-                    }
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showEditor = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .accessibilityLabel(
-                    String(localized: "settings.projects.new.a11y", defaultValue: "New Project")
-                )
-            }
-        }
+        .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(isPresented: $showEditor) {
-            // Create mode (projectToEdit: nil). Re-inject AppState: ProjectEditorView reads it for
-            // the #377 Phase-5 second-project nudge signal, and a sheet doesn't reliably inherit it
-            // (mirrors the macOS SettingsProjectsPane create sheet).
-            ProjectEditorView(projectToEdit: nil)
+            // Create mode. Re-inject AppState: ProjectEditorView reads it for the #377 Phase-5
+            // second-project nudge signal, and a sheet doesn't reliably inherit it.
+            ProjectEditorView(projectToEdit: nil,
+                              onSaved: { counts = ResearchItemCounts.fetch(from: modelContext) })
                 .environment(appState)
+        }
+        .sheet(item: $editingProject) { project in
+            ProjectEditorView(
+                projectToEdit: project,
+                onSaved: { counts = ResearchItemCounts.fetch(from: modelContext) },
+                onMergeRequested: { source in mergingProject = source },
+                onDeleted: { counts = ResearchItemCounts.fetch(from: modelContext) },
+                peerProjectCount: projects.count
+            )
+            .environment(appState)
         }
         .sheet(item: $mergingProject) { sourceProject in
             MergeProjectSheet(
                 sourceProject: sourceProject,
                 allProjects: projects.filter { $0.id != sourceProject.id },
                 onMerge: { targetProject in
-                    ProjectAdminService.merge(sourceProject, into: targetProject, context: modelContext, appState: appState)
+                    ProjectAdminService.merge(sourceProject, into: targetProject,
+                                              context: modelContext, appState: appState)
                     mergingProject = nil
+                    counts = ResearchItemCounts.fetch(from: modelContext)
                 }
             )
         }
-        .confirmationDialog(
-            String(localized: "settings.projects.delete.title", defaultValue: "Delete Project?"),
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "settings.projects.delete.confirm", defaultValue: "Delete"), role: .destructive) {
-                if let project = projectToDelete {
-                    ProjectAdminService.delete(project, context: modelContext, appState: appState)
-                }
-                projectToDelete = nil
-            }
-            Button(String(localized: "settings.projects.delete.cancel", defaultValue: "Cancel"), role: .cancel) {
-                projectToDelete = nil
-            }
-        } message: {
-            Text(String(localized: "settings.projects.delete.message",
-                        defaultValue: "Activity records are kept but unlinked from this project."))
-        }
     }
 
-    private func commitRename() {
-        let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty, let project = renamingProject {
-            project.name = trimmed
+    // MARK: - Row detail
+
+    /// "12 notes · 3 collections · active" — what is filed under the project, and whether it is the
+    /// one currently scoping the app.
+    private func rowDetail(_ project: Project) -> String {
+        var line = counts.project(project.id).summary
+        if appState.activeProjectId == project.id {
+            line += " · " + String(localized: "settings.projects.row.active", defaultValue: "active")
         }
-        renamingProject = nil
-        renameText = ""
+        if let question = project.researchQuestion, !question.isEmpty {
+            line += "\n" + question
+        }
+        return line
+    }
+
+    private var tagsDetail: String {
+        tags.isEmpty
+            ? String(localized: "settings.projects.related.tags.none", defaultValue: "None yet")
+            : (tags.count == 1
+               ? String(localized: "settings.projects.related.tags.one", defaultValue: "1 tag")
+               : String(format: String(localized: "settings.projects.related.tags.many %lld",
+                                       defaultValue: "%lld tags"), Int64(tags.count)))
+    }
+
+    private var scopesDetail: String {
+        guard !scopes.isEmpty else {
+            return String(localized: "settings.projects.related.scopes.none", defaultValue: "None yet")
+        }
+        let unindexed = scopes.filter {
+            CustomScopeResolver.indexedResolution(memberVolumeIds: $0.volumeIds,
+                                                  indexed: appState.indexedVolumeIds)
+                == .noIndexedMembers
+        }.count
+        let base = scopes.count == 1
+            ? String(localized: "settings.projects.related.scopes.one", defaultValue: "1 scope")
+            : String(format: String(localized: "settings.projects.related.scopes.many %lld",
+                                    defaultValue: "%lld scopes"), Int64(scopes.count))
+        guard unindexed > 0 else { return base }
+        return base + " · " + String(format: String(
+            localized: "settings.projects.related.scopes.unindexed %lld",
+            defaultValue: "%lld not yet indexed"), Int64(unindexed))
     }
 }
 
