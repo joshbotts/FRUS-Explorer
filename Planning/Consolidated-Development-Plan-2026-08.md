@@ -137,6 +137,19 @@ sequences them and pins the cross-lane edges.
 | Q-M4 | M-1 working corpus → M-2 query log → M-3 excerpt verification | Method & reproducibility (M-3 can drop in anywhere) |
 | Q-M5 | D-1 vocabulary explorer → D-2 coding assist | Discovery (lowest confidence) |
 
+**Project integration:** `Planning/QCA-Projects-Integration-Assessment.md` (2026-07-25)
+verifies where this lane meets the #377 project features and folds the results in as
+**riders** on already-scheduled sessions — M-1 ships project-aware (corpus `projectIds`
+attachment, promote defaults, the History/Focus/corpora three-scope family), M-2 is
+scope-corrected to *enrich* the existing `searchSubmit` session capture (sessions are
+not yet project-tagged — that attribution is part of M-2, not an extra), R-1 gains the
+Project Home corpus-profile card, Q-2's inspector labels project scopes and dual-counts
+empty conjuncts, M-3 gains the Home verify-quotations entry point. One appetite-driven
+addition rides the 17+ tail: **Q-V project-vocabulary leads** (keyness of the engaged
+set → distinctive-vocabulary lead source, presented beside — never blended into — the
+#308 axis leads). Four owner decisions (A–D) are tabled in the assessment; none blocks
+Q-M1.
+
 **Cross-lane edges (the only ones):**
 
 1. **Design before build for the four design-heavy sessions.** Q-2 (inspector), R-1

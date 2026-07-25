@@ -122,10 +122,17 @@ control presented (the existing analytics `controls:`-strip idiom is available)?
 **Pieces:**
 - a **promote** affordance on a result set / saved search / collection ("Save as
   working corpus…") — naming sheet with an honest scope line ("267 documents · resolved
-  against 552 indexed volumes · 2026-07-25");
+  against 552 indexed volumes · 2026-07-25"). **Project-aware:** the sheet pre-attaches
+  the active project (removable chip — attachment is a tag, never ownership), and
+  promoting **from the project History scope** is a first-class variant (freezing
+  today's engaged set as a citable snapshot);
 - **presence everywhere scopes appear**: the scope menus in Search, Analytics, Word
   Cloud, and facets already list "My Volume Scopes" — working corpora join as a sibling
-  section at document grain. Design the row (name · document count · staleness hint);
+  section at document grain. Design the row (name · document count · staleness hint).
+  **The project section of the scope menus must read as one designed family of three**:
+  *History* (dynamic — what you've engaged) · *Focus* (discovery — where your subjects
+  point) · *working corpora* (curated — what you've frozen). Each answers a different
+  question; today's pickers grew separately and it shows;
 - a **manager** in Settings → Research beside Volume Scopes, adopting the North Star
   list grammar (row → editor; counts on rows; "New …" ends the list) — the editor shows
   the definition (query + scope + snapshot date) and a re-resolve action, per the
@@ -134,7 +141,8 @@ control presented (the existing analytics `controls:`-strip idiom is available)?
 
 **Design questions:** What does "this corpus resolves to 241 documents here, 267 at
 creation" look like on the row and in the editor? Where does promote live on iPhone
-(toolbar? the facet panel's footer?)?
+(toolbar? the facet panel's footer?)? How does the three-scope family read in a compact
+menu without a paragraph of explanation?
 
 ### 5. Query log & method appendix (session M-2)
 
@@ -147,6 +155,16 @@ denominator · timestamp · hit count); manual **mark-as-significant**; absence 
 the existing project surfaces (`SessionLogView`, `SavedSearchesView`) — not a new
 top-level screen. The provenance-preamble idiom from the D3 export work is the visual
 kin for the exported appendix.
+
+**Engineering context that shapes the design:** the app *already* auto-captures every
+search (`searchSubmit` session events carry query + result count) — this surface is an
+**enrichment of that existing log**, not a new logger, so the design should treat the
+session log and the query log as one narrative with two lenses, not two lists. Project
+attribution is being added as part of this work (sessions are not yet project-tagged).
+The exported appendix header carries the project's name + research question, exactly as
+collection exports already do. An absence assertion records its full scope **including
+the project scope** — "0 in project history" and "0 corpus-wide" are different claims,
+and the design must keep them visually distinct.
 
 **Design questions:** How does mark-as-significant read in a dense log list? How is an
 absence assertion visually distinct from an ordinary zero-hit log row? Re-run affordance
@@ -170,6 +188,14 @@ shown when it lands)?
 9. **NARA Lookup candidate picker** (#235): selection → analyzed context → ranked
    candidate resolutions (each with the evidence that produced it), manual lookup as
    fallback. Direction sketch only; engineering scope is still being set.
+10. **Project Home cards for the Q&CA layer** (rides sessions R-1/M-1/M-2/M-3; see
+    `QCA-Projects-Integration-Assessment.md`): a corpus-profile card (top years /
+    volumes / people of the engaged set, with its indexed-vs-engaged denominator), a
+    query-log receipt card ("23 logged · 6 significant · 2 absence assertions"), a
+    verify-quotations entry point, and — later — a "Vocabulary leads" section beside
+    the existing #308-axis leads, each lead carrying its matched distinctive terms.
+    Ask: one composable card language for all of these, consistent with the existing
+    Project Home summary cards, rather than four bespoke tiles.
 
 ---
 
@@ -186,6 +212,10 @@ shown when it lands)?
   menu; chips for applied filters. New grammars need a reason.
 - **Compact width is first-class** (iPhone, iPad sheets at ~540 pt): `ViewThatFits`
   patterns, no size-class assumptions.
+- **Project scope is named wherever it filters.** Any count rendered under a project
+  scope (History / Focus / a working corpus) says so — the recall-vs-discovery
+  distinction is content, and "0 in project history · 47 corpus-wide" is the designed
+  form of a zero under scope.
 - **Accessibility:** Dynamic Type throughout; ≥44 pt targets; VoiceOver labels that
   speak the full fact (count + scope), matching the analytics precedent.
 - **Copy tone:** the app's existing methods-honesty register (see the D3 export
