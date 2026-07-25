@@ -80,6 +80,8 @@ struct StorageUsageBreakdown: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — S-2a: initial implementation
+///   1.1 — S-2b: the attention clause agrees in number ("1 needs" / "2 need"), which the single
+///          `%lld needs attention` form got wrong for every count but one
 struct LibraryStatusSummary: Equatable, Sendable {
 
     /// Volumes downloaded to this device.
@@ -116,9 +118,12 @@ struct LibraryStatusSummary: Equatable, Sendable {
                                   Int64(downloadedCount - indexedCount)))
         }
 
-        if interruptedCount > 0 {
+        if interruptedCount == 1 {
+            clauses.append(String(localized: "settings.hub.summary.needsAttention.one",
+                                  defaultValue: "1 needs attention"))
+        } else if interruptedCount > 1 {
             clauses.append(String(format: String(localized: "settings.hub.summary.needsAttention %lld",
-                                                 defaultValue: "%lld needs attention"),
+                                                 defaultValue: "%lld need attention"),
                                   Int64(interruptedCount)))
         } else if downloadedCount > 0 {
             clauses.append(String(localized: "settings.hub.summary.allWell",

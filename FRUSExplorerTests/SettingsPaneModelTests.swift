@@ -77,6 +77,7 @@ struct SettingsPaneModelTests {
     /// Both renderers show these, so their placement is the shared tree.
     @Test("Cross-platform panes land in the expected groups")
     func groupAssignments() {
+        #expect(SettingsPane.volumesStorage.group == .library)
         #expect(SettingsPane.storage.group == .library)
         #expect(SettingsPane.downloads.group == .library)
         #expect(SettingsPane.projects.group == .research)
@@ -96,6 +97,36 @@ struct SettingsPaneModelTests {
         #expect(SettingsPane.sideload.platforms == [.iOS])
         #expect(SettingsPane.researchGuide.platforms == [.iOS])
         #expect(SettingsPane.display.platforms == [.iOS, .macOS])
+    }
+
+    /// S-2b merged Storage + Add Volumes into one macOS destination. Until S-2c does the same on
+    /// iOS, the merged pane and the panes it supersedes must be on **opposite** platforms — if
+    /// both ever rendered on one platform the Library group would offer the same job twice.
+    @Test("The merged Library destination never coexists with the rows it supersedes")
+    func mergedLibraryDestinationIsExclusive() {
+        for platform in [SettingsPlatform.iOS, .macOS] {
+            let library = SettingsPane.panes(in: .library, on: platform)
+            if library.contains(.volumesStorage) {
+                #expect(!library.contains(.storage))
+                #expect(!library.contains(.downloads))
+                #expect(!library.contains(.sideload))
+            } else {
+                #expect(library.contains(.storage))
+                #expect(library.contains(.downloads))
+            }
+        }
+        #expect(SettingsPane.volumesStorage.platforms == [.macOS])
+        #expect(SettingsPane.storage.platforms == [.iOS])
+        #expect(SettingsPane.downloads.platforms == [.iOS])
+    }
+
+    /// The merged pane has to answer every query that used to find one of the three it replaces —
+    /// a reader who searched "sideload" or "github" must still land somewhere.
+    @Test("The merged destination inherits the search terms of the panes it absorbs")
+    func mergedDestinationKeywords() {
+        for query in ["download", "github", "sideload", "xml", "reindex", "free up", "corrections"] {
+            #expect(SettingsPane.volumesStorage.matches(query), "no match for \(query)")
+        }
     }
 
     // MARK: - Search

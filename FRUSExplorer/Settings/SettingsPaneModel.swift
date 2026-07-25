@@ -83,10 +83,13 @@ enum SettingsPlatform: Hashable, Sendable {
 /// Version history:
 ///   1.0 — S-1: promoted from the macOS-only sidebar enum to the shared cross-platform model;
 ///          gained `group`, `keywords`, and `platforms`
+///   1.1 — S-2b: `.volumesStorage`, the merged macOS Library destination. `.storage` and
+///          `.downloads` narrow to `[.iOS]` for the duration; S-2c merges the iOS side and
+///          retires all three of the old cases
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
 
     // Library
-    case storage, downloads, sideload
+    case volumesStorage, storage, downloads, sideload
     // Research
     case projects, tags, scopes, summarization, wordCloud, notes
     // Reading & Search
@@ -101,6 +104,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// The row title. One wording on both platforms — divergence here is the drift S-1 exists to end.
     var label: String {
         switch self {
+        case .volumesStorage:  return String(localized: "settings.pane.volumesStorage", defaultValue: "Volumes & Storage")
         case .storage:         return String(localized: "settings.pane.storage", defaultValue: "Storage & Index")
         case .downloads:       return String(localized: "settings.pane.downloads", defaultValue: "Add Volumes")
         case .sideload:        return String(localized: "settings.pane.sideload", defaultValue: "Sideload Volume")
@@ -126,6 +130,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// SF Symbol for the row.
     var icon: String {
         switch self {
+        case .volumesStorage:  return "internaldrive"
         case .storage:         return "internaldrive"
         case .downloads:       return "plus.circle"
         case .sideload:        return "square.and.arrow.down"
@@ -153,7 +158,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// Which of the four `1c` groups this pane belongs to.
     var group: SettingsGroup {
         switch self {
-        case .storage, .downloads, .sideload:
+        case .volumesStorage, .storage, .downloads, .sideload:
             return .library
         case .projects, .tags, .scopes, .summarization, .wordCloud, .notes:
             return .research
@@ -167,7 +172,13 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// Which renderers show this pane. See `SettingsPlatform` for why the two differ today.
     var platforms: Set<SettingsPlatform> {
         switch self {
-        // macOS reaches sideloading from inside Add Volumes; iOS has a dedicated row.
+        // The merged Library destination (S-2). macOS has it; iOS still reaches the same jobs
+        // through the three separate rows below until S-2c merges them there too. When it does,
+        // `.volumesStorage` gains `.iOS` and `.storage` / `.downloads` / `.sideload` are deleted.
+        case .volumesStorage: return [.macOS]
+        // Superseded on macOS by `.volumesStorage`; still the iOS rows.
+        case .storage, .downloads: return [.iOS]
+        // macOS sideloads from inside the hub; iOS has a dedicated row.
         case .sideload:      return [.iOS]
         // The in-app guide is a Window scene on macOS, opened from a menu rather than Settings.
         case .researchGuide: return [.iOS]
@@ -187,6 +198,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// ("stop words"), the thing being changed ("font"), or the old label they remember.
     var keywords: [String] {
         switch self {
+        case .volumesStorage:  return ["index", "reindex", "disk", "space", "free up", "rebuild",
+                                       "spotlight", "download", "github", "volumes", "corpus",
+                                       "sideload", "xml", "import", "updates", "corrections"]
         case .storage:         return ["index", "reindex", "disk", "space", "free up", "rebuild", "spotlight"]
         case .downloads:       return ["download", "github", "volumes", "corpus", "fetch", "updates", "corrections"]
         case .sideload:        return ["xml", "import", "tei", "local file"]
