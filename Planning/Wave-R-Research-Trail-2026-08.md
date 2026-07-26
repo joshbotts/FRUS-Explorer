@@ -1,6 +1,6 @@
 # Wave R — the research trail, and build-35 tester feedback
 
-**Status:** plan, not started. Runs **after S-6** (Settings docs closeout).
+**Status:** R-0 answered 2026-07-26; execution started. Runs **after S-6** (Settings docs closeout).
 **Inputs:** `Planning/Settings-Parity-Audit-2026-07-25.md` (§B2, B3, and the deliberate-list
 entry on search logging); build-35 tester feedback (not yet collected); carried work from the
 2026-07-26 bug session (#486 / #488 / #498) — see *Folded in* below.
@@ -46,8 +46,26 @@ piecemeal.
 
 ## R-0 — Decide the model *before* writing any code
 
-Three questions for the owner. Nothing else in the wave can be sequenced until they are answered,
-and two of them are policy, not engineering.
+> ### ✅ ANSWERED — owner decisions, 2026-07-26
+>
+> **Q1 → (a) Collapse to one trail.** `ReadingHistoryEntry`/`SearchHistoryEntry` become *the* trail.
+> `ResearchSession`/`SessionEvent` are retired and sessions are **derived at read time** by grouping
+> entries on the 30-minute idle rule. One store, one gate. R-2 owns the migration for records already
+> in users' iCloud private databases.
+>
+> **Q2 → Keep recording search text, and keep syncing it.** It is the user's own data, and since
+> PR #503 it is visible and deletable in Settings. No sync exclusion, no count-only reduction. This
+> makes R-4 (an iOS producer for search history) straightforwardly correct once R-1 has landed — but
+> **the ordering trap in R-4 still applies**: R-1 must land first, or iOS starts writing search text
+> into an ungated store.
+>
+> **Q3 → Keep the label "Log Research Sessions".** No rename. Existing testers know it and the pane
+> is named to match. The `UserDefaults` key `researchSessionLoggingEnabled` was never in question and
+> does not change either. **Consequence for R-1 and R-5:** the label stays engineering-flavoured, so
+> the *footer* carries the whole explanatory burden — it must say plainly that the switch governs
+> reading history and search history as well, since the name will not imply it.
+
+The three questions, as originally posed:
 
 **Q1. One trail or two?**
 - **(a) Collapse.** `ReadingHistoryEntry`/`SearchHistoryEntry` become the trail; `ResearchSession`/
