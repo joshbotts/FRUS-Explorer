@@ -11,6 +11,11 @@ import Foundation
 @testable import FRUSExplorer
 
 /// Tests for BrowserViewModel navigation, grouping, filtering, and tag display helpers.
+///
+/// Version history:
+///   1.0 — Session 11: initial implementation
+///   1.1 — Wave R / R-9: coverage for the `indexingPipeline` back-fill and for
+///          `indexVolume`'s missing-pipeline guard, which used to return silently
 @MainActor
 struct BrowserViewTests {
 
@@ -63,6 +68,92 @@ struct BrowserViewTests {
     func initNoTagFilters() {
         let vm = makeViewModel()
         #expect(vm.tagFilters.isEmpty)
+    }
+
+    // MARK: - Indexing-Pipeline Back-Fill (R-9)
+
+    /// Builds a real `IndexingPipeline` over a temp database. `BrowserViewModel` only stores and
+    /// nil-checks the pipeline, so nothing here needs a volume on disk.
+    private func makePipeline() throws -> (IndexingPipeline, URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("BrowserViewTests-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volumes
+        )
+        return (pipeline, dir)
+    }
+
+    @Test("R-9: attachIndexingPipelineIfNeeded back-fills a nil pipeline")
+    func attachIndexingPipelineBackFills() throws {
+        let vm = makeViewModel()
+        #expect(vm.indexingPipeline == nil,
+                "Precondition: the view model boots with no pipeline, exactly as BrowserView's onAppear bootstrap does when AppState has not assigned one yet")
+        let (pipeline, dir) = try makePipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        vm.attachIndexingPipelineIfNeeded(pipeline)
+        #expect(vm.indexingPipeline != nil,
+                "The pipeline must be back-filled — without it isIndexed() answers false for every volume for the rest of the session (R-9)")
+    }
+
+    @Test("R-9: attachIndexingPipelineIfNeeded never replaces a live pipeline")
+    func attachIndexingPipelineIsIdempotent() throws {
+        let (first, firstDir) = try makePipeline()
+        let (second, secondDir) = try makePipeline()
+        defer {
+            try? FileManager.default.removeItem(at: firstDir)
+            try? FileManager.default.removeItem(at: secondDir)
+        }
+        let store = ManifestStore(bundledEntries: [])
+        let vm = BrowserViewModel(
+            manifestStore: store,
+            tagStore: VolumeLevelTagStore(),
+            downloadManager: nil,
+            indexingPipeline: first
+        )
+
+        vm.attachIndexingPipelineIfNeeded(second)
+        #expect(vm.indexingPipeline === first,
+                "Back-filling must be a no-op once a pipeline is attached — the onChange observer can fire more than once and must never swap a live pipeline out")
+    }
+
+    @Test("R-9: attachIndexingPipelineIfNeeded(nil) is a no-op")
+    func attachIndexingPipelineIgnoresNil() {
+        let vm = makeViewModel()
+        vm.attachIndexingPipelineIfNeeded(nil)
+        #expect(vm.indexingPipeline == nil)
+    }
+
+    @Test("R-9: indexVolume with no pipeline records an error instead of failing mutely")
+    func indexVolumeWithoutPipelineSetsError() async {
+        let entry = makeEntry(volumeId: "frus1969-76v01", subseries: "1969-76")
+        let vm = makeViewModel(volumes: [entry])
+        #expect(vm.indexingError == nil, "Precondition: no error before the call")
+
+        await vm.indexVolume(entry)
+
+        // The whole point: CompilationView renders `indexingError`, so a nil here is a button
+        // that does nothing and explains nothing — the part of R-9 that cost the most to
+        // diagnose.
+        #expect(vm.indexingError as? BrowserIndexingError == .pipelineUnavailable,
+                "indexVolume must publish BrowserIndexingError.pipelineUnavailable when it has no pipeline, so the UI can say why nothing happened")
+        #expect(vm.isIndexing == false,
+                "A refused index must not leave the view in its indexing state")
+        let message = BrowserIndexingError.pipelineUnavailable.errorDescription ?? ""
+        #expect(!message.isEmpty, "The error must carry a user-readable message")
+        #expect(!message.lowercased().contains("try again"),
+                "The message must not promise that retrying helps — when FTS5Store failed to open at boot the pipeline is nil for the whole session and no number of taps can change that")
+    }
+
+    @Test("R-9: isIndexed answers false with no pipeline, which is why the banner could lie")
+    func isIndexedWithoutPipelineIsFalse() {
+        let vm = makeViewModel()
+        #expect(vm.isIndexed("frus1969-76v01") == false,
+                "Pins the ambiguity the fix works around: a nil pipeline is indistinguishable from an unindexed volume at this call site, so CompilationView must ask about the pipeline separately rather than trusting this answer")
     }
 
     // MARK: - Subseries Grouping

@@ -179,6 +179,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          authoring shortcuts ⌥⌘N (new collection), ⌘⇧A (add documents — moved
 ///          here from the toolbar button so the equivalent has a single owner),
 ///          ⌥⌘P (preview), ⌘E (export)
+///   4.6 — Wave R / R-9: `bootDownloadManager()` calls `UITestVolumeSeeder.seedIfRequested`
+///          (DEBUG-only, inert unless `FRUS_UI_TEST_SEED_VOLUME` is set) before building the
+///          `IndexingPipeline`, so a UI test can reach the compilation level — coverage the
+///          R-9 defect was able to hide behind because no test could get a volume on disk
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -1262,6 +1266,11 @@ struct FRUSExplorerApp: App {
         guard appState.downloadManager == nil else { return }
 
         let volumesDir = Self.makeVolumesDirectory()
+        // DEBUG-only, and inert unless a UI test names a volume in FRUS_UI_TEST_SEED_VOLUME.
+        // Placed before the pipeline is built so the fixture is on disk for the first read.
+        #if DEBUG
+        UITestVolumeSeeder.seedIfRequested(in: volumesDir)
+        #endif
         let dbURL = Self.makeDatabaseURL()
         appState.indexDirectory = dbURL.deletingLastPathComponent()
         // Retained so any in-session index rebuild can reopen the read-only stores against them (#275).

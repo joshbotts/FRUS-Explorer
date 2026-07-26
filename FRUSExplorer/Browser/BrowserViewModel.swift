@@ -43,6 +43,12 @@ import Observation
 ///          `progressStream` observer; `isIndexing` false-transition signals CompilationView
 ///          to auto-reload the document list without requiring navigation away
 ///   1.3 — Session 87: `BrowserLevel.people` case for person index navigation
+///   1.4 — Wave R / R-9: `indexingPipeline` is back-filled the same way `downloadManager`
+///          has been since #324 (`private(set) var` + `attachIndexingPipelineIfNeeded`),
+///          because capturing it once at `.onAppear` could capture `nil` and make every
+///          compilation claim "Index Required" for the whole session; `indexVolume`'s
+///          nil-pipeline guard now records `BrowserIndexingError.pipelineUnavailable`
+///          instead of returning silently
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -144,7 +150,14 @@ public final class BrowserViewModel {
     /// because it can legitimately be `nil` when the view model boots (#324) and must be
     /// back-filled once `AppState` finishes booting it.
     public private(set) var downloadManager: DownloadManager?
-    public let indexingPipeline: IndexingPipeline?
+    /// The search-index pipeline. Settable only through ``attachIndexingPipelineIfNeeded(_:)``
+    /// for the same reason as `downloadManager` above: it can legitimately be `nil` when the
+    /// view model boots and must be back-filled once `AppState` finishes booting it (R-9).
+    ///
+    /// This is deliberately a `var` and not a `let`, which also makes it observable: a view
+    /// body that reads it (via ``isIndexed(_:)``, say) re-evaluates when the pipeline attaches,
+    /// so `CompilationView` leaves its "Index Required" state on its own.
+    public private(set) var indexingPipeline: IndexingPipeline?
     let parser: FRUSDocumentParser
 
     // MARK: - Initialisation
@@ -173,6 +186,23 @@ public final class BrowserViewModel {
     public func attachDownloadManagerIfNeeded(_ manager: DownloadManager?) {
         guard downloadManager == nil, let manager else { return }
         downloadManager = manager
+    }
+
+    /// Back-fills the indexing pipeline when it wasn't ready at boot (R-9).
+    ///
+    /// The exact counterpart of ``attachDownloadManagerIfNeeded(_:)``, and it exists because
+    /// #324 fixed only the download-manager half of the same defect. `BrowserView` copies both
+    /// dependencies out of `AppState` from `.onAppear`, which under `FRUS_UI_TEST_MODE` (and on
+    /// any launch where `ContentView`'s gate opens before `bootDownloadManager()` finishes) runs
+    /// *before* `appState.indexingPipeline` is assigned. Without this the view model held `nil`
+    /// for the session and `isIndexed(_:)` answered `false` for every volume, so a fully indexed
+    /// volume showed "Index Required" and "Index Now" did nothing.
+    ///
+    /// A no-op once a pipeline is attached, so it can never clobber a live one — and a no-op in
+    /// the normal launch path, where the pipeline already exists by the time Browse appears.
+    public func attachIndexingPipelineIfNeeded(_ pipeline: IndexingPipeline?) {
+        guard indexingPipeline == nil, let pipeline else { return }
+        indexingPipeline = pipeline
     }
 
     // MARK: - Corpus Statistics
@@ -357,7 +387,18 @@ public final class BrowserViewModel {
     /// `false` at the end — CompilationView's `.onChange(of: vm.isIndexing)` uses
     /// this transition to load the document list without requiring navigation.
     public func indexVolume(_ volume: VolumeManifestEntry) async {
-        guard let pipeline = indexingPipeline else { return }
+        // R-9: never return silently here. This guard used to be a bare `return`, so
+        // "Index Now" produced no progress, no error, and no log line — the single most
+        // expensive part of diagnosing the defect. Recording the error lets
+        // `CompilationView`'s existing error row explain itself; the button is also
+        // disabled in that state, mirroring `MacCorpusBrowserWindow`.
+        guard let pipeline = indexingPipeline else {
+            indexingError = BrowserIndexingError.pipelineUnavailable
+            #if DEBUG
+            print("[BrowserView] indexVolume(\(volume.volumeId)) refused: no indexing pipeline.")
+            #endif
+            return
+        }
         isIndexing = true
         indexingError = nil
         indexingProgress = nil
@@ -410,6 +451,45 @@ public final class BrowserViewModel {
         case .people: return 0
         case .places: return 1
         case .topics: return 2
+        }
+    }
+}
+
+// MARK: - BrowserIndexingError
+
+/// Failures the Browser can hit before it ever reaches `IndexingPipeline`.
+///
+/// Exists so that ``BrowserViewModel/indexVolume(_:)``'s missing-pipeline path has something
+/// user-readable to publish into `indexingError`. `CompilationView` renders that value, so the
+/// "Index Now" button can no longer fail mutely (R-9).
+///
+/// Version history:
+///   1.0 — Wave R / R-9: initial implementation
+public enum BrowserIndexingError: LocalizedError, Equatable {
+
+    /// `AppState` has no `IndexingPipeline`, so nothing can be indexed or index-checked.
+    ///
+    /// Two ways to get here, and the message has to hold for both:
+    /// 1. The transient boot race this fix removes — the view model captured `nil` before
+    ///    `bootDownloadManager()` assigned the pipeline. Relaunching clears it (so does the
+    ///    back-fill, which is why the UI should no longer reach this state).
+    /// 2. `FTS5Store` / `IndexingPipeline` construction genuinely threw at boot
+    ///    (`FRUSExplorerApp` builds both with `try?`). Then the pipeline is `nil` for the whole
+    ///    session no matter what the user taps, and only a relaunch — or, if the database file
+    ///    itself is damaged, a reinstall — can restore it.
+    case pipelineUnavailable
+
+    /// A user-facing explanation, deliberately free of "try again": in case 2 retrying the
+    /// button cannot help, and promising otherwise is what made the original defect so opaque.
+    public var errorDescription: String? {
+        switch self {
+        case .pipelineUnavailable:
+            // One literal, not a `+` chain: `defaultValue` is a `String.LocalizationValue`,
+            // which is expressible by a literal but has no `+`.
+            return String(
+                localized: "browser.indexing.pipelineUnavailable",
+                defaultValue: "FRUS Explorer could not open its search index, so this volume cannot be indexed or checked in this session. Relaunch the app; if the message returns, the index database is damaged and reinstalling is the only way to rebuild it."
+            )
         }
     }
 }

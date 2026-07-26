@@ -66,6 +66,12 @@ import SwiftUI
 ///   2.0 — Session 1 / #237: iOS two-line principal nav-bar title
 ///          (`TwoLineNavTitleView`) matching `VolumeView`; the in-content full title
 ///          gains the `.isHeader` trait for the headings rotor
+///   2.1 — Wave R / R-9: `indexRequiredSection` distinguishes "not indexed" from "no
+///          pipeline". With no pipeline it says so, disables "Index Now" (matching
+///          `MacCorpusBrowserWindow`), and shows `BrowserIndexingError.pipelineUnavailable`
+///          rather than asserting "Index Required" about a volume it cannot check. A new
+///          `onChange(of: vm.indexingPipeline == nil)` loads the document list when the
+///          pipeline is back-filled while this view is already on screen.
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -178,6 +184,14 @@ struct CompilationView: View {
             if vm.isIndexed(volumeId) {
                 Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
             }
+        }
+        // R-9: `indexingPipeline` is back-filled after boot, and this view can already be on
+        // screen when that happens. Making it an observable `var` is enough for the section
+        // above to stop claiming "Index Required", but `.task` has already run and would leave
+        // the list stuck on "Loading documents…" — the load has to be kicked again here.
+        .onChange(of: vm.indexingPipeline == nil) { _, isNil in
+            guard !isNil, vm.isIndexed(volumeId) else { return }
+            Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
         }
         // The two Archival Neighbors presentations are iOS-only (S6): on macOS the
         // row actions open the value-based Archival Neighbors window instead, so
@@ -401,18 +415,37 @@ struct CompilationView: View {
 
     // MARK: - Index Required Placeholder
 
+    /// `true` when the view model has no `IndexingPipeline`, so `vm.isIndexed(_:)` cannot
+    /// answer the question this section is named for.
+    ///
+    /// R-9: without this distinction the section asserted "Index Required" for volumes that were
+    /// fully indexed — `isIndexed` returns `false` for a nil pipeline, which is indistinguishable
+    /// from "not indexed" at the call site. The banner was simply lying, and the button below it
+    /// was mute.
+    private var pipelineUnavailable: Bool { vm.indexingPipeline == nil }
+
     @ViewBuilder
     private var indexRequiredSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 10) {
                 Label(
-                    String(localized: "browser.compilation.indexRequired",
-                           defaultValue: "Index Required"),
-                    systemImage: "magnifyingglass.circle"
+                    pipelineUnavailable
+                        ? String(localized: "browser.compilation.indexUnavailable",
+                                 defaultValue: "Search Index Unavailable")
+                        : String(localized: "browser.compilation.indexRequired",
+                                 defaultValue: "Index Required"),
+                    systemImage: pipelineUnavailable
+                        ? "exclamationmark.triangle"
+                        : "magnifyingglass.circle"
                 )
                 .font(.headline)
-                Text(String(localized: "browser.compilation.indexRequired.detail",
-                            defaultValue: "This volume must be indexed before its documents can be browsed."))
+                // Two different claims, and only one of them is knowable in each state:
+                // with a pipeline we know the volume is unindexed; without one we know
+                // nothing about it and must say so instead of guessing.
+                Text(pipelineUnavailable
+                     ? (BrowserIndexingError.pipelineUnavailable.errorDescription ?? "")
+                     : String(localized: "browser.compilation.indexRequired.detail",
+                              defaultValue: "This volume must be indexed before its documents can be browsed."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button {
@@ -429,7 +462,12 @@ struct CompilationView: View {
                 // action button per view. "Read [Title]" is the true primary action;
                 // "Index Now" is a prerequisite maintenance action.
                 .buttonStyle(.bordered)
-                if let err = vm.indexingError {
+                // Matches `MacCorpusBrowserWindow`'s index button, which has disabled itself on a
+                // nil pipeline all along. A disabled control states its unavailability before the
+                // tap; the guard inside `indexVolume` still records an error, so the two are belt
+                // and braces rather than alternatives (R-9).
+                .disabled(pipelineUnavailable)
+                if let err = vm.indexingError, !pipelineUnavailable {
                     Text(err.localizedDescription)
                         .font(.caption)
                         .foregroundStyle(.red)
