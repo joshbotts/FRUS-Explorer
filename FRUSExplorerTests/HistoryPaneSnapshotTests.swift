@@ -35,6 +35,9 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Wave R-3: initial implementation
+///   1.1 — Wave R-2a review fixes: same-`id` rows get distinct identities and a delete that
+///          removes every copy, and the export table is loaded, scoped, filtered and deletable
+///          like the other two
 @MainActor
 struct HistoryPaneSnapshotTests {
 
@@ -369,5 +372,123 @@ struct HistoryPaneSnapshotTests {
 
         let snapshot = HistoryPaneSnapshot.fetch(from: context)
         #expect(snapshot.projects.map(\.name) == ["Berlin", "Zanzibar"])
+    }
+
+    // MARK: - Same-id duplicates
+
+    /// **The mitigation that broke its own premise.** `ResearchTrailMigration` accepts a residual
+    /// where two devices write a row carrying the same `id`, on the grounds that the duplicate is
+    /// "visible and individually deletable". It was neither: `ForEach(visibleSearches)` put two
+    /// elements under one `Identifiable` id — SwiftUI's documented-undefined case — and
+    /// `deleteSearch` re-fetched with `fetchLimit = 1`, so the swipe reported success and left the
+    /// row on screen.
+    ///
+    /// Half one: every loaded row has a distinct identity, whatever the entries' ids are.
+    @Test("Two entries sharing an id become two distinctly identified rows")
+    func sameIdEntriesGetDistinctRowIdentities() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let shared = UUID()
+
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        context.insert(SearchHistoryEntry(id: shared, queryText: "détente", resultCount: 4,
+                                          executedAt: base))
+        context.insert(SearchHistoryEntry(id: shared, queryText: "détente", resultCount: 4,
+                                          executedAt: base))
+        let visit = insertVisit(context, documentId: "d1")
+        let twin = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01")
+        twin.id = visit.id
+        context.insert(twin)
+        try context.save()
+
+        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        #expect(snapshot.searches.count == 2)
+        #expect(Set(snapshot.searches.map(\.id)).count == 2, "ForEach needs two distinct ids")
+        #expect(snapshot.searches.allSatisfy { $0.entryID == shared })
+        #expect(snapshot.documents.count == 2)
+        #expect(Set(snapshot.documents.map(\.id)).count == 2)
+    }
+
+    /// Half two: the delete removes every copy, so the swipe does what it says. They are identical
+    /// rows standing for one recorded thing.
+    @Test("Deleting a duplicated entry removes every copy")
+    func deletingADuplicatedEntryRemovesEveryCopy() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let shared = UUID()
+
+        context.insert(SearchHistoryEntry(id: shared, queryText: "détente", resultCount: 4))
+        context.insert(SearchHistoryEntry(id: shared, queryText: "détente", resultCount: 4))
+        let survivor = insertSearch(context, query: "Berlin")
+        try context.save()
+
+        #expect(HistoryTrailAdmin.deleteSearch(id: shared, in: context))
+        let remaining = try context.fetch(FetchDescriptor<SearchHistoryEntry>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.id == survivor.id)
+        #expect(HistoryPaneSnapshot.fetch(from: context).searches.count == 1)
+    }
+
+    // MARK: - Exports
+
+    /// The third trail type was not loaded here at all, which is what made "individually
+    /// deletable" untrue of it. Rows, totals, scope and delete now behave like the other two.
+    @Test("Exports are loaded, scoped, counted and deletable")
+    func exportsAreLoadedScopedAndDeletable() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = UUID()
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+
+        let scoped = ExportHistoryEntry(format: "pdf", documentCount: 12,
+                                        collectionName: "Détente Reader",
+                                        projectId: project, exportedAt: base)
+        context.insert(scoped)
+        context.insert(ExportHistoryEntry(format: "zotero-api", documentCount: 3,
+                                          exportedAt: base.addingTimeInterval(60)))
+        try context.save()
+
+        let all = HistoryPaneSnapshot.fetch(from: context)
+        #expect(all.totalExports == 2)
+        #expect(all.exports.map(\.documentCount) == [3, 12], "newest first")
+        #expect(all.isEmpty == false, "a store with only exports is not an empty trail")
+
+        let scopedSnapshot = HistoryPaneSnapshot.fetch(from: context, scope: .project(project))
+        #expect(scopedSnapshot.exports.map(\.entryID) == [scoped.id])
+        let unfiled = HistoryPaneSnapshot.fetch(from: context, scope: .unfiled)
+        #expect(unfiled.exports.map(\.format) == ["zotero-api"])
+
+        #expect(HistoryTrailAdmin.deleteExport(id: scoped.id, in: context))
+        #expect(HistoryPaneSnapshot.fetch(from: context).totalExports == 1)
+        #expect(HistoryTrailAdmin.deleteExport(id: UUID(), in: context) == false)
+    }
+
+    /// The export row's copy: a collection name when one was recorded, the format's own wording
+    /// when not — which is every row the migration produced, since the legacy payload carried no
+    /// name. And the filter reaches both spellings of the format.
+    @Test("An export row titles itself and filters on name and format")
+    func exportRowCopyAndFilter() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        context.insert(ExportHistoryEntry(format: "pdf", documentCount: 12,
+                                          collectionName: "Détente Reader", exportedAt: base))
+        context.insert(ExportHistoryEntry(format: "zotero-api", documentCount: 3,
+                                          exportedAt: base.addingTimeInterval(60)))
+        try context.save()
+
+        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let named = try #require(snapshot.exports.first { $0.format == "pdf" })
+        let migrated = try #require(snapshot.exports.first { $0.format == "zotero-api" })
+        #expect(named.title == "Détente Reader")
+        #expect(named.formatDisplayName == "PDF")
+        #expect(migrated.collectionName == nil)
+        #expect(migrated.title == "Zotero (web)", "no name recorded, so the format is the title")
+
+        #expect(snapshot.filteredExports(matching: "détente").map(\.format) == ["pdf"])
+        #expect(snapshot.filteredExports(matching: "PDF").map(\.format) == ["pdf"])
+        #expect(snapshot.filteredExports(matching: "zotero").map(\.format) == ["zotero-api"])
+        #expect(snapshot.filteredExports(matching: "").count == 2)
     }
 }

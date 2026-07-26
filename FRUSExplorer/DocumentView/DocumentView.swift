@@ -393,12 +393,11 @@ struct DocumentView: View {
             // already nil); inert on iPad/Mac, where the rail is the inspector and `activeSheet` is
             // never `.researchRail`. The `onChange` below keeps `panelVisible` in sync on dismissal.
             if isPhone, activeSheet?.id == "researchRail" { activeSheet = nil }
+            // Wave R-2a: the `appState.logEvent(.documentOpen(…))` that used to sit here is gone.
+            // It recorded the open a second time, ~50 lines from
+            // `DocumentViewModel.recordReadingHistory` below, into a store nothing but the session
+            // log read — the duplication this wave exists to remove. Reading history is the trail.
             bootstrapViewModel()
-            appState.logEvent(.documentOpen(
-                volumeId: entry.volumeId,
-                documentId: entry.documentId,
-                title: entry.header.isEmpty ? entry.documentId : entry.header
-            ))
         }
         // vm.documentTitle is set after the document loads; it provides a real
         // title for cross-reference targets, which are created with header: "".

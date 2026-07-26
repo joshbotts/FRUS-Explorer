@@ -1731,3 +1731,111 @@ Two days ahead of the Rev-3 schedule by close.
   the startup console line. **Not verified:** the macOS render of the row and its sheet (the Mac
   app shares the owner's real CloudKit container on this machine, so it was not launched), and
   the real CloudKit deploy path.
+
+### Session 2026-07-26 — Wave R-2a: one trail, one store
+
+Executes R-0's Q1(a) — the wave's riskiest change, and the one that had to be split.
+
+- **The split, and why.** `ResearchSession.self` / `SessionEvent.self` cannot leave
+  `frusModelTypes` in the same release that migrates them: without them the app cannot **read** the
+  rows it has to migrate on a device that has not launched since, or on a device whose second
+  device is still on an older build and still writing them. So this is **R-2a** — migrate, stop
+  writing, derive for display, keep the types enrolled. Removing them is **R-2b**, a later release,
+  specified in `Planning/Wave-R-Research-Trail-2026-08.md`.
+- **`ExportHistoryEntry`** (contract D1) — the trail's third typed table. The four
+  `logEvent(.export(…))` sites in `CollectionExportSheet` go through `ExportHistoryRecorder`, one
+  gated writer, so R-1's gate is written once and `noUngatedHistoryWriterExists` has one file to
+  name rather than a view with four copies of it. Exports survive because nothing else records
+  that a collection left the app, and the Zotero Web-API push has a real external side effect.
+- **`.noteSave` dropped** (contract D2) — `ResearchNote` timestamps itself.
+- **`ResearchTrailMigration`.** Migrates `.searchSubmit` (de-duplicated) and `.export`; drops
+  `.documentOpen` (every one already has a `ReadingHistoryEntry`) and `.noteSave`; then empties the
+  legacy tables. **No `UserDefaults` marker** — it is self-limiting (one `fetchCount` and out),
+  which is what lets it pick up events a device on an older build syncs in *later*; a one-shot flag
+  would have made those permanently unreadable. Idempotent because each migrated row takes **the
+  source event's own `id`**. Runs from the CloudKit import-settled debounce (local-only: at boot),
+  the `OrphanedTagRepair` placement, for the same "never against a partial store" reason.
+- **The ±2 s search pairing.** Pre-R-4 `.searchSubmit` events have no counterpart and must be
+  migrated; post-R-4 ones do and must not. Nothing on the record distinguishes them, so they pair
+  on content. Two seconds because the two writers fired in the same main-actor continuation with
+  nothing awaited between them (`SearchViewModel.search()`'s last statement, then
+  `SearchView.runSearch()`'s next line) — the real gap is sub-millisecond. A pre-existing entry
+  absorbs **one** event; a row this pass inserted absorbs any number of near-identical followers,
+  which is what `lastRecordedHistoryQuery` did live. That distinction was found by a failing test,
+  not by reading.
+- **Sessions derived.** `ResearchTrailSessions` groups the three tables on the 30-minute idle rule
+  from timestamps alone, which **removes** the inherited defect rather than reproducing it: the
+  stored form stamped `endedAt` only when a later event arrived in the same process, so a session
+  ended by quitting the app read "Ongoing" forever. `SessionLogView` reads a bounded
+  `SessionLogSnapshot` (1 000 activities, Show More, honest "showing N of M") instead of a `@Query`
+  over CloudKit-mirrored tables nothing prunes.
+- **The delete had to grow, and that was forced.** "Delete Recorded Sessions…" summarises *derived*
+  sessions, so a delete reaching only the legacy tables would have announced twelve sessions and
+  removed none of them. It now calls `HistoryTrailAdmin.deleteAll` — the whole trail plus the
+  legacy tables — with new copy keys. **Erase Everything** was extended the same way: it reached
+  `ReadingHistoryEntry` alone and left every recorded search behind.
+- **Not enrolled in `DuplicateRecordCleanup`, deliberately.** Its keeper rule breaks ties on
+  `createdAt` then `id.uuidString` — vacuous for a same-`id` group — so two devices can pick
+  different keepers and delete each other's copy. That hazard is pre-existing for the four enrolled
+  types and is not R-2's to fix, but it is a reason not to aim it at a table D5 says nothing may
+  silently delete. Migration duplicates are instead made rare (deterministic ids + import-settled
+  timing) and benign (an identical, individually deletable row).
+- **R-7's gate fired**, as designed: 7 added identifiers (`CD_ExportHistoryEntry` + 6 fields),
+  pasted into the inventory and listed in `identifiersAwaitingDeploy`. **The Production deploy is
+  outstanding** and is the one step no test can check.
+- **Verified.** Full `FRUSExplorerTests` **1762/1762** pass; iOS and macOS build with no new source
+  warnings; iPhone 17 Pro simulator walk-through — Research Sessions pane empty *and* populated,
+  the derived Session Log showing one session grouping a document open (12:06) and a search (12:07)
+  as "Ongoing · 2 events". **Not verified:** the macOS render of the pane and log sheet, the
+  migration against real legacy data (no `SessionEvent` rows existed on the test device), and the
+  multi-device race, none of which a simulator can reach.
+
+### Session 2026-07-26 — Wave R-2a review fixes (PR #517)
+
+Three adversarial reviews attacked the migration independently; most findings arrived with a
+failing test rather than an argument. Two were blockers.
+
+- **The dedupe design was wrong in kind, not in size.** `pairingTolerance` (2s) was sized from the
+  gap between the two *writers* — sub-millisecond, same main-actor continuation — but it was also
+  load-bearing for collapsing repeated *events*, whose gap is a human tap. `SearchViewModel.search()`
+  fired `.searchSubmit` on every execution; `recordSearchHistory` wrote one row per **distinct**
+  query; and iOS re-ran `search()` for the same keywords from `clearVolumeScope()` and the
+  result-row tag chip. One query plus two filter toggles = 3 events, 1 recorded search, **3 migrated
+  rows**, on every shipped iOS build. The window is **removed**, not retuned: existing entries and
+  legacy events merge into one time-ordered stream, which is cut into runs of consecutive identical
+  queries; a run holding a real entry writes nothing, a run without one writes exactly one row.
+  That is what `lastRecordedHistoryQuery` did, so `A A B A` is three searches. It also dissolves the
+  finding that a pre-existing row was the only row forbidden from absorbing its own followers.
+- **R-7's marker became an interlock.** The pass writes `ExportHistoryEntry` and deletes the
+  `SessionEvent` rows it replaces in one call. While that type sits in `identifiersAwaitingDeploy`,
+  CloudKit takes the deletions and rejects the replacements (#488) — a second device or a reinstall
+  would simply lose the export history. `run` now checks the marker for any record type it writes,
+  defers, and logs why. **The migration is therefore dormant in this build and starts by itself at
+  the first launch after the owner clears the marker** (CloudKit checklist step 4).
+- **Determinism.** Every fetch feeding a decision is sorted; the merged stream orders by
+  (timestamp, kind, id). `theResultDoesNotDependOnInsertionOrder` pins it.
+- **Same-`id` duplicates.** The residual is only benign if it is visible and deletable, and it was
+  neither — `ForEach` had two elements under one `Identifiable` id, and the deletes used
+  `fetchLimit = 1`. Rows now carry a distinct `HistoryRowID`; the deletes remove every copy;
+  `HistoryTrailAdmin.deleteExport` and a **Collections Exported** History section close the third
+  type, which had no per-entry delete and was never even loaded.
+- **The migration runs unconditionally at boot** as well as from the import-settled debounce — a
+  device signed out of iCloud never got that event, and nothing reads `SessionEvent` any more.
+- **The delete confirmation quotes the exact activity count.** It quoted a session count off a
+  1,000-activity scan against an unbounded delete: measured, "1000 sessions" destroyed 1,200. New
+  key `settings.sessions.delete.message.trail.v2`; the Settings row says "at least N sessions" when
+  its scan was truncated.
+- **`nil` timestamps.** `SessionLogSnapshot.totalActivities` counts only *datable* rows, so
+  `hasMore` can reach `false` and an all-undated store draws its empty state;
+  `ResearchSessionsSummary.isEmpty` asks whether there is anything **to delete**, so undated rows no
+  longer grey out the only delete control. A `SessionEvent` with a `nil` `timestamp` falls back to
+  `createdAt` instead of being destroyed. The legacy sweep is refused when the event fetch returned
+  fewer rows than the `fetchCount` before it.
+- **Tests changed, and why.** `pairingBoundaryHolds` **deleted** (it pinned the window from both
+  sides). `aLaterRepeatOfTheSameQueryIsNotSwallowed` and `eachEntryPairsWithOneEventOnly`
+  **rewritten** — both encoded the "one entry absorbs one event" assumption that produced the three
+  rows. `nilTimestampIsSkipped` **rewritten**: it asserted `totalActivities == 2` for a page that
+  could only ever draw one row, which is the desynchronisation itself.
+- **Verified.** Full `FRUSExplorerTests` **1777/1777** pass on a booted iPhone 17 Pro simulator;
+  iOS and macOS build with no new warnings. **Not verified:** the migration against real legacy
+  data, the multi-device race, and the on-device render of the new History exports section.

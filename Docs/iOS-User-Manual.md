@@ -455,13 +455,15 @@ Tap any category to open the matching documents; tapping one opens it directly i
 
 ### 7.5 History
 
-**Research → History** is your research trail: every document you have opened and every search you have run, newest first. Until now this existed only on the Mac; it is the same screen on both, so a trail that started on your iPad is legible on your Mac and the reverse.
+**Research → History** is your research trail: every document you have opened, every search you have run, and every collection you have exported, newest first, in three sections. Until now this existed only on the Mac; it is the same screen on both, so a trail that started on your iPad is legible on your Mac and the reverse.
 
 It has three controls:
 
 - **Project scope** — *All Projects*, *Not in a Project*, or a specific project by name. A history entry is filed under whichever project was active *when it was recorded*; switching projects later does not re-file anything retroactively. This is the control to reach for when you want to reconstruct what you actually read while working on one paper.
-- **Search history…** — a free-text filter over what is loaded. It matches a visited document's title, its volume id, and its document id; for searches it matches the query text.
+- **Search history…** — a free-text filter over what is loaded. It matches a visited document's title, its volume id, and its document id; for searches, the query text; for exports, the collection's name and the format.
 - **Delete** — swipe a row left, or long-press it, to remove that one entry. Deletions sync, and there is no undo.
+
+**Collections Exported** is the third section. It records what left the app — the format, how many documents, and the collection's name where it was known — because nothing else in the app remembers that an export happened. It matters most for the Zotero web send, which puts items into your live Zotero library: this row is the app's only memory of it. These rows are records, not shortcuts, so tapping one does nothing; delete is the only action.
 
 `[SCREENSHOT: iPhone History screen showing the project scope picker, the search field, and a Documents Visited section with two rows]`
 
@@ -982,23 +984,26 @@ The app can keep a record of your research trail. **Settings → Research → Re
 where you see what it keeps, decide whether it keeps it, and delete it.
 
 **Log Research Sessions** governs the recording — despite the name, all of it. That means the
-documents you open and the text of the searches you run, grouped into sessions that end after 30
-minutes of inactivity, and also the reading history that a project's **Recents** are built from.
+documents you open, the text of the searches you run, and the collections you export. There is one
+record of each, and it is the same record the **History** screen, a project's **Recently Read** and
+**Recent Searches** cards, and its **Documents Visited** and **Searches Run** counts are built from.
 All of it is kept on this device and, if iCloud sync is on, in your private iCloud database.
 
 Turning it off stops every part of that recording. One consequence is worth knowing in advance:
-because Recents are built from the reading history the switch now governs, they will thin out and
+because History and Recents are built from the record the switch governs, they will thin out and
 eventually be empty while the switch is off. That is the switch working, not a fault. Anything
 recorded before you turned it off stays until you delete it.
 
 **Session Log** shows how much has been recorded and opens the whole thing — sessions newest
-first, each expanding to the individual events. No other part of the app reads this log yet; it is
-groundwork for a research-trail view, and it is here so that what is recorded is something you can
-look at.
+first, each expanding to what you did in it. Sessions are not stored anywhere: they are worked out
+from the times of those records, with a gap of 30 minutes starting a new one. A session that is
+still within that 30 minutes reads **Ongoing**. Long trails load their most recent activity first,
+with a **Show More** button and a line saying how much is not shown.
 
-**Delete Recorded Sessions…** clears every recorded session and its events, and nothing else. Your
-notes, highlights, tags and collections stay put, and so does the reading and search history the
-switch above also governs — this button does not reach that.
+**Delete Recorded Sessions…** clears the whole record of your work — every document you opened,
+every search you ran, every collection you exported — because that is what the sessions are made
+of. Your notes, highlights, tags and collections are not touched. You can also delete single
+entries from the **History** screen (Section 7.5) rather than all of it.
 
 `[SCREENSHOT: Settings → Research → Research Sessions — the Log Research Sessions switch, the Session Log row with its counts, and Delete Recorded Sessions…]`
 

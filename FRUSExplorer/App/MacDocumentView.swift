@@ -37,7 +37,9 @@ import WebKit
 ///   1.0 — New UI scaffolding (macOS-only; replaces BrowserView-centric architecture)
 ///   1.1 — Session 91: removed private EditorialNoteBadge and TagChip; now uses
 ///          shared FRUSTheme components (EditorialNoteBadge, FRUSTagChip)
-///   1.2 — Session 100: logEvent(.documentOpen) in .task
+///   1.2 — Session 100: logEvent(.documentOpen) in .task (removed in Wave R-2a: the visit
+///          is already recorded as a `ReadingHistoryEntry` by `loadDocument()`, and the
+///          `SessionEvent` store it wrote to is retired)
 ///   1.3 — Session 103: highlight mode toggle + DocumentHighlightTextView +
 ///          color-picker popover + DocumentHighlight SwiftData insertion
 ///   1.4 — Session 105: renderingVersion uses SHA-256(flatText ++ kVersion) via
@@ -221,11 +223,9 @@ struct MacDocumentView: View {
             // vm.renderModel, so the passage is re-extracted from the flat text with
             // its anchors instead of freezing the raw selection string.
             highlightCoordinator.makeExcerptCaptureAction = makeSelectionExcerptCapture
-            appState.logEvent(.documentOpen(
-                volumeId: entry.volumeId,
-                documentId: entry.documentId,
-                title: entry.header.isEmpty ? entry.documentId : entry.header
-            ))
+            // Wave R-2a: the `appState.logEvent(.documentOpen(…))` that used to sit here is gone —
+            // `loadDocument()` above already records the visit via
+            // `DocumentViewModel.recordReadingHistory`, and that is the trail now.
         }
         .userActivity(AppActivityTypes.document, element: entry) { entry, activity in
             activity.title = entry.header.isEmpty ? entry.documentId : entry.header

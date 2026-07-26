@@ -38,6 +38,9 @@ import SwiftData
 ///   1.1 — Wave R-4 (2026-07-26): iOS gained a producer, so the type is no longer
 ///          macOS-only. `resultCount`'s doc corrected — the two producers derive it
 ///          differently (see the property).
+///   1.2 — Wave R-2a: `init` gained `id` and `executedAt` so ``ResearchTrailMigration`` can
+///          re-home a legacy `SessionEvent.searchSubmit` with its original identity and time.
+///          No stored property changed, so the CloudKit schema is untouched by this.
 @Model final class SearchHistoryEntry {
 
     // MARK: - Identity
@@ -73,16 +76,28 @@ import SwiftData
 
     // MARK: - Initializer
 
+    /// Creates a search record.
+    ///
+    /// - Parameters:
+    ///   - id: The entry's identifier. Defaults to a fresh `UUID`; ``ResearchTrailMigration``
+    ///     passes the migrated `SessionEvent`'s id so a second pass over the same event is a no-op.
+    ///   - queryText: The submitted query, trimmed by the caller.
+    ///   - resultCount: Matches at execution time (see the property — the two producers differ).
+    ///   - projectId: The active project, or `nil`.
+    ///   - executedAt: When the search ran. Defaults to now; the migration passes the source
+    ///     event's timestamp so a migrated search keeps its real place in the trail.
     init(
+        id: UUID = UUID(),
         queryText: String,
         resultCount: Int = 0,
-        projectId: UUID? = nil
+        projectId: UUID? = nil,
+        executedAt: Date = .now
     ) {
-        self.id = UUID()
+        self.id = id
         self.queryText = queryText
         self.resultCount = resultCount
         self.projectId = projectId
-        executedAt = Date.now
+        self.executedAt = executedAt
 
         #if DEBUG
         print("[SwiftData] SearchHistoryEntry created: \"\(queryText)\" results=\(resultCount) project=\(projectId?.uuidString ?? "nil")")

@@ -39,6 +39,7 @@ import Observation
 ///   1.2 — Session 40: `personRefText` property and `applyParameters(_:)` added
 ///   1.3 — Session 62: `showFilterPanel` semantics changed from inline panel to sheet flag
 ///   1.4 — Session 100: `appState` property for logEvent(.searchSubmit) after search()
+///          (both removed in Wave R-2a — see the last entry)
 ///   1.5 — Session 130: `searchHardLimit = 500` passed to `searchService.search()`; iOS
 ///          was silently capped at `defaultPageSize = 20` (the macOS VM already used 7 500)
 ///   1.6 — Session 2026-06-08: `phrase`, `prefixWildcard`, `booleanMode`, and
@@ -64,6 +65,10 @@ import Observation
 ///          always 0 and its Recent Searches card permanently empty. Mirrors the macOS
 ///          writer's semantics exactly, including the `submittedQuery` de-duplication
 ///          that keeps a filter/scope-only re-run from minting a second row.
+///   2.0 — Wave R-2a: the `.searchSubmit` session event and the `appState` back reference it
+///          needed are gone. `SearchHistoryEntry` is the only record of a search now, on both
+///          platforms; `ResearchTrailMigration` brings the events earlier builds wrote across,
+///          de-duplicated against the entries R-4's producer already wrote.
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -423,9 +428,10 @@ final class SearchViewModel {
 
     private let searchService: SearchService
 
-    /// Injected by `SearchView` after init so `search()` can fire `logEvent`.
-    /// Optional: no-op if not set (e.g. in unit tests).
-    weak var appState: AppState?
+    // Wave R-2a: the `weak var appState` injected here since Session 100 existed solely so
+    // `search()` could fire `AppState.logEvent(.searchSubmit(…))`. That writer is retired, and
+    // `SearchView` passes the active project id to `recordSearchHistory` directly, so the back
+    // reference is gone rather than left as an unread property.
 
     // MARK: - Initialisation
 
@@ -519,21 +525,11 @@ final class SearchViewModel {
             #endif
         }
         isSearching = false
-        if hasSearched {
-            // Wave R-4 kept this deliberately. It is the second record of one search — the
-            // duplication this wave exists to remove — but the Session Log is the ONLY surface
-            // that reads `SessionEvent`, and on iOS it is today the only browsable record of a
-            // search at all. Dropping it here would leave that log silently incomplete (docs
-            // opened, no searches) for the whole interval until R-2 retires sessions and derives
-            // them from the typed tables. An incomplete log misleads; a duplicate row does not,
-            // and both writers sit behind the same R-1 gate so nothing extra is collected.
-            // R-2 removes this call as part of the retirement it already owns, together with the
-            // migration for events already in users' iCloud databases.
-            appState?.logEvent(.searchSubmit(
-                query: keywords.trimmingCharacters(in: .whitespaces),
-                resultCount: results.count
-            ))
-        }
+        // Wave R-2a: the `appState?.logEvent(.searchSubmit(…))` that stood here is gone, as R-4
+        // said it would be. `SearchView.runSearch()` calls `recordSearchHistory` immediately after
+        // this method returns, and that `SearchHistoryEntry` is now the only record of a search —
+        // read by the History surface, Project Home, and the derived session log alike.
+        // `ResearchTrailMigration` carries the events already written by earlier builds across.
     }
 
     // MARK: - Search History

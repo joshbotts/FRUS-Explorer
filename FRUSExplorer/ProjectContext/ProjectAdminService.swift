@@ -19,16 +19,17 @@ import SwiftData
 ///
 /// ## Delete
 /// Deleting a project does not touch any other record. `ResearchNote`,
-/// `Collection`, `GeneratedSummary`, `ReadingHistoryEntry`, and
-/// `SearchHistoryEntry` rows that reference the deleted project's `id` keep
+/// `Collection`, `GeneratedSummary`, `ReadingHistoryEntry`, `SearchHistoryEntry`
+/// and `ExportHistoryEntry` rows that reference the deleted project's `id` keep
 /// that now-orphaned reference and remain visible in Global Context — "Activity
 /// records are kept but unlinked from this project," per the delete
 /// confirmation copy on both platforms.
 ///
 /// ## Merge
 /// Reassigns `ResearchNote.projectIds`, `Collection.projectIds`,
-/// `GeneratedSummary.projectId`, `ReadingHistoryEntry.projectId`, and
-/// `SearchHistoryEntry.projectId` from `source` to `target`, then deletes
+/// `GeneratedSummary.projectId`, `ReadingHistoryEntry.projectId`,
+/// `SearchHistoryEntry.projectId` and `ExportHistoryEntry.projectId` from
+/// `source` to `target`, then deletes
 /// `source`. A merge into the same project (`source.id == target.id`) is a
 /// no-op.
 ///
@@ -40,6 +41,8 @@ import SwiftData
 ///   1.0 — Session 153: extracted from `SettingsProjectsPane`
 ///   1.1 — Session 158: merge also reassigns `SearchHistoryEntry.projectId`
 ///          (previously left dangling at the deleted source project's id)
+///   1.2 — Wave R-2a: merge also reassigns `ExportHistoryEntry.projectId`, the research
+///          trail's third type
 @MainActor
 struct ProjectAdminService {
 
@@ -93,6 +96,14 @@ struct ProjectAdminService {
 
         let allSearchHistory = (try? context.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? []
         for entry in allSearchHistory where entry.projectId == sourceId {
+            entry.projectId = targetId
+        }
+
+        // Wave R-2a: the trail's third type. Attribution is stamped at write time on all three,
+        // so a merge that re-pointed two of them would leave exports stranded on a project that
+        // no longer exists — invisible in every scope but "All".
+        let allExportHistory = (try? context.fetch(FetchDescriptor<ExportHistoryEntry>())) ?? []
+        for entry in allExportHistory where entry.projectId == sourceId {
             entry.projectId = targetId
         }
 

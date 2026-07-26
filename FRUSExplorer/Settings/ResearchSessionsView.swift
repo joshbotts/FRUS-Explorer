@@ -41,6 +41,17 @@ import SwiftData
 ///   1.2 — Wave R-4: iOS gained a `SearchHistoryEntry` writer, so the iOS recording footer
 ///          (new key `…trail.v2`) now names the Project Home surfaces that fill as a result —
 ///          Recently Read, Recent Searches, Documents Visited and Searches Run
+///   1.3 — Wave R-2a: sessions are derived, not stored, so four pieces of copy stopped being
+///          true and were replaced under **new keys** (`…trail.mac.v2`, `…trail.v3`,
+///          `…activity.footer.derived`, `…manage.footer.whole`, `…delete.message.trail`):
+///          the recording footers now name exports as well, the activity footer no longer says
+///          "no other part of the app reads this log", and — the load-bearing one — the delete
+///          reaches the **whole** trail (`HistoryTrailAdmin.deleteAll`) instead of the retired
+///          session tables, so the warning had to grow to match. The macOS empty-state fence is
+///          gone: it existed because macOS wrote no `.searchSubmit` event
+///   1.4 — Wave R-2a review fixes: the delete confirmation quotes the **exact** activity count
+///          (`…delete.message.trail.v2`) instead of a session count derived from a 1,000-activity
+///          scan, which understated an unbounded delete by 10–20×
 struct ResearchSessionsView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -120,15 +131,25 @@ struct ResearchSessionsView: View {
         ) {
             Button(String(localized: "settings.sessions.delete.confirm",
                           defaultValue: "Delete"), role: .destructive) {
-                ResearchSessionAdmin.deleteAll(context: modelContext)
+                // Wave R-2a: the whole trail, not just the retired session tables. Sessions are
+                // derived from these rows now, so a delete that spared them would leave every
+                // session the dialog just counted still on screen.
+                HistoryTrailAdmin.deleteAll(context: modelContext)
                 refresh()
             }
             Button(String(localized: "settings.sessions.delete.cancel",
                           defaultValue: "Cancel"), role: .cancel) {}
         } message: {
-            Text(String(format: String(localized: "settings.sessions.delete.message %@",
-                                       defaultValue: "%@ will be permanently deleted from this device and, if iCloud sync is on, from iCloud. Your notes, highlights, tags and collections are not affected."),
-                        ResearchSessionsSummary.sessions(summary.sessionCount)))
+            // New key again (`…message.trail.v2`), because the magnitude changed and the sentence
+            // with it. `…message.trail` quoted `summary.sessionCount`, which is derived from a
+            // 1,000-activity scan while `deleteAll` is unbounded: a measured run announced "1000
+            // sessions" and destroyed 1,200 of them. The activity count is three `fetchCount`s and
+            // is therefore exact at any size, so that is what an irreversible, CloudKit-propagating
+            // delete is allowed to promise. No String Catalog ships, so rewriting the old key's
+            // text in place would be a silent collision.
+            Text(String(format: String(localized: "settings.sessions.delete.message.trail.v2 %@",
+                                       defaultValue: "%@ will be permanently deleted from this device and, if iCloud sync is on, from iCloud — every document you opened, every search you ran, and every collection you exported, since that is what a session is made of. Your notes, highlights, tags and collections are not affected."),
+                        ResearchSessionsSummary.events(summary.eventCount)))
         }
     }
 
@@ -144,28 +165,29 @@ struct ResearchSessionsView: View {
                         defaultValue: "Recording"))
         } footer: {
             // The label stays "Log Research Sessions" (owner decision, Wave R-0 Q3), so it does
-            // not hint that the switch also governs reading history and search history. Since
-            // Wave R-1 it does — `DocumentViewModel.recordReadingHistory` and
-            // `MacSearchViewModel.recordSearchHistory` honour the same preference `logEvent`
-            // does. The whole explanatory burden therefore lands here, and the footer has to
-            // carry the behaviour change too: turning the switch off drains History and the
-            // Project Home recents, because those surfaces are fed by the store now gated.
+            // not hint that the switch also governs reading history, search history and exports.
+            // It governs all three: since Wave R-1 `DocumentViewModel.recordReadingHistory` and
+            // both `recordSearchHistory` writers consult `AppState.isResearchLoggingEnabled`, and
+            // since Wave R-2a so does `ExportHistoryRecorder`. The whole explanatory burden
+            // therefore lands here, and the footer has to carry the behaviour change too: turning
+            // the switch off drains History and the Project Home recents, because those surfaces
+            // are fed by the store now gated.
             //
-            // Still two keys, because the two platforms surface the trail differently. Since
-            // Wave R-4 BOTH platforms write `SearchHistoryEntry`, so iOS finally fills Project
-            // Home's Searches Run tile and Recent Searches card; the iOS text names them, and
-            // its key is new (`…trail.v2`) rather than reused — there is no String Catalog, so
-            // rewriting a key's text in place would be a silent collision. What still differs is
-            // where the trail can be browsed, and hence which surfaces empty when the switch
-            // goes off: macOS has the History window, iOS has only a project's Home (R-3 is the
-            // gap). The earlier Mac footer's "searches are recorded on iPhone and iPad but not
-            // here" was true of the session log alone and wrong about the trail as a whole.
+            // Still two keys, because the two platforms *name* their surfaces differently — macOS
+            // has the History window and Recents, iOS has the History screen and Project Home's
+            // cards and tiles. Both texts got new keys again in R-2a (`…mac.v2`, `…v3`) rather
+            // than being rewritten in place: there is no String Catalog, so reusing a key with
+            // different text is a silent collision.
+            //
+            // What is no longer different is the substance. Before R-2a the two platforms wrote
+            // *different stores* for a search, so which surface emptied depended on the device;
+            // now there is one record of each kind and one sentence describing it.
             #if os(macOS)
-            Text(String(localized: "settings.sessions.logging.footer.trail.mac",
-                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, grouped into sessions that end after 30 minutes of inactivity, plus the text of the searches you run and the reading history behind the History window and a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so History and Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
+            Text(String(localized: "settings.sessions.logging.footer.trail.mac.v2",
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, the text of the searches you run, and the collections you export. There is one record of each, shared by the History window, a project's Recents, and the Session Log, which groups them into sessions that end after 30 minutes of inactivity. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so History and Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #else
-            Text(String(localized: "settings.sessions.logging.footer.trail.v2",
-                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity, plus the reading and search history behind a project's Recently Read and Recent Searches cards and its Documents Visited and Searches Run counts. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so those will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
+            Text(String(localized: "settings.sessions.logging.footer.trail.v3",
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, the text of the searches you run, and the collections you export. There is one record of each, shared by the History screen, a project's Recently Read and Recent Searches cards and its Documents Visited and Searches Run counts, and the Session Log, which groups them into sessions that end after 30 minutes of inactivity. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so those will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #endif
         }
     }
@@ -198,19 +220,20 @@ struct ResearchSessionsView: View {
                         defaultValue: "Recorded Activity"))
         } footer: {
             if summary.isEmpty {
-                // Fenced for the same reason the recording footer is: running a search records
-                // nothing on macOS, so telling a Mac user to try one would be a promise the app
-                // does not keep. The recording footer got this right and this one did not.
-                #if os(macOS)
-                Text(String(localized: "settings.sessions.activity.footer.empty.mac",
-                            defaultValue: "Nothing has been recorded yet. Open a document and it will appear here."))
-                #else
+                // One key on both platforms since Wave R-2a. The macOS variant existed because
+                // the session log read `SessionEvent`, which macOS never wrote for a search — so
+                // "run a search" would have been a promise the Mac did not keep. The log is
+                // derived from `SearchHistoryEntry` now, of which macOS has always been a
+                // producer, so the sentence is true on both and the fence is gone.
                 Text(String(localized: "settings.sessions.activity.footer.empty",
                             defaultValue: "Nothing has been recorded yet. Open a document or run a search and it will appear here."))
-                #endif
             } else {
-                Text(String(localized: "settings.sessions.activity.footer",
-                            defaultValue: "No other part of the app reads this log — it is groundwork for a research-trail view. It is here so that what is recorded is something you can look at."))
+                // New key (`…footer.derived`). The old text said "no other part of the app reads
+                // this log", which was true of the `SessionEvent` store and is false of what the
+                // log now reads: the same reading, search and export history the History surface
+                // and Project Home are built from.
+                Text(String(localized: "settings.sessions.activity.footer.derived",
+                            defaultValue: "Sessions are not stored — they are worked out from the times you opened documents, ran searches and exported collections, with a gap of 30 minutes starting a new one. The same records fill the History screen and a project's Recents."))
             }
         }
     }
@@ -232,12 +255,13 @@ struct ResearchSessionsView: View {
         } header: {
             Text(String(localized: "settings.sessions.manage.header", defaultValue: "Manage"))
         } footer: {
-            // Reworded for Wave R-1. The old text called reading history "separate", which was
-            // true of the recording switch then and is not now — the switch above governs it.
-            // What is still separate is the *deletion*: this button reaches the session log only.
-            // Closing that is R-5's job; until then the copy must not imply otherwise.
-            Text(String(localized: "settings.sessions.manage.footer.trail",
-                        defaultValue: "Deletes every recorded session and its events. Nothing else is touched: your notes, highlights, tags and collections stay put, and so does the reading and search history the switch above also governs — this button does not reach that."))
+            // Reworded again for Wave R-2a, under a new key (`…footer.whole`). R-1's text said
+            // this button "does not reach" the reading and search history. It does now: sessions
+            // are derived from that history, so deleting sessions *is* deleting it. The gap R-1
+            // had to be honest about is closed, and the copy has to say so or it under-warns
+            // about a destructive action.
+            Text(String(localized: "settings.sessions.manage.footer.whole",
+                        defaultValue: "Deletes the whole record of your work: every document you opened, every search you ran, and every collection you exported, on this device and — if iCloud sync is on — in your iCloud database. Your notes, highlights, tags and collections are not touched. You can also delete single entries from the History screen."))
         }
     }
 
