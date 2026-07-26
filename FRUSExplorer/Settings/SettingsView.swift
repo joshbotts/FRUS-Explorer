@@ -194,8 +194,11 @@ struct SettingsView: View {
             NavigationLink { DataRecoveryView() } label: { paneLabel(pane) }
         case .about:
             NavigationLink { AboutView() } label: { paneLabel(pane) }
-        // macOS-only panes (see `SettingsPane.platforms`) — never listed on iOS.
-        case .notes, .sync:
+        case .notes:
+            NavigationLink { NotesSettingsView() } label: { paneLabel(pane) }
+        // macOS-only pane (see `SettingsPane.platforms`): iOS renders sync as the inline section
+        // at the top of this root, not as a pushed destination.
+        case .sync:
             EmptyView()
         }
     }
