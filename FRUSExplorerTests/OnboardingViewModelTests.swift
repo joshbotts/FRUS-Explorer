@@ -16,12 +16,22 @@ import Testing
 import Foundation
 @testable import FRUSExplorer
 
-/// Tests for the Session 49 onboarding redesign and related infrastructure.
+/// Tests for `OnboardingViewModel` and the `ManifestStore` date helpers it reads.
+///
+/// **This does not cover the onboarding flow.** `OnboardingViewModel` does not drive the
+/// shipped flow — `OnboardingView` carries its own step state and actions, and the view
+/// model survives in the app through a single static helper, `hasDownloadedVolumes(in:)`,
+/// called from `ContentView`. The flow itself is covered by
+/// `OnboardingScopeResolverTests`.
+///
+/// The file was named `OnboardingFlowTests` until O-0, which is precisely how the
+/// Workstream O recon came to believe the flow had coverage.
 ///
 /// Version history:
 ///   1.0 — Session 49: initial implementation
+///   1.1 — O-0: renamed from `OnboardingFlowTests` to name what it actually exercises
 @MainActor
-struct OnboardingFlowTests {
+struct OnboardingViewModelTests {
 
     // MARK: - Helpers
 

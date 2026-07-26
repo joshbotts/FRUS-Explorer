@@ -14,7 +14,7 @@ import WebKit
 /// Lightweight in-app browser sheet for opening external links without
 /// leaving FRUS Explorer.
 ///
-/// `AboutView`, `OnboardingIntroView`, and `IndexingEducationView` embed a
+/// `AboutView` and `IndexingEducationView` embed a
 /// handful of inline Markdown links (e.g. to `history.state.gov`, the GitHub
 /// repository, or the federal statute establishing the FRUS series). Handing
 /// those off to the system browser is a jarring context switch — especially

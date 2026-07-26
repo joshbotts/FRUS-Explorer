@@ -41,6 +41,13 @@ import SwiftData
 ///   3.3 — Dynamic Type review 2026-07-04: hero-glyph caps now enforced in code
 ///         via `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
 ///         on a `.system(size:)` font).
+///   3.4 — O-0: the pure step-2 logic (volume floor, subseries order, grouping,
+///         validity, enqueue set) moved to `OnboardingScopeResolver`, and the
+///         Finish side-effect to `OnboardingCompletion`, so both are testable
+///         before O-4 rewrites this view around the word-cloud backdrop. The
+///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
+///         unchanged but for the now-deterministic subseries tiebreak, which is
+///         documented at `OnboardingScopeResolver.subseries`.
 @MainActor
 struct OnboardingView: View {
 
@@ -57,8 +64,7 @@ struct OnboardingView: View {
 
     // MARK: - Step 2 State
 
-    private enum ScopeChoice { case corpus, subseries, volume }
-    @State private var scopeChoice: ScopeChoice = .corpus
+    @State private var scopeChoice: OnboardingScopeChoice = .corpus
     @State private var selectedSubseries: String = ""
     @State private var selectedVolumeId: String = ""
 
@@ -207,7 +213,7 @@ struct OnboardingView: View {
                         Text(sub)
                             .font(.callout)
                             .foregroundStyle(.primary)
-                        let count = allVolumes.filter { $0.subseries == sub }.count
+                        let count = scopeResolver.volumeCount(inSubseries: sub)
                         Text("\(count) volume\(count == 1 ? "" : "s")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -370,51 +376,44 @@ struct OnboardingView: View {
 
     // MARK: - Derived Data
 
-    private var allVolumes: [VolumeManifestEntry] {
+    /// The pure step-2 logic, rebuilt from whichever manifest view is current.
+    ///
+    /// A refreshed manifest wins over the bundled one, so a user who came online during
+    /// onboarding is offered what the network knows rather than what shipped.
+    private var scopeResolver: OnboardingScopeResolver {
         let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
-        return source.filter { $0.sizeBytes >= 20_000 }
+        return OnboardingScopeResolver(manifestEntries: source)
     }
 
+    private var allVolumes: [VolumeManifestEntry] { scopeResolver.volumes }
+
     /// Subseries sorted newest-first by the leading four-digit year.
-    private var allSubseries: [String] {
-        let unique = Set(allVolumes.map(\.subseries))
-        return unique.sorted { startYear(from: $0) > startYear(from: $1) }
-    }
+    private var allSubseries: [String] { scopeResolver.subseries }
 
     /// Volumes grouped by subseries, subseries sorted newest-first.
     private var volumesBySubseries: [(subseries: String, volumes: [VolumeManifestEntry])] {
-        allSubseries.map { sub in
-            (sub, allVolumes.filter { $0.subseries == sub })
-        }
-    }
-
-    private func startYear(from subseries: String) -> Int {
-        Int(subseries.prefix(4)) ?? 0
+        scopeResolver.volumesBySubseries
     }
 
     // MARK: - Validation
 
     private var canProceedFromScope: Bool {
-        switch scopeChoice {
-        case .corpus:    return true
-        case .subseries: return !selectedSubseries.isEmpty
-        case .volume:    return !selectedVolumeId.isEmpty
-        }
+        scopeResolver.canProceed(
+            scope: scopeChoice,
+            selectedSubseries: selectedSubseries,
+            selectedVolumeId: selectedVolumeId
+        )
     }
 
     // MARK: - Actions
 
     private func enqueueAndAdvance() async {
         if let dm = appState.downloadManager {
-            let volumes: [VolumeManifestEntry]
-            switch scopeChoice {
-            case .corpus:
-                volumes = allVolumes
-            case .subseries:
-                volumes = allVolumes.filter { $0.subseries == selectedSubseries }
-            case .volume:
-                volumes = allVolumes.filter { $0.volumeId == selectedVolumeId }.prefix(1).map { $0 }
-            }
+            let volumes = scopeResolver.enqueueSet(
+                scope: scopeChoice,
+                selectedSubseries: selectedSubseries,
+                selectedVolumeId: selectedVolumeId
+            )
             for entry in volumes {
                 await dm.enqueueDownload(volumeId: entry.volumeId, downloadUrl: entry.downloadUrl)
             }
@@ -423,29 +422,10 @@ struct OnboardingView: View {
     }
 
     private func completeOnboarding() async {
-        await ensureDefaultProjectExists()
-        appState.hasCompletedOnboarding = true
-    }
-
-    private func ensureDefaultProjectExists() async {
-        do {
-            let descriptor = FetchDescriptor<Project>()
-            let count = try modelContext.fetchCount(descriptor)
-            guard count == 0 else { return }
-
-            let defaultProject = Project(name: "My Research")
-            modelContext.insert(defaultProject)
-            try modelContext.save()
-            appState.activeProjectId = defaultProject.id
-
-            #if DEBUG
-            print("[OnboardingView] Default project created: \(defaultProject.id)")
-            #endif
-        } catch {
-            #if DEBUG
-            print("[OnboardingView] Failed to create default project: \(error)")
-            #endif
+        if let newProjectId = OnboardingCompletion.ensureDefaultProjectExists(in: modelContext) {
+            appState.activeProjectId = newProjectId
         }
+        appState.hasCompletedOnboarding = true
     }
 
     // MARK: - Helpers
