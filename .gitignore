@@ -3,6 +3,13 @@
 *.xccheckout
 *.xcscmblueprint
 DerivedData/
+# A repo-local `xcodebuild -derivedDataPath` (scratch build output). The line above only matches
+# Xcode's DEFAULT directory name — a custom path inside the repo is otherwise fully committable,
+# and once swept 13,579 build artifacts into a staged commit (#511). Prefer pointing derived data
+# outside the repo entirely; these patterns are the backstop for when it lands inside.
+DerivedData*/
+.dd/
+dd-*/
 *.moved-aside
 xcuserdata/
 
