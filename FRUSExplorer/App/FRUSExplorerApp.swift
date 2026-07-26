@@ -209,6 +209,7 @@ final class FRUSAppDelegate: NSObject, UIApplicationDelegate {
             Task { @MainActor in handler() }
         }
     }
+
 }
 #endif
 
