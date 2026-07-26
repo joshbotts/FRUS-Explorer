@@ -116,6 +116,43 @@ struct NotesPaneSnapshotTests {
         #expect(row(body: "   ").title == "Empty note")
     }
 
+    /// The regression the first version shipped: a note with no newline in it — the ordinary
+    /// case, since a text editor soft-wraps and only a pressed Return stores one — made the
+    /// whole body the row's label, and the label had no line limit, so one note could be taller
+    /// than the pane. The title is bounded in the value type now.
+    @Test("A single-paragraph note does not become the whole row")
+    func longSingleLineIsBounded() {
+        let body = String(repeating: "diplomatic correspondence ", count: 40)
+        let title = row(body: body).title
+        #expect(title.count <= NotesPaneSnapshot.Row.titleLimit + 1, "got \(title.count) characters")
+        #expect(title.hasSuffix("…"))
+        #expect(body.hasPrefix(String(title.dropLast())))
+    }
+
+    /// A body just under the limit is shown whole, with no stray ellipsis.
+    @Test("A short first line is not elided")
+    func shortLineIsNotElided() {
+        let body = String(repeating: "a", count: NotesPaneSnapshot.Row.titleLimit)
+        #expect(row(body: body).title == body)
+        #expect(!row(body: body).title.hasSuffix("…"))
+    }
+
+    /// A note pasted from Windows or Word carries CRLF line breaks. Swift stores "\r\n" as a
+    /// single grapheme that does not equal "\n", so splitting on the literal newline would fail
+    /// to find any line break at all and smear the whole body across the row.
+    @Test("CRLF line breaks split like any other newline")
+    func crlfSplits() {
+        #expect(row(body: "First line\r\nsecond line").title == "First line")
+        #expect(row(body: "First line\rsecond line").title == "First line")
+    }
+
+    /// Leading blank lines are skipped rather than yielding the placeholder for a note that
+    /// clearly has content.
+    @Test("Leading blank lines are skipped")
+    func leadingBlankLines() {
+        #expect(row(body: "\n\n  \nReal content").title == "Real content")
+    }
+
     /// The detail line leads with where the note lives, then what it is filed under.
     @Test("Detail lists location then filing")
     func detailComposition() {

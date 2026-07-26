@@ -55,15 +55,30 @@ struct NotesPaneSnapshot: Equatable, Sendable {
         /// User-tag ids, kept for filtering.
         let userTagIds: [UUID]
 
-        /// The row's primary line: the note's first non-empty line, or a placeholder.
+        /// How many characters of the first line the row shows before eliding.
+        ///
+        /// A note is free-form text and a great many are a single paragraph with no newline in
+        /// them at all — `TextEditor` soft-wraps, so only a pressed Return puts one there. Without
+        /// a bound, "first line" is the whole note, and a settings row grows as tall as it. The
+        /// row it replaced was `Text(note.bodyText).lineLimit(2)`; this keeps that promise in the
+        /// value type, where it can be tested.
+        static let titleLimit = 90
+
+        /// The row's primary line: the note's first non-empty line, bounded, or a placeholder.
         var title: String {
+            // Split on the newline *character set*, not "\n": Swift stores a CRLF as one grapheme
+            // that does not equal "\n", so a note pasted from Windows or Word would otherwise
+            // never split and would smear its whole body across the row.
             let firstLine = bodyText
-                .split(separator: "\n", omittingEmptySubsequences: true)
-                .first
-                .map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
-            return firstLine.isEmpty
-                ? String(localized: "settings.notes.emptyNote", defaultValue: "Empty note")
-                : firstLine
+                .components(separatedBy: .newlines)
+                .lazy
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .first { !$0.isEmpty } ?? ""
+            guard !firstLine.isEmpty else {
+                return String(localized: "settings.notes.emptyNote", defaultValue: "Empty note")
+            }
+            guard firstLine.count > Self.titleLimit else { return firstLine }
+            return firstLine.prefix(Self.titleLimit).trimmingCharacters(in: .whitespaces) + "…"
         }
 
         /// The row's secondary line: where the note lives, then what it is filed under.

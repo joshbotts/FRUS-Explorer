@@ -663,6 +663,11 @@ private struct SettingsNotesPane: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
+    /// Whether the Settings window is the active one. On macOS Settings is a sibling window, not
+    /// a modal — the main window stays live behind it, so a note written or deleted there must
+    /// re-read here when the user comes back. A one-shot `.task` alone would show them the state
+    /// of the world when they opened the pane.
+    @Environment(\.controlActiveState) private var controlActiveState
 
     @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
 
@@ -680,6 +685,9 @@ private struct SettingsNotesPane: View {
         .frame(maxWidth: .infinity)
         .scrollIndicators(.visible)
         .task { refresh() }
+        .onChange(of: controlActiveState) { _, state in
+            if state != .inactive { refresh() }
+        }
         .sheet(isPresented: $showsAllNotes, onDismiss: refresh) {
             MacAllNotesSheet(snapshot: snapshot, onChanged: refresh)
         }
@@ -751,7 +759,13 @@ private struct SettingsNotesPane: View {
     @ViewBuilder
     private func noteRow(_ row: NotesPaneSnapshot.Row) -> some View {
         Button {
-            editingNote = NotesPaneSnapshot.note(id: row.id, in: modelContext)
+            // A nil lookup means the snapshot is stale — the note went away since the row was
+            // drawn. Re-read rather than leave a ghost row that does nothing when clicked.
+            guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+                refresh()
+                return
+            }
+            editingNote = note
         } label: {
             HStack {
                 SettingsNavRow(label: row.title,
@@ -764,6 +778,7 @@ private struct SettingsNotesPane: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
+            .lineLimit(2)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -844,6 +859,7 @@ private struct MacAllNotesSheet: View {
             footer
         }
         .frame(minWidth: 560, minHeight: 480)
+        .task { localSnapshot = NotesPaneSnapshot.fetch(from: modelContext) }
         .sheet(item: $editingNote, onDismiss: refresh) { note in
             ResearchNoteEditorView(
                 documentId: note.documentId,
@@ -939,13 +955,18 @@ private struct MacAllNotesSheet: View {
         } else {
             List(filtered) { row in
                 Button {
-                    editingNote = NotesPaneSnapshot.note(id: row.id, in: modelContext)
+                    guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+                        refresh()
+                        return
+                    }
+                    editingNote = note
                 } label: {
                     SettingsNavRow(label: row.title,
                                    detail: row.detail,
                                    value: row.lastModified.map {
                                        $0.formatted(date: .abbreviated, time: .omitted)
                                    })
+                        .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                 }
@@ -976,7 +997,11 @@ private struct MacAllNotesSheet: View {
     // MARK: - Mutations
 
     private func delete(_ row: NotesPaneSnapshot.Row) {
-        guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else { return }
+        guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+            // Already gone — the snapshot is stale, so re-read instead of silently doing nothing.
+            refresh()
+            return
+        }
         modelContext.delete(note)
         // Flush, so the cross-context @Query consumers (the Research window, Project Home)
         // see the removal promptly — the same reason ResearchNoteEditorView saves after delete.

@@ -450,6 +450,7 @@ enum WordCloudScope: Hashable, Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — S-5b: optional `lens` stamp, written when a result is persisted to disk
 struct WordCloudResult: Sendable, Codable {
     /// The most frequent terms, sorted by descending count (ties broken
     /// alphabetically). Length is bounded by the requested limit.
@@ -458,6 +459,19 @@ struct WordCloudResult: Sendable, Codable {
     let documentCount: Int
     /// Total number of non-stopword tokens scanned across all documents.
     let totalTokenCount: Int
+
+    /// The lens these terms were computed under, when known.
+    ///
+    /// Optional, and absent on every entry written before S-5b: the disk cache names its files
+    /// by a SHA-256 of the cache key, so nothing about a stored result was recoverable from it.
+    /// The Word Cloud settings bench needs this, because an entity-lens cloud is a list of
+    /// multi-word names ("united states", "john f. kennedy") and the word-path criteria reject
+    /// anything containing a space — measuring one against the other would report a near-total
+    /// drop that says nothing about the user's settings. The bench treats an unknown lens as
+    /// unusable rather than guess.
+    ///
+    /// Decoding is backward-compatible: entries without the field decode with `nil`.
+    var lens: WordCloudLens?
 
     /// An empty result (no documents in scope, or no surviving tokens).
     static let empty = WordCloudResult(terms: [], documentCount: 0, totalTokenCount: 0)

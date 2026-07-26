@@ -22,10 +22,11 @@ import Foundation
 /// ## Where the sample comes from
 /// Two sources, in order:
 ///
-/// 1. The most recent cloud on disk (``WordCloudDiskCache/mostRecent()``) — real terms from
-///    the user's own corpus, so the preview is recognisably theirs.
-/// 2. ``canonicalSample`` — a fixed, on-theme list, used when nothing is cached. Only clouds
-///    over persistent scopes are ever written to disk, so an empty cache is ordinary.
+/// 1. The most recent `.allTerms` cloud on disk (``WordCloudDiskCache/mostRecent(lens:)``) —
+///    real terms from the user's own corpus, so the preview is recognisably theirs.
+/// 2. ``canonicalSample`` — a fixed, on-theme list, used when there is no suitable entry. Only
+///    clouds over persistent scopes are written to disk at all, and entries cached before S-5b
+///    carry no lens stamp and are skipped, so falling back is ordinary rather than exceptional.
 ///
 /// Neither touches the search index. Opening Settings must never trigger indexing work, which
 /// is the constraint that ruled out computing a live cloud here.
@@ -102,7 +103,7 @@ struct WordCloudBench: Equatable, Sendable {
                               isFromUserCorpus: isFromUserCorpus)
     }
 
-    /// Reads the sample, preferring the user's most recent cached cloud.
+    /// Reads the sample, preferring the user's most recent cached word-path cloud.
     ///
     /// The **whole** cached list, not its head. Taking the top N was the obvious first choice and
     /// it was wrong: a cached cloud is already sorted by descending count, so its first forty
@@ -110,11 +111,14 @@ struct WordCloudBench: Equatable, Sendable {
     /// offers can touch them. The bench read as broken — turn a knob, watch nothing happen. The
     /// tail is where the thresholds bite, so the tail has to be in the sample.
     ///
+    /// Only `.allTerms` entries qualify — see ``WordCloudDiskCache/mostRecent(lens:)`` for why an
+    /// entity-lens cloud would make the numbers meaningless.
+    ///
     /// Synchronous disk I/O — call from a `.task`, never a view body.
     ///
     /// - Returns: The terms and whether they are the user's own.
     static func loadSample() -> (terms: [TermCount], isFromUserCorpus: Bool) {
-        if let cached = WordCloudDiskCache.mostRecent(), !cached.terms.isEmpty {
+        if let cached = WordCloudDiskCache.mostRecent(lens: .allTerms), !cached.terms.isEmpty {
             return (cached.terms, true)
         }
         return (canonicalSample, false)

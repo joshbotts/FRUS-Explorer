@@ -20,8 +20,8 @@ import SwiftUI
 /// "Minimum occurrences: 3" — never what it costs. The pane now opens with a live sample of the
 /// terms the current settings keep, and the Thresholds section carries a "Keeps N of M terms"
 /// line. Both come from ``WordCloudBench``, which measures against the user's most recent cached
-/// cloud (or a canned list when nothing is cached) and never touches the search index — opening
-/// Settings must not start indexing work.
+/// `.allTerms` cloud (or a canned list when there is no suitable one) and never touches the search
+/// index — opening Settings must not start indexing work.
 ///
 /// Version history:
 ///   1.0 — Word Cloud: tunable criteria + stop-list management
@@ -30,8 +30,10 @@ import SwiftUI
 ///   1.2 — S-5b: the bench — live sample row, "Keeps N of M terms" consequence line — and the
 ///          two stop-list sections merged into one editor with a scope picker. Also observes
 ///          `WordCloudSettings.Keys.revision`, so a stop-list change arriving from another
-///          device refreshes the sample; and drops `maxHeight: .infinity`, which Session 67
-///          removed elsewhere because it stops the split-view detail column bounding the Form.
+///          device refreshes the sample; re-reads the sample when the Settings window becomes
+///          active again (it is a sibling window, not a modal); and drops `maxHeight: .infinity`,
+///          which Session 67 removed elsewhere because it stops the split-view detail column
+///          bounding the Form.
 struct WordCloudSettingsView: View {
 
     @AppStorage(WordCloudSettings.Keys.excludeBoilerplate) private var excludeBoilerplate = true
@@ -46,19 +48,26 @@ struct WordCloudSettingsView: View {
     /// sample re-filters when a hidden word is added on another device.
     @AppStorage(WordCloudSettings.Keys.revision) private var settingsRevision = 0
 
+    #if os(macOS)
+    /// Whether the Settings window is active. Settings is a sibling window on macOS, so a user
+    /// can open a cloud in the main window and come straight back — re-read the sample then,
+    /// rather than keep telling them to go and do what they have just done.
+    @Environment(\.controlActiveState) private var controlActiveState
+    #endif
+
     /// Which stop list the editor is showing — every cloud, or one lens.
     @State private var stopListScope: StopListScope = .allLenses
     @State private var words: [String] = []
     @State private var newWord = ""
 
-    /// The sample terms, read once from disk.
+    /// The sample terms, read from disk on appear and whenever this window becomes active again.
     @State private var sample: [TermCount] = []
     /// Whether `sample` is the user's own cached cloud rather than the canned list.
     @State private var sampleIsFromUserCorpus = false
 
-    /// The sample re-filtered through the current criteria. Recomputed in `body`, which is
-    /// cheap — a `filter` over at most 40 terms — and keeps it exact as the user drags a
-    /// stepper, which a `.task`-driven `@State` could not.
+    /// The sample re-filtered through the current criteria. Recomputed in `body`, which is cheap
+    /// — a `filter` over at most the cached term limit (220) — and keeps the number exact as the
+    /// user drags a stepper, which a `.task`-driven `@State` could not.
     private var bench: WordCloudBench {
         WordCloudBench.evaluate(
             sample: sample,
@@ -87,12 +96,12 @@ struct WordCloudSettingsView: View {
         .formStyle(.grouped)
         #endif
         .navigationTitle(String(localized: "settings.wordcloud.title", defaultValue: "Word Cloud"))
-        .task {
-            let loaded = WordCloudBench.loadSample()
-            sample = loaded.terms
-            sampleIsFromUserCorpus = loaded.isFromUserCorpus
-            words = stopListScope.words
+        .task { loadSample() }
+        #if os(macOS)
+        .onChange(of: controlActiveState) { _, state in
+            if state != .inactive { loadSample() }
         }
+        #endif
         .onChange(of: stopListScope) { _, scope in
             words = scope.words
             newWord = ""
@@ -301,6 +310,14 @@ struct WordCloudSettingsView: View {
 
     // MARK: - Mutations
 
+    /// Re-reads the sample from disk and the hidden-word list for the current scope.
+    private func loadSample() {
+        let loaded = WordCloudBench.loadSample()
+        sample = loaded.terms
+        sampleIsFromUserCorpus = loaded.isFromUserCorpus
+        words = stopListScope.words
+    }
+
     private func add() {
         switch stopListScope {
         case .allLenses:
@@ -431,10 +448,14 @@ private struct FlowLayout: Layout {
             var x = bounds.minX
             for index in row.indices {
                 let size = subviews[index].sizeThatFits(.unspecified)
+                // Clamp to the container: a single term wider than the row cannot be wrapped
+                // (it is one word with `lineLimit(1)`), so proposing its ideal width would draw
+                // it straight past the section's edge. Proposing the bound lets it ellipsize.
+                let width = min(size.width, bounds.width)
                 subviews[index].place(
                     at: CGPoint(x: x, y: y + (row.height - size.height) / 2),
-                    proposal: ProposedViewSize(size))
-                x += size.width + spacing
+                    proposal: ProposedViewSize(width: width, height: size.height))
+                x += width + spacing
             }
             y += row.height + spacing
         }

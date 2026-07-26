@@ -166,6 +166,46 @@ struct WordCloudBenchTests {
         #expect(bench.sampleSize == WordCloudBench.canonicalSample.count)
     }
 
+    // MARK: - Sample provenance
+
+    /// The defect the lens stamp exists to prevent. Whether a cloud is written to disk depends
+    /// on its *scope*, not its lens, so an entity-lens cloud can be the most recent cached one.
+    /// Its terms are multi-word names, and the word path rejects anything containing a space —
+    /// so measuring one against `.allTerms` criteria reports a near-total drop that says nothing
+    /// about the user's settings.
+    @Test("An entity-lens sample measured against word criteria would be meaningless")
+    func entityLensSampleWouldMislead() {
+        let entityTerms = [TermCount(term: "united states", count: 400),
+                           TermCount(term: "john f. kennedy", count: 220),
+                           TermCount(term: "soviet union", count: 180),
+                           TermCount(term: "west berlin", count: 90)]
+
+        // Under the word path every one of them dies on the space alone.
+        #expect(evaluate(entityTerms).keptCount == 0)
+        // Under the lens they were computed for, they survive — which is why the fix is to
+        // record the lens rather than to filter the terms.
+        #expect(evaluate(entityTerms, includeDiplomatic: false, lens: .places).keptCount > 0)
+    }
+
+    /// A result carries no lens until one is stamped, and the stamp round-trips through the
+    /// Codable form the disk cache stores. Entries written before S-5b decode with `nil`, which
+    /// the reader treats as unusable.
+    @Test("The lens stamp round-trips and is absent by default")
+    func lensStampRoundTrips() throws {
+        var result = WordCloudResult(terms: [TermCount(term: "treaty", count: 3)],
+                                     documentCount: 1, totalTokenCount: 3)
+        #expect(result.lens == nil)
+
+        result.lens = .people
+        let decoded = try JSONDecoder().decode(
+            WordCloudResult.self, from: try JSONEncoder().encode(result))
+        #expect(decoded.lens == .people)
+
+        // A pre-S-5b payload has no `lens` key at all and must still decode.
+        let legacy = Data(#"{"terms":[],"documentCount":0,"totalTokenCount":0}"#.utf8)
+        #expect(try JSONDecoder().decode(WordCloudResult.self, from: legacy).lens == nil)
+    }
+
     // MARK: - Copy
 
     /// The consequence line names both numbers and scopes itself to the sample.
