@@ -1025,6 +1025,15 @@ event types, timing and error codes: never record or account identifiers, and no
 content of your notes, tags or collections. The log stays on the device and is not synced. Use
 **Copy**, **Export…** or **Clear Log**.
 
+**Diagnostics → iCloud Schema** answers a question the Sync Log cannot: whether iCloud has been
+told about everything this version of the app saves. iCloud will not accept a kind of record it
+has not been taught, so a version that adds one has to have that addition published before those
+records can upload. The row says **Up to date** or **Update pending**; the screen behind it
+explains what that means for your data, lists anything outstanding, and offers **Copy Report** for
+a bug report. An "Update pending" is a problem with the app rather than with your account — there
+is nothing to do from here except report it, and everything else keeps syncing meanwhile. The row
+appears only when iCloud sync is running on this device.
+
 **Recovery** is a ladder, ordered by what it costs you, and each rung says so on its own row:
 
 | Rung | What it does | What it deletes |

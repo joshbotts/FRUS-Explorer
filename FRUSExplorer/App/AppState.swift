@@ -488,10 +488,13 @@ final class AppState {
     ///
     /// This is the **single** reader of ``researchLoggingPreferenceKey``. Every writer of the
     /// research trail routes through it — `logEvent(_:defaults:)`,
-    /// `DocumentViewModel.recordReadingHistory(projectId:in:defaults:)` and
-    /// `MacSearchViewModel.recordSearchHistory(projectId:in:defaults:)` — so the switch cannot
+    /// `DocumentViewModel.recordReadingHistory(projectId:in:defaults:)`,
+    /// `MacSearchViewModel.recordSearchHistory(projectId:in:defaults:)` and its iOS counterpart
+    /// `SearchViewModel.recordSearchHistory(projectId:in:defaults:)` — so the switch cannot
     /// govern one recorder and miss another, which is exactly what it did before Wave R-1:
     /// the gate lived inline in `logEvent` and the two history stores had no gate at all.
+    /// Wave R-4's iOS search writer was gated from its first commit for the same reason: an
+    /// ungated one would have started collecting search text on a platform that was not.
     ///
     /// An **absent** value means **on**. Both the app gate and
     /// `SettingsSyncCoordinator`'s pull rely on that convention; a well-meaning change to

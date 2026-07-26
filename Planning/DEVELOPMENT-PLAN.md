@@ -1686,3 +1686,48 @@ Two days ahead of the Rev-3 schedule by close.
 - **Verified.** iOS `build-for-testing` + full `FRUSExplorerTests` (1694 tests, 232 suites) pass;
   macOS `FRUSExplorerMac` builds with no new warnings. Not verified: on-device/simulator visual
   review of the rewritten footers, and end-to-end drain of History/Recents.
+
+### Session 2026-07-26 — Wave R-7: the schema-deploy release gate
+- **Why.** `Planning/188-189-Tester-Feedback-Build28-Plan.md:158` specified "a startup log line
+  if the installed model set is newer than a known-deployed marker, so a future undeployed-schema
+  regression is caught before shipping." It was never built. #488 **is** that regression: build 35
+  added `CD_ProjectLeadEntry`, `CD_Project.CD_leadAxisWeights`, `CD_Project.CD_defaultUserTagIds`
+  and `CD_Collection.CD_includeProjectProvenance`; Production was never promoted; CloudKit export
+  failed for every user; the owner had to diagnose it from the CloudKit Console because the app
+  could not describe its own failure.
+- **The inventory.** `FRUSExplorer/Models/CloudKitSchemaInventory.swift` — 206 checked-in CloudKit
+  identifiers (**18 record types + 188 fields**) in the Console's own `CD_Type` /
+  `CD_Type.CD_field` vocabulary. Property-grained on purpose: three of #488's four identifiers
+  were fields on existing types, so a record-type-only inventory would have caught one quarter.
+  `ModelContainer.frusModelTypes` went `private` → internal so the test can build a `Schema` from
+  it; **membership unchanged** (that is R-2's).
+- **The ratchet.** `CloudKitSchemaInventoryTests` (9 tests) rebuilds the inventory from the live
+  `Schema` and fails on any change, printing the added/removed identifiers, the replacement
+  literal, and a five-step deploy checklist. Pasting the literal then trips a second test: the
+  deployed baseline (`installed − awaiting`) is pinned by count **and** SHA-256 digest, so the
+  change must be answered either by listing the identifiers in `identifiersAwaitingDeploy`
+  (not deployed) or by restating the baseline (a claim that it was). No test can verify the
+  deploy itself — nothing in-process sees the Production schema — but it cannot be skipped in
+  silence, which was the gap. All three rungs were proved red then green with a temporary
+  `CustomVolumeScope.r7ProofField`, then reverted.
+- **Marker.** Two `static let`s beside the inventory, seeded at **build 36 / 2026-07-26** per the
+  owner's note on #488 ("Resolved by deploying the missing CloudKit schema"). Source, not
+  `UserDefaults` or a bundled resource: the fact is a property of the release, must be identical
+  on every install of a build, and must be reviewable in the diff that adds a model.
+- **Startup signal.** `makeFRUSContainer()` logs on the CloudKit-enabled path only. Cost is one
+  `isEmpty` on an array literal — no `Schema` walk, no hashing.
+- **Surfaces.** Settings ▸ Data & Recovery ▸ Diagnostics gains an **iCloud Schema** row beside
+  Sync Log, shown in both states, with no alert/badge/red — an undeployed schema is a
+  release-process failure a researcher cannot act on, but #488's user-visible symptom was silence,
+  so it is stated rather than hidden. Its screen explains the state in plain language, lists
+  outstanding identifiers and offers **Copy Report**. The sync-log **export header** carries the
+  same state: #488 was reported by pasting that dump, which could not name its own cause. Row
+  hidden when the container is local-only.
+- **Also fixed.** The version-history block said "16 record types" for a list of 18 (drift across
+  #258 and #377 Phase 3). Any `N record types` phrase in `ModelContainer+FRUS.swift` is now pinned
+  to the derived count.
+- **Verified.** Full `FRUSExplorerTests` 1708/1708 pass; iOS + macOS build with no new warnings;
+  iPhone 17 Pro simulator walk-through of both states (row, detail screen, sync-log header) and
+  the startup console line. **Not verified:** the macOS render of the row and its sheet (the Mac
+  app shares the owner's real CloudKit container on this machine, so it was not launched), and
+  the real CloudKit deploy path.

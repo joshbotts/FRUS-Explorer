@@ -57,6 +57,13 @@ import Observation
 ///   Session 09: `selectedSubjectTagIds` live state removed — persisted subject ids
 ///         no longer echo into `hasActiveFilters`, emitted parameters, or new
 ///         `SavedSearch` records (the filter is inert).
+///   1.9 — Wave R-4 (2026-07-26): `recordSearchHistory(projectId:in:defaults:)` added —
+///          the iOS producer for `SearchHistoryEntry`, which until now had exactly one
+///          writer and it was `MacSearchViewModel` (`#if os(macOS)`). An iOS-only
+///          researcher's Project Home "Searches Run" tile was therefore structurally
+///          always 0 and its Recent Searches card permanently empty. Mirrors the macOS
+///          writer's semantics exactly, including the `submittedQuery` de-duplication
+///          that keeps a filter/scope-only re-run from minting a second row.
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -456,6 +463,14 @@ final class SearchViewModel {
 
     // MARK: - Search
 
+    /// The keyword text of the search most recently *executed*, trimmed.
+    ///
+    /// Frozen at the top of `search()` rather than read from `keywords` at recording time:
+    /// `keywords` is bound live to the `.searchable` field, so a user who keeps typing while
+    /// the FTS5 query is in flight would otherwise have the *later* text recorded against the
+    /// *earlier* search. Named for its macOS counterpart, `MacSearchViewModel.submittedQuery`.
+    private var submittedQuery: String = ""
+
     func search() async {
         let params = searchParameters
         // A person filter is a valid standalone constraint — `SearchService`
@@ -474,6 +489,9 @@ final class SearchViewModel {
             )
             return
         }
+        // Freeze the query text for `recordSearchHistory` before awaiting anything (see
+        // `submittedQuery`).
+        submittedQuery = keywords.trimmingCharacters(in: .whitespacesAndNewlines)
         isSearching = true
         searchError = nil
         hasSearched = true
@@ -502,11 +520,84 @@ final class SearchViewModel {
         }
         isSearching = false
         if hasSearched {
+            // Wave R-4 kept this deliberately. It is the second record of one search — the
+            // duplication this wave exists to remove — but the Session Log is the ONLY surface
+            // that reads `SessionEvent`, and on iOS it is today the only browsable record of a
+            // search at all. Dropping it here would leave that log silently incomplete (docs
+            // opened, no searches) for the whole interval until R-2 retires sessions and derives
+            // them from the typed tables. An incomplete log misleads; a duplicate row does not,
+            // and both writers sit behind the same R-1 gate so nothing extra is collected.
+            // R-2 removes this call as part of the retirement it already owns, together with the
+            // migration for events already in users' iCloud databases.
             appState?.logEvent(.searchSubmit(
                 query: keywords.trimmingCharacters(in: .whitespaces),
                 resultCount: results.count
             ))
         }
+    }
+
+    // MARK: - Search History
+
+    /// The most recently recorded search-history query text.
+    ///
+    /// Several of `SearchView`'s entry points re-run `search()` for the **same** query with a
+    /// changed filter — clearing the volume scope, tapping a tag chip on a result row — and
+    /// those must not each mint a "search executed" row. Tracking the last recorded query
+    /// yields one entry per distinct submitted query rather than one per execution. Exactly
+    /// `MacSearchViewModel.lastRecordedHistoryQuery`, whose re-runs come from
+    /// `parametersVersion` instead.
+    private var lastRecordedHistoryQuery: String?
+
+    /// Inserts a `SearchHistoryEntry` into the SwiftData context for the most recently
+    /// executed search — the iOS half of the trail's search producer.
+    ///
+    /// Call once after `search()` completes; `SearchView.runSearch()` is the single site that
+    /// does so, which is why every search entry point in that view routes through it. No-ops
+    /// when the query is empty (a person-only "find all mentions" hand-off, say), the search
+    /// errored, or the query text matches the last recorded entry (see
+    /// `lastRecordedHistoryQuery`).
+    ///
+    /// **Honours the research-logging preference**, and did so from its first commit — Wave R-1
+    /// closed the gate before this writer existed precisely so that adding it could not start
+    /// collecting search text on a platform that was not collecting it. As on macOS the gate is
+    /// checked **before** `lastRecordedHistoryQuery` is updated, so switching logging back on
+    /// mid-session does not silently swallow the query that was suppressed.
+    ///
+    /// ## One difference from the macOS writer
+    /// `resultCount` is `results.count`, the fetched count — capped at `searchHardLimit`
+    /// (1,000). `MacSearchViewModel` records `totalMatchCount`, the true uncapped total, because
+    /// its `performSearch` already runs `SearchService.searchCount` in parallel for its
+    /// truncation banner. This view model runs no such count, and adding one would put a second
+    /// FTS5 `COUNT(*)` on every iPhone search to improve a number nothing yet displays. A query
+    /// matching more than 1,000 documents is therefore recorded as 1,000 on iOS.
+    ///
+    /// - Parameters:
+    ///   - projectId: The active project, stamped onto the entry; `nil` when none is active.
+    ///   - context: The context the entry is inserted into.
+    ///   - defaults: The store the research-logging gate is read from. Defaults to
+    ///     `.standard`; overridden only by tests.
+    func recordSearchHistory(projectId: UUID?,
+                             in context: ModelContext,
+                             defaults: UserDefaults = .standard) {
+        guard AppState.isResearchLoggingEnabled(in: defaults) else {
+            #if DEBUG
+            print("[SearchViewModel] SearchHistoryEntry suppressed (research logging off)")
+            #endif
+            return
+        }
+        let query = submittedQuery
+        guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
+        lastRecordedHistoryQuery = query
+
+        let record = SearchHistoryEntry(
+            queryText: query,
+            resultCount: results.count,
+            projectId: projectId
+        )
+        context.insert(record)
+        #if DEBUG
+        print("[SearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(results.count)")
+        #endif
     }
 
     func clearFilters() {
