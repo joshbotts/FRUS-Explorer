@@ -359,12 +359,20 @@ extension HistoryPaneSnapshot {
 /// That is a privacy gap rather than a polish item, and the surface that lists the entries is
 /// where the reader expects to be able to remove one.
 ///
-/// A trail-wide delete — one action that reaches every type, wired into the Data & Recovery
-/// inventory and the research-data export — is **R-5's**, deliberately not attempted here. This
-/// type is the extension point for it.
+/// ## And why the trail-wide delete followed it here in R-2a
+/// R-3 left ``deleteAll(context:)`` to R-5. Wave R-2a forced it early rather than by choice: once
+/// sessions are *derived* from these tables, the Research Sessions pane's "Delete Recorded
+/// Sessions…" — which summarises the derived sessions — would otherwise announce "12 sessions will
+/// be permanently deleted", call `ResearchSessionAdmin.deleteAll`, and remove nothing the user can
+/// see. A button that lies about what it deletes is worse than one that does not exist.
+///
+/// What is still **R-5's**: the Data & Recovery **Contents** inventory, which accounts for notes,
+/// tags, highlights, collections, prompts and projects and is silent about the trail; and
+/// `ResearchDataExportView`, which likewise omits it.
 ///
 /// Version history:
 ///   1.0 — Wave R-3: per-entry delete for both trail types
+///   1.1 — Wave R-2a: `deleteAll(context:)` — the whole trail, plus the retired session tables
 enum HistoryTrailAdmin {
 
     /// Deletes one recorded document visit.
@@ -405,5 +413,73 @@ enum HistoryTrailAdmin {
         context.delete(entry)
         try? context.save()
         return true
+    }
+
+    /// What one trail-wide delete removed.
+    struct DeletedCounts: Equatable, Sendable {
+        /// Document visits removed.
+        var visits = 0
+        /// Searches removed.
+        var searches = 0
+        /// Exports removed.
+        var exports = 0
+        /// Legacy `SessionEvent` rows removed.
+        var legacyEvents = 0
+        /// Legacy `ResearchSession` rows removed.
+        var legacySessions = 0
+
+        /// Everything the user would think of as "a thing that was recorded".
+        var trailTotal: Int { visits + searches + exports }
+    }
+
+    /// Deletes the **whole** research trail: every document visit, every recorded search, every
+    /// export — and the retired session tables with them.
+    ///
+    /// ## What it deliberately does not touch
+    /// Notes, highlights, tags, collections, prompts and projects. The confirmation copy in
+    /// Settings promises exactly that, and this is the code that has to keep the promise.
+    ///
+    /// ## Why the legacy tables go too
+    /// A user asking to delete their recorded sessions means all of them. Any `SessionEvent` still
+    /// present is one ``ResearchTrailMigration`` has not reached yet — typically synced in from a
+    /// device on an older build — and leaving it would let the trail silently repopulate at the
+    /// next launch from rows the user just deleted. Events are removed before their sessions
+    /// because the relationship is `.nullify`; ``ResearchSessionAdmin/deleteAll(context:)`` is the
+    /// one place that hazard is written down, so this delegates rather than repeating it.
+    ///
+    /// - Parameter context: The SwiftData context to mutate.
+    /// - Returns: How many rows of each kind were removed.
+    @MainActor
+    @discardableResult
+    static func deleteAll(context: ModelContext) -> DeletedCounts {
+        var counts = DeletedCounts()
+
+        let visits = (try? context.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? []
+        for visit in visits { context.delete(visit) }
+        counts.visits = visits.count
+
+        let searches = (try? context.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? []
+        for search in searches { context.delete(search) }
+        counts.searches = searches.count
+
+        let exports = (try? context.fetch(FetchDescriptor<ExportHistoryEntry>())) ?? []
+        for export in exports { context.delete(export) }
+        counts.exports = exports.count
+
+        let legacy = ResearchSessionAdmin.deleteAll(context: context)
+        counts.legacyEvents = legacy.events
+        counts.legacySessions = legacy.sessions
+
+        // `ResearchSessionAdmin.deleteAll` saves, but only after its own deletes are staged; save
+        // again so the trail deletes above are flushed even when the legacy tables were empty and
+        // that call had nothing to do.
+        try? context.save()
+
+        // Always-on, like `DuplicateRecordCleanup`'s: this removes CloudKit-mirrored user records
+        // and propagates the removal to every device.
+        print("[HistoryTrailAdmin] Deleted the research trail: \(counts.visits) visit(s), "
+              + "\(counts.searches) search(es), \(counts.exports) export(s), plus "
+              + "\(counts.legacyEvents) legacy event(s) in \(counts.legacySessions) session(s).")
+        return counts
     }
 }

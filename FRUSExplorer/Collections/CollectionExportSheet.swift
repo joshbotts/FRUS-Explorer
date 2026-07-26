@@ -27,6 +27,10 @@ import UIKit
 ///          (`resolveItems`, `resolveDocuments`, `resolveSmartDocuments`, `resolveSummaries`,
 ///          `prepareVolumes`, render-model helpers, `SmartEntry`) moved to
 ///          `CollectionContentResolver`; smart and static exports share one resolve path
+///   1.2 — Wave R-2a: the four `appState.logEvent(.export(…))` calls became one `recordExport`
+///          helper writing an `ExportHistoryEntry` through `ExportHistoryRecorder`. The record
+///          gained the collection's name and the active project, neither of which the retired
+///          `SessionEvent` payload carried
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -413,13 +417,29 @@ struct ExportSheetView: View {
             let url = try await exporter.export(
                 metadata: metadata, items: items, options: buildExportOptions())
             exportedURL = url
-            appState.logEvent(.export(
-                format: selectedFormat.rawValue,
-                documentCount: items.documents.count
-            ))
+            recordExport(format: selectedFormat.rawValue,
+                         documentCount: items.documents.count)
         } catch {
             exportError = error.localizedDescription
         }
+    }
+
+    /// Records a completed export in the research trail (Wave R-2a, contract D1).
+    ///
+    /// The four export paths below all end here rather than each inserting a row: the
+    /// research-logging gate belongs in one place, and `ExportHistoryRecorder` is where the trail's
+    /// other three writers keep theirs. This replaces `appState.logEvent(.export(…))`, whose
+    /// `SessionEvent` store is retired.
+    ///
+    /// - Parameters:
+    ///   - format: `ExportFormat.rawValue`, or `"zotero-api"` for the Web-API send.
+    ///   - documentCount: How many documents went out.
+    private func recordExport(format: String, documentCount: Int) {
+        ExportHistoryRecorder.record(format: format,
+                                     documentCount: documentCount,
+                                     collectionName: collection.name,
+                                     projectId: appState.activeProjectId,
+                                     in: modelContext)
     }
 
     /// Builds a content resolver whose progress callbacks drive this sheet's
@@ -513,9 +533,8 @@ struct ExportSheetView: View {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
             try data.write(to: url, options: .atomic)
             exportedURL = url
-            appState.logEvent(.export(
-                format: selectedFormat.rawValue,
-                documentCount: entries.filter { $0.entryKind == .document }.count))
+            recordExport(format: selectedFormat.rawValue,
+                         documentCount: entries.filter { $0.entryKind == .document }.count)
         } catch {
             exportError = error.localizedDescription
         }
@@ -554,7 +573,7 @@ struct ExportSheetView: View {
             let url = try await ZoteroCollectionExporter().export(
                 metadata: metadata, documents: docs, options: buildExportOptions())
             exportedURL = url
-            appState.logEvent(.export(format: ExportFormat.zoteroJSON.rawValue, documentCount: docs.count))
+            recordExport(format: ExportFormat.zoteroJSON.rawValue, documentCount: docs.count)
         } catch is CancellationError {
             return
         } catch {
@@ -589,7 +608,10 @@ struct ExportSheetView: View {
             ) { message in
                 Task { @MainActor in preparingMessage = message }
             }
-            appState.logEvent(.export(format: "zotero-api", documentCount: result.addedItems))
+            // The decisive case for contract D1: this send has a real external side effect —
+            // items land in the user's live Zotero library — and this row is the app's only
+            // memory that it happened.
+            recordExport(format: "zotero-api", documentCount: result.addedItems)
             zoteroResult = result
         } catch is CancellationError {
             return

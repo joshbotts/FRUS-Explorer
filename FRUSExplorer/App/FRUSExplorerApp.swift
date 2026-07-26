@@ -1337,6 +1337,13 @@ struct FRUSExplorerApp: App {
             // CloudKit) as a duplicate of a live record.
             if !appState.cloudKitSyncEnabled {
                 OrphanedTagRepair.run(context: modelContainer.mainContext)
+                // Wave R-2a: retire the legacy session tables into the typed trail. Same
+                // placement rule as the repair above, and for the same reason — with CloudKit on
+                // we wait for imports to settle (see the sync observer) so two devices are less
+                // likely to migrate the same events before either's push lands. On a local-only
+                // store there is no import to wait for, so it runs now. Self-limiting: one
+                // `fetchCount` and out once the legacy tables are empty.
+                ResearchTrailMigration.run(context: modelContainer.mainContext)
             }
             // Optional cross-device settings sync: mirror UserDefaults to/from a
             // CloudKit-synced record when this device has opted in. Starting it
@@ -1690,6 +1697,12 @@ struct FRUSExplorerApp: App {
                                 guard !Task.isCancelled else { return }
                                 DuplicateRecordCleanup.run(context: modelContainer.mainContext)
                                 OrphanedTagRepair.run(context: modelContainer.mainContext)
+                                // Wave R-2a: same debounce, same reason. Running the trail
+                                // migration only after imports go quiet means a second device
+                                // that has already migrated will usually have delivered its rows
+                                // by now, and this device recognises them by id and skips —
+                                // which is what keeps the two from both writing the same row.
+                                ResearchTrailMigration.run(context: modelContainer.mainContext)
                             }
                         }
                     } else {
@@ -1796,10 +1809,9 @@ struct FRUSExplorerApp: App {
             }
         }
 
-        // Wire the logging context last so the session log is ready before any
-        // user interaction fires (document opens, searches) but after the
-        // SwiftData container and schema are fully initialised.
-        appState.loggingContext = ModelContext(modelContainer)
+        // Wave R-2a: `appState.loggingContext` was wired here — a hand-made `ModelContext` that
+        // existed only for `AppState.logEvent`. Both are gone; the three trail writers use the
+        // view's `@Environment(\.modelContext)`, which is the container's main context.
     }
 
     // MARK: - Activity Continuation

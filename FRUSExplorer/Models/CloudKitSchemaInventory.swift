@@ -58,6 +58,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Wave R-7: initial implementation
+///   1.1 — Wave R-2a: `ExportHistoryEntry`'s seven identifiers added to the inventory **and** to
+///          ``identifiersAwaitingDeploy`` — the gate fired on the model change, as designed, and
+///          the deploy has not happened yet. The baseline count and digest are unchanged, which
+///          is the point: `installed − awaiting` still describes Production.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -146,6 +150,13 @@ enum CloudKitSchemaInventory {
         "CD_DocumentTagAssignment.CD_id",
         "CD_DocumentTagAssignment.CD_tagId",
         "CD_DocumentTagAssignment.CD_volumeId",
+        "CD_ExportHistoryEntry",
+        "CD_ExportHistoryEntry.CD_collectionName",
+        "CD_ExportHistoryEntry.CD_documentCount",
+        "CD_ExportHistoryEntry.CD_exportedAt",
+        "CD_ExportHistoryEntry.CD_format",
+        "CD_ExportHistoryEntry.CD_id",
+        "CD_ExportHistoryEntry.CD_projectId",
         "CD_GeneratedSummary",
         "CD_GeneratedSummary.CD_authorship",
         "CD_GeneratedSummary.CD_createdAt",
@@ -307,7 +318,20 @@ enum CloudKitSchemaInventory {
     ///
     /// Populated by the developer who changes the schema; cleared by whoever runs
     /// CloudKit Dashboard → Schema → **Deploy Schema Changes to Production**.
-    static let identifiersAwaitingDeploy: [String] = []
+    ///
+    /// **Wave R-2a** added `ExportHistoryEntry` (contract D1). Seven identifiers — one record type
+    /// and its six fields — none of them deployed at the time of writing. The retiring
+    /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
+    /// and still in Production, and removing them is R-2b's, not this release's.
+    static let identifiersAwaitingDeploy: [String] = [
+        "CD_ExportHistoryEntry",
+        "CD_ExportHistoryEntry.CD_collectionName",
+        "CD_ExportHistoryEntry.CD_documentCount",
+        "CD_ExportHistoryEntry.CD_exportedAt",
+        "CD_ExportHistoryEntry.CD_format",
+        "CD_ExportHistoryEntry.CD_id",
+        "CD_ExportHistoryEntry.CD_projectId",
+    ]
 
     // MARK: - Derived state
 

@@ -125,12 +125,10 @@ struct ResearchNoteEditorView: View {
                 Spacer()
 
                 Button(String(localized: "note.editor.toolbar.save", defaultValue: "Save")) {
+                    // Wave R-2a / contract D2: the `.noteSave` research event is gone. It was
+                    // redundant — `ResearchNote` carries `createdAt` and `lastModified` of its own
+                    // — and nothing but the session log ever read it.
                     if let noteId = vm.save(context: modelContext) {
-                        appState.logEvent(.noteSave(
-                            noteId: noteId,
-                            documentId: vm.documentId,
-                            volumeId: vm.volumeId
-                        ))
                         linkNoteToHighlight(noteId: noteId)
                     }
                     // Explicit save ensures the persistent store is updated before dismiss()
@@ -311,12 +309,8 @@ struct ResearchNoteEditorView: View {
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "note.editor.toolbar.save",
                           defaultValue: "Save")) {
+                // Wave R-2a / contract D2: no `.noteSave` event — see the macOS toolbar above.
                 if let noteId = vm.save(context: modelContext) {
-                    appState.logEvent(.noteSave(
-                        noteId: noteId,
-                        documentId: vm.documentId,
-                        volumeId: vm.volumeId
-                    ))
                     linkNoteToHighlight(noteId: noteId)
                 }
                 try? modelContext.save()   // ensure @Query in Research view updates promptly

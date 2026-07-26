@@ -23,11 +23,15 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — initial implementation
+///   1.1 — Wave R-2a: counted from the derived trail (``ResearchTrailSessions``) rather than from
+///          the retired `ResearchSession`/`SessionEvent` tables. The wording is unchanged, so the
+///          localisation keys are reused as-is; what an "event" is has simply become "a recorded
+///          activity" — a document opened, a search run, a collection exported
 struct ResearchSessionsSummary: Equatable, Sendable {
 
-    /// How many sessions have been recorded.
+    /// How many sessions have been recorded — derived, not stored.
     var sessionCount: Int = 0
-    /// How many events across all of them.
+    /// How many recorded activities across all of them.
     var eventCount: Int = 0
     /// When the most recent session began, or `nil` if nothing has been recorded.
     var lastSessionStart: Date?
@@ -81,32 +85,57 @@ struct ResearchSessionsSummary: Equatable, Sendable {
 
     // MARK: - Building
 
-    /// Counts what is stored, in two fetches.
+    /// Counts what the trail holds, grouped into sessions.
+    ///
+    /// ## Why this loads rows rather than counting them
+    /// A session is not a stored row any more, so `sessionCount` cannot come from a `fetchCount` —
+    /// the grouping has to see the timestamps. The activity total *is* three `fetchCount`s and is
+    /// exact whatever the page size; only the session count and the last start are computed from
+    /// the loaded page. On a trail longer than ``activityScanLimit`` the session count therefore
+    /// describes the recent window rather than the whole history. That is the right trade for a
+    /// Settings row whose job is "is there anything in here, and when did it last record?", and it
+    /// is why the two numbers are derived differently rather than both being approximations.
     ///
     /// - Parameter context: The SwiftData context to read.
     @MainActor
     static func fetch(from context: ModelContext) -> ResearchSessionsSummary {
-        let sessions = (try? context.fetch(
-            FetchDescriptor<ResearchSession>(
-                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]))) ?? []
-        let events = (try? context.fetchCount(FetchDescriptor<SessionEvent>())) ?? 0
+        let activities = ResearchTrailSessions.activities(in: context, limit: activityScanLimit)
+        let sessions = ResearchTrailSessions.group(activities)
         return ResearchSessionsSummary(
             sessionCount: sessions.count,
-            eventCount: events,
+            eventCount: ResearchTrailSessions.totalActivityCount(in: context),
             lastSessionStart: sessions.first?.startedAt)
     }
+
+    /// How many activities the summary loads to count sessions with.
+    ///
+    /// Matches ``SessionLogSnapshot/defaultPageLimit``, so the row's session count and the log's
+    /// first page describe the same window.
+    static let activityScanLimit = SessionLogSnapshot.defaultPageLimit
 }
 
 // MARK: - ResearchSessionAdmin
 
-/// Deleting recorded research sessions.
+/// Emptying the **legacy** `ResearchSession`/`SessionEvent` tables.
 ///
 /// Separated from the view for the reason `UserTagAdmin` is: a destructive operation with a
 /// cascade should be one named thing that can be read, reviewed, and tested, not a closure inside
 /// a confirmation dialog.
 ///
+/// ## Who calls this now
+/// Since Wave R-2a, ``ResearchTrailMigration`` — as its last step, once the two event kinds worth
+/// keeping have been re-homed. The Research Sessions pane's "Delete Recorded Sessions…" no longer
+/// calls it directly: sessions are derived from the typed trail, so a delete that reached only
+/// these two tables would report "12 sessions will be deleted" and remove nothing the user can
+/// see. That button calls ``HistoryTrailAdmin/deleteAll(context:)``, which reaches the whole trail
+/// **and** these tables.
+///
+/// R-2b deletes this type along with the models it operates on.
+///
 /// Version history:
 ///   1.0 — initial implementation
+///   1.1 — Wave R-2a: no longer the delete behind the Settings button; kept as the migration's
+///          legacy-table sweep and as the one place that documents the `.nullify` hazard
 enum ResearchSessionAdmin {
 
     /// Deletes every recorded session and event.

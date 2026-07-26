@@ -1356,7 +1356,16 @@ struct EraseEverythingView: View {
                 try modelContext.delete(model: UserTag.self)
                 try modelContext.delete(model: Collection.self)
                 try modelContext.delete(model: GeneratedSummary.self)
+                // Wave R-2a: the whole research trail, not just reading history. "Erase
+                // Everything" reached `ReadingHistoryEntry` alone, so a reset left every recorded
+                // search — the user's own query text, mirrored to iCloud — and every session row
+                // behind. `SessionEvent` goes before `ResearchSession` for the `.nullify` reason
+                // `ResearchSessionAdmin` documents.
                 try modelContext.delete(model: ReadingHistoryEntry.self)
+                try modelContext.delete(model: SearchHistoryEntry.self)
+                try modelContext.delete(model: ExportHistoryEntry.self)
+                try modelContext.delete(model: SessionEvent.self)
+                try modelContext.delete(model: ResearchSession.self)
                 try modelContext.delete(model: SummarizationPrompt.self)
                 try modelContext.delete(model: Project.self)
                 await MainActor.run {

@@ -128,6 +128,11 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///         (`DocumentViewModel.recordReadingHistory`, `MacSearchViewModel
 ///         .recordSearchHistory`) now honour the same switch. `logEvent` gained a
 ///         `defaults:` parameter so the gate is testable without global state.
+///   4.8 — Wave R-2a: `logEvent(_:defaults:)`, `loggingContext`, `currentResearchSession`,
+///         `lastEventDate` and `sessionExpiryInterval` removed. `AppState` no longer writes
+///         the research trail at all — the three typed writers do, sessions are derived by
+///         `ResearchTrailSessions`, and the idle interval moved to `ResearchTrailSessions
+///         .idleInterval`. `isResearchLoggingEnabled(in:)` stays: it is still the one gate.
 
 // MARK: - CloudKitSyncState
 
@@ -487,14 +492,18 @@ final class AppState {
     /// explicit `UserDefaults` store.
     ///
     /// This is the **single** reader of ``researchLoggingPreferenceKey``. Every writer of the
-    /// research trail routes through it — `logEvent(_:defaults:)`,
-    /// `DocumentViewModel.recordReadingHistory(projectId:in:defaults:)`,
-    /// `MacSearchViewModel.recordSearchHistory(projectId:in:defaults:)` and its iOS counterpart
-    /// `SearchViewModel.recordSearchHistory(projectId:in:defaults:)` — so the switch cannot
-    /// govern one recorder and miss another, which is exactly what it did before Wave R-1:
-    /// the gate lived inline in `logEvent` and the two history stores had no gate at all.
-    /// Wave R-4's iOS search writer was gated from its first commit for the same reason: an
-    /// ungated one would have started collecting search text on a platform that was not.
+    /// research trail routes through it — `DocumentViewModel.recordReadingHistory(projectId:in:
+    /// defaults:)`, `MacSearchViewModel.recordSearchHistory(projectId:in:defaults:)` and its iOS
+    /// counterpart `SearchViewModel.recordSearchHistory(projectId:in:defaults:)`, and since Wave
+    /// R-2a `ExportHistoryRecorder.record(…)` — so the switch cannot govern one recorder and miss
+    /// another, which is exactly what it did before Wave R-1: the gate lived inline in the
+    /// now-retired `logEvent` and the two history stores had no gate at all. Wave R-4's iOS search
+    /// writer was gated from its first commit for the same reason: an ungated one would have
+    /// started collecting search text on a platform that was not.
+    ///
+    /// `ResearchTrailMigration` deliberately does **not** consult it: moving records the user
+    /// already has is not collection, and skipping the move when the switch is off would destroy
+    /// them instead of preserving them.
     ///
     /// An **absent** value means **on**. Both the app gate and
     /// `SettingsSyncCoordinator`'s pull rely on that convention; a well-meaning change to
@@ -514,75 +523,20 @@ final class AppState {
         isResearchLoggingEnabled(in: .standard)
     }
 
-    // MARK: - Research Session Logging
-
-    /// `ModelContext` used exclusively for writing `ResearchSession` and `SessionEvent`
-    /// records. Set at boot by `FRUSExplorerApp`; `nil` until boot completes.
-    /// Callers do not need to interact with this directly — use `logEvent(_:)`.
-    var loggingContext: ModelContext?
-
-    /// In-memory handle to the current open research session.
-    /// `nil` at launch; replaced when the previous session expires.
-    private var currentResearchSession: ResearchSession?
-
-    /// Timestamp of the last logged event; used to detect session expiry.
-    private var lastEventDate: Date?
-
-    /// After this many seconds of inactivity a new `ResearchSession` is started.
-    static let sessionExpiryInterval: TimeInterval = 30 * 60
-
-    /// Logs a research event, creating or reusing a `ResearchSession` automatically.
-    ///
-    /// Fire-and-forget: callers need not `await` or wrap in a `Task`. All writes
-    /// are synchronous on the main actor. No-op until `loggingContext` is wired at boot.
-    ///
-    /// Session lifecycle:
-    /// - If no session is open, a new `ResearchSession` is inserted and becomes current.
-    /// - If the last event was more than `sessionExpiryInterval` ago, the previous
-    ///   session is closed (`endedAt` stamped) and a fresh session is created.
-    ///
-    /// - Parameters:
-    ///   - kind: The event to record.
-    ///   - defaults: The store the research-logging gate is read from. Defaults to
-    ///     `.standard`; overridden only by tests, so the gate can be exercised without
-    ///     mutating process-wide state.
-    func logEvent(_ kind: ResearchEventKind, defaults: UserDefaults = .standard) {
-        guard Self.isResearchLoggingEnabled(in: defaults) else { return }
-        guard let ctx = loggingContext else { return }
-        let now = Date.now
-
-        // Expire idle session.
-        if let session = currentResearchSession,
-           let last = lastEventDate,
-           now.timeIntervalSince(last) > Self.sessionExpiryInterval {
-            session.endedAt = last
-            currentResearchSession = nil
-        }
-
-        // Open a new session when needed.
-        if currentResearchSession == nil {
-            let session = ResearchSession(startedAt: now)
-            ctx.insert(session)
-            currentResearchSession = session
-        }
-
-        guard let session = currentResearchSession else { return }
-
-        let order = session.events?.count ?? 0
-        let event = SessionEvent(
-            sessionId: session.id,
-            timestamp: now,
-            kind: kind,
-            sortOrder: order
-        )
-        event.session = session
-        ctx.insert(event)
-        lastEventDate = now
-
-        #if DEBUG
-        print("[ResearchSession] Logged \(kind.typeString)")
-        #endif
-    }
+    // MARK: - Research Session Logging (retired, Wave R-2a)
+    //
+    // `logEvent(_:defaults:)`, `loggingContext`, the in-memory `currentResearchSession` and
+    // `sessionExpiryInterval` all lived here. Nothing writes a `ResearchSession` or a
+    // `SessionEvent` any more:
+    //
+    //   • document opens were already recorded as `ReadingHistoryEntry` from the same two views;
+    //   • searches are recorded as `SearchHistoryEntry` on both platforms since Wave R-4;
+    //   • exports are `ExportHistoryEntry` (contract D1);
+    //   • note saves are dropped — `ResearchNote` timestamps itself (contract D2).
+    //
+    // Sessions are now derived from those tables' timestamps by `ResearchTrailSessions`, whose
+    // `idleInterval` is the 30 minutes this constant used to hold. `ResearchTrailMigration` moves
+    // what is worth keeping out of the legacy tables.
 
     /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
     /// `nil` if the database could not be opened.

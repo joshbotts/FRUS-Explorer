@@ -982,23 +982,26 @@ The app can keep a record of your research trail. **Settings → Research → Re
 where you see what it keeps, decide whether it keeps it, and delete it.
 
 **Log Research Sessions** governs the recording — despite the name, all of it. That means the
-documents you open and the text of the searches you run, grouped into sessions that end after 30
-minutes of inactivity, and also the reading history that a project's **Recents** are built from.
+documents you open, the text of the searches you run, and the collections you export. There is one
+record of each, and it is the same record the **History** screen, a project's **Recently Read** and
+**Recent Searches** cards, and its **Documents Visited** and **Searches Run** counts are built from.
 All of it is kept on this device and, if iCloud sync is on, in your private iCloud database.
 
 Turning it off stops every part of that recording. One consequence is worth knowing in advance:
-because Recents are built from the reading history the switch now governs, they will thin out and
+because History and Recents are built from the record the switch governs, they will thin out and
 eventually be empty while the switch is off. That is the switch working, not a fault. Anything
 recorded before you turned it off stays until you delete it.
 
 **Session Log** shows how much has been recorded and opens the whole thing — sessions newest
-first, each expanding to the individual events. No other part of the app reads this log yet; it is
-groundwork for a research-trail view, and it is here so that what is recorded is something you can
-look at.
+first, each expanding to what you did in it. Sessions are not stored anywhere: they are worked out
+from the times of those records, with a gap of 30 minutes starting a new one. A session that is
+still within that 30 minutes reads **Ongoing**. Long trails load their most recent activity first,
+with a **Show More** button and a line saying how much is not shown.
 
-**Delete Recorded Sessions…** clears every recorded session and its events, and nothing else. Your
-notes, highlights, tags and collections stay put, and so does the reading and search history the
-switch above also governs — this button does not reach that.
+**Delete Recorded Sessions…** clears the whole record of your work — every document you opened,
+every search you ran, every collection you exported — because that is what the sessions are made
+of. Your notes, highlights, tags and collections are not touched. You can also delete single
+entries from the **History** screen (Section 7.5) rather than all of it.
 
 `[SCREENSHOT: Settings → Research → Research Sessions — the Log Research Sessions switch, the Session Log row with its counts, and Delete Recorded Sessions…]`
 

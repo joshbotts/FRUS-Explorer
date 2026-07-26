@@ -19,22 +19,24 @@ import Testing
 /// Before Wave R-1 the app recorded what you read twice, through two independent systems, and the
 /// switch governed only one of them. Opening a document fired `AppState.logEvent(.documentOpen)`
 /// — gated — and `DocumentViewModel.recordReadingHistory` — gated by nothing at all. The gated
-/// recorder feeds the session log and nothing else; the ungated one feeds the History window,
-/// Project Home's recents, Project Leads' engaged documents, the search checklist and the storage
-/// hub's last-opened dates. Turning the switch off therefore did not stop the app remembering what
-/// you read. The same shape held for searches with the platforms swapped: the iOS `.searchSubmit`
-/// event was gated, the macOS `SearchHistoryEntry` was not.
+/// recorder fed the session log and nothing else; the ungated one feeds the History surface,
+/// Project Home's recents, the search checklist and the storage hubs' last-opened dates. Turning
+/// the switch off therefore did not stop the app remembering what you read. The same shape held
+/// for searches with the platforms swapped: the iOS `.searchSubmit` event was gated, the macOS
+/// `SearchHistoryEntry` was not.
 ///
 /// No test covered any of the three writers. These do.
 ///
 /// ## What each writer gets
 /// | Writer | Reachable from the iOS test bundle? | Covered by |
 /// |---|---|---|
-/// | `AppState.logEvent` (document open, iOS + macOS) | yes | behavioural test |
-/// | `AppState.logEvent` (search submit, iOS only) | yes | behavioural test |
 /// | `DocumentViewModel.recordReadingHistory` (iOS + macOS) | yes | behavioural test |
 /// | `SearchViewModel.recordSearchHistory` (iOS, Wave R-4) | yes | behavioural test, over a real FTS5 index |
+/// | `ExportHistoryRecorder.record` (iOS + macOS, Wave R-2a) | yes | behavioural test |
 /// | `MacSearchViewModel.recordSearchHistory` (macOS only) | **no** — the type is `#if os(macOS)` and this bundle builds for iOS | source-shape test |
+///
+/// `AppState.logEvent` used to be the first two rows of that table. Wave R-2a retired it — nothing
+/// writes a `SessionEvent` any more, so its gate is no longer a thing that can regress.
 ///
 /// `FRUSExplorerTests` is an iOS-only target (`project.yml`) and the macOS scheme has no test
 /// action, so a behavioural test of the macOS search writer would compile nowhere and run never.
@@ -53,6 +55,10 @@ import Testing
 ///          written to catch now exists, so it is listed there and covered behaviourally —
 ///          off / on / de-duplicated — plus a guard that every `SearchView` search entry point
 ///          still routes through the one recorder
+///   1.2 — Wave R-2a: the `AppState.logEvent` tests go with the method. `ExportHistoryRecorder` is
+///          the new third writer and is covered behaviourally; the producer guard now scans for
+///          `ExportHistoryEntry(` too, which is what made it fail until the two files that
+///          construct one were listed
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -134,9 +140,13 @@ struct ResearchLoggingGateTests {
     // MARK: - Document open — the headline case
 
     /// **The test Wave R-1 exists to make pass.** With the preference off, opening a document
-    /// inserts neither a `SessionEvent` nor a `ReadingHistoryEntry`. Before R-1 the second half of
-    /// this assertion failed: the reading-history writer had no gate at all.
-    @Test("With logging off, opening a document records neither a session event nor reading history")
+    /// records no `ReadingHistoryEntry`. Before R-1 this failed outright: the reading-history
+    /// writer had no gate at all.
+    ///
+    /// Until Wave R-2a this also asserted that no `SessionEvent` was written. That writer is
+    /// retired; reading history is now the only record of a document open, which is precisely why
+    /// the migration does not carry `.documentOpen` events across.
+    @Test("With logging off, opening a document records no reading history")
     func documentOpenRecordsNothingWhenLoggingOff() throws {
         let scratch = ScratchDefaults()
         defer { scratch.destroy() }
@@ -145,27 +155,17 @@ struct ResearchLoggingGateTests {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
 
-        let appState = AppState()
-        appState.loggingContext = context
-
-        // Exactly the pair `DocumentView` fires on open, ~50 lines apart.
-        appState.logEvent(.documentOpen(volumeId: "frus1969-76v01",
-                                        documentId: "d1",
-                                        title: "Memorandum of Conversation"),
-                          defaults: scratch.store)
         makeViewModel().recordReadingHistory(projectId: UUID(),
                                              in: context,
                                              defaults: scratch.store)
 
-        #expect(try context.fetch(FetchDescriptor<SessionEvent>()).isEmpty)
-        #expect(try context.fetch(FetchDescriptor<ResearchSession>()).isEmpty)
         #expect(try context.fetch(FetchDescriptor<ReadingHistoryEntry>()).isEmpty)
     }
 
-    /// The control. Without it the test above would pass just as happily if both writers were
-    /// broken outright, which is the failure mode a gate test is most likely to hide.
-    @Test("With logging on, opening a document records both a session event and reading history")
-    func documentOpenRecordsBothWhenLoggingOn() throws {
+    /// The control. Without it the test above would pass just as happily if the writer were broken
+    /// outright, which is the failure mode a gate test is most likely to hide.
+    @Test("With logging on, opening a document records reading history")
+    func documentOpenRecordsWhenLoggingOn() throws {
         let scratch = ScratchDefaults()
         defer { scratch.destroy() }
         scratch.setLogging(true)
@@ -174,21 +174,9 @@ struct ResearchLoggingGateTests {
         let context = container.mainContext
         let projectId = UUID()
 
-        let appState = AppState()
-        appState.loggingContext = context
-
-        appState.logEvent(.documentOpen(volumeId: "frus1969-76v01",
-                                        documentId: "d42",
-                                        title: "Memorandum of Conversation"),
-                          defaults: scratch.store)
         makeViewModel(documentId: "d42").recordReadingHistory(projectId: projectId,
                                                               in: context,
                                                               defaults: scratch.store)
-
-        let events = try context.fetch(FetchDescriptor<SessionEvent>())
-        #expect(events.count == 1)
-        #expect(events.first?.eventType == "documentOpen")
-        #expect(try context.fetch(FetchDescriptor<ResearchSession>()).count == 1)
 
         let visits = try context.fetch(FetchDescriptor<ReadingHistoryEntry>())
         #expect(visits.count == 1)
@@ -197,7 +185,7 @@ struct ResearchLoggingGateTests {
     }
 
     /// Absent the preference entirely — a fresh install — recording still happens. Pins the
-    /// default the same way the gate test does, but through the writers rather than the helper.
+    /// default the same way the gate test does, but through the writer rather than the helper.
     @Test("With no preference set, opening a document still records")
     func documentOpenRecordsWhenPreferenceAbsent() throws {
         let scratch = ScratchDefaults()
@@ -206,26 +194,19 @@ struct ResearchLoggingGateTests {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
 
-        let appState = AppState()
-        appState.loggingContext = context
-
-        appState.logEvent(.documentOpen(volumeId: "frus1969-76v01",
-                                        documentId: "d1",
-                                        title: "Memorandum of Conversation"),
-                          defaults: scratch.store)
         makeViewModel().recordReadingHistory(projectId: nil, in: context, defaults: scratch.store)
 
-        #expect(try context.fetch(FetchDescriptor<SessionEvent>()).count == 1)
         #expect(try context.fetch(FetchDescriptor<ReadingHistoryEntry>()).count == 1)
     }
 
-    // MARK: - Search submit (iOS producer)
+    // MARK: - Collection export (the Wave R-2a producer)
 
-    /// The iOS search writer. `SearchViewModel.search()` calls `appState.logEvent(.searchSubmit…)`
-    /// after a completed search; the gate is `logEvent`'s, so it is tested at that boundary rather
-    /// than by standing up a `SearchService` and an FTS5 database.
-    @Test("With logging off, submitting a search records no session event")
-    func searchSubmitRecordsNothingWhenLoggingOff() throws {
+    /// The third writer. Exports are the one event kind the contract keeps (D1), because nothing
+    /// else records that a collection left the app — and the Zotero Web-API push really does put
+    /// items in the user's library. An ungated writer here would have been a fourth recorder the
+    /// switch does not govern, which is the defect this whole wave exists for.
+    @Test("With logging off, a completed export records nothing")
+    func exportRecordsNothingWhenLoggingOff() throws {
         let scratch = ScratchDefaults()
         defer { scratch.destroy() }
         scratch.setLogging(false)
@@ -233,18 +214,49 @@ struct ResearchLoggingGateTests {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
 
-        let appState = AppState()
-        appState.loggingContext = context
-        appState.logEvent(.searchSubmit(query: "détente", resultCount: 12), defaults: scratch.store)
+        let wrote = ExportHistoryRecorder.record(format: "pdf",
+                                                 documentCount: 12,
+                                                 collectionName: "Détente",
+                                                 projectId: UUID(),
+                                                 in: context,
+                                                 defaults: scratch.store)
 
-        #expect(try context.fetch(FetchDescriptor<SessionEvent>()).isEmpty)
-        #expect(try context.fetch(FetchDescriptor<ResearchSession>()).isEmpty)
+        #expect(wrote == false)
+        #expect(try context.fetch(FetchDescriptor<ExportHistoryEntry>()).isEmpty)
     }
 
-    /// The control — and a reminder of what is at stake: the payload carries the user's raw query
-    /// text into a CloudKit-mirrored store.
-    @Test("With logging on, submitting a search records the query text")
-    func searchSubmitRecordsQueryWhenLoggingOn() throws {
+    /// The control, and the shape of the record: format, count, collection name, project.
+    @Test("With logging on, a completed export records format, count, name and project")
+    func exportRecordsEverythingWhenLoggingOn() throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let projectId = UUID()
+
+        let wrote = ExportHistoryRecorder.record(format: "zotero-api",
+                                                 documentCount: 7,
+                                                 collectionName: "  Détente  ",
+                                                 projectId: projectId,
+                                                 in: context,
+                                                 defaults: scratch.store)
+
+        #expect(wrote)
+        let rows = try context.fetch(FetchDescriptor<ExportHistoryEntry>())
+        #expect(rows.count == 1)
+        #expect(rows.first?.format == "zotero-api")
+        #expect(rows.first?.documentCount == 7)
+        #expect(rows.first?.collectionName == "Détente", "the name is trimmed")
+        #expect(rows.first?.projectId == projectId)
+        #expect(rows.first?.exportedAt != nil)
+    }
+
+    /// An unnamed collection stores `nil` rather than an empty string, so the session log falls
+    /// back to the format instead of drawing "Exported  — 3 documents".
+    @Test("A blank collection name is stored as nil")
+    func blankExportNameIsNil() throws {
         let scratch = ScratchDefaults()
         defer { scratch.destroy() }
         scratch.setLogging(true)
@@ -252,16 +264,11 @@ struct ResearchLoggingGateTests {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
 
-        let appState = AppState()
-        appState.loggingContext = context
-        appState.logEvent(.searchSubmit(query: "détente", resultCount: 12), defaults: scratch.store)
+        ExportHistoryRecorder.record(format: "pdf", documentCount: 3, collectionName: "   ",
+                                     projectId: nil, in: context, defaults: scratch.store)
 
-        let events = try context.fetch(FetchDescriptor<SessionEvent>())
-        #expect(events.count == 1)
-        #expect(events.first?.eventType == "searchSubmit")
-        let payload = try #require(events.first?.payload)
-        let decoded = try JSONSerialization.jsonObject(with: payload) as? [String: Any]
-        #expect(decoded?["query"] as? String == "détente")
+        #expect(try context.fetch(FetchDescriptor<ExportHistoryEntry>())
+            .first?.collectionName == nil)
     }
 
     // MARK: - Search history (iOS producer, Wave R-4)
@@ -487,17 +494,29 @@ struct ResearchLoggingGateTests {
 
     /// No further writer has appeared without a gate.
     ///
-    /// Scans every app source file for `ReadingHistoryEntry(` / `SearchHistoryEntry(`
-    /// construction and asserts the producing files are exactly the known gated ones. R-4's iOS
-    /// search-history writer — the candidate this guard was written for — is now the third, and
-    /// it is gated. A fourth fails this test until it is listed here, which is the moment to
-    /// check it consults the gate.
+    /// Scans every app source file for `ReadingHistoryEntry(` / `SearchHistoryEntry(` /
+    /// `ExportHistoryEntry(` construction and asserts the producing files are exactly the known
+    /// ones. R-4's iOS search-history writer — the candidate this guard was written for — was the
+    /// third; R-2a's export recorder is the fourth, and both are gated. A fifth fails this test
+    /// until it is listed here, which is the moment to check that it consults the gate.
+    ///
+    /// The list carries one deliberate non-writer: `ResearchTrailMigration`, which constructs both
+    /// migrated types and must **not** be gated. The comment beside it is the record of that
+    /// decision, which is the point of asserting on an exact set rather than a lower bound.
     @Test("Every producer of a history entry is a known, gated writer")
     func noUngatedHistoryWriterExists() throws {
         let expected: Set<String> = [
             "DocumentViewModel.swift",   // ReadingHistoryEntry — gated
             "MacSearchViewModel.swift",  // SearchHistoryEntry  — gated (macOS)
             "SearchViewModel.swift",     // SearchHistoryEntry  — gated (iOS, Wave R-4)
+            // ExportHistoryEntry — gated inside `ExportHistoryRecorder` (Wave R-2a). The four
+            // `ExportSheetView` call sites route through that recorder precisely so the gate is
+            // written once rather than copied four times into a view.
+            "ExportHistoryEntry.swift",
+            // SearchHistoryEntry + ExportHistoryEntry — the migration, and deliberately NOT gated.
+            // It moves records the user already has rather than collecting new ones; skipping it
+            // when the switch is off would destroy them. See `ResearchTrailMigration`'s doc.
+            "ResearchTrailMigration.swift",
         ]
 
         let enumerator = try #require(
@@ -510,7 +529,9 @@ struct ResearchLoggingGateTests {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 // Prose that names the initialiser is not a producer.
                 if trimmed.hasPrefix("//") || trimmed.hasPrefix("*") { continue }
-                if trimmed.contains("ReadingHistoryEntry(") || trimmed.contains("SearchHistoryEntry(") {
+                if trimmed.contains("ReadingHistoryEntry(")
+                    || trimmed.contains("SearchHistoryEntry(")
+                    || trimmed.contains("ExportHistoryEntry(") {
                     producers.insert(url.lastPathComponent)
                 }
             }

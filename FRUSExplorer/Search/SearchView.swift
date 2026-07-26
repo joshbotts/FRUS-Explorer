@@ -38,6 +38,7 @@ import SwiftData
 ///   1.6 — Session 88: timeline toggle button; `DocumentTimelineView` replaces results list when active
 ///   1.7 — Session 96: Save Search toolbar button + name sheet; Saved Searches toolbar button + list sheet
 ///   1.8 — Session 100: vm.appState wired in .task for searchSubmit logging
+///          (removed in Wave R-2a — see 1.17)
 ///   1.9 — Session 2026-06-07: over-cap "Visualize in Corpus Analytics" button in
 ///          `resultCountHeader` — hands keywords + active date filter off to
 ///          `AnalyticsView` via `AppState.pendingAnalytics` (see `AnalyticsParameters`)
@@ -75,6 +76,8 @@ import SwiftData
 ///          only as `SessionEvent.searchSubmit`, so Project Home's "Searches Run" tile and
 ///          Recent Searches card — both backed by `SearchHistoryEntry` — were structurally
 ///          empty for anyone who never used the Mac app.
+///   1.17 — Wave R-2a: `vm.appState` is no longer wired in `.task` — the only thing it fed was
+///          the retired `.searchSubmit` session event. `runSearch()` is unchanged.
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -251,7 +254,6 @@ struct SearchView: View {
         .frame(minWidth: 680, minHeight: 520)
         #endif
         .task {
-            vm.appState = appState
             vm.availableUserTags = liveUserTags
             // Load the volume/subseries picker options before applying any incoming
             // parameters so `applyParameters` can reconstruct the subseries selection

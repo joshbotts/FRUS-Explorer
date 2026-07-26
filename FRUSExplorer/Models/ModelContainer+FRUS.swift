@@ -35,8 +35,8 @@ extension ModelContainer {
     ///   1.4 — `PersonClusterOverride` (2026-06-17) and `SyncedPreferences` (2026-06-27)
     ///          added to the schema (16 at the time). Both are new CloudKit record types —
     ///          deploy the Development schema to Production before shipping (see note).
-    ///   1.5 — Wave R-7: the list holds **18 record types**, not the 16 this block went on
-    ///          claiming through two additions (`CustomVolumeScope`, #258; `ProjectLeadEntry`,
+    ///   1.5 — Wave R-7: the list had grown to 18 while this block went on claiming 16, through
+    ///          two additions (`CustomVolumeScope`, #258; `ProjectLeadEntry`,
     ///          #377 Phase 3). That drift is the reason for the gate: `CloudKitSchemaInventory`
     ///          holds a checked-in inventory of every mirrored identifier, and
     ///          `FRUSExplorerTests/CloudKitSchemaInventoryTests` fails the suite — with the
@@ -44,6 +44,13 @@ extension ModelContainer {
     ///          pins the number above, so this sentence cannot go stale again. The member list
     ///          itself is unchanged; only its visibility (`private` → internal, so the test can
     ///          build a `Schema` from it) and these comments.
+    ///   1.6 — Wave R-2a: `ExportHistoryEntry` added (contract D1 — the only record that a
+    ///          collection was exported, and the Zotero Web-API push has a real external side
+    ///          effect), bringing the list to **19 record types**. `ResearchSession`/`SessionEvent`
+    ///          are **retiring but still listed**: the migration has to be able to read them.
+    ///          R-2b removes them, at which point the count drops to 17. The gate fired on this
+    ///          change, as designed, and its seven identifiers are in
+    ///          `CloudKitSchemaInventory.identifiersAwaitingDeploy` until Production is promoted.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -78,8 +85,16 @@ extension ModelContainer {
             CollectionEntry.self,
             ReadingHistoryEntry.self,
             SearchHistoryEntry.self,
+            // Wave R-2a / contract D1 — NEW CloudKit record type (collection exports): deploy the
+            // schema to Production before shipping, per the note above.
+            ExportHistoryEntry.self,
             SummarizationPrompt.self,
             SavedSearch.self,
+            // RETIRING, Wave R-2a. Nothing writes these two any more — sessions are derived from
+            // the three history types above. They stay enrolled for one release **only** so
+            // `ResearchTrailMigration` can read rows already in users' stores, including rows a
+            // second device on an older build is still writing. Removing them is R-2b; doing it
+            // here would have left the app unable to read what it has to migrate.
             ResearchSession.self,
             SessionEvent.self,
             DocumentHighlight.self,
