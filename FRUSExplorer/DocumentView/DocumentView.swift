@@ -1112,7 +1112,7 @@ struct DocumentView: View {
                             defaultValue: "Person Information Unavailable"))
                     .font(.headline)
                 Text(String(localized: "personNotFound.detail",
-                            defaultValue: "Detailed information about this person isn't available for this volume. To populate person data, re-index the volume in Settings → Volumes."))
+                            defaultValue: "Detailed information about this person isn't available for this volume. To populate person data, re-index the volume in Settings → Volumes & Storage."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -1145,7 +1145,7 @@ struct DocumentView: View {
                             defaultValue: "Term Definition Unavailable"))
                     .font(.headline)
                 Text(String(localized: "glossNotFound.detail",
-                            defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes."))
+                            defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes & Storage."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -1976,7 +1976,7 @@ private struct SummarizationPromptPickerSheet: View {
                         systemImage: "sparkles",
                         description: Text(
                             String(localized: "document.summarize.picker.empty.detail",
-                                   defaultValue: "Add a prompt in Settings → Summarization Prompts.")
+                                   defaultValue: "Add a prompt in Settings → Summarization.")
                         )
                     )
                 }

@@ -220,7 +220,7 @@ A **Top subjects** section on the volume view lists the subjects most characteri
 
 ### 4.2 Downloading Volumes
 
-Any volume that has not been downloaded shows a download button. Click it to add the volume to the download queue. Progress appears in the status bar and in **Settings → Corpus → Storage**. Downloaded volumes are indexed automatically on completion.
+Any volume that has not been downloaded shows a download button. Click it to add the volume to the download queue. Progress appears in the status bar and in **Settings → Volumes & Storage**. Downloaded volumes are indexed automatically on completion.
 
 **Browsing vs. indexing.** Once a volume is *downloaded* you can browse its full structure — front matter, chapters, and compilations — straight away, whether or not it has finished indexing. If a volume isn't indexed yet (or a prior indexing pass was interrupted — most likely on the large early annual volumes), a non-blocking banner at the top of its contents explains this and offers to **Index** / **Re-index** it. Indexing is what enables full-text **search**, opening a chapter's **document list**, and the connections graph — so those wait until indexing completes, but the volume's structure never does. (This matches iOS, which has always browsed downloaded volumes without requiring an index.)
 
@@ -757,7 +757,7 @@ The summary appears in the strip above the document. If a previously generated s
 - *General Summary* — A one-paragraph overview of the document's content.
 - *Structured Summary* — Key participants, subject, decisions, and significance as structured fields.
 
-**User prompts** — Create your own in **Settings → Advanced → Summarization**:
+**User prompts** — Create your own in **Settings → Research → Summarization**:
 
 1. Click **+** to create a new prompt.
 2. Give it a name.
@@ -775,7 +775,7 @@ Documents that are too long for a single model call are automatically chunked (a
 
 ### 11.4 Background Summarization
 
-To summarize many documents at once, use the **Background Summarizer** in **Settings → Advanced → Summarization → Background Summarizer**.
+To summarize many documents at once, use the **Background Summarizer** in **Settings → Research → Summarization → New Batch Run…**.
 
 1. Choose a scope: an entire subseries, a single volume, a user tag, a saved search, a date range, or one of your saved volume scopes (**My Volume Scopes** — Section 5.8; the picker shows how many of the scope's volumes are downloaded, and Run stays disabled until at least one member volume is downloaded).
 2. Set the concurrency limit (how many documents are summarized in parallel).
@@ -870,7 +870,7 @@ Any collection row — there, in a volume's Sources list, or in a document's Sou
 
 ### 12.2 NARA API Key
 
-Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → Advanced → NARA API**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.
+Lot file and presidential library lookups require a free NARA Catalog API key. Enter your key once in **Settings → System → Connections**; it is stored in iCloud Keychain and syncs automatically to all your devices. Central file, decimal file, and CIA resolution work without a key.
 
 `[SCREENSHOT: Settings pane for NARA API key entry with a "Need a Key?" link]`
 
@@ -1070,59 +1070,102 @@ Manage all user tags in **Settings → Research → Tags**:
 
 ## 16. Settings
 
-Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
+Open Settings with **⌘,** or via **FRUS Explorer → Settings**. The window is a sidebar of
+thirteen panes in four groups — **Library**, **Research**, **Reading & Search**, and **System** —
+and the window title tells you which pane you are in.
 
-`[SCREENSHOT: macOS Settings window with the sidebar showing all panes]`
+`[SCREENSHOT: the macOS Settings window — the grouped sidebar and a pane open beside it]`
 
-### General
+The Mac and the iPhone show the same tree, from the same source, with two deliberate differences:
+**iCloud Sync** is a pane here and an inline section at the top of the list on iOS; and the Mac
+sidebar has no search field, so you navigate it by group. Sub-screens open as sheets with a
+**Done** button rather than pushing, because the Settings window carries no navigation chrome of
+its own.
 
-| Pane | Contents |
-|------|----------|
-| **iCloud Sync** | A **Sync Settings Across Devices** toggle that mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices that have it enabled. Off by default — turning it on adopts your existing iCloud settings; leave it off to keep this Mac's settings separate. (Device-specific preferences stay local. Requires iCloud.) If sync misbehaves, the **Sync Diagnostics** pane below keeps a redacted, exportable event log to help pin it down. |
-| **Sync Diagnostics** | A local, on-device, **redacted** log of your recent iCloud sync events that you can read and export (as JSON) to help diagnose sync problems. It records **only** event types, timing, and error codes — never record or account identifiers, and nothing about the content of your notes, tags, or collections — and the log itself stays on this Mac (it is not synced). Use **Copy**, **Export…**, or **Clear Log**. |
-| **About** | FRUS series overview, links to history.state.gov and the GitHub source repository, app version and attribution |
-| **Display** | Theme preferences (light, dark, or system), and a **Chart Colors** stepper setting the app-wide default number of colour-coded source volumes shown in the Chronology and Corpus Analytics distribution charts before the remainder fold into "Other" (6–12, default 8; each view can override this with its own Chart colors menu) |
-| **Search** | FTS5 configuration — stemming language, ranking parameters — and a **Result preview** setting for the default **snippet length** (how many lines of matched context a result preview shows, 1–10). This default is honored by the main **Search window** results (Section 5.1) and the Collections **Add Documents** previews (Section 10.2a), each of which can override it locally. |
+| Group | Pane | Contents |
+|-------|------|----------|
+| **Library** | **Volumes & Storage** | The whole corpus on this Mac behind one door. See Section 16.1. |
+| **Research** | **Projects** | The active-project picker and Project Home, then the list where you rename, merge and delete projects. |
+| | **Tags** | Rename, merge and delete user tags; each row carries what is attached to it. |
+| | **Volume Scopes** | Create, edit and delete your named volume sets (Section 5.8). **New Scope…** opens the editor with its subseries-grouped volume picker and **Add Volumes By…** facets; each row shows live indexed coverage and a Word Cloud button. Scopes sync via iCloud. |
+| | **Summarization** | Apple Intelligence availability, your standard and custom prompts, and **New Batch Run…**, which opens the run sheet. |
+| | **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters), a live **Sample** of what your settings keep with a "Keeps N of M terms" line, one hidden-words editor scoped to every cloud or to a single lens, and an **Appearance** section setting the cloud's font and density — device-local, not synced (Section 13.4). |
+| | **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag and text filters. Identical to the iOS pane. |
+| | **Research Sessions** | The **Log Research Sessions** switch and a plain statement of what it records; the **Session Log**, expandable to individual events; and **Delete Recorded Sessions…**. Note the platform difference the pane states: searches are recorded on iPhone and iPad but not in the macOS Search window. |
+| **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and the default document mode. |
+| | **Search** | Default search scope, default document type, and **Result Preview** — how many lines of matched context a result shows (1–10). Honoured by the Search window (Section 5.1) and the Collections **Add Documents** previews (Section 10.2a), each of which can override it locally. |
+| **System** | **iCloud Sync** | The **Sync Settings Across Devices** toggle, which mirrors your word-cloud filters and stop lists, citation style, default document mode and research-logging preference to your other devices that have it enabled. Off by default. Live sync status is in the main window's status bar, not here. |
+| | **Connections** | The NARA Catalog and Zotero (Section 16.2). |
+| | **Data & Recovery** | Export, reports, diagnostics and the recovery ladder (Section 16.3). |
+| | **About** | Version, what FRUS is, resources including the **FRUS Research Guide**, attribution, and the full legal notices. |
 
-`[SCREENSHOT: Settings → General → Sync Diagnostics showing the redacted on-device list of sync events (event type, timestamp, result/error code) with the Copy, Export…, and Clear Log actions]`
+### 16.1 Volumes & Storage
 
-### Research
+One destination for the corpus on this Mac. It opens with a **Storage used** bar broken into XML
+and index, and a line saying how many volumes you have and whether anything needs attention.
 
-| Pane | Contents |
-|------|----------|
-| **Projects** | Create, rename, set defaults, delete projects |
-| **Tags** | Rename, merge, delete user tags |
-| **Volume Scopes** | Create, edit, and delete your named volume sets (Section 5.8) — **New Scope** opens the editor with its subseries-grouped volume picker and **Add Volumes By…** facets; each row shows live indexed coverage, Edit/Delete actions, and a Word Cloud button. Scopes sync via iCloud |
-| **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag, and text filters. Identical to the iOS pane |
-| **Research Sessions** | The **Log Research Sessions** switch and a plain statement of what it records; the **Session Log** — every recorded session, expandable to its individual events; and **Delete Recorded Sessions…**, which clears the log and nothing else. Note the platform difference the pane states: searches are recorded on iPhone and iPad but not in the macOS Search window |
-| **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters), your custom global + per-lens hidden-word lists, and an **Appearance** section setting the cloud's font (Rounded / Default / Serif / Monospaced) and density (Compact / Balanced / Airy) — device-local, not synced (see Section 13.4) |
+- **Add Volumes** — **Download from GitHub…** opens the browse list; **Sideload XML File…**
+  imports a volume file you obtained separately.
+- **Downloaded Volumes** — the first few, then **Show all** for the complete list, where an
+  individual volume can be re-indexed or removed.
+- **Needs Attention** — shown only when volumes were interrupted mid-index.
+- **Keeping Current** — **Check for Corrections** compares your copies against the published ones;
+  **Refresh Available List** asks again without reopening Settings. Updating re-downloads and
+  re-indexes a volume; notes, highlights, tags and summaries are preserved.
+- **Storage & Index** — **Free Up Space…** opens a sheet listing only volumes with nothing
+  attached, ordered by what you would recover, and asks before removing anything. **Index
+  Remaining** indexes what is downloaded but not searchable. **Rebuild From Scratch** deletes and
+  re-parses the whole index. None of the three affects notes, highlights or tags.
+- **Advanced** — index health and an on-demand **Check Integrity**, and the Spotlight index.
 
-### Corpus
+`[SCREENSHOT: Settings → Volumes & Storage — the storage bar, Downloaded Volumes, Keeping Current, and Storage & Index]`
 
-| Pane | Contents |
-|------|----------|
-| **Storage** | Breakdown of disk usage by volumes (XML), search index (FTS5), and generated summaries; per-volume delete with size shown; indexing controls (Index Remaining, Reindex All, Delete & Rebuild) |
-| **Index Health** | The merged search-index version, current status, and an on-demand **integrity check** across the FTS5 store — useful for confirming the index is consistent after large download or reindex batches |
-| **Add Volumes** | Download queue with progress; **Check for Updates** to fetch the latest manifest; **Sideload XML** to import a single volume file |
+### 16.2 Connections
 
-### Advanced
+**Settings → System → Connections** holds the two outside services. Neither is required, and each
+card shows whether it is connected before you open it. Both keys are held in your keychain and
+travel with iCloud Keychain to your other devices.
 
-| Pane | Contents |
-|------|----------|
-| **NARA API** | API key entry (stored in iCloud Keychain); *Need a Key?* link |
-| **Zotero** | Connect your Zotero account with a Web API key (stored in iCloud Keychain, so the connection follows you to your other devices) so **Send to Zotero Library** can push documents and collections straight into your library; a link creates a key with the right permissions |
-| **Summarization** | Prompt management, summary browser, background summarizer |
-| **Data** | Research-data export: a summary of everything you've created (notes, tags, highlights, collections, prompts, projects) with **Export as JSON…** and **Export Notes as Markdown…** buttons. A **Broken Cross-References Report** section exports the corpus-wide list of unresolvable cross-references (Section 6.2) — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus — via **Export CSV…** / **Export JSON…** |
+**NARA Catalog.** A free API key from the National Archives, used by Source Explorer to resolve lot
+files and Presidential Library records. Open the card and follow **Get a free key from NARA**.
+Without a key, Source Explorer falls back to the strategies that need none.
 
-### Reset
+**Zotero.** Connect your account with a Web API key so **Send to Zotero Library** can push
+documents and whole collections — with your tags and research notes — into your library. A link in
+the card creates a key with the right permissions.
 
-| Option | Effect |
-|--------|--------|
-| **Reset Local Data** | Deletes all local app data; iCloud-synced records (notes, tags, collections, highlights) are preserved and re-download on next launch |
-| **Reset iCloud Sync** | Clears the CloudKit change token so the container performs a full re-sync from the server on next launch. Use when the sync indicator shows a persistent error that does not resolve on its own |
-| **Reset Everything** | Deletes all local data and initiates deletion of all iCloud records |
+`[SCREENSHOT: Settings → System → Connections — the two service cards, and the Zotero editor showing the Connected as state]`
 
-All reset options require confirmation.
+### 16.3 Data & Recovery
+
+**Settings → System → Data & Recovery** answers three questions: how do I get my work out, what
+does the app think is wrong, and how do I put it back together.
+
+**Contents** lists what the app is holding — notes, tags and assignments, highlights, collections,
+custom prompts, projects — with a count against each, so an export or a reset has a visible size
+before you commit to it.
+
+**Export as JSON** writes one file with your notes, tags, highlights, collections, custom prompts
+and projects; **Export Notes as Markdown** writes one file per note, Obsidian-compatible. Generated
+AI summaries are excluded by default and can be included with a toggle.
+
+**Reports → Broken Cross-References** exports the corpus-wide list of cross-references that do not
+resolve, as CSV or JSON (Section 6.2).
+
+**Diagnostics → Sync Log** summarizes itself on its row — "Last event 12:04 · no errors today" —
+and opens a local, on-device, **redacted** log of recent iCloud sync events. It records **only**
+event types, timing and error codes: never record or account identifiers, and nothing about the
+content of your notes, tags or collections. The log stays on this Mac and is not synced.
+
+**Recovery** is a ladder ordered by what it costs you, and each rung says so on its own row:
+
+| Rung | What it does | What it deletes |
+|------|--------------|-----------------|
+| **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — nothing in iCloud is touched |
+| **Reset This Device** | Clears downloaded volumes and the search index | Volumes and index only; your iCloud data survives |
+| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection and project, on every device |
+
+`[SCREENSHOT: Settings → System → Data & Recovery — the Contents counts, the export rows, and the Recovery ladder]`
 
 ---
 

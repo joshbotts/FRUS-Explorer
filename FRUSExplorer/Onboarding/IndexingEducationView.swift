@@ -1073,7 +1073,7 @@ private extension EducationPage {
                 systemImage: "quote.bubble",
                 paragraphs: [
                     "Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File \u{2192} Import).",
-                    "Sending to Zotero is one action: connect a Zotero account (Settings \u{2192} Zotero) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import."
+                    "Sending to Zotero is one action: connect a Zotero account (Settings \u{2192} Connections) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import."
                 ]
             ),
             EducationSection(
