@@ -443,6 +443,9 @@ struct ResearchRailView: View {
                         }
                         .padding(.horizontal, hInset)
                         .padding(.vertical, 8)
+                        // #312 follow-up: the inner Text already carries a greedy frame, so this
+                        // only needs the shape to make the row's gaps hit-testable.
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     Divider()
@@ -460,6 +463,9 @@ struct ResearchRailView: View {
                             .font(.callout)
                             .foregroundStyle(Color.accentColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            // #312 follow-up: frame was already here; the shape completes the pair so the
+                            // whole action row is tappable, not just its label glyphs.
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, hInset)
@@ -474,6 +480,9 @@ struct ResearchRailView: View {
                         .font(.callout)
                         .foregroundStyle(Color.accentColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        // #312 follow-up: frame was already here; the shape completes the pair so the
+                        // whole action row is tappable, not just its label glyphs.
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, hInset)
@@ -561,6 +570,9 @@ struct ResearchRailView: View {
                         .font(.callout)
                         .foregroundStyle(Color.accentColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        // #312 follow-up: frame was already here; the shape completes the pair so the
+                        // whole action row is tappable, not just its label glyphs.
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, hInset)

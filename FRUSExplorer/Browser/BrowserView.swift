@@ -587,6 +587,13 @@ private struct SubseriesRowView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+        // #312 follow-up: full-row tap target. BOTH modifiers, in this order — the frame widens
+        // this VStack (whose intrinsic width is only its longest line) to the row, and
+        // contentShape makes the widened area hit-testable, since the enclosing
+        // `.buttonStyle(.plain)` Button hit-tests only opaque content. See `CorpusView` for the
+        // A/B measurement behind "both, in this order".
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 

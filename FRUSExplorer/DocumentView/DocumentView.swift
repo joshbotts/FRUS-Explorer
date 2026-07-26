@@ -2015,6 +2015,10 @@ private struct PromptPickerRow: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+        // #312 follow-up: full-row tap target — both modifiers, in this order. Prompt names are
+        // short, so without the frame most of this picker row is dead under `.buttonStyle(.plain)`.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 

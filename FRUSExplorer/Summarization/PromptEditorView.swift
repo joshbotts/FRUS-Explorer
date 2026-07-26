@@ -518,6 +518,10 @@ private struct TemplateRow: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+        // #312 follow-up: full-row tap target — both modifiers, in this order (frame widens this
+        // VStack to the row, contentShape makes the widened area hit-testable).
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private var fieldSummary: String {

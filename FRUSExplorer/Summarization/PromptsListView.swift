@@ -169,6 +169,10 @@ private struct PromptRow: View {
             }
         }
         .padding(.vertical, 2)
+        // #312 follow-up: no frame needed — the Spacer already makes this HStack full width.
+        // contentShape makes the gap between the name and the chevron tappable under
+        // `.buttonStyle(.plain)`, which hit-tests only opaque content.
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
     }

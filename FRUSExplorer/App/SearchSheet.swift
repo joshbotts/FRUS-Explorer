@@ -1354,6 +1354,11 @@ private struct SearchResultRow: View {
                 }
             }
         }
+        // #312 follow-up: full-row tap target — both modifiers, in this order. The macOS Search
+        // window is a separate implementation from the iOS `SearchView` (see the parallel fix to
+        // `SearchView.SearchResultRow`), so this had to be ported rather than inherited.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
