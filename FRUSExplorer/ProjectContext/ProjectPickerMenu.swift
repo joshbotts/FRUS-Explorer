@@ -118,12 +118,26 @@ struct ProjectPickerMenu: View {
 /// `activeProjectId` is `@Observable`, so switching projects re-renders. Injected via
 /// `.safeAreaInset`, which reserves zero height when the banner is empty.
 ///
+/// ## Placement rule (#486) — read before adding a host
+/// The `.safeAreaInset(edge: .top)` MUST be applied to content **inside** the host's navigation
+/// container, never to the container itself. A top inset applied to a `NavigationStack` does not
+/// push its navigation bar down: SwiftUI composites the inset into the same top chrome band and
+/// draws the banner **over** the bar, clipping the back button, the title, and the trailing toolbar
+/// items. That is exactly what #486 was — the Browse tab applied it to `BrowserView()` from
+/// `BrowserTabView`, while `SearchView` (unaffected) applies it to its results content inside its
+/// own stack. The rule is about the iOS navigation bar specifically; the macOS hosts
+/// (`MacCorpusBrowserWindow`, `SearchSheet`) sit under a real window title bar, which is chrome
+/// outside the content view and is not affected.
+///
 /// Version history:
 ///   1.0 — #377 Phase 5: initial implementation
 ///   1.1 — #377 Phase 5 fix: suppressed on regular-width iPad, where a pinned top inset is
 ///          occluded by the iPadOS floating top tab bar (same as the browser breadcrumb, #238);
 ///          the research question is surfaced there as a navigation subtitle instead — see
 ///          `WorkingOnSubtitleModifier` / `View.workingOnSubtitle()`.
+///   1.2 — #486: documented the inside-the-navigation-container placement rule above. No change
+///          to this view; the Browse host moved its inset (`BrowserView.stackLayout` /
+///          `levelView(for:vm:)`).
 struct WorkingOnBanner: View {
 
     @Environment(AppState.self) private var appState
