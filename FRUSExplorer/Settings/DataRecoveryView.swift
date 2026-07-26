@@ -27,6 +27,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — S-4b: initial implementation
+///   1.1 — Wave R-7: an **iCloud Schema** row in Diagnostics, beside the Sync Log, reporting
+///          whether the CloudKit container has been taught about everything this build stores.
+///          #488 shipped without that answer being available anywhere in the app.
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -39,9 +42,9 @@ struct DataRecoveryView: View {
     /// macOS presents the two sub-screens as sheets; iOS pushes.
     @State private var sheet: SubScreen? = nil
 
-    /// The two screens this door leads to.
+    /// The screens this door leads to.
     enum SubScreen: String, Identifiable {
-        case brokenReferences, syncLog, eraseEverything
+        case brokenReferences, syncLog, schemaStatus, eraseEverything
         var id: String { rawValue }
     }
 
@@ -68,6 +71,7 @@ struct DataRecoveryView: View {
                      label: String(localized: "settings.dataRecovery.syncLog",
                                    defaultValue: "Sync Log"),
                      detail: syncSummary.text())
+                if appState.cloudKitSyncEnabled { schemaRow }
             } header: {
                 Text(String(localized: "settings.dataRecovery.diagnostics.header",
                             defaultValue: "Diagnostics"))
@@ -134,6 +138,50 @@ struct DataRecoveryView: View {
         } message: {
             Text(String(localized: "settings.dataRecovery.resetDevice.message",
                         defaultValue: "Downloaded volumes and the search index go; your notes, highlights, tags, collections and projects stay in iCloud and come back on the next launch. You will need to download volumes again."))
+        }
+    }
+
+    // MARK: - iCloud schema (Wave R-7)
+
+    /// The schema-deploy state, beside the Sync Log because it explains the class of sync failure
+    /// the log records but cannot name (#488).
+    ///
+    /// ## Who this is for
+    /// A developer or a tester, which is why it lives in **Diagnostics** and not on a screen a
+    /// researcher passes through. An undeployed schema is a release-process failure, so it gets no
+    /// alert, no badge, no red — a researcher who wanders in should find a fact, not an alarm. It
+    /// is nonetheless shown rather than hidden, because on the one build where this mattered the
+    /// user-visible symptom was silent: sync simply stopped working, with nothing anywhere saying
+    /// why.
+    ///
+    /// The row is present in **both** states. "Everything deployed" is the answer a tester needs
+    /// when they are asked whether the schema is the problem, and a row that only ever appears
+    /// when something is wrong cannot be checked in advance — or screenshotted for a bug report.
+    ///
+    /// Hidden entirely when CloudKit is off for this session: with a local-only store the deploy
+    /// state is not a fact about anything the user can observe.
+    @ViewBuilder
+    private var schemaRow: some View {
+        if CloudKitSchemaInventory.isProductionSchemaCurrent {
+            link(.schemaStatus,
+                 label: String(localized: "settings.dataRecovery.schema",
+                               defaultValue: "iCloud Schema"),
+                 detail: String(localized: "settings.dataRecovery.schema.detail.current",
+                                defaultValue: "Published \(CloudKitSchemaInventory.deployedOn) — matches this version of the app"),
+                 value: String(localized: "settings.dataRecovery.schema.value.current",
+                               defaultValue: "Up to date"))
+        } else {
+            let pending = CloudKitSchemaInventory.identifiersAwaitingDeploy.count
+            link(.schemaStatus,
+                 label: String(localized: "settings.dataRecovery.schema",
+                               defaultValue: "iCloud Schema"),
+                 detail: pending == 1
+                     ? String(localized: "settings.dataRecovery.schema.detail.pending.one",
+                              defaultValue: "One addition in this version is not published yet")
+                     : String(localized: "settings.dataRecovery.schema.detail.pending",
+                              defaultValue: "\(pending) additions in this version are not published yet"),
+                 value: String(localized: "settings.dataRecovery.schema.value.pending",
+                               defaultValue: "Update pending"))
         }
     }
 
@@ -229,6 +277,7 @@ struct DataRecoveryView: View {
         switch screen {
         case .brokenReferences: BrokenReferencesReportView()
         case .syncLog:          SyncDiagnosticsView()
+        case .schemaStatus:     SchemaDeployStatusView()
         case .eraseEverything:  EraseEverythingView()
         }
     }
@@ -280,6 +329,155 @@ struct DataRecoveryView: View {
         Task {
             await ResetService.resetLocalData(appState: appState)
             await MainActor.run { isResetting = false }
+        }
+    }
+}
+
+// MARK: - SchemaDeployStatusView
+
+/// Settings → Data & Recovery → **iCloud Schema** — whether the iCloud container has been taught
+/// about everything this version of the app can store (Wave R-7).
+///
+/// ## Why a screen and not a line
+/// #488 shipped because nothing anywhere connected "sync stopped working" to "the schema was never
+/// deployed". The row next door states the answer; this screen carries what a bug report needs:
+/// which identifiers are outstanding, in CloudKit's own vocabulary, copyable in one tap. The
+/// diagnosis that took a CloudKit Console session and a `git diff` becomes a paste.
+///
+/// ## Two audiences, in order
+/// The first section is written for whoever opened it — a plain statement of what is or is not
+/// happening to their data, with the honest "nothing you can do from here". The identifier list
+/// and the deploy checklist come after, for the developer who receives the report. Nobody is
+/// alarmed and nobody is patronised.
+///
+/// Version history:
+///   1.0 — Wave R-7: initial implementation
+struct SchemaDeployStatusView: View {
+
+    /// Set briefly after a successful copy so the button can confirm.
+    @State private var didCopy = false
+
+    var body: some View {
+        Form {
+            Section {
+                Text(explanation)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text(String(localized: "settings.dataRecovery.schema.about",
+                            defaultValue: "About"))
+            }
+
+            Section {
+                SettingsNavRow(
+                    label: String(localized: "settings.dataRecovery.schema.state",
+                                  defaultValue: "State"),
+                    value: CloudKitSchemaInventory.isProductionSchemaCurrent
+                        ? String(localized: "settings.dataRecovery.schema.value.current",
+                                 defaultValue: "Up to date")
+                        : String(localized: "settings.dataRecovery.schema.value.pending",
+                                 defaultValue: "Update pending"))
+                SettingsNavRow(
+                    label: String(localized: "settings.dataRecovery.schema.lastPublished",
+                                  defaultValue: "Last published"),
+                    detail: String(localized: "settings.dataRecovery.schema.lastPublished.detail",
+                                   defaultValue: "App version \(CloudKitSchemaInventory.deployedThroughBuild)"),
+                    value: CloudKitSchemaInventory.deployedOn)
+                SettingsNavRow(
+                    label: String(localized: "settings.dataRecovery.schema.recordTypes",
+                                  defaultValue: "Kinds of record"),
+                    detail: String(localized: "settings.dataRecovery.schema.recordTypes.detail",
+                                   defaultValue: "\(CloudKitSchemaInventory.fieldCount) fields across them"),
+                    value: "\(CloudKitSchemaInventory.recordTypeCount)")
+            } header: {
+                Text(String(localized: "settings.dataRecovery.schema.status.header",
+                            defaultValue: "Status"))
+            }
+
+            if !CloudKitSchemaInventory.isProductionSchemaCurrent {
+                Section {
+                    ForEach(CloudKitSchemaInventory.identifiersAwaitingDeploy, id: \.self) { id in
+                        Text(id)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
+                } header: {
+                    Text(String(localized: "settings.dataRecovery.schema.awaiting.header",
+                                defaultValue: "Not Yet Published"))
+                } footer: {
+                    Text(String(localized: "settings.dataRecovery.schema.awaiting.footer",
+                                defaultValue: "Records that use these will fail to upload until the developer publishes the schema update in the CloudKit Dashboard. Everything else syncs normally."))
+                }
+            }
+
+            Section {
+                Button {
+                    copyReport()
+                } label: {
+                    Label(didCopy
+                          ? String(localized: "settings.dataRecovery.schema.copied",
+                                   defaultValue: "Copied")
+                          : String(localized: "settings.dataRecovery.schema.copy",
+                                   defaultValue: "Copy Report"),
+                          systemImage: didCopy ? "checkmark" : "doc.on.doc")
+                }
+            } footer: {
+                Text(String(localized: "settings.dataRecovery.schema.copy.footer",
+                            defaultValue: "Paste this into a bug report alongside the Sync Log."))
+            }
+        }
+        #if os(macOS)
+        .formStyle(.grouped)
+        #endif
+        .navigationTitle(String(localized: "settings.dataRecovery.schema",
+                                defaultValue: "iCloud Schema"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+
+    /// The plain-language paragraph, in the state it is actually in. Written for the person
+    /// holding the device, not for the person who will fix it.
+    private var explanation: String {
+        if CloudKitSchemaInventory.isProductionSchemaCurrent {
+            return String(localized: "settings.dataRecovery.schema.about.current",
+                          defaultValue: "iCloud has to be told about each kind of record the app saves before it will accept one. Everything this version saves has been published, so nothing is being held back for this reason.")
+        }
+        return String(localized: "settings.dataRecovery.schema.about.pending",
+                      defaultValue: "iCloud has to be told about each kind of record the app saves before it will accept one, and some additions in this version have not been published yet. Records that use them will not upload until they are — everything else keeps syncing. This is a problem with the app, not with your account, and there is nothing to do from here except report it.")
+    }
+
+    /// The copyable report: the state, the marker, and the outstanding identifiers. Only names
+    /// this app defines — no user content, matching the sync log's redaction contract.
+    private func reportText() -> String {
+        var lines = [
+            "FRUS Explorer — iCloud schema",
+            "state: \(CloudKitSchemaInventory.isProductionSchemaCurrent ? "up to date" : "update pending")",
+            "last published: build \(CloudKitSchemaInventory.deployedThroughBuild) (\(CloudKitSchemaInventory.deployedOn))",
+            "record types: \(CloudKitSchemaInventory.recordTypeCount)",
+            "fields: \(CloudKitSchemaInventory.fieldCount)",
+        ]
+        if !CloudKitSchemaInventory.isProductionSchemaCurrent {
+            lines.append("awaiting deploy:")
+            lines.append(contentsOf: CloudKitSchemaInventory.identifiersAwaitingDeploy
+                .map { "  \($0)" })
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// Copies the report and flips the button label for a moment.
+    private func copyReport() {
+        let text = reportText()
+        #if os(iOS)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
+        didCopy = true
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            didCopy = false
         }
     }
 }

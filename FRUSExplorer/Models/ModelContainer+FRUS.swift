@@ -33,8 +33,17 @@ extension ModelContainer {
     ///          `FRUSExplorerApp.cloudKitDiagnostic(_:)` and surface the real domain/code/
     ///          description in the UI, instead of a hardcoded "check console" placeholder
     ///   1.4 — `PersonClusterOverride` (2026-06-17) and `SyncedPreferences` (2026-06-27)
-    ///          added to the schema (now 16 record types). Both are new CloudKit record
-    ///          types — deploy the Development schema to Production before shipping (see note).
+    ///          added to the schema (16 at the time). Both are new CloudKit record types —
+    ///          deploy the Development schema to Production before shipping (see note).
+    ///   1.5 — Wave R-7: the list holds **18 record types**, not the 16 this block went on
+    ///          claiming through two additions (`CustomVolumeScope`, #258; `ProjectLeadEntry`,
+    ///          #377 Phase 3). That drift is the reason for the gate: `CloudKitSchemaInventory`
+    ///          holds a checked-in inventory of every mirrored identifier, and
+    ///          `FRUSExplorerTests/CloudKitSchemaInventoryTests` fails the suite — with the
+    ///          deploy checklist in the failure message — the moment this list changes. It also
+    ///          pins the number above, so this sentence cannot go stale again. The member list
+    ///          itself is unchanged; only its visibility (`private` → internal, so the test can
+    ///          build a `Schema` from it) and these comments.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -50,7 +59,16 @@ extension ModelContainer {
     /// `serverRejectedRequest` (15), `incompatibleVersion` (18), or `invalidArguments` (12) —
     /// surfaced by `cloudKitDiagnostic(_:)` as e.g. "CKErrorDomain serverRejectedRequest: …".
     /// **Whenever you add a model type here, deploy the CloudKit schema before shipping.**
-    private static var frusModelTypes: [any PersistentModel.Type] {
+    ///
+    /// ## The gate (Wave R-7)
+    /// That instruction used to be a comment and nothing else, which is how #488 shipped: build 35
+    /// added four CloudKit identifiers, the Production schema was never promoted, and every user's
+    /// export failed. Editing this list now fails `CloudKitSchemaInventoryTests` until
+    /// ``CloudKitSchemaInventory`` is updated, and the failure message carries the deploy
+    /// checklist. Internal rather than `private` for exactly that reason — the test builds a
+    /// `Schema` from this list and reads the mirrored identifiers back out of it, so the inventory
+    /// is pinned against the real schema rather than against another hand-written list.
+    static var frusModelTypes: [any PersistentModel.Type] {
         [
             Project.self,
             ResearchNote.self,
@@ -109,11 +127,15 @@ extension ModelContainer {
     // SavedSearch if no user has saved a search, DocumentHighlight if no one has
     // highlighted text) will be ABSENT from the CloudKit schema until that happens.
     //
-    // To proactively populate the CloudKit schema with all 16 record types:
+    // To proactively populate the CloudKit schema with every type in `frusModelTypes`
+    // (`CloudKitSchemaInventory.installedIdentifiers` is the maintained list; this comment
+    // deliberately no longer restates the count, which is what went stale before):
     //   1. Run a Development build with a real iCloud account signed in.
     //   2. Save at least one search → creates SavedSearch schema entry.
     //   3. Highlight text in a document → creates DocumentHighlight schema entry.
     //   4. CloudKit Dashboard → Deploy Schema Changes to Production.
+    //   5. Clear `CloudKitSchemaInventory.identifiersAwaitingDeploy` and re-run
+    //      `CloudKitSchemaInventoryTests`, which prints the new baseline to paste in.
     //
     // See Planning/130-CloudKit-SchemaInit.md for full context.
 
@@ -141,6 +163,10 @@ extension ModelContainer {
         do {
             let container = try ModelContainer(for: cloudSchema, configurations: [cloudConfig])
             print("[SwiftData] ModelContainer created — CloudKit sync ENABLED")
+            // Wave R-7: the startup line the build-28 plan specified and #488 needed. Only on
+            // this path — a local-only or test-host container never talks to CloudKit, so its
+            // deploy state is not a fact about anything. Costs one `isEmpty` on an array literal.
+            CloudKitSchemaInventory.logDeployStateIfNeeded()
             return (container, true, nil)
         } catch {
             // CloudKit unavailable: log the full error so developers/testers can diagnose

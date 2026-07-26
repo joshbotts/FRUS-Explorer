@@ -1,6 +1,7 @@
 # Wave R — the research trail, and build-35 tester feedback
 
-**Status:** R-0 answered 2026-07-26; **R-1 shipped 2026-07-26**. Runs **after S-6** (Settings docs closeout).
+**Status:** R-0 answered 2026-07-26; **R-1, R-9 and R-7 shipped 2026-07-26**. Runs **after S-6**
+(Settings docs closeout).
 **Inputs:** `Planning/Settings-Parity-Audit-2026-07-25.md` (§B2, B3, and the deliberate-list
 entry on search logging); build-35 tester feedback (not yet collected); carried work from the
 2026-07-26 bug session (#486 / #488 / #498) — see *Folded in* below.
@@ -335,6 +336,52 @@ diagnosis had to be reconstructed from the CloudKit Console and a `git diff` ins
 
 ### R-7 — Build the schema-deploy release gate that was already specified
 
+> #### ✅ SHIPPED — 2026-07-26
+>
+> `FRUSExplorer/Models/CloudKitSchemaInventory.swift` holds a checked-in inventory of every
+> CloudKit identifier this build mirrors — **206 of them: 18 record types and 188 fields**, in
+> CloudKit's own `CD_Type` / `CD_Type.CD_field` vocabulary. Property-grained deliberately: three
+> of #488's four identifiers were *fields on existing types*, so a record-type-only inventory
+> would have caught a quarter of it.
+>
+> **The gate is a three-step ratchet, each step proved red then green:**
+> 1. Change the schema → `CloudKitSchemaInventoryTests` fails, naming the added/removed
+>    identifiers and printing the replacement literal plus the five-step deploy checklist.
+> 2. Paste the literal → the *baseline* test now fails, because `installed − awaiting` no longer
+>    matches the pinned count and SHA-256 digest.
+> 3. Mend it either by listing the identifiers in `identifiersAwaitingDeploy` (honest: not
+>    deployed) or by restating count + digest (a claim that you deployed). Both are explicit acts
+>    in the diff. **No test can verify the deploy itself** — nothing in-process can see the
+>    Production schema — but neither can it be skipped in silence, which is the whole of what was
+>    missing.
+>
+> **Marker location, and why:** two `static let`s beside the inventory. The fact recorded is a
+> property of the *release* ("the owner promoted this identifier set to Production"), not of the
+> device or the user, so it must be identical on every install of a build and reviewable in the
+> PR diff that adds a model. `UserDefaults` fails the first, a bundled resource the second.
+> Seeded at **build 36 / 2026-07-26**, per the owner's own note on #488 ("Resolved by deploying
+> the missing CloudKit schema"); nothing has entered the model set since.
+>
+> **Startup cost is one `isEmpty` on an array literal.** No `Schema` walk, no hashing; the
+> expensive comparison against the real schema happens in the test suite. `makeFRUSContainer()`
+> logs only on the CloudKit-enabled path.
+>
+> **Surfaces, and who they are for.** Settings ▸ Data & Recovery ▸ Diagnostics gains an **iCloud
+> Schema** row beside Sync Log — no alert, no badge, no red, because an undeployed schema is a
+> release-process failure and a researcher cannot act on it. It is *shown* rather than hidden,
+> and shown in **both** states, because #488's user-visible symptom was silence and because a row
+> that only appears when something is wrong cannot be checked in advance or screenshotted. Its
+> screen explains the state in plain language first, then lists the outstanding identifiers with
+> a **Copy Report** button. The sync-log **export header** carries the same state — #488 was
+> reported by pasting that dump, so the export that described the failure could not name its
+> cause. The row hides entirely when the container is local-only.
+>
+> **Also fixed:** the version-history block said "16 record types" for a list of 18, drifting
+> across `CustomVolumeScope` (#258) and `ProjectLeadEntry` (#377 Phase 3). Any `N record types`
+> phrase in `ModelContainer+FRUS.swift` is now pinned to the derived count.
+>
+> **R-2 is unblocked.**
+
 `Planning/188-189-Tester-Feedback-Build28-Plan.md:158` called for "a startup log line if the
 installed model set is newer than a known-deployed marker, so a future undeployed-schema regression
 is caught before shipping." It was never built. #488 **is** that regression: build 35 added four
@@ -451,8 +498,8 @@ Expect the feedback to cluster on surfaces this wave already opens.
 Under the settled contract they read and write tables that **already exist**, so they are
 schema-neutral and independent. The order is now:
 
-- **R-7 first** — it gates R-2. R-2 adds query-log fields to `SearchHistoryEntry`, which needs a
-  Production schema deploy, and that additive shape is exactly what broke #488.
+- ~~**R-7 first** — it gates R-2.~~ **Shipped 2026-07-26.** R-2 adds query-log fields to
+  `SearchHistoryEntry`; when it does, the inventory test will fail and hand it the checklist.
 - **R-3 and R-4 in parallel**, needing neither R-2 nor R-7. R-4 should land at or before R-3, or the
   new iOS History screen shows reading with no searches.
 - **R-2** once R-7 exists.
