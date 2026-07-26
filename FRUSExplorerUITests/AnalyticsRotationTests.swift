@@ -369,6 +369,34 @@ final class AnalyticsRotationTests: XCTestCase {
                        "App was killed rotating after a second tap away from the term field.")
     }
 
+    /// SCOPE PROBE: is the defect specific to the Corpus Analytics sheet, or does ANY focused text
+    /// field wedge on rotation?
+    ///
+    /// This decides whether an orientation lock on one screen is a real mitigation or a band-aid.
+    /// The Search tab's keywords field is a plain `TextField` in a `NavigationStack` — but NOT in a
+    /// sheet, and its stack is not nested inside another presented controller. If this hangs, the
+    /// defect is app-wide and must be fixed globally.
+    func testRotateWithFocusedSearchFieldIsSafe() throws {
+        let search = app.buttons["Search"].firstMatch
+        guard search.waitForExistence(timeout: 10) else { throw XCTSkip("Search tab not found") }
+        search.tap()
+
+        // `.searchable` surfaces as a searchField, not a textField.
+        var field = app.searchFields.firstMatch
+        if !field.waitForExistence(timeout: 5) { field = app.textFields.firstMatch }
+        guard field.waitForExistence(timeout: 10) else { throw XCTSkip("Search field not found") }
+        field.tap()
+        field.typeText("Berlin")
+        _ = app.staticTexts.firstMatch.waitForExistence(timeout: 2)
+        field.tap()   // the second focus — the Corpus Analytics minimal trigger
+
+        rotateRoundTrip()
+
+        XCTAssertEqual(app.state, .runningForeground,
+                       "App was killed rotating with a focused Search field — the defect is NOT "
+                       + "confined to Corpus Analytics and an orientation lock there would not fix it.")
+    }
+
     // MARK: - Helpers
 
     /// Opens Browse ▸ the analysis menu ▸ Corpus Analytics.
@@ -379,9 +407,26 @@ final class AnalyticsRotationTests: XCTestCase {
         // The grouped analysis menu — an explicit Menu rather than toolbar overflow (BrowserView).
         // Its accessibility LABEL is the short name from `.controlHelp(_:detail:)`; the long
         // "Chronology, Corpus Analytics, …" string is the accessibility HINT, not the label.
-        let menu = app.buttons["Analysis Tools"]
-        guard menu.waitForExistence(timeout: 10) else {
-            throw XCTSkip("Analysis toolbar menu not found — Browse toolbar layout changed")
+        var menu = app.buttons["Analysis Tools"]
+        if !menu.waitForExistence(timeout: 10) {
+            // iPad: the Browse toolbar collapses its trailing items into an overflow control, so
+            // "Analysis Tools" is not a top-level button until that is expanded.
+            for label in ["More", "Show More", "More Actions"] {
+                let more = app.buttons[label].firstMatch
+                if more.exists { more.tap(); break }
+            }
+            // On iPad the overflowed item loses the `.controlHelp` accessibility label and falls
+            // back to the raw SF Symbol name — worth fixing separately (VoiceOver reads
+            // "chart.bar.xaxis"), but the test has to cope with it today.
+            menu = app.buttons["Analysis Tools"]
+            if !menu.waitForExistence(timeout: 5) {
+                menu = app.buttons["chart.bar.xaxis"].firstMatch
+            }
+            if !menu.waitForExistence(timeout: 5) {
+                let labels = app.buttons.allElementsBoundByIndex.prefix(30)
+                    .map { $0.label }.filter { !$0.isEmpty }.joined(separator: " | ")
+                throw XCTSkip("Analysis toolbar menu not found. Buttons on screen: \(labels)")
+            }
         }
         menu.tap()
 
