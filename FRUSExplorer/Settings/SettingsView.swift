@@ -89,34 +89,7 @@ struct SettingsView: View {
             Form {
                 // iCloud sync status — visible on iOS where there is no macOS status bar.
                 // Shows container init result and the most recent sync event outcome.
-                Section {
-                    iCloudSyncStatusRow
-                    Toggle(isOn: $syncSettingsEnabled) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(String(localized: "settings.sync.toggle",
-                                        defaultValue: "Sync Settings Across Devices"))
-                            Text(String(localized: "settings.sync.toggle.detail",
-                                        defaultValue: "Word-cloud filters & stop lists, citation style, default document mode, and research logging."))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .disabled(!appState.cloudKitSyncEnabled)
-                    .onChange(of: syncSettingsEnabled) { _, newValue in
-                        appState.settingsSync?.handleEnabledChange(newValue)
-                    }
-                    if !appState.cloudKitSyncEnabled {
-                        Text(String(localized: "settings.sync.unavailable",
-                                    defaultValue: "Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text(String(localized: "settings.section.icloud", defaultValue: "iCloud Sync"))
-                } footer: {
-                    Text(String(localized: "settings.sync.footer",
-                                defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
-                }
+                SyncSettingsSection { iCloudSyncStatusRow }
 
                 // Rows come from the shared `SettingsPane` model (S-1) in the four task-first
                 // groups, so this root and the macOS sidebar cannot disagree about a pane's name,
@@ -1392,9 +1365,99 @@ struct EraseEverythingView: View {
     }
 }
 
+// MARK: - SyncSettingsSection
+
+/// The iCloud Sync section — the device-local master switch for cross-device settings sync.
+///
+/// One declaration, two hosts (S-5b): a section of the iOS Settings root, and the whole of the
+/// macOS Sync pane. Before this the two kept private copies of the same four sentences and had
+/// already drifted — the Mac said "shares those settings", iOS "shares the settings above", and
+/// `Docs/EditableContent.md` claimed all three keys were a "single edit point" when they were
+/// not. `leading` lets iOS put its sync-status row inside the same section; macOS shows status
+/// in the main window's status bar and passes nothing.
+///
+/// Version history:
+///   1.0 — S-5b: extracted from `SettingsView` so `SettingsSyncPane` could be deleted
+struct SyncSettingsSection<Leading: View>: View {
+
+    /// Rows shown above the toggle — the iOS sync-status cell, or nothing.
+    @ViewBuilder var leading: Leading
+
+    @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
+    @Environment(AppState.self) private var appState
+
+    var body: some View {
+        Section {
+            leading
+            Toggle(isOn: $syncSettingsEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "settings.sync.toggle",
+                                defaultValue: "Sync Settings Across Devices"))
+                    Text(String(localized: "settings.sync.toggle.detail",
+                                defaultValue: "Word-cloud filters & stop lists, citation style, default document mode, and research logging."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .disabled(!appState.cloudKitSyncEnabled)
+            .onChange(of: syncSettingsEnabled) { _, newValue in
+                appState.settingsSync?.handleEnabledChange(newValue)
+            }
+            if !appState.cloudKitSyncEnabled {
+                Text(String(localized: "settings.sync.unavailable",
+                            defaultValue: "Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } header: {
+            Text(String(localized: "settings.section.icloud", defaultValue: "iCloud Sync"))
+        } footer: {
+            Text(String(localized: "settings.sync.footer",
+                        defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
+        }
+    }
+}
+
+extension SyncSettingsSection where Leading == EmptyView {
+    /// The section with no leading rows — the macOS pane, which gets its sync status from the
+    /// main window's status bar rather than repeating it here.
+    init() { self.init(leading: { EmptyView() }) }
+}
+
+#if os(macOS)
+/// The macOS Settings → iCloud Sync pane: the shared section, in a Form of its own.
+///
+/// Version history:
+///   1.0 — S-5b: replaces the hand-rolled `SettingsSyncPane`
+struct SyncSettingsView: View {
+    var body: some View {
+        Form {
+            SyncSettingsSection()
+        }
+        .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.pane.sync", defaultValue: "iCloud Sync"))
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
+    }
+}
+#endif
+
 // MARK: - DisplaySettingsView
 
-private struct DisplaySettingsView: View {
+/// The Display pane — text size, chart colors, citation style, and reading defaults.
+///
+/// Shared by both platforms since S-5b. macOS had a parallel `SettingsDisplayPane` that had
+/// drifted from this one in section order and in three footer sentences; it is gone. The
+/// controls a platform doesn't have (edge-tap page turn) stay behind their own fence, and the
+/// one sentence that is genuinely macOS-only — the citation popover — is a separate key rather
+/// than the same key with two texts, which would be a silent collision.
+///
+/// Version history:
+///   1.0 — Session 26: iOS Display settings
+///   1.1 — S-5b: shared with macOS; `SettingsDisplayPane` deleted
+struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
     @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
@@ -1470,8 +1533,16 @@ private struct DisplaySettingsView: View {
                 Text(String(localized: "settings.display.citationStyle.header",
                             defaultValue: "Citations"))
             } footer: {
+                // The citation popover is a macOS surface (`CitationPopoverView`), so only the
+                // Mac footer may promise it. Same key with two texts would be the silent
+                // collision the localized-key lesson warns about.
+                #if os(macOS)
+                Text(String(localized: "settings.display.citationStyle.footer.mac",
+                            defaultValue: "Used for Copy Citation, Share Citation, and the citation popover's default. The popover can still switch styles per-presentation for comparison."))
+                #else
                 Text(String(localized: "settings.display.citationStyle.footer",
                             defaultValue: "Used when copying or sharing a citation."))
+                #endif
             }
 
             Section {
@@ -1518,11 +1589,16 @@ private struct DisplaySettingsView: View {
                 }
             }
         }
+        #if os(macOS)
+        .formStyle(.grouped)
+        #endif
         .navigationTitle(String(localized: "settings.display.title", defaultValue: "Display"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
         #if os(macOS)
+        // maxWidth only — Session 67 removed `maxHeight: .infinity` here because it stops the
+        // NavigationSplitView detail column from bounding the Form's own scroll view.
         .frame(maxWidth: .infinity)
         .scrollIndicators(.visible)
         #endif
@@ -1531,7 +1607,17 @@ private struct DisplaySettingsView: View {
 
 // MARK: - SearchDefaultsView
 
-private struct SearchDefaultsView: View {
+/// The Search pane — default scope, default document type, and result-preview length.
+///
+/// Shared by both platforms since S-5b. The macOS `SettingsSearchPane` it replaces carried a
+/// footer that told Mac readers to override these "per-session in the Search sheet" — macOS has
+/// a Search *window* with a Filters panel, so that sentence had been wrong on the Mac since the
+/// window shipped. One view, one true sentence.
+///
+/// Version history:
+///   1.0 — Session 26: iOS search defaults
+///   1.1 — S-5b: shared with macOS; `SettingsSearchPane` deleted
+struct SearchDefaultsView: View {
     @AppStorage(SearchDefaults.scopeDocumentsKey) private var scopeDocuments    = true
     @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes        = true
     @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries    = true
@@ -1627,8 +1713,12 @@ private struct SearchDefaultsView: View {
                             defaultValue: "How many lines of matched context each search result shows. Individual search screens can override this default."))
             }
         }
-        .navigationTitle(String(localized: "settings.search.title",
-                                defaultValue: "Search Defaults"))
+        #if os(macOS)
+        .formStyle(.grouped)
+        #endif
+        // "Search", not "Search Defaults" — S-0 renamed the row that leads here, and a
+        // destination whose title disagrees with the row that opened it reads as a wrong turn.
+        .navigationTitle(String(localized: "settings.search.title", defaultValue: "Search"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

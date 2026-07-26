@@ -63,6 +63,14 @@ import AppKit
 ///   1.7 — S-2b: `SettingsStoragePane`, `SettingsAddVolumesPane`, and `ManageStorageSheet`
 ///          (1,618 lines) leave this file for the merged `MacVolumesStorageHub`; the stale
 ///          hand-copied sidebar tree in the doc above is replaced by a pointer to the model
+///   1.8 — S-5b: the last four hand-rolled `ScrollView`/`PaneHeader` panes go. Display,
+///          Search and Sync are deleted outright in favour of the cross-platform
+///          `DisplaySettingsView` / `SearchDefaultsView` / `SyncSettingsSection` — there was
+///          never a macOS-specific behaviour in them, only drifted copy. Notes is rewritten
+///          as a `Form` over a one-shot `NotesPaneSnapshot` (it held three live `@Query`s over
+///          every note, the documented CPU-peg shape) with the full list behind one door.
+///          `PaneSectionHeader`, `settingsPaneToggleRow`, and a dead `Bundle` extension go
+///          with them.
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -92,10 +100,13 @@ struct FRUSSettingsView: View {
         } detail: {
             Group {
                 switch selection {
-                case .sync:           SettingsSyncPane()
+                // Display, Search and Sync render the cross-platform views (S-5b). The macOS
+                // twins they replaced held no macOS-specific behaviour — only copy that had
+                // drifted from the iOS original.
+                case .sync:           SyncSettingsView()
                 case .about:          AboutView()
-                case .display:        SettingsDisplayPane()
-                case .search:         SettingsSearchPane()
+                case .display:        DisplaySettingsView()
+                case .search:         SearchDefaultsView()
                 case .projects:       SettingsProjectsPane()
                 case .tags:           SettingsTagsPane()
                 case .scopes:         SettingsScopesPane()
@@ -153,212 +164,6 @@ struct PaneHeader: View {
             }
         }
         .padding(.bottom, 12)
-    }
-}
-
-private struct PaneSectionHeader: View {
-    let title: String
-    var body: some View {
-        Text(title)
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.secondary)
-            .textCase(.uppercase)
-            .kerning(0.6)
-            .padding(.top, 16)
-            .padding(.bottom, 4)
-    }
-}
-
-// MARK: - Display Pane
-
-private struct SettingsDisplayPane: View {
-    @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
-    @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
-    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
-    @AppStorage(ChartSeriesPalette.storageKey) private var chartSeriesCount = ChartSeriesPalette.defaultCount
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "Display",
-                    subtitle: "Adjust how documents are presented."
-                )
-
-                PaneSectionHeader(title: "Text size")
-                Picker("Document text size", selection: $textSize) {
-                    ForEach(TextSizePreference.allCases) { size in
-                        Text(size.label).tag(size)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 280)
-                .padding(.bottom, 8)
-
-                Text("Adjusts the body text size in the Document view.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-
-                PaneSectionHeader(title: "Citations")
-                Picker("Citation style", selection: $citationStyle) {
-                    ForEach(CitationStyle.allCases) { style in
-                        Text(style.displayName).tag(style)
-                    }
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-                .padding(.bottom, 8)
-
-                Text("Used for Copy Citation, Share Citation, and the citation popover's default. The popover can still switch styles per-presentation for comparison.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-
-                PaneSectionHeader(title: "Reading")
-                Picker("Open documents in", selection: $defaultDocumentMode) {
-                    ForEach(DefaultDocumentMode.allCases) { mode in
-                        Text(mode.label).tag(mode)
-                    }
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-                .padding(.bottom, 8)
-
-                Text("\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail alongside the document; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-
-                PaneSectionHeader(title: "Chart colors")
-                Stepper(value: $chartSeriesCount, in: ChartSeriesPalette.range) {
-                    Text("Distinctly-colored volumes: \(chartSeriesCount)")
-                }
-                .frame(maxWidth: 280)
-                .padding(.bottom, 8)
-
-                Text("How many volumes are shown as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(24)
-        }
-    }
-}
-
-// MARK: - Search Pane
-
-/// Optional cross-device settings sync (the device-local master toggle).
-private struct SettingsSyncPane: View {
-    @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
-    @Environment(AppState.self) private var appState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "iCloud Sync",
-                    subtitle: "Optionally share your settings across devices signed in to the same iCloud account."
-                )
-
-                settingsPaneToggleRow(
-                    label: "Sync settings across devices",
-                    detail: "Word-cloud filters & stop lists, citation style, default document mode, and research logging.",
-                    isOn: $syncSettingsEnabled
-                )
-                .disabled(!appState.cloudKitSyncEnabled)
-                .onChange(of: syncSettingsEnabled) { _, newValue in
-                    appState.settingsSync?.handleEnabledChange(newValue)
-                }
-
-                Text(appState.cloudKitSyncEnabled
-                     ? "When on, this device shares those settings with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."
-                     : "Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.top, 10)
-            }
-            .padding(24)
-        }
-    }
-}
-
-/// The local, redacted CloudKit sync-telemetry log (#188-C.1) — read, copy, export, or clear it
-/// to help diagnose iCloud sync problems. Everything shown is on the redaction allow-list: event
-/// types, timing, and error codes only.
-private struct SettingsSearchPane: View {
-    @AppStorage(SearchDefaults.scopeDocumentsKey) private var scopeDocuments  = true
-    @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes      = true
-    @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries  = true
-    @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
-    @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
-
-    /// Whether `scope` is the only search scope still enabled — see the iOS twin in
-    /// `SearchDefaultsView`. With all three off, `SearchService.makeMatchExpressions` throws
-    /// `FTS5Error.emptyQuery`, so every search fails instead of returning an honest empty result.
-    private func isOnlyEnabledScope(_ scope: Bool) -> Bool {
-        scope && [scopeDocuments, scopeNotes, scopeSummaries].filter { $0 }.count == 1
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "Search",
-                    subtitle: "Default scope and filter settings for the Search sheet."
-                )
-
-                PaneSectionHeader(title: "Default search scope")
-                Text("These toggles control which content types are searched by default. They can be overridden per-session in the Search sheet. At least one scope stays on — searching nothing has no result to show.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.bottom, 10)
-
-                settingsPaneToggleRow(
-                    label: "Documents",
-                    detail: "Search indexed FRUS document text.",
-                    isOn: $scopeDocuments,
-                    isDisabled: isOnlyEnabledScope(scopeDocuments)
-                )
-                settingsPaneToggleRow(
-                    label: "Research notes",
-                    detail: "Include your research notes in search results.",
-                    isOn: $scopeNotes,
-                    isDisabled: isOnlyEnabledScope(scopeNotes)
-                )
-                settingsPaneToggleRow(
-                    label: "AI summaries",
-                    detail: "Include generated summary text in search results.",
-                    isOn: $scopeSummaries,
-                    isDisabled: isOnlyEnabledScope(scopeSummaries)
-                )
-
-                PaneSectionHeader(title: "Default document type")
-                Picker("Default document type filter", selection: $defaultTypeFilter) {
-                    Text("Documents & Editorial Notes").tag("all")
-                    Text("Primary documents only").tag("documentsOnly")
-                    Text("Editorial notes only").tag("editorialNotesOnly")
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-
-                PaneSectionHeader(title: "Result preview")
-                Text("How many lines of matched context each search result shows. Individual search screens can override this default.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.bottom, 10)
-                Picker("Snippet length", selection: $snippetLineCount) {
-                    ForEach(1...10, id: \.self) { n in
-                        Text(SearchDefaults.snippetLinesLabel(n)).tag(n)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(maxWidth: 200, alignment: .leading)
-            }
-            .padding(24)
-        }
     }
 }
 
@@ -1275,45 +1080,6 @@ private struct SettingsSummarizationPane: View {
             promptText: prompt.promptText,
             fields: fields
         )
-    }
-}
-
-// MARK: - Shared Helpers
-
-/// Toggle row used across multiple settings panes.
-/// Named `settingsPaneToggleRow` to avoid collision with `settingsToggleRow` in SettingsView.swift.
-@ViewBuilder
-private func settingsPaneToggleRow(label: String,
-                                   detail: String,
-                                   isOn: Binding<Bool>,
-                                   isDisabled: Bool = false) -> some View {
-    HStack(alignment: .top, spacing: 12) {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.system(size: 13))
-            Text(detail)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-        }
-        Spacer()
-        Toggle("", isOn: isOn)
-            .labelsHidden()
-            .disabled(isDisabled)
-    }
-    .padding(10)
-    .background(Color.secondary.opacity(0.06))
-    .clipShape(RoundedRectangle(cornerRadius: 7))
-    .padding(.bottom, 6)
-}
-
-// MARK: - Bundle Helpers
-
-private extension Bundle {
-    var shortVersionString: String {
-        infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-    }
-    var buildNumber: String {
-        infoDictionary?["CFBundleVersion"] as? String ?? "—"
     }
 }
 
