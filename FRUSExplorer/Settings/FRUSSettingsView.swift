@@ -102,8 +102,7 @@ struct FRUSSettingsView: View {
                 case .notes:          SettingsNotesPane()
                 case .wordCloud:      WordCloudSettingsView()
                 case .volumesStorage: MacVolumesStorageHub()
-                case .naraAPI:        SettingsNARAPane()
-                case .zotero:         ZoteroIntegrationView()
+                case .connections:    ConnectionsView()
                 case .summarization:  SettingsSummarizationPane()
                 case .data:           SettingsDataPane()
                 case .reset:          SettingsResetPane()
@@ -1156,118 +1155,6 @@ private struct SettingsNotesPane: View {
 
     private func tagNamesFor(_ note: ResearchNote) -> [String] {
         note.userTagIds.compactMap { tid in tags.first { $0.id == tid }?.name }
-    }
-}
-
-// MARK: - NARA API Pane
-
-private struct SettingsNARAPane: View {
-    @State private var apiKey: String = ""
-    @State private var isRevealed: Bool = false
-    @State private var isSaved: Bool = false
-    @State private var callCount: Int = 0
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "NARA API",
-                    subtitle: "Store your National Archives catalog API key to enable the Source Explorer."
-                )
-
-                PaneSectionHeader(title: "API key")
-                Text("The NARA API key is stored securely in iCloud Keychain and synced across your devices. The Source Explorer toolbar button is only shown when a key is configured.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.bottom, 12)
-
-                HStack(spacing: 8) {
-                    Group {
-                        if isRevealed {
-                            TextField("Paste your NARA API key", text: $apiKey)
-                        } else {
-                            SecureField("NARA API key", text: $apiKey)
-                        }
-                    }
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 320)
-
-                    Button {
-                        isRevealed.toggle()
-                    } label: {
-                        Image(systemName: isRevealed ? "eye.slash" : "eye")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    // A6: the label flips with state so VoiceOver announces the
-                    // action the button will actually perform.
-                    .accessibilityLabel(isRevealed
-                        ? String(localized: "settings.apiKey.conceal",
-                                 defaultValue: "Conceal API key")
-                        : String(localized: "settings.apiKey.reveal",
-                                 defaultValue: "Reveal API key"))
-
-                    Button("Save") {
-                        saveKey()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                    if isSaved {
-                        Label("Saved", systemImage: "checkmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.green)
-                    }
-                }
-                .padding(.bottom, 8)
-
-                if !apiKey.isEmpty {
-                    Button("Remove key from keychain") {
-                        removeKey()
-                    }
-                    .font(.system(size: 12))
-                    .foregroundStyle(.red)
-                    .buttonStyle(.plain)
-                }
-
-                PaneSectionHeader(title: "Usage (last 30 days)")
-                HStack {
-                    Text("\(callCount) API call\(callCount == 1 ? "" : "s")")
-                        .font(.system(size: 13))
-                    Spacer()
-                    Text("Limit not enforced by FRUS Explorer")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(10)
-                .background(Color.secondary.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 7))
-
-                Link("Get a NARA API key", destination: URL(string: "https://www.archives.gov/research/catalog/help/api")!)
-                    .font(.system(size: 12))
-                    .padding(.top, 12)
-            }
-            .padding(24)
-        }
-        .onAppear { loadKey() }
-    }
-
-    private func loadKey() {
-        apiKey = NARAAPIKeyStore.shared.retrieveKey() ?? ""
-        callCount = NARAAPIKeyStore.shared.callCountLast30Days
-    }
-
-    private func saveKey() {
-        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        NARAAPIKeyStore.shared.storeKey(trimmed)
-        withAnimation { isSaved = true }
-        Task { try? await Task.sleep(for: .seconds(2)); isSaved = false }
-    }
-
-    private func removeKey() {
-        NARAAPIKeyStore.shared.deleteKey()
-        apiKey = ""
     }
 }
 

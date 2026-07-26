@@ -71,7 +71,7 @@ struct SettingsPaneModelTests {
         // Spot-check the ones S-0 renamed, so a later edit cannot quietly revert them.
         #expect(SettingsPane.tags.label == "Tags")
         #expect(SettingsPane.search.label == "Search")
-        #expect(SettingsPane.naraAPI.label == "NARA API")
+        #expect(SettingsPane.connections.label == "Connections")
     }
 
     /// Both renderers show these, so their placement is the shared tree.
@@ -114,6 +114,22 @@ struct SettingsPaneModelTests {
         }
     }
 
+    /// S-4a merged the two outside-service rows. Same rule as the Library merge: the survivor has
+    /// to answer for both, and neither of the retired rows may still be reachable.
+    @Test("Connections answers for both services it absorbed")
+    func connectionsKeywords() {
+        for query in ["nara", "national archives", "catalog", "api key", "source explorer",
+                      "zotero", "bibliography", "citations", "library", "connect"] {
+            #expect(SettingsPane.connections.matches(query), "no match for \(query)")
+        }
+        // One row, both platforms — a second would mean the merge came undone on one side.
+        for platform in [SettingsPlatform.iOS, .macOS] {
+            let system = SettingsPane.panes(in: .system, on: platform)
+            #expect(system.contains(.connections))
+            #expect(system.filter { $0 == .connections }.count == 1)
+        }
+    }
+
     // MARK: - Search
 
     /// An empty query shows the whole tree — a cleared search field must not blank the screen.
@@ -130,7 +146,7 @@ struct SettingsPaneModelTests {
     func labelMatch() {
         #expect(SettingsPane.wordCloud.matches("word cloud"))
         #expect(SettingsPane.wordCloud.matches("WORD CLOUD"))
-        #expect(SettingsPane.naraAPI.matches("nara"))
+        #expect(SettingsPane.connections.matches("nara"))
     }
 
     /// Keywords are what make the field worth having: they match what a researcher types, not
@@ -139,7 +155,7 @@ struct SettingsPaneModelTests {
     func keywordMatch() {
         #expect(SettingsPane.wordCloud.matches("stop words"))
         #expect(!SettingsPane.wordCloud.label.lowercased().contains("stop words"))
-        #expect(SettingsPane.naraAPI.matches("api key"))
+        #expect(SettingsPane.connections.matches("api key"))
         #expect(SettingsPane.display.matches("font"))
         #expect(SettingsPane.data.matches("export"))
         #expect(SettingsPane.reset.matches("erase"))
