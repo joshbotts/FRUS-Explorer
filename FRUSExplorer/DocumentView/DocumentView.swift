@@ -221,6 +221,9 @@ enum DocumentSheet: Identifiable {
 ///          on a `.system(size:)` font); the highlight color-picker sheet content
 ///          is wrapped in a `ScrollView` so the grown chrome scrolls instead of
 ///          clipping at the smallest (`.height(180)`) detent.
+///   3.11 — Wave R / R-8: the research-rail toolbar toggle names itself in its `Label`. This
+///          toolbar holds one item and cannot overflow today; the shape is normalised so that
+///          adding a second item can never silently rename this one to its SF Symbol.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -988,12 +991,14 @@ struct DocumentView: View {
             Button {
                 toggleRail()
             } label: {
-                Image(systemName: "doc.text.magnifyingglass")
+                // R-8: named `Label`, not a bare `Image`. This toolbar holds one item and
+                // so cannot overflow today; the shape is normalised so that adding a
+                // second item can never silently rename this one to its SF Symbol.
+                Label(Self.researchRailName, systemImage: "doc.text.magnifyingglass")
                     .foregroundStyle(railToggleActive ? Color.accentColor : Color.primary)
             }
             .controlHelp(
-                String(localized: "document.toolbar.researchRail.a11y",
-                       defaultValue: "Research panel"),
+                Self.researchRailName,
                 detail: String(localized: "document.toolbar.panelMode.hint",
                                defaultValue: "Read mode also enables edge-tap navigation to the previous and next document in this volume"),
                 systemImage: "doc.text.magnifyingglass"
@@ -1001,6 +1006,12 @@ struct DocumentView: View {
             .accessibilityAddTraits(railToggleActive ? [.isSelected] : [])
             .accessibilityIdentifier("researchRailToggle")
         }
+    }
+
+    /// The rail toggle's name, read from its `Label` (what an overflowed toolbar row would
+    /// announce) as well as from `.controlHelp`. One definition, so the two cannot drift.
+    static var researchRailName: String {
+        String(localized: "document.toolbar.researchRail.a11y", defaultValue: "Research panel")
     }
 
     /// Whether the rail is currently visible — accent-tints the toggle. iPad reads `panelVisible`

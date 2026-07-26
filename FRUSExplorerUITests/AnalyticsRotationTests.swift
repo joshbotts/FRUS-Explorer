@@ -46,6 +46,9 @@ import XCTest
 ///          run in the everyday suite (~20s each). Person Analytics coverage added: it is the
 ///          latent sibling that reproduced the same cycle, and its two fields are what showed the
 ///          fix belongs on the presentation rather than on each field.
+///   1.2 — Wave R / R-8: `openCorpusAnalytics` no longer falls back to the raw SF Symbol name
+///          when the toolbar overflows. That fallback existed because the overflowed item
+///          announced `chart.bar.xaxis`; it now announces "Analysis Tools".
 final class AnalyticsRotationTests: XCTestCase {
 
     var app: XCUIApplication!
@@ -482,19 +485,18 @@ final class AnalyticsRotationTests: XCTestCase {
         // "Chronology, Corpus Analytics, …" string is the accessibility HINT, not the label.
         var menu = app.buttons["Analysis Tools"]
         if !menu.waitForExistence(timeout: 10) {
-            // iPad: the Browse toolbar collapses its trailing items into an overflow control, so
-            // "Analysis Tools" is not a top-level button until that is expanded.
+            // iPad: if the Browse toolbar ever collapses its trailing items into an overflow
+            // control, "Analysis Tools" is not a top-level button until that is expanded.
             for label in ["More", "Show More", "More Actions"] {
                 let more = app.buttons[label].firstMatch
                 if more.exists { more.tap(); break }
             }
-            // On iPad the overflowed item loses the `.controlHelp` accessibility label and falls
-            // back to the raw SF Symbol name — worth fixing separately (VoiceOver reads
-            // "chart.bar.xaxis"), but the test has to cope with it today.
+            // R-8 fixed the raw-SF-Symbol fallback this used to need: the overflowed row now
+            // announces "Analysis Tools" like the in-bar button, because the name lives in the
+            // item's `Label` rather than only in `.controlHelp`. `ToolbarOverflowAccessibilityTests`
+            // is the guard; do not reintroduce a `app.buttons["chart.bar.xaxis"]` fallback here —
+            // it would silently re-accept the defect.
             menu = app.buttons["Analysis Tools"]
-            if !menu.waitForExistence(timeout: 5) {
-                menu = app.buttons["chart.bar.xaxis"].firstMatch
-            }
             if !menu.waitForExistence(timeout: 5) {
                 let labels = app.buttons.allElementsBoundByIndex.prefix(30)
                     .map { $0.label }.filter { !$0.isEmpty }.joined(separator: " | ")

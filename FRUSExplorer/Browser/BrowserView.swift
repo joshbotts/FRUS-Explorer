@@ -84,6 +84,11 @@ import SwiftUI
 ///          an `onChange` observer, alongside the #324 `downloadManager` one it was always
 ///          missing. Bootstrapping from `.onAppear` can capture a nil pipeline, which made
 ///          every compilation report "Index Required" for the rest of the session.
+///   2.9 — Wave R / R-8: the analysis menu and the downloaded-only filter name themselves in
+///          their `Label`s instead of relying on `.controlHelp` / `.accessibilityLabel` alone.
+///          An item collapsed into the iPadOS toolbar overflow takes its accessible name from
+///          the label closure, so the analysis menu announced "chart.bar.xaxis". Adds the
+///          `#if DEBUG` `uiTestOverflowFillerItems` seam that lets a UI test reach that state.
 ///   Session 09: `pendingBrowseVolume` resolves against the unfiltered manifest —
 ///         the filtered-groups lookup silently dropped hand-offs to undownloaded
 ///         volumes, which the subject pivot routinely targets.
@@ -277,6 +282,13 @@ struct BrowserView: View {
     /// auto-overflow "…" control that could fail to open — leaving Corpus Analytics
     /// effectively unreachable from the browser. A dedicated `Menu` is always tappable
     /// and keeps the toolbar to three primary items.
+    ///
+    /// ## Why the label is a `Label` and not an `Image` (R-8)
+    /// This button's name reached VoiceOver as the raw symbol string `chart.bar.xaxis`
+    /// whenever iPadOS collapsed it into the navigation-bar overflow. `.controlHelp`'s
+    /// `.accessibilityLabel` decorates only the in-bar representation; the overflow row
+    /// re-derives its name from the label closure's own content. Naming the `Label`
+    /// fixes both representations, and the bar still renders it icon-only.
     @ToolbarContentBuilder
     private var analyticsToolbarItems: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
@@ -314,16 +326,100 @@ struct BrowserView: View {
                         icon: { Image(systemName: WordCloudGlyph.symbol) }
                 }
             } label: {
-                Image(systemName: "chart.bar.xaxis")
+                Label(Self.analysisToolsName, systemImage: "chart.bar.xaxis")
             }
             .controlHelp(
-                String(localized: "browse.analysisTools.a11y", defaultValue: "Analysis Tools"),
+                Self.analysisToolsName,
                 detail: String(localized: "browse.analysisTools.help",
                                defaultValue: "Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, and the corpus Word Cloud"),
                 systemImage: "chart.bar.xaxis"
             )
         }
     }
+
+    /// The analysis menu's name, used by BOTH its `Label` (which is what the iPadOS
+    /// toolbar overflow reads) and its `.controlHelp` (which is what the in-bar
+    /// representation reads). One property so the two can never drift apart — a drift
+    /// that is invisible until the toolbar happens to overflow. See R-8.
+    /// Computed, not a stored `static let`, so the lookup is re-resolved per render exactly
+    /// as the inline `String(localized:)` it replaced was — a stored one would freeze the
+    /// locale at first access.
+    static var analysisToolsName: String {
+        String(localized: "browse.analysisTools.a11y", defaultValue: "Analysis Tools")
+    }
+
+    /// The downloaded-only filter's name, shared by both layouts' toolbars. Like the
+    /// analysis menu it is read twice — once from the `Label` (the iPadOS overflow row)
+    /// and once from `.accessibilityLabel` (the in-bar button) — so it lives in one place.
+    private var downloadFilterName: String {
+        appState.filterDownloadedOnly
+            ? String(localized: "browser.filter.off.a11y",
+                     defaultValue: "Show all volumes")
+            : String(localized: "browser.filter.on.a11y",
+                     defaultValue: "Show downloaded volumes only")
+    }
+
+    /// The downloaded-only filter's glyph — filled while the filter is on.
+    private var downloadFilterSymbol: String {
+        appState.filterDownloadedOnly ? "arrow.down.circle.fill" : "arrow.down.circle"
+    }
+
+    /// The downloaded-only filter's tooltip / VoiceOver hint.
+    private var downloadFilterHelp: String {
+        appState.filterDownloadedOnly
+            ? String(localized: "browser.filter.off.help",
+                     defaultValue: "Show all volumes in the corpus, including those not yet downloaded")
+            : String(localized: "browser.filter.on.help",
+                     defaultValue: "Show only volumes you have downloaded and can browse offline")
+    }
+
+    #if DEBUG
+    /// The launch-environment key a UI test sets to force this toolbar into the iPadOS
+    /// navigation-bar overflow (R-8).
+    static let uiTestToolbarOverflowKey = "FRUS_UI_TEST_TOOLBAR_OVERFLOW"
+
+    /// Inert filler toolbar items that exist only to make iPadOS collapse the Browse
+    /// toolbar into its overflow control.
+    ///
+    /// ## Why a seam and not a plain assertion
+    /// R-8's defect is observable only once an item has been **re-hosted** into the
+    /// overflow: while it sits in the bar, `.controlHelp`'s `accessibilityLabel` is
+    /// present and correct, and the raw-symbol name never appears. No shipping iPad size
+    /// collapses the three-item Browse toolbar — measured on iPad Pro 13-inch (M5) and
+    /// iPad mini (A17 Pro), portrait, both of which keep all three items in the bar — so
+    /// a UI test that merely looked for "Analysis Tools" would pass against the bug. This
+    /// seam creates the state the assertion is actually about.
+    ///
+    /// Gated twice over, like `UITestVolumeSeeder`: the whole block is `#if DEBUG` (absent
+    /// from AppStore and DirectDistribution builds) and it emits nothing unless
+    /// ``uiTestToolbarOverflowKey`` is set to `"1"`.
+    @ToolbarContentBuilder
+    private var uiTestOverflowFillerItems: some ToolbarContent {
+        if ProcessInfo.processInfo.environment[Self.uiTestToolbarOverflowKey] == "1" {
+            // Six, not three: the item count needed to overflow grows with screen width,
+            // and this must hold on the widest installed iPad. Names are unlocalized on
+            // purpose — this content cannot reach a shipping build.
+            ToolbarItem(placement: .primaryAction) {
+                Button { } label: { Label("UI Test Filler 1", systemImage: "1.circle") }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { } label: { Label("UI Test Filler 2", systemImage: "2.circle") }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { } label: { Label("UI Test Filler 3", systemImage: "3.circle") }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { } label: { Label("UI Test Filler 4", systemImage: "4.circle") }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { } label: { Label("UI Test Filler 5", systemImage: "5.circle") }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { } label: { Label("UI Test Filler 6", systemImage: "6.circle") }
+            }
+        }
+    }
+    #endif
 
     // MARK: - Layout Variants
 
@@ -350,24 +446,12 @@ struct BrowserView: View {
                         Button {
                             appState.filterDownloadedOnly.toggle()
                         } label: {
-                            Image(systemName: appState.filterDownloadedOnly
-                                  ? "arrow.down.circle.fill"
-                                  : "arrow.down.circle")
+                            // R-8: named `Label`, not a bare `Image` — the iPadOS toolbar
+                            // overflow re-derives the row's name from this closure.
+                            Label(downloadFilterName, systemImage: downloadFilterSymbol)
                         }
-                        .accessibilityLabel(
-                            appState.filterDownloadedOnly
-                                ? String(localized: "browser.filter.off.a11y",
-                                         defaultValue: "Show all volumes")
-                                : String(localized: "browser.filter.on.a11y",
-                                         defaultValue: "Show downloaded volumes only")
-                        )
-                        .help(
-                            appState.filterDownloadedOnly
-                                ? String(localized: "browser.filter.off.help",
-                                         defaultValue: "Show all volumes in the corpus, including those not yet downloaded")
-                                : String(localized: "browser.filter.on.help",
-                                         defaultValue: "Show only volumes you have downloaded and can browse offline")
-                        )
+                        .accessibilityLabel(downloadFilterName)
+                        .help(downloadFilterHelp)
                     }
                     analyticsToolbarItems
                 }
@@ -414,26 +498,17 @@ struct BrowserView: View {
                         Button {
                             appState.filterDownloadedOnly.toggle()
                         } label: {
-                            Image(systemName: appState.filterDownloadedOnly
-                                  ? "arrow.down.circle.fill"
-                                  : "arrow.down.circle")
+                            // R-8: named `Label`, not a bare `Image` — the iPadOS toolbar
+                            // overflow re-derives the row's name from this closure.
+                            Label(downloadFilterName, systemImage: downloadFilterSymbol)
                         }
-                        .accessibilityLabel(
-                            appState.filterDownloadedOnly
-                                ? String(localized: "browser.filter.off.a11y",
-                                         defaultValue: "Show all volumes")
-                                : String(localized: "browser.filter.on.a11y",
-                                         defaultValue: "Show downloaded volumes only")
-                        )
-                        .help(
-                            appState.filterDownloadedOnly
-                                ? String(localized: "browser.filter.off.help",
-                                         defaultValue: "Show all volumes in the corpus, including those not yet downloaded")
-                                : String(localized: "browser.filter.on.help",
-                                         defaultValue: "Show only volumes you have downloaded and can browse offline")
-                        )
+                        .accessibilityLabel(downloadFilterName)
+                        .help(downloadFilterHelp)
                     }
                     analyticsToolbarItems
+                    #if DEBUG
+                    uiTestOverflowFillerItems
+                    #endif
                 }
         }
     }

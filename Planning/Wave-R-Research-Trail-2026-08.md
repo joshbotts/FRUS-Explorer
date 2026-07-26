@@ -576,6 +576,48 @@ On iPad the Browse analysis-menu button's accessibility label resolves to the ra
   overflow drops the label generally, this is not a one-button bug. Audit the other overflow-prone
   toolbars before scoping.
 
+> **Settled 2026-07-26 (shipped).** The mechanism is confirmed and the inferred one above is
+> **wrong in its wording**, which matters because it points at the wrong fix.
+>
+> **Overflow does not drop the label — it recomputes it.** When iPadOS collapses a toolbar item
+> into the `OverflowBarButtonItem` popover it re-hosts the item as a UIKit menu row whose
+> accessible name is re-derived from the *content of the item's `label:` closure*. A `Label`'s
+> text wins; with a bare `Image(systemName:)` the fallback is the image's own accessibility name,
+> which for an SF Symbol is the symbol string. `.accessibilityLabel` — and therefore
+> `.controlHelp` — is applied **outside** that closure, decorates only the in-bar representation,
+> and never reaches the overflow row. It also *loses* to the label content when both exist:
+> `ProjectPickerMenu` labels its `Menu` `Label(projectName, …)` and carries
+> `.accessibilityLabel("Switch project context")`, and its overflow row announces the **project
+> name**. So no change to `ControlHelp.swift` could have fixed this: the modifier has no access to
+> the label content. The fix is per-call-site, and the rule is now documented on
+> `ControlHelpModifier` and enforced by `ToolbarAccessibilityAuditTests`.
+>
+> Measured on iPad Pro 13-inch (M5), iPadOS 26.5, with an A/B probe of four toolbar-item shapes:
+>
+> | shape | overflow row label |
+> |---|---|
+> | `Menu … label: { Image(systemName:) }` + `.accessibilityLabel` | ❌ the symbol string |
+> | `Menu … label: { Label(name, systemImage:) }` | ✅ `name` |
+> | `Button … label: { Label(name, systemImage:) }` | ✅ `name` |
+> | plain `Button … label: { Image(systemName:) }` + `.accessibilityLabel` | kept in the bar, correct |
+>
+> **Correction to the "Verified" bullet.** The Browse toolbar does **not** overflow on any iPad
+> tested — iPad Pro 13-inch (M5) and iPad mini (A17 Pro), portrait, both keep all three trailing
+> items in the bar. The condition under which the reporter met the overflow was not reproduced;
+> R-8 forced it instead, with a `#if DEBUG` filler seam
+> (`BrowserView.uiTestOverflowFillerItems`, `FRUS_UI_TEST_TOOLBAR_OVERFLOW=1`). That seam is load
+> bearing: without it a UI test asserting "Analysis Tools" on iPad **passes against the defect**,
+> because the in-bar label was always correct.
+>
+> **Audit result — six iOS sites converted to named `Label`s**, all of the same shape: the Browse
+> analysis menu (the report), the Browse downloaded-only filter in both layouts, the three
+> cross-reference graph toolbar buttons (that toolbar carries three primary items plus Done and is
+> the most overflow-prone in the app), the subseries word cloud, and the document research-rail
+> toggle. **Not fixed, reported:** `MacCorpusBrowserWindow`'s three sidebar toolbar buttons carry
+> `.help(_:)` and *no* `accessibilityLabel` at all, with raw English tooltips rather than
+> `String(localized:)` — a macOS-only gap needing new localized keys and a macOS verification pass
+> R-8 could not do. They are the audit test's only allowlisted exception, with the count pinned.
+
 ### R-9 — "Index Required" on an indexed volume, and a mute "Index Now"
 
 At the compilation level the app can show **"Index Required"** for a volume that is fully indexed,

@@ -97,6 +97,10 @@ private enum CompactGraphContent {
 ///          "Archival Neighbors…" opens the value-based window on macOS
 ///          (`openWindow(value: ArchivalNeighborsRequest.document…)`); the sheet and
 ///          its target state are now iOS-only
+///   2.1 — Wave R / R-8: the three icon-only toolbar controls (reference-list toggle, reset
+///          viewport, info) name themselves in their `Label`s. This toolbar carries three
+///          primary items plus Done, so it is the most overflow-prone in the app, and an
+///          overflowed row takes its name from the label closure — not `.controlHelp`.
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -206,11 +210,13 @@ struct CrossReferenceGraphView: View {
                     Button {
                         showInfoPopover.toggle()
                     } label: {
-                        Image(systemName: "info.circle")
+                        // R-8: named `Label`, not a bare `Image` — this toolbar carries
+                        // three primary items plus Done, so it can collapse into the
+                        // iPadOS overflow, which reads its name from this closure.
+                        Label(Self.graphInfoName, systemImage: "info.circle")
                     }
                     .controlHelp(
-                        String(localized: "graph.info.a11y",
-                               defaultValue: "About this graph"),
+                        Self.graphInfoName,
                         detail: String(localized: "graph.info.help",
                                        defaultValue: "Learn what this graph shows and how to interact with it"),
                         systemImage: "info.circle"
@@ -1332,16 +1338,33 @@ struct CrossReferenceGraphView: View {
             GraphReferenceListTip().invalidate(reason: .actionPerformed)
             withAnimation { showReferenceList.toggle() }
         } label: {
-            Image(systemName: "sidebar.trailing")
+            // R-8: see `graphInfoName` — a toolbar item's name must live in its label.
+            Label(Self.referenceListToggleName, systemImage: "sidebar.trailing")
         }
         .popoverTip(GraphReferenceListTip())
         .controlHelp(
-            String(localized: "graph.list.toggle.a11y",
-                   defaultValue: "Toggle reference list"),
+            Self.referenceListToggleName,
             detail: String(localized: "graph.list.toggle.help",
                            defaultValue: "Show or hide the reference list panel"),
             systemImage: "sidebar.trailing"
         )
+    }
+
+    /// Names for the three icon-only graph toolbar controls. Each is read twice — from the
+    /// `Label` (the iPadOS toolbar-overflow row) and from `.controlHelp` (the in-bar
+    /// control) — so each has exactly one definition. See R-8 / `ControlHelpModifier`.
+    /// Computed rather than stored so the lookup is re-resolved per render exactly as the
+    /// inline `String(localized:)` calls they replaced were.
+    static var graphInfoName: String {
+        String(localized: "graph.info.a11y", defaultValue: "About this graph")
+    }
+    /// Name of the reference-list toggle; see ``graphInfoName``.
+    static var referenceListToggleName: String {
+        String(localized: "graph.list.toggle.a11y", defaultValue: "Toggle reference list")
+    }
+    /// Name of the reset-viewport control; see ``graphInfoName``.
+    static var resetViewportName: String {
+        String(localized: "graph.resetView.a11y", defaultValue: "Reset view")
     }
 
     // MARK: - Info Popover
@@ -1474,10 +1497,12 @@ struct CrossReferenceGraphView: View {
         Button {
             vm.resetViewport(animated: !reduceMotion)
         } label: {
-            Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+            // R-8: see `graphInfoName` — a toolbar item's name must live in its label.
+            Label(Self.resetViewportName,
+                  systemImage: "arrow.up.left.and.down.right.magnifyingglass")
         }
         .controlHelp(
-            String(localized: "graph.resetView.a11y", defaultValue: "Reset view"),
+            Self.resetViewportName,
             detail: String(localized: "graph.resetView.help",
                            defaultValue: "Restore the graph's pan and zoom to their original position"),
             systemImage: "arrow.up.left.and.down.right.magnifyingglass"
