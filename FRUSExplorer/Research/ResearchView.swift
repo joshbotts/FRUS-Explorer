@@ -21,6 +21,17 @@ enum ResearchSidebarItem: Hashable {
     case collection(UUID)
     /// A specific highlight color — shows documents that have at least one highlight of this color.
     case highlightColor(DocumentHighlight.Color)
+    /// The research trail — every document opened and search run (Wave R-3).
+    ///
+    /// **Unlike every other case this is not a document filter**: it pushes ``HistoryView``
+    /// rather than a `ResearchDocumentEntry` list, so `documents(for:)` returns nothing for it.
+    /// It rides this enum because the iOS Research tab's `NavigationStack` path is typed
+    /// `[ResearchSidebarItem]` (#272) and a push of any other type could not enter it.
+    ///
+    /// Offered on **iOS only**. macOS reaches the same view through the `frus.history` window
+    /// and its History menu, so a second door in the Research window's sidebar would be a
+    /// duplicate surface.
+    case history
 }
 
 // MARK: - ResearchDocumentEntry
@@ -96,6 +107,8 @@ struct ResearchDocumentEntry: Identifiable {
 ///          the stack path and a non-nil default asks the stack to launch auto-pushed. Defensive
 ///          only — measured on iPad, the `.allNotes` default did NOT auto-push (SwiftUI drops the
 ///          initial path element); the claim that it did, recorded in a8b20ca, does not reproduce.
+///   1.7 — Wave R-3: `ResearchSidebarItem.history` pushes the shared `HistoryView` on iOS, the
+///          research trail's first surface on iPhone/iPad. macOS keeps its `frus.history` window.
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -209,7 +222,7 @@ struct ResearchView: View {
             sidebar
         } detail: {
             if let item = selectedItem {
-                documentList(for: item)
+                destination(for: item)
             } else {
                 ContentUnavailableView(
                     String(localized: "research.empty.noSelection",
@@ -225,10 +238,23 @@ struct ResearchView: View {
         NavigationStack(path: researchNavigationPath) {
             sidebar
                 .navigationDestination(for: ResearchSidebarItem.self) { item in
-                    documentList(for: item)
+                    destination(for: item)
                 }
         }
         #endif
+    }
+
+    /// What a sidebar selection pushes (iOS) or fills the detail column with (macOS).
+    ///
+    /// Every case but ``ResearchSidebarItem/history`` is a filter over annotated documents;
+    /// history is the research trail, a different list entirely (Wave R-3).
+    @ViewBuilder
+    private func destination(for item: ResearchSidebarItem) -> some View {
+        if item == .history {
+            HistoryView()
+        } else {
+            documentList(for: item)
+        }
     }
 
     /// A sidebar row that navigates correctly per platform: a `NavigationLink` push in the iOS
@@ -299,6 +325,28 @@ struct ResearchView: View {
                         Image(systemName: "note.text")
                     }
                 }
+
+                #if os(iOS)
+                // Wave R-3: the research trail's only door on iPhone/iPad. macOS reaches the same
+                // `HistoryView` through the `frus.history` window and the History menu, so adding
+                // a row here too would be a duplicate surface.
+                sidebarRow(.history) {
+                    Label {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(String(localized: "research.sidebar.history",
+                                        defaultValue: "History"))
+                                .foregroundStyle(.primary)
+                            Text(String(localized: "research.sidebar.history.detail",
+                                        defaultValue: "Documents opened and searches run"))
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    } icon: {
+                        Image(systemName: "clock.arrow.circlepath")
+                    }
+                }
+                #endif
             }
 
             // Collections sorted alphabetically by name
@@ -402,6 +450,10 @@ struct ResearchView: View {
             case .highlightColor:
                 return String(localized: "research.empty.noDocs.highlight",
                               defaultValue: "No documents have highlights in this color.")
+            case .history:
+                // Unreachable: `destination(for:)` routes `.history` to `HistoryView` and never
+                // reaches this list. Present so the switch stays exhaustive.
+                return ""
             }
         }()
         Group {
@@ -810,6 +862,9 @@ struct ResearchView: View {
                     .filter { $0.color == color }
                     .map { "\($0.volumeId)/\($0.documentId)" }
             )
+        case .history:
+            // The trail is not an annotation source — `HistoryView` reads it directly.
+            matchingKeys = []
         }
 
         // Seed the grouped notes dictionary.
@@ -889,6 +944,10 @@ struct ResearchView: View {
         case .highlightColor(let color):
             return color.displayName + " " + String(localized: "research.list.highlights",
                                                     defaultValue: "Highlights")
+        case .history:
+            // `HistoryView` sets its own navigation title; this is only reached if a future
+            // caller asks for the label outside `destination(for:)`.
+            return String(localized: "research.sidebar.history", defaultValue: "History")
         }
     }
 }

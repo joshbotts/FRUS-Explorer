@@ -444,13 +444,32 @@ In the tag picker, the **New Tag** field sits at the **top** of the sheet, so cr
 The **Research** tab is your single workspace for everything you've annotated. Its root screen is a category list you browse by:
 
 - **All Research Documents** — every document you've annotated in any way (a note, a tag, a collection, or a highlight)
+- **History** — everything you've *read*, as opposed to everything you've marked up (see Section 7.5)
 - **By Collection** — documents grouped by the collections that contain them
 - **By Tag** — documents grouped by the custom tags you've applied
 - **By Highlight Color** — documents grouped by which highlight color appears in them
 
-`[SCREENSHOT: Research tab category list showing All Research Documents, By Collection, By Tag, and By Highlight Color sections]`
+`[SCREENSHOT: Research tab category list showing Project Home, All Research Documents, History, By Collection, By Tag, and By Highlight Color sections]`
 
 Tap any category to open the matching documents; tapping one opens it directly in the document view, scrolled to the relevant note or highlight. Navigation here is a simple push-and-back flow, so the back button always returns you to the category list.
+
+### 7.5 History
+
+**Research → History** is your research trail: every document you have opened and every search you have run, newest first. Until now this existed only on the Mac; it is the same screen on both, so a trail that started on your iPad is legible on your Mac and the reverse.
+
+It has three controls:
+
+- **Project scope** — *All Projects*, *Not in a Project*, or a specific project by name. A history entry is filed under whichever project was active *when it was recorded*; switching projects later does not re-file anything retroactively. This is the control to reach for when you want to reconstruct what you actually read while working on one paper.
+- **Search history…** — a free-text filter over what is loaded. It matches a visited document's title, its volume id, and its document id; for searches it matches the query text.
+- **Delete** — swipe a row left, or long-press it, to remove that one entry. Deletions sync, and there is no undo.
+
+`[SCREENSHOT: iPhone History screen showing the project scope picker, the search field, and a Documents Visited section with two rows]`
+
+**On long lists**, each section loads its most recent 500 entries and a **Show More** button appears at the end when there are more. While a section is showing less than everything, its header says so — "Showing 500 of 12,904" — so a filtered list is never mistaken for the whole trail. Note that the search field filters what is *loaded*: on a very long history, **Show More** widens what a search can reach.
+
+**Searches on iPhone and iPad.** Search recording currently happens on the Mac; searches you run there appear here once iCloud syncs. Searches run on iPhone or iPad do not yet produce entries in this list.
+
+**If both sections stay empty**, check **Settings → Research → Research Sessions**: with **Log Research Sessions** off, nothing new is recorded, and History says so beneath the first section.
 
 ---
 
