@@ -1,6 +1,8 @@
 # What's New in Build 36 (iOS)
 
-Build 36 is a **Settings release**. The whole of Settings has been rebuilt around one shared structure, and two ways to lose data without being asked are closed. Everything from build 35 — Research Projects, Corpus Analytics compare/export, and iPad multi-window — is unchanged and still worth your attention. No re-index needed.
+Build 36 is a **Settings release**, and it also fixes the **Corpus Analytics freeze** some of you hit on iPhone. The whole of Settings has been rebuilt around one shared structure, and two ways to lose data without being asked are closed. Everything from build 35 — Research Projects, Corpus Analytics compare/export, and iPad multi-window — is unchanged and still worth your attention. No re-index needed.
+
+> **One behaviour change to know about before you turn anything off:** the **Log Research Sessions** switch now governs *everything* the app remembers about your work, not just the session log. Turn it off and History and a project's Recents will thin out and eventually empty. That is the switch finally doing what its description says — not a fault. See *The recording switch* below.
 
 ## Settings, rebuilt
 
@@ -35,7 +37,21 @@ Multi-window was broken at the OS-registration level; it's fixed. **Drag a docum
 - **Source Explorer** — resolved collections show the **HMS/MLR Entry** number NARA staff ask for.
 
 
+## The recording switch now means what it says
+
+**Log Research Sessions** used to stop only the session log — the one thing in the app nothing else read. Your reading history kept recording regardless, and it is what fills History, a project's Recents, Project Leads, and the last-opened dates in Volumes & Storage. Turning the switch off did not stop the app remembering what you read.
+
+It does now. One switch, every recorder.
+
+- **If you rely on Recents or History, leave it on.** With it off, those surfaces will empty over time — by design.
+- **Already-recorded activity stays** until you delete it. The delete button in Settings → Research → Research Sessions still clears only the session log; a delete that covers the whole trail is coming.
+- **A correction for Mac users:** the old text in that pane said searches were recorded on iPhone and iPad "but not here". That was true of the session log and **wrong about the History window**, which has been recording your Mac search text all along. The pane now says so plainly.
+
 ## Fixes
+- **Corpus Analytics froze the app when you rotated the iPhone.** Enter a term, tap the term field again, turn the phone sideways, and the app would hang and be killed. **Person Analytics had the same defect** and nobody had noticed — its two person-search fields did it too, just without the hang. Both fixed. If you were avoiding rotating that screen, please stop avoiding it.
+- **The "Working on:" project banner covered the navigation bar.** On iPhone it sat on top of the back button, the title, and the toolbar buttons at every level of Browse. It now sits below the bar.
+- **Browse rows only responded to taps on the text.** Tapping the empty space to the right of a subseries or volume name did nothing. The whole row is tappable now.
+- **"Index Required" on a volume that was fully indexed** — with an "Index Now" button that did nothing at all when tapped. Fixed. And if the search index genuinely cannot be built, you now get a warning and an explanation instead of a dead blue button.
 - **Two ways to lose work without being asked, closed.** On Mac, Free Up Space removed volumes with no confirmation at all. On iPhone and iPad, a full swipe deleted a Volume Scope outright. Both now ask first.
 - iPhone: the Research rail no longer auto-opens on every document — it appears when you ask for it.
 - Source Explorer no longer shows "No Document Selected" for the first document you open.

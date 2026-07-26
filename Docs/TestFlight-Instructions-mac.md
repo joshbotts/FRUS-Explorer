@@ -2,6 +2,8 @@
 
 Build 36 is a **Settings release**. The whole of Settings has been rebuilt around one shared structure, and two ways to lose data without being asked are closed. Everything from build 35 — Research Projects, Corpus Analytics compare/export, and find-in-document — is unchanged and still worth your attention. No re-index needed.
 
+> **Two things to read before you change any setting:** the **Log Research Sessions** switch now governs *everything* the app remembers about your work — turn it off and the History window will thin out and eventually empty, by design. And the old description in that pane told you your Mac searches were not being recorded. **That was wrong.** Both are covered in *The recording switch* below.
+
 ## Settings, rebuilt
 
 Settings has been rebuilt end to end. **Seventeen destinations became thirteen rows in four groups** — Library, Research, Reading & Search, System — and both platforms now render the same tree from the same source, so a setting is in the same place on your Mac as on your iPhone. Every pane is a native grouped form; sub-screens open as sheets with a Done button.
@@ -34,6 +36,16 @@ Settings has been rebuilt end to end. **Seventeen destinations became thirteen r
 - **Zotero** — connect in Settings → Connections, then Share a document (with tags and notes) to your library.
 - **Source Explorer** — resolved collections show the **HMS/MLR Entry** number NARA staff ask for.
 
+
+## The recording switch now means what it says
+
+**Log Research Sessions** used to stop only the session log — the one thing in the app nothing else read. Your reading and search history kept recording regardless, and they are what fill the **History window**, a project's Recents, Project Leads, and the last-opened dates in Volumes & Storage. Turning the switch off did not stop the app remembering what you read.
+
+It does now. One switch, every recorder.
+
+- **The old description was wrong, and this is the important part.** It said searches were recorded on iPhone and iPad "but not here". That was true of the *session log* and false of the History window, which has been recording your Mac search text — the actual query strings — all along, and syncing them to your private iCloud database. The pane now says so plainly. If that is not what you want, turn the switch off.
+- **If you rely on the History window, leave it on.** With it off, History will empty over time — by design.
+- **Already-recorded activity stays** until you delete it. The delete button in Settings → Research → Research Sessions still clears only the session log; a delete that covers the whole trail is coming.
 
 ## Fixes
 - **Two ways to lose work without being asked, closed.** On Mac, Free Up Space removed volumes with no confirmation at all. On iPhone and iPad, a full swipe deleted a Volume Scope outright. Both now ask first.
