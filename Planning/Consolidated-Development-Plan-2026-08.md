@@ -14,11 +14,14 @@ research-rail program is complete; `ResearchStripView` no longer exists (four st
 doc-comment mentions remain — swept in S-0). Those completions moot parts of #368; see
 the issue-disposition table at the end.
 
-**Status, 2026-07-26.** Workstream **S is complete** — S-0…S-6 shipped as PRs #485–#505;
-#368's settings paragraph is closed by comment. Wave R (the research trail,
-`Planning/Wave-R-Research-Trail-2026-08.md`) ran after it and is down to its tail (R-5,
-R-6, R-8, and R-2b as a later release). The lanes still open are **Q**, **N**, and the
-new **O**; the slot table below is kept as the plan of record, with the live remainder in
+**Status, 2026-07-26 (revised after #521).** Workstream **S is complete** — S-0…S-6
+shipped as PRs #485–#505; #368's settings paragraph is closed by comment. Wave R (the
+research trail, `Planning/Wave-R-Research-Trail-2026-08.md`) ran after it and is now
+**complete but for R-2b**: R-1 and R-3…R-9 shipped as PRs #510–#521, and R-2b (retiring
+`ResearchSession`/`SessionEvent` from `frusModelTypes`, 19 record types → 17) deliberately
+waits for the R-2a build to have been in the field, since the migration must still be able
+to read the rows it converts. The lanes still open are **Q**, **N**, and the new **O**;
+the slot table below is kept as the plan of record, with the live remainder in
 *What is left*.
 
 Four workstreams, deliberately independent lanes: **S** (Settings North Star — complete),
@@ -268,7 +271,8 @@ namedFileSeries route it would build on.
 
 **Source of truth:** `Planning/Onboarding-Glass-Flow-Plan.md` (2026-07-26), against
 `design_handoff_onboarding_glass_flow/` (canonical options **1a, 4a, 4b, 4c**; turns 2–3
-are rejected design history). Six sessions, ~7–9 PRs. This plan does not restate them.
+are rejected design history). Six sessions, ~8–10 PRs (O-0 is two). This plan does not
+restate them.
 
 A full-bleed animated word cloud behind the first-run flow, driven by vectors generated at
 build time and bundled, so it renders with zero downloaded volumes — which is what lets the
@@ -291,9 +295,9 @@ never both claim the screen.
 
 **Why this lane is cheap to schedule.** It adds **no `@Model` type**, so
 `CloudKitSchemaInventoryTests` never fires and no Production schema deploy gates the
-release — the release-blocking dependency Q's M-1 and M-2 both carry. It is independent of
-Wave R's tail. Its only file shared with another lane is `FRUSTheme.swift`, and only
-additively.
+release — the release-blocking dependency Q's M-1 and M-2 both carry, and the one R-2b
+carries too. It is independent of R-2b. Its only file shared with another lane is
+`FRUSTheme.swift`, and only additively.
 
 **Why it is expensive to slice.** Unlike Q — whose Q-1 ships alone in one small session —
 every O screen sits on the backdrop, the backdrop sits on the bundled artifacts, and the
@@ -356,16 +360,16 @@ reader of `Onboarding/` being misled by dead code.
 
 | Slot | Lane | Session |
 |---|---|---|
-| 1 | O | **O-0** clear the ground (+ the launch measurement that settles O-0-1) |
+| 1 | O | **O-0** clear the ground (two PRs; the second is the single manifest decode) |
 | 2 | Q | Q-1 NEAR |
 | 3 | O | **O-1** `WordCloudKit` + `CloudVectorsGenerator` *(owner runs the corpus pass)* |
 | 4 | Q | Q-2 Query Inspector |
-| 5 | R | Wave-R tail: R-6 + R-8 together, then R-5 |
-| 6 | O | **O-2** backdrop |
-| 7 | Q | Q-3 fts5vocab + exact-word *(start the big Mac index in the background)* |
-| 8 | N | N-1 #353 parser session |
-| 9 | O | **O-4** the three steps *(and **O-3** iff O-0-1 kept the splash)* |
-| 10 | Q | R-1 facets *(needs the indexed corpus)* |
+| 5 | O | **O-2** backdrop |
+| 6 | Q | Q-3 fts5vocab + exact-word *(start the big Mac index in the background)* |
+| 7 | N | N-1 #353 parser session |
+| 8 | O | **O-4** the three steps |
+| 9 | Q | R-1 facets *(needs the indexed corpus)* |
+| 10 | O | **O-3** indexing backdrop + occasional splash |
 | 11 | O | **O-5** accessibility + docs closeout |
 | 12 | Q | R-2 + R-3 |
 | 13 | N | N-2 #354 routing (+ N-3 curation riding along) |
@@ -373,7 +377,12 @@ reader of `Onboarding/` being misled by dead code.
 
 O-1 and Q-3 are the two slots with owner wall-clock attached (the corpus generator pass and
 the big Mac index); running them in adjacent slots lets both proceed while review happens.
-**R-2b stays out of this table** — it waits for the R-2a build to have been in the field.
+O-3 and O-4 both hang off O-2 and are order-independent; O-4 goes first because it is the
+half the handoff is actually about, and O-5 needs both.
+
+**R-2b is the only Wave-R item left and stays out of this table** — it waits for the R-2a
+build to have been in the field, and carries its own Production schema deploy through the
+#488 gate.
 
 ---
 

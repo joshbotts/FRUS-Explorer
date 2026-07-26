@@ -47,3 +47,10 @@ notarization-*.json
 # #335: the full corpus-wide Source Explorer export is ~182MB — regenerate with
 # SourceExplorerExportGenerator; only the summary + sample are committed.
 Planning/source-explorer-export/source-explorer-export.json
+
+# Claude Design hand-off bundles. Plan docs cite these as source of truth by repo-relative
+# path, so unpack them at the repo root — but they are reference material (prototype HTML,
+# 2x screenshots, runtime JS), not sources, and none has ever been committed. Each plan
+# names the archive it came from under "Source of truth"; see e.g.
+# Planning/Onboarding-Glass-Flow-Plan.md.
+design_handoff_*/
