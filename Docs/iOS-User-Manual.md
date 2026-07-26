@@ -455,13 +455,15 @@ Tap any category to open the matching documents; tapping one opens it directly i
 
 ### 7.5 History
 
-**Research → History** is your research trail: every document you have opened and every search you have run, newest first. Until now this existed only on the Mac; it is the same screen on both, so a trail that started on your iPad is legible on your Mac and the reverse.
+**Research → History** is your research trail: every document you have opened, every search you have run, and every collection you have exported, newest first, in three sections. Until now this existed only on the Mac; it is the same screen on both, so a trail that started on your iPad is legible on your Mac and the reverse.
 
 It has three controls:
 
 - **Project scope** — *All Projects*, *Not in a Project*, or a specific project by name. A history entry is filed under whichever project was active *when it was recorded*; switching projects later does not re-file anything retroactively. This is the control to reach for when you want to reconstruct what you actually read while working on one paper.
-- **Search history…** — a free-text filter over what is loaded. It matches a visited document's title, its volume id, and its document id; for searches it matches the query text.
+- **Search history…** — a free-text filter over what is loaded. It matches a visited document's title, its volume id, and its document id; for searches, the query text; for exports, the collection's name and the format.
 - **Delete** — swipe a row left, or long-press it, to remove that one entry. Deletions sync, and there is no undo.
+
+**Collections Exported** is the third section. It records what left the app — the format, how many documents, and the collection's name where it was known — because nothing else in the app remembers that an export happened. It matters most for the Zotero web send, which puts items into your live Zotero library: this row is the app's only memory of it. These rows are records, not shortcuts, so tapping one does nothing; delete is the only action.
 
 `[SCREENSHOT: iPhone History screen showing the project scope picker, the search field, and a Documents Visited section with two rows]`
 

@@ -24,6 +24,11 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Wave R-2a: initial implementation
+///   1.1 — Wave R-2a review fixes: `nilTimestampIsSkipped` **rewritten** as
+///          ``nilTimestampIsSkippedFromBothSides``. It asserted `totalActivities == 2` for a store
+///          whose page could only ever draw one row — pinning the desynchronisation that made
+///          "Show More" endless — so the assertion had to be inverted rather than kept. Two new
+///          cases cover the `#Predicate` behind the fix and the all-undated store
 struct ResearchTrailSessionsTests {
 
     // MARK: - Fixtures
@@ -221,10 +226,15 @@ struct ResearchTrailSessionsTests {
 
     /// A row whose timestamp column is `nil` — possible only on a partially-written or legacy row,
     /// since the columns are optional purely for CloudKit — is dropped rather than placed at some
-    /// invented point on the timeline.
-    @Test("An activity with no timestamp is skipped, not guessed at")
+    /// invented point on the timeline, **and the total drops it too**.
+    ///
+    /// The first version of this test asserted `totalActivities == 2` "because the count is of
+    /// rows, and both rows exist". That is the defect, not the contract: the page skips the
+    /// undated row and the total counted it, so `loadedActivities < totalActivities` was true
+    /// however far the reader paged and "Show More" could never exhaust.
+    @Test("An activity with no timestamp is skipped by the page and by the total alike")
     @MainActor
-    func nilTimestampIsSkipped() throws {
+    func nilTimestampIsSkippedFromBothSides() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
@@ -238,8 +248,71 @@ struct ResearchTrailSessionsTests {
 
         let snapshot = SessionLogSnapshot.fetch(from: context)
         #expect(snapshot.loadedActivities == 1)
-        #expect(snapshot.totalActivities == 2, "the count is of rows, and both rows exist")
+        #expect(snapshot.totalActivities == 1,
+                "the total describes the rows the page can draw, or Show More never ends")
+        #expect(snapshot.hasMore == false)
         #expect(snapshot.sessions.count == 1)
+
+        // The row is still there — it is undeletable-by-log, not deleted.
+        #expect(try context.fetchCount(FetchDescriptor<ReadingHistoryEntry>()) == 2)
+        #expect(ResearchTrailSessions.totalActivityCount(in: context) == 2,
+                "the delete-magnitude count is of rows and must still see both")
+    }
+
+    /// **The predicate that can only fail at runtime.** `datedActivityCount` compares three
+    /// optional `Date` columns against a typed `nil` binding inside a `#Predicate`, and a
+    /// translation failure would surface as a swallowed `try?` returning zero — which reads as
+    /// "empty trail" rather than as an error. So each table is exercised with a mix.
+    @Test("The dated-activity count sees every table and excludes exactly the undated rows")
+    @MainActor
+    func datedActivityCountCoversAllThreeTables() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let visit = ReadingHistoryEntry(documentId: "d1", volumeId: "v")
+        visit.accessedAt = Self.epoch
+        context.insert(visit)
+        let undatedVisit = ReadingHistoryEntry(documentId: "d2", volumeId: "v")
+        undatedVisit.accessedAt = nil
+        context.insert(undatedVisit)
+
+        context.insert(SearchHistoryEntry(queryText: "détente", resultCount: 1,
+                                          executedAt: Self.epoch))
+        let undatedSearch = SearchHistoryEntry(queryText: "Berlin", resultCount: 1)
+        undatedSearch.executedAt = nil
+        context.insert(undatedSearch)
+
+        context.insert(ExportHistoryEntry(format: "pdf", documentCount: 2,
+                                          exportedAt: Self.epoch))
+        let undatedExport = ExportHistoryEntry(format: "html", documentCount: 1)
+        undatedExport.exportedAt = nil
+        context.insert(undatedExport)
+        try context.save()
+
+        #expect(ResearchTrailSessions.totalActivityCount(in: context) == 6)
+        #expect(ResearchTrailSessions.datedActivityCount(in: context) == 3)
+    }
+
+    /// The worst version of the desynchronisation: a store of nothing but undated rows derived no
+    /// sessions, reported itself non-empty, and drew a blank `List` where the empty state belongs.
+    @Test("A store of nothing but undated rows reports itself empty to the log")
+    @MainActor
+    func anAllUndatedStoreShowsTheEmptyState() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let undated = ReadingHistoryEntry(documentId: "d1", volumeId: "v")
+        undated.accessedAt = nil
+        context.insert(undated)
+        let undatedSearch = SearchHistoryEntry(queryText: "détente", resultCount: 1)
+        undatedSearch.executedAt = nil
+        context.insert(undatedSearch)
+        try context.save()
+
+        let snapshot = SessionLogSnapshot.fetch(from: context)
+        #expect(snapshot.isEmpty)
+        #expect(snapshot.hasMore == false)
+        #expect(snapshot.sessions.isEmpty)
     }
 
     /// An empty store produces an empty snapshot with nothing hidden behind "Show More".

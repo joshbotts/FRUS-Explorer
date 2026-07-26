@@ -49,6 +49,9 @@ import SwiftData
 ///          reaches the **whole** trail (`HistoryTrailAdmin.deleteAll`) instead of the retired
 ///          session tables, so the warning had to grow to match. The macOS empty-state fence is
 ///          gone: it existed because macOS wrote no `.searchSubmit` event
+///   1.4 — Wave R-2a review fixes: the delete confirmation quotes the **exact** activity count
+///          (`…delete.message.trail.v2`) instead of a session count derived from a 1,000-activity
+///          scan, which understated an unbounded delete by 10–20×
 struct ResearchSessionsView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -137,12 +140,16 @@ struct ResearchSessionsView: View {
             Button(String(localized: "settings.sessions.delete.cancel",
                           defaultValue: "Cancel"), role: .cancel) {}
         } message: {
-            // New key (`…message.trail`): the sentence now promises to delete the reading and
-            // search history too, which the old one explicitly did not. No String Catalog ships,
-            // so rewriting the old key's text in place would be a silent collision.
-            Text(String(format: String(localized: "settings.sessions.delete.message.trail %@",
-                                       defaultValue: "%@ will be permanently deleted from this device and, if iCloud sync is on, from iCloud — every document you opened, every search you ran, and every export, since that is what a session is made of. Your notes, highlights, tags and collections are not affected."),
-                        ResearchSessionsSummary.sessions(summary.sessionCount)))
+            // New key again (`…message.trail.v2`), because the magnitude changed and the sentence
+            // with it. `…message.trail` quoted `summary.sessionCount`, which is derived from a
+            // 1,000-activity scan while `deleteAll` is unbounded: a measured run announced "1000
+            // sessions" and destroyed 1,200 of them. The activity count is three `fetchCount`s and
+            // is therefore exact at any size, so that is what an irreversible, CloudKit-propagating
+            // delete is allowed to promise. No String Catalog ships, so rewriting the old key's
+            // text in place would be a silent collision.
+            Text(String(format: String(localized: "settings.sessions.delete.message.trail.v2 %@",
+                                       defaultValue: "%@ will be permanently deleted from this device and, if iCloud sync is on, from iCloud — every document you opened, every search you ran, and every collection you exported, since that is what a session is made of. Your notes, highlights, tags and collections are not affected."),
+                        ResearchSessionsSummary.events(summary.eventCount)))
         }
     }
 

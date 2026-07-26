@@ -316,6 +316,12 @@ enum CloudKitSchemaInventory {
     /// records carrying them — the #488 failure mode — and the app says so at launch and in
     /// Settings ▸ Data & Recovery.
     ///
+    /// **This list is also an interlock, not only a notice.** `ResearchTrailMigration` refuses to
+    /// run while any identifier here belongs to a record type it writes, because that pass writes
+    /// replacements and deletes their sources in one call: CloudKit would take the deletions and
+    /// reject the writes, and the data would be gone on the next device. Anything else that both
+    /// writes an undeployed type and destroys its source should consult this the same way.
+    ///
     /// Populated by the developer who changes the schema; cleared by whoever runs
     /// CloudKit Dashboard → Schema → **Deploy Schema Changes to Production**.
     ///

@@ -129,6 +129,8 @@ struct DerivedResearchSession: Identifiable, Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Wave R-2a: initial implementation
+///   1.1 — Wave R-2a review fixes: ``datedActivityCount(in:)`` added, so a page that skips
+///          `nil`-timestamped rows is compared against a total that skips them too
 enum ResearchTrailSessions {
 
     /// After this much inactivity, the next activity starts a new session.
@@ -258,9 +260,11 @@ enum ResearchTrailSessions {
         }.prefix(limit))
     }
 
-    /// How many activities the whole trail holds, across all three tables.
+    /// How many **rows** the whole trail holds, across all three tables — timestamp or not.
     ///
-    /// Three `fetchCount`s, so the log can say what it is not showing without materialising it.
+    /// Three `fetchCount`s. This is the number a delete would remove, so it is what the Settings
+    /// row quotes and what decides whether the delete control is enabled. It is deliberately *not*
+    /// what the session log compares its page against; see ``datedActivityCount(in:)``.
     ///
     /// - Parameter context: The SwiftData context to read.
     @MainActor
@@ -268,6 +272,33 @@ enum ResearchTrailSessions {
         let visits = (try? context.fetchCount(FetchDescriptor<ReadingHistoryEntry>())) ?? 0
         let searches = (try? context.fetchCount(FetchDescriptor<SearchHistoryEntry>())) ?? 0
         let exports = (try? context.fetchCount(FetchDescriptor<ExportHistoryEntry>())) ?? 0
+        return visits + searches + exports
+    }
+
+    /// How many trail rows carry a timestamp, and can therefore appear in a session.
+    ///
+    /// ## Why this is separate from ``totalActivityCount(in:)``
+    /// ``activities(in:limit:)`` skips rows with a `nil` timestamp — it has to, since an activity
+    /// with no time cannot be placed on a timeline. Comparing that page against a count that
+    /// *included* those rows desynchronises the two: `loadedActivities < totalActivities` stays
+    /// true no matter how far the reader pages, so "Show More" never exhausts, and a store whose
+    /// rows are all undated reports itself non-empty and draws a blank list instead of the empty
+    /// state. Counting the same population the page is drawn from removes both.
+    ///
+    /// The three predicates compare an optional column against a **typed** `nil` binding, the form
+    /// `HistoryScope.unfiled` established here — `$0.accessedAt != nil` alone leaves the macro
+    /// without a type for the literal.
+    ///
+    /// - Parameter context: The SwiftData context to read.
+    @MainActor
+    static func datedActivityCount(in context: ModelContext) -> Int {
+        let noDate: Date? = nil
+        let visits = (try? context.fetchCount(FetchDescriptor<ReadingHistoryEntry>(
+            predicate: #Predicate { $0.accessedAt != noDate }))) ?? 0
+        let searches = (try? context.fetchCount(FetchDescriptor<SearchHistoryEntry>(
+            predicate: #Predicate { $0.executedAt != noDate }))) ?? 0
+        let exports = (try? context.fetchCount(FetchDescriptor<ExportHistoryEntry>(
+            predicate: #Predicate { $0.exportedAt != noDate }))) ?? 0
         return visits + searches + exports
     }
 }
@@ -291,13 +322,18 @@ enum ResearchTrailSessions {
 ///
 /// Version history:
 ///   1.0 — Wave R-2a: initial implementation
+///   1.1 — Wave R-2a review fixes: ``totalActivities`` counts *datable* rows, so `hasMore` can
+///          actually reach `false` and an all-undated store draws its empty state
 struct SessionLogSnapshot: Equatable, Sendable {
 
     /// The derived sessions, newest first.
     let sessions: [DerivedResearchSession]
     /// How many activities were loaded into ``sessions``.
     let loadedActivities: Int
-    /// How many activities exist in the whole trail.
+    /// How many activities the trail holds that **could** be loaded — rows carrying a timestamp.
+    ///
+    /// Not the row count: see ``ResearchTrailSessions/datedActivityCount(in:)`` for why the two
+    /// have to describe the same population.
     let totalActivities: Int
     /// The activity limit this snapshot was fetched with.
     let pageLimit: Int
@@ -319,7 +355,9 @@ struct SessionLogSnapshot: Equatable, Sendable {
     /// Whether the trail holds more than this page loaded.
     var hasMore: Bool { loadedActivities < totalActivities }
 
-    /// Whether anything is recorded at all.
+    /// Whether there is any session to show. An all-undated store is empty **here** even though it
+    /// still holds deletable rows — the log draws sessions, and there are none. The delete control
+    /// asks a different question and reads `ResearchSessionsSummary.isEmpty` instead.
     var isEmpty: Bool { totalActivities == 0 }
 
     /// Reads one page of the trail and groups it.
@@ -334,7 +372,7 @@ struct SessionLogSnapshot: Equatable, Sendable {
         return SessionLogSnapshot(
             sessions: ResearchTrailSessions.group(activities),
             loadedActivities: activities.count,
-            totalActivities: ResearchTrailSessions.totalActivityCount(in: context),
+            totalActivities: ResearchTrailSessions.datedActivityCount(in: context),
             pageLimit: limit)
     }
 }

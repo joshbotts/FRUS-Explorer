@@ -21,6 +21,8 @@ import Testing
 ///          `HistoryTrailAdmin.deleteAll` (the whole trail) rather than
 ///          `ResearchSessionAdmin.deleteAll` (the retired tables). The `.nullify` assertion that
 ///          made the old delete correct is kept, because the migration still relies on it.
+///   1.2 — Wave R-2a review fixes: the truncated-scan floor wording, the exactness flag, and the
+///          undated-row store whose delete control disabled itself
 struct ResearchSessionsSummaryTests {
 
     private func makeContainer() throws -> ModelContainer {
@@ -81,6 +83,73 @@ struct ResearchSessionsSummaryTests {
     func missingStartDate() {
         let summary = ResearchSessionsSummary(sessionCount: 2, eventCount: 5, lastSessionStart: nil)
         #expect(summary.text() == "2 sessions · 5 events")
+    }
+
+    /// **The magnitude the delete dialog used to understate.** The session count comes off a
+    /// 1,000-activity scan; the delete is unbounded. A measured run had the confirmation say "1000
+    /// sessions" and destroy 1,200. When the scan is truncated the row says "at least", and the
+    /// dialog quotes the exact activity total instead.
+    @Test("A truncated scan is reported as a floor, not a total")
+    func approximateSessionCountSaysSo() {
+        #expect(ResearchSessionsSummary.sessions(12, exact: false) == "at least 12 sessions")
+        #expect(ResearchSessionsSummary.sessions(1, exact: false) == "at least 1 session")
+        #expect(ResearchSessionsSummary.sessions(12) == "12 sessions", "the exact form is unchanged")
+
+        let approximate = ResearchSessionsSummary(sessionCount: 1_000, eventCount: 12_400,
+                                                  lastSessionStart: nil,
+                                                  isSessionCountExact: false)
+        #expect(approximate.text() == "at least 1000 sessions · 12400 events")
+    }
+
+    /// The scan limit is where the flag flips, and the activity total stays exact on both sides of
+    /// it — it is three `fetchCount`s, which is why it is what the confirmation dialog quotes.
+    @Test("The exactness flag follows the scan limit")
+    @MainActor
+    func exactnessFollowsTheScanLimit() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        // Comfortably inside the window.
+        insertVisit(context, at: 1_000)
+        insertVisit(context, at: 2_000)
+        try context.save()
+        let small = ResearchSessionsSummary.fetch(from: context)
+        #expect(small.isSessionCountExact)
+        #expect(small.eventCount == 2)
+
+        // Fill the scan window exactly, which is the point at which older rows may exist unseen.
+        for index in 0..<ResearchSessionsSummary.activityScanLimit {
+            insertVisit(context, at: 100_000 + Double(index) * 60)
+        }
+        try context.save()
+        let large = ResearchSessionsSummary.fetch(from: context)
+        #expect(large.isSessionCountExact == false)
+        #expect(large.eventCount == ResearchSessionsSummary.activityScanLimit + 2,
+                "the activity total is exact whatever the scan saw")
+    }
+
+    /// **The delete control that disabled itself over the user's data.** `isEmpty` used to ask
+    /// whether any session could be derived. A row with no timestamp derives none — so a store
+    /// holding recorded query text reported itself empty, greyed out "Delete Recorded Sessions…",
+    /// and left that text in the user's iCloud database with no way to remove it.
+    @Test("Undated rows still enable the delete")
+    @MainActor
+    func undatedRowsAreStillDeletable() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let undated = SearchHistoryEntry(queryText: "a query the user wants gone", resultCount: 3)
+        undated.executedAt = nil
+        context.insert(undated)
+        try context.save()
+
+        let summary = ResearchSessionsSummary.fetch(from: context)
+        #expect(summary.sessionCount == 0, "no timestamp, so no session can be derived")
+        #expect(summary.eventCount == 1)
+        #expect(summary.isEmpty == false, "there is something to delete, so the control is live")
+
+        HistoryTrailAdmin.deleteAll(context: context)
+        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 0)
     }
 
     // MARK: - Counting

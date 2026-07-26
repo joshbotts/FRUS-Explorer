@@ -26,7 +26,12 @@ import Testing
 /// | reading history doubled | ``documentOpensAreDroppedNotMigrated`` |
 /// | pre-R-4 searches lost | ``preR4SearchesAreMigrated`` |
 /// | post-R-4 searches doubled | ``postR4SearchesArePairedNotDuplicated`` |
-/// | pairing too greedy | ``aLaterRepeatOfTheSameQueryIsNotSwallowed``, ``eachEntryPairsWithOneEventOnly`` |
+/// | **one query becoming three rows** | ``aFilterTogglesReRunsCollapseToOneRow``, ``aFilterToggleAfterARecordedSearchAddsNothing`` |
+/// | collapsing too greedy | ``aRepeatWithAnotherQueryInBetweenIsMigrated`` |
+/// | the answer depending on fetch order | ``theResultDoesNotDependOnInsertionOrder`` |
+/// | deleting rows CloudKit will not replace | ``anUndeployedRecordTypeDefersTheWholePass``, ``theShippedMarkerIsRespectedByDefault`` |
+/// | a short read deleting everything | ``theSweepIsRefusedWhenTheReadIsShort`` |
+/// | a datable event destroyed | ``anEventWithNoTimestampFallsBackToCreatedAt`` |
 /// | a second pass duplicating | ``runningTwiceChangesNothing``, ``reImportedEventsAreRecognised`` |
 /// | exports lost | ``exportsAreMigratedWithTheirPayload`` |
 /// | note saves resurrected | ``noteSavesAreDropped`` |
@@ -34,6 +39,17 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Wave R-2a: initial implementation
+///   1.1 — Wave R-2a review fixes. Three tests were **deleted or rewritten** because they pinned
+///          behaviour these fixes deliberately change:
+///          - `pairingBoundaryHolds` — deleted. It asserted a ±2s window from both sides; there is
+///            no window any more, and keeping it would have pinned the defect.
+///          - `aLaterRepeatOfTheSameQueryIsNotSwallowed` — rewritten as
+///            ``aRepeatWithAnotherQueryInBetweenIsMigrated``. Its fixture (one entry, one identical
+///            event ten minutes later, nothing in between) is exactly the case the *live* writer
+///            collapsed, so migrating it was the bug rather than the guarantee.
+///          - `eachEntryPairsWithOneEventOnly` — rewritten as
+///            ``aFilterToggleAfterARecordedSearchAddsNothing``. "One entry absorbs one event" was
+///            the assumption that produced three rows from one query.
 @MainActor
 struct ResearchTrailMigrationTests {
 
@@ -43,6 +59,18 @@ struct ResearchTrailMigrationTests {
 
     private func makeContainer() throws -> ModelContainer {
         try ModelContainer.makeTestContainer()
+    }
+
+    /// Runs the migration with the schema interlock **open**.
+    ///
+    /// The shipped `identifiersAwaitingDeploy` is non-empty as of this change — `ExportHistoryEntry`
+    /// is new and Production has not been promoted — so the default `run(context:)` correctly does
+    /// nothing at all. Every test about *what the pass does* therefore has to say explicitly that
+    /// it is testing the post-deploy world. ``theShippedMarkerIsRespectedByDefault`` is the one
+    /// that does not.
+    @discardableResult
+    private func migrate(_ context: ModelContext) -> ResearchTrailMigration.Result {
+        ResearchTrailMigration.run(context: context, awaitingDeploy: [])
     }
 
     /// Inserts a legacy event exactly as the retired `AppState.logEvent` would have written it —
@@ -104,12 +132,92 @@ struct ResearchTrailMigrationTests {
         }
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.documentOpensDropped == 3)
         #expect(try context.fetchCount(FetchDescriptor<ReadingHistoryEntry>()) == 3,
                 "reading history must be exactly what it was")
         #expect(try context.fetchCount(FetchDescriptor<SessionEvent>()) == 0)
+    }
+
+    // MARK: - Trap 2: one query must not become three rows
+
+    /// **The defect the review found, reproduced.**
+    ///
+    /// `SearchViewModel.search()` fired `.searchSubmit` on *every* execution, and iOS re-ran it for
+    /// the same keywords from two documented sites — `clearVolumeScope()` and the result-row tag
+    /// chip. So one submitted query plus two filter toggles is three events. The live producer's
+    /// `lastRecordedHistoryQuery` wrote **one** row for that; the first draft of this pass, which
+    /// paired on a ±2s window, wrote three, because the gap between a submit and a tap is a human
+    /// one.
+    ///
+    /// The gaps here are minutes apart on purpose: the collapsing rule must not have a time
+    /// constant in it at all.
+    @Test("One query re-run by filter toggles migrates as one row, however far apart")
+    func aFilterTogglesReRunsCollapseToOneRow() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        // Submit, then two filter toggles — the second a full four minutes later.
+        for offset in [0.0, 45.0, 240.0] {
+            insertEvent(.searchSubmit(query: "Ostpolitik", resultCount: 3), at: offset, in: context)
+        }
+        try context.save()
+
+        let result = migrate(context)
+
+        #expect(result.searchesMigrated == 1)
+        #expect(result.searchesCollapsedAsRepeat == 2)
+        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 1)
+
+        // The row keeps the *first* event's time, which is when the user actually searched.
+        let row = try #require(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).first)
+        #expect(row.executedAt == Self.epoch)
+    }
+
+    /// The same defect in its post-R-4 shape: the app recorded the search itself, and the filter
+    /// toggles fired events beside it. Those events must add nothing — an entry does not "absorb
+    /// one event and no more", it stands for the whole run of that query.
+    @Test("Filter toggles beside a recorded search add no rows")
+    func aFilterToggleAfterARecordedSearchAddsNothing() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        insertEvent(.searchSubmit(query: "Berlin", resultCount: 9), at: 0, in: context)
+        context.insert(SearchHistoryEntry(queryText: "Berlin", resultCount: 9,
+                                          executedAt: Self.epoch.addingTimeInterval(0.05)))
+        insertEvent(.searchSubmit(query: "Berlin", resultCount: 9), at: 600, in: context)
+        try context.save()
+
+        let result = migrate(context)
+
+        #expect(result.searchesPairedWithExistingEntry == 2)
+        #expect(result.searchesMigrated == 0)
+        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 1)
+    }
+
+    /// The collapsing has an outside, and it is the one the live writer had: a **different** query
+    /// in between resets `lastRecordedHistoryQuery`, so coming back to the first is a second
+    /// search and a second row. `A A B A` is three searches, not one and not four.
+    @Test("A repeat with another query in between is migrated, not swallowed")
+    func aRepeatWithAnotherQueryInBetweenIsMigrated() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 0, in: context)
+        insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 30, in: context)
+        insertEvent(.searchSubmit(query: "Ostpolitik", resultCount: 5), at: 60, in: context)
+        insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 90, in: context)
+        try context.save()
+
+        let result = migrate(context)
+
+        #expect(result.searchesMigrated == 3)
+        #expect(result.searchesCollapsedAsRepeat == 1)
+
+        let rows = try context.fetch(FetchDescriptor<SearchHistoryEntry>())
+            .sorted { ($0.executedAt ?? .distantPast) < ($1.executedAt ?? .distantPast) }
+        #expect(rows.map(\.queryText) == ["détente", "Ostpolitik", "détente"])
     }
 
     // MARK: - Trap 3: searches, both shapes
@@ -126,7 +234,7 @@ struct ResearchTrailMigrationTests {
                                 at: 0, in: context)
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.searchesMigrated == 1)
         #expect(result.searchesPairedWithExistingEntry == 0)
@@ -156,99 +264,16 @@ struct ResearchTrailMigrationTests {
                                           executedAt: Self.epoch.addingTimeInterval(0.05)))
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.searchesPairedWithExistingEntry == 1)
         #expect(result.searchesMigrated == 0)
         #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 1)
     }
 
-    /// The tolerance has an outside. A user who runs the same query again ten minutes later ran
-    /// two searches, and the log is a method appendix (contract D5) — dropping the second because
-    /// its text matches an earlier one would silently delete research history.
-    @Test("A later repeat of the same query is migrated, not swallowed by the earlier entry")
-    func aLaterRepeatOfTheSameQueryIsNotSwallowed() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        context.insert(SearchHistoryEntry(queryText: "détente", resultCount: 12,
-                                          executedAt: Self.epoch))
-        insertEvent(.searchSubmit(query: "détente", resultCount: 12),
-                    at: 10 * 60, in: context)
-        try context.save()
-
-        let result = ResearchTrailMigration.run(context: context)
-
-        #expect(result.searchesMigrated == 1)
-        #expect(result.searchesPairedWithExistingEntry == 0)
-        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 2)
-    }
-
-    /// The boundary itself, from both sides. Two seconds is the documented window; three is not.
-    @Test("Pairing holds inside the tolerance and stops outside it")
-    func pairingBoundaryHolds() throws {
-        for (gap, expectPaired) in [(1.5, true), (3.0, false)] {
-            let container = try makeContainer()
-            let context = container.mainContext
-
-            context.insert(SearchHistoryEntry(queryText: "quadripartite", resultCount: 4,
-                                              executedAt: Self.epoch.addingTimeInterval(gap)))
-            insertEvent(.searchSubmit(query: "quadripartite", resultCount: 4), at: 0, in: context)
-            try context.save()
-
-            let result = ResearchTrailMigration.run(context: context)
-            #expect(result.searchesPairedWithExistingEntry == (expectPaired ? 1 : 0),
-                    "gap \(gap)s should \(expectPaired ? "" : "not ")pair")
-            #expect(result.searchesMigrated == (expectPaired ? 0 : 1))
-        }
-    }
-
-    /// One entry absorbs one event, not all of them. Two events for the same query moments apart
-    /// with only one existing entry means one was already recorded and one was not.
-    @Test("An existing entry pairs with at most one event")
-    func eachEntryPairsWithOneEventOnly() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        context.insert(SearchHistoryEntry(queryText: "Berlin", resultCount: 9,
-                                          executedAt: Self.epoch))
-        insertEvent(.searchSubmit(query: "Berlin", resultCount: 9), at: 0, in: context)
-        insertEvent(.searchSubmit(query: "Berlin", resultCount: 9), at: 600, in: context)
-        try context.save()
-
-        let result = ResearchTrailMigration.run(context: context)
-
-        #expect(result.searchesPairedWithExistingEntry == 1)
-        #expect(result.searchesMigrated == 1)
-        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 2)
-    }
-
-    /// Identical events seconds apart — a filter-only re-run under the old writer, which fired the
-    /// event but wrote no entry — collapse to one row. The row this pass inserts joins the
-    /// pairable pool and, unlike a pre-existing entry, absorbs **every** near-identical event that
-    /// follows: that is what `lastRecordedHistoryQuery` did live, and the reason a
-    /// migrated row is not "claimed" the way an existing entry is.
-    @Test("Repeated identical events within the tolerance collapse to one row")
-    func repeatedEventsWithinToleranceCollapse() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        for offset in [0.0, 0.5, 1.2] {
-            insertEvent(.searchSubmit(query: "Ostpolitik", resultCount: 3),
-                        at: offset, in: context)
-        }
-        try context.save()
-
-        let result = ResearchTrailMigration.run(context: context)
-
-        #expect(result.searchesMigrated == 1)
-        #expect(result.searchesPairedWithExistingEntry == 2)
-        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 1)
-    }
-
     /// The two writers trimmed differently — `.whitespaces` versus `.whitespacesAndNewlines` — so
     /// a pasted query with a trailing newline did not match itself byte for byte.
-    @Test("Pairing survives the two writers' different trimming")
+    @Test("Grouping survives the two writers' different trimming")
     func pairingNormalisesWhitespace() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -258,14 +283,15 @@ struct ResearchTrailMigrationTests {
         insertEvent(.searchSubmit(query: "détente\n", resultCount: 12), at: 0, in: context)
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
         #expect(result.searchesPairedWithExistingEntry == 1)
         #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 1)
     }
 
-    /// Case is not folded: two searches differing only in case are two searches, and the recorded
-    /// text is the user's own wording.
-    @Test("Pairing is case-sensitive")
+    /// Case is not folded: two searches differing only in case are two searches, the recorded text
+    /// is the user's own wording, and the live `lastRecordedHistoryQuery` comparison was
+    /// case-sensitive too.
+    @Test("Grouping is case-sensitive")
     func pairingIsCaseSensitive() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -275,7 +301,143 @@ struct ResearchTrailMigrationTests {
         insertEvent(.searchSubmit(query: "berlin", resultCount: 9), at: 0, in: context)
         try context.save()
 
-        #expect(ResearchTrailMigration.run(context: context).searchesMigrated == 1)
+        #expect(migrate(context).searchesMigrated == 1)
+    }
+
+    // MARK: - Determinism
+
+    /// **The non-determinism the review demonstrated.** The pool the old pairing walked came
+    /// straight out of an unsorted `fetch`, and `first(where:)` took the first match in undefined
+    /// store order rather than the nearest in time — two runs of one fixture gave opposite answers.
+    ///
+    /// The stream is explicitly ordered now, so the same rows inserted in a different sequence must
+    /// migrate identically. Insertion order is the lever available to a test; it is also what
+    /// varies between two devices replaying a CloudKit import.
+    @Test("The result does not depend on the order rows were inserted")
+    func theResultDoesNotDependOnInsertionOrder() throws {
+        /// Offsets and queries, as (offset, query, isEntry).
+        let plan: [(Double, String, Bool)] = [
+            (0, "détente", false),
+            (0.05, "détente", true),
+            (120, "Berlin", false),
+            (240, "Berlin", false),
+            (360, "Ostpolitik", false),
+            (365, "Ostpolitik", true),
+            (480, "Berlin", false),
+        ]
+
+        func queriesAfterMigrating(inserting order: [(Double, String, Bool)]) throws -> [String] {
+            let container = try makeContainer()
+            let context = container.mainContext
+            for (offset, query, isEntry) in order {
+                if isEntry {
+                    context.insert(SearchHistoryEntry(
+                        queryText: query, resultCount: 1,
+                        executedAt: Self.epoch.addingTimeInterval(offset)))
+                } else {
+                    insertEvent(.searchSubmit(query: query, resultCount: 1),
+                                at: offset, in: context)
+                }
+            }
+            try context.save()
+            migrate(context)
+            return try context.fetch(FetchDescriptor<SearchHistoryEntry>())
+                .sorted { ($0.executedAt ?? .distantPast) < ($1.executedAt ?? .distantPast) }
+                .map(\.queryText)
+        }
+
+        let forward = try queriesAfterMigrating(inserting: plan)
+        let reversed = try queriesAfterMigrating(inserting: Array(plan.reversed()))
+        let shuffledish = try queriesAfterMigrating(
+            inserting: [plan[3], plan[0], plan[6], plan[2], plan[5], plan[1], plan[4]])
+
+        #expect(forward == reversed)
+        #expect(forward == shuffledish)
+        // And the answer itself: one détente (already recorded), one Berlin run, one Ostpolitik
+        // (already recorded), then Berlin again after Ostpolitik broke the run.
+        #expect(forward == ["détente", "Berlin", "Ostpolitik", "Berlin"])
+    }
+
+    // MARK: - The CloudKit schema interlock
+
+    /// **The second blocker the review found.** The pass writes `ExportHistoryEntry` rows and
+    /// deletes the `SessionEvent` rows they replace, in one call. If that record type is awaiting a
+    /// Production deploy the deletions sync and the replacements do not — on a second device, or
+    /// after a reinstall, the export history is simply gone. That is #488's failure mode, and the
+    /// app already knows it is in it.
+    @Test("A record type awaiting a Production deploy defers the whole pass")
+    func anUndeployedRecordTypeDefersTheWholePass() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 0, in: context)
+        insertEvent(.export(format: "pdf", documentCount: 2), at: 60, in: context)
+        try context.save()
+
+        let result = ResearchTrailMigration.run(
+            context: context,
+            awaitingDeploy: ["CD_ExportHistoryEntry", "CD_ExportHistoryEntry.CD_format"])
+
+        #expect(result.deferredAwaitingSchemaDeploy)
+        #expect(result.didRun == false)
+        #expect(result.wroteAnything == false)
+        // Nothing written, and — the load-bearing half — nothing deleted.
+        #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<ExportHistoryEntry>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<SessionEvent>()) == 2)
+    }
+
+    /// The interlock is about the types this pass *writes*. A pending identifier belonging to some
+    /// other model must not hold the migration hostage for a release.
+    @Test("An unrelated pending identifier does not block the pass")
+    func anUnrelatedPendingIdentifierDoesNotBlock() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 0, in: context)
+        try context.save()
+
+        let result = ResearchTrailMigration.run(
+            context: context, awaitingDeploy: ["CD_Project.CD_leadAxisWeights"])
+
+        #expect(result.deferredAwaitingSchemaDeploy == false)
+        #expect(result.searchesMigrated == 1)
+    }
+
+    /// The default argument is the checked-in marker, so the interlock is live in the shipping
+    /// build rather than something a caller has to remember to pass. This test is deliberately
+    /// written to keep passing after the owner clears the marker: it asserts the *relationship*
+    /// between the marker and the outcome, not today's value of the marker.
+    @Test("The shipped deploy marker governs the default call")
+    func theShippedMarkerIsRespectedByDefault() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 0, in: context)
+        try context.save()
+
+        let blocking = ResearchTrailMigration.blockingIdentifiers()
+        let result = ResearchTrailMigration.run(context: context)
+
+        if blocking.isEmpty {
+            #expect(result.deferredAwaitingSchemaDeploy == false)
+            #expect(result.searchesMigrated == 1)
+        } else {
+            #expect(result.deferredAwaitingSchemaDeploy)
+            #expect(try context.fetchCount(FetchDescriptor<SessionEvent>()) == 1,
+                    "a deferred pass must leave the legacy rows alone")
+        }
+    }
+
+    /// Every record type the pass inserts has to be one the interlock watches, or the interlock is
+    /// decorative. Read off the two `context.insert` calls in `run`.
+    @Test("The interlock covers exactly the record types the pass writes")
+    func theInterlockCoversWhatThePassWrites() {
+        #expect(ResearchTrailMigration.writtenRecordTypes
+                == ["CD_SearchHistoryEntry", "CD_ExportHistoryEntry"])
+        #expect(ResearchTrailMigration.blockingIdentifiers(
+            in: ["CD_SearchHistoryEntry.CD_queryText"]) == ["CD_SearchHistoryEntry.CD_queryText"])
+        #expect(ResearchTrailMigration.blockingIdentifiers(in: ["CD_ReadingHistoryEntry"]).isEmpty)
     }
 
     // MARK: - Exports (contract D1)
@@ -291,7 +453,7 @@ struct ResearchTrailMigrationTests {
         insertEvent(.export(format: "pdf", documentCount: 2), at: 60, in: context)
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.exportsMigrated == 2)
         let rows = try context.fetch(FetchDescriptor<ExportHistoryEntry>())
@@ -317,7 +479,7 @@ struct ResearchTrailMigrationTests {
                     at: 0, in: context)
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.noteSavesDropped == 1)
         #expect(result.searchesMigrated == 0)
@@ -342,7 +504,7 @@ struct ResearchTrailMigrationTests {
                     at: 30, in: context)
         try context.save()
 
-        let first = ResearchTrailMigration.run(context: context)
+        let first = migrate(context)
         #expect(first.didRun)
 
         func searchIds() throws -> [String] {
@@ -352,7 +514,7 @@ struct ResearchTrailMigrationTests {
         let afterFirst = try searchIds()
         let exportsAfterFirst = try context.fetchCount(FetchDescriptor<ExportHistoryEntry>())
 
-        let second = ResearchTrailMigration.run(context: context)
+        let second = migrate(context)
         #expect(second.didRun == false, "nothing left to look at")
         #expect(second == ResearchTrailMigration.Result())
 
@@ -378,7 +540,7 @@ struct ResearchTrailMigrationTests {
         let exportId = exportEvent.id
         try context.save()
 
-        ResearchTrailMigration.run(context: context)
+        migrate(context)
         #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 1)
 
         // The same two events land again — a CloudKit import from the other device. Same ids,
@@ -399,7 +561,7 @@ struct ResearchTrailMigrationTests {
         context.insert(export)
         try context.save()
 
-        let second = ResearchTrailMigration.run(context: context)
+        let second = migrate(context)
 
         #expect(second.didRun)
         #expect(second.searchesAlreadyMigrated == 1)
@@ -427,7 +589,7 @@ struct ResearchTrailMigrationTests {
         context.insert(ResearchSession(startedAt: Self.epoch.addingTimeInterval(-9_000)))
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.legacyEventsDeleted == 1)
         #expect(result.legacySessionsDeleted == 2)
@@ -435,12 +597,29 @@ struct ResearchTrailMigrationTests {
         #expect(try context.fetchCount(FetchDescriptor<ResearchSession>()) == 0)
     }
 
+    /// **The unconditional-sweep defect.** The sweep deletes the whole `SessionEvent` table, but
+    /// the migration reads it with `try?`: a throw degrades to `[]`, nothing is migrated, and
+    /// everything is deleted while the counters report a clean run. The guard makes the sweep
+    /// conditional on having read every row the count promised.
+    ///
+    /// Pinned through the rule itself, because a SwiftData fetch failure cannot be contrived from a
+    /// test — which is exactly why the code path needs a name of its own rather than an inline
+    /// comparison.
+    @Test("The sweep is refused when the read came back short")
+    func theSweepIsRefusedWhenTheReadIsShort() {
+        #expect(ResearchTrailMigration.maySweepLegacyTables(fetched: 12, counted: 12))
+        #expect(ResearchTrailMigration.maySweepLegacyTables(fetched: 0, counted: 0))
+        #expect(ResearchTrailMigration.maySweepLegacyTables(fetched: 0, counted: 12) == false,
+                "a failed fetch must not authorise deleting the table it failed to read")
+        #expect(ResearchTrailMigration.maySweepLegacyTables(fetched: 11, counted: 12) == false)
+    }
+
     /// An empty store costs one `fetchCount` and reports that it did nothing — which is what makes
     /// running this on every launch, rather than once behind a flag, affordable.
     @Test("An empty store is a no-op")
     func anEmptyStoreIsANoOp() throws {
         let container = try makeContainer()
-        let result = ResearchTrailMigration.run(context: container.mainContext)
+        let result = migrate(container.mainContext)
         #expect(result.didRun == false)
         #expect(result == ResearchTrailMigration.Result())
     }
@@ -475,11 +654,34 @@ struct ResearchTrailMigrationTests {
                     session: session)
         try context.save()
 
-        let result = ResearchTrailMigration.run(context: context)
+        let result = migrate(context)
 
         #expect(result.unreadableDropped == 3)
         #expect(result.searchesMigrated == 0)
         #expect(try context.fetchCount(FetchDescriptor<SearchHistoryEntry>()) == 0)
+    }
+
+    /// A `nil` `timestamp` is not a reason to destroy a readable record. `SessionEvent.init` set
+    /// `createdAt` to the same instant, so the fallback is exact rather than a guess — and the row
+    /// this pass deletes moments later would otherwise be the only copy.
+    @Test("An event with no timestamp falls back to createdAt rather than being dropped")
+    func anEventWithNoTimestampFallsBackToCreatedAt() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let event = insertEvent(.searchSubmit(query: "quadripartite", resultCount: 4),
+                                at: 300, in: context)
+        event.timestamp = nil
+        // `createdAt` still holds the instant the initialiser stamped.
+        #expect(event.createdAt == Self.epoch.addingTimeInterval(300))
+        try context.save()
+
+        let result = migrate(context)
+
+        #expect(result.unreadableDropped == 0)
+        #expect(result.searchesMigrated == 1)
+        let row = try #require(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).first)
+        #expect(row.executedAt == Self.epoch.addingTimeInterval(300))
     }
 
     /// The migration is **not** gated on the research-logging preference, and that is deliberate:
@@ -500,7 +702,7 @@ struct ResearchTrailMigrationTests {
         insertEvent(.searchSubmit(query: "détente", resultCount: 12), at: 0, in: context)
         try context.save()
 
-        #expect(ResearchTrailMigration.run(context: context).searchesMigrated == 1)
+        #expect(migrate(context).searchesMigrated == 1)
     }
 
     // MARK: - The legacy payload grammar

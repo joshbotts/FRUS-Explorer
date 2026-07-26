@@ -83,6 +83,51 @@ enum HistoryScope: Hashable, Sendable {
             return #Predicate<SearchHistoryEntry> { $0.projectId == target }
         }
     }
+
+    /// The export-history predicate for this scope, or `nil` for ``all``.
+    ///
+    /// Rows migrated from a legacy `SessionEvent` always carry `nil`, so they land in
+    /// ``unfiled`` — the old event type had no project at all and inventing one would be a
+    /// fabricated attribution.
+    var exportPredicate: Predicate<ExportHistoryEntry>? {
+        switch self {
+        case .all:
+            return nil
+        case .unfiled:
+            let none: UUID? = nil
+            return #Predicate<ExportHistoryEntry> { $0.projectId == none }
+        case .project(let target):
+            return #Predicate<ExportHistoryEntry> { $0.projectId == target }
+        }
+    }
+}
+
+// MARK: - HistoryRowID
+
+/// A loaded row's **display** identity: the entry it came from, plus which copy of that entry it
+/// is.
+///
+/// ## Why a row's id is not just the entry's id
+/// `SearchHistoryEntry.id` is not unique in practice. Two devices that migrate the same legacy
+/// event in the same window both write a row with that event's id, and `ResearchTrailMigration`
+/// accepts that residual deliberately — contract D5 forbids anything from silently deleting this
+/// table, and `DuplicateRecordCleanup`'s tiebreak is vacuous for a same-`id` group, so collapsing
+/// them risks two devices deleting each other's copy and losing the record entirely.
+///
+/// The accepted mitigation was "a duplicate is visible and individually deletable". Neither half
+/// worked while the id was the row id: `ForEach` over two elements with the same `Identifiable`
+/// id is documented-undefined in SwiftUI, and the delete re-fetched with `fetchLimit = 1`, so the
+/// swipe reported success and left the row on screen. This type is the first half of the fix —
+/// every loaded row gets a distinct identity — and `HistoryTrailAdmin` deleting **every** copy is
+/// the second.
+struct HistoryRowID: Hashable, Sendable {
+
+    /// The source entry's `id`, which is what a delete re-fetches on.
+    let entryID: UUID
+
+    /// Which copy of that entry this row is: `0` for the first one loaded, `1` for the next, and
+    /// so on. Almost always `0`.
+    let copy: Int
 }
 
 // MARK: - HistoryPaneSnapshot
@@ -122,14 +167,21 @@ enum HistoryScope: Hashable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Wave R-3: initial implementation
+///   1.1 — Wave R-2a review fixes: exports are loaded, filtered and counted like the other two
+///          types (the migration's duplicate residual was justified by "individually deletable",
+///          which an unloaded table cannot be), and every row carries a distinct
+///          ``HistoryRowID`` so a same-`id` pair is two rows to `ForEach` rather than SwiftUI's
+///          documented-undefined case
 struct HistoryPaneSnapshot: Equatable, Sendable {
 
     // MARK: - Rows
 
     /// One recorded document visit, with everything the row draws already resolved.
     struct DocumentRow: Identifiable, Equatable, Sendable {
-        /// The entry's own id — also the key a per-row delete re-fetches on.
-        let id: UUID
+        /// This row's display identity — see ``HistoryRowID`` for why it is not the entry's id.
+        let id: HistoryRowID
+        /// The entry's own id: the key a per-row delete re-fetches on.
+        var entryID: UUID { id.entryID }
         /// FRUS volume identifier.
         let volumeId: String
         /// Document identifier within the volume.
@@ -166,8 +218,10 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
 
     /// One recorded search execution.
     struct SearchRow: Identifiable, Equatable, Sendable {
-        /// The entry's own id — the key a per-row delete re-fetches on.
-        let id: UUID
+        /// This row's display identity — see ``HistoryRowID``.
+        let id: HistoryRowID
+        /// The entry's own id: the key a per-row delete re-fetches on.
+        var entryID: UUID { id.entryID }
         /// The submitted query text, as stored.
         let queryText: String
         /// The uncapped match count at execution time. Not refreshed if the index changes later.
@@ -186,16 +240,68 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
         }
     }
 
+    /// One recorded collection export.
+    ///
+    /// The third trail type had no rows in this snapshot at all until the R-2a review: the
+    /// migration's accepted duplicate residual was justified by "visibly and individually
+    /// deletable", and an export the History surface never loaded is neither.
+    struct ExportRow: Identifiable, Equatable, Sendable {
+        /// This row's display identity — see ``HistoryRowID``.
+        let id: HistoryRowID
+        /// The entry's own id: the key a per-row delete re-fetches on.
+        var entryID: UUID { id.entryID }
+        /// `ExportFormat.rawValue`, or `"zotero-api"` for the Zotero Web-API push.
+        let format: String
+        /// How many documents went out.
+        let documentCount: Int
+        /// The collection's name at export time. Always `nil` on rows migrated from a legacy
+        /// `SessionEvent`, whose payload carried only the format and the count.
+        let collectionName: String?
+        /// When the export completed.
+        let exportedAt: Date?
+        /// The project active at write time, or `nil`.
+        let projectId: UUID?
+
+        /// The format's human name — `ExportFormat`'s own wording where the raw value is one of
+        /// its cases, plus the one value that is not (`"zotero-api"`, the Web-API push), and the
+        /// raw string itself for anything a future build writes that this one does not know.
+        var formatDisplayName: String {
+            if format == "zotero-api" {
+                return String(localized: "history.exports.format.zoteroAPI",
+                              defaultValue: "Zotero (web)")
+            }
+            return ExportFormat(rawValue: format)?.displayName ?? format
+        }
+
+        /// The row's primary line: the collection's name where it was recorded, else the format.
+        var title: String { collectionName?.isEmpty == false ? collectionName! : formatDisplayName }
+
+        /// Whether this row matches a free-text filter term. Matches the collection name and both
+        /// spellings of the format, so "pdf" and "PDF" both find a PDF export.
+        ///
+        /// - Parameter term: The already-trimmed search term. An empty term matches everything.
+        func matches(_ term: String) -> Bool {
+            guard !term.isEmpty else { return true }
+            return title.localizedStandardContains(term)
+                || format.localizedStandardContains(term)
+                || formatDisplayName.localizedStandardContains(term)
+        }
+    }
+
     // MARK: - Contents
 
     /// The loaded page of document visits, newest first.
     let documents: [DocumentRow]
     /// The loaded page of searches, newest first.
     let searches: [SearchRow]
+    /// The loaded page of exports, newest first.
+    let exports: [ExportRow]
     /// How many document visits exist **in this scope**, before the page limit.
     let totalDocuments: Int
     /// How many searches exist **in this scope**, before the page limit.
     let totalSearches: Int
+    /// How many exports exist **in this scope**, before the page limit.
+    let totalExports: Int
     /// Project ids paired with their names, sorted by name — the scope picker's options.
     let projects: [(id: UUID, name: String)]
     /// The row limit this snapshot was fetched with, per section.
@@ -203,7 +309,8 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
 
     /// The state before the first fetch.
     static let empty = HistoryPaneSnapshot(
-        documents: [], searches: [], totalDocuments: 0, totalSearches: 0,
+        documents: [], searches: [], exports: [],
+        totalDocuments: 0, totalSearches: 0, totalExports: 0,
         projects: [], pageLimit: defaultPageLimit)
 
     /// How many rows each section loads to begin with.
@@ -222,16 +329,21 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
     /// Whether more searches exist in this scope than the page loaded.
     var hasMoreSearches: Bool { searches.count < totalSearches }
 
+    /// Whether more exports exist in this scope than the page loaded.
+    var hasMoreExports: Bool { exports.count < totalExports }
+
     /// Whether the trail is empty in this scope — nothing to browse, filter, or delete.
-    var isEmpty: Bool { totalDocuments == 0 && totalSearches == 0 }
+    var isEmpty: Bool { totalDocuments == 0 && totalSearches == 0 && totalExports == 0 }
 
     /// Tuples are not `Equatable` by synthesis, so `projects` is compared field-wise — the same
     /// shape ``NotesPaneSnapshot`` uses for the identical reason.
     static func == (lhs: HistoryPaneSnapshot, rhs: HistoryPaneSnapshot) -> Bool {
         lhs.documents == rhs.documents
             && lhs.searches == rhs.searches
+            && lhs.exports == rhs.exports
             && lhs.totalDocuments == rhs.totalDocuments
             && lhs.totalSearches == rhs.totalSearches
+            && lhs.totalExports == rhs.totalExports
             && lhs.pageLimit == rhs.pageLimit
             && lhs.projects.map(\.id) == rhs.projects.map(\.id)
             && lhs.projects.map(\.name) == rhs.projects.map(\.name)
@@ -257,11 +369,20 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
         return searches.filter { $0.matches(trimmed) }
     }
 
+    /// The loaded export rows matching a free-text term.
+    ///
+    /// - Parameter term: Raw filter text; trimmed here so callers need not.
+    func filteredExports(matching term: String) -> [ExportRow] {
+        let trimmed = term.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return exports }
+        return exports.filter { $0.matches(trimmed) }
+    }
+
     // MARK: - Building
 
-    /// Reads one page of the trail for one scope, in five fetches.
+    /// Reads one page of the trail for one scope, in seven fetches.
     ///
-    /// Two bounded page fetches, two unbounded counts (so the view can be honest about what it
+    /// Three bounded page fetches, three unbounded counts (so the view can be honest about what it
     /// is not showing), and one project fetch for the picker. The counts are separate
     /// descriptors because `fetchCount` honours `fetchLimit` — reusing the page descriptor would
     /// report the page size as the total and the "Show More" affordance would never appear.
@@ -278,6 +399,7 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
                       limit: Int = defaultPageLimit) -> HistoryPaneSnapshot {
         let readingPredicate = scope.readingPredicate
         let searchPredicate = scope.searchPredicate
+        let exportPredicate = scope.exportPredicate
 
         var readingPage = FetchDescriptor<ReadingHistoryEntry>(
             predicate: readingPredicate,
@@ -289,20 +411,32 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
             sortBy: [SortDescriptor(\.executedAt, order: .reverse)])
         searchPage.fetchLimit = limit
 
+        var exportPage = FetchDescriptor<ExportHistoryEntry>(
+            predicate: exportPredicate,
+            sortBy: [SortDescriptor(\.exportedAt, order: .reverse)])
+        exportPage.fetchLimit = limit
+
         let visits = (try? context.fetch(readingPage)) ?? []
         let queries = (try? context.fetch(searchPage)) ?? []
+        let sends = (try? context.fetch(exportPage)) ?? []
 
         let visitTotal = (try? context.fetchCount(
             FetchDescriptor<ReadingHistoryEntry>(predicate: readingPredicate))) ?? visits.count
         let queryTotal = (try? context.fetchCount(
             FetchDescriptor<SearchHistoryEntry>(predicate: searchPredicate))) ?? queries.count
+        let exportTotal = (try? context.fetchCount(
+            FetchDescriptor<ExportHistoryEntry>(predicate: exportPredicate))) ?? sends.count
 
         let projects = (try? context.fetch(
             FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)]))) ?? []
 
+        var visitIDs = RowIDMinter()
+        var queryIDs = RowIDMinter()
+        var sendIDs = RowIDMinter()
+
         return HistoryPaneSnapshot(
             documents: visits.map {
-                DocumentRow(id: $0.id,
+                DocumentRow(id: visitIDs.next(for: $0.id),
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
                             displayTitle: $0.displayTitle,
@@ -310,16 +444,40 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
                             projectId: $0.projectId)
             },
             searches: queries.map {
-                SearchRow(id: $0.id,
+                SearchRow(id: queryIDs.next(for: $0.id),
                           queryText: $0.queryText,
                           resultCount: $0.resultCount,
                           executedAt: $0.executedAt,
                           projectId: $0.projectId)
             },
+            exports: sends.map {
+                ExportRow(id: sendIDs.next(for: $0.id),
+                          format: $0.format,
+                          documentCount: $0.documentCount,
+                          collectionName: $0.collectionName,
+                          exportedAt: $0.exportedAt,
+                          projectId: $0.projectId)
+            },
             totalDocuments: visitTotal,
             totalSearches: queryTotal,
+            totalExports: exportTotal,
             projects: projects.map { (id: $0.id, name: $0.name) },
             pageLimit: limit)
+    }
+
+    /// Hands out a distinct ``HistoryRowID`` per loaded row, numbering repeats of one entry id.
+    ///
+    /// One per section, because the sections are three different tables and an id shared across
+    /// them is not a duplicate of anything.
+    private struct RowIDMinter {
+        private var seen: [UUID: Int] = [:]
+
+        /// The next identity for this entry id.
+        mutating func next(for entryID: UUID) -> HistoryRowID {
+            let copy = seen[entryID, default: 0]
+            seen[entryID] = copy + 1
+            return HistoryRowID(entryID: entryID, copy: copy)
+        }
     }
 }
 
@@ -370,15 +528,26 @@ extension HistoryPaneSnapshot {
 /// tags, highlights, collections, prompts and projects and is silent about the trail; and
 /// `ResearchDataExportView`, which likewise omits it.
 ///
+/// ## Why the per-entry deletes are unbounded
+/// Each one used to re-fetch with `fetchLimit = 1`. `id` is not unique in this store: two devices
+/// that migrate the same legacy `SessionEvent` in the same window both write a row carrying that
+/// event's id, and ``ResearchTrailMigration`` accepts that residual on purpose. With a limit of
+/// one, deleting such a row removed a single copy, returned `true`, and left the other on screen —
+/// so the swipe reported success and did nothing visible. Deleting every copy is what the user
+/// asked for: they are identical rows standing for one recorded thing.
+///
 /// Version history:
 ///   1.0 — Wave R-3: per-entry delete for both trail types
 ///   1.1 — Wave R-2a: `deleteAll(context:)` — the whole trail, plus the retired session tables
+///   1.2 — Wave R-2a review fixes: the per-entry deletes remove **every** row sharing the id, and
+///          ``deleteExport(id:in:)`` closes the third trail type, which had no per-entry delete at
+///          all
 enum HistoryTrailAdmin {
 
-    /// Deletes one recorded document visit.
+    /// Deletes every recorded document visit carrying this id.
     ///
     /// - Parameters:
-    ///   - id: The entry's id, as carried by ``HistoryPaneSnapshot/DocumentRow``.
+    ///   - id: The entry's id, as carried by ``HistoryPaneSnapshot/DocumentRow/entryID``.
     ///   - context: The SwiftData context to mutate.
     /// - Returns: `false` when no entry with that id exists — the snapshot the caller is holding
     ///   is stale and should be re-read rather than silently left alone.
@@ -387,10 +556,10 @@ enum HistoryTrailAdmin {
     static func deleteDocumentVisit(id: UUID, in context: ModelContext) -> Bool {
         // Scalar `==` on a UUID is safe in a `#Predicate`; the documented SwiftData hazard is
         // `contains` on a transformable array column, which this is not.
-        var descriptor = FetchDescriptor<ReadingHistoryEntry>(predicate: #Predicate { $0.id == id })
-        descriptor.fetchLimit = 1
-        guard let entry = (try? context.fetch(descriptor))?.first else { return false }
-        context.delete(entry)
+        let descriptor = FetchDescriptor<ReadingHistoryEntry>(predicate: #Predicate { $0.id == id })
+        let entries = (try? context.fetch(descriptor)) ?? []
+        guard !entries.isEmpty else { return false }
+        for entry in entries { context.delete(entry) }
         // Flush, so the removal reaches the other contexts that read this table — Project Home's
         // recents, the storage hubs' "opened" dates, the search History scope — and CloudKit,
         // promptly rather than whenever the autosave timer next fires.
@@ -398,19 +567,36 @@ enum HistoryTrailAdmin {
         return true
     }
 
-    /// Deletes one recorded search.
+    /// Deletes every recorded search carrying this id.
     ///
     /// - Parameters:
-    ///   - id: The entry's id, as carried by ``HistoryPaneSnapshot/SearchRow``.
+    ///   - id: The entry's id, as carried by ``HistoryPaneSnapshot/SearchRow/entryID``.
     ///   - context: The SwiftData context to mutate.
     /// - Returns: `false` when no entry with that id exists.
     @MainActor
     @discardableResult
     static func deleteSearch(id: UUID, in context: ModelContext) -> Bool {
-        var descriptor = FetchDescriptor<SearchHistoryEntry>(predicate: #Predicate { $0.id == id })
-        descriptor.fetchLimit = 1
-        guard let entry = (try? context.fetch(descriptor))?.first else { return false }
-        context.delete(entry)
+        let descriptor = FetchDescriptor<SearchHistoryEntry>(predicate: #Predicate { $0.id == id })
+        let entries = (try? context.fetch(descriptor)) ?? []
+        guard !entries.isEmpty else { return false }
+        for entry in entries { context.delete(entry) }
+        try? context.save()
+        return true
+    }
+
+    /// Deletes every recorded export carrying this id.
+    ///
+    /// - Parameters:
+    ///   - id: The entry's id, as carried by ``HistoryPaneSnapshot/ExportRow/entryID``.
+    ///   - context: The SwiftData context to mutate.
+    /// - Returns: `false` when no entry with that id exists.
+    @MainActor
+    @discardableResult
+    static func deleteExport(id: UUID, in context: ModelContext) -> Bool {
+        let descriptor = FetchDescriptor<ExportHistoryEntry>(predicate: #Predicate { $0.id == id })
+        let entries = (try? context.fetch(descriptor)) ?? []
+        guard !entries.isEmpty else { return false }
+        for entry in entries { context.delete(entry) }
         try? context.save()
         return true
     }

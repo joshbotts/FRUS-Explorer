@@ -43,6 +43,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Wave R-3: initial implementation, replacing `HistoryWindowView`'s macOS-only body
+///   1.1 — Wave R-2a review fixes: a third section for `ExportHistoryEntry`, with the same
+///          per-row delete; the deletes key on `entryID` rather than the row's display identity
 struct HistoryView: View {
 
     @Environment(AppState.self) private var appState
@@ -75,6 +77,10 @@ struct HistoryView: View {
 
     private var visibleSearches: [HistoryPaneSnapshot.SearchRow] {
         snapshot.filteredSearches(matching: query)
+    }
+
+    private var visibleExports: [HistoryPaneSnapshot.ExportRow] {
+        snapshot.filteredExports(matching: query)
     }
 
     /// Whether any filter is narrowing the view, which decides whether an empty section reads
@@ -168,6 +174,7 @@ struct HistoryView: View {
         List {
             documentsSection
             searchesSection
+            exportsSection
         }
         #if os(macOS)
         .listStyle(.inset)
@@ -233,6 +240,38 @@ struct HistoryView: View {
                               defaultValue: "Searches Executed"),
                 shown: snapshot.searches.count,
                 total: snapshot.totalSearches)
+        }
+    }
+
+    /// The third trail type. It had no section here until the R-2a review: the migration's
+    /// accepted duplicate residual is justified by every row being "visible and individually
+    /// deletable", which an export the History surface never drew could not be.
+    private var exportsSection: some View {
+        Section {
+            if visibleExports.isEmpty {
+                emptyState(
+                    title: isFiltering
+                        ? String(localized: "history.filtered.empty.title", defaultValue: "No Matches")
+                        : String(localized: "history.exports.empty.title",
+                                 defaultValue: "No Collections Exported"),
+                    systemImage: "square.and.arrow.up",
+                    detail: isFiltering
+                        ? String(localized: "history.filtered.empty.detail",
+                                 defaultValue: "No history matches the current filters.")
+                        : String(localized: "history.exports.empty.detail",
+                                 defaultValue: "Collections you export will appear here."))
+            } else {
+                ForEach(visibleExports) { row in
+                    exportRow(row)
+                }
+                if snapshot.hasMoreExports { showMoreButton }
+            }
+        } header: {
+            sectionHeader(
+                title: String(localized: "history.section.exports",
+                              defaultValue: "Collections Exported"),
+                shown: snapshot.exports.count,
+                total: snapshot.totalExports)
         }
     }
 
@@ -359,7 +398,46 @@ struct HistoryView: View {
         #endif
     }
 
-    /// The context-menu delete, shared by both row kinds.
+    /// An export is a record of something that already left the app, so — unlike a visit or a
+    /// search — there is nothing to re-run and the row is not a button. Delete is the only action.
+    private func exportRow(_ row: HistoryPaneSnapshot.ExportRow) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(row.title)
+                .font(.body)
+                .lineLimit(2)
+                .foregroundStyle(.primary)
+            HStack(spacing: 6) {
+                Text(row.formatDisplayName)
+                    .font(FRUSTheme.captionFont)
+                    .foregroundStyle(.secondary)
+                Text(verbatim: "·").foregroundStyle(.tertiary)
+                Text(String(localized: "history.exports.documentCount",
+                            defaultValue: "\(row.documentCount) documents"))
+                    .font(FRUSTheme.captionFont)
+                    .foregroundStyle(.secondary)
+                if let date = row.exportedAt {
+                    Text(verbatim: "·").foregroundStyle(.tertiary)
+                    Text(date, style: .relative)
+                        .font(FRUSTheme.captionFont)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .contextMenu { deleteButton { deleteExport(row) } }
+        #if os(iOS)
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) { deleteExport(row) } label: {
+                Label(String(localized: "history.delete", defaultValue: "Delete"),
+                      systemImage: "trash")
+            }
+        }
+        #endif
+    }
+
+    /// The context-menu delete, shared by all three row kinds.
     ///
     /// No confirmation dialog: a history row is a record of something the reader can recreate by
     /// opening the document or running the search again, and the platform convention for a
@@ -407,14 +485,21 @@ struct HistoryView: View {
     // MARK: - Mutations
 
     private func deleteDocument(_ row: HistoryPaneSnapshot.DocumentRow) {
-        HistoryTrailAdmin.deleteDocumentVisit(id: row.id, in: modelContext)
+        // `entryID`, not `id`: the row's own identity is display-only (see `HistoryRowID`), and
+        // the delete removes every copy sharing the entry id.
+        HistoryTrailAdmin.deleteDocumentVisit(id: row.entryID, in: modelContext)
         // Re-read whether or not the entry was found: a `false` return means the snapshot is
         // stale, which is precisely when a refresh is most useful.
         refresh()
     }
 
     private func deleteSearch(_ row: HistoryPaneSnapshot.SearchRow) {
-        HistoryTrailAdmin.deleteSearch(id: row.id, in: modelContext)
+        HistoryTrailAdmin.deleteSearch(id: row.entryID, in: modelContext)
+        refresh()
+    }
+
+    private func deleteExport(_ row: HistoryPaneSnapshot.ExportRow) {
+        HistoryTrailAdmin.deleteExport(id: row.entryID, in: modelContext)
         refresh()
     }
 

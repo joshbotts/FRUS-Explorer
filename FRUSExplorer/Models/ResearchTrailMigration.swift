@@ -18,7 +18,7 @@ import SwiftData
 ///
 /// | Legacy event | Fate | Why |
 /// |---|---|---|
-/// | `.searchSubmit` | migrated to ``SearchHistoryEntry``, de-duplicated | iOS had no `SearchHistoryEntry` producer before Wave R-4, so pre-R-4 events are the *only* record of those searches |
+/// | `.searchSubmit` | migrated to ``SearchHistoryEntry``, collapsed exactly as the live writer collapsed | iOS had no `SearchHistoryEntry` producer before Wave R-4, so pre-R-4 events are the *only* record of those searches |
 /// | `.export` | migrated to ``ExportHistoryEntry`` | contract D1 — nothing else records that an export happened, and the Zotero push had a real external side effect |
 /// | `.documentOpen` | **dropped** | every one already has a matching ``ReadingHistoryEntry``; migrating would double every user's reading history |
 /// | `.noteSave` | **dropped** | contract D2 — `ResearchNote` timestamps itself |
@@ -38,14 +38,54 @@ import SwiftData
 /// document — which no surface has ever displayed and which does not belong in a list of documents
 /// the user read.
 ///
-/// ### Why `.searchSubmit` needs de-duplication (and `.export` does not)
-/// Historically `.searchSubmit` fired on iOS only and iOS had no `SearchHistoryEntry` producer, so
-/// those events have no counterpart and must be migrated. **Wave R-4 added the iOS producer and
-/// deliberately kept the event**, so anything recorded since R-4 shipped *does* have a counterpart
-/// and migrating it would duplicate. Nothing on the record distinguishes the two — not the
-/// platform, not the payload — so the pairing is done on content: see ``pairingTolerance``.
+/// ## How searches are collapsed — the live writer's rule, not a time window
+/// The two producers did **different** jobs, and one of them fired far more often than it recorded:
 ///
-/// `ExportHistoryEntry` is new in this change, so no export can already have a counterpart.
+/// - `AppState.logEvent(.searchSubmit)` fired on **every** execution of `SearchViewModel.search()`.
+/// - `SearchViewModel.recordSearchHistory` wrote a `SearchHistoryEntry` only when the query differed
+///   from `lastRecordedHistoryQuery` — the last query it had recorded. Consecutive identical
+///   queries collapsed to one row **regardless of the gap between them**.
+///
+/// iOS re-ran `search()` for the same keywords from two documented sites: `clearVolumeScope()` and
+/// the result-row tag chip. So one submitted query followed by two filter toggles is *three* events
+/// and *one* recorded search, and the gap between them is a human tap — seconds, sometimes longer.
+///
+/// An earlier draft of this pass tried to fix that with a ±2s window sized from the gap between the
+/// two *writers* (sub-millisecond, same main-actor continuation). One constant cannot do both jobs:
+/// tuned for the writers it splits a filter toggle into a second row, and tuned for the taps it
+/// starts pairing unrelated searches. So there is no window. This replays the events **in timestamp
+/// order** and applies the producer's own rule:
+///
+/// 1. Existing ``SearchHistoryEntry`` rows and legacy `.searchSubmit` events are merged into one
+///    stream, ordered by time (ties broken deterministically — entries first, then id).
+/// 2. The stream is cut into maximal **runs of consecutive items carrying the same query text**.
+///    That is precisely what `lastRecordedHistoryQuery` computed live.
+/// 3. A run that already contains a real `SearchHistoryEntry` writes nothing — the app recorded
+///    that search at the time, and the events beside it are the re-runs the producer suppressed.
+/// 4. A run with no entry writes exactly **one** row, from its first event.
+///
+/// A different query in between ends the run, so `A A B A` migrates as three searches, which is what
+/// the user actually ran and what the live writer would have recorded. The one thing this
+/// deliberately does *not* do is split `A … A` with nothing in between into two rows because the two
+/// are hours apart: the live writer did not, and inventing a threshold here would re-introduce the
+/// constant this change exists to remove.
+///
+/// `ExportHistoryEntry` is new in this change, so no export can already have a counterpart and
+/// exports migrate one-for-one.
+///
+/// ## The schema interlock (why this may do nothing at all)
+/// The pass **writes** `SearchHistoryEntry` and `ExportHistoryEntry` rows and **deletes** the
+/// `SessionEvent` rows they replace. Those are two CloudKit operations with very different
+/// reliability: a delete of an already-deployed record type always syncs, while a write of a record
+/// type whose Production schema has not been promoted always fails — that is #488, and
+/// ``CloudKitSchemaInventory/identifiersAwaitingDeploy`` is the app's own record of being in that
+/// state. Running anyway would propagate the deletions to every device and none of the
+/// replacements: on a second device, or after a reinstall, the export history would simply be gone.
+///
+/// So R-7's marker is an **interlock**, not a notice. If any identifier awaiting deploy belongs to
+/// a record type this pass writes, the pass defers, logs why, and touches nothing. It runs by
+/// itself at the launch after the owner clears the marker (step 4 of the CloudKit checklist in
+/// `CLAUDE.md`); nothing needs to be remembered.
 ///
 /// ## Idempotence
 /// Every migrated row takes **the source event's own `id`**. Re-running therefore finds the row
@@ -67,13 +107,18 @@ import SwiftData
 /// 1. **Deterministic ids.** A device that has already imported the other's migrated rows skips
 ///    them outright — the id is the event's, so both devices compute the same one.
 /// 2. **It runs after imports settle.** `FRUSExplorerApp` calls this from the debounced
-///    import-settled observer on CloudKit installs (and directly at boot on local-only ones), the
-///    same placement `OrphanedTagRepair` uses and for the same reason: never against a partial
-///    store mid-sync. That narrows the race to two devices whose first post-update launches
-///    overlap before either's push lands.
+///    import-settled observer on CloudKit installs, the same placement `OrphanedTagRepair` uses and
+///    for the same reason: never against a partial store mid-sync. It *also* runs unconditionally
+///    at boot, because a device signed out of iCloud gets no import-settled event at all and would
+///    otherwise never migrate — and nothing reads `SessionEvent` any more, so on that device the
+///    searches and exports would be invisible for as long as it stayed signed out. The pass is
+///    self-limiting, so the extra call costs one `fetchCount`.
 /// 3. **The residual failure is benign.** In that window both devices write a row with the same
 ///    `id` and identical fields, and the trail shows the query twice. It is visible, it is
-///    per-entry deletable (Wave R-3), and it is not data loss.
+///    per-entry deletable (Wave R-3), and it is not data loss. `HistoryPaneSnapshot` gives every
+///    loaded row a distinct *display* identity so `ForEach` behaves, and
+///    `HistoryTrailAdmin.deleteSearch` removes **every** copy sharing the id, so the swipe does
+///    what it says.
 ///
 /// Those duplicates are deliberately **not** auto-collapsed. `DuplicateRecordCleanup` groups by
 /// `id` and then breaks ties on `createdAt` and `id.uuidString` — but every member of a same-`id`
@@ -91,25 +136,56 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Wave R-2a: initial implementation
+///   1.1 — Wave R-2a review fixes: the ±2s `pairingTolerance` is **gone**, replaced by the live
+///          writer's consecutive-identical rule over a merged, time-ordered stream (it collapsed
+///          three events from one query into three rows on every shipped iOS build); the pass now
+///          defers while any record type it writes is awaiting a CloudKit Production deploy; every
+///          fetch that feeds a decision is explicitly ordered; a `SessionEvent` with a `nil`
+///          `timestamp` falls back to its `createdAt` instead of being destroyed; and the legacy
+///          sweep no longer runs when the event fetch disagrees with the count that preceded it
 @MainActor
 enum ResearchTrailMigration {
 
-    // MARK: - Tuning
+    // MARK: - The schema interlock
 
-    /// How far apart a legacy `.searchSubmit` event and an existing ``SearchHistoryEntry`` may be
-    /// and still count as two records of **one** search.
+    /// The CloudKit record types this pass writes rows into.
     ///
-    /// **Two seconds.** The two writers fired in the same main-actor continuation:
-    /// `SearchViewModel.search()` logged the event as its last statement, and
-    /// `SearchView.runSearch()` called `recordSearchHistory` on the next line, with nothing
-    /// awaited in between. The real gap is sub-millisecond, so two seconds is roughly three orders
-    /// of magnitude of headroom.
+    /// Deliberately not derived from anything: it is the list a reader has to check against the
+    /// `context.insert` calls below, and a derived version would be a second thing to get wrong.
+    static let writtenRecordTypes: Set<String> = [
+        "CD_SearchHistoryEntry",
+        "CD_ExportHistoryEntry",
+    ]
+
+    /// The identifiers awaiting a Production deploy that belong to a record type this pass writes.
     ///
-    /// It is deliberately not larger. A false **positive** (pairing two records that are not a
-    /// pair) silently drops one search from a log the contract calls a method appendix; a false
-    /// **negative** leaves a visible duplicate row. The tighter window favours keeping data, and
-    /// the only thing it can miss is a pairing that never existed in the first place.
-    static let pairingTolerance: TimeInterval = 2
+    /// Non-empty means running would push deletions CloudKit accepts and replacements it rejects.
+    ///
+    /// - Parameter awaitingDeploy: The pending list; defaults to
+    ///   ``CloudKitSchemaInventory/identifiersAwaitingDeploy``. A parameter so the interlock is
+    ///   testable from both sides without editing a checked-in constant.
+    /// - Returns: The blocking identifiers, in the order given.
+    static func blockingIdentifiers(
+        in awaitingDeploy: [String] = CloudKitSchemaInventory.identifiersAwaitingDeploy
+    ) -> [String] {
+        awaitingDeploy.filter { identifier in
+            writtenRecordTypes.contains(String(identifier.prefix(while: { $0 != "." })))
+        }
+    }
+
+    /// Whether the legacy sweep may run, given what the two reads of the event table saw.
+    ///
+    /// The sweep deletes the whole `SessionEvent` table. It is only safe to do that when the rows
+    /// this pass actually read are *all* the rows: if the fetch failed — `try?` degrades to `[]` —
+    /// or came back short, everything would be deleted and nothing migrated, and the counters would
+    /// report a clean run.
+    ///
+    /// A free function so the rule is testable without contriving a SwiftData fetch failure.
+    ///
+    /// - Parameters:
+    ///   - fetched: How many events the migration read.
+    ///   - counted: How many `fetchCount` said there were, moments earlier.
+    static func maySweepLegacyTables(fetched: Int, counted: Int) -> Bool { fetched == counted }
 
     // MARK: - Result
 
@@ -118,16 +194,29 @@ enum ResearchTrailMigration {
     struct Result: Equatable, Sendable {
 
         /// Whether there was anything to look at. `false` means the legacy tables were empty and
-        /// the pass exited after one `fetchCount`.
+        /// the pass exited after one `fetchCount` — or that it never got that far, in which case
+        /// one of the two flags below says why.
         var didRun = false
+
+        /// Whether the pass declined to run because a record type it writes is still awaiting a
+        /// CloudKit Production deploy. See the type's *schema interlock* note.
+        var deferredAwaitingSchemaDeploy = false
+
+        /// Whether the pass abandoned itself because the `SessionEvent` fetch disagreed with the
+        /// `fetchCount` that preceded it. Nothing is migrated and nothing is swept; the next launch
+        /// tries again.
+        var abandonedIncompleteLegacyRead = false
 
         /// Searches written to ``SearchHistoryEntry``.
         var searchesMigrated = 0
         /// Search events whose row was already present — a re-run, or another device's work.
         var searchesAlreadyMigrated = 0
-        /// Search events paired with an existing entry and therefore not written (the post-R-4
-        /// shape).
+        /// Search events suppressed because a real ``SearchHistoryEntry`` already stands for that
+        /// run of the query — the post-R-4 shape, where the app wrote both records.
         var searchesPairedWithExistingEntry = 0
+        /// Search events suppressed as re-runs of the row this pass just wrote — the filter-toggle
+        /// shape, which fired the event but wrote no entry live.
+        var searchesCollapsedAsRepeat = 0
 
         /// Exports written to ``ExportHistoryEntry``.
         var exportsMigrated = 0
@@ -154,7 +243,8 @@ enum ResearchTrailMigration {
 
     /// Migrates what is worth keeping, then removes the legacy tables' contents.
     ///
-    /// Safe to call on every launch: it costs one `fetchCount` when there is nothing to do.
+    /// Safe to call on every launch: it costs one array-literal check plus one `fetchCount` when
+    /// there is nothing to do.
     ///
     /// The write and the delete are **separate saves**, in that order. An interruption between
     /// them leaves the migrated rows in place and the legacy rows still present, which the next
@@ -163,68 +253,72 @@ enum ResearchTrailMigration {
     ///
     /// - Parameters:
     ///   - context: The SwiftData context to read and mutate.
-    ///   - tolerance: The search-pairing window; defaults to ``pairingTolerance``. A parameter so
-    ///     the pairing can be tested at both ends without waiting two seconds.
+    ///   - awaitingDeploy: The CloudKit identifiers not yet promoted to Production; defaults to
+    ///     ``CloudKitSchemaInventory/identifiersAwaitingDeploy``. See ``blockingIdentifiers(in:)``.
     /// - Returns: What the pass did.
     @discardableResult
-    static func run(context: ModelContext,
-                    tolerance: TimeInterval = pairingTolerance) -> Result {
+    static func run(
+        context: ModelContext,
+        awaitingDeploy: [String] = CloudKitSchemaInventory.identifiersAwaitingDeploy
+    ) -> Result {
         var result = Result()
+
+        let blocking = blockingIdentifiers(in: awaitingDeploy)
+        guard blocking.isEmpty else {
+            result.deferredAwaitingSchemaDeploy = true
+            // Always-on: this is the state #488 describes, and the console of a TestFlight device
+            // is where it would otherwise have to be noticed.
+            print("[ResearchTrailMigration] Deferred: \(blocking.joined(separator: ", ")) "
+                  + "await a CloudKit Production deploy. Migrating now would sync the deletion of "
+                  + "the legacy events and not their replacements. Nothing was changed.")
+            return result
+        }
 
         let legacyEventCount = (try? context.fetchCount(FetchDescriptor<SessionEvent>())) ?? 0
         let legacySessionCount = (try? context.fetchCount(FetchDescriptor<ResearchSession>())) ?? 0
         guard legacyEventCount > 0 || legacySessionCount > 0 else { return result }
         result.didRun = true
 
-        let events = (try? context.fetch(FetchDescriptor<SessionEvent>())) ?? []
-
         // Full fetches, deliberately. Their cost is paid only while legacy rows exist — which is
         // once per device, plus whenever an older build syncs more in — never on an ordinary
-        // launch. The bounded alternative would be a `#Predicate` over the optional `executedAt`
+        // launch. The bounded alternative would be a `#Predicate` over the optional `timestamp`
         // window, and this codebase has already recorded that SwiftData's translation of optional
         // comparisons is the kind of thing that fails at runtime rather than at compile time
         // (see `HistoryPaneSnapshot`'s note on the free-text filter).
-        let existingSearches = (try? context.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? []
+        //
+        // Every one of them is **sorted**. Fetch order is not defined, and all three feed
+        // decisions: an unordered event fetch would collapse runs differently from one run to the
+        // next, and an unordered entry fetch would decide which run an entry lands in by accident.
+        let events = (try? context.fetch(FetchDescriptor<SessionEvent>(
+            sortBy: [SortDescriptor(\.timestamp), SortDescriptor(\.sortOrder)]))) ?? []
+
+        guard maySweepLegacyTables(fetched: events.count, counted: legacyEventCount) else {
+            result.abandonedIncompleteLegacyRead = true
+            print("[ResearchTrailMigration] Abandoned: read \(events.count) of "
+                  + "\(legacyEventCount) legacy event(s). Nothing was migrated and nothing was "
+                  + "deleted; the next launch tries again.")
+            return result
+        }
+
+        // `SortDescriptor` needs a `Comparable` value and `UUID` is not one, so the id tie-break
+        // is applied in memory (see `searchRuns`) rather than in the fetch.
+        let existingSearches = (try? context.fetch(FetchDescriptor<SearchHistoryEntry>(
+            sortBy: [SortDescriptor(\.executedAt)]))) ?? []
         let existingExportIds = Set(
-            ((try? context.fetch(FetchDescriptor<ExportHistoryEntry>())) ?? []).map(\.id))
+            ((try? context.fetch(FetchDescriptor<ExportHistoryEntry>(
+                sortBy: [SortDescriptor(\.exportedAt)]))) ?? []).map(\.id))
 
-        var searchIdsPresent = Set(existingSearches.map(\.id))
-
-        /// A row an event can pair with instead of being migrated.
-        ///
-        /// Two kinds live here, and they behave differently on purpose:
-        ///
-        /// - **Pre-existing** rows (`migratedHere == false`) each stand for one search the app
-        ///   really recorded, so each absorbs at most **one** event. Otherwise a single entry
-        ///   would swallow every later re-submission of the same query.
-        /// - Rows **this pass inserted** (`migratedHere == true`) stand for a migrated event, and
-        ///   absorb any number of near-identical events that follow. That is what the live
-        ///   producer's `lastRecordedHistoryQuery` did: a filter-only re-run fired the event but
-        ///   wrote no entry, so N events moments apart are one search, not N.
-        struct Pairable {
-            let id: UUID
-            let query: String
-            let at: Date
-            let migratedHere: Bool
-        }
-        var pairableSearches: [Pairable] = existingSearches.compactMap {
-            guard let at = $0.executedAt else { return nil }
-            return Pairable(id: $0.id, query: normalized($0.queryText), at: at,
-                            migratedHere: false)
-        }
-        /// Pre-existing entries already claimed by an event this pass.
-        var claimedSearchIds: Set<UUID> = []
+        let searchIdsPresent = Set(existingSearches.map(\.id))
         var exportIdsPresent = existingExportIds
 
-        // Oldest first, so pairing and self-pairing are deterministic regardless of fetch order.
-        let ordered = events.sorted {
-            let l = $0.timestamp ?? .distantPast
-            let r = $1.timestamp ?? .distantPast
-            return l == r ? $0.id.uuidString < $1.id.uuidString : l < r
-        }
-
-        for event in ordered {
-            guard let timestamp = event.timestamp,
+        // Pass 1: everything that is decided event by event, plus the search events the run
+        // grouping in pass 2 needs.
+        var searchEvents: [SearchEvent] = []
+        for event in events {
+            // A `nil` timestamp is not a reason to destroy a readable record: `SessionEvent.init`
+            // set `createdAt` to the very same instant, so the fallback is exact rather than a
+            // guess. Only an event with neither is genuinely undatable.
+            guard let timestamp = event.timestamp ?? event.createdAt,
                   let kind = ResearchEventKind.decode(from: event) else {
                 result.unreadableDropped += 1
                 continue
@@ -243,29 +337,15 @@ enum ResearchTrailMigration {
                     result.unreadableDropped += 1
                     continue
                 }
+                // Its row is already here — this device's earlier pass, or another device's.
+                // Dropping it from the stream rather than counting it twice: the row itself is in
+                // `existingSearches` and stands for the event in the grouping below.
                 if searchIdsPresent.contains(event.id) {
                     result.searchesAlreadyMigrated += 1
                     continue
                 }
-                if let match = pairableSearches.first(where: {
-                    ($0.migratedHere || !claimedSearchIds.contains($0.id))
-                        && $0.query == query
-                        && abs($0.at.timeIntervalSince(timestamp)) <= tolerance
-                }) {
-                    if !match.migratedHere { claimedSearchIds.insert(match.id) }
-                    result.searchesPairedWithExistingEntry += 1
-                    continue
-                }
-                context.insert(SearchHistoryEntry(
-                    id: event.id,
-                    queryText: rawQuery.trimmingCharacters(in: .whitespacesAndNewlines),
-                    resultCount: resultCount,
-                    projectId: nil,
-                    executedAt: timestamp))
-                searchIdsPresent.insert(event.id)
-                pairableSearches.append(Pairable(id: event.id, query: query, at: timestamp,
-                                                 migratedHere: true))
-                result.searchesMigrated += 1
+                searchEvents.append(SearchEvent(id: event.id, query: query, rawQuery: rawQuery,
+                                                resultCount: resultCount, at: timestamp))
 
             case .export(let format, let documentCount):
                 if exportIdsPresent.contains(event.id) {
@@ -284,6 +364,23 @@ enum ResearchTrailMigration {
             }
         }
 
+        // Pass 2: the live writer's rule, replayed. See the type's note.
+        for run in searchRuns(events: searchEvents, entries: existingSearches) {
+            if run.holdsExistingEntry {
+                result.searchesPairedWithExistingEntry += run.events.count
+                continue
+            }
+            guard let first = run.events.first else { continue }
+            context.insert(SearchHistoryEntry(
+                id: first.id,
+                queryText: first.rawQuery.trimmingCharacters(in: .whitespacesAndNewlines),
+                resultCount: first.resultCount,
+                projectId: nil,
+                executedAt: first.at))
+            result.searchesMigrated += 1
+            result.searchesCollapsedAsRepeat += run.events.count - 1
+        }
+
         // Durable before the source goes.
         try? context.save()
 
@@ -296,6 +393,7 @@ enum ResearchTrailMigration {
         print("[ResearchTrailMigration] Retired \(removed.events) event(s) in "
               + "\(removed.sessions) session(s): \(result.searchesMigrated) search(es) migrated, "
               + "\(result.searchesPairedWithExistingEntry) already had an entry, "
+              + "\(result.searchesCollapsedAsRepeat) collapsed as re-runs of one query, "
               + "\(result.exportsMigrated) export(s) migrated, "
               + "\(result.documentOpensDropped) document open(s) and "
               + "\(result.noteSavesDropped) note save(s) dropped as redundant.")
@@ -303,14 +401,111 @@ enum ResearchTrailMigration {
         return result
     }
 
+    // MARK: - The search stream
+
+    /// One legacy `.searchSubmit`, decoded, waiting to be grouped.
+    private struct SearchEvent {
+        /// The source event's id — which the migrated row takes.
+        let id: UUID
+        /// The comparison form of the query (see ``normalized(_:)``).
+        let query: String
+        /// The query exactly as recorded, which is what a migrated row stores.
+        let rawQuery: String
+        /// The match count the event carried.
+        let resultCount: Int
+        /// When it fired.
+        let at: Date
+    }
+
+    /// A maximal stretch of consecutive stream items carrying the same query.
+    private struct SearchRun {
+        /// Whether a real ``SearchHistoryEntry`` falls inside it — in which case the app already
+        /// recorded this search and none of the events beside it should be written.
+        let holdsExistingEntry: Bool
+        /// The events in the run, oldest first.
+        let events: [SearchEvent]
+    }
+
+    /// Cuts the merged event + entry stream into runs of consecutive identical queries.
+    ///
+    /// The whole of the collapsing rule lives here, as a pure function over values, so the
+    /// behaviour that decides whether a user's query log gains a duplicate row can be tested
+    /// without a store.
+    ///
+    /// Entries with no `executedAt` are left out: an item with no time cannot be placed in a
+    /// sequence, and putting it at `.distantPast` would let it absorb a genuinely separate search.
+    /// Its id is still known to the caller, which is what prevents a re-migration.
+    ///
+    /// - Parameters:
+    ///   - events: The decoded search events.
+    ///   - entries: Every ``SearchHistoryEntry`` already in the store.
+    /// - Returns: The runs holding at least one event, oldest first.
+    private static func searchRuns(events: [SearchEvent],
+                                   entries: [SearchHistoryEntry]) -> [SearchRun] {
+        guard !events.isEmpty else { return [] }
+
+        /// A stream position: an event to decide about, or an entry that decides for it.
+        struct Item {
+            let query: String
+            let at: Date
+            let id: UUID
+            let event: SearchEvent?
+            /// Entries sort before events at an identical instant, so an entry that ties with an
+            /// event of the same query is inside its run rather than adjacent to it. With
+            /// different queries the choice is arbitrary but must be *fixed*, which is the point.
+            var rank: Int { event == nil ? 0 : 1 }
+        }
+
+        var stream: [Item] = events.map {
+            Item(query: $0.query, at: $0.at, id: $0.id, event: $0)
+        }
+        stream.append(contentsOf: entries.compactMap { entry in
+            guard let at = entry.executedAt else { return nil }
+            return Item(query: normalized(entry.queryText), at: at, id: entry.id, event: nil)
+        })
+        stream.sort {
+            if $0.at != $1.at { return $0.at < $1.at }
+            if $0.rank != $1.rank { return $0.rank < $1.rank }
+            return $0.id.uuidString < $1.id.uuidString
+        }
+
+        var runs: [SearchRun] = []
+        var currentQuery: String?
+        var currentEvents: [SearchEvent] = []
+        var currentHasEntry = false
+
+        func closeCurrent() {
+            guard !currentEvents.isEmpty else { return }
+            runs.append(SearchRun(holdsExistingEntry: currentHasEntry, events: currentEvents))
+        }
+
+        for item in stream {
+            if item.query != currentQuery {
+                closeCurrent()
+                currentQuery = item.query
+                currentEvents = []
+                currentHasEntry = false
+            }
+            if let event = item.event {
+                currentEvents.append(event)
+            } else {
+                currentHasEntry = true
+            }
+        }
+        closeCurrent()
+
+        return runs
+    }
+
     // MARK: - Helpers
 
-    /// The comparison form for query pairing.
+    /// The comparison form for query grouping.
     ///
     /// The two writers trimmed differently — `logEvent` used `.whitespaces`, `recordSearchHistory`
     /// `.whitespacesAndNewlines` — so a query the user pasted with a trailing newline would not
     /// match itself byte for byte. Case is **not** folded: the recorded text is the user's own
-    /// wording, and two searches differing only in case are two searches.
+    /// wording, and two searches differing only in case are two searches — which is also what the
+    /// live `lastRecordedHistoryQuery` comparison did.
     private static func normalized(_ query: String) -> String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }

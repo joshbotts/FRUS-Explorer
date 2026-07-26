@@ -1337,14 +1337,18 @@ struct FRUSExplorerApp: App {
             // CloudKit) as a duplicate of a live record.
             if !appState.cloudKitSyncEnabled {
                 OrphanedTagRepair.run(context: modelContainer.mainContext)
-                // Wave R-2a: retire the legacy session tables into the typed trail. Same
-                // placement rule as the repair above, and for the same reason — with CloudKit on
-                // we wait for imports to settle (see the sync observer) so two devices are less
-                // likely to migrate the same events before either's push lands. On a local-only
-                // store there is no import to wait for, so it runs now. Self-limiting: one
-                // `fetchCount` and out once the legacy tables are empty.
-                ResearchTrailMigration.run(context: modelContainer.mainContext)
             }
+            // Wave R-2a: retire the legacy session tables into the typed trail. Unconditional,
+            // unlike the repair above. The CloudKit-settled observer below runs it too — that is
+            // the *preferred* moment, because a second device that has already migrated will
+            // usually have delivered its rows by then — but it cannot be the only moment: a device
+            // signed out of iCloud, or one whose first import fails, never gets that event, and
+            // since this release nothing reads `SessionEvent` any more, so its recorded searches
+            // and exports would be invisible for as long as that lasted. The pass is
+            // self-limiting — one array-literal check plus one `fetchCount` once the legacy tables
+            // are empty — so calling it here as well costs nothing, and it is idempotent by
+            // construction (migrated rows take the source event's id).
+            ResearchTrailMigration.run(context: modelContainer.mainContext)
             // Optional cross-device settings sync: mirror UserDefaults to/from a
             // CloudKit-synced record when this device has opted in. Starting it
             // installs the change observer and performs an initial pull if enabled.

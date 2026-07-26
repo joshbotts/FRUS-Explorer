@@ -1789,3 +1789,53 @@ Executes R-0's Q1(a) — the wave's riskiest change, and the one that had to be 
   as "Ongoing · 2 events". **Not verified:** the macOS render of the pane and log sheet, the
   migration against real legacy data (no `SessionEvent` rows existed on the test device), and the
   multi-device race, none of which a simulator can reach.
+
+### Session 2026-07-26 — Wave R-2a review fixes (PR #517)
+
+Three adversarial reviews attacked the migration independently; most findings arrived with a
+failing test rather than an argument. Two were blockers.
+
+- **The dedupe design was wrong in kind, not in size.** `pairingTolerance` (2s) was sized from the
+  gap between the two *writers* — sub-millisecond, same main-actor continuation — but it was also
+  load-bearing for collapsing repeated *events*, whose gap is a human tap. `SearchViewModel.search()`
+  fired `.searchSubmit` on every execution; `recordSearchHistory` wrote one row per **distinct**
+  query; and iOS re-ran `search()` for the same keywords from `clearVolumeScope()` and the
+  result-row tag chip. One query plus two filter toggles = 3 events, 1 recorded search, **3 migrated
+  rows**, on every shipped iOS build. The window is **removed**, not retuned: existing entries and
+  legacy events merge into one time-ordered stream, which is cut into runs of consecutive identical
+  queries; a run holding a real entry writes nothing, a run without one writes exactly one row.
+  That is what `lastRecordedHistoryQuery` did, so `A A B A` is three searches. It also dissolves the
+  finding that a pre-existing row was the only row forbidden from absorbing its own followers.
+- **R-7's marker became an interlock.** The pass writes `ExportHistoryEntry` and deletes the
+  `SessionEvent` rows it replaces in one call. While that type sits in `identifiersAwaitingDeploy`,
+  CloudKit takes the deletions and rejects the replacements (#488) — a second device or a reinstall
+  would simply lose the export history. `run` now checks the marker for any record type it writes,
+  defers, and logs why. **The migration is therefore dormant in this build and starts by itself at
+  the first launch after the owner clears the marker** (CloudKit checklist step 4).
+- **Determinism.** Every fetch feeding a decision is sorted; the merged stream orders by
+  (timestamp, kind, id). `theResultDoesNotDependOnInsertionOrder` pins it.
+- **Same-`id` duplicates.** The residual is only benign if it is visible and deletable, and it was
+  neither — `ForEach` had two elements under one `Identifiable` id, and the deletes used
+  `fetchLimit = 1`. Rows now carry a distinct `HistoryRowID`; the deletes remove every copy;
+  `HistoryTrailAdmin.deleteExport` and a **Collections Exported** History section close the third
+  type, which had no per-entry delete and was never even loaded.
+- **The migration runs unconditionally at boot** as well as from the import-settled debounce — a
+  device signed out of iCloud never got that event, and nothing reads `SessionEvent` any more.
+- **The delete confirmation quotes the exact activity count.** It quoted a session count off a
+  1,000-activity scan against an unbounded delete: measured, "1000 sessions" destroyed 1,200. New
+  key `settings.sessions.delete.message.trail.v2`; the Settings row says "at least N sessions" when
+  its scan was truncated.
+- **`nil` timestamps.** `SessionLogSnapshot.totalActivities` counts only *datable* rows, so
+  `hasMore` can reach `false` and an all-undated store draws its empty state;
+  `ResearchSessionsSummary.isEmpty` asks whether there is anything **to delete**, so undated rows no
+  longer grey out the only delete control. A `SessionEvent` with a `nil` `timestamp` falls back to
+  `createdAt` instead of being destroyed. The legacy sweep is refused when the event fetch returned
+  fewer rows than the `fetchCount` before it.
+- **Tests changed, and why.** `pairingBoundaryHolds` **deleted** (it pinned the window from both
+  sides). `aLaterRepeatOfTheSameQueryIsNotSwallowed` and `eachEntryPairsWithOneEventOnly`
+  **rewritten** — both encoded the "one entry absorbs one event" assumption that produced the three
+  rows. `nilTimestampIsSkipped` **rewritten**: it asserted `totalActivities == 2` for a page that
+  could only ever draw one row, which is the desynchronisation itself.
+- **Verified.** Full `FRUSExplorerTests` **1777/1777** pass on a booted iPhone 17 Pro simulator;
+  iOS and macOS build with no new warnings. **Not verified:** the migration against real legacy
+  data, the multi-device race, and the on-device render of the new History exports section.
