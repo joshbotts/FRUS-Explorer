@@ -80,6 +80,10 @@ import SwiftUI
 ///   2.7 — #498: `.statusBarHidden(false)` on each analysis sheet's content, outside the inner
 ///          NavigationStack — the actual fix for the rotation deadlock the orientation lock was
 ///          only mitigating. See the note above the sheet declarations.
+///   2.8 — Wave R / R-9: `appState.indexingPipeline` is back-filled into the view model by
+///          an `onChange` observer, alongside the #324 `downloadManager` one it was always
+///          missing. Bootstrapping from `.onAppear` can capture a nil pipeline, which made
+///          every compilation report "Index Required" for the rest of the session.
 ///   Session 09: `pendingBrowseVolume` resolves against the unfiltered manifest —
 ///         the filtered-groups lookup silently dropped hand-offs to undownloaded
 ///         volumes, which the subject pivot routinely targets.
@@ -241,6 +245,15 @@ struct BrowserView: View {
         // moment the manager appears (a no-op in production, where it exists at boot).
         .onChange(of: appState.downloadManager == nil) { _, isNil in
             if !isNil { viewModel?.attachDownloadManagerIfNeeded(appState.downloadManager) }
+        }
+        // R-9: the sibling of the #324 back-fill above, and the half that fix left undone.
+        // `appState.indexingPipeline` is assigned EARLIER than the download manager (both inside
+        // bootDownloadManager), so a view model that captured a nil manager captured a nil
+        // pipeline too — and only the manager was ever repaired. Without this, `isIndexed`
+        // answered false for every volume for the rest of the session, so CompilationView showed
+        // "Index Required" for fully indexed volumes and its "Index Now" button did nothing.
+        .onChange(of: appState.indexingPipeline == nil) { _, isNil in
+            if !isNil { viewModel?.attachIndexingPipelineIfNeeded(appState.indexingPipeline) }
         }
         // Warm the lazy volume-subject-profiles decode off the main thread while the
         // user is still at the subseries/volume lists, so the first VolumeView push
