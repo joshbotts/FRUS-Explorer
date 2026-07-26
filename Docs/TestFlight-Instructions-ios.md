@@ -39,12 +39,12 @@ Multi-window was broken at the OS-registration level; it's fixed. **Drag a docum
 
 ## The recording switch now means what it says
 
-**Log Research Sessions** used to stop only the session log — the one thing in the app nothing else read. Your reading history kept recording regardless, and it is what fills History, a project's Recents, Project Leads, and the last-opened dates in Volumes & Storage. Turning the switch off did not stop the app remembering what you read.
+**Log Research Sessions** used to stop only the session log — the one thing in the app nothing else read. Your reading history kept recording regardless, and it is what fills History, a project's Recents, the search History and Focus scopes, and the last-opened dates in Volumes & Storage. Turning the switch off did not stop the app remembering what you read.
 
 It does now. One switch, every recorder.
 
 - **If you rely on Recents or History, leave it on.** With it off, those surfaces will empty over time — by design.
-- **Already-recorded activity stays** until you delete it. The delete button in Settings → Research → Research Sessions still clears only the session log; a delete that covers the whole trail is coming.
+- **Already-recorded activity stays** until you delete it — and now you can. The delete button in Settings → Research → Research Sessions clears the *whole* trail, and the new History screen lets you swipe away individual entries.
 - **A correction for Mac users:** the old text in that pane said searches were recorded on iPhone and iPad "but not here". That was true of the session log and **wrong about the History window**, which has been recording your Mac search text all along. The pane now says so plainly.
 
 ## Fixes
