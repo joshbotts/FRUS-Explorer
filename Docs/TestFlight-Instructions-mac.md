@@ -39,13 +39,13 @@ Settings has been rebuilt end to end. **Seventeen destinations became thirteen r
 
 ## The recording switch now means what it says
 
-**Log Research Sessions** used to stop only the session log — the one thing in the app nothing else read. Your reading and search history kept recording regardless, and they are what fill the **History window**, a project's Recents, Project Leads, and the last-opened dates in Volumes & Storage. Turning the switch off did not stop the app remembering what you read.
+**Log Research Sessions** used to stop only the session log — the one thing in the app nothing else read. Your reading and search history kept recording regardless, and they are what fill the **History window**, a project's Recents, the search History and Focus scopes, and the last-opened dates in Volumes & Storage. Turning the switch off did not stop the app remembering what you read.
 
 It does now. One switch, every recorder.
 
 - **The old description was wrong, and this is the important part.** It said searches were recorded on iPhone and iPad "but not here". That was true of the *session log* and false of the History window, which has been recording your Mac search text — the actual query strings — all along, and syncing them to your private iCloud database. The pane now says so plainly. If that is not what you want, turn the switch off.
 - **If you rely on the History window, leave it on.** With it off, History will empty over time — by design.
-- **Already-recorded activity stays** until you delete it. The delete button in Settings → Research → Research Sessions still clears only the session log; a delete that covers the whole trail is coming.
+- **Already-recorded activity stays** until you delete it — and now you can. The delete button in Settings → Research → Research Sessions clears the *whole* trail, and the new History screen lets you swipe away individual entries.
 
 ## Fixes
 - **Two ways to lose work without being asked, closed.** On Mac, Free Up Space removed volumes with no confirmation at all. On iPhone and iPad, a full swipe deleted a Volume Scope outright. Both now ask first.
