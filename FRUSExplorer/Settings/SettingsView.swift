@@ -710,7 +710,7 @@ private struct ProjectsSettingsView: View {
                     showEditor = true
                 }
             } header: {
-                Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
+                Text(String(localized: "settings.projects.list.header", defaultValue: "All Projects"))
             }
 
             // 3. The two lists that share this grammar.

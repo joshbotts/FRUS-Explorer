@@ -144,29 +144,6 @@ struct FRUSSettingsView: View {
 // (S-1) so both renderers share one declaration of every pane's label, icon, group, keywords, and
 // platform availability. The five hand-maintained sidebar section arrays are gone with it.
 
-// MARK: - Shared Pane Chrome
-
-/// Consistent header for every settings pane.
-///
-/// Not `private`: `MacVolumesStorageHub` lives in its own file (S-2b) and heads its form with
-/// the same title/subtitle pair, so the two must not drift.
-struct PaneHeader: View {
-    let title: String
-    var subtitle: String? = nil
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-            if let subtitle {
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.bottom, 12)
-    }
-}
-
 // MARK: - Projects Pane
 
 /// macOS Settings → Research → Projects — the hub for the research trio (S-3b).
@@ -182,7 +159,7 @@ struct PaneHeader: View {
 ///   where rename, merge and delete are visible rows with footers that say what each costs.
 /// - "New project" moves out of the pane header into a row at the end of the list it creates into.
 /// - Rows carry their tally, so the cost of a delete is visible before it is chosen.
-/// - Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + `PaneHeader` + card stack.
+/// - Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + card stack.
 ///   S-5 was going to convert this pane anyway; doing it here means not building it twice.
 private struct SettingsProjectsPane: View {
     @Environment(AppState.self) private var appState
@@ -202,12 +179,6 @@ private struct SettingsProjectsPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.projects.title", defaultValue: "Projects"),
-                    subtitle: String(localized: "settings.projects.pane.subtitle",
-                                     defaultValue: "Switch context up top; manage the list below.")
-                )
-
                 Picker(selection: Binding(get: { appState.activeProjectId },
                                           set: { appState.activeProjectId = $0 })) {
                     Text(String(localized: "settings.projects.active.global",
@@ -291,7 +262,7 @@ private struct SettingsProjectsPane: View {
                     showEditor = true
                 }
             } header: {
-                Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
+                Text(String(localized: "settings.projects.list.header", defaultValue: "All Projects"))
             }
 
             Section {
@@ -320,6 +291,7 @@ private struct SettingsProjectsPane: View {
             }
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(isPresented: $showEditor) {
             ProjectEditorView(projectToEdit: nil,
@@ -435,15 +407,6 @@ private struct SettingsScopesPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.scopes.title",
-                                  defaultValue: "Volume Scopes"),
-                    subtitle: String(localized: "settings.scopes.pane.subtitle",
-                                     defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed.")
-                )
-            }
-
-            Section {
                 if scopes.isEmpty {
                     Text(String(localized: "settings.scopes.empty.detail",
                                 defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))
@@ -461,11 +424,13 @@ private struct SettingsScopesPane: View {
                     editorIsDraft = true
                     editorTarget = CustomVolumeScope(name: "")
                 }
-            } header: {
-                Text(String(localized: "settings.scopes.title", defaultValue: "Volume Scopes"))
+            } footer: {
+                Text(String(localized: "settings.scopes.pane.subtitle",
+                            defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed."))
             }
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.scopes.title", defaultValue: "Volume Scopes"))
         .sheet(item: $editorTarget) { target in
             CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
                 .environment(appState)
@@ -592,14 +557,6 @@ private struct SettingsTagsPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.pane.tags", defaultValue: "Tags"),
-                    subtitle: String(localized: "settings.tags.pane.subtitle",
-                                     defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project.")
-                )
-            }
-
-            Section {
                 if tags.isEmpty {
                     Text(String(localized: "settings.tags.empty.where",
                                 defaultValue: "No tags yet. Tags are the labels you apply to research notes and documents as you read — create one here, or from any note."))
@@ -644,11 +601,13 @@ private struct SettingsTagsPane: View {
                     modelContext.insert(tag)
                     pendingNewTag = tag
                 }
-            } header: {
-                Text(String(localized: "settings.tags.list.header", defaultValue: "Tags"))
+            } footer: {
+                Text(String(localized: "settings.tags.pane.subtitle",
+                            defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project."))
             }
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.pane.tags", defaultValue: "Tags"))
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(item: $editingTag) { tag in
             TagEditorView(
@@ -1056,13 +1015,6 @@ private struct SettingsSummarizationPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.pane.summarization",
-                                  defaultValue: "Summarization"),
-                    subtitle: String(localized: "settings.summarization.pane.subtitle",
-                                     defaultValue: "Prompts, summaries and batch runs.")
-                )
-
                 if AppleIntelligenceProvider.shared.isAvailable {
                     SettingsStatusRow(
                         label: String(localized: "settings.summarization.availability.label",
@@ -1173,6 +1125,8 @@ private struct SettingsSummarizationPane: View {
             generateSection
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.pane.summarization",
+                                defaultValue: "Summarization"))
         .task { refreshTally() }
         .sheet(item: $promptToEdit, onDismiss: refreshTally) { prompt in
             PromptEditorView(promptToEdit: prompt)
