@@ -1142,12 +1142,23 @@ the card creates a key with the right permissions.
 does the app think is wrong, and how do I put it back together.
 
 **Contents** lists what the app is holding — notes, tags and assignments, highlights, collections,
-custom prompts, projects — with a count against each, so an export or a reset has a visible size
-before you commit to it.
+custom prompts, projects, and your research trail as three counts (**Documents Visited**,
+**Searches Executed**, **Collections Exported**) — with a count against each, so an export or a
+reset has a visible size before you commit to it.
 
 **Export as JSON** writes one file with your notes, tags, highlights, collections, custom prompts
-and projects; **Export Notes as Markdown** writes one file per note, Obsidian-compatible. Generated
-AI summaries are excluded by default and can be included with a toggle.
+and projects, together with your whole research trail: every document you opened, every search you
+ran *with the number of results it returned*, and every collection you exported. The trail is not
+optional, and that is deliberate — a search that returned nothing is evidence, and an export that
+dropped it could not stand as a record of how you worked. Each entry carries the project that was
+active when it was recorded, so a file exported mid-project can be read back as the method behind
+it. **Export Notes as Markdown** writes one file per note, Obsidian-compatible. Generated AI
+summaries are excluded by default and can be included with a toggle.
+
+Because the JSON file contains the text of every search you ran, look before you share it — the
+same reason the Contents list shows you the size of the trail first. To empty the trail rather
+than export it, use **Delete Recorded Sessions…** in Settings → Research → Research Sessions
+(Section 16).
 
 **Reports → Broken Cross-References** exports the corpus-wide list of cross-references that do not
 resolve, as CSV or JSON (Section 6.2).
@@ -1172,7 +1183,7 @@ appears only when iCloud sync is running on this Mac.
 |------|--------------|-----------------|
 | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — nothing in iCloud is touched |
 | **Reset This Device** | Clears downloaded volumes and the search index | Volumes and index only; your iCloud data survives |
-| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection and project, on every device |
+| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection, project and recorded session, on every device |
 
 `[SCREENSHOT: Settings → System → Data & Recovery — the Contents counts, the export rows, and the Recovery ladder]`
 

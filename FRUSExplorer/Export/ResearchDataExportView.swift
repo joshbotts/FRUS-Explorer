@@ -11,22 +11,40 @@ import SwiftData
 
 // MARK: - ResearchDataExportView
 
-/// Settings → Data → "Export Research Data…".
+/// The **Contents** inventory and the export rows at the top of Settings ▸ System ▸
+/// **Data & Recovery** (`DataRecoveryView`, which is where this is hosted on **both** platforms —
+/// there is no separate macOS pane; the `SettingsDataPane` this comment used to name was folded
+/// into `DataRecoveryView` by S-4b).
 ///
 /// Offers two exports built from `ResearchDataExporter`:
-/// - A single versioned JSON file containing notes, tags, highlights,
-///   collections, user-created prompts, and projects (optionally including
-///   AI-generated summaries).
+/// - A single versioned JSON file containing notes, tags, highlights, collections, user-created
+///   prompts, projects and the research trail (optionally including AI-generated summaries).
 /// - One Markdown file per research note, with YAML front matter linking back
 ///   to the source document, for use with Obsidian-style tools.
 ///
 /// Both exports are written to a temporary directory and shared via `ShareLink`.
-/// The macOS equivalent is `SettingsDataPane` (`NSSavePanel`-based).
+///
+/// ## Why the trail counts are not `@Query`
+/// Every other row here is backed by a `@Query`, which is fine for notes and collections and
+/// wrong for the trail: it grows without bound by design (Wave R contract D5 — nothing prunes
+/// it), so a `@Query` would hold every recorded visit in memory on a Settings screen and re-run
+/// on each iCloud sync. `ResearchDataExporter.trailCounts(modelContext:)` is three `fetchCount`s,
+/// taken in the same pass that builds the file, so the numbers on screen and the file being
+/// offered describe the same read.
+///
+/// The accepted cost is that these three rows are a **snapshot** rather than live: the `@Query`
+/// rows re-render when a note is added in another window, and these do not until the pane is
+/// re-entered or the summaries toggle flipped. That is the right trade — the alternative is
+/// holding an unbounded table in memory to keep a number current on a screen the reader is about
+/// to leave — and it is not misleading, because the file on offer was built from that same
+/// snapshot. Making the numbers live would mean making the file live with them.
 ///
 /// Version history:
 ///   1.0 — Session 154: initial implementation
 ///   1.1 — Session 7 / #240B: "Broken Cross-References Report" section — CSV/JSON
 ///          ShareLinks re-serialized from the bundled broken-refs index.
+///   1.2 — Wave R-5: the inventory accounts for the research trail, which it had been silent
+///          about, and the JSON footer says so under a new key
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -40,6 +58,10 @@ struct DataExportSections: View {
     @Query private var prompts: [SummarizationPrompt]
     @Query private var projects: [Project]
     @Query private var summaries: [GeneratedSummary]
+
+    /// Row counts for the three research-trail tables — see the type's note on why these are not
+    /// `@Query`. Refreshed by `prepareJSONExport()`, which is also what writes the file.
+    @State private var trailCounts: (visits: Int, searches: Int, exports: Int) = (0, 0, 0)
 
     @State private var includeGeneratedSummaries = false
     @State private var jsonExportURL: URL?
@@ -60,6 +82,14 @@ struct DataExportSections: View {
                 LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(collections.count)")
                 LabeledContent(String(localized: "settings.export.prompts", defaultValue: "Custom Prompts"), value: "\(userPromptCount)")
                 LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(projects.count)")
+                // Wave R-5. The three trail rows are worded exactly as the History screen's
+                // section headers, so the same recorded thing is not called two different names
+                // in two places. New keys rather than reuse of the `history.section.*` ones: no
+                // String Catalog ships, so sharing a key across features is a collision waiting
+                // for the first translator who needs them to differ.
+                LabeledContent(String(localized: "settings.export.readingHistory", defaultValue: "Documents Visited"), value: "\(trailCounts.visits)")
+                LabeledContent(String(localized: "settings.export.searchHistory", defaultValue: "Searches Executed"), value: "\(trailCounts.searches)")
+                LabeledContent(String(localized: "settings.export.exportHistory", defaultValue: "Collections Exported"), value: "\(trailCounts.exports)")
             }
 
             Section {
@@ -77,9 +107,15 @@ struct DataExportSections: View {
             Section {
                 jsonExportRow
             } footer: {
+                // New key for Wave R-5 (`…json.footer.trail`). The old text listed six things and
+                // the file now carries seven; rewriting `settings.export.json.footer` in place
+                // would be a silent collision without a String Catalog. The trail is named
+                // explicitly rather than folded into "your research data" because it is the part
+                // a reader would not assume was in there — and the part they may want to check
+                // before sharing the file, since it includes the text of every search they ran.
                 Text(String(
-                    localized: "settings.export.json.footer",
-                    defaultValue: "A single JSON file containing your notes, tags, highlights, collections, custom prompts, and projects."
+                    localized: "settings.export.json.footer.trail",
+                    defaultValue: "A single JSON file containing your notes, tags, highlights, collections, custom prompts and projects, plus your research trail — every document you opened, every search you ran with the number of results it returned, and every collection you exported."
                 ))
             }
 
@@ -155,10 +191,12 @@ struct DataExportSections: View {
 
     // MARK: - Export Preparation
 
-    /// Builds the JSON envelope and writes it to a temporary file for `ShareLink`.
+    /// Builds the JSON envelope and writes it to a temporary file for `ShareLink`, and refreshes
+    /// the trail counts shown in **Contents** from the same read.
     private func prepareJSONExport() {
         jsonExportURL = nil
         jsonExportError = nil
+        trailCounts = ResearchDataExporter.trailCounts(modelContext: modelContext)
         do {
             let envelope = try ResearchDataExporter.makeEnvelope(
                 modelContext: modelContext,

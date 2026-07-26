@@ -12,17 +12,35 @@ import SwiftData
 // MARK: - ResearchDataEnvelope
 
 /// A versioned snapshot of the user's research data — notes, tags, highlights,
-/// collections, user-created prompts, and projects — suitable for backup or as
-/// an exit ramp from the app.
+/// collections, user-created prompts, projects, and the research trail — suitable
+/// for backup or as an exit ramp from the app.
 ///
 /// `formatVersion` exists so a future importer can detect and migrate older
 /// exports. Import itself is out of scope for Session 154.
+///
+/// ## Why the trail is in here (Wave R-5)
+/// Through format version 2 this envelope carried no history at all: every document the user had
+/// opened, every search they had run, and every collection they had exported was omitted from the
+/// one file the app offers as a way to get their work out. That is not a completeness tick. The
+/// Wave R contract's decision **D5** declines to auto-prune the trail *because* Q&CA exports the
+/// query log as a **method appendix** — a recorded query with its real hit count, including the
+/// zeros, is what makes a claim of absence checkable — and an export that omits the trail cannot
+/// serve that purpose. The three arrays are unconditional for the same reason: an appendix behind
+/// an opt-out is not an appendix.
+///
+/// The appendix header is already here and needed nothing new. Q&CA §I-2 asks that the project
+/// `name` + `researchQuestion` head the exported appendix exactly as #454/#455 head collection
+/// exports; ``exportedForProjectName`` / ``exportedForProjectResearchQuestion`` (#377 Phase 4)
+/// are that header, stamped from the active project at export time.
 ///
 /// Version history:
 ///   1.0 — Session 154: initial implementation
 ///   2.0 — #377 Phase 4: `exportedForProjectName` / `exportedForProjectResearchQuestion`
 ///          (the active project this backup was generated under; both optional, so pre-Phase-4
 ///          files still decode)
+///   3.0 — Wave R-5: `readingHistory` / `searchHistory` / `exportHistory` — the three typed
+///          research-trail tables. A custom `init(from:)` (see the extension below) defaults all
+///          three to empty, so version-1 and version-2 files still decode
 struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataExporter.currentFormatVersion`.
@@ -54,6 +72,83 @@ struct ResearchDataEnvelope: Codable, Equatable, Sendable {
     /// Empty unless the caller opts in via `includeGeneratedSummaries` — AI
     /// output can be large and is excluded by default.
     var summaries: [GeneratedSummaryExport]
+
+    // MARK: - The research trail (Wave R-5)
+
+    /// Every recorded document visit, oldest first. See the type's *Why the trail is in here*.
+    var readingHistory: [ReadingHistoryEntryExport] = []
+
+    /// Every recorded search — the query text and the hit count it returned — oldest first.
+    /// This is the method appendix's raw material.
+    var searchHistory: [SearchHistoryEntryExport] = []
+
+    /// Every recorded collection export, oldest first.
+    var exportHistory: [ExportHistoryEntryExport] = []
+}
+
+// MARK: - ResearchDataEnvelope + backward-compatible decoding
+
+extension ResearchDataEnvelope {
+
+    /// The envelope's JSON keys, spelled out rather than synthesized.
+    ///
+    /// Explicit because ``init(from:)`` below is explicit, and because
+    /// `ResearchDataExporterTests.exportJSONDataKeysMatchSchema` pins this exact set — a key that
+    /// silently appeared or vanished would otherwise change the published file format without
+    /// showing up in a diff anyone reads.
+    enum CodingKeys: String, CodingKey {
+        case formatVersion, exportedAt
+        case exportedForProjectName, exportedForProjectResearchQuestion
+        case notes, tags, tagAssignments, highlights, collections, prompts, projects, summaries
+        case readingHistory, searchHistory, exportHistory
+    }
+
+    /// Decodes an envelope, tolerating files written before the trail existed.
+    ///
+    /// ## Why this is hand-written
+    /// Swift's synthesized `Decodable` **ignores a property's default value** — `var
+    /// readingHistory: [ReadingHistoryEntryExport] = []` still makes the key mandatory, so adding
+    /// the three arrays to a synthesized decoder would have made every version-1 and version-2
+    /// file undecodable. That is not hypothetical: `ResearchDataExporterTests.legacyJSONDecodes`
+    /// decodes exactly such a file, and #377 Phase 4 took the same care with the two header
+    /// fields (by making them `Optional`, which the synthesizer does honour). An array that is
+    /// semantically "none recorded" should not have to be `nil` to say so, hence `decodeIfPresent
+    /// … ?? []` instead.
+    ///
+    /// Only the three trail arrays are tolerant. Everything else stays required, so a truncated or
+    /// corrupt file still fails loudly rather than decoding into a plausible-looking empty backup.
+    ///
+    /// `encode(to:)` remains synthesized — this initializer lives in an extension precisely so the
+    /// memberwise initializer survives for ``ResearchDataExporter/makeEnvelope(modelContext:includeGeneratedSummaries:activeProjectId:)``.
+    ///
+    /// - Parameter decoder: The decoder to read from.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        formatVersion = try container.decode(Int.self, forKey: .formatVersion)
+        exportedAt = try container.decode(Date.self, forKey: .exportedAt)
+        exportedForProjectName =
+            try container.decodeIfPresent(String.self, forKey: .exportedForProjectName)
+        exportedForProjectResearchQuestion =
+            try container.decodeIfPresent(String.self, forKey: .exportedForProjectResearchQuestion)
+        notes = try container.decode([ResearchNoteExport].self, forKey: .notes)
+        tags = try container.decode([UserTagExport].self, forKey: .tags)
+        tagAssignments =
+            try container.decode([DocumentTagAssignmentExport].self, forKey: .tagAssignments)
+        highlights = try container.decode([DocumentHighlightExport].self, forKey: .highlights)
+        collections = try container.decode([CollectionExport].self, forKey: .collections)
+        prompts = try container.decode([SummarizationPromptExport].self, forKey: .prompts)
+        projects = try container.decode([ProjectExport].self, forKey: .projects)
+        summaries = try container.decode([GeneratedSummaryExport].self, forKey: .summaries)
+        readingHistory =
+            try container.decodeIfPresent([ReadingHistoryEntryExport].self,
+                                          forKey: .readingHistory) ?? []
+        searchHistory =
+            try container.decodeIfPresent([SearchHistoryEntryExport].self,
+                                          forKey: .searchHistory) ?? []
+        exportHistory =
+            try container.decodeIfPresent([ExportHistoryEntryExport].self,
+                                          forKey: .exportHistory) ?? []
+    }
 }
 
 // MARK: - ResearchNoteExport
@@ -189,6 +284,67 @@ struct GeneratedSummaryExport: Codable, Equatable, Sendable {
     var lastModified: Date?
 }
 
+// MARK: - ReadingHistoryEntryExport
+
+/// Export DTO mirroring `ReadingHistoryEntry` — one recorded document visit (Wave R-5).
+struct ReadingHistoryEntryExport: Codable, Equatable, Sendable {
+    var id: UUID
+    var documentId: String
+    var volumeId: String
+
+    /// The document's title as captured at read time, or `nil` on entries written before that
+    /// field existed — those display as `volumeId · documentId`.
+    var displayTitle: String?
+
+    /// The project active when the document was opened, or `nil` for global context. Stamped at
+    /// write time: switching projects later does not re-attribute it.
+    var projectId: UUID?
+
+    var accessedAt: Date?
+}
+
+// MARK: - SearchHistoryEntryExport
+
+/// Export DTO mirroring `SearchHistoryEntry` — one recorded search (Wave R-5).
+///
+/// This is the row the Q&CA method appendix is built from: the query as submitted, and the hit
+/// count it actually returned. A recorded **zero** is the point, not an omission — it is what
+/// turns "I found nothing on this" into a checkable claim.
+struct SearchHistoryEntryExport: Codable, Equatable, Sendable {
+    var id: UUID
+
+    /// The submitted query text, trimmed.
+    var queryText: String
+
+    /// Matches at execution time, not now. The two producers derive it differently and the
+    /// difference shows only on very broad queries — macOS records the true uncapped total, iOS
+    /// the result count capped at its 1,000-row hard limit. See `SearchHistoryEntry.resultCount`.
+    var resultCount: Int
+
+    var projectId: UUID?
+    var executedAt: Date?
+}
+
+// MARK: - ExportHistoryEntryExport
+
+/// Export DTO mirroring `ExportHistoryEntry` — one recorded collection export (Wave R-5).
+struct ExportHistoryEntryExport: Codable, Equatable, Sendable {
+    var id: UUID
+
+    /// `ExportFormat.rawValue`, or `"zotero-api"` for the Zotero Web-API push — the one value
+    /// that is not a member of that enum, kept verbatim so migrated and live rows read alike.
+    var format: String
+
+    var documentCount: Int
+
+    /// The collection's name at export time, or `nil`. Absent on rows migrated from the retired
+    /// `SessionEvent`, whose payload carried only the format and the count.
+    var collectionName: String?
+
+    var projectId: UUID?
+    var exportedAt: Date?
+}
+
 // MARK: - ResearchNoteMarkdownExport
 
 /// A single rendered Markdown file for a `ResearchNote`, with YAML front matter
@@ -213,19 +369,28 @@ struct ResearchNoteMarkdownExport: Identifiable, Sendable {
 /// Builds and serializes a `ResearchDataEnvelope` from the user's SwiftData store,
 /// and renders per-note Markdown files for interop with Obsidian-style tools.
 ///
-/// Entry points: iOS `ResearchDataExportView` (Settings → Export Research Data…)
-/// and macOS `SettingsDataPane`.
+/// Entry point: `DataExportSections`, the **Contents** and export rows at the top of
+/// Settings ▸ System ▸ **Data & Recovery** (`DataRecoveryView`). One declaration on both
+/// platforms — the separate macOS `SettingsDataPane` this comment used to name was folded into
+/// `DataRecoveryView` by S-4b and no longer exists.
 ///
 /// Version history:
 ///   1.0 — Session 154: initial implementation
+///   1.1 — Wave R-5: the envelope carries the research trail, and the stale `SettingsDataPane`
+///          entry point above was corrected
 @MainActor
 enum ResearchDataExporter {
 
     /// Current `ResearchDataEnvelope.formatVersion`. Bump when making a breaking
     /// change to the export schema; a future importer can branch on this value.
-    /// (No importer exists yet — the added Phase-4 header fields are optional, so a hypothetical
-    /// reader of a v1 file, or a v2-file reader that ignores them, is unaffected.)
-    static let currentFormatVersion = 2
+    ///
+    /// (No importer exists yet. Every reader is nonetheless kept working in both directions: the
+    /// Phase-4 header fields are optional and the Wave R-5 trail arrays default to empty, so a
+    /// v1 or v2 file still decodes here — and a v3 file read by something that ignores the three
+    /// new keys is unaffected. The bump to 3 is what lets such a reader tell "this file predates
+    /// the trail" from "this user's trail was empty", which a purely additive change would
+    /// otherwise make indistinguishable.)
+    static let currentFormatVersion = 3
 
     /// Builds an envelope from the current contents of `modelContext`.
     ///
@@ -250,6 +415,18 @@ enum ResearchDataExporter {
         let summaries = includeGeneratedSummaries
             ? try modelContext.fetch(FetchDescriptor<GeneratedSummary>())
             : []
+
+        // The research trail (Wave R-5). Unconditional — see `ResearchDataEnvelope`'s note on D5.
+        // Sorted oldest-first in the fetch rather than after the fact: an appendix is read forward
+        // in time, and sorting in the descriptor also makes the file deterministic, which raw
+        // fetch order (which CloudKit can reorder between runs) is not. Rows with a `nil`
+        // timestamp — possible only via the optional-for-CloudKit columns — sort to the front.
+        let readingHistory = try modelContext.fetch(
+            FetchDescriptor<ReadingHistoryEntry>(sortBy: [SortDescriptor(\.accessedAt)]))
+        let searchHistory = try modelContext.fetch(
+            FetchDescriptor<SearchHistoryEntry>(sortBy: [SortDescriptor(\.executedAt)]))
+        let exportHistory = try modelContext.fetch(
+            FetchDescriptor<ExportHistoryEntry>(sortBy: [SortDescriptor(\.exportedAt)]))
 
         let highlightsByNoteId = Dictionary(grouping: highlights, by: \.noteId)
 
@@ -369,7 +546,54 @@ enum ResearchDataExporter {
                     createdAt: summary.createdAt,
                     lastModified: summary.lastModified
                 )
+            },
+            readingHistory: readingHistory.map { visit in
+                ReadingHistoryEntryExport(
+                    id: visit.id,
+                    documentId: visit.documentId,
+                    volumeId: visit.volumeId,
+                    displayTitle: visit.displayTitle,
+                    projectId: visit.projectId,
+                    accessedAt: visit.accessedAt
+                )
+            },
+            searchHistory: searchHistory.map { search in
+                SearchHistoryEntryExport(
+                    id: search.id,
+                    queryText: search.queryText,
+                    resultCount: search.resultCount,
+                    projectId: search.projectId,
+                    executedAt: search.executedAt
+                )
+            },
+            exportHistory: exportHistory.map { export in
+                ExportHistoryEntryExport(
+                    id: export.id,
+                    format: export.format,
+                    documentCount: export.documentCount,
+                    collectionName: export.collectionName,
+                    projectId: export.projectId,
+                    exportedAt: export.exportedAt
+                )
             }
+        )
+    }
+
+    /// How many rows each trail table holds, for the **Contents** inventory.
+    ///
+    /// Three `fetchCount`s, deliberately not three `@Query` properties. The trail grows without
+    /// bound by design (contract D5 — nothing prunes it), and a `@Query` would load every row of
+    /// it into the Data & Recovery pane and re-run on each iCloud sync. That is the exact fault
+    /// the History window was fixed for; the inventory only ever needed the numbers.
+    ///
+    /// - Parameter modelContext: The SwiftData context to read from.
+    /// - Returns: The per-table counts, in the order the inventory lists them.
+    static func trailCounts(modelContext: ModelContext)
+        -> (visits: Int, searches: Int, exports: Int) {
+        (
+            (try? modelContext.fetchCount(FetchDescriptor<ReadingHistoryEntry>())) ?? 0,
+            (try? modelContext.fetchCount(FetchDescriptor<SearchHistoryEntry>())) ?? 0,
+            (try? modelContext.fetchCount(FetchDescriptor<ExportHistoryEntry>())) ?? 0
         )
     }
 

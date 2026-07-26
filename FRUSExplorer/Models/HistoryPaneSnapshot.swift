@@ -524,9 +524,11 @@ extension HistoryPaneSnapshot {
 /// be permanently deleted", call `ResearchSessionAdmin.deleteAll`, and remove nothing the user can
 /// see. A button that lies about what it deletes is worse than one that does not exist.
 ///
-/// What is still **R-5's**: the Data & Recovery **Contents** inventory, which accounts for notes,
-/// tags, highlights, collections, prompts and projects and is silent about the trail; and
-/// `ResearchDataExportView`, which likewise omits it.
+/// **Both closed by R-5.** The Data & Recovery **Contents** inventory now counts the three trail
+/// tables alongside notes, tags, highlights, collections, prompts and projects, and the JSON
+/// research-data export carries them (`ResearchDataEnvelope` format version 3). The inventory was
+/// never a section of `DataRecoveryView` itself — it is `DataExportSections`' *Contents* section,
+/// declared in `ResearchDataExportView.swift` and hosted by that pane on both platforms.
 ///
 /// ## Why the per-entry deletes are unbounded
 /// Each one used to re-fetch with `fetchLimit = 1`. `id` is not unique in this store: two devices

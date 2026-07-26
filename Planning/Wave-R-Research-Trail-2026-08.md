@@ -215,8 +215,10 @@ the whole trail, plus per-entry delete from the History view.
 > **Closed, in two instalments.** R-3 added the per-entry delete (`HistoryTrailAdmin`). R-2a added
 > `HistoryTrailAdmin.deleteAll` and pointed "Delete Recorded Sessions…" at it, because a derived
 > session log made any narrower delete a lie; it also extended **Erase Everything**, which reached
-> `ReadingHistoryEntry` alone and left every recorded search behind. R-5 still owns the Data &
-> Recovery **Contents** inventory and `ResearchDataExportView`.
+> `ReadingHistoryEntry` alone and left every recorded search behind. **R-5 closed the last two**:
+> the Contents inventory now counts all three trail tables and the JSON export carries them
+> (envelope format version 3). See R-5 below — including the correction that the inventory is not
+> in `DataRecoveryView.swift` at all.
 
 ### How this meets the Q&CA plan
 
@@ -454,6 +456,52 @@ R-1 would start recording iOS search text into an ungated store — strictly mor
 today. R-1 must land first.
 
 ## R-5 — Delete, export, and the copy
+
+> ### ✅ SHIPPED — 2026-07-26
+>
+> **The delete half was already done** when R-5 opened, in two earlier instalments: R-3 added the
+> per-entry deletes and R-2a added `HistoryTrailAdmin.deleteAll` plus the `EraseEverythingView`
+> extension. R-5 therefore shipped the export, the inventory, and the copy.
+>
+> **Export.** `ResearchDataEnvelope` is **format version 3** and carries `readingHistory` /
+> `searchHistory` / `exportHistory` — unconditionally, not behind the summaries opt-in, because
+> D5's whole argument is that the trail is the Q&CA **method appendix** and an appendix behind an
+> opt-out is not one. Rows are fetched oldest-first (an appendix reads forward in time; it also
+> makes the file deterministic). The §I-2 appendix header needed **no new work**:
+> `exportedForProjectName` / `exportedForProjectResearchQuestion` from #377 Phase 4 already are
+> the #454/#455 idiom, stamped from the active project.
+>
+> **One trap worth recording.** Swift's synthesized `Decodable` **ignores a property's default
+> value**, so `var readingHistory: [...] = []` still makes the JSON key mandatory — adding the
+> three arrays naively would have made every previously-exported file undecodable. `init(from:)`
+> is hand-written (in an extension, so the memberwise init survives) with `decodeIfPresent … ?? []`
+> for those three keys only; everything else stays required so a truncated file still fails loudly.
+> Both directions are pinned by tests.
+>
+> **Correction to this document.** There is **no Contents section in `DataRecoveryView.swift`**.
+> The inventory is `DataExportSections`' *Contents* section, declared in
+> `FRUSExplorer/Export/ResearchDataExportView.swift` and hosted by the Data & Recovery pane on
+> **both** platforms — there is no separate macOS export pane. The `SettingsDataPane` that two doc
+> comments still named was folded into `DataRecoveryView` by S-4b and no longer exists; those
+> comments are corrected. The trail counts are three `fetchCount`s rather than three `@Query`s,
+> deliberately: the trail is unbounded by D5, and a `@Query` would hold all of it in memory on a
+> Settings screen.
+>
+> **Copy.** Two shipped strings were found *false*, not merely stale, and both were about a
+> destructive action under-stating its reach — R-2a extended the code and left the words behind:
+> `settings.erase.warning` (the Erase Everything screen's entire account of what it deletes) and
+> `settings.dataRecovery.erase.detail` (its row subtitle). Both replaced under new keys.
+> `Docs/EditableContent.md`'s Research Sessions block was still transcribing the **R-1** wording —
+> including "this button does not reach that" and "No other part of the app reads this log", both
+> untrue since R-2a — and was refreshed to the shipped keys. `ResearchSessionsView`,
+> `HistoryView`, `SessionLogView` and the Session Log copy were re-read and found **accurate** to
+> the three-table derived model; they needed nothing.
+>
+> **Not touched, deliberately:** `Docs/TestFlight-Instructions-{ios,mac}.md` still say the delete
+> "clears only the session log; a delete that covers the whole trail is coming" (false since
+> R-2a), and the iOS one still names Project Leads as fed by reading history (the contract's own
+> first correction says it is not). Those two files are being rewritten on
+> `claude/build36-release-notes`; editing them here would collide. **Handed to that lane.**
 
 - `ResearchSessionAdmin.deleteAll` (PR #503) deletes sessions only. Whatever R-2 settles on, the
   delete must cover the whole trail, and Data & Recovery's **Contents** inventory should list it —
