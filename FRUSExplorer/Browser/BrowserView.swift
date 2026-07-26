@@ -153,7 +153,7 @@ struct BrowserView: View {
                 // Wave B fix: the default form sheet (~540pt) is too narrow for the consolidated
                 // filter row and cramps the chart. `.page` sizing gives the sheet a wider canvas on
                 // iPad (a no-op on compact iPhone, which uses the full-height sheet regardless).
-                .presentationSizing(.page)
+                .modifier(PageSizingUnlessBisected())
         }
         .sheet(isPresented: $showPersonAnalytics) {
             PersonAnalyticsView()

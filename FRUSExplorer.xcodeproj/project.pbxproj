@@ -161,6 +161,7 @@
 		375BE17C379040FE41606010 /* CollectionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F5EEC9CE97A2ED05070E05 /* CollectionListView.swift */; };
 		37A0504453CB50DFC4BED5D7 /* RelatedDocumentsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAF5353C2A01C28B87BC8E46 /* RelatedDocumentsEngine.swift */; };
 		37A50312D842442B2FA0E6A5 /* AnalyticsExportDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B3C9EA4795837E7228864 /* AnalyticsExportDelivery.swift */; };
+		384C404E87DE44A54EF4486C /* AnalyticsRotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89C14E9DBC9063DE4763B77B /* AnalyticsRotationTests.swift */; };
 		387C8EC61FCD42C53EAE7806 /* FTS5Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80CF02342D779587705CA46F /* FTS5Store.swift */; };
 		38A26A564699691DA7AC0274 /* EntitlementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0114AD73FF8B5C9D0446099 /* EntitlementsTests.swift */; };
 		392A0CC7F77DFEF055EB9F37 /* ProjectEngagedDocuments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF4A19EB2EF48DDC1A27D3C6 /* ProjectEngagedDocuments.swift */; };
@@ -1011,6 +1012,7 @@
 		889499978D57AFAA88BE4093 /* ResearchSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchSession.swift; sourceTree = "<group>"; };
 		8897B63AE9CA431E64C8B530 /* DocumentKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentKey.swift; sourceTree = "<group>"; };
 		8927AFD7F65221657E7459A4 /* EducationDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EducationDashboardView.swift; sourceTree = "<group>"; };
+		89C14E9DBC9063DE4763B77B /* AnalyticsRotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsRotationTests.swift; sourceTree = "<group>"; };
 		8AC61AAB18A3D751E0376D08 /* FRUSExplorerWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FRUSExplorerWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B5A88FD6AE12C259469664C /* FRUSASTNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSASTNode.swift; sourceTree = "<group>"; };
 		8BB695C46BBFC3ABB34224FC /* PublicationLagTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicationLagTargetTests.swift; sourceTree = "<group>"; };
@@ -1477,6 +1479,7 @@
 		7531CB8B25CB6A248FA15108 /* FRUSExplorerUITests */ = {
 			isa = PBXGroup;
 			children = (
+				89C14E9DBC9063DE4763B77B /* AnalyticsRotationTests.swift */,
 				75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */,
 				224A890D46A896064CB945BB /* UIObstructionTests.swift */,
 			);
@@ -2184,6 +2187,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				384C404E87DE44A54EF4486C /* AnalyticsRotationTests.swift in Sources */,
 				43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */,
 				02CFB3D51254CB1FA9A12543 /* UIObstructionTests.swift in Sources */,
 			);

@@ -491,6 +491,9 @@ struct AnalyticsView: View {
         termInput = ""
         // A categorical axis can't compare (owner decision A) — fall back to By-Year on the 2nd term.
         if isComparing && chartAxis.isCategorical { chartAxis = .byYear }
+        // #498 bisect: resign first responder on commit, so the platform-backed UITextField is not
+        // focused (and the software keyboard is not up) when a rotation arrives.
+        if RotationCycleBisect.resignOnCommit { termFieldFocused = false }
         reloadData()
     }
 
@@ -817,7 +820,8 @@ struct AnalyticsView: View {
     /// `true` in iPhone portrait (compact width + regular height), where rotating to
     /// landscape gives the chart noticeably more room. Drives the landscape hint.
     private var showsLandscapeHint: Bool {
-        horizontalSizeClass == .compact && verticalSizeClass == .regular
+        !RotationCycleBisect.noLandscapeHint
+            && horizontalSizeClass == .compact && verticalSizeClass == .regular
     }
 
     // MARK: - Body
@@ -830,10 +834,10 @@ struct AnalyticsView: View {
                 } else {
                     VStack(spacing: 0) {
                         // D1: the comparison-term chips sit above the consolidated filter row.
-                        termChipsRow
+                        if !RotationCycleBisect.noTermChips { termChipsRow }
                         // Wave B: one consolidated filter row (term + scope / range / group-by chips)
                         // replaces the four stacked bars, so the chart lands above the fold.
-                        filterRow
+                        if !RotationCycleBisect.noFilterRow { filterRow }
                         if chartAxis.isCategorical && !committedTerm.isEmpty {
                             categoricalYearNote
                         }
@@ -854,8 +858,12 @@ struct AnalyticsView: View {
                         // VStack shrink-wraps and the macOS window centers it — floating the term
                         // field mid-window (Wave B made this prominent: one compact row replaced the
                         // four tall bars that used to mask the missing greedy frame).
-                        contentArea
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        if RotationCycleBisect.noContentArea {
+                            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            contentArea
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     }
                 }
             }
@@ -872,7 +880,15 @@ struct AnalyticsView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(String(localized: "analytics.title", defaultValue: "Corpus Analytics"))
             #endif
-            .toolbar { toolbarContent }
+            .toolbar { if !RotationCycleBisect.noToolbar { toolbarContent } }
+            #if os(iOS)
+            // #498 bisect: drop first responder as soon as the device orientation changes, so no
+            // focused UIKit text field exists while the rotation's SwiftUI graph transaction runs.
+            .onReceive(NotificationCenter.default.publisher(
+                for: UIDevice.orientationDidChangeNotification)) { _ in
+                if RotationCycleBisect.resignOnRotate { termFieldFocused = false }
+            }
+            #endif
         }
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
@@ -1103,15 +1119,25 @@ struct AnalyticsView: View {
 
     /// The term entry field. D1: an "Add a term…" field that appends on Return (each committed term
     /// becomes a chip); the placeholder reads "Term…" for the first, then "Add a term…".
+    /// #498 bisect: focus binding for the term field, so committing a term can resign first
+    /// responder. There is no `@FocusState` on the shipped view at all — the field keeps focus and
+    /// the software keyboard after every commit, which is the owner's reported behaviour and the
+    /// state the view is in when the fatal rotation arrives.
+    @FocusState private var termFieldFocused: Bool
+
     private var termField: some View {
         TextField(termFieldPlaceholder, text: $termInput)
+            .focused($termFieldFocused)
             .textFieldStyle(.roundedBorder)
             .onSubmit { addTerm() }
             .disabled(atCompareCap)
     }
 
     private var termFieldPlaceholder: String {
-        committedTerms.isEmpty
+        if RotationCycleBisect.staticPlaceholder {
+            return String(localized: "analytics.term.placeholder", defaultValue: "Term…")
+        }
+        return committedTerms.isEmpty
             ? String(localized: "analytics.term.placeholder", defaultValue: "Term…")
             : String(localized: "analytics.term.addPlaceholder", defaultValue: "Add a term…")
     }
@@ -1294,6 +1320,37 @@ struct AnalyticsView: View {
     /// plus a horizontally scrolling chip cluster only when genuinely narrow (iPhone). Replaces the
     /// four stacked filter bars so the chart lands above the fold on the iPad sheet.
     private var filterRow: some View {
+        // #498 bisect: hoist the term field + Search out of ViewThatFits so the platform-backed
+        // TextField keeps stable identity across a width-driven branch swap; only the pure-SwiftUI
+        // chip cluster is allowed to re-layout.
+        if RotationCycleBisect.hoistTermField {
+            return AnyView(
+                VStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        termField.frame(minWidth: 150, maxWidth: 260)
+                        searchButton
+                        Spacer(minLength: 0)
+                    }
+                    if !committedTerm.isEmpty {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) { scopeChip; yearChip; groupByChip; adminPresetChip }
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) { scopeChip; yearChip; groupByChip; adminPresetChip }
+                                    .padding(.vertical, 1)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+            )
+        }
+        return AnyView(legacyFilterRow)
+    }
+
+    /// The shipped filter row (pre-#498). Retained verbatim so the bisect switch is a true A/B.
+    private var legacyFilterRow: some View {
         // Decide one-row vs. two-row by ACTUAL available width, not size class — an iPad sheet reports
         // compact width yet is wide enough for one row (that mismatch put the chips below the field).
         ViewThatFits(in: .horizontal) {
@@ -2417,7 +2474,7 @@ struct AnalyticsView: View {
             AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty || isComparing)
         }
 
-        if horizontalSizeClass == .compact {
+        if RotationCycleBisect.stableToolbar || horizontalSizeClass == .compact {
             // iPhone: fold the secondary chart controls into a single "Options" menu (mirrors
             // WordCloudView). On regular width they render inline below (#188-A). Shown only when the
             // menu would have content — after Wave B moved axis granularity to the filter row's
@@ -2506,7 +2563,7 @@ struct AnalyticsView: View {
         // width the two fold into ONE menu (the save toggle becomes its first item) — the iPhone
         // nav bar already sheds its title to fit the existing controls (#219), so adding two more
         // items would crowd the view-mode picker (review fix).
-        if horizontalSizeClass == .compact {
+        if RotationCycleBisect.stableToolbar || horizontalSizeClass == .compact {
             ToolbarItem(placement: .primaryAction) {
                 savedQueriesMenu(includingSaveToggle: true)
             }
@@ -2522,7 +2579,7 @@ struct AnalyticsView: View {
         // D3: research-grade export. Corpus shows one chart at a time, so the control is view-level
         // (owner decision H). At regular width it is its own toolbar menu; on compact width it folds
         // into the existing Options menu instead of adding a nav-bar item (#219, D1 Phase 3).
-        if horizontalSizeClass != .compact {
+        if !RotationCycleBisect.stableToolbar && horizontalSizeClass != .compact {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     exportMenuItems
@@ -2771,4 +2828,81 @@ struct AnalyticsView: View {
             if token == fetchToken { isLoading = false }
         }
     }
+}
+
+// MARK: - #498 rotation-cycle bisect switches (TEMPORARY)
+
+/// Runtime switches used to isolate which of the four candidate causes of the #498
+/// AttributeGraph cycle is load-bearing, without rebuilding between runs.
+///
+/// The crash is a preference cycle: a rotation opens a SwiftUI graph transaction, UIKit re-enters
+/// synchronously through `-[UIViewController _traitCollectionDidChange:]` to ask
+/// `childForStatusBarHidden`, and resolving that preference re-enters the in-flight transaction.
+/// Each switch neutralises one thing in the Corpus Analytics sheet that restructures on the very
+/// trait change UIKit is propagating.
+///
+/// Read once at process start so a flip cannot itself perturb the graph mid-run.
+///
+/// **This type is deleted once the minimal fix is known** — it exists only for the bisect.
+///
+/// Version history:
+///   1.0 — #498: bisect scaffolding
+enum RotationCycleBisect {
+
+    private static func on(_ key: String) -> Bool {
+        ProcessInfo.processInfo.environment[key] == "1"
+    }
+
+    /// Suppress the portrait-only landscape hint, so rotation does not add/remove a child of the
+    /// NavigationStack's root VStack.
+    static let noLandscapeHint = on("FRUS498_NO_LANDSCAPE_HINT")
+
+    /// Hoist the platform-backed term field out of `ViewThatFits`, so a width-driven branch swap
+    /// cannot tear down and rebuild a `UITextField`.
+    static let hoistTermField = on("FRUS498_HOIST_TERMFIELD")
+
+    /// Emit a size-class-invariant set of `ToolbarItem`s (always the compact form, a strict subset),
+    /// so the toolbar preference's shape does not change on rotation.
+    static let stableToolbar = on("FRUS498_STABLE_TOOLBAR")
+
+    /// Drop `.presentationSizing(.page)` from the Corpus Analytics sheet — the only such call in the
+    /// app, and the only structural difference between this sheet and its siblings.
+    static let noPageSizing = on("FRUS498_NO_PAGE_SIZING")
+}
+
+/// Applies `.presentationSizing(.page)` unless the #498 bisect switch disables it.
+struct PageSizingUnlessBisected: ViewModifier {
+    func body(content: Content) -> some View {
+        if RotationCycleBisect.noPageSizing {
+            content
+        } else {
+            content.presentationSizing(.page)
+        }
+    }
+}
+
+extension RotationCycleBisect {
+    /// Elide the comparison-term chip row (the one subtree that scales with term count).
+    static let noTermChips = ProcessInfo.processInfo.environment["FRUS498_NO_TERM_CHIPS"] == "1"
+    /// Elide the whole consolidated filter row (term field + chips).
+    static let noFilterRow = ProcessInfo.processInfo.environment["FRUS498_NO_FILTER_ROW"] == "1"
+    /// Replace the chart/table content area with an inert spacer.
+    static let noContentArea = ProcessInfo.processInfo.environment["FRUS498_NO_CONTENT_AREA"] == "1"
+    /// Emit no toolbar content at all.
+    static let noToolbar = ProcessInfo.processInfo.environment["FRUS498_NO_TOOLBAR"] == "1"
+}
+
+extension RotationCycleBisect {
+    /// Resign first responder when a term is committed.
+    static let resignOnCommit = ProcessInfo.processInfo.environment["FRUS498_RESIGN_ON_COMMIT"] == "1"
+}
+
+extension RotationCycleBisect {
+    /// Keep the term field's placeholder constant across commits.
+    static let staticPlaceholder = ProcessInfo.processInfo.environment["FRUS498_STATIC_PLACEHOLDER"] == "1"
+}
+
+extension RotationCycleBisect {
+    /// Resign first responder when the device orientation changes.
+    static let resignOnRotate = ProcessInfo.processInfo.environment["FRUS498_RESIGN_ON_ROTATE"] == "1"
 }
