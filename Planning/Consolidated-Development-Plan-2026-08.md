@@ -1,10 +1,12 @@
 # Consolidated Development Plan — August 2026
 
-**Date:** 2026-07-25 · **Inputs:** (1) the Settings North Star design handoff
-(`design_handoff_settings_northstar/`, dated 2026-07-24, all 10 panes settled); (2)
-`Planning/Query-And-Corpus-Analysis-Session-Plan.md` (13 sessions, 5 milestones, dated
-2026-07-24); (3) the seven open NARA Catalog issues (#235, #354, #355, #372, #375, #376,
-#405) plus the parser session #353 they depend on.
+**Date:** 2026-07-25 (revised 2026-07-26 — see *Status*) · **Inputs:** (1) the Settings
+North Star design handoff (`design_handoff_settings_northstar/`, dated 2026-07-24, all 10
+panes settled); (2) `Planning/Query-And-Corpus-Analysis-Session-Plan.md` (13 sessions, 5
+milestones, dated 2026-07-24); (3) the seven open NARA Catalog issues (#235, #354, #355,
+#372, #375, #376, #405) plus the parser session #353 they depend on; (4) **added
+2026-07-26** — the onboarding design handoff (`design_handoff_onboarding_glass_flow/`,
+options 1a/4a–4c settled), planned in `Planning/Onboarding-Glass-Flow-Plan.md`.
 
 **Where this picks up.** The analytics design program is complete and merged: quick-win
 Waves A–C, D1 compare terms (#470–#473), and D3 research-grade export (#474–#479). The
@@ -12,9 +14,17 @@ research-rail program is complete; `ResearchStripView` no longer exists (four st
 doc-comment mentions remain — swept in S-0). Those completions moot parts of #368; see
 the issue-disposition table at the end.
 
-Three workstreams, deliberately independent lanes: **S** (Settings North Star), **Q**
-(Query & Corpus Analysis), **N** (NARA Catalog). Any lane can pause without blocking the
-others; the only hard cross-lane edges are called out in *Sequencing*.
+**Status, 2026-07-26.** Workstream **S is complete** — S-0…S-6 shipped as PRs #485–#505;
+#368's settings paragraph is closed by comment. Wave R (the research trail,
+`Planning/Wave-R-Research-Trail-2026-08.md`) ran after it and is down to its tail (R-5,
+R-6, R-8, and R-2b as a later release). The lanes still open are **Q**, **N**, and the
+new **O**; the slot table below is kept as the plan of record, with the live remainder in
+*What is left*.
+
+Four workstreams, deliberately independent lanes: **S** (Settings North Star — complete),
+**Q** (Query & Corpus Analysis), **N** (NARA Catalog), **O** (Onboarding overhaul). Any
+lane can pause without blocking the others; the only hard cross-lane edges are called out
+in *Sequencing*.
 
 House rules that bind every session below: implementer ≠ reviewer; UI PRs carry a
 visual-review checklist (owner verifies on device); `build-for-testing` before claiming
@@ -254,6 +264,58 @@ namedFileSeries route it would build on.
 
 ---
 
+## Workstream O — Onboarding overhaul ("Glass over Word Clouds")
+
+**Source of truth:** `Planning/Onboarding-Glass-Flow-Plan.md` (2026-07-26), against
+`design_handoff_onboarding_glass_flow/` (canonical options **1a, 4a, 4b, 4c**; turns 2–3
+are rejected design history). Six sessions, ~7–9 PRs. This plan does not restate them.
+
+A full-bleed animated word cloud behind the first-run flow, driven by vectors generated at
+build time and bundled, so it renders with zero downloaded volumes — which is what lets the
+Add Volumes step preview a scope's vocabulary at the moment the user is choosing what to
+download. The handoff also asks for an every-launch splash; recon found its stated trigger
+does not exist (the stores open synchronously before first render), so **O-0-1 re-decides
+what that composition is for** — the leading candidate is the first download-and-index
+wait, which is minutes long and currently bare.
+
+| Session | What it does | Effort |
+|---|---|---|
+| **O-0** | Delete ~770 lines of dead `Onboarding/` code; add characterization tests for the live flow; measure the launch gap | S |
+| **O-1** | `WordCloudKit` extraction + `CloudVectorsGenerator` + the two bundled artifacts | L |
+| **O-2** | `WordCloudBackdropView`, layout extensions, lens cycle, Reduce Motion | M |
+| **O-3** | Where the cloud goes outside onboarding — launch splash *or* the indexing wait; **shape set by O-0-1, skipped entirely under one option** | S–M |
+| **O-4** | The three steps in docked glass: segmented scope, transient sheet, scope-reactive backdrop | L |
+| **O-5** | Accessibility, both manuals, screenshot rows, acceptance walk-through | S–M |
+
+**Why this lane is cheap to schedule.** It adds **no `@Model` type**, so
+`CloudKitSchemaInventoryTests` never fires and no Production schema deploy gates the
+release — the release-blocking dependency Q's M-1 and M-2 both carry. It is independent of
+Wave R's tail. Its only file shared with another lane is `FRUSTheme.swift`, and only
+additively.
+
+**Why it is expensive to slice.** Unlike Q — whose Q-1 ships alone in one small session —
+every O screen sits on the backdrop, the backdrop sits on the bundled artifacts, and the
+artifacts sit on the generator. The first user-visible increment is O-1 + O-2 + O-4.
+
+**Cross-lane edges:**
+
+1. **O-0 is independent of everything** and worth landing early on its own merits: it
+   deletes dead code that two audit backlogs (UI-Audit §A5, `Dynamic-Type-Worklist.md`)
+   cite as if it were live, and it covers a 583-line view that today has no behavioural
+   tests at all.
+2. **O-1's `WordCloudKit` is the fifth generator-adjacent shared target** and starts on
+   `GeneratorKit` — so it is a worked example for #270's migration of the older five,
+   not an exception to it.
+3. **Q-M3 (S-1 keyness) also touches the word-cloud stack.** Keyness extends
+   `WordCloudSettingsView` and the frequency path; O-1 extracts the tokenizer beneath it.
+   Either order compiles; **O-1 first reads better**, because keyness then lands on the
+   shared target rather than being lifted into it afterwards.
+4. **No design dependency.** The handoff is settled and accepted; the only open question is
+   engineering (O-0-1, the splash premise), and it is answered by a measurement rather than
+   by design.
+
+---
+
 ## Sequencing — the combined picture
 
 Three lanes, one implementer: the honest constraint is review-and-verify bandwidth, not
@@ -284,6 +346,33 @@ Natural pause points: after slot 5 (Q-M1 shipped + settings regrouped), after sl
 (result-set object complete), after slot 15 (settings program complete). Milestones
 Q-M3/Q-M5 and N-6 are appetite-driven tails, not commitments.
 
+### What is left — the live interleave (2026-07-26)
+
+The S slots above are done and Wave R has run; this is the remainder, three lanes and one
+implementer. O-0 is placed first because it is small, independent, and stops the next
+reader of `Onboarding/` being misled by dead code.
+
+| Slot | Lane | Session |
+|---|---|---|
+| 1 | O | **O-0** clear the ground (+ the launch measurement that settles O-0-1) |
+| 2 | Q | Q-1 NEAR |
+| 3 | O | **O-1** `WordCloudKit` + `CloudVectorsGenerator` *(owner runs the corpus pass)* |
+| 4 | Q | Q-2 Query Inspector |
+| 5 | R | Wave-R tail: R-6 + R-8 together, then R-5 |
+| 6 | O | **O-2** backdrop |
+| 7 | Q | Q-3 fts5vocab + exact-word *(start the big Mac index in the background)* |
+| 8 | N | N-1 #353 parser session |
+| 9 | O | **O-4** the three steps *(and **O-3** iff O-0-1 kept the splash)* |
+| 10 | Q | R-1 facets *(needs the indexed corpus)* |
+| 11 | O | **O-5** accessibility + docs closeout |
+| 12 | Q | R-2 + R-3 |
+| 13 | N | N-2 #354 routing (+ N-3 curation riding along) |
+| 14+ | Q · N | M-1 → M-2/M-3; N-5 · N-4 if unblocked · N-6; then Q-M3/Q-M5 as appetite allows |
+
+O-1 and Q-3 are the two slots with owner wall-clock attached (the corpus generator pass and
+the big Mac index); running them in adjacent slots lets both proceed while review happens.
+**R-2b stays out of this table** — it waits for the R-2a build to have been in the field.
+
 ---
 
 ## Issue disposition
@@ -297,7 +386,9 @@ Q-M3/Q-M5 and N-6 are appetite-driven tails, not commitments.
 | #268 shared AXChartDescriptor | **Not mooted** — accessibility work, unscheduled here; pairs naturally with any future analytics session. |
 | #266 saved-search freshness | Adjacent to Q-M4 (M-2's log knows last-run hit counts) — fold into M-2's decision points rather than scheduling separately. |
 | #308 / #261 / #260 / #259 / #234 | FRUS-subjects & person-authority programs — untouched by this plan. |
-| #262 / #263 / #265 / #279 / #270 / #312 / #358 / #106 | Backlog, untouched. |
+| #262 / #263 / #265 / #279 / #312 / #358 | Backlog, untouched. |
+| #270 GeneratorKit migration | Still backlog, but O-1's new `WordCloudKit`/`CloudVectorsGenerator` starts on `GeneratorKit` — a worked example for the older five rather than a sixth exception. |
+| #106 screenshot checklist | Gains the onboarding/splash rows in O-5; the existing ⚙️ fresh-install onboarding captures are re-shot there rather than in a separate pass. |
 
 ---
 

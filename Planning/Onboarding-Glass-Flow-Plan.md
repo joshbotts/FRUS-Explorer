@@ -34,10 +34,26 @@ first `.task {}` fire at `FRUSExplorerApp.swift:1054` — `IndexingPipeline`, `S
 `DownloadManager` construction and `resumeQueuedDownloads()`.
 
 So a splash bound to "stores ready" has nothing to wait for and may flash for a single
-frame — worse than no splash. Either it covers the *first `.task`* (honest, but that work
-is fast on a cold install with no queue), or it gets a display floor, which the handoff
-explicitly forbids ("never block; dismiss when ready, even mid-fade-in"). **Owner decision
-O-0-1**, taken against a measurement, not a guess.
+frame — worse than no splash.
+
+**But there is a real wait; it is simply earlier than a SwiftUI overlay can reach.**
+`AppState`'s stored properties decode roughly **1.8 MB of bundled JSON synchronously on
+the main thread before the first frame**, and `manifest.json` is decoded **twice**:
+
+| Load | Size | Where |
+|---|---|---|
+| `volume-tag-taxonomy.json` | 99 KB | `VolumeLevelTagStore.init()` — `VolumeLevelTagStore.swift:58` |
+| `manifest.json` (1st) | 782 KB | `VolumeLevelTagStore.init()` — `:59`, for `volumesByTag` |
+| `manifest.json` (2nd) | 782 KB | `ManifestStore.init()` — `ManifestStore.swift:177` |
+| `administration-profiles-index.json` | 171 KB | `AdministrationProfilesStore.init()` — `:39–41` |
+
+…plus `ModelContainer.makeFRUSContainer()`, which on a large synced store is likely the
+dominant term. On iOS that entire window is covered by `UILaunchScreen: {}`
+(`project.yml:97`) — a **blank** screen. On macOS it is covered by nothing.
+
+That reframes 1a: the honest gap is pre-render, where only a launch screen can draw, and
+part of it is self-inflicted (the double decode). **Owner decision O-0-1**, taken against
+a measurement, not a guess — the options are enumerated in O-0 below.
 
 ### 2. The onboarding tests do not test the onboarding flow
 
@@ -201,17 +217,55 @@ question before anyone builds a splash.
 - Rename `OnboardingFlowTests` to name what it actually covers
   (`OnboardingViewModelTests`), so the next reader is not misled the way this plan's recon
   was.
-- **Measure the splash gap:** cold launch → first interactive frame on an iPhone and a Mac,
-  fresh install and warm install, with Instruments. Record the numbers in the PR body.
+- **Measure the splash gap, in two parts** — they have different answers and different
+  remedies: (i) process start → first frame (the pre-render window: `AppState` init,
+  the ~1.8 MB of JSON, `ModelContainer`), and (ii) first frame → first `.task` complete.
+  iPhone and Mac, fresh install and warm install, with Instruments. Record both in the PR
+  body; O-0-1 and O-0-2 are decided from them.
 
 **Data & migration:** none. **Prereq:** none. **Needs xcodegen:** yes (deletions).
 
-**Decision point (O-0-1).** What the splash covers, given the measurement:
-(a) bind to the first `.task`'s completion and accept a possibly-brief appearance;
-(b) give it a display floor — contradicts the handoff, needs explicit owner sign-off;
-(c) drop 1a and keep the cloud on onboarding only. Recommend deciding from the numbers;
-if the gap is under ~150 ms on both platforms, (c) is the honest answer and it removes a
-whole session.
+**Decision point (O-0-1) — what the splash is for.** Five options, not two. Measure first
+(pre-render gap and first-`.task` duration, separately), then pick:
+
+- **(a) Move it earlier — launch screen + continuation.** Put the 1a identity block
+  (icon tile, wordmark, caption) in the iOS launch screen so it covers the *real*
+  pre-render gap that is blank today, then have `LaunchSplashView` continue from the same
+  composition with the cloud while the first `.task` runs, dismissing when ready. The two
+  halves read as one moment. **Constraints:** a launch screen cannot animate and cannot
+  draw a cloud — the static half is identity only; macOS has no launch screen at all, so
+  it gets the SwiftUI half only. Best fidelity to the design's intent; most honest about
+  what is being waited on.
+- **(b) Threshold-triggered.** Render nothing for the first ~250 ms; if readiness has not
+  arrived, fade the splash in and hold a short floor so it cannot strobe. Fast launches
+  never see it. Honours "never block" literally, at the cost that the better the app's
+  launch gets, the less anyone sees the work.
+- **(c) Re-target to the wait that actually exists — first download and index.** That wait
+  is *minutes*, not milliseconds, and today it is an `IndexingBannerView` /
+  `IndexingQueueBannerView` over an app with nothing in it. Putting the backdrop behind
+  that banner, scoped to the volumes currently landing and re-aggregating as they do,
+  spends the asset on a genuine emptiness and previews exactly what is arriving. Reuses
+  O-2 wholesale; needs no splash at all. **Strongest product use of the cloud**, and it
+  composes with (a) or (d) rather than competing.
+- **(d) Conditional occasions.** Show it only on launches that have something to say —
+  first launch after install, a CloudKit initial import, a pending reindex — and never on
+  an ordinary warm start. Keeps the moment rare enough to stay a moment.
+- **(e) Drop 1a.** Keep the cloud on 4a–4c only. Cheapest, removes O-3 entirely, and loses
+  nothing the Add Volumes preview does not already deliver.
+
+**Recommendation:** (c) + (e) as the pairing — retire the every-launch splash and spend
+the backdrop on the indexing wait, which is real, long, and currently bare. If the owner
+wants launch identity regardless, (a) is the version that is true; (b) is the compromise
+that keeps 1a literally. **(f) is not on the list:** a fixed display floor on every cold
+launch is a permanent tax on a tool people open repeatedly, and the handoff already
+forbids it.
+
+**Rider, either way (O-0-2).** `manifest.json` is decoded twice on the pre-render path
+(finding 1). Fixing that — have `VolumeLevelTagStore` take the entries `ManifestStore`
+already decoded — removes ~782 KB of main-thread work from every cold launch. It is a
+launch-latency fix that stands on its own merits and shrinks whatever gap the splash was
+going to cover, so decide it *before* O-0-1, not after. Small, but it is a behavioural
+change to app startup: its own PR, not a rider on a UI session.
 
 **Verify.** Full `FRUSExplorerTests` green with the new tests; iOS and macOS build clean;
 UI tests still reach `MainTabView` under `FRUS_UI_TEST_MODE`.
@@ -298,26 +352,38 @@ Measure a lens crossfade with the animation instrument on the oldest supported i
 
 ---
 
-## O-3 — Launch splash *(Effort S–M; conditional on O-0-1)*
+## O-3 — Where the cloud goes outside onboarding *(Effort S–M; shape set by O-0-1)*
 
-**Goal.** The every-launch identity moment, without ever delaying readiness.
+**Goal.** Spend 1a's composition on a wait that exists, without ever delaying readiness.
+**This session is skipped entirely under option (e).**
 
-**Deliverables.**
+**Deliverables — under (a)/(b)/(d), the splash forms.**
 - `LaunchSplashView` per 1a: full-strength cloud, centre exclusion zone, icon tile,
   wordmark, caption, cycling chip, shimmer bar.
-- Overlay wired at `FRUSExplorerApp.swift:1042` (over `ContentView`), driven by whatever
-  O-0-1 settled; fade ~0.25 s.
+- Overlay wired at `FRUSExplorerApp.swift:1042` (over `ContentView`), with the trigger
+  O-0-1 chose; fade ~0.25 s. Under (a), also the iOS launch-screen assets and the
+  `UILaunchScreen` keys replacing today's `{}` (`project.yml:97`), composed so the static
+  and animated halves line up.
+
+**Deliverables — under (c), the indexing form.**
+- The backdrop behind `IndexingBannerView` / `IndexingQueueBannerView`, scoped to the
+  volumes currently downloading and re-aggregating as each lands — the same
+  scope-reactive machinery 4b already needs, pointed at the queue instead of a picker.
+- Must not compete with the education content that already fills this wait
+  (`IndexingEducationView`, reached from the banner): decide which owns the screen before
+  building, and treat the cloud as backdrop to it rather than a rival surface.
 - **UI-test bypass**: the splash must not appear under `FRUS_UI_TEST_MODE`, or every
   existing UI test's first element lookup races it. Same env check as
   `ContentView.swift:53`.
 - Note, do not silently fix, the in-`body` filesystem scan (finding 9).
 
-**Data & migration:** none. **Prereq:** O-2 (the cloud), O-0-1 (the premise).
-**Needs xcodegen:** yes.
+**Data & migration:** none. **Prereq:** O-2 (the cloud), O-0-1 (the shape).
+**Needs xcodegen:** yes (new files; launch-screen assets under (a)).
 
-**Verify.** `UIObstructionTests` and `FRUSExplorerUITests` green unchanged. Cold launch on
-device: the splash never extends time-to-interactive beyond the O-0 baseline — if it does,
-it is wrong regardless of how it looks.
+**Verify.** `UIObstructionTests` and `FRUSExplorerUITests` green unchanged. Under any
+splash form, cold launch on device must not extend time-to-interactive beyond the O-0
+baseline — if it does, it is wrong regardless of how it looks. Under (c), verify against a
+real first download on both platforms, not a simulated queue.
 
 ---
 
@@ -375,7 +441,7 @@ still reaches Ready, and the default project is still created.
 ## Order and stop points
 
 ```
-O-0 ──► O-1 ──► O-2 ──┬──► O-3 (if O-0-1 says build it)
+O-0 ──► O-1 ──► O-2 ──┬──► O-3 (shape per O-0-1; skipped under (e))
                       └──► O-4 ──► O-5
 ```
 
@@ -389,7 +455,8 @@ main structural difference from Workstream Q, whose Q-1 ships alone in one small
 here the first user-visible increment costs O-1 + O-2 + O-4.
 
 **Natural pause:** after O-2 (the cloud exists and is proven offline) and after O-4 (the
-flow is the designed flow). O-3 is genuinely optional depending on O-0-1.
+flow is the designed flow). O-3 is genuinely optional: under O-0-1 option (e) it does not
+exist, and under (c) it is a second home for O-2's backdrop rather than a new surface.
 
 ---
 
@@ -397,7 +464,8 @@ flow is the designed flow). O-3 is genuinely optional depending on O-0-1.
 
 | Risk | Where | Mitigation |
 |---|---|---|
-| Splash has nothing to wait for; flashes for one frame | O-0/O-3 | Decide O-0-1 from an Instruments measurement; (c) is a legitimate outcome |
+| Splash has nothing to wait for; flashes for one frame | O-0/O-3 | Decide O-0-1 from a two-part Instruments measurement; (c) and (e) are both legitimate outcomes |
+| A splash makes launch *slower* to justify itself | O-3 | Time-to-interactive against the O-0 baseline is the gate; O-0-2 removes 782 KB from that path first |
 | Rewriting a 583-line view with no behavioural coverage | O-4 | O-0's characterization tests land first and must pass unchanged |
 | Generator and app disagree on a volume's terms | O-1 | Parity test (O-1-1); one shared `WordCloudKit`, never a reimplementation |
 | Four NLTagger passes over 3.34 GB | O-1 | One pass, four accumulators (O-1-2); measure on ten volumes first |
