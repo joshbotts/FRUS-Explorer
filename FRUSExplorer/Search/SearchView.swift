@@ -842,11 +842,14 @@ struct SearchView: View {
     private var saveSearchSheet: some View {
         NavigationStack {
             Form {
+                // These two keys were swapped relative to the macOS sheet: iOS had the section
+                // titled "Search Name" with a "Name" placeholder, macOS the reverse. Same keys,
+                // so one of the two was always going to be wrong once a catalog ships.
                 Section(String(localized: "search.saveSearch.section",
-                               defaultValue: "Search Name")) {
+                               defaultValue: "Name")) {
                     TextField(
                         String(localized: "search.saveSearch.placeholder",
-                               defaultValue: "Name"),
+                               defaultValue: "Name this search"),
                         text: $saveSearchName
                     )
                 }

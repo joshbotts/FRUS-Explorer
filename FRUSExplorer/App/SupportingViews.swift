@@ -576,8 +576,10 @@ struct StatusBarView: View {
                 )
                 .font(.system(size: 11))
                 .foregroundStyle(.red)
+                // "Settings → Danger Zone" has never existed on this platform; the recovery
+                // ladder lives in Data & Recovery since S-4b. Same destination as the iOS cell.
                 .help(String(localized: "statusBar.sync.zoneMissing.help",
-                             defaultValue: "The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or reset iCloud sync in Settings → Danger Zone."))
+                             defaultValue: "The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or use Settings → Data & Recovery → Fix iCloud Sync."))
             }
 
             // Account warning — shown when health check detected a non-available status

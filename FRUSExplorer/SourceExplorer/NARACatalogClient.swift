@@ -48,7 +48,7 @@ public enum NARACatalogError: Error, LocalizedError {
         switch self {
         case .missingAPIKey:
             return String(localized: "nara.error.missingKey",
-                          defaultValue: "A NARA Catalog API key is required to search for lot files and Presidential Library records. Add your key in Settings → NARA API.")
+                          defaultValue: "A NARA Catalog API key is required to search for lot files and Presidential Library records. Add your key in Settings → Connections.")
         case .networkError:
             return String(localized: "nara.error.network",
                           defaultValue: "Network unavailable. Connect to look up this source in the NARA Catalog.")
@@ -57,7 +57,7 @@ public enum NARACatalogError: Error, LocalizedError {
                           defaultValue: "NARA Catalog API rate limit reached. Try again later, or use the manual search link below.")
         case .apiKeyRejected:
             return String(localized: "nara.error.keyRejected",
-                          defaultValue: "NARA Catalog API key was rejected (HTTP 403). Check the key in Settings → NARA API.")
+                          defaultValue: "NARA Catalog API key was rejected (HTTP 403). Check the key in Settings → Connections.")
         case .unexpectedResponse(let code):
             return String(localized: "nara.error.response",
                           defaultValue: "Unexpected response from NARA Catalog (HTTP \(code)).")

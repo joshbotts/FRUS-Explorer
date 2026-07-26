@@ -1635,6 +1635,12 @@ private struct MacManageStorageSheet: View {
 
     @State private var selected: Set<String> = []
     @State private var isRemoving = false
+    /// Whether the "Remove N volumes" confirmation is up.
+    ///
+    /// This sheet used to delete on the first click, with no confirmation of any kind — the
+    /// button's action was `Task { await performRemoval() }`. iOS has always asked first, using
+    /// the two keys below; the Mac now asks the same question in the same words.
+    @State private var showConfirmation = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1709,7 +1715,7 @@ private struct MacManageStorageSheet: View {
                     }
                     Spacer()
                     Button {
-                        Task { await performRemoval() }
+                        showConfirmation = true
                     } label: {
                         if isRemoving {
                             ProgressView().controlSize(.small)
@@ -1726,6 +1732,22 @@ private struct MacManageStorageSheet: View {
             }
         }
         .frame(minWidth: 520, minHeight: 420)
+        .confirmationDialog(
+            String(localized: "settings.hub.freeUp.confirm.title",
+                   defaultValue: "Remove these volumes?"),
+            isPresented: $showConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.hub.remove.confirm", defaultValue: "Remove"),
+                   role: .destructive) {
+                Task { await performRemoval() }
+            }
+            Button(String(localized: "settings.hub.rebuild.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
+        } message: {
+            Text(String(localized: "settings.hub.freeUp.confirm.message",
+                        defaultValue: "The XML files and their search-index rows are deleted from this device. Every one of these volumes can be downloaded again."))
+        }
         .overlay {
             if isRemoving {
                 ZStack {
