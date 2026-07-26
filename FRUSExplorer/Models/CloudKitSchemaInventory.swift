@@ -290,9 +290,12 @@ enum CloudKitSchemaInventory {
 
     /// The build at which the Production CloudKit schema was last promoted.
     ///
-    /// Build 36. Issue #488 records the promotion: *"Resolved by deploying the missing CloudKit
-    /// schema"* (2026-07-26), which brought Production level with the build-35 additions. Nothing
-    /// has been added to the model set since.
+    /// Build 36. Two promotions are recorded here. Issue #488's closing comment — *"Resolved by
+    /// deploying the missing CloudKit schema"* (2026-07-26) — brought Production level with the
+    /// build-35 additions. The second, the same day, promoted `CD_ExportHistoryEntry` and its six
+    /// fields for Wave R-2a, after a Development build exported a collection so the record type
+    /// existed to promote (CloudKit creates a record type only when a record of it is first saved —
+    /// the trap that made #488 possible).
     static let deployedThroughBuild = "36"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
@@ -302,13 +305,13 @@ enum CloudKitSchemaInventory {
     /// How many identifiers the Production schema is attested to carry. Pinned by the test
     /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
     /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 206
+    static let deployedIdentifierCount = 213
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "49e3b48ffe4a15002a41e489463c00ca96ffc287225d675bbb9e5b7cf864efd6"
+        "8d31f02cae584f2f0d738a30bbd7ca2f978b56b9702a217780890a5826a59118"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -330,13 +333,7 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        "CD_ExportHistoryEntry",
-        "CD_ExportHistoryEntry.CD_collectionName",
-        "CD_ExportHistoryEntry.CD_documentCount",
-        "CD_ExportHistoryEntry.CD_exportedAt",
-        "CD_ExportHistoryEntry.CD_format",
-        "CD_ExportHistoryEntry.CD_id",
-        "CD_ExportHistoryEntry.CD_projectId",
+        // Empty: Production matches this build (deployed 2026-07-26).
     ]
 
     // MARK: - Derived state
