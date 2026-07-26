@@ -746,7 +746,27 @@ final class MacSearchViewModel {
     /// last-recorded entry (a filter/scope-only re-run of the same query —
     /// see `lastRecordedHistoryQuery`). Mirrors `DocumentViewModel
     /// .recordReadingHistory`.
-    func recordSearchHistory(projectId: UUID?, in context: ModelContext) {
+    ///
+    /// **Honours the research-logging preference.** Until Wave R-1 this writer had no gate,
+    /// so a Mac recorded the user's raw query text into a CloudKit-mirrored store — read by
+    /// the History window and Project Home — no matter how "Log Research Sessions" was set.
+    /// The gate is checked **before** `lastRecordedHistoryQuery` is updated, so turning the
+    /// switch back on mid-session does not silently skip the query that was suppressed.
+    ///
+    /// - Parameters:
+    ///   - projectId: The active project, stamped onto the entry; `nil` when none is active.
+    ///   - context: The context the entry is inserted into.
+    ///   - defaults: The store the research-logging gate is read from. Defaults to
+    ///     `.standard`; overridden only by tests.
+    func recordSearchHistory(projectId: UUID?,
+                             in context: ModelContext,
+                             defaults: UserDefaults = .standard) {
+        guard AppState.isResearchLoggingEnabled(in: defaults) else {
+            #if DEBUG
+            print("[MacSearchViewModel] SearchHistoryEntry suppressed (research logging off)")
+            #endif
+            return
+        }
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
         lastRecordedHistoryQuery = query

@@ -1,6 +1,6 @@
 # Wave R — the research trail, and build-35 tester feedback
 
-**Status:** R-0 answered 2026-07-26; execution started. Runs **after S-6** (Settings docs closeout).
+**Status:** R-0 answered 2026-07-26; **R-1 shipped 2026-07-26**. Runs **after S-6** (Settings docs closeout).
 **Inputs:** `Planning/Settings-Parity-Audit-2026-07-25.md` (§B2, B3, and the deliberate-list
 entry on search logging); build-35 tester feedback (not yet collected); carried work from the
 2026-07-26 bug session (#486 / #488 / #498) — see *Folded in* below.
@@ -93,6 +93,27 @@ record via `SyncedPreferences.researchLoggingEnabled`).
 ---
 
 ## R-1 — Close the gate (do this regardless of Q1)
+
+> ### ✅ SHIPPED — 2026-07-26
+>
+> One reader: `AppState.researchLoggingPreferenceKey` + `AppState.isResearchLoggingEnabled(in:)`
+> (absent means on). All three writers route through it; `SettingsSyncCoordinator` and the
+> `ResearchSessionsView` `@AppStorage` binding take the key from `AppState` rather than
+> re-declaring the literal, and `SettingsView`'s orphaned `@AppStorage` (unread since S-1) is gone.
+> Covered by `FRUSExplorerTests/ResearchLoggingGateTests` — behavioural for the two writers the
+> iOS test bundle can reach, source-shape for the macOS one it cannot, plus a guard that fails
+> when a *fourth* producer of a history entry appears. **R-4 is now unblocked.**
+>
+> **One correction to the finding above.** The pre-R-1 macOS footer's "searches are recorded on
+> iPhone and iPad but not here" was true of the **session log** only. macOS is the sole producer of
+> `SearchHistoryEntry` and does record search text — into the store the History window reads. Both
+> platforms record searches; what differs is the store, and hence which surface empties when the
+> switch goes off. The rewritten footers say so. Anything downstream that inherited the old
+> framing (R-5's copy pass especially) should be re-read against this.
+>
+> **R-5 is partly pre-empted, not done.** The Manage footer no longer calls reading history
+> "separate", but `ResearchSessionAdmin.deleteAll` still reaches the session log only — the copy
+> now says that explicitly rather than implying otherwise. Extending the delete is still R-5's.
 
 Make `recordReadingHistory` and `recordSearchHistory` honour the same preference `logEvent` does.
 

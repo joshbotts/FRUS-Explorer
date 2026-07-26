@@ -122,6 +122,12 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.6 — Session 09: retired the document-level subjectTagStore (and its 9 MB
 ///         synchronous bundle parse at init); the volume-level successor loads
 ///         lazily via `VolumeSubjectProfilesStore`, not on AppState.
+///   4.7 — Wave R-1: `researchLoggingPreferenceKey` + `isResearchLoggingEnabled(in:)`
+///         become the single reader of the research-logging preference. `logEvent`'s
+///         inline `UserDefaults` read is gone, and the two previously ungated writers
+///         (`DocumentViewModel.recordReadingHistory`, `MacSearchViewModel
+///         .recordSearchHistory`) now honour the same switch. `logEvent` gained a
+///         `defaults:` parameter so the gate is testable without global state.
 
 // MARK: - CloudKitSyncState
 
@@ -467,6 +473,44 @@ final class AppState {
     /// `UserDefaults` to/from a CloudKit-synced record when the device opts in.
     var settingsSync: SettingsSyncCoordinator?
 
+    // MARK: - Research Logging Preference
+
+    /// The `UserDefaults` key behind Settings ▸ Research ▸ Research Sessions ▸
+    /// "Log Research Sessions".
+    ///
+    /// **Do not change this string.** It is user-data-bearing and mirrored into CloudKit
+    /// through `SyncedPreferences.researchLoggingEnabled`, so renaming it would silently
+    /// reset every existing user's choice and desynchronise their devices.
+    nonisolated static let researchLoggingPreferenceKey = "researchSessionLoggingEnabled"
+
+    /// Whether the app may record what the user reads and searches for, read from an
+    /// explicit `UserDefaults` store.
+    ///
+    /// This is the **single** reader of ``researchLoggingPreferenceKey``. Every writer of the
+    /// research trail routes through it — `logEvent(_:defaults:)`,
+    /// `DocumentViewModel.recordReadingHistory(projectId:in:defaults:)` and
+    /// `MacSearchViewModel.recordSearchHistory(projectId:in:defaults:)` — so the switch cannot
+    /// govern one recorder and miss another, which is exactly what it did before Wave R-1:
+    /// the gate lived inline in `logEvent` and the two history stores had no gate at all.
+    ///
+    /// An **absent** value means **on**. Both the app gate and
+    /// `SettingsSyncCoordinator`'s pull rely on that convention; a well-meaning change to
+    /// default-off would silently disable recording for every existing user.
+    ///
+    /// - Parameter store: The defaults store to consult. Production callers use
+    ///   `.standard`; the store is a parameter so `SettingsSyncCoordinator` can pass the
+    ///   store it was handed, and so tests can drive the gate without mutating global state.
+    /// - Returns: `true` when the app may record research activity.
+    nonisolated static func isResearchLoggingEnabled(in store: UserDefaults) -> Bool {
+        (store.object(forKey: researchLoggingPreferenceKey) as? Bool) ?? true
+    }
+
+    /// Whether the app may record what the user reads and searches for, per
+    /// `UserDefaults.standard`. Convenience over ``isResearchLoggingEnabled(in:)``.
+    nonisolated static var isResearchLoggingEnabled: Bool {
+        isResearchLoggingEnabled(in: .standard)
+    }
+
     // MARK: - Research Session Logging
 
     /// `ModelContext` used exclusively for writing `ResearchSession` and `SessionEvent`
@@ -493,9 +537,14 @@ final class AppState {
     /// - If no session is open, a new `ResearchSession` is inserted and becomes current.
     /// - If the last event was more than `sessionExpiryInterval` ago, the previous
     ///   session is closed (`endedAt` stamped) and a fresh session is created.
-    func logEvent(_ kind: ResearchEventKind) {
-        let enabled = UserDefaults.standard.object(forKey: "researchSessionLoggingEnabled") as? Bool ?? true
-        guard enabled else { return }
+    ///
+    /// - Parameters:
+    ///   - kind: The event to record.
+    ///   - defaults: The store the research-logging gate is read from. Defaults to
+    ///     `.standard`; overridden only by tests, so the gate can be exercised without
+    ///     mutating process-wide state.
+    func logEvent(_ kind: ResearchEventKind, defaults: UserDefaults = .standard) {
+        guard Self.isResearchLoggingEnabled(in: defaults) else { return }
         guard let ctx = loggingContext else { return }
         let now = Date.now
 

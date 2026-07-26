@@ -37,6 +37,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Optional iCloud settings sync
+///   1.1 — Wave R-1: the research-logging key and its absent-means-on read are no longer
+///          duplicated here; both come from `AppState`
 @MainActor
 @Observable
 final class SettingsSyncCoordinator {
@@ -44,8 +46,9 @@ final class SettingsSyncCoordinator {
     /// Device-local toggle key (deliberately not part of `SyncedPreferences`).
     static let enabledKey = "frus.settings.syncEnabled"
 
-    /// The research-logging `UserDefaults` key (declared inline elsewhere).
-    private static let researchLoggingKey = "researchSessionLoggingEnabled"
+    /// The research-logging `UserDefaults` key. Owned by ``AppState`` — this alias exists so
+    /// the string is written down once (Wave R-1); it used to be declared inline here as well.
+    private static let researchLoggingKey = AppState.researchLoggingPreferenceKey
 
     private let context: ModelContext
     private var observer: NSObjectProtocol?
@@ -208,7 +211,9 @@ final class SettingsSyncCoordinator {
         update(\.wcFoldPlurals, WordCloudSettings.foldPlurals)
         update(\.wcFilterMarkings, WordCloudSettings.filterMarkings)
         update(\.wcExcludeBoilerplate, (store.object(forKey: WordCloudSettings.Keys.excludeBoilerplate) as? Bool) ?? true)
-        update(\.researchLoggingEnabled, (store.object(forKey: Self.researchLoggingKey) as? Bool) ?? true)
+        // Routed through the one reader of the key so the absent-means-on convention lives in a
+        // single place (Wave R-1). This is a push of the *local* value, so it reads `store`.
+        update(\.researchLoggingEnabled, AppState.isResearchLoggingEnabled(in: store))
         update(\.citationStyleRaw, store.string(forKey: SettingsKeys.citationStyle) ?? "")
         update(\.defaultDocumentModeRaw, store.string(forKey: SettingsKeys.defaultDocumentMode) ?? "")
 

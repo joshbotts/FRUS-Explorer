@@ -526,7 +526,29 @@ public final class DocumentViewModel {
 
     /// Inserts a `ReadingHistoryEntry` into the SwiftData context.
     /// Call this once after a successful load, passing the active project ID.
-    public func recordReadingHistory(projectId: UUID?, in context: ModelContext) {
+    ///
+    /// **Honours the research-logging preference.** Until Wave R-1 this writer had no gate of
+    /// any kind, so "Log Research Sessions" stopped the `SessionEvent` recorder that only the
+    /// session log reads while this one — which feeds the History window, Project Home's
+    /// recents, Project Leads' engaged documents, the search checklist and the storage hub's
+    /// last-opened dates — kept running. A user who turned the switch off had not stopped the
+    /// app remembering what they read. It now returns without inserting when logging is off.
+    ///
+    /// - Parameters:
+    ///   - projectId: The active project, stamped onto the entry; `nil` when none is active.
+    ///   - context: The context the entry is inserted into.
+    ///   - defaults: The store the research-logging gate is read from. Defaults to
+    ///     `.standard`; overridden only by tests.
+    public func recordReadingHistory(projectId: UUID?,
+                                     in context: ModelContext,
+                                     defaults: UserDefaults = .standard) {
+        guard AppState.isResearchLoggingEnabled(in: defaults) else {
+            #if DEBUG
+            print("[DocumentView] ReadingHistoryEntry suppressed (research logging off): " +
+                  "\(entry.volumeId)/\(entry.documentId)")
+            #endif
+            return
+        }
         let record = ReadingHistoryEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
