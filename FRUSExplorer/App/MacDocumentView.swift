@@ -278,7 +278,7 @@ struct MacDocumentView: View {
             Button(String(localized: "personNotFound.dismiss", defaultValue: "OK")) {}
         } message: {
             Text(String(localized: "personNotFound.detail",
-                        defaultValue: "Detailed information about this person isn't available for this volume. To populate person data, re-index the volume in Settings → Volumes."))
+                        defaultValue: "Detailed information about this person isn't available for this volume. To populate person data, re-index the volume in Settings → Volumes & Storage."))
         }
         .alert(
             String(localized: "glossNotFound.title",
@@ -288,7 +288,7 @@ struct MacDocumentView: View {
             Button(String(localized: "glossNotFound.dismiss", defaultValue: "OK")) {}
         } message: {
             Text(String(localized: "glossNotFound.detail",
-                        defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes."))
+                        defaultValue: "A definition for this term isn't available for this volume. To populate term data, re-index the volume in Settings → Volumes & Storage."))
         }
         .alert(
             String(localized: "document.crossref.download.title",

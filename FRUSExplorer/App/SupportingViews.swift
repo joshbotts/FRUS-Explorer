@@ -1608,7 +1608,7 @@ struct SummaryPromptPickerView: View {
                         systemImage: "sparkles",
                         description: Text(
                             String(localized: "document.summarize.picker.empty.detail",
-                                   defaultValue: "Add a prompt in Settings → Summarization Prompts.")
+                                   defaultValue: "Add a prompt in Settings → Summarization.")
                         )
                     )
                 }

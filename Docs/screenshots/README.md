@@ -96,10 +96,58 @@ chart, set a date range longer than 8 years that stays under the 5,000-document 
   Export…), and the two-mode **Sort-by-Date menu** (Across the Whole Collection / Within Each
   Section) on both the macOS ribbon and the iOS/iPad Collections toolbar.
 
-## New since build 26
+## New since build 35 — the Settings North Star
 
-The build-27 feature set (testers' last build was 26) adds the analytics surfaces and Collections
-polish below. None of these shots are captured yet — they all belong in Remaining. Legend: 🆕 new
+Build 36 rebuilt Settings end to end: seventeen destinations became thirteen rows in four groups
+(Library · Research · Reading & Search · System), driven by one shared model on both platforms.
+**Every existing settings shot is obsolete**, and most of these surfaces have never been captured.
+Legend as above: 🆕 new shot · 🔄 re-capture (existing shot is stale).
+
+The design handoff's reference framings — `design_handoff_settings_northstar/screenshots/`,
+`00-ia-settled-1c.png` through `10-about-polish.png` — are one per pane and are what these should
+look like.
+
+**iPhone (`ios/`)**
+
+- 🔄 `settings` — **STALE, three IA generations out of date.** The committed image shows Volumes
+  (Downloads · Storage & Index · Sideload), Research (User Tags · Projects · Summarization ·
+  a Log Research Sessions toggle), Integrations, Data, and a Reset row. Not one of those group
+  names or rows still exists. Re-capture the root: the iCloud Sync section, the **Search Settings**
+  field, and the four groups.
+- 🆕 `settings-volumes-storage` — the merged Library destination: storage bar with the XML/index
+  split, Downloaded Volumes, Keeping Current, Storage & Index.
+- 🆕 `settings-free-up-space` — the Free Up Space sheet with candidates selected and the
+  **confirmation dialog** showing. This is a fixed-safety surface; the dialog is the point.
+- 🆕 `settings-connections` — the two service cards (NARA Catalog · Zotero) showing connected and
+  not-connected state side by side.
+- 🆕 `settings-data-recovery` — Contents counts, the export rows, and the three-rung recovery
+  ladder with its consequence lines.
+- 🆕 `settings-research-sessions` — the Log Research Sessions switch, the Session Log row with real
+  counts, and Delete Recorded Sessions…
+- 🆕 `settings-notes` — the pane iOS never had: recent notes plus the All Notes door.
+- ⚙️ `settings-search-results` — the Search Settings field with a query typed ("privacy" or
+  "stop words") showing the tree filtered. Optional, but it is the feature reviewers miss.
+
+**Mac (`macos/`)**
+
+- 🆕 `settings-sidebar` — the window with the grouped sidebar and a pane open beside it. There has
+  never been a committed macOS settings shot.
+- 🆕 `settings-word-cloud` — the pane carrying the new bench: the **Sample** row, the
+  "Keeps N of M terms" line, and the single Hidden Words editor with its scope picker.
+- 🆕 `settings-session-log` — the Session Log sheet with real sessions expanded to their events.
+
+**Not to capture**
+
+The macOS Settings window has no search field (iOS only), and macOS has no live sync status inside
+Settings (it is in the main window's status bar). Both are real gaps, recorded in
+`Planning/Settings-Parity-Audit-2026-07-25.md`, not things to shoot.
+
+## New since build 26 (build-27 tier — partly captured)
+
+The build-27 feature set adds the analytics surfaces and Collections polish below. **Several of
+these have since been captured** — `macos/person-analytics-trends`, `macos/person-analytics-network`,
+`macos/series-production`, `macos/collections-ribbon` are committed, and `macos/collections` has been
+re-captured — so treat the ticks in issue #106 as authoritative over this list. Legend: 🆕 new
 shot · 🔄 re-capture (existing shot is stale) · ⚙️ optional re-capture to surface a new state.
 
 **iPhone (`ios/`)**

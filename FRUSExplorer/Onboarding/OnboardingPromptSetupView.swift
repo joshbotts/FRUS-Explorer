@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // Session 49: Prompt-setup step removed from onboarding. Summarization prompt
-// configuration is available in Settings → Summarization Prompts.
+// configuration is available in Settings → Summarization.
 // File retained so the Xcode project continues to compile without a pbxproj edit.

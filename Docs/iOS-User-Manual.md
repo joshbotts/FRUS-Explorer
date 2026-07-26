@@ -82,7 +82,7 @@ A brief overview of the FRUS series appears, including the scope of the corpus (
 
 **Step 2 — Add Volumes**
 
-Choose how much of the corpus to download to your device now. You can always add or remove volumes later from **Settings → Volumes**.
+Choose how much of the corpus to download to your device now. You can always add or remove volumes later from **Settings → Volumes & Storage**.
 
 | Option | Description |
 |--------|-------------|
@@ -193,7 +193,7 @@ On iPhone, a **breadcrumb trail** at the top of the screen shows your current po
 
 `[SCREENSHOT: Breadcrumb trail on iPhone showing Subseries > Volume > Document]`
 
-Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents); tap it and the page tracks the download live, loading the volume's contents automatically when it finishes — no need to leave and come back. You can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
+Volumes you haven't downloaded yet are still browsable. Opening one shows a **Download Volume** button on its page (in place of the contents); tap it and the page tracks the download live, loading the volume's contents automatically when it finishes — no need to leave and come back. You can also long-press the volume in the list and choose **Download Volume** to queue it without opening the page. (See Settings → Volumes & Storage for managing downloads in bulk.) Anywhere you reach a document in an undownloaded volume — including a cross-reference inside another document — the app offers to download the volume rather than dead-ending.
 
 Every volume's page also carries a **Top subjects** section — the subjects most characteristic of that volume, derived from experimental subject data and grouped by category. These are automatically detected topics, not editorial subject headings, so an occasional mistag is possible. Because these profiles ship with the app, they appear even for volumes you haven't downloaded. Tap a subject to see the *other* FRUS volumes covering the same subject across the whole corpus — including ones you haven't downloaded — and navigate straight to any of them.
 
@@ -275,7 +275,7 @@ The **Search** tab provides full-text search across every volume you've download
 
 Type a word or phrase into the search field and results appear as you type, each showing a highlighted snippet of matching text, the document's citation, and its date. Tap a result to open the document, scrolled to the matching passage.
 
-You can control how much context each snippet shows — anywhere from **1 to 10 lines**. Set the app-wide default in **Settings → General → Search Defaults → Result Preview**, and override it for just this list from the **Result Preview** section of the filter panel (Section 5.3). The length you choose here is remembered separately from the one used in the Collections *Add Documents* sheet (Section 10.1), so each surface keeps its own preferred snippet length.
+You can control how much context each snippet shows — anywhere from **1 to 10 lines**. Set the app-wide default in **Settings → Reading & Search → Search → Result Preview**, and override it for just this list from the **Result Preview** section of the filter panel (Section 5.3). The length you choose here is remembered separately from the one used in the Collections *Add Documents* sheet (Section 10.1), so each surface keeps its own preferred snippet length.
 
 Results are shown a page at a time — 25 per page, with **‹ Page X of Y ›** controls in the results header — so a large result set stays fast to scroll. Up to 1,000 matches are loaded; if a query matches more, the header says so, and you can narrow your terms or use **Visualize in Corpus Analytics** (Section 5.5) to chart and tighten the result set.
 
@@ -383,7 +383,7 @@ While in Read mode, invisible tap zones along the left and right edges of the sc
 
 ### 6.4 Display Preferences
 
-Adjust font size, line spacing, and other reading preferences from **Settings → General → Display** (see Section 16). The same Display screen holds a **Chart Colors** stepper that sets the global default for how many distinctly coloured source volumes the Chronology and Corpus Analytics distribution charts show before the rest fold into a grey "Other" series (range 6–12, default 8). Either chart can override this for itself with its own **Chart colors** toolbar menu (Sections 13.1 and 14.2).
+Adjust font size, line spacing, and other reading preferences from **Settings → Reading & Search → Display** (see Section 16). The same Display screen holds a **Chart Colors** stepper that sets the global default for how many distinctly coloured source volumes the Chronology and Corpus Analytics distribution charts show before the rest fold into a grey "Other" series (range 6–12, default 8). Either chart can override this for itself with its own **Chart colors** toolbar menu (Sections 13.1 and 14.2).
 
 ### 6.5 Related Documents
 
@@ -727,7 +727,7 @@ Each recognized entry also carries an **Archival Neighbors** affordance in one o
 
 **Archival collections across the series.** FRUS Explorer ships a corpus-wide authority of the ~4,400 archival collections FRUS editors cite — each with its canonical name, the variant forms volumes actually print, its National Archives catalog record where one resolved offline, and every citing volume. The **Collection** view shows all of this plus two kinds of counts, deliberately distinct: the *series-wide* citing-volume list comes from the bundled authority and is independent of what you have downloaded, while **In Your Library** counts are always computed from *your own indexed volumes* ("N documents in M of your indexed volumes"). An **Archival Neighbors** action lists those local documents. You reach a Collection view from a matching entry in a volume's Sources list, or from Source Explorer when a document's source note matches a tracked collection — and **Browse Archival Collections** (in Source Explorer's Archival Collection section) opens a searchable list of the whole authority, grouped by repository, with each collection's sub-series one disclosure away.
 
-If you have a NARA API key configured (see **Settings → Integrations**), Source Explorer can enrich lot-file and presidential-library lookups with live catalog data. Central-file, decimal-file, pre-1910, and CIA resolution work without a key.
+If you have a NARA API key configured (see **Settings → System → Connections**), Source Explorer can enrich lot-file and presidential-library lookups with live catalog data. Central-file, decimal-file, pre-1910, and CIA resolution work without a key.
 
 ---
 
@@ -741,7 +741,7 @@ Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4
 
 ### 13.1 Running an Analysis
 
-Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Choose a **dimension** — Decade, Year, Month, Day, **Subseries**, or **By Volume**: the time dimensions chart frequency over time, while Subseries and By Volume break the same query down by where in the corpus it appears (omitting any subseries or volume where the term never occurs). The **Subseries** grouping uses the same publication-era buckets as the Corpus Browser, so early annual, conference, and supplement volumes bucket consistently between the two. On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that subseries or volume. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-represented source volumes each get a colour, the rest fold into a grey "Other", and a legend below names each volume with its count — so you can see at a glance *which* part of the corpus is driving a term in any period (the same encoding the Chronology graph uses). These two charts also offer a **normalization** toggle — **Raw count** or **% of documents** — that reads a term as a *share of the corpus* in each period rather than a raw tally: dividing each period's matches by the number of documents FRUS actually published in that year or decade, so a spike is corrected for periods that simply contain more documents. (The toggle is offered only on By Year and By Decade, the axes that have a meaningful per-period corpus total.) The number of distinctly coloured volumes before the "Other" fold is **configurable** (6–12, default 8): a **Chart colors** menu in the Analytics toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → General → Display** (see Section 6.4). A **Scope** bar and a **year-range** bar above the chart let you narrow every figure to a subseries or volume (the same scope Search uses, so a chart and your searches can cover the identical corpus subset) and to a span of years, without re-entering your term; an **Administration** preset menu sets the year range to a president's term in one tap. The Scope menu also lists **My Volume Scopes** — your named volume sets (Section 16.1), each with an honest "N of M indexed" count and disabled with "none indexed yet" when no member is indexed, since analytics can only chart indexed volumes — and a **By Detected Topic** submenu (experimental) that scopes the analysis to the indexed volumes where a detected-topic category or sub-category is characteristic, with the same honest counts. The identical scope bar serves Person Analytics (13.6) and Cross-Reference Analytics (8.1). An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it. On iPhone, the secondary toolbar controls — **Group by** (dimension), **Values** (raw count vs. %), **Fit line**, and **Chart colors** — are folded into a single **Options (•••)** menu so they don't crowd the narrow toolbar (the chart/table view picker stays inline); on iPad they remain inline.
+Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Choose a **dimension** — Decade, Year, Month, Day, **Subseries**, or **By Volume**: the time dimensions chart frequency over time, while Subseries and By Volume break the same query down by where in the corpus it appears (omitting any subseries or volume where the term never occurs). The **Subseries** grouping uses the same publication-era buckets as the Corpus Browser, so early annual, conference, and supplement volumes bucket consistently between the two. On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that subseries or volume. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-represented source volumes each get a colour, the rest fold into a grey "Other", and a legend below names each volume with its count — so you can see at a glance *which* part of the corpus is driving a term in any period (the same encoding the Chronology graph uses). These two charts also offer a **normalization** toggle — **Raw count** or **% of documents** — that reads a term as a *share of the corpus* in each period rather than a raw tally: dividing each period's matches by the number of documents FRUS actually published in that year or decade, so a spike is corrected for periods that simply contain more documents. (The toggle is offered only on By Year and By Decade, the axes that have a meaningful per-period corpus total.) The number of distinctly coloured volumes before the "Other" fold is **configurable** (6–12, default 8): a **Chart colors** menu in the Analytics toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → Reading & Search → Display** (see Section 6.4). A **Scope** bar and a **year-range** bar above the chart let you narrow every figure to a subseries or volume (the same scope Search uses, so a chart and your searches can cover the identical corpus subset) and to a span of years, without re-entering your term; an **Administration** preset menu sets the year range to a president's term in one tap. The Scope menu also lists **My Volume Scopes** — your named volume sets (Section 16.1), each with an honest "N of M indexed" count and disabled with "none indexed yet" when no member is indexed, since analytics can only chart indexed volumes — and a **By Detected Topic** submenu (experimental) that scopes the analysis to the indexed volumes where a detected-topic category or sub-category is characteristic, with the same honest counts. The identical scope bar serves Person Analytics (13.6) and Cross-Reference Analytics (8.1). An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it. On iPhone, the secondary toolbar controls — **Group by** (dimension), **Values** (raw count vs. %), **Fit line**, and **Chart colors** — are folded into a single **Options (•••)** menu so they don't crowd the narrow toolbar (the chart/table view picker stays inline); on iPad they remain inline.
 
 ### 13.2 From a Chart to a Search
 
@@ -828,7 +828,7 @@ Set the **From** and **To** dates and tap **Show**. FRUS Explorer loads every do
 
 ### 14.2 The Distribution Chart
 
-A stacked bar chart above the list shows the document distribution, colored by volume, with a tappable legend that doubles as a per-volume filter. Each volume appears under a **concise, distinct label** — its topic plus a compact period/volume tag (e.g. *Southeast Asia · 1969-76 v20*) rather than its full title — so series are easy to tell apart. The number of distinctly coloured volumes before the rest fold into a grey "Other" series is **configurable** (6–12, default 8): a **Chart colors** menu in the Chronology toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → General → Display** (see Section 6.4). The chart is **anchored to the exact range you picked**, so it represents your chosen window rather than stretching to the uncertainty bounds of imprecise dates, and for very wide ranges it shows the **complete distribution** even when the document list below is capped (Section 14.1). Two companion sections keep the chart honest:
+A stacked bar chart above the list shows the document distribution, colored by volume, with a tappable legend that doubles as a per-volume filter. Each volume appears under a **concise, distinct label** — its topic plus a compact period/volume tag (e.g. *Southeast Asia · 1969-76 v20*) rather than its full title — so series are easy to tell apart. The number of distinctly coloured volumes before the rest fold into a grey "Other" series is **configurable** (6–12, default 8): a **Chart colors** menu in the Chronology toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → Reading & Search → Display** (see Section 6.4). The chart is **anchored to the exact range you picked**, so it represents your chosen window rather than stretching to the uncertainty bounds of imprecise dates, and for very wide ranges it shows the **complete distribution** even when the document list below is capped (Section 14.1). Two companion sections keep the chart honest:
 
 - **Spans this period** — wide-span documents (mostly editorial notes covering a whole multi-year range) are listed separately rather than smeared across the chart.
 - **Extends beyond this range** — documents whose uncertain date reaches before or after your range are reported here, each annotated with the direction it overflows.
@@ -867,46 +867,148 @@ In the **Research** tab, you can filter your notes, tags, and highlights to show
 
 ## 16. Settings
 
-The **Settings** tab gathers every app-wide preference, organized into clearly labeled sections.
+The **Settings** tab gathers every app-wide preference. It opens with your iCloud sync status, a
+search field, and then four groups — **Library**, **Research**, **Reading & Search**, and
+**System** — each holding the destinations that belong to it.
 
-![Settings on iPhone — the grouped sections for Volumes (Downloads, Storage & Index), Research (User Tags, Projects, Summarization), Integrations, and Data.](screenshots/ios/settings.png)
+Type in **Search Settings** to filter the list. The field matches more than row names: "stop
+words" finds Word Cloud, "api key" finds Connections, "erase" finds Data & Recovery.
 
-| Section | Contains |
-|---------|----------|
-| **iCloud Sync** | Sync status for your research data (notes, tags, collections, highlights, projects), plus a **Sync Settings Across Devices** toggle that mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices that have it enabled. Off by default — turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate. (Device-specific preferences like download limits stay local.) If sync ever misbehaves, **Sync Diagnostics** (in the **Data** section) keeps a redacted, exportable event log to help pin it down. |
-| **General** | **Display** preferences (font size, line spacing, related reading options, and the **Chart Colors** default — 6–12, default 8 — for the Chronology and Corpus Analytics distribution charts; see Section 6.4) and **Search Defaults** (default filters and sort order for new searches) |
-| **Volumes** | **Downloads** (queue and manage which volumes are on your device), **Storage** (see how much space the corpus occupies and free it up), **Index Health** (the merged search-index version, status, and an on-demand integrity check — an app update that raises the index version, such as this update's cross-reference rebuild in Section 8, rebuilds the index for your downloaded volumes automatically), and **Sideload** (import volume files manually, e.g., from a file you've obtained separately) |
-| **Research** | **Projects** (see Section 15), **Tags** (create, rename, merge, and delete your custom tags), **Volume Scopes** (named, reusable volume sets — see Section 16.1), **Summarization** (manage AI summarization prompts and turn on background summarization), **Word Cloud** (filtering criteria, a live sample of what your settings keep, and your custom hidden-word list; see Section 13.4), **Notes** (your most recent research notes, with **All Notes** for the full list), and **Research Sessions** (the **Log Research Sessions** switch, the **Session Log** of what has been recorded, and **Delete Recorded Sessions…**) |
-| **Integrations** | **NARA Catalog API Key** (your National Archives catalog key for Source Explorer) and **Zotero** (connect your Zotero account with a Web API key so **Send to Zotero Library** can push documents and collections straight into your library — see Section 16.2) |
-| **Data** | Export your research data — including a **Broken Cross-References Report** (CSV or JSON), the corpus-wide list of unresolvable cross-references (Section 6.1); **Sync Diagnostics** — a local, on-device, **redacted** log of your recent iCloud sync events that you can read and export (as a `.txt` file) to help diagnose sync problems. It records **only** event types, timing, and error codes — never record or account identifiers, and nothing about the content of your notes, tags, or collections — and the log itself stays on the device (it is not synced). Use **Copy**, **Export…**, or **Clear Log**. And **Reset** options to clear cached or local app state |
+`[SCREENSHOT: Settings on iPhone — the iCloud Sync section at the top, the Search Settings field, and the Library / Research / Reading & Search / System groups]`
 
-Two standalone rows complete the tab:
+At the very top, above the groups, an **iCloud Sync** section shows your sync status and the
+**Sync Settings Across Devices** toggle. That toggle mirrors your word-cloud filters and stop
+lists, citation style, default document mode, and research-logging preference to your other
+devices that have it enabled. It is off by default — turning it on adopts your existing iCloud
+settings; leaving it off keeps this device's settings separate. Genuinely device-local
+preferences stay local either way: **Show Indexing Live Activity**, and the Word Cloud's
+**Appearance** choices.
 
-- **FRUS Research Guide** — opens the standalone research-methodology guide as a sheet (see Section 19)
-- **About** — version information, acknowledgments, and links (opened in the embedded browser where applicable)
+| Group | Pane | What it holds |
+|-------|------|---------------|
+| **Library** | **Volumes & Storage** | One destination for the whole corpus on your device: what you have, what to add, what it costs, and the search index. See Section 16.1. |
+| **Research** | **Projects** | Your research projects — the active-project picker, Project Home, and the list where you rename, merge and delete them (Section 15). |
+| | **Tags** | Create, rename, merge and delete your custom tags. Each row shows what is attached, so the cost of a delete is visible before you choose it. |
+| | **Volume Scopes** | Named, reusable volume sets (Section 16.2). |
+| | **Summarization** | Apple Intelligence availability, your standard and custom prompts, and **New Batch Run…**, which opens the run sheet. |
+| | **Word Cloud** | Filtering criteria, a live sample of what your settings keep, the "Keeps N of M terms" line, and one hidden-words editor scoped either to every cloud or to a single lens (Section 13.4). |
+| | **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag and text filters. |
+| | **Research Sessions** | What the app records about your reading, whether to record it, and how to delete it (Section 16.4). |
+| **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and reading defaults including **Edge-Tap Page Turn**. |
+| | **Search** | Default search scope, default document type, and how many lines of context each result shows. |
+| **System** | **Connections** | The two outside services — the NARA Catalog and Zotero (Section 16.3). |
+| | **Data & Recovery** | Getting your work out, finding out what the app thinks is wrong, and putting it back together (Section 16.5). |
+| | **About** | Version, what FRUS is, resources including the **FRUS Research Guide** (Section 19), attribution, and the full legal notices. |
 
-`[SCREENSHOT: Settings → Data → Sync Diagnostics showing the redacted event log — event type, timestamp, and error code per row — with the Copy, Export…, and Clear Log actions]`
+### 16.1 Volumes & Storage
 
-### 16.1 Volume Scopes
+Everything about the corpus on your device lives behind one row. It opens with a **Storage used**
+bar broken into XML and index, and a line telling you how many of the available volumes you have
+and whether anything needs attention.
+
+Below that, in the order you are likely to need them:
+
+- **Active Downloads** — appears while transfers are running, with a **Cancel** per transfer.
+- **Add Volumes** — **Download from GitHub…** opens the full browse list; **Sideload XML File…**
+  imports a volume file you have obtained separately.
+- **Downloaded Volumes** — the first few, then **Show all** for the complete list, where you can
+  re-index or remove an individual volume.
+- **Needs Attention** — shown only when volumes were interrupted mid-index.
+- **Keeping Current** — **Check for Corrections** compares your copies against the published ones;
+  **Refresh Available List** asks again without reopening Settings. Updating re-downloads and
+  re-indexes a volume; your notes, highlights, tags and summaries are preserved.
+- **Storage & Index** — **Free Up Space…** opens a sheet listing only volumes with nothing
+  attached, ordered by what you would recover; it asks before removing anything. **Index
+  Remaining** indexes what is downloaded but not yet searchable. **Rebuild From Scratch** deletes
+  and re-parses the whole index. Notes, highlights and tags are never affected by any of the three.
+- **Advanced** — index health and an on-demand **Check Integrity**, the Spotlight index, and
+  **Show Indexing Live Activity**.
+
+`[SCREENSHOT: Settings → Volumes & Storage — the storage bar and the Downloaded Volumes, Keeping Current, and Storage & Index sections]`
+
+### 16.2 Volume Scopes
 
 A **volume scope** is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration — that you define once and then apply anywhere the app scopes a search or an analysis: the Search filters (Section 5.3), the Corpus, Person, and Cross-Reference Analytics scope menus (Section 13.1), a Word Cloud launched straight from the scope's row (Section 13.4), and — at manifest grain, downloaded or not — the About the Series dashboards (Section 19.1). Scopes sync to your other devices via iCloud.
 
-Manage them in **Settings → Research → Volume Scopes**. Tap **New Scope** to open the editor:
+Manage them in **Settings → Research → Volume Scopes**. Tap **New Scope…** to open the editor:
 
 - Name the scope, then pick members from the **whole manifest**, grouped by subseries — a scope may deliberately include volumes you haven't downloaded (a footer counts "N volumes selected · M indexed"; undownloaded members stay in the scope and take effect once indexed). Each subseries header offers **Add All** / **Remove All**, indexed volumes carry an **Indexed** badge, and a search field filters the list by title.
 - The **Add Volumes By…** menu adds volumes in bulk by four facets — **Subject…** (detected topics), **Person…** (the volumes where a person you pick is mentioned — indexed volumes only, since mentions come from your index), **Manifest Tag…** (the Office of the Historian's volume tags), and **Coverage Years / Editor…** (every volume whose document coverage intersects a year range, optionally narrowed by editor name — or, leaving both years blank, every volume with a matching editor regardless of coverage dates). Facets always **add** to the selection — they never remove volumes you've already picked.
 
-Back in the list, each scope's row shows "N of M volumes indexed" (or a "none indexed yet" warning). Tap a row to edit the scope, swipe to delete it, and long-press for a **Word Cloud** built from its indexed volumes (Section 13.4). Deleting a scope does not affect searches already run with it.
+Back in the list, each scope's row shows "N of M volumes indexed" (or a "none indexed yet" warning). Tap a row to edit the scope, swipe left and confirm to delete it, and long-press for a **Word Cloud** built from its indexed volumes (Section 13.4). Deleting a scope does not affect searches already run with it.
 
 `[SCREENSHOT: Settings → Research → Volume Scopes — the scope list with "N of M volumes indexed" rows, and the editor showing the subseries-grouped volume picker with the Add Volumes By… facet menu open]`
 
-### 16.2 Connecting Zotero
+### 16.3 Connections
 
-**Settings → Integrations → Zotero** connects your Zotero account, so **Send to Zotero Library** (Sections 9.3 and 10.6) can push documents and whole collections — with your tags and research notes — straight into your library over the Zotero Web API, where they sync to all your devices including the Zotero iOS app (as the screen notes, this is the only way to get FRUS annotations into Zotero on iPhone and iPad).
+**Settings → System → Connections** holds the two outside services the app can use. Neither is
+required — the app works without both — and each card shows at a glance whether it is connected
+before you open it. Both keys are held in your keychain and travel with iCloud Keychain to your
+other devices.
 
-Setup takes a minute: tap **Create a Zotero API key** to open zotero.org with a new key pre-configured with the access FRUS Explorer needs, paste the key into the field, and tap **Connect**. The app verifies the key, shows who you're **Connected as**, and stores the key securely in the device Keychain; **Disconnect** removes it at any time. Without a connected account, the collection export sheet's Zotero row falls back to producing an RIS file for import into Zotero desktop (Section 10.6).
+**NARA Catalog.** A free API key from the National Archives, used by Source Explorer to resolve
+lot files and Presidential Library records. Open the card, follow **Get a free key from NARA**,
+and paste it in. Without a key, Source Explorer still works — it falls back to the strategies that
+need no key.
 
-`[SCREENSHOT: Settings → Integrations → Zotero — the Create a Zotero API key link and paste field, and the Connected as state after connecting]`
+**Zotero.** Connecting your Zotero account, so **Send to Zotero Library** (Sections 9.3 and 10.6) can push documents and whole collections — with your tags and research notes — straight into your library over the Zotero Web API, where they sync to all your devices including the Zotero iOS app (as the screen notes, this is the only way to get FRUS annotations into Zotero on iPhone and iPad).
+
+Setup takes a minute: open the Zotero card, tap **Create a Zotero API key** to open zotero.org with a new key pre-configured with the access FRUS Explorer needs, paste the key into the field, and tap **Connect**. The app verifies the key, shows who you're **Connected as**, and stores the key securely in the device Keychain; **Disconnect** removes it at any time. Without a connected account, the collection export sheet's Zotero row falls back to producing an RIS file for import into Zotero desktop (Section 10.6).
+
+`[SCREENSHOT: Settings → System → Connections — the two service cards showing connected/not-connected state, and the Zotero editor with the Create a Zotero API key link and the Connected as state]`
+
+### 16.4 Research Sessions
+
+The app can keep a record of your research trail. **Settings → Research → Research Sessions** is
+where you see what it keeps, decide whether it keeps it, and delete it.
+
+**Log Research Sessions** governs the recording. What goes into the log is the documents you open
+and the text of the searches you run, grouped into sessions that end after 30 minutes of
+inactivity. It is kept on this device and, if iCloud sync is on, in your private iCloud database.
+Turning it off stops new recording; sessions already recorded are kept until you delete them.
+
+**Session Log** shows how much has been recorded and opens the whole thing — sessions newest
+first, each expanding to the individual events. No other part of the app reads this log yet; it is
+groundwork for a research-trail view, and it is here so that what is recorded is something you can
+look at.
+
+**Delete Recorded Sessions…** clears every recorded session and its events, and nothing else —
+your notes, highlights, tags, collections and reading history are separate and stay put.
+
+`[SCREENSHOT: Settings → Research → Research Sessions — the Log Research Sessions switch, the Session Log row with its counts, and Delete Recorded Sessions…]`
+
+### 16.5 Data & Recovery
+
+**Settings → System → Data & Recovery** answers three questions: how do I get my work out, what
+does the app think is wrong, and how do I put it back together.
+
+**Contents** lists what the app is holding — research notes, tags and assignments, highlights,
+collections, custom prompts, projects — with a count against each, so an export or a reset has a
+visible size before you commit to it.
+
+**Export as JSON** writes a single file containing your notes, tags, highlights, collections,
+custom prompts and projects. **Export Notes as Markdown** writes one file per note, Obsidian-
+compatible. Generated AI summaries are excluded by default and can be included with a toggle,
+since that output can be large.
+
+**Reports → Broken Cross-References** is the corpus-wide list of cross-references that do not
+resolve, available as CSV or JSON (Section 6.1).
+
+**Diagnostics → Sync Log** summarizes itself on its row — "Last event 12:04 · no errors today" —
+and opens a local, on-device, **redacted** log of recent iCloud sync events. It records **only**
+event types, timing and error codes: never record or account identifiers, and nothing about the
+content of your notes, tags or collections. The log stays on the device and is not synced. Use
+**Copy**, **Export…** or **Clear Log**.
+
+**Recovery** is a ladder, ordered by what it costs you, and each rung says so on its own row:
+
+| Rung | What it does | What it deletes |
+|------|--------------|-----------------|
+| **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — nothing in iCloud is touched |
+| **Reset This Device** | Clears downloaded volumes and the search index | Volumes and index only; your iCloud data survives |
+| **Erase Everything…** | Its own screen, behind two confirmations | Every note, tag, collection and project, on every device |
+
+`[SCREENSHOT: Settings → System → Data & Recovery — the Contents counts, the export rows, and the Recovery ladder with its three labelled rungs]`
 
 ---
 
@@ -958,7 +1060,7 @@ When using Apple Pencil to select text for a highlight (Section 7.2), selection 
 
 The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology — covering how to approach the FRUS series as a primary source, how to build a research question, how to use citations rigorously, and other practical guidance for working with declassified diplomatic records. It also carries an **About the Series** category of four interactive, offline dashboards about the series itself (Section 19.1).
 
-Open it from **Settings → FRUS Research Guide**. It opens as a sheet you can read at your own pace, with internal links that open in the embedded browser (Section 2) so you never lose your place.
+Open it from **Settings → System → About → FRUS Research Guide**. It opens as a sheet you can read at your own pace, with internal links that open in the embedded browser (Section 2) so you never lose your place.
 
 `[SCREENSHOT: FRUS Research Guide opened as a sheet, showing a methodology section with embedded links]`
 
