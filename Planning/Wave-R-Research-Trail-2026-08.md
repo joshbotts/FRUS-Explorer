@@ -1,6 +1,7 @@
 # Wave R — the research trail, and build-35 tester feedback
 
-**Status:** R-0 answered 2026-07-26; **R-1 shipped 2026-07-26**. Runs **after S-6** (Settings docs closeout).
+**Status:** R-0 answered 2026-07-26; **R-1 shipped 2026-07-26**; **R-3 shipped 2026-07-26**.
+Runs **after S-6** (Settings docs closeout).
 **Inputs:** `Planning/Settings-Parity-Audit-2026-07-25.md` (§B2, B3, and the deliberate-list
 entry on search logging); build-35 tester feedback (not yet collected); carried work from the
 2026-07-26 bug session (#486 / #488 / #498) — see *Folded in* below.
@@ -181,6 +182,11 @@ Today, for contrast: macOS Research ▸ History shows the two types capped at 10
 projects, with no search, no filter and no delete; **iOS has no History surface whatsoever** — its
 only browsable history is the Session Log, which shows the one store nothing else reads.
 
+> **Corrected by R-3 (2026-07-26).** The cap-at-10 and no-filter half of that paragraph described
+> the History **menu** (`HistoryMenuContent`), not the Complete History **window**, which was
+> uncapped and already carried a three-way project filter. The window's real gaps were search,
+> delete, and any bound on what it loaded. All three are closed; see R-3 below.
+
 ### Deletion — the sharpest gap
 
 Verified coverage today:
@@ -266,6 +272,39 @@ and keep `SessionLogView` pointed at the derived grouping. Needs a migration sto
 already in users' iCloud private databases.
 
 ## R-3 — A History surface on iOS
+
+> ### ✅ SHIPPED — 2026-07-26
+>
+> One `HistoryView` both platforms render: macOS in the existing `frus.history` window
+> (`HistoryWindowView` is now a 4-line wrapper that keeps the scene, its minimum size, and the
+> History menu), iOS pushed from the Research tab via a new `ResearchSidebarItem.history`.
+> Backed by `HistoryPaneSnapshot` + `HistoryTrailAdmin` (`Models/HistoryPaneSnapshot.swift`).
+>
+> **Two claims in the pre-implementation scoping were wrong, and the corrections matter for R-5.**
+> The "caps each section at 10 rows" and "shows all projects with no filter" defects belonged to
+> `HistoryMenuContent` — the *menu* — not to `HistoryWindowView`. The window was already uncapped
+> and already had a three-way `HistoryProjectFilter`. What it actually lacked was search, delete,
+> and any bound at all on what it loaded. The 10-row cap in the History **menu** is correct for a
+> menu and was deliberately left alone.
+>
+> - **Scope (D4)** is pushed into the fetch `#Predicate`, not applied afterwards — which is what
+>   makes a bounded page correct rather than a global page the scope mostly discards. The
+>   `$0.projectId == nil` form ("Not in a Project") had no precedent in this codebase and is now
+>   covered by a behavioural test *and* verified in the running app.
+> - **Not a `@Query`.** The window held two live unbounded `@Query`s over tables D5 guarantees
+>   nothing prunes, both CloudKit-mirrored — the drip-import re-render shape that has pegged a CPU
+>   core here before. Replaced with the `NotesPaneSnapshot` one-shot cadence: 500 rows/section,
+>   `fetchCount` for the honest total, "Show More", refresh on appear / scope change / delete.
+> - **Per-entry delete landed here, not in R-5.** `SearchHistoryEntry` had no delete path anywhere
+>   in the app. `HistoryTrailAdmin` is the named extension point R-5 should grow `deleteAll` on.
+>
+> **Still R-5's**, deliberately untouched: one delete that reaches the whole trail, the Data &
+> Recovery **Contents** inventory, and `ResearchDataExportView`.
+>
+> **Known limit, stated in the UI and the manuals:** the free-text filter narrows the *loaded
+> page*, not the whole store. Pushing it down would mean `localizedStandardContains` against the
+> optional `displayTitle` inside a `#Predicate`, which SwiftData translates at runtime or not at
+> all. "Showing N of M" plus Show More is the honest alternative.
 
 `HistoryWindowView` is macOS-only (`#if os(macOS)`, reached by the `frus.history` scene and the
 Research ▸ History menu). iOS has no view over the trail at all — the nearest thing is Project

@@ -1187,11 +1187,19 @@ there. Turn it back on and they refill from that point forward.
 
 ### 17.2 The Complete History Window
 
-Choose **Complete History…** from the History menu (or open the `frus.history` window directly) to see your full reading and search history in a dedicated window — not just the last ten of each. An optional **project filter** lets you narrow the list to activity associated with a specific research project (see Section 15.1), which is useful for reconstructing the research trail behind a particular paper or question.
+Choose **Complete History…** from the History menu (or open the `frus.history` window directly) to see your full reading and search history in a dedicated window — not just the last ten of each.
 
-`[SCREENSHOT: Complete History window showing a scrollable list of visited documents and searches with a project filter control]`
+This window is now the **same screen iPhone and iPad show** under Research → History, so a trail that started on your iPad is legible here and the reverse. Its controls moved out of the toolbar and into the top of the window, and two are new:
+
+- **Project scope** — *All Projects*, *Not in a Project*, or a specific project by name (see Section 15.1), useful for reconstructing the research trail behind a particular paper or question. A history entry is filed under whichever project was active *when it was recorded*; switching projects later does not re-file anything retroactively.
+- **Search history…** *(new)* — a free-text filter over what is loaded. It matches a visited document's title, its volume id, and its document id; for searches it matches the query text.
+- **Delete** *(new)* — right-click any row and choose **Delete** to remove that one entry. This is the first way the app has offered to remove a recorded search; deletions sync, and there is no undo. A single action that clears the whole trail at once is still to come.
+
+`[SCREENSHOT: Complete History window showing the project scope picker and search field above a scrollable list of visited documents and searches]`
 
 From either list, you can reopen a document or re-run a search with a single click — the same way you would from the History menu's short lists.
+
+**On long lists**, each section loads its most recent 500 entries, with a **Show More** button at the end when there are more; while a section is showing less than everything, its header says so ("Showing 500 of 12,904"). The search field filters what is *loaded*, so on a very long history **Show More** widens what a search can reach. (The window used to hold every entry in memory at once and re-draw the whole list on each iCloud sync; it no longer does.)
 
 ### 17.3 The FRUS Research Guide
 
