@@ -522,6 +522,51 @@ layer down: the app reported a sync failure it had made itself unable to describ
 
 ### R-6 — Make a CloudKit failure diagnosable
 
+> #### ✅ SHIPPED — 2026-07-26
+>
+> `FRUSExplorer/Diagnostics/CloudKitErrorInspector.swift` replaces the one-level `userInfo`
+> lookup with a **bounded breadth-first walk** of the error graph — `NSUnderlyingErrorKey` and
+> `NSMultipleUnderlyingErrorsKey`, capped at depth 6 / 64 errors, with an `ObjectIdentifier` set
+> so a self-referential chain terminates on the second visit rather than hanging. The
+> per-item dictionary is found wherever it sits, and its **depth is recorded**, because at depth
+> 1 is exactly where `NSPersistentCloudKitContainer` put #488's.
+>
+> **`hadPartialDictionary` is the field the whole item is for.** `false` means *the app looked
+> and there was none*; the field's absence on a stored row means *the row predates the walk*.
+> Those were the same silence before, and telling them apart is what cost #488 the most time. A
+> walk stopped by a bound reports `chainTruncated` rather than pretending to an absence.
+>
+> **Schema identifiers, and only those, are lifted out of the server text.** The grammar is
+> hand-written rather than a regex so a reviewer can read exactly what escapes: split the text
+> into maximal `[A-Za-z0-9_]` runs, emit a run only if it begins with `CD_` (with something
+> after) or *is* `_pcs_data`. A UUID cannot match — it has no underscore, so `CD_` can never
+> begin inside one — and the maximal-run rule means `someCD_thing` is one run that fails the
+> prefix test rather than two. **#188-C.1's redaction contract still has no mechanical gate
+> except this one:** `CloudKitErrorInspectorTests` feeds it a description carrying a UUID record
+> name, a zone owner id, an e-mail address and a field value, and asserts zero tokens and that no
+> fragment survives anywhere in the result. That test was **proved red under mutation** (grammar
+> widened to emit every run) before being trusted.
+>
+> **The new `SyncDiagnosticsEntry` fields are all optional.** `SyncDiagnosticsLog.loaded()`
+> swallows a decode failure with `try?`, so a non-optional addition would silently wipe the very
+> history the owner pastes into issues; a legacy-JSON decode test pins it.
+>
+> **Surfaced in two places.** `SyncDiagnosticsLog.line(for:stamp:)` — split out of
+> `formattedText()` and testable without the actor — renders `partial=N@depth D`, the
+> `no per-item errors in chain` / `chain truncated` distinction, `schema: CD_…` and
+> `retry-after=Ns`. Data & Recovery's Sync Log row stops collapsing every failure to "an error":
+> it now reads "2 errors today, 1 with no detail", and `SyncLogSummary.Event` makes the second
+> count structurally unable to exceed the first.
+>
+> **Also fixed, found while doing it:** the CloudKit code-name table was applied to every domain,
+> so an `NSCocoaErrorDomain` code 4 was confidently reported as `networkFailure`; the equal-count
+> histogram sort was unstable, so the same failure rendered differently on each run; and
+> `cloudKitDiagnostic`'s doc comment had drifted above the wrong declaration and still claimed it
+> logged via `print`.
+>
+> **This makes the next failure diagnosable. It fixes no sync**, and nothing here has been
+> exercised against a real CloudKit rejection — only against reconstructed error shapes.
+
 `cloudKitDiagnostic` (`FRUSExplorer/App/FRUSExplorerApp.swift:2007`) looks for the per-item error
 dictionary at exactly one level:
 

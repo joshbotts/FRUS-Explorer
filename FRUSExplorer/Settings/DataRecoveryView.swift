@@ -30,6 +30,9 @@ import SwiftData
 ///   1.1 — Wave R-7: an **iCloud Schema** row in Diagnostics, beside the Sync Log, reporting
 ///          whether the CloudKit container has been taught about everything this build stores.
 ///          #488 shipped without that answer being available anywhere in the app.
+///   1.2 — Wave R-6: the Sync Log row counts errors the app could not describe separately from
+///          errors it could, so a `partialFailure` with no sub-errors no longer reads the same
+///          as a fully diagnosed one.
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -287,7 +290,13 @@ struct DataRecoveryView: View {
     private func loadSyncSummary() async {
         let entries = await SyncDiagnosticsLog.shared.entries()
         syncSummary = SyncLogSummary.make(
-            entries: entries.map { (timestamp: $0.timestamp, hasError: $0.errorCode != nil) })
+            entries: entries.map {
+                .init(timestamp: $0.timestamp,
+                      hasError: $0.errorCode != nil,
+                      // Wave R-6: an error the app could not describe is counted separately, so
+                      // the row stops reading the same for a diagnosed and an undiagnosed failure.
+                      isUndiagnosed: $0.isUndiagnosedFailure)
+            })
     }
 
     // MARK: - Recovery actions

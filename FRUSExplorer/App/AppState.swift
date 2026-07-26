@@ -133,6 +133,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///         the research trail at all — the three typed writers do, sessions are derived by
 ///         `ResearchTrailSessions`, and the idle interval moved to `ResearchTrailSessions
 ///         .idleInterval`. `isResearchLoggingEnabled(in:)` stays: it is still the one gate.
+///   4.9 — Wave R-6: `checkCloudKitHealth()`'s two `catch` blocks run the error through
+///         `CloudKitErrorInspector`, so an account or zone failure records the retry-after hint
+///         and the "looked for per-item detail" fact instead of a bare domain and code.
 
 // MARK: - CloudKitSyncState
 
@@ -347,9 +350,19 @@ final class AppState {
             } catch {
                 let ns = error as NSError
                 cloudKitLog.error("account status check failed: \(ns.domain, privacy: .public) code=\(ns.code, privacy: .public)")
+                // Wave R-6: the health checks used to record a bare domain + code, so a rate-limit
+                // rejection looked the same as an outage. The inspection adds the retry-after hint
+                // and the "we looked for per-item detail" fact, all allow-listed scalars.
+                let inspection = CloudKitErrorInspector.inspect(ns)
                 Task { await SyncDiagnosticsLog.shared.record(
                     phase: "account", startDate: nil, endDate: Date.now, succeeded: false,
-                    errorDomain: ns.domain, errorCode: ns.code) }
+                    errorDomain: ns.domain, errorCode: ns.code,
+                    hadPartialDictionary: inspection.hadPartialDictionary,
+                    partialDictionaryDepth: inspection.partialDictionaryDepth,
+                    schemaIdentifiers: inspection.schemaIdentifiers.isEmpty
+                        ? nil : inspection.schemaIdentifiers,
+                    retryAfterSeconds: inspection.retryAfterSeconds,
+                    chainTruncated: inspection.chainTruncated) }
             }
 
             // ── Private zone verification ────────────────────────────────────────
@@ -368,9 +381,16 @@ final class AppState {
                 cloudKitZoneVerified = false
                 let ns = error as NSError
                 cloudKitLog.error("zone verification failed: \(ns.domain, privacy: .public) code=\(ns.code, privacy: .public)")
+                let inspection = CloudKitErrorInspector.inspect(ns)   // Wave R-6; see above.
                 Task { await SyncDiagnosticsLog.shared.record(
                     phase: "zone", startDate: nil, endDate: Date.now, succeeded: false,
-                    errorDomain: ns.domain, errorCode: ns.code) }
+                    errorDomain: ns.domain, errorCode: ns.code,
+                    hadPartialDictionary: inspection.hadPartialDictionary,
+                    partialDictionaryDepth: inspection.partialDictionaryDepth,
+                    schemaIdentifiers: inspection.schemaIdentifiers.isEmpty
+                        ? nil : inspection.schemaIdentifiers,
+                    retryAfterSeconds: inspection.retryAfterSeconds,
+                    chainTruncated: inspection.chainTruncated) }
             }
         }
     }
