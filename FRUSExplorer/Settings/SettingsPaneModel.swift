@@ -91,6 +91,9 @@ enum SettingsPlatform: Hashable, Sendable {
 ///          thing (an account elsewhere this app talks to) and now share one destination
 ///   1.4 — S-4b: `.dataRecovery` replaces `.data`, `.syncDiagnostics` and `.reset`. System is
 ///          four rows now, down from nine before S-4.
+///   1.5 — S-5: `.researchGuide` retires — it is content, not a setting, and now lives in
+///          About's Resources on both platforms. The tree is symmetric except for Notes and
+///          iCloud Sync.
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
 
     // Library
@@ -100,7 +103,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     // Reading & Search
     case display, search
     // System
-    case sync, connections, dataRecovery, about, researchGuide
+    case sync, connections, dataRecovery, about
 
     var id: String { rawValue }
 
@@ -122,7 +125,6 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .connections:     return String(localized: "settings.pane.connections", defaultValue: "Connections")
         case .dataRecovery:    return String(localized: "settings.pane.dataRecovery", defaultValue: "Data & Recovery")
         case .about:           return String(localized: "settings.pane.about", defaultValue: "About")
-        case .researchGuide:   return String(localized: "settings.pane.researchGuide", defaultValue: "FRUS Research Guide")
         }
     }
 
@@ -142,7 +144,6 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .connections:     return "link"
         case .dataRecovery:    return "square.and.arrow.up"
         case .about:           return "info.circle"
-        case .researchGuide:   return "book"
         }
     }
 
@@ -157,7 +158,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
             return .research
         case .display, .search:
             return .readingAndSearch
-        case .sync, .connections, .dataRecovery, .about, .researchGuide:
+        case .sync, .connections, .dataRecovery, .about:
             return .system
         }
     }
@@ -168,8 +169,6 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// asymmetries are all in Research and System.
     var platforms: Set<SettingsPlatform> {
         switch self {
-        // The in-app guide is a Window scene on macOS, opened from a menu rather than Settings.
-        case .researchGuide: return [.iOS]
         // iOS has no standalone Notes pane; its note settings live with the research surfaces.
         case .notes:         return [.macOS]
         // iOS presents iCloud sync as an inline toggle section, not a pushed destination.
@@ -206,8 +205,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
                                        "broken cross-references", "report", "icloud", "log",
                                        "troubleshoot", "errors", "sync diagnostics", "erase",
                                        "delete", "start over", "clear", "reset", "recovery"]
-        case .about:           return ["version", "build", "license", "credits", "acknowledgements"]
-        case .researchGuide:   return ["help", "guide", "education", "how to", "learn"]
+        case .about:           return ["version", "build", "license", "credits", "acknowledgements",
+                                       "help", "guide", "education", "how to", "learn", "legal",
+                                       "notices", "disclaimer"]
         }
     }
 

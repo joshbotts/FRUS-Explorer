@@ -92,7 +92,6 @@ struct SettingsPaneModelTests {
     func platformAsymmetry() {
         #expect(SettingsPane.notes.platforms == [.macOS])
         #expect(SettingsPane.sync.platforms == [.macOS])
-        #expect(SettingsPane.researchGuide.platforms == [.iOS])
         #expect(SettingsPane.display.platforms == [.iOS, .macOS])
     }
 
@@ -124,14 +123,23 @@ struct SettingsPaneModelTests {
         }
     }
 
-    /// The whole point of S-4: the System group shrinks from nine rows to four.
-    @Test("System is down to its four merged rows", arguments: [SettingsPlatform.iOS, .macOS])
+    /// The whole point of S-4 and S-5: System shrinks from nine rows to three or four.
+    @Test("System is down to its merged rows", arguments: [SettingsPlatform.iOS, .macOS])
     func systemGroupSize(platform: SettingsPlatform) {
         let system = SettingsPane.panes(in: .system, on: platform)
         #expect(system.contains(.connections))
         #expect(system.contains(.dataRecovery))
         #expect(system.contains(.about))
-        #expect(system.count <= 5, "System grew back: \(system.map(\.rawValue))")
+        #expect(system.count <= 4, "System grew back: \(system.map(\.rawValue))")
+    }
+
+    /// S-5 retired the Research Guide row — it is content, not a setting, and lives in About's
+    /// Resources now. A reader who searches for it must still land on the pane that has it.
+    @Test("About answers for the Research Guide it absorbed")
+    func aboutCarriesTheGuide() {
+        for query in ["guide", "help", "how to", "learn", "legal", "notices", "version"] {
+            #expect(SettingsPane.about.matches(query), "no match for \(query)")
+        }
     }
 
     /// S-4a merged the two outside-service rows. Same rule as the Library merge: the survivor has

@@ -49,10 +49,10 @@ enum AboutLinks {
 /// ## Sections
 /// 1. **App** — icon, name, and version
 /// 2. **About FRUS** — bundled series description prose
-/// 3. **Resources** — links to history.state.gov and HistoryAtState on GitHub
+/// 3. **Resources** — the FRUS Research Guide, the platform manual, history.state.gov, and
+///    HistoryAtState on GitHub
 /// 4. **Attribution** — code generation credit and contributor note
-/// 5. **Open Source** — TEI Publisher Lib and Apache 2.0 licence statement
-/// 6. **NARA Catalog API** — required disclaimers
+/// 5. **Legal** — one row to `FullNoticesView` (open-source licenses + the two disclaimers)
 ///
 /// ## Version history
 ///   1.0 — Session 26: initial implementation
@@ -64,7 +64,16 @@ enum AboutLinks {
 ///          macOS, UIImage named AppIcon on iOS, with RoundedRectangle clip on iOS);
 ///          asterisks removed from FRUS description; "Foreign Relations of the United States"
 ///          italicised via AttributedString.inlinePresentationIntent = .emphasized
+///   1.4 — S-5: one About on both platforms (the macOS `SettingsAboutPane` is gone). The
+///          Research Guide moves here from its own Settings row; the three legal essays move
+///          behind one Legal row into `FullNoticesView` — a push on iOS, a sheet on macOS,
+///          because the Settings detail column has no back button of its own.
 struct AboutView: View {
+
+    @Environment(AppState.self) private var appState
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     /// The link tapped most recently — presented in `InAppBrowserView`
     /// rather than handed to the system browser, so following a Resources
@@ -73,6 +82,11 @@ struct AboutView: View {
     /// `Identifiable` (see `CollectionEditorView`) so it can drive
     /// `.sheet(item:)` directly.
     @State private var inAppBrowserURL: URL?
+
+    #if os(macOS)
+    /// Whether the Legal row's full-notices sheet is up. macOS only — iOS pushes instead.
+    @State private var showsFullNotices = false
+    #endif
 
     private var appIconImage: Image {
         #if os(macOS)
@@ -130,9 +144,7 @@ struct AboutView: View {
             frusDescriptionSection
             resourcesSection
             attributionSection
-            openSourceSection
-            naraDisclaimerSection
-            dosDisclaimerSection
+            legalSection
         }
         #if os(iOS)
         .listStyle(.insetGrouped)
@@ -153,6 +165,25 @@ struct AboutView: View {
         .sheet(item: $inAppBrowserURL) { url in
             InAppBrowserView(url: url)
         }
+        #if os(macOS)
+        // The full notices arrive as a sheet here, not a push — see `legalSection`.
+        .sheet(isPresented: $showsFullNotices) {
+            VStack(spacing: 0) {
+                FullNoticesView()
+                Divider()
+                HStack {
+                    Spacer()
+                    Button(String(localized: "about.legal.done", defaultValue: "Done")) {
+                        showsFullNotices = false
+                    }
+                    .keyboardShortcut(.cancelAction)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+            }
+            .frame(minWidth: 520, minHeight: 460)
+        }
+        #endif
     }
 
     // MARK: - App Header
@@ -230,6 +261,88 @@ contemporary challenges and the United States's role in the world.
         AttributedString(markdownBody: Self.frusDescriptionRaw)
     }
 
+    // MARK: - Research Guide
+
+    /// The in-app Research Guide, rehomed from a Settings root row into Resources (S-5).
+    ///
+    /// It is content, not a setting — a root row for it made the Settings list carry an essay
+    /// alongside its controls. It opens as a sheet on iOS and its own window on macOS, which is
+    /// where each platform already put it.
+    @ViewBuilder
+    private var researchGuideRow: some View {
+        Button {
+            #if os(macOS)
+            // The guide is a VALUE-based WindowGroup(for: ResearchGuideWindowID.self), not an
+            // id-based one — `openWindow(id:)` silently does nothing against it. Same call the
+            // Help ▸ FRUS Research Guide menu item makes (#363 #7).
+            openWindow(value: ResearchGuideWindowID())
+            #else
+            appState.showResearchGuide = true
+            #endif
+        } label: {
+            HStack {
+                Label(String(localized: "about.resources.researchGuide",
+                             defaultValue: "FRUS Research Guide"), systemImage: "book")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Color.accentColor)
+    }
+
+    // MARK: - Legal
+
+    /// One Legal row leading to the full notices (S-5).
+    ///
+    /// The open-source licenses and the two disclaimers used to be three prose sections at the
+    /// bottom of About — three essays a reader scrolled past every time they came here for a
+    /// version number. Every word is preserved, one tap away.
+    ///
+    /// A push on iOS, a sheet on macOS: the Settings window's detail column has no navigation
+    /// chrome, so a `NavigationLink` there pushes to a screen with no back button. Same shape
+    /// `DataRecoveryView.link(_:)` uses for the recovery sub-screens (S-4b).
+    @ViewBuilder
+    private var legalSection: some View {
+        Section {
+            #if os(macOS)
+            Button {
+                showsFullNotices = true
+            } label: {
+                HStack {
+                    legalRowLabel
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            #else
+            NavigationLink {
+                FullNoticesView()
+            } label: {
+                legalRowLabel
+            }
+            #endif
+        } header: {
+            Text(String(localized: "about.legal.header", defaultValue: "Legal"))
+        }
+    }
+
+    /// The Legal row's text, shared by the two presentations above.
+    private var legalRowLabel: some View {
+        SettingsNavRow(
+            label: String(localized: "about.legal.full", defaultValue: "Full Notices"),
+            detail: String(localized: "about.legal.detail",
+                           defaultValue: "Open-source licenses, and the two disclaimers this app is required to make")
+        )
+    }
+
     // MARK: - Resources
 
     /// One Resources-section link row (label + external-link chevron), opened in the
@@ -254,6 +367,7 @@ contemporary challenges and the United States's role in the world.
     private var resourcesSection: some View {
         Section(String(localized: "about.resources.header",
                        defaultValue: "Resources")) {
+            researchGuideRow
             // Platform user manual(s) — rendered Markdown on GitHub.
             #if os(macOS)
             resourceLink(String(localized: "about.resources.manual.mac", defaultValue: "macOS User Manual"),
@@ -333,6 +447,45 @@ contemporary challenges and the United States's role in the world.
                    defaultValue: ", an AI assistant made by Anthropic, at the direction of Joshua Botts. Josh thanks his colleagues for the inspiration, feature ideas, feedback, and enthusiasm they contributed to the app.")
         )
         return str
+    }
+}
+
+// MARK: - FullNoticesView
+
+/// Licences and the two disclaimers, on their own screen (S-5).
+///
+/// The wording is exactly what used to sit at the bottom of About — these are statements the app
+/// is obliged to make, and not mine to rewrite. What changed is where they live: a reader coming
+/// to About for a version number no longer scrolls past three essays to reach it, and a reader who
+/// wants the notices gets them whole rather than as a tail.
+///
+/// Version history:
+///   1.0 — S-5: extracted from `AboutView`
+struct FullNoticesView: View {
+
+    /// Links open in the in-app browser, as they did inside About.
+    @State private var inAppBrowserURL: URL?
+
+    var body: some View {
+        List {
+            openSourceSection
+            naraDisclaimerSection
+            dosDisclaimerSection
+        }
+        #if os(iOS)
+        .listStyle(.insetGrouped)
+        .navigationBarTitleDisplayMode(.inline)
+        #else
+        .listStyle(.inset)
+        #endif
+        .navigationTitle(String(localized: "about.legal.full", defaultValue: "Full Notices"))
+        .environment(\.openURL, OpenURLAction { url in
+            inAppBrowserURL = url
+            return .handled
+        })
+        .sheet(item: $inAppBrowserURL) { url in
+            InAppBrowserView(url: url)
+        }
     }
 
     // MARK: - Open Source
