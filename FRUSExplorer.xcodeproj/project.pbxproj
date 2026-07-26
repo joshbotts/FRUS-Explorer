@@ -41,6 +41,7 @@
 		0CD288609D6056F954B01F89 /* RelatedDocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A364FA04305F32B1651686AF /* RelatedDocumentsView.swift */; };
 		0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD28FFF6434C093ED97134C /* MacCorpusBrowserWindow.swift */; };
 		0D347250EA4A69C21E4A3F35 /* WordCloudLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81468F37DEEF01DF5BC14F13 /* WordCloudLayout.swift */; };
+		0D620BFF3A443036A9F313FC /* NotesPaneSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0D35614EA326028BDB9F63 /* NotesPaneSnapshot.swift */; };
 		0E211377FAA14FF62EBE46C6 /* SimilarityGenerators.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB57AB13190B5CF833864061 /* SimilarityGenerators.swift */; };
 		0E410D22F78C0B8D005E5317 /* IndexingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */; };
 		0E7D2137040CFFD2A6F1BDC6 /* HistoryWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60908891C1CCD378F1735444 /* HistoryWindowView.swift */; };
@@ -182,6 +183,7 @@
 		42D8CBEAE384F5DEAD24D3BC /* WordCloudPrecomputeQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACC4C8D8526B0D17510AA8 /* WordCloudPrecomputeQueue.swift */; };
 		43271775F9297C6E750B28AD /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB377EE42472B3381A35DA9 /* CollectionEditorView.swift */; };
 		43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */; };
+		43FF348D49B0CEEC8D89DC7D /* NotesPaneSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0D35614EA326028BDB9F63 /* NotesPaneSnapshot.swift */; };
 		44C38CF030971E130CB5C460 /* CollectionExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE13446F4368DB7721139BAE /* CollectionExportSheet.swift */; };
 		45AB710B07E4CE0F24DA7125 /* SettingsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8E5ACAE8EEC2B4C468C4D0 /* SettingsComponents.swift */; };
 		45FEBB7068690AC9F2D2CD31 /* FTS5Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80CF02342D779587705CA46F /* FTS5Store.swift */; };
@@ -1197,6 +1199,7 @@
 		FD2F9B965F27786F60BE298A /* CustomScopesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomScopesView.swift; sourceTree = "<group>"; };
 		FD719C2891726CA1E781C46F /* DocumentTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTimelineView.swift; sourceTree = "<group>"; };
 		FDC6F25D5BDA0721F9DABE98 /* SyncedPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedPreferences.swift; sourceTree = "<group>"; };
+		FE0D35614EA326028BDB9F63 /* NotesPaneSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesPaneSnapshot.swift; sourceTree = "<group>"; };
 		FF2B075E2CA9A68F872EEFD2 /* OnboardingDownloadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDownloadView.swift; sourceTree = "<group>"; };
 		FF735149F415370F2B4A807F /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1844,6 +1847,7 @@
 				3CFC1E7C3362A966E80CA3A6 /* IndexingActivityAttributes.swift */,
 				87E25F23B7A7E1469594E312 /* KeychainStore.swift */,
 				B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */,
+				FE0D35614EA326028BDB9F63 /* NotesPaneSnapshot.swift */,
 				8CD0F18E6B410DD30B5D9908 /* OrphanedTagRepair.swift */,
 				471EA3C4C3411D61C4EB3994 /* PersonAuthorityIndex.swift */,
 				43502C5AB149D9A03A1673AB /* PersonClusterOverride.swift */,
@@ -2315,6 +2319,7 @@
 				AB50012C979B264526C336D7 /* NARACatalogLookupView.swift in Sources */,
 				EFD79D1B370203F3CDBAC9FA /* NativeCollectionFormat.swift in Sources */,
 				4FC8CD8DC2F25EF1E3E4345C /* NavBarFullTitle.swift in Sources */,
+				0D620BFF3A443036A9F313FC /* NotesPaneSnapshot.swift in Sources */,
 				95E58E62F1C53AA8262FB06E /* OnboardingDownloadView.swift in Sources */,
 				9C03AF5FBBCE530B99448B02 /* OnboardingIntroView.swift in Sources */,
 				A720A8CBE9671A43BC31F30B /* OnboardingProjectSetupView.swift in Sources */,
@@ -2613,6 +2618,7 @@
 				31F50A34087FE24125917128 /* NARACatalogLookupView.swift in Sources */,
 				B98F32DECC303257F9DD7AAE /* NativeCollectionFormat.swift in Sources */,
 				2D28E5B002304D58424B5EDA /* NavBarFullTitle.swift in Sources */,
+				43FF348D49B0CEEC8D89DC7D /* NotesPaneSnapshot.swift in Sources */,
 				101A80D67DCE40A1B07C7EBA /* OnboardingDownloadView.swift in Sources */,
 				B5504390CC53BC96EC7ABA4A /* OnboardingIntroView.swift in Sources */,
 				FC7A54140CBE7EFD4AE3BFCD /* OnboardingProjectSetupView.swift in Sources */,

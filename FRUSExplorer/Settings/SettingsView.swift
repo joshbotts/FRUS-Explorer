@@ -1383,11 +1383,34 @@ struct SyncSettingsSection<Leading: View>: View {
     /// Rows shown above the toggle — the iOS sync-status cell, or nothing.
     @ViewBuilder var leading: Leading
 
+    /// Whether to draw the "iCloud Sync" section header. False on the macOS pane, where the
+    /// window already carries that title and a header would stutter it.
+    var showsHeader: Bool = true
+
     @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        Section {
+        if showsHeader {
+            Section {
+                rows
+            } header: {
+                Text(String(localized: "settings.section.icloud", defaultValue: "iCloud Sync"))
+            } footer: {
+                footerText
+            }
+        } else {
+            Section {
+                rows
+            } footer: {
+                footerText
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var rows: some View {
+        Group {
             leading
             Toggle(isOn: $syncSettingsEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -1411,19 +1434,21 @@ struct SyncSettingsSection<Leading: View>: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-        } header: {
-            Text(String(localized: "settings.section.icloud", defaultValue: "iCloud Sync"))
-        } footer: {
-            Text(String(localized: "settings.sync.footer",
-                        defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
         }
+    }
+
+    private var footerText: Text {
+        Text(String(localized: "settings.sync.footer",
+                    defaultValue: "When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."))
     }
 }
 
 extension SyncSettingsSection where Leading == EmptyView {
     /// The section with no leading rows — the macOS pane, which gets its sync status from the
     /// main window's status bar rather than repeating it here.
-    init() { self.init(leading: { EmptyView() }) }
+    init(showsHeader: Bool = true) {
+        self.init(leading: { EmptyView() }, showsHeader: showsHeader)
+    }
 }
 
 #if os(macOS)
@@ -1434,7 +1459,7 @@ extension SyncSettingsSection where Leading == EmptyView {
 struct SyncSettingsView: View {
     var body: some View {
         Form {
-            SyncSettingsSection()
+            SyncSettingsSection(showsHeader: false)
         }
         .formStyle(.grouped)
         .navigationTitle(String(localized: "settings.pane.sync", defaultValue: "iCloud Sync"))
