@@ -20,6 +20,11 @@ import SwiftUI
 ///   1.2 — Session 87: People cross-volume index entry
 ///   1.3 — Session 130: removed CorpusStatsView section (volume/document counts and date ranges
 ///          from the manifest were inaccurate or irrelevant to in-app navigation)
+///   1.4 — #312: both row types are now tappable across the full row width. They were
+///          `Button … .buttonStyle(.plain)` wrapping an intrinsically-sized label, so only the
+///          label's own glyphs were hit-testable and most of a ~370pt row was dead space —
+///          for a finger, not just for the UI-test harness that spent three investigations
+///          (`UIObstructionTests` 1.6/1.7/1.9) blaming XCUITest for it.
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -36,6 +41,21 @@ struct CorpusView: View {
                         systemImage: "person.2"
                     )
                     .foregroundStyle(.primary)
+                    // Both modifiers are required, and in this order. `.contentShape` reshapes the
+                    // hit area WITHIN the view's frame; it does not widen the frame, and a bare
+                    // `Label` in a List row is only as wide as its glyphs (~65pt of a ~370pt row).
+                    // So contentShape alone buys nothing here — it just fills the gaps between the
+                    // glyphs it already covers.
+                    //
+                    // A/B-MEASURED, not assumed (iPhone 17, iOS 26.3.1), against
+                    // `UIObstructionTests.testBreadcrumbBarNotObstructingFirstRow`, which taps a row
+                    // and requires a push: with contentShape ALONE the test FAILS ("did not push a
+                    // browser level"); with the frame restored it PASSES, on iPhone and iPad both.
+                    // Do not "simplify" by deleting the frame — that silently restores the dead zone
+                    // and turns that test red. Same idiom as the Settings rows, where the greed comes
+                    // from an `HStack { … Spacer() }` rather than an explicit frame.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(
@@ -57,6 +77,12 @@ struct CorpusView: View {
                         #endif
                     } label: {
                         SubseriesRowLabel(group: group)
+                            // See the People row above for why the frame has to precede the
+                            // contentShape, and for the measurement: the label's VStack is only as
+                            // wide as its longest line, so contentShape alone does not reach the
+                            // rest of the row. Both modifiers, in this order.
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
