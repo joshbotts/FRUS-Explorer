@@ -89,6 +89,8 @@ enum SettingsPlatform: Hashable, Sendable {
 ///          `.storage`, `.downloads`, and `.sideload` are deleted. Library is one row now.
 ///   1.3 — S-4a: `.connections` replaces `.naraAPI` and `.zotero` — both are the same kind of
 ///          thing (an account elsewhere this app talks to) and now share one destination
+///   1.4 — S-4b: `.dataRecovery` replaces `.data`, `.syncDiagnostics` and `.reset`. System is
+///          four rows now, down from nine before S-4.
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
 
     // Library
@@ -98,7 +100,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     // Reading & Search
     case display, search
     // System
-    case sync, syncDiagnostics, connections, data, reset, about, researchGuide
+    case sync, connections, dataRecovery, about, researchGuide
 
     var id: String { rawValue }
 
@@ -117,10 +119,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .display:         return String(localized: "settings.pane.display", defaultValue: "Display")
         case .search:          return String(localized: "settings.pane.search", defaultValue: "Search")
         case .sync:            return String(localized: "settings.pane.sync", defaultValue: "iCloud Sync")
-        case .syncDiagnostics: return String(localized: "settings.pane.syncDiagnostics", defaultValue: "Sync Diagnostics")
         case .connections:     return String(localized: "settings.pane.connections", defaultValue: "Connections")
-        case .data:            return String(localized: "settings.pane.data", defaultValue: "Research Data")
-        case .reset:           return String(localized: "settings.pane.reset", defaultValue: "Reset App")
+        case .dataRecovery:    return String(localized: "settings.pane.dataRecovery", defaultValue: "Data & Recovery")
         case .about:           return String(localized: "settings.pane.about", defaultValue: "About")
         case .researchGuide:   return String(localized: "settings.pane.researchGuide", defaultValue: "FRUS Research Guide")
         }
@@ -139,10 +139,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .display:         return "textformat.size"
         case .search:          return "magnifyingglass"
         case .sync:            return "icloud"
-        case .syncDiagnostics: return "stethoscope"
         case .connections:     return "link"
-        case .data:            return "square.and.arrow.up"
-        case .reset:           return "arrow.counterclockwise"
+        case .dataRecovery:    return "square.and.arrow.up"
         case .about:           return "info.circle"
         case .researchGuide:   return "book"
         }
@@ -159,7 +157,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
             return .research
         case .display, .search:
             return .readingAndSearch
-        case .sync, .syncDiagnostics, .connections, .data, .reset, .about, .researchGuide:
+        case .sync, .connections, .dataRecovery, .about, .researchGuide:
             return .system
         }
     }
@@ -201,12 +199,13 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .display:         return ["text size", "font", "citations", "reading mode", "chart colors", "appearance"]
         case .search:          return ["scope", "snippet", "editorial notes", "defaults", "filters"]
         case .sync:            return ["icloud", "cloudkit", "devices"]
-        case .syncDiagnostics: return ["icloud", "log", "troubleshoot", "errors"]
         case .connections:     return ["national archives", "catalog", "api key", "source explorer",
                                        "nara", "zotero", "citations", "library", "integration",
                                        "bibliography", "connect", "account"]
-        case .data:            return ["export", "json", "markdown", "backup", "broken cross-references", "report"]
-        case .reset:           return ["erase", "delete", "start over", "clear"]
+        case .dataRecovery:    return ["export", "json", "markdown", "obsidian", "backup",
+                                       "broken cross-references", "report", "icloud", "log",
+                                       "troubleshoot", "errors", "sync diagnostics", "erase",
+                                       "delete", "start over", "clear", "reset", "recovery"]
         case .about:           return ["version", "build", "license", "credits", "acknowledgements"]
         case .researchGuide:   return ["help", "guide", "education", "how to", "learn"]
         }

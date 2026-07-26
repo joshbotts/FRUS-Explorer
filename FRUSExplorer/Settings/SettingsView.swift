@@ -215,20 +215,15 @@ struct SettingsView: View {
             NavigationLink { DisplaySettingsView() } label: { paneLabel(pane) }
         case .search:
             NavigationLink { SearchDefaultsView() } label: { paneLabel(pane) }
-        case .syncDiagnostics:
-            NavigationLink { SyncDiagnosticsView() } label: { paneLabel(pane) }
         case .connections:
             NavigationLink { ConnectionsView() } label: { paneLabel(pane) }
-        case .data:
-            NavigationLink { ResearchDataExportView() } label: { paneLabel(pane) }
+        case .dataRecovery:
+            NavigationLink { DataRecoveryView() } label: { paneLabel(pane) }
         case .researchGuide:
             Button { appState.showResearchGuide = true } label: { paneLabel(pane) }
                 .buttonStyle(.plain)
         case .about:
             NavigationLink { AboutView() } label: { paneLabel(pane) }
-        case .reset:
-            NavigationLink { ResetView() } label: { paneLabel(pane) }
-                .foregroundStyle(.red)
         // macOS-only panes (see `SettingsPane.platforms`) — never listed on iOS.
         case .notes, .sync:
             EmptyView()
@@ -1255,227 +1250,102 @@ private struct SummarizationPromptsSettingsView: View {
     }
 }
 
-// MARK: - ResetView
+// MARK: - EraseEverythingView
 
-/// Three-tier reset UI, ordered least → most destructive: iCloud Sync, Local
-/// Data, and the two-step "Reset App to Initial State" action.
+/// The last rung of the recovery ladder, on its own screen with two confirmations (S-4b).
 ///
-/// ## What is deleted
-/// - **Reset iCloud Sync**: the local SwiftData SQLite store, forcing a fresh
-///   download from CloudKit on next launch. iCloud data is untouched.
-/// - **Reset Local Data**: downloaded volume XML files and the search index
-///   (`frus.db`), via the shared `ResetService.resetLocalData(appState:)`. The
-///   local SwiftData store and iCloud-synced data are untouched.
-/// - **Reset App to Initial State**: everything `ResetService.resetLocalData`
-///   clears, plus all SwiftData user-generated records: `ResearchNote`,
-///   `UserTag`, `GeneratedSummary`, `ReadingHistoryEntry`, `Collection`,
-///   `CollectionEntry`, `SummarizationPrompt`, `Project`, and the active
-///   project selection (`AppState.activeProjectId`).
-///
-/// ## Post-reset navigation
-/// Both platforms now set `hasCompletedOnboarding = false` directly after clearing data.
-/// - **iOS**: Settings is a persistent tab — no sheet is on screen.
-/// - **macOS**: Settings is now a `Settings` scene (independent window, not a modal sheet).
-///   There is no animation race with `ContentView`, so direct assignment is safe.
-///
-/// ## Confirmation gates
-/// The user must confirm twice (two `confirmationDialog` calls) before `performReset()`
-/// is invoked, guarding against accidental taps. Sync and Local resets each require
-/// a single confirmation.
+/// The two lighter repairs — Fix iCloud Sync and Reset This Device — moved onto the Data & Recovery
+/// door itself, where a reader scanning for the smallest thing that might help meets them first.
+/// This one is deliberately further away: it is the only one that destroys work.
 ///
 /// Version history:
-///   1.0 — Session 24: initial implementation
-///   1.1 — Session 32: added `Project` deletion; switched to two-phase sheet-dismissal
-///          for safe post-reset onboarding navigation (macOS)
-///   1.2 — Session 44: iOS path simplified to direct assignment
-///   1.3 — Session 46: macOS path also simplified; pendingOnboardingAfterReset removed
-///   1.4 — Session 153: added the "Reset Local Data" tier (between Sync and Full),
-///          backed by the shared `ResetService`, closing the iOS gap with
-///          macOS `SettingsResetPane`
-private struct ResetView: View {
+///   1.0 — Session 24: initial implementation as `ResetView`, all three rungs
+///   1.1 — S-4b: reduced to the full erase; the two non-destructive rungs live on the door
+struct EraseEverythingView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
     @State private var showFirstConfirmation  = false
     @State private var showSecondConfirmation = false
-    @State private var showSyncReset          = false
-    @State private var showLocalReset         = false
     @State private var isResetting = false
     @State private var resetError: String? = nil
 
     var body: some View {
         Form {
-            // iCloud sync reset — least destructive, recommended when sync is broken
-            Section(header: Text(String(localized: "settings.reset.sync.header",
-                                        defaultValue: "iCloud Sync"))) {
-                Text(String(localized: "settings.reset.sync.warning",
-                            defaultValue: "If iCloud sync is consistently reporting errors, clearing the local sync state forces a fresh download from iCloud. Your data in iCloud is not deleted."))
-                    .font(.callout)
+            Section {
+                Text(String(localized: "settings.erase.warning",
+                            defaultValue: "This deletes every downloaded volume, the search index, and all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. Because your research data syncs, it goes from your other devices too. This cannot be undone."))
                     .foregroundStyle(.secondary)
-
-                Button(String(localized: "settings.reset.sync.button",
-                              defaultValue: "Reset iCloud Sync"), role: .destructive) {
-                    showSyncReset = true
-                }
-                .disabled(isResetting)
-            }
-
-            // Local-only reset — deletes downloaded volumes and the search index from
-            // this device. iCloud-synced data (notes, collections, tags, projects) is
-            // untouched and will re-sync on next launch.
-            Section(header: Text(String(localized: "settings.reset.local.header",
-                                        defaultValue: "This Device"))) {
-                Text(String(localized: "settings.reset.local.warning",
-                            defaultValue: "Deletes all downloaded volume files and the search index from this device. Your notes, collections, tags, and projects remain in iCloud and will be restored the next time the app launches."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Button(String(localized: "settings.reset.local.button",
-                              defaultValue: "Reset Local Data"), role: .destructive) {
-                    showLocalReset = true
-                }
-                .disabled(isResetting)
-                .accessibilityLabel(
-                    String(localized: "settings.reset.local.button.a11y",
-                           defaultValue: "Reset local data. Destructive action.")
-                )
+            } header: {
+                Text(String(localized: "settings.erase.header", defaultValue: "What This Removes"))
             }
 
             Section {
-                Text(String(localized: "settings.reset.warning",
-                            defaultValue: "This will delete all downloaded volumes, your search index, all research notes, projects, user tags, collections, and AI-generated summaries. This action cannot be undone."))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
-                Button(String(localized: "settings.reset.button",
-                              defaultValue: "Reset App to Initial State"), role: .destructive) {
+                Button(role: .destructive) {
                     showFirstConfirmation = true
+                } label: {
+                    if isResetting {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text(String(localized: "settings.erase.working", defaultValue: "Erasing…"))
+                        }
+                    } else {
+                        Text(String(localized: "settings.erase.button",
+                                    defaultValue: "Erase Everything…"))
+                    }
                 }
                 .disabled(isResetting)
-                .accessibilityLabel(
-                    String(localized: "settings.reset.button.a11y",
-                           defaultValue: "Reset app to initial state. Destructive action.")
-                )
-            }
 
-            if let error = resetError {
-                Section {
-                    Label(error, systemImage: "exclamationmark.triangle")
+                if let resetError {
+                    Label(resetError, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.red)
                         .font(.callout)
                 }
+            } footer: {
+                Text(String(localized: "settings.erase.footer",
+                            defaultValue: "You will be asked twice. Afterwards the app returns to onboarding as if newly installed."))
             }
         }
-        .navigationTitle(String(localized: "settings.reset.title", defaultValue: "Reset App"))
+        #if os(macOS)
+        .formStyle(.grouped)
+        #endif
+        .navigationTitle(String(localized: "settings.dataRecovery.erase",
+                                defaultValue: "Erase Everything…"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
         .confirmationDialog(
-            String(localized: "settings.reset.sync.confirm.title",
-                   defaultValue: "Reset iCloud Sync?"),
-            isPresented: $showSyncReset,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "settings.reset.sync.confirm.proceed",
-                          defaultValue: "Reset iCloud Sync"), role: .destructive) {
-                performSyncReset()
-            }
-            Button(String(localized: "settings.reset.cancel", defaultValue: "Cancel"),
-                   role: .cancel) {}
-        } message: {
-            Text(String(localized: "settings.reset.sync.confirm.message",
-                        defaultValue: "The local iCloud sync state will be cleared. Your data in iCloud is not deleted. The app will re-download your notes and collections on next launch."))
-        }
-        .confirmationDialog(
-            String(localized: "settings.reset.local.confirm.title",
-                   defaultValue: "Reset Local Data?"),
-            isPresented: $showLocalReset,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "settings.reset.local.confirm.proceed",
-                          defaultValue: "Reset Local Data"), role: .destructive) {
-                performLocalReset()
-            }
-            Button(String(localized: "settings.reset.cancel", defaultValue: "Cancel"),
-                   role: .cancel) {}
-        } message: {
-            Text(String(localized: "settings.reset.local.confirm.message",
-                        defaultValue: "Volume files and the search index will be deleted from this device. Your notes, collections, tags, and projects in iCloud are not affected and will re-sync."))
-        }
-        .confirmationDialog(
-            String(localized: "settings.reset.confirm1.title",
-                   defaultValue: "Reset FRUS Explorer?"),
+            String(localized: "settings.erase.confirm1.title",
+                   defaultValue: "Erase everything?"),
             isPresented: $showFirstConfirmation,
             titleVisibility: .visible
         ) {
-            Button(String(localized: "settings.reset.confirm1.proceed",
+            Button(String(localized: "settings.erase.confirm1.proceed",
                           defaultValue: "Continue"), role: .destructive) {
                 showSecondConfirmation = true
             }
-            Button(String(localized: "settings.reset.cancel",
-                          defaultValue: "Cancel"), role: .cancel) {}
+            Button(String(localized: "settings.connections.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
         } message: {
-            Text(String(localized: "settings.reset.confirm1.message",
-                        defaultValue: "All user data will be permanently deleted. Are you sure?"))
+            Text(String(localized: "settings.erase.confirm1.message",
+                        defaultValue: "Everything listed above will be deleted from this device and from iCloud."))
         }
         .confirmationDialog(
-            String(localized: "settings.reset.confirm2.title",
-                   defaultValue: "This Cannot Be Undone"),
+            String(localized: "settings.erase.confirm2.title",
+                   defaultValue: "This cannot be undone"),
             isPresented: $showSecondConfirmation,
             titleVisibility: .visible
         ) {
-            Button(String(localized: "settings.reset.confirm2.proceed",
-                          defaultValue: "Delete Everything"), role: .destructive) {
+            Button(String(localized: "settings.erase.confirm2.proceed",
+                          defaultValue: "Erase Everything"), role: .destructive) {
                 performReset()
             }
-            Button(String(localized: "settings.reset.cancel",
-                          defaultValue: "Cancel"), role: .cancel) {}
+            Button(String(localized: "settings.connections.cancel", defaultValue: "Cancel"),
+                   role: .cancel) {}
         } message: {
-            Text(String(localized: "settings.reset.confirm2.message",
-                        defaultValue: "All downloaded volumes, research notes, projects, and summaries will be deleted immediately."))
-        }
-    }
-
-    private func performSyncReset() {
-        isResetting = true
-        let fm = FileManager.default
-        // Delete SwiftData SQLite files so the container re-downloads from CloudKit.
-        let appSupportURLs = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        for base in appSupportURLs {
-            // Standard SwiftData store location (bundle-id based)
-            if let bundleId = Bundle.main.bundleIdentifier {
-                let dir = base.appendingPathComponent(bundleId, isDirectory: true)
-                if let files = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
-                    for file in files where file.pathExtension == "sqlite" {
-                        try? fm.removeItem(at: file)
-                    }
-                }
-            }
-            // Also check the named app-support dir used by this app
-            let namedDir = base.appendingPathComponent("FRUSExplorer", isDirectory: true)
-            if let files = try? fm.contentsOfDirectory(at: namedDir, includingPropertiesForKeys: nil) {
-                for file in files where file.pathExtension == "sqlite"
-                                         && !file.lastPathComponent.hasPrefix("frus") {
-                    try? fm.removeItem(at: file)
-                }
-            }
-        }
-        appState.hasCompletedOnboarding = false
-        isResetting = false
-    }
-
-    /// Local-only reset: deletes downloaded volumes and the search index, leaving
-    /// the local SwiftData store and iCloud-synced data untouched.
-    private func performLocalReset() {
-        isResetting = true
-        Task {
-            await ResetService.resetLocalData(appState: appState)
-            await MainActor.run { isResetting = false }
+            Text(String(localized: "settings.erase.confirm2.message",
+                        defaultValue: "Export your research data first if you might want it back."))
         }
     }
 
@@ -1495,8 +1365,6 @@ private struct ResetView: View {
                 // `OrphanedTagRepair` would resurrect as "Recovered Tag" placeholders for tags the
                 // user explicitly asked to delete (#406). Likewise `CollectionEntry` before
                 // `Collection` (its delete rule is `.nullify`, not cascade).
-                // #406: `DocumentTagAssignment`/`DocumentHighlight` were previously omitted entirely,
-                // so a full reset left orphaned tag assignments and stranded highlights syncing.
                 try modelContext.delete(model: DocumentTagAssignment.self)
                 try modelContext.delete(model: DocumentHighlight.self)
                 try modelContext.delete(model: CollectionEntry.self)
@@ -1509,10 +1377,6 @@ private struct ResetView: View {
                 try modelContext.delete(model: Project.self)
                 await MainActor.run {
                     appState.activeProjectId = nil
-                    // Both iOS and macOS now use direct assignment. On iOS, Settings is
-                    // a persistent tab; on macOS, Settings is a Settings scene (independent
-                    // window). Neither path has a modal sheet on screen that could race
-                    // with ContentView's transition to OnboardingView.
                     appState.hasCompletedOnboarding = false
                 }
 

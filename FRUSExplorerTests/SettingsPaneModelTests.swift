@@ -83,7 +83,7 @@ struct SettingsPaneModelTests {
         #expect(SettingsPane.display.group == .readingAndSearch)
         #expect(SettingsPane.search.group == .readingAndSearch)
         #expect(SettingsPane.about.group == .system)
-        #expect(SettingsPane.reset.group == .system)
+        #expect(SettingsPane.dataRecovery.group == .system)
     }
 
     /// The asymmetries are deliberate and documented; pinning them means a future change to one
@@ -112,6 +112,26 @@ struct SettingsPaneModelTests {
                       "corrections", "storage", "spotlight", "disk"] {
             #expect(SettingsPane.volumesStorage.matches(query), "no match for \(query)")
         }
+    }
+
+    /// S-4b merged Research Data, Sync Diagnostics and Reset App. The recovery ladder is only
+    /// findable if the door answers for all three of the rows it replaced.
+    @Test("Data & Recovery answers for the three rows it absorbed")
+    func dataRecoveryKeywords() {
+        for query in ["export", "json", "markdown", "obsidian", "backup", "broken cross-references",
+                      "sync diagnostics", "log", "troubleshoot", "erase", "reset", "start over"] {
+            #expect(SettingsPane.dataRecovery.matches(query), "no match for \(query)")
+        }
+    }
+
+    /// The whole point of S-4: the System group shrinks from nine rows to four.
+    @Test("System is down to its four merged rows", arguments: [SettingsPlatform.iOS, .macOS])
+    func systemGroupSize(platform: SettingsPlatform) {
+        let system = SettingsPane.panes(in: .system, on: platform)
+        #expect(system.contains(.connections))
+        #expect(system.contains(.dataRecovery))
+        #expect(system.contains(.about))
+        #expect(system.count <= 5, "System grew back: \(system.map(\.rawValue))")
     }
 
     /// S-4a merged the two outside-service rows. Same rule as the Library merge: the survivor has
@@ -157,8 +177,8 @@ struct SettingsPaneModelTests {
         #expect(!SettingsPane.wordCloud.label.lowercased().contains("stop words"))
         #expect(SettingsPane.connections.matches("api key"))
         #expect(SettingsPane.display.matches("font"))
-        #expect(SettingsPane.data.matches("export"))
-        #expect(SettingsPane.reset.matches("erase"))
+        #expect(SettingsPane.dataRecovery.matches("export"))
+        #expect(SettingsPane.dataRecovery.matches("erase"))
         #expect(SettingsPane.volumesStorage.matches("reindex"))
     }
 

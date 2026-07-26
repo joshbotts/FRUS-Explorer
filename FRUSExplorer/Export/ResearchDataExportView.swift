@@ -27,7 +27,7 @@ import SwiftData
 ///   1.0 — Session 154: initial implementation
 ///   1.1 — Session 7 / #240B: "Broken Cross-References Report" section — CSV/JSON
 ///          ShareLinks re-serialized from the bundled broken-refs index.
-struct ResearchDataExportView: View {
+struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -46,15 +46,13 @@ struct ResearchDataExportView: View {
     @State private var jsonExportError: String?
     @State private var markdownExportURLs: [URL] = []
     @State private var isPreparingMarkdown = true
-    @State private var brokenRefsCSVURL: URL?
-    @State private var brokenRefsJSONURL: URL?
 
     private var userPromptCount: Int {
         prompts.filter { !$0.isStandard }.count
     }
 
     var body: some View {
-        Form {
+        Group {
             Section(String(localized: "settings.export.section.contents", defaultValue: "Contents")) {
                 LabeledContent(String(localized: "settings.export.notes", defaultValue: "Research Notes"), value: "\(notes.count)")
                 LabeledContent(String(localized: "settings.export.tags", defaultValue: "Tags & Assignments"), value: "\(tags.count + tagAssignments.count)")
@@ -94,32 +92,12 @@ struct ResearchDataExportView: View {
                 ))
             }
 
-            if BrokenRefsIndexStore.shared != nil {
-                Section {
-                    brokenRefsCSVExportRow
-                    brokenRefsJSONExportRow
-                } header: {
-                    Text(String(localized: "settings.export.brokenRefs.header", defaultValue: "Broken Cross-References Report"))
-                } footer: {
-                    Text(String(
-                        localized: "settings.export.brokenRefs.footer",
-                        defaultValue: "The corpus-wide list of cross-references in the printed FRUS volumes that point to a document, page, or volume not present in the corpus. The CSV lists distinct broken targets; the fuller per-occurrence spreadsheet with source line numbers is generated offline."
-                    ))
-                }
-            }
         }
-        .navigationTitle(String(localized: "settings.export.title", defaultValue: "Export Research Data"))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
         .task(id: includeGeneratedSummaries) {
             prepareJSONExport()
         }
         .task {
             await prepareMarkdownExports()
-        }
-        .task {
-            prepareBrokenRefsExports()
         }
     }
 
@@ -166,30 +144,6 @@ struct ResearchDataExportView: View {
         }
     }
 
-    // MARK: - Broken Cross-References Export Rows
-
-    @ViewBuilder
-    private var brokenRefsCSVExportRow: some View {
-        if let brokenRefsCSVURL {
-            ShareLink(item: brokenRefsCSVURL) {
-                Label(String(localized: "settings.export.brokenRefs.csv", defaultValue: "Export as CSV"), systemImage: "tablecells")
-            }
-        } else {
-            preparingRow
-        }
-    }
-
-    @ViewBuilder
-    private var brokenRefsJSONExportRow: some View {
-        if let brokenRefsJSONURL {
-            ShareLink(item: brokenRefsJSONURL) {
-                Label(String(localized: "settings.export.brokenRefs.json", defaultValue: "Export as JSON"), systemImage: "doc.badge.arrow.up")
-            }
-        } else {
-            preparingRow
-        }
-    }
-
     @ViewBuilder
     private var preparingRow: some View {
         HStack(spacing: 8) {
@@ -200,25 +154,6 @@ struct ResearchDataExportView: View {
     }
 
     // MARK: - Export Preparation
-
-    /// Writes the bundled broken-refs index to temporary CSV + JSON files for `ShareLink`.
-    private func prepareBrokenRefsExports() {
-        guard let index = BrokenRefsIndexStore.shared else { return }
-        do {
-            let csv = BrokenRefsReportExporter.csv(from: index)
-            let csvURL = FileManager.default.temporaryDirectory.appendingPathComponent("frus-broken-cross-references.csv")
-            try Data(csv.utf8).write(to: csvURL, options: .atomic)
-            brokenRefsCSVURL = csvURL
-
-            let jsonURL = FileManager.default.temporaryDirectory.appendingPathComponent("frus-broken-cross-references.json")
-            try BrokenRefsReportExporter.jsonData().write(to: jsonURL, options: .atomic)
-            brokenRefsJSONURL = jsonURL
-        } catch {
-            #if DEBUG
-            print("[ResearchDataExportView] broken-refs export prep failed — \(error)")
-            #endif
-        }
-    }
 
     /// Builds the JSON envelope and writes it to a temporary file for `ShareLink`.
     private func prepareJSONExport() {
@@ -242,7 +177,7 @@ struct ResearchDataExportView: View {
         }
 
         #if DEBUG
-        print("[ResearchDataExportView] JSON export prepared: \(jsonExportURL?.lastPathComponent ?? "failed")")
+        print("[DataExportSections] JSON export prepared: \(jsonExportURL?.lastPathComponent ?? "failed")")
         #endif
     }
 
@@ -266,7 +201,7 @@ struct ResearchDataExportView: View {
         isPreparingMarkdown = false
 
         #if DEBUG
-        print("[ResearchDataExportView] Markdown export prepared: \(urls.count) file(s)")
+        print("[DataExportSections] Markdown export prepared: \(urls.count) file(s)")
         #endif
     }
 }
