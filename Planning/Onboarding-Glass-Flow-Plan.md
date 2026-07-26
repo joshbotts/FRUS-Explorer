@@ -4,6 +4,10 @@
 **Source of truth:** `design_handoff_onboarding_glass_flow/` — `README.md`, `Onboarding
 Revamp.dc.html` (canonical option ids **1a, 4a, 4b, 4c** only; turns 2–3 are rejected
 design history), `Current Onboarding.dc.html` (baseline recreation), `screenshots/01`–`08`.
+**The bundle is deliberately untracked** (`.gitignore`: `design_handoff_*/`, as with every
+Claude Design hand-off) — unpack `Onboarding flow with animated word clouds.zip` from
+iCloud Drive at the repo root before any O session, or the file:line citations below and in
+the sessions resolve to nothing.
 **Execution context:** local Mac + Xcode. Two sessions have owner-executed steps (the
 corpus generator run in O-1, the fresh-install captures in O-5).
 
@@ -14,8 +18,9 @@ is downloaded — which is what makes it usable as a *content preview* at the mo
 user is deciding what to download.
 
 **Scope of this plan:** 6 sessions, ~8–10 PRs (O-0 is two). No CloudKit schema change, so the #488
-schema-deploy gate never fires. Independent of Wave R's remaining items (R-5, R-6, R-8,
-R-2b) and of Workstream Q — it can interleave with either.
+schema-deploy gate never fires. Independent of **R-2b** — the one Wave-R item still open,
+the rest having shipped as PRs #510–#521 — and of Workstream Q; it can interleave with
+either.
 
 ---
 
@@ -487,7 +492,12 @@ still reaches Ready, and the default project is still created.
 - Both manuals' onboarding sections; TestFlight notes; screenshot-checklist rows in #106
   (the onboarding captures are ⚙️ fresh-install, owner-executed).
 - Walk the handoff's acceptance checklist line by line in the PR body, each mapped to where
-  it was verified.
+  it was verified — **with one line knowingly not met.** The checklist opens with "Splash
+  shows on every cold launch, cycles lenses, never blocks readiness"
+  (`README.md:105`, and `:23`/`:67` say the same). O-0-1 answered (d): the splash fires
+  only on launches with a live reason, never on an ordinary warm start. That item is
+  therefore **superseded, not failed** — record it as such rather than quietly ticking it,
+  and pair it with the (c) indexing backdrop, which is where the composition actually went.
 
 **Prereq:** O-3, O-4. **Needs xcodegen:** no.
 
@@ -562,10 +572,11 @@ Everything else is ordinary PR work.
 
 ## Relationship to the other workstreams
 
-Independent of Wave R's tail (R-5, R-6, R-8, R-2b) and of Workstream Q. It adds **no
-`@Model` type**, so `CloudKitSchemaInventoryTests` never fires and no Production schema
-deploy gates the release — the one release-blocking dependency that Q's M-1 and M-2 both
-carry. The only shared file with any other lane is `FRUSTheme.swift`, and only additively.
+Independent of **R-2b** (the only Wave-R item left; R-1 and R-3…R-9 shipped as PRs
+#510–#521) and of Workstream Q. It adds **no `@Model` type**, so
+`CloudKitSchemaInventoryTests` never fires and no Production schema deploy gates the
+release — the release-blocking dependency that Q's M-1, Q's M-2, and R-2b all carry. The
+only shared file with any other lane is `FRUSTheme.swift`, and only additively.
 
 If both lanes run, O-0 is the natural companion to a Q session: it is small, it is
 independent, and it stops the next reader of `Onboarding/` from being misled the way this
