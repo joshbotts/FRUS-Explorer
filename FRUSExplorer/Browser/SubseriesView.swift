@@ -18,6 +18,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
+///   1.1 — Wave R / R-8: the word-cloud toolbar button names itself in its `Label` rather than
+///          relying on `.accessibilityLabel` alone, which an overflowed toolbar row discards.
 struct SubseriesView: View {
 
     let vm: BrowserViewModel
@@ -89,14 +91,22 @@ struct SubseriesView: View {
                 Button {
                     appState.openWordCloud(.subseries(subseriesId: group.subseries), from: sceneID)
                 } label: {
-                    Image(systemName: WordCloudGlyph.symbol)
+                    // R-8: named `Label`, not a bare `Image`. This toolbar has a single
+                    // item today and so cannot overflow, but the shape is the one that
+                    // announced a raw SF Symbol name the moment a Browse toolbar did.
+                    Label(Self.wordCloudName, systemImage: WordCloudGlyph.symbol)
                 }
                 .help(String(localized: "browser.subseries.wordCloud.help",
                              defaultValue: "Visualise the most frequent terms across this subseries"))
-                .accessibilityLabel(String(localized: "browser.subseries.wordCloud.a11y",
-                                           defaultValue: "Subseries word cloud"))
+                .accessibilityLabel(Self.wordCloudName)
             }
         }
+    }
+
+    /// The word-cloud control's name, read both from its `Label` (which is what an
+    /// overflowed toolbar row announces) and from `.accessibilityLabel`. See R-8.
+    static var wordCloudName: String {
+        String(localized: "browser.subseries.wordCloud.a11y", defaultValue: "Subseries word cloud")
     }
 }
 

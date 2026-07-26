@@ -29,8 +29,40 @@ import SwiftUI
 /// and an overlay view would have to win pointer hit-testing without stealing
 /// touches — a fragile hack. TipKit popovers cover proactive discovery instead.
 ///
+/// ## Toolbar rule (R-8) — this modifier is NOT enough on its own
+/// The "VoiceOver name | all" row above is false for a **toolbar item that
+/// collapses into the iPadOS navigation-bar overflow**. Measured on iPad
+/// (iPadOS 26.5, `OverflowBarButtonItem` expanded): the overflow row is a UIKit
+/// menu row whose accessible name is re-derived from the *content of the item's
+/// `label:` closure* — a `Label`'s text if there is one, otherwise the image's
+/// own accessibility name, which for `Image(systemName:)` is the **raw SF Symbol
+/// string**. Modifiers applied outside the label closure — `accessibilityLabel`,
+/// and therefore this one — decorate only the in-bar representation and are not
+/// carried across. Overflow does not *drop* the name; it recomputes it, and
+/// `.accessibilityLabel` loses to the label content even when both are present.
+///
+/// So for anything inside a `.toolbar`, write the name into the label closure:
+///
+/// ```swift
+/// // ✅ announces "Analysis Tools" in the bar AND in the overflow
+/// Menu { … } label: { Label(name, systemImage: "chart.bar.xaxis") }
+///     .controlHelp(name, detail: …, systemImage: "chart.bar.xaxis")
+///
+/// // ❌ announces "chart.bar.xaxis" once the item overflows
+/// Menu { … } label: { Image(systemName: "chart.bar.xaxis") }
+///     .controlHelp(name, detail: …, systemImage: "chart.bar.xaxis")
+/// ```
+///
+/// A bare `Label` still renders **icon-only** in the bar on both platforms, so
+/// this costs nothing visually — do not add `.labelStyle(.iconOnly)`, which is
+/// what strips the text the overflow needs. `ToolbarAccessibilityAuditTests`
+/// enforces the rule across the source tree.
+///
 /// Version history:
 ///   1.0 — Session 162: initial implementation
+///   1.1 — Wave R / R-8: documented the toolbar rule above. The modifier is
+///          unchanged; what changed is the claim it makes — an icon-only toolbar
+///          control needs its name in the label closure as well.
 private struct ControlHelpModifier: ViewModifier {
 
     /// Short control name ("Reset View") — VoiceOver label and the Large
@@ -70,11 +102,14 @@ extension View {
     /// VoiceOver hint plus Large Content Viewer entry on iOS/iPadOS.
     ///
     /// Use this instead of separate `accessibilityLabel`/`help` calls on any
-    /// button whose visible content is just an icon:
+    /// button whose visible content is just an icon. Inside a `.toolbar` the
+    /// label closure must *also* carry the name as a `Label` — see the toolbar
+    /// rule on `ControlHelpModifier`; this modifier alone does not survive the
+    /// iPadOS overflow.
     ///
     /// ```swift
     /// Button { vm.resetViewport() } label: {
-    ///     Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+    ///     Label(name, systemImage: "arrow.up.left.and.down.right.magnifyingglass")
     /// }
     /// .controlHelp(
     ///     String(localized: "graph.resetView.a11y", defaultValue: "Reset View"),
