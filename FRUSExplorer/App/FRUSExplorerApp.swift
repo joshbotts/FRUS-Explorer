@@ -209,6 +209,19 @@ final class FRUSAppDelegate: NSObject, UIApplicationDelegate {
             Task { @MainActor in handler() }
         }
     }
+
+    /// Supported interface orientations, narrowed while `OrientationLock` is engaged (#498).
+    ///
+    /// Info.plist declares all four orientations; this delegate is the only thing that restricts
+    /// them, and it does so only while the Corpus Analytics sheet is presented on iPhone. See
+    /// `OrientationLock` for why.
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        // UIKit calls this on the main thread; the lock is MainActor-isolated.
+        MainActor.assumeIsolated { OrientationLock.shared.mask }
+    }
 }
 #endif
 

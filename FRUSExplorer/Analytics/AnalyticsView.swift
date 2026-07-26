@@ -876,6 +876,11 @@ struct AnalyticsView: View {
         }
         #if os(macOS)
         .frame(minWidth: 680, minHeight: 520)
+        #else
+        // #498 mitigation: pin the orientation while this sheet is up. Rotating it on iPhone with a
+        // re-focused term field deadlocks the app in an AttributeGraph cycle (see `OrientationLock`).
+        // iPhone only — iPad is unaffected and keeps free rotation.
+        .orientationLockedWhilePresented()
         #endif
         // D3: anchored on the outermost view (not the inner `Group`, which would apply the
         // presentation per child — see the Group-modifier gotcha).
@@ -1033,8 +1038,14 @@ struct AnalyticsView: View {
     private var landscapeHint: some View {
         HStack(spacing: 6) {
             Image(systemName: "rotate.right")
-            Text(String(localized: "analytics.landscapeHint",
-                        defaultValue: "Rotate to landscape for a wider chart"))
+            // #498: while the sheet is orientation-locked, rotating does nothing — so the old
+            // "Rotate to landscape" copy would be an instruction the app no longer honours. Say the
+            // thing the reader can actually act on instead.
+            Text(OrientationLock.shared.isLocked
+                 ? String(localized: "analytics.landscapeHint.locked",
+                          defaultValue: "For a wider chart, close this and reopen in landscape")
+                 : String(localized: "analytics.landscapeHint",
+                          defaultValue: "Rotate to landscape for a wider chart"))
         }
         .font(.caption2)
         .foregroundStyle(.tertiary)
