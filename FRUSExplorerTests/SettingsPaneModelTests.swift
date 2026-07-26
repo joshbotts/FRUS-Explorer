@@ -100,15 +100,28 @@ struct SettingsPaneModelTests {
         #expect(SettingsPane.display.platforms == [.iOS, .macOS])
     }
 
-    /// The reason Notes is on iOS at all. A reader who wants to stop the app recording their
-    /// searches will not think to look under "Notes", so the pane has to answer for the words
-    /// they actually type.
-    @Test("Notes answers for the research-session switch it owns")
-    func notesCarriesTheLoggingSwitch() {
-        for query in ["log research sessions", "logging", "sessions", "history",
-                      "privacy", "recording", "trail"] {
-            #expect(SettingsPane.notes.matches(query), "no match for \(query)")
+    /// The research-session switch has its own pane now. It was a section of Notes only because
+    /// Notes was the one Research destination with room — the giveaway being that `.notes` had to
+    /// carry "logging", "privacy" and "trail" so a reader could find a recording switch inside a
+    /// pane called *Notes*. Those keywords belong to the pane that owns the switch.
+    @Test("Research Sessions answers for the words a reader actually types")
+    func researchSessionsKeywords() {
+        for query in ["log research sessions", "logging", "session log", "history",
+                      "privacy", "recording", "trail", "delete history"] {
+            #expect(SettingsPane.researchSessions.matches(query), "no match for \(query)")
         }
+        #expect(SettingsPane.researchSessions.group == .research)
+        #expect(SettingsPane.researchSessions.platforms == [.iOS, .macOS])
+    }
+
+    /// And Notes goes back to being about notes: it must not still claim the recording vocabulary,
+    /// or both panes surface for "privacy" and the split has bought nothing.
+    @Test("Notes no longer answers for the recording switch")
+    func notesReleasedTheLoggingKeywords() {
+        for query in ["logging", "privacy", "recording", "trail", "session log"] {
+            #expect(!SettingsPane.notes.matches(query), "Notes still matches \(query)")
+        }
+        #expect(SettingsPane.notes.matches("research notes"))
         #expect(SettingsPane.notes.platforms.contains(.iOS))
     }
 

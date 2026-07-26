@@ -30,6 +30,11 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 101: initial implementation
+///   1.1 — First presented (from Settings ▸ Research ▸ Research Sessions). Two bugs that had
+///          been invisible while the view was unreachable: every session read "Ongoing", because
+///          `endedAt` is only stamped when a later event closes a session in the same process,
+///          so anything ended by quitting the app stayed open forever; and the event count had a
+///          single `%lld events` form, so a one-event session read "1 events".
 struct SessionLogView: View {
 
     @Query(sort: \ResearchSession.startedAt, order: .reverse)
@@ -81,21 +86,39 @@ private struct SessionRowView: View {
 
     private var eventCount: Int { session.events?.count ?? 0 }
 
+    /// When the session actually stopped.
+    ///
+    /// `endedAt` is stamped only when a *later* event arrives after the expiry interval, in the
+    /// same process — so a session that ended because the app quit is never closed and keeps a
+    /// nil `endedAt` forever. Falling back to the last event's timestamp is what the data
+    /// actually says; without it every session in the log reads "Ongoing", which is how this
+    /// showed up the moment the view was first presented.
+    private var effectiveEnd: Date? {
+        session.endedAt ?? sortedEvents.compactMap(\.timestamp).max()
+    }
+
+    /// Whether this session could still be the open one — its last activity is recent enough that
+    /// the next event would join it rather than start a new session.
+    private var isOngoing: Bool {
+        guard session.endedAt == nil, let last = effectiveEnd else { return false }
+        return Date.now.timeIntervalSince(last) <= AppState.sessionExpiryInterval
+    }
+
     private var durationString: String? {
         guard let start = session.startedAt else { return nil }
-        if let end = session.endedAt {
-            let interval = end.timeIntervalSince(start)
-            if interval < 60 {
-                return "\(Int(interval))s"
-            } else if interval < 3_600 {
-                return "\(Int(interval / 60))m"
-            } else {
-                let h = Int(interval / 3_600)
-                let m = Int((interval.truncatingRemainder(dividingBy: 3_600)) / 60)
-                return "\(h)h \(m)m"
-            }
-        } else {
+        if isOngoing {
             return String(localized: "sessionLog.ongoing", defaultValue: "Ongoing")
+        }
+        guard let end = effectiveEnd else { return nil }
+        let interval = max(0, end.timeIntervalSince(start))
+        if interval < 60 {
+            return "\(Int(interval))s"
+        } else if interval < 3_600 {
+            return "\(Int(interval / 60))m"
+        } else {
+            let h = Int(interval / 3_600)
+            let m = Int((interval.truncatingRemainder(dividingBy: 3_600)) / 60)
+            return "\(h)h \(m)m"
         }
     }
 
@@ -124,17 +147,11 @@ private struct SessionRowView: View {
                         Text("·")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
-                        Text(
-                            String(
-                                format: String(
-                                    localized: "sessionLog.eventCount %lld",
-                                    defaultValue: "%lld events"
-                                ),
-                                Int64(eventCount)
-                            )
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        // Two forms, via the shared helper: the single `%lld events` format
+                        // rendered "1 events" for every one-event session, which is most of them.
+                        Text(ResearchSessionsSummary.events(eventCount))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

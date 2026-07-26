@@ -99,7 +99,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     // Library
     case volumesStorage
     // Research
-    case projects, tags, scopes, summarization, wordCloud, notes
+    case projects, tags, scopes, summarization, wordCloud, notes, researchSessions
     // Reading & Search
     case display, search
     // System
@@ -119,6 +119,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .summarization:   return String(localized: "settings.pane.summarization", defaultValue: "Summarization")
         case .wordCloud:       return String(localized: "settings.pane.wordCloud", defaultValue: "Word Cloud")
         case .notes:           return String(localized: "settings.pane.notes", defaultValue: "Notes")
+        case .researchSessions: return String(localized: "settings.pane.researchSessions",
+                                              defaultValue: "Research Sessions")
         case .display:         return String(localized: "settings.pane.display", defaultValue: "Display")
         case .search:          return String(localized: "settings.pane.search", defaultValue: "Search")
         case .sync:            return String(localized: "settings.pane.sync", defaultValue: "iCloud Sync")
@@ -138,6 +140,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .summarization:   return "sparkles"
         case .wordCloud:       return "text.word.spacing"
         case .notes:           return "note.text"
+        case .researchSessions: return "clock.arrow.circlepath"
         case .display:         return "textformat.size"
         case .search:          return "magnifyingglass"
         case .sync:            return "icloud"
@@ -154,7 +157,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         switch self {
         case .volumesStorage:
             return .library
-        case .projects, .tags, .scopes, .summarization, .wordCloud, .notes:
+        case .projects, .tags, .scopes, .summarization, .wordCloud, .notes, .researchSessions:
             return .research
         case .display, .search:
             return .readingAndSearch
@@ -192,12 +195,10 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .scopes:          return ["volume scope", "custom scope", "my volume scopes", "subset"]
         case .summarization:   return ["ai", "apple intelligence", "prompts", "summaries", "batch", "background"]
         case .wordCloud:       return ["stop words", "stopwords", "hidden words", "lens", "density", "typeface", "font"]
-        // "logging"/"sessions"/"history" are here because this pane owns the Log Research
-        // Sessions switch, which is the thing a reader is most likely to come hunting for and
-        // the least discoverable from the pane's name.
-        case .notes:           return ["research notes", "annotations", "log research sessions",
-                                       "logging", "sessions", "session log", "history", "privacy",
-                                       "recording", "trail"]
+        case .notes:           return ["research notes", "annotations"]
+        case .researchSessions: return ["log research sessions", "logging", "session log",
+                                        "history", "privacy", "recording", "trail", "activity",
+                                        "delete history", "clear history", "what is recorded"]
         case .display:         return ["text size", "font", "citations", "reading mode", "chart colors", "appearance"]
         case .search:          return ["scope", "snippet", "editorial notes", "defaults", "filters"]
         case .sync:            return ["icloud", "cloudkit", "devices"]

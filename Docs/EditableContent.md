@@ -1483,17 +1483,41 @@ When on, this device shares the settings above with your other devices that also
 
 ### Research Sessions
 
-<!-- Shared surface: NotesSettingsView is one view rendered on both platforms (Settings ▸ Research ▸ Notes). Single edit point. -->
+<!-- Settings ▸ Research ▸ Research Sessions. One view on both platforms, but the recording footer has TWO keys because the platforms genuinely record different things: the only `.searchSubmit` call site is the iOS SearchViewModel, so searches run in the macOS Search window are never logged. Sessions sync, so a Mac user still sees searches their iPhone recorded — which is why the Mac wording is "not here" rather than "not recorded". -->
 
-#### Research-session logging footer
+#### Research-session recording footer (iOS)
 
-<!-- The sentence this replaced ("Records which documents you open and when, so History and Project Leads can show your trail") was false: History reads ReadingHistoryEntry/SearchHistoryEntry, Project Leads reads collections, notes and tags, and neither changes when this is off. The replacement states what is recorded, where it goes, and that nothing consumes it yet. -->
+<!-- Replaces the sentence shipped in S-5b ("Records which documents you open and when, so History and Project Leads can show your trail"), which was false: History reads ReadingHistoryEntry/SearchHistoryEntry, Project Leads reads collections, notes and tags, and neither changes when the switch is off. -->
 
-<!-- SOURCE: FRUSExplorer/Settings/NotesSettingsView.swift | NotesSettingsView.researchSessionsSection footer | key: settings.notes.logging.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | key: settings.sessions.logging.footer | shared: iOS only (see the note above) -->
 
-Records the documents you open and the text of the searches you run, grouped into sessions. Kept on this device and, if iCloud sync is on, in your private iCloud database. No part of the app reads this log yet — it is groundwork for a future research-trail view. Turning it off stops new recording; sessions already recorded are kept.
+Records the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity. Kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops new recording; sessions already recorded are kept until you delete them.
 
-<!-- END SOURCE: settings.notes.logging.footer -->
+<!-- END SOURCE: settings.sessions.logging.footer -->
+
+#### Research-session recording footer (macOS)
+
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | key: settings.sessions.logging.footer.mac | shared: macOS only (see the note above) -->
+
+Records the documents you open, grouped into sessions that end after 30 minutes of inactivity. Searches are recorded on iPhone and iPad but not here. Kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops new recording; sessions already recorded are kept until you delete them.
+
+<!-- END SOURCE: settings.sessions.logging.footer.mac -->
+
+#### Recorded-activity footer
+
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordedActivitySection footer | key: settings.sessions.activity.footer | shared: iOS+macOS (single edit point) -->
+
+No other part of the app reads this log — it is groundwork for a research-trail view. It is here so that what is recorded is something you can look at.
+
+<!-- END SOURCE: settings.sessions.activity.footer -->
+
+#### Delete-sessions footer
+
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.manageSection footer | key: settings.sessions.manage.footer | shared: iOS+macOS (single edit point) -->
+
+Deletes every recorded session and its events. Nothing else is touched — your notes, highlights, tags, collections and reading history are separate and stay put.
+
+<!-- END SOURCE: settings.sessions.manage.footer -->
 
 #### iCloud unavailable (Local Only) detail
 <!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 223–224 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->

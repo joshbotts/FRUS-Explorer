@@ -13,12 +13,11 @@ import SwiftData
 
 /// Settings → Research → Notes — every research note on this device.
 ///
-/// Shared by both platforms. It was macOS-only until the research-session gap was traced: the
-/// "Log Research Sessions" switch lives in this pane, and iOS lost it when S-1 replaced the
-/// hand-written settings root with a model-driven loop over *panes* — the switch was the one
-/// inline row in the tree that had no pane to become. Giving iOS the pane restores the switch
-/// where the user already knows to look for it, and brings with it the flat, note-grained
-/// browser iOS never had (its Research tab lists documents, never notes).
+/// Shared by both platforms. It was macOS-only until the research-session gap was traced — the
+/// "Log Research Sessions" switch used to live here, and iOS had no control for it at all. The
+/// switch has since moved to its own `ResearchSessionsView`, where it belongs; what this pane
+/// keeps is the reason iOS still wants it: a flat, note-grained browser the platform never had
+/// (its Research tab lists documents, never notes).
 ///
 /// ## What changed in S-5b (macOS)
 /// - Native `Form(.grouped)` replaces the bespoke split layout (a padded header block, a
@@ -56,8 +55,6 @@ struct NotesSettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     #endif
 
-    @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
-
     @State private var snapshot: NotesPaneSnapshot = .empty
     @State private var editingNote: ResearchNote?
     @State private var showsAllNotes = false
@@ -65,7 +62,6 @@ struct NotesSettingsView: View {
     var body: some View {
         Form {
             notesSection
-            researchSessionsSection
         }
         #if os(macOS)
         .formStyle(.grouped)
@@ -146,28 +142,6 @@ struct NotesSettingsView: View {
                 Text(NotesPaneSnapshot.showingCount(
                     shown: min(Self.inlineNoteLimit, snapshot.total), of: snapshot.total))
             }
-        }
-    }
-
-    @ViewBuilder
-    private var researchSessionsSection: some View {
-        Section {
-            Toggle(String(localized: "settings.notes.logging",
-                          defaultValue: "Log Research Sessions"),
-                   isOn: $loggingEnabled)
-        } header: {
-            Text(String(localized: "settings.notes.sessions.header",
-                        defaultValue: "Research Sessions"))
-        } footer: {
-            // Rewritten in this session. The sentence S-5b shipped — "Records which documents you
-            // open and when, so History and Project Leads can show your trail" — was false on
-            // both halves: History reads ReadingHistoryEntry/SearchHistoryEntry and Project Leads
-            // reads collections, notes and tags. Neither consults these records, and neither
-            // changes when this is off. What the copy must say instead is what is actually
-            // recorded (including the search text), where it goes (iCloud, with everything else),
-            // and that nothing reads it yet — see `Docs/EditableContent.md`.
-            Text(String(localized: "settings.notes.logging.footer",
-                        defaultValue: "Records the documents you open and the text of the searches you run, grouped into sessions. Kept on this device and, if iCloud sync is on, in your private iCloud database. No part of the app reads this log yet — it is groundwork for a future research-trail view. Turning it off stops new recording; sessions already recorded are kept."))
         }
     }
 
