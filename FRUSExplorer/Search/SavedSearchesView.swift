@@ -237,5 +237,10 @@ struct SavedSearchesView: View {
             }
         }
         .padding(.vertical, 2)
+        // #312 follow-up: full-row tap target. Both modifiers, in this order — a saved-search name
+        // is usually short, so without the frame most of the row is dead to a finger (the enclosing
+        // row Button is `.buttonStyle(.plain)`, which hit-tests only opaque content).
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }

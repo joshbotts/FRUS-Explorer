@@ -1382,6 +1382,9 @@ struct SourceExplorerView: View {
             }
         }
         .padding(.vertical, 2)
+        // #312 follow-up: the contentShape below only covers this VStack's own width, which for a
+        // short header is less than the row; the frame widens it first.
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
     }
 }

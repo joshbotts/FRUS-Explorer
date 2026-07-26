@@ -295,6 +295,10 @@ private struct PersonIndexRow: View {
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
+            // #312 follow-up: no frame needed — the Spacer already makes this HStack full width.
+            // contentShape is what makes the gaps around the name, count capsule and chevron
+            // tappable, since `.buttonStyle(.plain)` hit-tests only opaque content.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)

@@ -215,6 +215,12 @@ struct SubseriesTagFilterBar: View {
                     systemImage: "tag"
                 )
                 .font(.callout)
+                // #312 follow-up: `.borderless` hit-tests only its label content, exactly like
+                // `.plain` — measured on iPhone 16e (iOS 26.x), a tap on the right-hand half of this
+                // row did nothing before these two lines. This row spans the full width visually, so
+                // the whole width should be the target.
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
             .help(String(localized: "browser.filter.addTag.help",
@@ -515,6 +521,10 @@ private struct TagPickerRow: View {
                         .accessibilityHidden(true)
                 }
             }
+            // #312 follow-up: no frame needed — the Spacer already makes this HStack full width.
+            // contentShape makes the gap between the name and the checkmark tappable, which for a
+            // toggle row is most of the target. Mirrors `MergeTagSheet.mergeTagRow` in SettingsView.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // VoiceOver announces which taxonomy filters are active; the visual checkmark

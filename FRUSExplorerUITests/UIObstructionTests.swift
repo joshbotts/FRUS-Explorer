@@ -24,17 +24,34 @@ import UIKit
 ///   6. The "Working on:" project banner (top safeAreaInset) — does not cover the Browse
 ///      NAVIGATION BAR or its controls (#486)
 ///
-/// Scenarios 1–5 all assert on a list CELL. Scenario 6 is the first to assert on a navigation-bar
+/// Scenarios 1–5 assert on list content. Scenario 6 is the first to assert on a navigation-bar
 /// control, which is why #486 — a banner drawn straight over the back button, title, and trailing
 /// toolbar items — shipped past a suite named for obstruction. When adding a scenario, ask which
 /// chrome it can prove innocent, not merely which one it exercises.
 ///
-/// Scenario 4 covers the Browse tab's ROOT list only; its drill-in asserted nothing and was
-/// removed (see 1.6). Scenario 5 now covers Research's root list AND the pushed detail level in
-/// the launch representation (see 1.7) — the pushed level is where #272's bug actually lives, so
-/// root-only coverage was gating the wrong column entirely. Its remaining gaps are enumerated in
-/// the coverage ledger at the end of that scenario. A false-green is worse than a documented gap;
-/// so is a documented gap that was never re-measured.
+/// Scenarios 4 and 5 both cover their tab's root list AND its pushed level (see 2.1 and 1.7) — the
+/// pushed level is where #238/#272 actually live, so root-only coverage was gating the wrong column
+/// entirely. Scenario 5's remaining gaps are enumerated in the coverage ledger at the end of it.
+/// A false-green is worse than a documented gap; so is a documented gap that was never re-measured.
+///
+/// ## A cautionary tale, kept because it cost three investigations
+/// Scenario 4's Browse drill-in was removed and stayed removed for three rounds (1.6, 1.7, 1.9) on
+/// the conclusion that XCUITest "cannot drive a programmatic-push `Button`". That was never true.
+/// TWO unrelated defects were producing the same symptom, and each round found one more reason to
+/// believe the harness explanation instead of separating them:
+///   1. **A test-query bug.** `corpusSubseriesRow` (then `corpusContentCell`) matched the section
+///      HEADER "Subseries", which SwiftUI also exposes as a cell. Tapping a header cannot push
+///      anything, so no change to the app could have made that tap work.
+///   2. **An app bug.** `CorpusView`'s rows carried no `.contentShape`, so only the label's glyphs
+///      were hit-testable and the row's centre — where an element tap lands — was dead space, for a
+///      real finger as much as for the harness.
+/// Round 1.6 hit (1) and blamed the driver. Round 1.9 hit (1) and (2) in one run each, and hardened
+/// the same wrong explanation into a "structural" claim. #486 found (2) while doing something else.
+/// Both had to be fixed before the drill-in could return (2.1).
+///
+/// The lesson is narrow and worth keeping: when a tap does nothing, verify WHAT element you tapped
+/// and WHERE the tap landed before concluding anything about the driver — and having found one
+/// cause, keep going, because a symptom this cheap to reproduce can have two.
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
@@ -64,6 +81,8 @@ import UIKit
 ///          trivially hittable). A single blind toggle could otherwise assert only the
 ///          never-broken sidebar mode when a prior aborted run leaked the persisted
 ///          representation.
+///          ** The query introduced here was wrong from the start — see 2.1(a). ** It matched the
+///          section header, not a subseries row. The reasoning above is sound; the element was not.
 ///   1.4 — #272: added scenario 5 (Research counterpart to scenario 4); `selectBrowseSection`
 ///          generalised to `selectSection(_:)`, which also fixes scenario 3 on iPad (it
 ///          hardcoded `app.tabBars`, matching only the iPhone bottom bar, so it failed on
@@ -81,12 +100,18 @@ import UIKit
 ///          run in BOTH representations.
 ///   1.6 — The same audit applied to scenario 4's drill-in, which had the identical defect and
 ///          predates scenario 5: it asserted `app.cells.firstMatch` — the naked query
-///          `corpusContentCell` exists to avoid — which matches the un-pushed list, so it passed
+///          `corpusSubseriesRow` exists to avoid — which matches the un-pushed list, so it passed
 ///          without navigating. Measured on iPad: after the tap `backButton=false` and the nav
 ///          bar stayed "FRUS Corpus" (no push), yet the assertion reported true; repeated taps
 ///          did not push either. Root cause (shared with scenario 5): an XCUITest tap on a
 ///          SwiftUI List row's Cell element does not activate the Button inside it. Removed;
 ///          the pushed level is now an explicit, documented gap in both scenarios.
+///          ** SUPERSEDED by 2.1 — the stated root cause is WRONG. ** The observations hold (no
+///          push, vacuous oracle, removal justified); the diagnosis does not. XCUITest activates
+///          such a Button fine. This round's tap could never have pushed for a reason unrelated to
+///          Buttons: the query resolved to the section HEADER "Subseries", not a row. See
+///          `corpusSubseriesRow`. Fixed in #312 along with the separate `.contentShape` defect 1.9
+///          ran into; drill-in restored.
 ///   1.7 — #272 follow-up, all of it measured on iPad Pro 13-inch (M5); two claims above do not
 ///          survive re-measurement. (a) 1.6's shared root cause does NOT hold for Research: a tap
 ///          on `researchContentCell` DOES push (nav bar becomes "All Research Documents",
@@ -117,6 +142,14 @@ import UIKit
 ///          Research's are `NavigationLink(value:)`, and XCUITest drives the link but not the
 ///          button's action here. No drill-in is added (a red test is worse than a documented
 ///          gap); the measured finding is recorded in scenario 4's NOTE and on #312.
+///          ** SUPERSEDED by 2.1 — "structural" was the wrong conclusion from two sound runs. **
+///          Both runs did fail to push, for two DIFFERENT reasons, neither of them the construction
+///          of the row: the cell-tap run tapped the section header (see 1.6's correction and
+///          `corpusSubseriesRow`), and the direct-`Button` run tapped the row's centre, which was
+///          dead space because the row had no `.contentShape`. Finding one cause and stopping is
+///          what turned two ordinary bugs into a permanent gap. The `NavigationLink`-vs-`Button`
+///          contrast is a coincidence — Research's rows are full-width because a `NavigationLink`
+///          row fills its cell, so its centre tap hits. Both defects fixed in #312.
 ///   2.0 — #486: added scenario 6, the first assertion in this suite against a NAVIGATION-BAR
 ///          control rather than a list cell. Stages the state the banner needs (creates a project
 ///          with a research question through Settings ▸ Projects ▸ New Project…, which the create
@@ -125,6 +158,33 @@ import UIKit
 ///          iPhone-scoped: the banner is deliberately absent on regular-width iPad (#461/#462).
 ///          Also corrects 1.9: `CorpusView` rows are not un-drivable, they are un-hittable off
 ///          their text (no `.contentShape`) — a tap near the row's LEADING edge pushes.
+///   2.1 — #312: `CorpusView`'s rows are full-width tap targets now, which retires the harness
+///          limitation 1.6/1.9 recorded and 2.0 half-corrected. Four consequences here:
+///          (a) `corpusContentCell` → `corpusSubseriesRow`, and it now matches the row's `Button`
+///              via `label BEGINSWITH 'Subseries '` (trailing space) instead of a cell via
+///              `BEGINSWITH 'Subseries'`. The old predicate matched the section HEADER, which
+///              SwiftUI exposes as a cell as well: measured on iPhone 17 (iOS 26.3.1), the resolved
+///              element was 40.3pt tall where every real row is 73.7pt. This is a SECOND defect,
+///              independent of the app fix, and it is the one that actually defeated 1.6 — a header
+///              tap can never push. Every earlier assertion written against that query, including
+///              scenario 4's four root hittability assertions, was really asserting on the header.
+///          (b) scenario 4's Browse drill-in is RESTORED, with the sound oracle 1.9's own notes
+///              specified (`BackButton` + the "FRUS Corpus" nav bar going away) and 1.7's ordering
+///              (drill in BEFORE the swipe). This closes #312 gap 3 — the pushed Browse level is
+///              covered in the launch representation, matching scenario 5's shape.
+///          (c) scenario 2 was another casualty of the app bug, previously invisible: its
+///              `app.cells.firstMatch.tap()` targets the corpus list's first row, which since
+///              Session 87 is "People", not a subseries — and it never pushed, so the post-tap
+///              `app.cells.firstMatch` matched the un-pushed corpus list and the test passed
+///              having asserted nothing about the breadcrumb bar it is named for. Now it drills
+///              into a subseries (what its name always claimed) behind a `BackButton` oracle.
+///              Retargeting is not cosmetic: with the rows fixed, the old target would have pushed
+///              into `PersonIndexView`, which on a fresh install renders a cell-less
+///              `ContentUnavailableView` — the test would have started FAILING. Verified on the
+///              simulator: that view shows "No People Indexed" and contributes no cells.
+///          (d) scenario 6's `dx: 0.22` coordinate tap is back to a plain element tap; the offset
+///              was a workaround for the app bug, and keeping it would hide the fix. Confirmed
+///              green on iPhone 17 with the plain tap.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -289,15 +349,42 @@ final class UIObstructionTests: XCTestCase {
     /// modifier shifts the list content down by exactly the bar's natural height.
     /// This test guards against any regression where the bar's height is
     /// underreported and the first row slides beneath it.
+    ///
+    /// SCOPE: on a regular-width iPad `breadcrumbBarIfAppropriate` renders `EmptyView` (#238), so on
+    /// an iPad destination this exercises the push but has no breadcrumb to prove innocent. It is
+    /// left unskipped deliberately — the push half is still worth running there — but do not read an
+    /// iPad-only green as breadcrumb coverage.
     func testBreadcrumbBarNotObstructingFirstRow() throws {
         // Ensure we are on the Browse tab.
         selectBrowseSection()
 
-        // Wait for the corpus list to load then tap the first cell to navigate in.
-        let firstCell = app.cells.firstMatch
-        let appeared = firstCell.waitForExistence(timeout: 10)
-        XCTAssertTrue(appeared, "Expected corpus list cells to appear within 10 s")
-        firstCell.tap()
+        // Drill into a SUBSERIES — what this test's name and docstring have always described.
+        //
+        // `app.cells.firstMatch.tap()` used to stand here, and it was wrong twice over (2.1):
+        //  - It targets the corpus list's FIRST row, which since Session 87 is the "People"
+        //    cross-volume index, not a subseries. On a fresh UI-test install `PersonIndexView` has
+        //    no indexed people and renders a cell-less `ContentUnavailableView`, so once #312 made
+        //    the row actually tappable the old target would have started FAILING here.
+        //  - It never pushed at all, which is what hid the mis-target: `CorpusView`'s rows had no
+        //    `.contentShape`, so the element tap landed beside the label. The post-tap assertion
+        //    below was then satisfied by the UN-pushed corpus list, and this test passed for years
+        //    having asserted nothing whatsoever about the breadcrumb bar it is named for.
+        let subseriesRow = corpusSubseriesRow
+        XCTAssertTrue(subseriesRow.waitForExistence(timeout: 10),
+                      "Expected corpus subseries rows to appear within 10 s")
+        subseriesRow.tap()
+
+        // Sound oracle for the push, so the assertions below cannot be satisfied by the root list:
+        // the corpus root has no back button and owns the "FRUS Corpus" navigation bar.
+        XCTAssertTrue(
+            app.buttons["BackButton"].waitForExistence(timeout: 10),
+            "Tapping a corpus subseries row did not push a browser level — without the push this "
+                + "test cannot see the breadcrumb bar at all (#312)"
+        )
+        XCTAssertFalse(
+            app.navigationBars["FRUS Corpus"].exists,
+            "Still at the corpus root after tapping a subseries row — no push happened"
+        )
 
         // After navigating in, the breadcrumb bar appears and a new set of rows loads.
         // Wait briefly for the pushed view's cells to settle.
@@ -308,7 +395,9 @@ final class UIObstructionTests: XCTestCase {
         // Scroll back to the top in case the navigation defaulted to a non-zero offset.
         app.swipeDown(velocity: .fast)
 
-        // The first cell must be hittable — not hidden under the breadcrumb bar.
+        // The first cell must be hittable — not hidden under the breadcrumb bar. `app.cells` is
+        // safe here (unlike at the root) because the push is proven above, so these are the
+        // SubseriesView's own volume rows.
         XCTAssertTrue(
             app.cells.firstMatch.isHittable,
             "First row in pushed browser level is not hittable — it may be obscured by the breadcrumb bar"
@@ -378,11 +467,29 @@ final class UIObstructionTests: XCTestCase {
 
     // MARK: - 4. iPad tab-bar representations do not obstruct Browse content
 
-    /// A Browse content cell (corpus subseries row), excluding any sidebar tab rows the
-    /// `.sidebarAdaptable` sidebar representation exposes as cells — those are trivially
-    /// hittable and would let an obstruction assertion pass without testing content.
-    private var corpusContentCell: XCUIElement {
-        app.cells.containing(NSPredicate(format: "label BEGINSWITH 'Subseries'")).firstMatch
+    /// A Browse content row — the first corpus SUBSERIES row, resolved as the row's own `Button`.
+    ///
+    /// Excludes the sidebar tab rows that the `.sidebarAdaptable` sidebar representation exposes as
+    /// cells: those are trivially hittable and would let an obstruction assertion pass without
+    /// testing content at all.
+    ///
+    /// ## Why a button, and why the trailing space (2.1)
+    /// This used to be `app.cells.containing(NSPredicate("label BEGINSWITH 'Subseries'"))`, which
+    /// matched the section HEADER — the literal string "Subseries" — because SwiftUI exposes an
+    /// inset-grouped header as a cell too, and it sorts before the rows. Measured on iPhone 17
+    /// (iOS 26.3.1): the resolved element was 40.3pt tall at y=260.7, while every real subseries row
+    /// is 73.7pt. So every assertion written against this query was really asserting on the header.
+    ///
+    /// That is the SECOND, independent reason 1.6's cell-tap drill-in never pushed — a header has no
+    /// action, so no fix to the row's tap target could ever have rescued it. It is separate from the
+    /// missing `.contentShape` that defeated 1.9's direct-button attempt (#312).
+    ///
+    /// The row's accessibility label is "Subseries <name>, <n> volumes", so `BEGINSWITH 'Subseries '`
+    /// — with the trailing space — matches rows and excludes the bare header. Do not drop it.
+    private var corpusSubseriesRow: XCUIElement {
+        // Built fresh on each access — see `sidebarToggleButton` for the Swift 6 "sending" hazard a
+        // hoisted NSPredicate creates in this nonisolated context.
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
     }
 
     /// On iPad the tabs render via `.tabViewStyle(.sidebarAdaptable)`, which the user can
@@ -427,12 +534,15 @@ final class UIObstructionTests: XCTestCase {
         // Representation A — whatever the install launched in.
         selectBrowseSection()
         XCTAssertTrue(
-            corpusContentCell.waitForExistence(timeout: 10),
+            corpusSubseriesRow.waitForExistence(timeout: 10),
             "Corpus subseries rows did not appear in the launch representation"
         )
+        // Detail level BEFORE the swipe — same ordering constraint scenario 5 documents (1.7): an
+        // immediately-preceding swipe stops the row tap driving the push.
+        assertBrowseDetailPushesUnobstructed("launch representation")
         app.swipeDown(velocity: .fast) // ensure we are scrolled to the top
         XCTAssertTrue(
-            corpusContentCell.isHittable,
+            corpusSubseriesRow.isHittable,
             "First subseries row is not hittable in the launch tab-bar representation — "
                 + "chrome may be overlaying content (#238)"
         )
@@ -446,45 +556,111 @@ final class UIObstructionTests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.7)
 
         XCTAssertTrue(
-            corpusContentCell.waitForExistence(timeout: 10),
+            corpusSubseriesRow.waitForExistence(timeout: 10),
             "Corpus subseries rows did not appear after toggling the tab-bar representation"
         )
         app.swipeDown(velocity: .fast)
         XCTAssertTrue(
-            corpusContentCell.isHittable,
+            corpusSubseriesRow.isHittable,
             "First subseries row is not hittable after toggling the tab-bar representation — "
                 + "chrome may be overlaying content (#238)"
         )
 
-        // NOTE — the drill-in that used to live here was REMOVED: it asserted nothing.
-        // It did `corpusContentCell.tap()` and then asserted `app.cells.firstMatch` — the exact
-        // naked query `corpusContentCell` above exists to avoid. That query matches the
-        // *un-pushed* corpus list (and, in the sidebar representation, the tab rows themselves),
-        // so it passed whether or not the tap navigated. Instrumented on iPad Pro 13-inch (M5):
-        // after the tap, `backButton=false` and the nav bar stayed "FRUS Corpus" — i.e. NO push
-        // ever happened — while the old assertion still reported true. Repeated taps (2nd, 3rd)
-        // did not push either.
+        // NO drill-in in representation B — the ordering constraint 1.7 measured for scenario 5
+        // applies here too: representation A's `swipeDown` above precedes any tap we could make
+        // now, and a swipe defeats the tap that drives the push. The drill-in therefore lives in
+        // representation A only, exactly as scenario 5's does. Not an app defect; a harness quirk.
         //
-        // Do not restore it naively. #312 gap 3 re-tested exactly this, on iPad Pro 13-inch (M5),
-        // to settle 1.7's open question — whether the ordering fix that revived scenario 5's
-        // Research drill-in also revives Browse's. It does NOT. Two measured runs with the sound
-        // oracle (BackButton + the "FRUS Corpus" → subseries title change), drilling in BEFORE any
-        // swipe: neither `corpusContentCell.tap()` nor tapping the row's `Button` element directly
-        // (`app.buttons` matching "Subseries …") pushes — `BackButton` never appears within 10s.
-        // The structural reason the Research fix did not transfer: `CorpusView`'s rows are
-        // `Button { navigationPath.append… } .buttonStyle(.plain)` (a programmatic push), where
-        // `ResearchView`'s are `NavigationLink(value:)` — and XCUITest activates the latter on a
-        // cell/element tap but not the former's action here. So Browse's pushed-level coverage is a
-        // genuine gap that needs a different driving mechanism (not just a tap target), tracked on
-        // #312. The four assertions above are the real #238 regression gate and are unaffected.
+        // RESOLVED — the pushed-level gap this comment block used to document is closed (2.1).
+        // Kept in outline because the diagnosis was wrong three times, and because the reason it
+        // stayed wrong is more instructive than the answer: there were TWO defects, and each round
+        // found one, explained the whole symptom with it, and stopped.
+        //   1.6 removed the original drill-in for a good reason (`app.cells.firstMatch` matched the
+        //       un-pushed list, so it passed without navigating) and then added a bad one: that an
+        //       XCUITest tap on a List row's cell "does not activate the Button inside it". What it
+        //       had actually tapped was the section HEADER — the old `corpusContentCell` predicate
+        //       `label BEGINSWITH 'Subseries'` matched the header text, which SwiftUI also exposes
+        //       as a cell. No app change could ever have made that tap push.
+        //   1.9 re-measured on iPad Pro 13-inch (M5) and correctly found that neither the cell tap
+        //       nor the row's `Button` element pushes — two runs, two different causes, read as one.
+        //       It hardened the wrong explanation into a structural claim (`Button` +
+        //       `.buttonStyle(.plain)` vs `ResearchView`'s `NavigationLink(value:)`) and a permanent
+        //       gap on #312. The `NavigationLink` contrast is a coincidence: those rows fill their
+        //       cell, so their centre is live.
+        //   #486 found the second cause while doing something else: raw touch injection on iPhone 17
+        //       Pro (iOS 26.5) showed `CorpusView`'s rows had no `.contentShape`, so only the
+        //       label's glyphs were hit-testable. A row is ~370pt wide and "People" is ~65pt of it,
+        //       so a centred tap — an element tap's landing point — fell in dead space. That is what
+        //       defeated 1.9's direct-`Button` run.
+        //   #312 fixed both: `.frame(maxWidth: .infinity)` + `.contentShape(Rectangle())` on the row
+        //       labels (a real UX defect — most of every Browse row was dead to a finger, not just
+        //       to the harness), and the query, which now resolves a row instead of the header.
+        //       Measured on iPhone 17 (iOS 26.3.1) after the app fix: tapping the header cell still
+        //       does not push (`back=false`, nav bar still "FRUS Corpus"), while a plain element tap
+        //       on the row's `Button` does (`back=true`). Two fixes, two independent effects.
         //
-        // CORRECTION (#486, measured on iPhone 17 Pro / iOS 26.5 with raw simulator touch
-        // injection): the diagnosis above is wrong, and it is a tap TARGET after all. `CorpusView`
-        // rows carry no `.contentShape`, so only the label's glyphs are hit-testable and everything
-        // to their right — including the cell's centre, which is where both an element tap and a
-        // centred coordinate tap land — is dead space. A tap at dx ≈ 0.22 pushes every time
-        // (scenario 6 relies on this). Whether that also revives THIS scenario's iPad drill-in is
-        // untested; the correction is recorded so the next attempt does not re-derive it.
+        // The lesson, since it survived three investigations that each re-derived the wrong answer:
+        // a tap that does nothing is evidence about WHICH element you resolved and WHERE the tap
+        // landed, before it is evidence about the driver. "The harness cannot do this" is the most
+        // expensive conclusion available and needs the most evidence, not the least — and one
+        // confirmed cause is not a reason to stop looking for a second.
+    }
+
+    /// Drills into a corpus subseries and asserts the **pushed Browse level** appears and is not
+    /// overlaid by the iPad tab-bar chrome. Scenario 4's counterpart to
+    /// `assertResearchDetailPushesUnobstructed`, and the coverage 1.6/1.9 removed (see 2.1).
+    ///
+    /// Oracle: `BackButton` plus the disappearance of the "FRUS Corpus" navigation bar. Both are
+    /// needed. The first alone can be satisfied by chrome the sidebar representation happens to
+    /// expose; the second alone would pass if the whole Browse tab failed to render. Together they
+    /// say "we left the corpus root and landed somewhere with a back button", which is the claim.
+    /// This is precisely the oracle 1.9's notes specified — it was never the weak link.
+    ///
+    /// Call this BEFORE any swipe on the root list (1.7's ordering finding, which holds for both
+    /// scenarios). Pops back so the caller resumes at the corpus root.
+    private func assertBrowseDetailPushesUnobstructed(_ context: String) {
+        corpusSubseriesRow.tap()
+
+        let back = app.buttons["BackButton"]
+        guard back.waitForExistence(timeout: 10) else {
+            XCTFail("Tapping a corpus subseries row did not push the subseries level (\(context)) — "
+                    + "if this is failing again, check the row's tap target before concluding "
+                    + "anything about XCUITest; that mistake cost three investigations (#312)")
+            return
+        }
+        XCTAssertFalse(
+            app.navigationBars["FRUS Corpus"].exists,
+            "A back button appeared but the navigation bar is still 'FRUS Corpus' (\(context)) — "
+                + "no push happened and the oracle is being satisfied by other chrome"
+        )
+
+        // The pushed level's own top chrome must be reachable — the #238 assertion one level
+        // deeper than the root-only version could reach.
+        let detailBar = app.navigationBars.firstMatch
+        XCTAssertTrue(detailBar.waitForExistence(timeout: 5),
+                      "The pushed subseries level has no navigation bar (\(context))")
+        XCTAssertTrue(
+            detailBar.isHittable,
+            "The pushed subseries level's navigation bar is not hittable (\(context)) — the "
+                + "floating top tab bar may be overlaying the detail column's top safe area (#238)"
+        )
+
+        // ...and so must a real control near the TOP of the pushed list, which is where a
+        // mis-computed top safe area does its damage. `SubseriesView`'s tag-filter bar renders
+        // "Add Tag Filter" unconditionally, so this holds with no seeded data — deliberately NOT
+        // `app.cells.firstMatch`, which in the sidebar representation matches the tab rows and
+        // would pass without touching Browse content at all (the trap 1.6 fell into).
+        let addTagFilter = app.buttons["Add Tag Filter"]
+        XCTAssertTrue(addTagFilter.waitForExistence(timeout: 5),
+                      "The pushed subseries level's tag-filter bar did not appear (\(context))")
+        XCTAssertTrue(
+            addTagFilter.isHittable,
+            "The pushed subseries level's 'Add Tag Filter' control is not hittable (\(context)) — "
+                + "chrome may be overlaying content one level below the corpus root (#238)"
+        )
+
+        back.tap()
+        Thread.sleep(forTimeInterval: 0.5)
     }
 
     // MARK: - 5. iPad tab-bar representations do not obstruct Research content
@@ -493,7 +669,7 @@ final class UIObstructionTests: XCTestCase {
     /// `ResearchView`'s sidebar always emits regardless of how much user data exists, so this
     /// asserts on real content on a fresh install.
     ///
-    /// As with `corpusContentCell`, this deliberately does NOT use `app.cells.firstMatch`: the
+    /// As with `corpusSubseriesRow`, this deliberately does NOT use `app.cells.firstMatch`: the
     /// `.sidebarAdaptable` sidebar representation exposes the tab rows themselves as cells, and
     /// those are trivially hittable — an obstruction assertion against them would pass without
     /// testing content at all.
@@ -821,21 +997,17 @@ final class UIObstructionTests: XCTestCase {
         // This is where #486 was ugliest: with an inline title the bar is a single row, so the
         // banner sliced the back chevron, the title, and the trailing rail toggle at once.
         //
-        // The push is driven by a coordinate tap NEAR THE LEADING EDGE of the row, and the offset
-        // is load-bearing. #312 recorded that no tap on a `CorpusView` row pushes and blamed the
-        // `Button { navigationPath.append… } .buttonStyle(.plain)` construction. Re-measured here
-        // on iPhone 17 Pro (iOS 26.5) by injecting raw touches into the simulator: the cause is
-        // simpler and is not a harness quirk at all — those rows carry NO `.contentShape`, so only
-        // the label's own glyphs are hit-testable. A tap at the row's CENTRE lands in empty space
-        // to the right of the text and does nothing (for a real finger as much as for XCUITest);
-        // a tap at dx ≈ 0.22 lands on the word "People" and pushes reliably. That dead space is a
-        // real (pre-existing, out-of-scope) UX defect in `CorpusView` — see the CORRECTION note in
-        // scenario 4 — not something this scenario should paper over silently.
+        // A plain element tap drives the push. It did not always: this line used to be a coordinate
+        // tap at `dx: 0.22`, because `CorpusView`'s rows had no `.contentShape` and only the label's
+        // ~65pt of glyphs were hit-testable — a centred tap (which is where an element tap lands)
+        // fell in dead space. #312 made both row types full-width targets, so the workaround is gone
+        // rather than left in place to hide the fix. If this ever stops pushing, check the row's tap
+        // target first — see the note at the end of scenario 4 for why that ordering matters.
         let peopleRow = app.cells.containing(
             NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
         XCTAssertTrue(peopleRow.waitForExistence(timeout: 10),
                       "The corpus 'People' row did not appear")
-        peopleRow.coordinate(withNormalizedOffset: CGVector(dx: 0.22, dy: 0.5)).tap()
+        peopleRow.tap()
 
         let back = app.buttons["BackButton"]
         XCTAssertTrue(back.waitForExistence(timeout: 10),

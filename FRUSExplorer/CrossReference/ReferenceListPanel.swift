@@ -280,6 +280,9 @@ struct ReferenceListPanel: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.vertical, 2)
+            // #312 follow-up: the Spacer already makes this HStack full width; this makes
+            // the gaps hit-testable under `.buttonStyle(.plain)`.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .id(node.id)

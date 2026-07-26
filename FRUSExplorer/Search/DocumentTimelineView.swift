@@ -219,6 +219,11 @@ struct DocumentTimelineView: View {
                                     .foregroundStyle(.tertiary)
                             }
                             .padding(.vertical, 1)
+                            // #312 follow-up: full-row tap target — both modifiers, in this order
+                            // (the frame widens this VStack to the row; contentShape makes the
+                            // widened area hit-testable under `.buttonStyle(.plain)`).
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .disabled(onSelect == nil)

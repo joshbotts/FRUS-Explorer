@@ -467,6 +467,11 @@ struct SearchFilterView: View {
                                     .lineLimit(1)
                             }
                         }
+                        // #312 follow-up: full-row tap target — both modifiers, in this order.
+                        // Person names are short, so without the frame an autocomplete suggestion
+                        // is only tappable on its glyphs under `.buttonStyle(.plain)`.
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(person.name)

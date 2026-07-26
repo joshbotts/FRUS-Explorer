@@ -895,6 +895,9 @@ struct CollectionEditorView: View {
                             }
                         }
                         .padding(.vertical, 2)
+                        // #312 follow-up: full-row tap target — both modifiers, in this order.
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }

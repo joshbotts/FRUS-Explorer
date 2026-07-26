@@ -244,6 +244,9 @@ struct CrossReferenceGraphWindowView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .padding(.vertical, 2)
+                            // #312 follow-up: full-row tap target — both modifiers, in this order.
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -267,6 +270,9 @@ struct CrossReferenceGraphWindowView: View {
                         systemImage: "point.3.connected.trianglepath.dotted"
                     )
                     .padding(.vertical, 4)
+                    // #312 follow-up: full-row tap target for this action row.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint(
@@ -294,6 +300,9 @@ struct CrossReferenceGraphWindowView: View {
                         systemImage: "doc.text.magnifyingglass"
                     )
                     .padding(.vertical, 4)
+                    // #312 follow-up: full-row tap target for this action row.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint(
@@ -354,6 +363,9 @@ struct CrossReferenceGraphWindowView: View {
                                 }
                             }
                             .padding(.vertical, 2)
+                            // #312 follow-up: full-row tap target.
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }

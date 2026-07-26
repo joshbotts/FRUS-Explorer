@@ -1160,6 +1160,14 @@ private struct SearchResultRow: View {
             }
         }
         .padding(.vertical, 4)
+        // #312 follow-up: full-row tap target (frame widens, contentShape makes the widened area
+        // hit-testable; the enclosing row Button is `.buttonStyle(.plain)`, which hit-tests only
+        // opaque content). NOTE this row nests its own tag chips: contentShape on the parent should
+        // not shadow them, since SwiftUI hit-tests children before the parent's shape — if a chip
+        // tap ever starts opening the document instead of filtering by the tag, this pair is the
+        // first thing to suspect.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 

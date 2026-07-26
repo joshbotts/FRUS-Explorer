@@ -161,6 +161,10 @@ private struct PersonVolumeRow: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+            // #312 follow-up: no frame needed — the Spacer already makes this HStack full width.
+            // contentShape is what makes the gap between the text and the chevron tappable, since
+            // `.buttonStyle(.plain)` hit-tests only opaque content.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .padding(.vertical, 2)
