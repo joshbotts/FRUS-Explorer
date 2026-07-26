@@ -41,6 +41,11 @@ import XCTest
 /// Version history:
 ///   1.0 — #498: first rotation coverage in the suite (there was none), plus the empty/committed
 ///          term A/B that discriminates the leading diagnosis
+///   1.1 — #498 fix: `FRUS498_RUN_REPRO` no longer gates anything — with the
+///          `.statusBarHidden(false)` fix in `BrowserView` none of these cases hangs, so they all
+///          run in the everyday suite (~20s each). Person Analytics coverage added: it is the
+///          latent sibling that reproduced the same cycle, and its two fields are what showed the
+///          fix belongs on the presentation rather than on each field.
 final class AnalyticsRotationTests: XCTestCase {
 
     var app: XCUIApplication!
@@ -53,12 +58,6 @@ final class AnalyticsRotationTests: XCTestCase {
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         app.launchArguments = ["-hasCompletedOnboarding", "1"]
-        // #498: the shipped mitigation pins the orientation while this sheet is up, which would make
-        // every rotation below a no-op and turn this suite into a test of the lock rather than of the
-        // defect. Disable it here so the tests keep exercising the real rotation path — that is what
-        // makes them able to tell whether a candidate fix for the underlying cycle actually works.
-        // `AnalyticsOrientationLockTests` covers the mitigation itself.
-        app.launchEnvironment["FRUS_DISABLE_ORIENTATION_LOCK"] = "1"
         app.launch()
     }
 
@@ -69,20 +68,6 @@ final class AnalyticsRotationTests: XCTestCase {
         app = nil
     }
 
-
-    // MARK: - Repro opt-in
-
-    /// The three cases below still reproduce the OPEN #498 defect, so each one wedges the app and
-    /// burns ~4.5 minutes timing out. They are skipped unless `FRUS498_RUN_REPRO=1` is set on the
-    /// test runner, so the everyday suite stays green and fast while the reproduction stays one
-    /// environment variable away for whoever is hunting the underlying AttributeGraph cycle.
-    ///
-    /// The remaining tests in this file are genuine regression guards and always run.
-    private func requireReproOptIn() throws {
-        guard ProcessInfo.processInfo.environment["FRUS498_RUN_REPRO"] == "1" else {
-            throw XCTSkip("Reproduces the OPEN #498 hang (~4.5 min). Set FRUS498_RUN_REPRO=1 to run.")
-        }
-    }
 
     // MARK: - Tests
 
@@ -129,7 +114,6 @@ final class AnalyticsRotationTests: XCTestCase {
     /// trait change UIKit is propagating — which is the `PlatformViewChild.updateValue()` frame in
     /// the crash stack.
     func testRotateWithMultipleTermsAndKeyboardUp() throws {
-        try requireReproOptIn()
         try openCorpusAnalytics()
 
         let field = app.textFields["Term…"]
@@ -211,7 +195,6 @@ final class AnalyticsRotationTests: XCTestCase {
     /// which is a `.safeAreaInset(edge: .top)` applied OUTSIDE BrowserView's NavigationStack
     /// (MainTabView.swift:313, the #486 defect), makes the rotation worse.
     func testRotateWithProjectBannerActive() throws {
-        try requireReproOptIn()
         try giveActiveProjectAResearchQuestion()
 
         // Confirm the banner is actually on screen before drawing any conclusion from this test.
@@ -311,7 +294,6 @@ final class AnalyticsRotationTests: XCTestCase {
     /// Two terms — the `isComparing` threshold (`committedTerms.count >= 2`). Locates the boundary
     /// between the passing 1-term case and the hanging 3-term case.
     func testRotateWithTwoTerms() throws {
-        try requireReproOptIn()
         try openCorpusAnalytics()
 
         let field = app.textFields["Term…"]
@@ -335,7 +317,6 @@ final class AnalyticsRotationTests: XCTestCase {
     /// then rotate. If this hangs, the defect needs neither a second term nor any text — only a
     /// re-focus of the platform-backed field before the rotation.
     func testRotateAfterSecondTapOnField() throws {
-        try requireReproOptIn()
         try openCorpusAnalytics()
 
         let field = app.textFields["Term…"]
@@ -405,7 +386,91 @@ final class AnalyticsRotationTests: XCTestCase {
                        + "confined to Corpus Analytics and an orientation lock there would not fix it.")
     }
 
+    // MARK: - Latent siblings (#498)
+
+    /// Person Analytics ▸ Network ▸ "Set focus person…".
+    ///
+    /// The same sheet → own-`NavigationStack` → platform text field shape as Corpus Analytics,
+    /// presented from the same `BrowserView`. Before the fix this rotation tripped the same
+    /// AttributeGraph cycle ~30 times per round trip — bounded rather than a wedge, so it passed
+    /// this assertion while still being the defect. It is included because it is the case that
+    /// showed the fix has to be applied per PRESENTATION, not per field.
+    func testRotatePersonAnalyticsNetworkFieldAfterSecondTap() throws {
+        try openAnalysisItem("Person Analytics")
+
+        let network = app.buttons["Network"].firstMatch
+        XCTAssertTrue(network.waitForExistence(timeout: 10), "Network mode should be offered")
+        network.tap()
+
+        let field = app.textFields["Set focus person…"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "Focus-person field should exist")
+        field.tap()
+        field.typeText("Berlin")
+        _ = app.staticTexts.firstMatch.waitForExistence(timeout: 2)
+        field.tap()   // the second focus — the Corpus Analytics minimal trigger
+
+        rotateRoundTrip()
+
+        XCTAssertEqual(app.state, .runningForeground,
+                       "App was killed rotating Person Analytics after re-tapping its focus field.")
+    }
+
+    /// Person Analytics ▸ Trends ▸ "Add a person to compare…" — the OTHER focusable field on the
+    /// same sheet. It is covered by the same single `.statusBarHidden(false)`, which is the
+    /// property a per-field fix would not have.
+    func testRotatePersonAnalyticsTrendsFieldAfterSecondTap() throws {
+        try openAnalysisItem("Person Analytics")
+
+        let field = app.textFields["Add a person to compare…"]
+        var scrolls = 0
+        while (!field.exists || !field.isHittable) && scrolls < 6 {
+            app.swipeUp()
+            scrolls += 1
+        }
+        guard field.waitForExistence(timeout: 5), field.isHittable else {
+            throw XCTSkip("Add-a-person field not reachable by scrolling")
+        }
+        field.tap()
+        field.typeText("Berlin")
+        _ = app.staticTexts.firstMatch.waitForExistence(timeout: 2)
+        field.tap()
+
+        rotateRoundTrip()
+
+        XCTAssertEqual(app.state, .runningForeground,
+                       "App was killed rotating Person Analytics after re-tapping its compare field.")
+    }
+
+    /// CONTROL for the two probes above: same sheet, same mode, rotated with the field never
+    /// touched. Measured at zero cycle detections even before the fix, which is what establishes
+    /// that the count above is attributable to the focused field and not to opening the sheet.
+    func testRotatePersonAnalyticsNetworkNoFocus() throws {
+        try openAnalysisItem("Person Analytics")
+
+        let network = app.buttons["Network"].firstMatch
+        XCTAssertTrue(network.waitForExistence(timeout: 10), "Network mode should be offered")
+        network.tap()
+        XCTAssertTrue(app.textFields["Set focus person…"].waitForExistence(timeout: 10),
+                      "Focus-person field should exist")
+
+        rotateRoundTrip()
+
+        XCTAssertEqual(app.state, .runningForeground, "App was killed rotating Person Analytics.")
+    }
+
     // MARK: - Helpers
+
+    /// Opens Browse ▸ Analysis Tools ▸ the named item.
+    private func openAnalysisItem(_ label: String) throws {
+        let browse = app.buttons["Browse"].firstMatch
+        if browse.waitForExistence(timeout: 10) { browse.tap() }
+        let menu = app.buttons["Analysis Tools"]
+        guard menu.waitForExistence(timeout: 10) else { throw XCTSkip("Analysis Tools menu not found") }
+        menu.tap()
+        let item = app.buttons[label].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "\(label) menu item should exist")
+        item.tap()
+    }
 
     /// Opens Browse ▸ the analysis menu ▸ Corpus Analytics.
     private func openCorpusAnalytics() throws {

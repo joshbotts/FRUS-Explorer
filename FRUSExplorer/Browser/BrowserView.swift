@@ -77,6 +77,9 @@ import SwiftUI
 ///          navigation bar rather than below it. It is now an inset on the `CorpusView` root
 ///          and folded into the per-level breadcrumb inset, so it appears at every Browse
 ///          depth and reserves space below the bar.
+///   2.7 — #498: `.statusBarHidden(false)` on each analysis sheet's content, outside the inner
+///          NavigationStack — the actual fix for the rotation deadlock the orientation lock was
+///          only mitigating. See the note above the sheet declarations.
 ///   Session 09: `pendingBrowseVolume` resolves against the unfiltered manifest —
 ///         the filtered-groups lookup silently dropped hand-offs to undownloaded
 ///         volumes, which the subject pivot routinely targets.
@@ -98,6 +101,16 @@ struct BrowserView: View {
     @State private var showCrossRefAnalytics = false
     @State private var showChronology = false
     @State private var chronologyParameters: ChronologyParameters?
+    // #498: every one of these sheets presents a view that opens its OWN NavigationStack, which
+    // nests a second SwiftUI graph host inside the window's. Rotating one of them while a
+    // platform-backed text field inside it has been focused makes UIKit re-enter that nested host
+    // through `-[UIViewController _traitCollectionDidChange:]` to resolve `childForStatusBarHidden`,
+    // reading a preference out of the transaction that is still building it — the AttributeGraph
+    // cycle. Authoring `.statusBarHidden(false)` on the view handed to `.sheet` (OUTSIDE the inner
+    // NavigationStack) gives that query a locally-resolvable answer, so it never recurses. The
+    // placement is the fix: the identical modifier applied INSIDE the inner NavigationStack still
+    // wedges. Measured on iPhone 17 Pro Max, iOS 26: 29,040,997 cycle detections + a hang before,
+    // 0 after; see the sibling coverage in `AnalyticsRotationTests`.
     // showCitationLookup lives in AppState (promoted in Session 43) so that macOS
     // menu commands and future iOS tab navigation can trigger it. On iOS, Search/
     // Citation Lookup/Settings are persistent tabs (MainTabView) — BrowserView
@@ -159,11 +172,18 @@ struct BrowserView: View {
                 // filter row and cramps the chart. `.page` sizing gives the sheet a wider canvas on
                 // iPad (a no-op on compact iPhone, which uses the full-height sheet regardless).
                 .presentationSizing(.page)
+                // #498: author the status-bar preference HERE, on the view handed to `.sheet`,
+                // outside AnalyticsView's own NavigationStack. See the note below.
+                .statusBarHidden(false)
         }
         .sheet(isPresented: $showPersonAnalytics) {
             PersonAnalyticsView()
                 .environment(appState)
                 .modelContainer(modelContext.container)
+                // #498: same fix, same reason — this sheet's two person-search fields reproduced
+                // the cycle too (bounded, ~30 detections per rotation rather than a wedge, but the
+                // same defect). One line here covers every field on the sheet.
+                .statusBarHidden(false)
         }
         .sheet(isPresented: $showCrossRefAnalytics) {
             CrossReferenceAnalyticsView()
@@ -172,6 +192,10 @@ struct BrowserView: View {
                 // #338 step 4: publish this window's scene id so the analytics view's document /
                 // volume open actions target THIS window (a sheet doesn't reliably inherit it).
                 .environment(\.sceneID, sceneID)
+                // #498: prophylactic. This sheet has no text field today, so it does not currently
+                // reproduce — but it is the same sheet → own-NavigationStack shape, and adding a
+                // field later would silently re-open the defect.
+                .statusBarHidden(false)
         }
         .sheet(isPresented: $showChronology) {
             ChronologyView(initialParameters: chronologyParameters)
@@ -179,6 +203,8 @@ struct BrowserView: View {
                 // #338 step 2: a sheet doesn't reliably inherit `\.sceneID` (review Finding 1), so
                 // publish it explicitly so ChronologyView's Word Cloud button targets THIS window.
                 .environment(\.sceneID, sceneID)
+                // #498: prophylactic, as above — no text field today, same presentation shape.
+                .statusBarHidden(false)
         }
         // Search → Analytics handoff (a capped search offered to "Visualize in Corpus Analytics")
         // and the cross-view → Chronology handoff. Captured into local state before presenting, then
