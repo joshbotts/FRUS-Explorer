@@ -131,14 +131,11 @@ actor WordFrequencyService {
             }
         }
 
-        let tokenizer = WordCloudTokenizer(
-            stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomaticStopwords)
-                .union(extraStopwords),
-            minimumLength: tuning.minimumLength,
-            foldPlurals: tuning.foldPlurals,
+        let tokenizer = WordCloudTokenizer.configured(
+            tuning: tuning,
             lens: lens,
-            lexicon: WordCloudLexicons.filter(for: lens),
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
+            includeDiplomatic: includeDiplomaticStopwords,
+            extraStopwords: extraStopwords
         )
         let total = keys.count
         var counts: [String: Int] = [:]

@@ -214,6 +214,55 @@ struct WordCloudTokenizer: Sendable {
         return word
     }
 
+    /// Builds the tokenizer the app actually uses, from a tuning and a lens.
+    ///
+    /// Three call sites assembled this six-line expression independently — the frequency
+    /// service, the collection-cloud exporter, and (as of S-5b) the settings bench. A settings
+    /// preview built from a *different* assembly than the cloud would be a preview of nothing,
+    /// so the assembly is stated once.
+    ///
+    /// - Parameters:
+    ///   - tuning: The user's tunable criteria.
+    ///   - lens: The semantic filter in force.
+    ///   - includeDiplomatic: Whether the diplomatic-boilerplate stopword layer is active
+    ///     (the `excludeBoilerplate` setting — deliberately not a `WordCloudTuning` field,
+    ///     since it selects a stopword layer rather than tuning a threshold).
+    ///   - extraStopwords: The user's global + per-lens hidden words, plus any per-scope ones.
+    static func configured(tuning: WordCloudTuning,
+                           lens: WordCloudLens = .allTerms,
+                           includeDiplomatic: Bool,
+                           extraStopwords: Set<String> = []) -> WordCloudTokenizer {
+        WordCloudTokenizer(
+            stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomatic)
+                .union(extraStopwords),
+            minimumLength: tuning.minimumLength,
+            foldPlurals: tuning.foldPlurals,
+            lens: lens,
+            lexicon: WordCloudLexicons.filter(for: lens),
+            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
+        )
+    }
+
+    /// Whether an already-normalised term survives every criterion this tokenizer applies.
+    ///
+    /// The same three tests `accumulateWords` runs inline (lexicon membership, markings
+    /// rejection, then the per-lens acceptability check), exposed so a caller holding a term
+    /// list rather than raw text can ask the question — the Word Cloud settings bench computes
+    /// "Keeps N of M terms" with it. Factored rather than reimplemented, so the number the
+    /// settings pane shows cannot drift from what the cloud actually does.
+    ///
+    /// Note what it does **not** cover: `WordCloudTuning.minimumCount`, which is applied later
+    /// (`WordFrequencyService.finalize`) against accumulated counts rather than per term, and
+    /// plural folding, which happens during tokenisation and cannot be undone from a term.
+    ///
+    /// - Parameter term: A lowercased, already-lemmatised candidate.
+    /// - Returns: `true` when the term would be counted.
+    func accepts(_ term: String) -> Bool {
+        if let lexicon, !lexicon.contains(term) { return false }
+        if markings.contains(term) { return false }
+        return lens.isEntity ? isAcceptableEntity(term) : isAcceptable(term)
+    }
+
     /// Whether a normalised candidate term should be counted.
     ///
     /// Rejects short tokens, anything containing a digit or non-letter (so dates,

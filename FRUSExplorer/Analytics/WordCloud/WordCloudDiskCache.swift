@@ -62,6 +62,48 @@ enum WordCloudDiskCache {
         return result
     }
 
+    /// The most recently written cached cloud, whatever its scope.
+    ///
+    /// Filenames are SHA-256 digests, so the key — and with it the scope, lens, and tuning —
+    /// is not recoverable from a cache file. This is deliberately a "some real cloud you looked
+    /// at recently", not a specific one: the Word Cloud settings bench uses it as sample
+    /// material to show what the current criteria would keep, and falls back to a canned list
+    /// when the cache is empty.
+    ///
+    /// Only clouds computed for persistent scopes are written here (corpus, subseries, subject
+    /// category — see `WordCloudLoader`), so a user who has only opened volume or document
+    /// clouds has nothing cached and the fallback is the normal case, not the exception.
+    ///
+    /// Synchronous disk I/O: call it from a `.task`, never a view body.
+    ///
+    /// - Returns: The newest decodable entry, or `nil` when the cache is empty or unreadable.
+    static func mostRecent() -> WordCloudResult? {
+        guard let directory,
+              let entries = try? FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles])
+        else { return nil }
+
+        let newestFirst = entries
+            .filter { $0.pathExtension == "json" }
+            .compactMap { url -> (URL, Date)? in
+                guard let date = try? url.resourceValues(forKeys: [.contentModificationDateKey])
+                    .contentModificationDate else { return nil }
+                return (url, date)
+            }
+            .sorted { $0.1 > $1.1 }
+
+        for (url, _) in newestFirst {
+            if let data = try? Data(contentsOf: url),
+               let result = try? JSONDecoder().decode(WordCloudResult.self, from: data),
+               !result.terms.isEmpty {
+                return result
+            }
+        }
+        return nil
+    }
+
     /// Saves `result` under `key`, overwriting any existing entry.
     static func save(_ result: WordCloudResult, key: String) {
         guard let url = fileURL(for: key),

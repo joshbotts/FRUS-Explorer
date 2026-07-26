@@ -137,12 +137,10 @@ enum WordCloudExporter {
         excludeBoilerplate: Bool = true
     ) -> (cgImage: CGImage, pngBase64: String)? {
         let tuning = WordCloudSettings.tuning
-        let tokenizer = WordCloudTokenizer(
-            stopwords: WordCloudStopwords.active(includeDiplomatic: excludeBoilerplate)
-                .union(WordCloudSettings.extraStopwords(for: .allTerms)),
-            minimumLength: tuning.minimumLength,
-            foldPlurals: tuning.foldPlurals,
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
+        let tokenizer = WordCloudTokenizer.configured(
+            tuning: tuning,
+            includeDiplomatic: excludeBoilerplate,
+            extraStopwords: WordCloudSettings.extraStopwords(for: .allTerms)
         )
         var counts: [String: Int] = [:]
         for text in texts { tokenizer.accumulate(from: text, into: &counts) }
