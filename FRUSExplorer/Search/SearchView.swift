@@ -69,6 +69,12 @@ import SwiftData
 ///          search context one back-swipe away; opening in a separate document window
 ///          (the 1.12 behaviour, so the results list stays visible) is demoted to the
 ///          row context menu's "Open in New Window". iPhone unchanged (always pushed).
+///   1.16 — Wave R-4 (2026-07-26): all five search entry points now route through
+///          `runSearch()`, which runs the query and then records a `SearchHistoryEntry`
+///          via `SearchViewModel.recordSearchHistory`. Before this, iOS recorded searches
+///          only as `SessionEvent.searchSubmit`, so Project Home's "Searches Run" tile and
+///          Recent Searches card — both backed by `SearchHistoryEntry` — were structurally
+///          empty for anyone who never used the Mac app.
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -155,7 +161,7 @@ struct SearchView: View {
                 )
                 // Fire search on keyboard Return / iOS "Search" button.
                 .onSubmit(of: .search) {
-                    Task { await vm.search() }
+                    Task { await runSearch() }
                 }
                 // Clearing the search bar resets results so the view returns to
                 // the initial "enter keywords" prompt state.
@@ -214,7 +220,7 @@ struct SearchView: View {
                 .sheet(isPresented: $showSavedSearches) {
                     SavedSearchesView { saved in
                         vm.applyParameters(saved.searchParameters)
-                        Task { await vm.search() }
+                        Task { await runSearch() }
                     }
                     .modelContainer(modelContext.container)
                     // #338 step 2: publish this window's scene id into the sheet so
@@ -287,6 +293,25 @@ struct SearchView: View {
         .onChange(of: appState.activeProjectId) { _, _ in
             applyActiveProject()
         }
+    }
+
+    // MARK: - Running a Search
+
+    /// Runs the current query and records it in the research trail (Wave R-4).
+    ///
+    /// **Every** search entry point in this view must call this rather than `vm.search()`
+    /// directly — the keyboard Return, the Saved Searches sheet, an incoming `pendingSearch`
+    /// hand-off, clearing the volume scope, and tapping a tag chip on a result row. A bare
+    /// `vm.search()` would run the search but leave no `SearchHistoryEntry`, which is the
+    /// failure this indirection exists to prevent; `ResearchLoggingGateTests`
+    /// `iOSSearchEntryPointsRouteThroughTheRecorder` fails if one reappears.
+    ///
+    /// `recordSearchHistory` applies its own skip conditions (logging off, empty query,
+    /// errored search, or a filter/scope-only re-run of the same query), so calling it after
+    /// every execution is correct — the last two entry points above are re-runs by nature.
+    private func runSearch() async {
+        await vm.search()
+        vm.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
     }
 
     /// Loads the active project's search context into the view model: date defaults,
@@ -370,7 +395,7 @@ struct SearchView: View {
             || !(params.personRef ?? "").isEmpty
             || params.personRollupId != nil
         if canRun {
-            Task { await vm.search() }
+            Task { await runSearch() }
         }
     }
 
@@ -605,7 +630,7 @@ struct SearchView: View {
             || !vm.personRefText.trimmingCharacters(in: .whitespaces).isEmpty
             || vm.personRollupId != nil
         if vm.hasSearched && hasQuery {
-            Task { await vm.search() }
+            Task { await runSearch() }
         }
     }
 
@@ -929,7 +954,7 @@ struct SearchView: View {
                         onUserTagTap: { tagId in
                             if let uuid = UUID(uuidString: tagId) {
                                 vm.selectedUserTagIds.insert(uuid)
-                                Task { await vm.search() }
+                                Task { await runSearch() }
                             }
                         }
                     )

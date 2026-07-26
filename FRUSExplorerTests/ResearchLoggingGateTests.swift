@@ -33,6 +33,7 @@ import Testing
 /// | `AppState.logEvent` (document open, iOS + macOS) | yes | behavioural test |
 /// | `AppState.logEvent` (search submit, iOS only) | yes | behavioural test |
 /// | `DocumentViewModel.recordReadingHistory` (iOS + macOS) | yes | behavioural test |
+/// | `SearchViewModel.recordSearchHistory` (iOS, Wave R-4) | yes | behavioural test, over a real FTS5 index |
 /// | `MacSearchViewModel.recordSearchHistory` (macOS only) | **no** — the type is `#if os(macOS)` and this bundle builds for iOS | source-shape test |
 ///
 /// `FRUSExplorerTests` is an iOS-only target (`project.yml`) and the macOS scheme has no test
@@ -48,6 +49,10 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Wave R-1: initial implementation
+///   1.1 — Wave R-4: the iOS `SearchHistoryEntry` producer this suite's fourth-writer guard was
+///          written to catch now exists, so it is listed there and covered behaviourally —
+///          off / on / de-duplicated — plus a guard that every `SearchView` search entry point
+///          still routes through the one recorder
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -259,6 +264,190 @@ struct ResearchLoggingGateTests {
         #expect(decoded?["query"] as? String == "détente")
     }
 
+    // MARK: - Search history (iOS producer, Wave R-4)
+
+    /// A real FTS5 index over a two-document fixture, plus the view model that searches it.
+    ///
+    /// `recordSearchHistory` reads state that only a completed `search()` sets — the frozen
+    /// `submittedQuery`, `searchError`, `results` — so these tests drive the whole path rather
+    /// than poking the view model's fields. The temporary directory is the caller's to remove.
+    ///
+    /// Explicitly `@MainActor`: a nested type does not inherit its enclosing type's isolation,
+    /// and `SearchViewModel` is main-actor-isolated.
+    @MainActor
+    private struct SearchHarness {
+        let directory: URL
+        let viewModel: SearchViewModel
+
+        /// Builds the index and returns a view model wired to it.
+        static func make() async throws -> SearchHarness {
+            let dir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("FRUSLoggingGate-\(UUID().uuidString)", isDirectory: true)
+            let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+            try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+
+            let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>frus1969-76v01</title></titleStmt>
+              <publicationStmt><date>2003</date></publicationStmt>
+              <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+              <text><body>
+                <div type="compilation" xml:id="comp1">
+                  <div type="document" xml:id="d1"><head>Memorandum of Conversation</head>\
+            <dateline>Washington, January 20, 1969.</dateline>\
+            <p>Discussed détente policy with the Soviet delegation.</p></div>
+                  <div type="document" xml:id="d2"><head>Telegram</head>\
+            <dateline>Moscow, February 5, 1969.</dateline>\
+            <p>Routine administrative message about staff assignments.</p></div>
+                </div>
+              </body></text>
+            </TEI>
+            """
+            try xml.write(to: volumes.appendingPathComponent("frus1969-76v01.xml"),
+                          atomically: true,
+                          encoding: .utf8)
+
+            let dbURL = dir.appendingPathComponent("gate.sqlite")
+            let store = try FTS5Store(databaseURL: dbURL)
+            let pipeline = try IndexingPipeline(fts5Store: store,
+                                                databaseURL: dbURL,
+                                                volumesDirectory: volumes,
+                                                concurrencyLimit: 1)
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            return SearchHarness(
+                directory: dir,
+                viewModel: SearchViewModel(
+                    searchService: SearchService(fts5Store: store, pipeline: pipeline)))
+        }
+
+        /// Removes the temporary index.
+        func destroy() { try? FileManager.default.removeItem(at: directory) }
+    }
+
+    /// **The R-4 half of what R-1 protected.** With the preference off, running a search on iOS
+    /// inserts no `SearchHistoryEntry`. Shipping this producer ungated would have started
+    /// collecting the user's search text on a platform that was not collecting it — strictly more
+    /// collection than before — which is why R-1 had to land first.
+    @Test("With logging off, an iOS search records no search history")
+    func iOSSearchRecordsNothingWhenLoggingOff() async throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(false)
+
+        let harness = try await SearchHarness.make()
+        defer { harness.destroy() }
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        harness.viewModel.keywords = "détente"
+        await harness.viewModel.search()
+        harness.viewModel.recordSearchHistory(projectId: UUID(),
+                                              in: context,
+                                              defaults: scratch.store)
+
+        #expect(!harness.viewModel.results.isEmpty, "the search itself must still run")
+        #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).isEmpty)
+    }
+
+    /// The control, and the feature: one row per distinct query, stamped with the active project.
+    /// Before R-4 this count was structurally zero on iOS no matter how much the user searched,
+    /// which is why Project Home's "Searches Run" tile never left 0 for anyone without a Mac.
+    @Test("With logging on, an iOS search records exactly one row per distinct query")
+    func iOSSearchRecordsOneRowPerDistinctQueryWhenLoggingOn() async throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let harness = try await SearchHarness.make()
+        defer { harness.destroy() }
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let projectId = UUID()
+        let vm = harness.viewModel
+
+        vm.keywords = "détente"
+        await vm.search()
+        vm.recordSearchHistory(projectId: projectId, in: context, defaults: scratch.store)
+
+        let afterFirst = try context.fetch(FetchDescriptor<SearchHistoryEntry>())
+        #expect(afterFirst.count == 1)
+        #expect(afterFirst.first?.queryText == "détente")
+        #expect(afterFirst.first?.projectId == projectId)
+        #expect(afterFirst.first?.resultCount == vm.results.count)
+
+        // A different query is a different row.
+        vm.keywords = "telegram"
+        await vm.search()
+        vm.recordSearchHistory(projectId: projectId, in: context, defaults: scratch.store)
+
+        let afterSecond = try context.fetch(FetchDescriptor<SearchHistoryEntry>())
+        #expect(afterSecond.count == 2)
+        #expect(Set(afterSecond.map(\.queryText)) == ["détente", "telegram"])
+    }
+
+    /// The de-duplication, which is the whole reason `submittedQuery` is frozen and
+    /// `lastRecordedHistoryQuery` exists. `SearchView` re-runs `search()` for the **same** query
+    /// whenever a filter moves — clearing the volume scope, tapping a tag chip on a result row —
+    /// and each of those must not read as another search the user ran.
+    @Test("A scope-only re-run of the same iOS query does not duplicate the row")
+    func iOSScopeOnlyRerunDoesNotDuplicate() async throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let harness = try await SearchHarness.make()
+        defer { harness.destroy() }
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let vm = harness.viewModel
+
+        vm.keywords = "détente"
+        await vm.search()
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+        #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 1)
+
+        // Narrow the volume scope and re-run — the query text has not changed.
+        vm.selectedVolumeIds = ["frus1969-76v01"]
+        await vm.search()
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+        #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 1)
+
+        // And widening it again is still the same query.
+        vm.selectedVolumeIds = []
+        await vm.search()
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+        #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 1)
+    }
+
+    /// The skip conditions inherited from the macOS writer. An empty keyword box records nothing
+    /// — `search()` refuses it outright — so a person-only "find all mentions" hand-off leaves no
+    /// query row rather than a blank one.
+    @Test("An iOS search with no keywords records no search history")
+    func iOSEmptyQueryRecordsNothing() async throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let harness = try await SearchHarness.make()
+        defer { harness.destroy() }
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let vm = harness.viewModel
+
+        vm.keywords = "   "
+        await vm.search()
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+
+        #expect(vm.searchError != nil, "an all-whitespace query is rejected by search()")
+        #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).isEmpty)
+    }
+
     // MARK: - Source-shape guards
 
     /// The repository root, located the same way `CodingStandardsAuditTests` does.
@@ -296,17 +485,19 @@ struct ResearchLoggingGateTests {
                 """)
     }
 
-    /// No fourth writer has appeared without a gate.
+    /// No further writer has appeared without a gate.
     ///
     /// Scans every app source file for `ReadingHistoryEntry(` / `SearchHistoryEntry(`
-    /// construction and asserts the producing files are exactly the two gated ones. Adding a
-    /// third producer — R-4's planned iOS search-history writer is the obvious candidate — fails
-    /// this test until it is listed here, which is the moment to check it consults the gate.
+    /// construction and asserts the producing files are exactly the known gated ones. R-4's iOS
+    /// search-history writer — the candidate this guard was written for — is now the third, and
+    /// it is gated. A fourth fails this test until it is listed here, which is the moment to
+    /// check it consults the gate.
     @Test("Every producer of a history entry is a known, gated writer")
     func noUngatedHistoryWriterExists() throws {
         let expected: Set<String> = [
             "DocumentViewModel.swift",   // ReadingHistoryEntry — gated
-            "MacSearchViewModel.swift",  // SearchHistoryEntry  — gated
+            "MacSearchViewModel.swift",  // SearchHistoryEntry  — gated (macOS)
+            "SearchViewModel.swift",     // SearchHistoryEntry  — gated (iOS, Wave R-4)
         ]
 
         let enumerator = try #require(
@@ -330,6 +521,58 @@ struct ResearchLoggingGateTests {
                 A history-entry producer appeared or moved: \(producers.sorted()). Every writer \
                 of the research trail must honour AppState.isResearchLoggingEnabled (Wave R-1). \
                 Update this list once the new writer is gated.
+                """)
+    }
+
+    /// Every iOS search entry point still routes through the one recorder (Wave R-4).
+    ///
+    /// `SearchView` runs a search from five places — the keyboard Return, the Saved Searches
+    /// sheet, an incoming `pendingSearch` hand-off, clearing the volume scope, and tapping a tag
+    /// chip on a result row. Each calls `runSearch()`, which awaits `vm.search()` and then
+    /// records. A sixth site added later that calls `vm.search()` directly would run the search
+    /// and leave no `SearchHistoryEntry` — invisible in review, and untestable behaviourally
+    /// because the omission is in the view, not the view model. So the shape is pinned instead:
+    /// `vm.search()` may appear exactly once in the file, inside `runSearch()`, immediately
+    /// followed by the recorder.
+    @Test("Every iOS search entry point routes through the one history recorder")
+    func iOSSearchEntryPointsRouteThroughTheRecorder() throws {
+        let url = Self.sourceRoot.appendingPathComponent("Search/SearchView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let lines = source.split(separator: "\n", omittingEmptySubsequences: false)
+
+        // Prose that names the call is not a call site — the same exclusion the scans above use.
+        let callSites = lines.indices.filter {
+            let trimmed = lines[$0].trimmingCharacters(in: .whitespaces)
+            guard !trimmed.hasPrefix("//"), !trimmed.hasPrefix("*") else { return false }
+            return trimmed.contains("vm.search()")
+        }
+        #expect(callSites.count == 1,
+                """
+                SearchView must call vm.search() from exactly one place — runSearch() — so every \
+                search entry point records a SearchHistoryEntry (Wave R-4). Found \
+                \(callSites.count) call sites at lines \(callSites.map { $0 + 1 }).
+                """)
+
+        let callSite = try #require(callSites.first)
+        let follows = lines[(callSite + 1)...].prefix(2).joined(separator: "\n")
+        #expect(follows.contains("recordSearchHistory("),
+                "the vm.search() call in SearchView must be followed by vm.recordSearchHistory(…)")
+
+        // And the gate is the view model's, checked before the insert — the same shape the macOS
+        // writer is held to above.
+        let vmURL = Self.sourceRoot.appendingPathComponent("Search/SearchViewModel.swift")
+        let vmSource = try String(contentsOf: vmURL, encoding: .utf8)
+        let signatureRange = try #require(vmSource.range(of: "func recordSearchHistory("),
+                                          "SearchViewModel.recordSearchHistory is missing")
+        let insertRange = try #require(
+            vmSource.range(of: "context.insert(record)",
+                           range: signatureRange.upperBound..<vmSource.endIndex),
+            "SearchViewModel.recordSearchHistory no longer inserts a record")
+        #expect(vmSource[signatureRange.upperBound..<insertRange.lowerBound]
+            .contains("AppState.isResearchLoggingEnabled(in: defaults)"),
+                """
+                SearchViewModel.recordSearchHistory must consult the research-logging gate \
+                before inserting a SearchHistoryEntry (Wave R-1 / R-4)
                 """)
     }
 

@@ -38,6 +38,9 @@ import SwiftData
 ///          session log, so both recording footers were rewritten (new keys) to say so and to
 ///          warn that History and Recents drain when it is off; the Manage footer no longer
 ///          calls reading history "separate"; the `@AppStorage` key comes from `AppState`
+///   1.2 — Wave R-4: iOS gained a `SearchHistoryEntry` writer, so the iOS recording footer
+///          (new key `…trail.v2`) now names the Project Home surfaces that fill as a result —
+///          Recently Read, Recent Searches, Documents Visited and Searches Run
 struct ResearchSessionsView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -148,19 +151,21 @@ struct ResearchSessionsView: View {
             // carry the behaviour change too: turning the switch off drains History and the
             // Project Home recents, because those surfaces are fed by the store now gated.
             //
-            // Still two keys, because the two platforms record into different stores. iOS is the
-            // only producer of `.searchSubmit` session events; macOS is the only producer of
-            // `SearchHistoryEntry`. Both platforms therefore DO record search text — the earlier
-            // Mac footer's "searches are recorded on iPhone and iPad but not here" was true of
-            // the session log alone and is wrong about the trail as a whole. What actually
-            // differs is where it lands, and hence which surfaces empty when the switch goes off:
-            // macOS has the History window, iOS has only a project's Recents (R-3 is the gap).
+            // Still two keys, because the two platforms surface the trail differently. Since
+            // Wave R-4 BOTH platforms write `SearchHistoryEntry`, so iOS finally fills Project
+            // Home's Searches Run tile and Recent Searches card; the iOS text names them, and
+            // its key is new (`…trail.v2`) rather than reused — there is no String Catalog, so
+            // rewriting a key's text in place would be a silent collision. What still differs is
+            // where the trail can be browsed, and hence which surfaces empty when the switch
+            // goes off: macOS has the History window, iOS has only a project's Home (R-3 is the
+            // gap). The earlier Mac footer's "searches are recorded on iPhone and iPad but not
+            // here" was true of the session log alone and wrong about the trail as a whole.
             #if os(macOS)
             Text(String(localized: "settings.sessions.logging.footer.trail.mac",
                         defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, grouped into sessions that end after 30 minutes of inactivity, plus the text of the searches you run and the reading history behind the History window and a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so History and Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #else
-            Text(String(localized: "settings.sessions.logging.footer.trail",
-                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity, plus the reading history behind a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
+            Text(String(localized: "settings.sessions.logging.footer.trail.v2",
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity, plus the reading and search history behind a project's Recently Read and Recent Searches cards and its Documents Visited and Searches Run counts. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so those will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #endif
         }
     }
