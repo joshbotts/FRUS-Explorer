@@ -2,7 +2,8 @@
 
 **Status:** plan, not started. Runs **after S-6** (Settings docs closeout).
 **Inputs:** `Planning/Settings-Parity-Audit-2026-07-25.md` (§B2, B3, and the deliberate-list
-entry on search logging); build-35 tester feedback (not yet collected).
+entry on search logging); build-35 tester feedback (not yet collected); carried work from the
+2026-07-26 bug session (#486 / #488 / #498) — see *Folded in* below.
 
 ---
 
@@ -127,6 +128,130 @@ today. R-1 must land first.
 
 ---
 
+## Folded in — the 2026-07-26 bug session (#486 / #488 / #498)
+
+Three items surfaced while fixing unrelated bugs. **R-6 belongs to this wave on the merits, not
+just for want of a home**: Wave R exists because the app claims something it does not do — a switch
+labelled "Log Research Sessions" that governs one of two recorders. R-6 is the same species one
+layer down: the app reported a sync failure it had made itself unable to describe.
+
+### R-6 — Make a CloudKit failure diagnosable
+
+`cloudKitDiagnostic` (`FRUSExplorer/App/FRUSExplorerApp.swift:2007`) looks for the per-item error
+dictionary at exactly one level:
+
+```swift
+if ..., let partialErrors = error.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
+```
+
+On a miss it falls through to domain + code only. `grep` over `FRUSExplorer/` returns **zero**
+readers of `NSUnderlyingErrorKey`, `NSMultipleUnderlyingErrorsKey`, `CKErrorRetryAfterKey`, or
+CloudKit's server error text — so on that path every channel that could name the rejected record
+type is discarded. That is why #488's log line was a bare `CKErrorDomain partialFailure (2)` and the
+diagnosis had to be reconstructed from the CloudKit Console and a `git diff` instead.
+
+- Walk `NSUnderlyingErrorKey` / `NSMultipleUnderlyingErrorsKey` (bounded depth) for the dictionary —
+  `NSPersistentCloudKitContainer` can re-vend a `partialFailure` whose sub-errors sit one level down.
+- Record `hadPartialDictionary` so **"we looked and found none" is distinguishable from "we never
+  looked"** — the ambiguity that cost the most time on #488.
+- Extract **schema identifiers only** from the server text via a strict allow-list regex
+  (`CD_[A-Za-z0-9_]+`, `_pcs_data`). **Never the raw string** — it can carry record names and field
+  values, and #188-C.1's redaction contract has no mechanical gate, so a later "simplification" to
+  log the description would silently become a PII leak.
+- New fields on `SyncDiagnosticsEntry` must be optional-with-default: `SyncDiagnosticsLog.loaded()`
+  swallows a decode failure with `try?` and would wipe the very history being kept.
+- Zero test coverage today (`grep` for `cloudKitDiagnostic` / `SyncDiagnosticsEntry` across both test
+  targets returns nothing). The error shapes are constructible offline with no CloudKit account.
+
+**Runbook while this is unbuilt:** `Planning/488-CloudKit-Capture-Runbook.md`.
+
+### R-7 — Build the schema-deploy release gate that was already specified
+
+`Planning/188-189-Tester-Feedback-Build28-Plan.md:158` called for "a startup log line if the
+installed model set is newer than a known-deployed marker, so a future undeployed-schema regression
+is caught before shipping." It was never built. #488 **is** that regression: build 35 added four
+CloudKit identifiers (`CD_ProjectLeadEntry`, `CD_Project.CD_leadAxisWeights`,
+`CD_Project.CD_defaultUserTagIds`, `CD_Collection.CD_includeProjectProvenance`) with no deploy gate
+covering them, and the last recorded gate in `DEVELOPMENT-PLAN.md` is for build 33.
+
+Pair it with the inventory test: pin `frusModelTypes` to a checked-in list so adding a `@Model`
+fails the suite until the list, the version-history block in `ModelContainer+FRUS.swift` (**still
+says "16 record types" when the list holds 18**), and a deploy-gate line are all updated. A gate
+nobody is forced to update is theatre — the failure message must carry the checklist.
+
+### R-8 — iPad: the analysis toolbar button reads its SF Symbol name aloud
+
+On iPad the Browse analysis-menu button's accessibility label resolves to the raw symbol name
+`chart.bar.xaxis` rather than "Analysis Tools", so VoiceOver announces "chart bar xaxis".
+
+- **Verified:** the label is wrong on iPad — found because it broke an XCUITest element lookup that
+  worked on iPhone; the button is only reachable there after expanding the toolbar overflow.
+- **Inferred, not confirmed:** that the overflow re-hosting is what drops it. `ControlHelp.swift:51`
+  does apply `.accessibilityLabel(label)` on iOS, so the modifier is present — something downstream
+  is overriding or discarding it. Confirm the mechanism before choosing a fix.
+- Cheap and worth doing regardless: the same `.controlHelp` pattern is used across the app, so if
+  overflow drops the label generally, this is not a one-button bug. Audit the other overflow-prone
+  toolbars before scoping.
+
+### R-9 — "Index Required" on an indexed volume, and a mute "Index Now"
+
+At the compilation level the app can show **"Index Required"** for a volume that is fully indexed,
+with an **"Index Now"** button that does nothing — no progress, no error, no log line.
+
+**The trigger is not what it first looked like.** It was reported as "after a successful download +
+index", which is wrong and would have sent someone hunting in the indexing pipeline. Reproduced on
+unmodified `v2` (`7a9370e`), iPhone 17 Pro, one install, one database:
+
+| Launch | Browse → volume → Chapter 1 |
+|---|---|
+| Normal | "Documents (5)" — healthy |
+| `FRUS_UI_TEST_MODE=1` | **"Index Required"**; "Index Now" is inert |
+| Normal again | "Documents (28)" — healthy |
+
+Ground truth across all three: `SELECT COUNT(*) FROM document_cache WHERE volume_id='frus1989-92v31'`
+→ **250**. The volume was indexed every time; the banner is simply lying. The real trigger is
+**launching with `ContentView`'s onboarding gate bypassed**, which is what every UI test does.
+
+**Root cause (verified in source).** `BrowserViewModel.indexingPipeline` is captured once and never
+back-filled — `BrowserViewModel.swift:147` (`let`), copied by `bootstrapViewModel()` at
+`BrowserView.swift:563-576` from `.onAppear`, before `FRUSExplorerApp.swift:1317` has assigned it.
+Two guards then fail *silently*:
+
+```swift
+guard let pipeline = indexingPipeline else { return false }   // :345 → "Index Required"
+guard let pipeline = indexingPipeline else { return }         // :359 → "Index Now" no-ops
+```
+
+`indexingError` is never set, so `CompilationView.swift:432`'s error line stays hidden and the
+button is completely mute. Only the compilation level asks `isIndexed`, which is why nothing higher
+looks wrong: `loadVolumeStructure` falls back to parsing the XML when the pipeline is nil.
+
+**This is the unfixed half of closed issue #324.** That fix added `attachDownloadManagerIfNeeded`
+plus an `onChange` back-fill — **for `downloadManager` only**. `indexingPipeline` never got the
+equivalent, so the same defect simply moved one level down (VolumeView "Download Required" →
+CompilationView "Index Required"). No open issue covers it.
+
+**Why it is not a shipping-user emergency, and the one path where it is.** In the normal path the
+`ContentView` gate requires `hasVolumes`/`hasActiveDownloads`, both of which need
+`appState.downloadManager`, assigned *after* the pipeline — so users do not reach the browser in the
+bad state. **But** `FTS5Store` and `IndexingPipeline` are both built with `try?`
+(`FRUSExplorerApp.swift:1309-1311`) while `DownloadManager` is created outside that block. If either
+throws, the pipeline stays nil for the session, the gate still opens, and **every** compilation shows
+"Index Required" with a dead button and no error surfaced anywhere. That path was not forced in
+testing — worth forcing before deciding the priority.
+
+macOS is unaffected: `MacCorpusBrowserWindow.swift:888` reads the pipeline live and `.disabled`s its
+button — a disabled control rather than a mute one, which is the behaviour to copy.
+
+**Cost today:** it blocks UI-test coverage of everything below the volume level — the same class of
+blocker #324 was filed for.
+
+**Fix shape:** mirror #324 (`attachIndexingPipelineIfNeeded` + `onChange` back-fill), or read the
+pipeline from `AppState` live. Independently, the `indexVolume` guard should set `indexingError` so
+the button can never be silently mute again.
+
+---
+
 ## Tester feedback — build 35
 
 Not yet collected. Slot it here rather than in a separate wave: the settings programme touched
@@ -157,6 +282,17 @@ Expect the feedback to cluster on surfaces this wave already opens.
 **R-1 → (Q1 answer) → R-2 → R-3 → R-4 → R-5**, with tester feedback triaged into whichever step it
 lands on. R-1 can go early and alone; R-3 is the item with the most user-visible value and should
 not start before Q1 is settled, or it will be built against a model that then changes.
+
+The folded-in items are independent of that chain and of each other, so they can be slotted wherever
+they fit. If any of them go early, take **R-6 and R-7 together** — they are one story (the app could
+not describe the failure, and the gate that would have caught it before shipping was never built),
+and doing either alone leaves the other looking optional. **R-8** is small and unblocked.
+
+**R-9 has a claim on going first**, for a reason that is not its user impact: it blocks UI-test
+coverage of everything below the volume level, so any later work that wants a test at document grain
+pays for it anyway. Its fix is also already written down — #324 solved the identical problem on the
+sibling field, so this is applying a known pattern rather than designing one. Force the `try?`
+failure path described in the entry before deciding whether it is also a shipping-user bug.
 
 ## Standing constraints
 
