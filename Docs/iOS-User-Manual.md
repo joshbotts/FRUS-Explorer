@@ -1026,9 +1026,15 @@ resolve, available as CSV or JSON (Section 6.1).
 
 **Diagnostics → Sync Log** summarizes itself on its row — "Last event 12:04 · no errors today" —
 and opens a local, on-device, **redacted** log of recent iCloud sync events. It records **only**
-event types, timing and error codes: never record or account identifiers, and nothing about the
-content of your notes, tags or collections. The log stays on the device and is not synced. Use
-**Copy**, **Export…** or **Clear Log**.
+event types, timing, error codes, and the names of the app's own record types and fields when
+iCloud rejects one: never record or account identifiers, and nothing about the content of your
+notes, tags or collections. The log stays on the device and is not synced. Use **Copy**,
+**Export…** or **Clear Log**.
+
+When a failure cannot be described any further than "something went wrong", the row says so —
+"2 errors today, 1 with no detail". That is a real distinction rather than a hedge: an error the
+app could describe names what iCloud objected to and is usually actionable, while one it could
+not is worth reporting with **Export…** attached.
 
 **Diagnostics → iCloud Schema** answers a question the Sync Log cannot: whether iCloud has been
 told about everything this version of the app saves. iCloud will not accept a kind of record it

@@ -29,10 +29,23 @@ struct SubErrorBucket: Codable, Sendable, Hashable {
 /// never carry user-identifying data or synced content.
 ///
 /// Recorded (safe): event phase, timing, success, error domain/code/code-name, a
-/// `(codeName, code) → count` histogram of a `partialFailure`'s sub-errors, and coarse
-/// environment (app version/build, OS, device-model class). **Never** recorded: record
-/// names/IDs, zone/owner identifiers, emails, field values, `localizedDescription`, or any
-/// free text that could embed an identifier.
+/// `(codeName, code) → count` histogram of a `partialFailure`'s sub-errors, the app's own
+/// CloudKit schema identifiers recovered from the server text, and coarse environment (app
+/// version/build, OS, device-model class). **Never** recorded: record names/IDs, zone/owner
+/// identifiers, emails, field values, `localizedDescription`, or any free text that could embed
+/// an identifier.
+///
+/// ## Adding a field
+/// Every property added after 1.0 **must** be optional. `SyncDiagnosticsLog.loaded()` swallows a
+/// decode failure with `try?` and falls back to `[]`, so a non-optional addition would silently
+/// erase the entire on-disk history the first time an old file was read — the very history the
+/// owner pastes into an issue. Optional properties decode with `decodeIfPresent`, so a file
+/// written by an older build still round-trips; `SyncDiagnosticsEntryTests` pins that.
+///
+/// Version history:
+///   1.0 — #188-C.1: initial implementation
+///   1.1 — Wave R-6: `hadPartialDictionary`, `partialDictionaryDepth`, `schemaIdentifiers`,
+///          `retryAfterSeconds`, `chainTruncated` — the channels #488 discarded
 struct SyncDiagnosticsEntry: Codable, Sendable, Identifiable {
     /// A freshly generated local row id — NOT the CloudKit event's identifier.
     let id: UUID
@@ -59,6 +72,20 @@ struct SyncDiagnosticsEntry: Codable, Sendable, Identifiable {
     let partialItemCount: Int?
     /// For a `partialFailure`: the per-item sub-errors bucketed by code name.
     let subErrorHistogram: [SubErrorBucket]?
+    /// Whether a `CKPartialErrorsByItemIDKey` dictionary was found anywhere in the error chain
+    /// (Wave R-6). `false` means *looked, found none*; `nil` means the row predates the walk.
+    var hadPartialDictionary: Bool? = nil
+    /// How many `NSUnderlyingErrorKey` hops down that dictionary sat — `0` for the top-level
+    /// error. `nil` when none was found or the row predates the walk.
+    var partialDictionaryDepth: Int? = nil
+    /// The `CD_…` / `_pcs_data` schema identifiers named in the server's error text. These are
+    /// names this app's own schema defines — never record names or field values.
+    var schemaIdentifiers: [String]? = nil
+    /// The server's requested back-off in seconds (`CKErrorRetryAfterKey`), when it sent one.
+    var retryAfterSeconds: Double? = nil
+    /// Whether the error-chain walk stopped at a bound instead of exhausting the chain, so a
+    /// bounded walk that found nothing is not mistaken for an absence.
+    var chainTruncated: Bool? = nil
     /// App marketing version (`CFBundleShortVersionString`).
     let appVersion: String
     /// App build number (`CFBundleVersion`).
@@ -67,6 +94,26 @@ struct SyncDiagnosticsEntry: Codable, Sendable, Identifiable {
     let osVersion: String
     /// Device model *class* (e.g. `iPhone16,2`) — not a serial or per-device identifier.
     let deviceModel: String
+}
+
+extension SyncDiagnosticsEntry {
+
+    /// Whether this row records a failure the app could not describe beyond a domain and a code
+    /// (Wave R-6).
+    ///
+    /// This is #488's log line exactly: `CKErrorDomain partialFailure (2)` with no sub-errors and
+    /// no schema identifiers — a row that *looks* like every other failed row in the Data &
+    /// Recovery summary but tells the reader nothing. Rows written before R-6 are undiagnosed by
+    /// definition, and this correctly says so.
+    ///
+    /// The `errorCode` guard is deliberately the same test the Data & Recovery summary uses for
+    /// "this row is an error", so the undescribed count can never exceed the error count. The
+    /// health-check rows that carry only an `errorCodeName` (`accountStatus(3)`) are not errors by
+    /// that definition and are not counted here either.
+    var isUndiagnosedFailure: Bool {
+        guard errorCode != nil else { return false }
+        return (subErrorHistogram ?? []).isEmpty && (schemaIdentifiers ?? []).isEmpty
+    }
 }
 
 // MARK: - SyncDiagnosticsLog
@@ -138,7 +185,12 @@ actor SyncDiagnosticsLog {
         errorCode: Int? = nil,
         errorCodeName: String? = nil,
         partialItemCount: Int? = nil,
-        subErrorHistogram: [SubErrorBucket]? = nil
+        subErrorHistogram: [SubErrorBucket]? = nil,
+        hadPartialDictionary: Bool? = nil,
+        partialDictionaryDepth: Int? = nil,
+        schemaIdentifiers: [String]? = nil,
+        retryAfterSeconds: Double? = nil,
+        chainTruncated: Bool? = nil
     ) {
         let duration: Double? = (startDate != nil && endDate != nil)
             ? endDate!.timeIntervalSince(startDate!) : nil
@@ -155,6 +207,11 @@ actor SyncDiagnosticsLog {
             errorCodeName: errorCodeName,
             partialItemCount: partialItemCount,
             subErrorHistogram: subErrorHistogram,
+            hadPartialDictionary: hadPartialDictionary,
+            partialDictionaryDepth: partialDictionaryDepth,
+            schemaIdentifiers: schemaIdentifiers,
+            retryAfterSeconds: retryAfterSeconds,
+            chainTruncated: chainTruncated,
             appVersion: Self.appVersion,
             appBuild: Self.appBuild,
             osVersion: Self.osVersion,
@@ -181,22 +238,51 @@ actor SyncDiagnosticsLog {
         var lines: [String] = [envHeader(), ""]
         let stamp = ISO8601DateFormatter()
         for e in rows.reversed() {  // newest first for reading
-            var parts = ["[\(stamp.string(from: e.timestamp))]",
-                         e.phase,
-                         e.succeeded ? "ok" : "FAILED"]
-            if let d = e.durationSeconds { parts.append(String(format: "%.1fs", d)) }
-            if let dom = e.errorDomain, let code = e.errorCode {
-                parts.append("\(dom) \(e.errorCodeName ?? "code \(code)") (\(code))")
-            }
-            if let n = e.partialItemCount { parts.append("partial=\(n)") }
-            var line = parts.joined(separator: "  ")
-            if let hist = e.subErrorHistogram, !hist.isEmpty {
-                let breakdown = hist.map { "\($0.count)× \($0.key)" }.joined(separator: ", ")
-                line += "\n    └ \(breakdown)"
-            }
-            lines.append(line)
+            lines.append(Self.line(for: e, stamp: stamp))
         }
         return lines.joined(separator: "\n")
+    }
+
+    /// Renders one row of the readable dump.
+    ///
+    /// Split out of ``formattedText()`` and `nonisolated` so the wording can be tested against a
+    /// constructed entry, without the actor, the durable file, or an Application Support
+    /// directory. Before Wave R-6 nothing in either test target touched this type at all.
+    ///
+    /// The Wave R-6 fields are rendered so that the three states an owner must tell apart are
+    /// visibly different in the text they paste into an issue:
+    /// - `partial=N@depth D` — the per-item dictionary was found, and where.
+    /// - `no per-item errors in chain` — the walk completed and there were none.
+    /// - neither — the row predates the walk, so the app genuinely does not know.
+    nonisolated static func line(for e: SyncDiagnosticsEntry,
+                                 stamp: ISO8601DateFormatter) -> String {
+        var parts = ["[\(stamp.string(from: e.timestamp))]",
+                     e.phase,
+                     e.succeeded ? "ok" : "FAILED"]
+        if let d = e.durationSeconds { parts.append(String(format: "%.1fs", d)) }
+        if let dom = e.errorDomain, let code = e.errorCode {
+            parts.append("\(dom) \(e.errorCodeName ?? "code \(code)") (\(code))")
+        }
+        if let n = e.partialItemCount {
+            parts.append(e.partialDictionaryDepth.map { "partial=\(n)@depth \($0)" }
+                         ?? "partial=\(n)")
+        } else if e.hadPartialDictionary == false {
+            parts.append(e.chainTruncated == true
+                         ? "no per-item errors found (chain truncated)"
+                         : "no per-item errors in chain")
+        }
+        if let retry = e.retryAfterSeconds {
+            parts.append(String(format: "retry-after=%.0fs", retry))
+        }
+        var line = parts.joined(separator: "  ")
+        if let hist = e.subErrorHistogram, !hist.isEmpty {
+            let breakdown = hist.map { "\($0.count)× \($0.key)" }.joined(separator: ", ")
+            line += "\n    └ \(breakdown)"
+        }
+        if let ids = e.schemaIdentifiers, !ids.isEmpty {
+            line += "\n    └ schema: \(ids.joined(separator: ", "))"
+        }
+        return line
     }
 
     /// The pretty-printed JSON bytes of all rows, for file export.

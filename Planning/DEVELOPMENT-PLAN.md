@@ -1839,3 +1839,51 @@ failing test rather than an argument. Two were blockers.
 - **Verified.** Full `FRUSExplorerTests` **1777/1777** pass on a booted iPhone 17 Pro simulator;
   iOS and macOS build with no new warnings. **Not verified:** the migration against real legacy
   data, the multi-device race, and the on-device render of the new History exports section.
+
+### Session 2026-07-26 — Wave R-6: make a CloudKit failure diagnosable
+
+Issue #488 reported `CKErrorDomain partialFailure (2)` and nothing else; the cause was
+reconstructed from the CloudKit Console and a `git diff`. R-7 built the gate that stops the
+regression recurring — this makes the *next* one describable. **It fixes no sync.**
+
+- **The defect, verified in source.** `cloudKitDiagnostic` read
+  `error.userInfo[CKPartialErrorsByItemIDKey]` at exactly one level and, on a miss, fell through to
+  domain + code. A `grep` for `NSUnderlyingErrorKey`, `NSMultipleUnderlyingErrorsKey`,
+  `CKErrorRetryAfterKey` and the server's error text returned **zero readers anywhere in the app**,
+  so every channel that could name the rejected record type was discarded.
+- **The walk.** New `FRUSExplorer/Diagnostics/CloudKitErrorInspector.swift`: breadth-first over
+  `NSUnderlyingErrorKey` + `NSMultipleUnderlyingErrorsKey`, bounded three ways — depth 6, 64
+  errors, and an `ObjectIdentifier` visited-set so a self-referential chain terminates on the
+  second visit instead of hanging. The per-item dictionary is found wherever it sits and its
+  **depth is recorded**; `NSPersistentCloudKitContainer` re-vends #488's failure at depth 1.
+- **`hadPartialDictionary` is the point.** `false` = looked, found none. Field absent on a stored
+  row = the row predates the walk. Those were one silence before. A walk stopped by a bound sets
+  `chainTruncated` rather than claiming an absence.
+- **Schema identifiers only, by a hand-written grammar.** Split the text into maximal
+  `[A-Za-z0-9_]` runs; emit a run only if it starts with `CD_` (with something after) or *is*
+  `_pcs_data`. No regex, so a reviewer can read exactly what escapes and there is no pattern to
+  "simplify" into `.*`. A UUID cannot match (no underscore, so `CD_` never begins inside one) and
+  the maximal-run rule makes `someCD_thing` one failing run rather than two.
+- **The redaction gate.** #188-C.1 forbids free text from an `NSError` reaching the log and has no
+  mechanical enforcement except this: `CloudKitErrorInspectorTests` feeds a description carrying a
+  UUID record name, a zone owner id, an e-mail and a field value, and asserts zero tokens plus no
+  surviving fragment anywhere in the result. **Proved red under mutation** (grammar widened to emit
+  every run — it leaked the UUID, the e-mail and "Kissinger") before being trusted.
+- **New `SyncDiagnosticsEntry` fields are all optional.** `loaded()` swallows a decode failure with
+  `try?`, so a non-optional addition would silently wipe the history the owner pastes into issues;
+  `legacyRowDecodes` pins a pre-R-6 JSON file.
+- **Surfaces.** `SyncDiagnosticsLog.line(for:stamp:)` split out of `formattedText()` and testable
+  without the actor: renders `partial=N@depth D`, the `no per-item errors in chain` /
+  `chain truncated` / say-nothing distinction, `schema: CD_…`, `retry-after=Ns`. Data & Recovery's
+  Sync Log row reads "2 errors today, 1 with no detail"; `SyncLogSummary.Event` makes the second
+  count structurally unable to exceed the first. The two `checkCloudKitHealth()` catch blocks run
+  through the inspector too.
+- **Also fixed, found while doing it.** The CloudKit code-name table was applied to *every* domain
+  (an `NSCocoaErrorDomain` code 4 was reported as `networkFailure`); the equal-count histogram sort
+  was unstable, so one failure rendered differently on each run; `cloudKitDiagnostic`'s doc comment
+  had drifted above the wrong declaration and still claimed it logged via `print`.
+- **Verified.** 44 new tests in `CloudKitErrorInspectorTests` / `CloudKitDiagnosticTests` /
+  `SyncDiagnosticsEntryTests` / extended `SyncLogSummaryTests`; full `FRUSExplorerTests`
+  **1815/1815** pass on a booted iPhone 17 simulator; iOS and macOS build with no new warnings.
+  **Not verified:** anything against a real CloudKit rejection — every shape is reconstructed —
+  and the on-device render of the new Sync Log row wording on either platform.

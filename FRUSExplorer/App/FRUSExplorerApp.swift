@@ -179,6 +179,11 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          authoring shortcuts ⌥⌘N (new collection), ⌘⇧A (add documents — moved
 ///          here from the toolbar button so the equivalent has a single owner),
 ///          ⌥⌘P (preview), ⌘E (export)
+///   4.7 — Wave R / R-6: `cloudKitDiagnostic(_:)` delegates to `CloudKitErrorInspector`, which
+///          walks the underlying-error chain for the per-item dictionary instead of checking one
+///          level, records whether it looked, and recovers the server's `CD_…` schema
+///          identifiers. The CloudKit code table is no longer applied to non-`CKErrorDomain`
+///          errors, where it named codes it had no business naming.
 ///   4.6 — Wave R / R-9: `bootDownloadManager()` calls `UITestVolumeSeeder.seedIfRequested`
 ///          (DEBUG-only, inert unless `FRUS_UI_TEST_SEED_VOLUME` is set) before building the
 ///          `IndexingPipeline`, so a UI test can reach the compilation level — coverage the
@@ -1297,7 +1302,13 @@ struct FRUSExplorerApp: App {
                     await SyncDiagnosticsLog.shared.record(
                         phase: "init", startDate: nil, endDate: Date.now, succeeded: false,
                         errorDomain: diag.domain, errorCode: diag.code, errorCodeName: diag.codeName,
-                        partialItemCount: diag.partialCount, subErrorHistogram: diag.histogram)
+                        partialItemCount: diag.partialCount, subErrorHistogram: diag.histogram,
+                        hadPartialDictionary: diag.inspection.hadPartialDictionary,
+                        partialDictionaryDepth: diag.inspection.partialDictionaryDepth,
+                        schemaIdentifiers: diag.inspection.schemaIdentifiers.isEmpty
+                            ? nil : diag.inspection.schemaIdentifiers,
+                        retryAfterSeconds: diag.inspection.retryAfterSeconds,
+                        chainTruncated: diag.inspection.chainTruncated)
                 }
             } else {
                 appState.cloudKitInitError = String(
@@ -1736,7 +1747,17 @@ struct FRUSExplorerApp: App {
                             errorCode: diag?.code,
                             errorCodeName: diag?.codeName,
                             partialItemCount: diag?.partialCount,
-                            subErrorHistogram: diag?.histogram
+                            subErrorHistogram: diag?.histogram,
+                            // Wave R-6. Recorded for every ended event that carried an error, so
+                            // "the app looked and there was no per-item detail" is a fact in the
+                            // row rather than an absence the reader has to guess at.
+                            hadPartialDictionary: diag?.inspection.hadPartialDictionary,
+                            partialDictionaryDepth: diag?.inspection.partialDictionaryDepth,
+                            schemaIdentifiers: (diag?.inspection.schemaIdentifiers).flatMap {
+                                $0.isEmpty ? nil : $0
+                            },
+                            retryAfterSeconds: diag?.inspection.retryAfterSeconds,
+                            chainTruncated: diag?.inspection.chainTruncated
                         )
                     }
                 }
@@ -1950,32 +1971,6 @@ struct FRUSExplorerApp: App {
 
     // MARK: - CloudKit Diagnostics
 
-    /// Converts a CloudKit `NSError` into a human-readable diagnostic string.
-    ///
-    /// For `CKError.partialFailure` (code 2), `localizedDescription` returns the
-    /// useless "Some items failed." string. This function extracts the per-item
-    /// sub-errors from `CKPartialErrorsByItemIDKey`, counts them by error code,
-    /// and returns a summary like:
-    ///
-    ///   `"Partial sync failure (12 records): 10× changeTokenExpired, 2× serverRecordChanged"`
-    ///
-    /// The detailed breakdown is also written to the console via `print` so it
-    /// survives app relaunch and can be captured in Console.app (subsystem:
-    /// `bottsywattsy.FRUS-Explorer`).
-    ///
-    /// ## Interpreting common sub-error codes
-    /// - **changeTokenExpired (21)**: Sync token stale after a schema change — usually
-    ///   self-healing as `NSPersistentCloudKitContainer` fetches a new token.
-    /// - **zoneNotFound (26)** / **userDeletedZone (28)**: The iCloud private database zone
-    ///   was deleted (user reset iCloud data). The container should recreate it; if it does
-    ///   not, sign out of iCloud and back in.
-    /// - **serverRecordChanged (14)**: Merge conflict — auto-resolved by the container.
-    /// - **notAuthenticated (9)**: No iCloud account. User must sign in via Settings.
-    /// - **serverRejectedRequest (15)** / **incompatibleVersion (18)**: Schema or data
-    ///   mismatch between the app and the deployed CloudKit schema. May require a
-    ///   CloudKit Dashboard schema reset or an app update.
-    /// - **unknownItem (11)**: Record being updated does not exist on the server. Usually
-    ///   follows a zone/token reset; resolves after the container re-uploads.
     /// A **redacted** CloudKit diagnostic: a user-facing, identifier-free `message` plus the safe
     /// aggregate used by the sync-telemetry log (#188-C.1). Carries no record ids, zone/owner
     /// names, `localizedDescription`, or any `userInfo` value.
@@ -1992,71 +1987,103 @@ struct FRUSExplorerApp: App {
         let partialCount: Int?
         /// For a `partialFailure`: the sub-errors bucketed by code name.
         let histogram: [SubErrorBucket]?
+        /// The full allow-listed inspection of the error chain (Wave R-6) — where the per-item
+        /// dictionary was found, the schema identifiers the server named, the retry-after hint,
+        /// and whether the walk was bounded. Passed straight through to the telemetry row.
+        let inspection: CloudKitErrorInspection
     }
 
+    /// Converts a CloudKit `NSError` into a redacted diagnostic: an identifier-free `message` for
+    /// the sync-status UI plus the allow-listed aggregate the sync-telemetry log stores.
+    ///
+    /// For `CKError.partialFailure` (code 2) `localizedDescription` returns the useless "Some
+    /// items failed." string, so the diagnosis lives entirely in `CKPartialErrorsByItemIDKey` —
+    /// which this counts by sub-error code, never by record id, to produce:
+    ///
+    ///   `"Partial sync failure (12 records): 10× changeTokenExpired, 2× serverRecordChanged"`
+    ///
+    /// A one-line summary also goes to `cloudKitLog` (subsystem `bottsywattsy.FRUS-Explorer`,
+    /// category `CloudKit`) so it survives relaunch and can be read in Console.app.
+    ///
+    /// ## Wave R-6 — why this is not one `userInfo` lookup
+    /// It used to be, and #488 is what that cost. The lookup ran at exactly one level and, on a
+    /// miss, fell through to domain + code; when `NSPersistentCloudKitContainer` re-vended the
+    /// failure with the sub-errors one hop down, the log line was `CKErrorDomain partialFailure
+    /// (2)` and nothing else, and the cause had to be reconstructed from the CloudKit Console.
+    /// ``CloudKitErrorInspector`` now walks the underlying-error chain (bounded), reports whether
+    /// it *looked and found nothing* as distinct from never having looked, and recovers the
+    /// server's `CD_…` schema identifiers — the four of which named #488's actual cause.
+    ///
+    /// ## Interpreting common sub-error codes
+    /// - **changeTokenExpired (21)**: Sync token stale after a schema change — usually
+    ///   self-healing as `NSPersistentCloudKitContainer` fetches a new token.
+    /// - **zoneNotFound (26)** / **userDeletedZone (28)**: The iCloud private database zone
+    ///   was deleted (user reset iCloud data). The container should recreate it; if it does
+    ///   not, sign out of iCloud and back in.
+    /// - **serverRecordChanged (14)**: Merge conflict — auto-resolved by the container.
+    /// - **notAuthenticated (9)**: No iCloud account. User must sign in via Settings.
+    /// - **serverRejectedRequest (15)** / **incompatibleVersion (18)**: Schema or data
+    ///   mismatch between the app and the deployed CloudKit schema. May require a
+    ///   CloudKit Dashboard schema reset or an app update. If `schemaIdentifiers` is non-empty,
+    ///   those are the identifiers Production has not been taught about — check
+    ///   `CloudKitSchemaInventory.identifiersAwaitingDeploy` (R-7) before anything else.
+    /// - **unknownItem (11)**: Record being updated does not exist on the server. Usually
+    ///   follows a zone/token reset; resolves after the container re-uploads.
+    ///
+    /// - Parameter error: The error as CloudKit or SwiftData handed it over.
+    /// - Returns: A result carrying no record ids, zone/owner names, `localizedDescription`, or
+    ///   any other free text from the error.
     nonisolated static func cloudKitDiagnostic(_ error: NSError) -> CloudKitDiagnosticResult {
-        // Human-readable labels for the CloudKit error codes most likely to appear
-        // in a SwiftData+CloudKit app during normal operation and schema migration.
-        let codeNames: [Int: String] = [
-            1:  "internalError",
-            2:  "partialFailure",
-            3:  "networkUnavailable",
-            4:  "networkFailure",
-            5:  "badContainer",
-            6:  "serviceUnavailable",
-            7:  "requestRateLimited",
-            8:  "missingEntitlement",
-            9:  "notAuthenticated",
-            10: "permissionFailure",
-            11: "unknownItem",
-            12: "invalidArguments",
-            14: "serverRecordChanged",
-            15: "serverRejectedRequest",
-            18: "incompatibleVersion",
-            19: "constraintViolation",
-            20: "operationCancelled",
-            21: "changeTokenExpired",
-            22: "batchRequestFailed",
-            23: "zoneBusy",
-            24: "badDatabase",
-            25: "quotaExceeded",
-            26: "zoneNotFound",
-            28: "userDeletedZone",
-        ]
+        let inspection = CloudKitErrorInspector.inspect(error)
 
-        // For partialFailure, aggregate the per-item sub-errors by code — the safe diagnosis.
-        // The record ids in `CKPartialErrorsByItemIDKey` are deliberately NEVER read/logged:
-        // a `CKRecord.ID` exposes only its `recordName` (a leaky token) and zone identity, and
-        // the record *type* is not recoverable from it — so we key purely on the sub-error code.
-        if error.domain == CKErrorDomain, error.code == CKError.partialFailure.rawValue,
-           let partialErrors = error.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
+        // The CloudKit code table is only meaningful for CKErrorDomain. Applying it to, say, an
+        // NSCocoaErrorDomain error produced a confident wrong name ("code 4" → "networkFailure"),
+        // which reads as a diagnosis and is not one.
+        let name: String = error.domain == CKErrorDomain
+            ? (CloudKitErrorInspector.codeName(for: error.code) ?? "code \(error.code)")
+            : "code \(error.code)"
+        let schema = inspection.schemaIdentifiers
 
-            var byCode: [Int: Int] = [:]
-            for (_, subError) in partialErrors {
-                byCode[(subError as NSError).code, default: 0] += 1
-            }
-            let histogram = byCode.sorted { $0.value > $1.value }
-                .map { code, count in SubErrorBucket(key: codeNames[code] ?? "code \(code)",
-                                                     code: code, count: count) }
-            let breakdown = histogram.map { "\($0.count)× \($0.key)" }.joined(separator: ", ")
-            let count = partialErrors.count
-            cloudKitLog.error("partialFailure records=\(count, privacy: .public) breakdown=\(breakdown, privacy: .public)")
+        // The per-item dictionary is the real diagnosis, wherever in the chain it turned up.
+        // The record ids keying it are deliberately NEVER read/logged: a `CKRecord.ID` exposes
+        // only its `recordName` (a leaky token) and zone identity, and the record *type* is not
+        // recoverable from it — so we key purely on the sub-error code.
+        if inspection.hadPartialDictionary, let count = inspection.partialItemCount {
+            let histogram = inspection.subErrorHistogram ?? []
+            let breakdown = histogram.isEmpty
+                ? "no per-item errors reported"
+                : histogram.map { "\($0.count)× \($0.key)" }.joined(separator: ", ")
+            let depth = inspection.partialDictionaryDepth ?? 0
+            cloudKitLog.error("""
+                partialFailure records=\(count, privacy: .public) \
+                depth=\(depth, privacy: .public) \
+                breakdown=\(breakdown, privacy: .public) \
+                schema=\(schema.joined(separator: ","), privacy: .public)
+                """)
             return CloudKitDiagnosticResult(
                 message: "Partial sync failure (\(count) record\(count == 1 ? "" : "s")): \(breakdown)",
                 domain: error.domain,
                 code: error.code,
-                codeName: codeNames[error.code] ?? "partialFailure",
+                codeName: name,
                 partialCount: count,
-                histogram: histogram
+                histogram: histogram.isEmpty ? nil : histogram,
+                inspection: inspection
             )
         }
 
-        // Non-partial error: domain + code name only (no localizedDescription — it can embed ids).
-        let name = codeNames[error.code] ?? "code \(error.code)"
-        cloudKitLog.error("\(error.domain, privacy: .public) \(name, privacy: .public) code=\(error.code, privacy: .public)")
+        // No per-item detail anywhere in the chain: domain + code name only (never
+        // localizedDescription — it can embed ids), plus whatever schema identifiers the server
+        // named, which is the one thing that made #488 diagnosable after the fact.
+        cloudKitLog.error("""
+            \(error.domain, privacy: .public) \(name, privacy: .public) \
+            code=\(error.code, privacy: .public) \
+            partialDict=none visited=\(inspection.errorsVisited, privacy: .public) \
+            schema=\(schema.joined(separator: ","), privacy: .public)
+            """)
         return CloudKitDiagnosticResult(message: "\(error.domain) \(name)",
                                         domain: error.domain, code: error.code, codeName: name,
-                                        partialCount: nil, histogram: nil)
+                                        partialCount: nil, histogram: nil,
+                                        inspection: inspection)
     }
 }
 
