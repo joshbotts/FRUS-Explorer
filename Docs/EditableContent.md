@@ -1483,29 +1483,29 @@ When on, this device shares the settings above with your other devices that also
 
 ### Research Sessions
 
-<!-- Settings ▸ Research ▸ Research Sessions. One view on both platforms, but the recording footer has TWO keys because the platforms genuinely record different things: the only `.searchSubmit` call site is the iOS SearchViewModel, so searches run in the macOS Search window are never logged. Sessions sync, so a Mac user still sees searches their iPhone recorded — which is why the Mac wording is "not here" rather than "not recorded". -->
+<!-- Settings ▸ Research ▸ Research Sessions. One view on both platforms, but the recording footer has TWO keys because the platforms record into different stores. iOS is the only producer of `.searchSubmit` session events; macOS is the only producer of `SearchHistoryEntry`. Since Wave R-1 the switch governs BOTH stores, so both platforms record search text — what differs is where it lands, and hence which surfaces empty when the switch goes off: macOS has the History window, iOS has only a project's Recents. The pre-R-1 Mac wording ("searches are recorded on iPhone and iPad but not here") was true of the session log alone and wrong about the trail as a whole. -->
 
 #### Research-session recording footer (iOS)
 
-<!-- Replaces the sentence shipped in S-5b ("Records which documents you open and when, so History and Project Leads can show your trail"), which was false: History reads ReadingHistoryEntry/SearchHistoryEntry, Project Leads reads collections, notes and tags, and neither changes when the switch is off. -->
+<!-- Rewritten in Wave R-1 under a NEW key. The previous text (settings.sessions.logging.footer, "Records the documents you open and the text of the searches you run…") was honest about the app as it then was — the switch governed the session log only — and became wrong the moment reading history and search history came under the same gate. The label stays "Log Research Sessions" (owner decision, R-0 Q3), so the footer carries the whole explanatory burden, including the behaviour change: Recents drain when the switch is off. -->
 
-<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 151–152 | key: settings.sessions.logging.footer | shared: iOS only (see the note above) -->
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 162–163 | key: settings.sessions.logging.footer.trail | shared: iOS only (see the note above) -->
 
-Records the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity. Kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops new recording; sessions already recorded are kept until you delete them.
+Despite the name, this switch covers everything the app remembers about your work — the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity, plus the reading history behind a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
 
-<!-- END SOURCE: settings.sessions.logging.footer -->
+<!-- END SOURCE: settings.sessions.logging.footer.trail -->
 
 #### Research-session recording footer (macOS)
 
-<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 148–149 | key: settings.sessions.logging.footer.mac | shared: macOS only (see the note above) -->
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 159–160 | key: settings.sessions.logging.footer.trail.mac | shared: macOS only (see the note above) -->
 
-Records the documents you open, grouped into sessions that end after 30 minutes of inactivity. Searches are recorded on iPhone and iPad but not here. Kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops new recording; sessions already recorded are kept until you delete them.
+Despite the name, this switch covers everything the app remembers about your work — the documents you open, grouped into sessions that end after 30 minutes of inactivity, plus the text of the searches you run and the reading history behind the History window and a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so History and Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
 
-<!-- END SOURCE: settings.sessions.logging.footer.mac -->
+<!-- END SOURCE: settings.sessions.logging.footer.trail.mac -->
 
 #### Recorded-activity footer
 
-<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordedActivitySection footer | lines: 196–197 | key: settings.sessions.activity.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordedActivitySection footer | lines: 207–208 | key: settings.sessions.activity.footer | shared: iOS+macOS (single edit point) -->
 
 No other part of the app reads this log — it is groundwork for a research-trail view. It is here so that what is recorded is something you can look at.
 
@@ -1513,11 +1513,13 @@ No other part of the app reads this log — it is groundwork for a research-trai
 
 #### Delete-sessions footer
 
-<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.manageSection footer | lines: 219–220 | key: settings.sessions.manage.footer | shared: iOS+macOS (single edit point) -->
+<!-- Rewritten in Wave R-1 under a NEW key. The previous text (settings.sessions.manage.footer) called reading history "separate", which was true of the recording switch then and is not now. What is still separate is the deletion: this button reaches the session log only. -->
 
-Deletes every recorded session and its events. Nothing else is touched — your notes, highlights, tags, collections and reading history are separate and stay put.
+<!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.manageSection footer | lines: 234–235 | key: settings.sessions.manage.footer.trail | shared: iOS+macOS (single edit point) -->
 
-<!-- END SOURCE: settings.sessions.manage.footer -->
+Deletes every recorded session and its events. Nothing else is touched: your notes, highlights, tags and collections stay put, and so does the reading and search history the switch above also governs — this button does not reach that.
+
+<!-- END SOURCE: settings.sessions.manage.footer.trail -->
 
 #### iCloud unavailable (Local Only) detail
 <!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 228–229 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->

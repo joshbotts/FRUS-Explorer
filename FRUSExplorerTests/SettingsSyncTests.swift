@@ -53,7 +53,7 @@ struct SettingsSyncCoordinatorTests {
             WordCloudSettings.Keys.revision,
             SettingsKeys.citationStyle,
             SettingsKeys.defaultDocumentMode,
-            "researchSessionLoggingEnabled",
+            AppState.researchLoggingPreferenceKey,
         ] { defaults.removeObject(forKey: key) }
     }
 

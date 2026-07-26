@@ -67,13 +67,19 @@ import UniformTypeIdentifiers
 ///   2.6 — S-2c: `DownloadsSettingsView`, `StorageManagementView`, and `SideloadView` (1,577
 ///          lines) leave this file for the merged `VolumesStorageHubView`; Library is one row.
 ///          The stale hand-copied panel table above is replaced by a pointer to the model
+///   2.7 — Wave R-1: removed the orphaned `researchSessionLoggingEnabled` `@AppStorage`
+///          property — the switch itself has lived in `ResearchSessionsView` since S-1 and
+///          nothing in this file read the value
 struct SettingsView: View {
 
     #if !os(iOS)
     @Environment(\.dismiss) private var dismiss
     #endif
 
-    @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
+    // The research-logging `@AppStorage` that used to sit here was removed in Wave R-1: the
+    // switch moved to `ResearchSessionsView` in S-1 and nothing in this file had read the
+    // property since. Leaving it behind made the key look like it had more readers than it did.
+
     /// Device-local master toggle for optional cross-device settings sync.
     @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
 

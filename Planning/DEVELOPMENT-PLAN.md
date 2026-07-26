@@ -1654,3 +1654,35 @@ Two days ahead of the Rev-3 schedule by close.
   significant one being M-1-1 (CloudKit shape for document-grain working corpora — lean
   sync-the-definition, not the key list).
 - **No app code changed this session** (assessment + planning only).
+
+### Session 2026-07-26 — Wave R-1: close the research-logging gate
+- **The bug.** `AppState.logEvent` was gated on `researchSessionLoggingEnabled`;
+  `DocumentViewModel.recordReadingHistory` and `MacSearchViewModel.recordSearchHistory` were
+  gated by nothing at all. So the switch labelled "Log Research Sessions" stopped the recorder
+  only `SessionLogView` reads and left running the ones feeding the History window, Project
+  Home recents, Project Leads' engaged documents, the search checklist and the storage hub's
+  last-opened dates. Turning it off did not stop the app remembering what you read.
+- **Fix.** One reader: `AppState.researchLoggingPreferenceKey` +
+  `AppState.isResearchLoggingEnabled(in:)` (absent means on). All three writers route through
+  it; `SettingsSyncCoordinator` and the `ResearchSessionsView` `@AppStorage` binding take the
+  key from `AppState` instead of re-declaring the literal. The orphaned `@AppStorage` in
+  `SettingsView` (unread since S-1) was removed. `UserDefaults` key unchanged — it is
+  user-data-bearing and mirrored via `SyncedPreferences.researchLoggingEnabled`.
+- **Behaviour change, stated in the copy.** With the switch off, History and Project Home
+  recents now drain. Both recording footers were rewritten under **new** localization keys
+  (no String Catalog, so key reuse is a silent collision) to say the switch governs the whole
+  trail and to warn about the drain; the Manage footer no longer calls reading history
+  "separate". Owner decision R-0 Q3 keeps the label "Log Research Sessions", so the footer
+  carries the whole explanatory burden.
+- **Copy correction.** The pre-R-1 macOS footer said "searches are recorded on iPhone and iPad
+  but not here". True of the *session log* alone: macOS is the sole producer of
+  `SearchHistoryEntry` and does record search text. Corrected on both platforms.
+- **Tests.** New `FRUSExplorerTests/ResearchLoggingGateTests` (10 tests): behavioural coverage
+  of the two writers reachable from the iOS bundle (document open, iOS search submit) with
+  on/off/absent controls; a source-shape guard for the macOS search writer (the type is
+  `#if os(macOS)`, the test bundle is iOS-only); plus two standing guards — every producer of
+  a history entry is a known gated writer, and the key literal appears in exactly one file.
+  Both negative controls verified by temporarily neutering each gate.
+- **Verified.** iOS `build-for-testing` + full `FRUSExplorerTests` (1694 tests, 232 suites) pass;
+  macOS `FRUSExplorerMac` builds with no new warnings. Not verified: on-device/simulator visual
+  review of the rewritten footers, and end-to-end drain of History/Recents.

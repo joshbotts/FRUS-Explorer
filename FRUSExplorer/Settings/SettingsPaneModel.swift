@@ -196,9 +196,13 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .summarization:   return ["ai", "apple intelligence", "prompts", "summaries", "batch", "background"]
         case .wordCloud:       return ["stop words", "stopwords", "hidden words", "lens", "density", "typeface", "font"]
         case .notes:           return ["research notes", "annotations"]
+        // "reading history" / "search history" / "recents" joined the list in Wave R-1, when the
+        // switch in this pane became the control for those stores as well as the session log. A
+        // reader looking for where their reading history is governed must land here.
         case .researchSessions: return ["log research sessions", "logging", "session log",
                                         "history", "privacy", "recording", "trail", "activity",
-                                        "delete history", "clear history", "what is recorded"]
+                                        "delete history", "clear history", "what is recorded",
+                                        "reading history", "search history", "recents"]
         case .display:         return ["text size", "font", "citations", "reading mode", "chart colors", "appearance"]
         case .search:          return ["scope", "snippet", "editorial notes", "defaults", "filters"]
         case .sync:            return ["icloud", "cloudkit", "devices"]

@@ -962,18 +962,24 @@ Setup takes a minute: open the Zotero card, tap **Create a Zotero API key** to o
 The app can keep a record of your research trail. **Settings → Research → Research Sessions** is
 where you see what it keeps, decide whether it keeps it, and delete it.
 
-**Log Research Sessions** governs the recording. What goes into the log is the documents you open
-and the text of the searches you run, grouped into sessions that end after 30 minutes of
-inactivity. It is kept on this device and, if iCloud sync is on, in your private iCloud database.
-Turning it off stops new recording; sessions already recorded are kept until you delete them.
+**Log Research Sessions** governs the recording — despite the name, all of it. That means the
+documents you open and the text of the searches you run, grouped into sessions that end after 30
+minutes of inactivity, and also the reading history that a project's **Recents** are built from.
+All of it is kept on this device and, if iCloud sync is on, in your private iCloud database.
+
+Turning it off stops every part of that recording. One consequence is worth knowing in advance:
+because Recents are built from the reading history the switch now governs, they will thin out and
+eventually be empty while the switch is off. That is the switch working, not a fault. Anything
+recorded before you turned it off stays until you delete it.
 
 **Session Log** shows how much has been recorded and opens the whole thing — sessions newest
 first, each expanding to the individual events. No other part of the app reads this log yet; it is
 groundwork for a research-trail view, and it is here so that what is recorded is something you can
 look at.
 
-**Delete Recorded Sessions…** clears every recorded session and its events, and nothing else —
-your notes, highlights, tags, collections and reading history are separate and stay put.
+**Delete Recorded Sessions…** clears every recorded session and its events, and nothing else. Your
+notes, highlights, tags and collections stay put, and so does the reading and search history the
+switch above also governs — this button does not reach that.
 
 `[SCREENSHOT: Settings → Research → Research Sessions — the Log Research Sessions switch, the Session Log row with its counts, and Delete Recorded Sessions…]`
 

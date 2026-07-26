@@ -34,6 +34,10 @@ import SwiftData
 /// Version history:
 ///   1.0 — initial implementation: the pane, the log viewer's first construction site, and the
 ///          first way to delete recorded sessions on either platform
+///   1.1 — Wave R-1: the switch now gates reading history and search history as well as the
+///          session log, so both recording footers were rewritten (new keys) to say so and to
+///          warn that History and Recents drain when it is off; the Manage footer no longer
+///          calls reading history "separate"; the `@AppStorage` key comes from `AppState`
 struct ResearchSessionsView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -45,7 +49,9 @@ struct ResearchSessionsView: View {
     @Environment(\.scenePhase) private var scenePhase
     #endif
 
-    @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
+    /// The one switch. Bound to the key `AppState` owns so the string is written down once
+    /// (Wave R-1) — and so it stays obvious that this control now governs three writers, not one.
+    @AppStorage(AppState.researchLoggingPreferenceKey) private var loggingEnabled = true
 
     @State private var summary: ResearchSessionsSummary = .empty
     @State private var showsDeleteConfirmation = false
@@ -134,22 +140,27 @@ struct ResearchSessionsView: View {
             Text(String(localized: "settings.sessions.recording.header",
                         defaultValue: "Recording"))
         } footer: {
-            // What goes in the log, stated plainly — including the search text, which is the part
-            // a reader would not guess and has the most right to know.
+            // The label stays "Log Research Sessions" (owner decision, Wave R-0 Q3), so it does
+            // not hint that the switch also governs reading history and search history. Since
+            // Wave R-1 it does — `DocumentViewModel.recordReadingHistory` and
+            // `MacSearchViewModel.recordSearchHistory` honour the same preference `logEvent`
+            // does. The whole explanatory burden therefore lands here, and the footer has to
+            // carry the behaviour change too: turning the switch off drains History and the
+            // Project Home recents, because those surfaces are fed by the store now gated.
             //
-            // Two keys, because the two platforms genuinely record different things: the only
-            // `.searchSubmit` call site is `SearchViewModel.search()`, which is the iOS search
-            // model. `MacSearchViewModel` has no logging call, so searches run in the macOS
-            // Search window are never recorded. Sessions sync, though, so a Mac user WILL see
-            // searches their iPhone recorded — which is why the Mac sentence says "not here"
-            // rather than "not recorded". (Whether to close that gap is a separate decision:
-            // doing it would start collecting search text on a platform that currently does not.)
+            // Still two keys, because the two platforms record into different stores. iOS is the
+            // only producer of `.searchSubmit` session events; macOS is the only producer of
+            // `SearchHistoryEntry`. Both platforms therefore DO record search text — the earlier
+            // Mac footer's "searches are recorded on iPhone and iPad but not here" was true of
+            // the session log alone and is wrong about the trail as a whole. What actually
+            // differs is where it lands, and hence which surfaces empty when the switch goes off:
+            // macOS has the History window, iOS has only a project's Recents (R-3 is the gap).
             #if os(macOS)
-            Text(String(localized: "settings.sessions.logging.footer.mac",
-                        defaultValue: "Records the documents you open, grouped into sessions that end after 30 minutes of inactivity. Searches are recorded on iPhone and iPad but not here. Kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops new recording; sessions already recorded are kept until you delete them."))
+            Text(String(localized: "settings.sessions.logging.footer.trail.mac",
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open, grouped into sessions that end after 30 minutes of inactivity, plus the text of the searches you run and the reading history behind the History window and a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so History and Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #else
-            Text(String(localized: "settings.sessions.logging.footer",
-                        defaultValue: "Records the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity. Kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops new recording; sessions already recorded are kept until you delete them."))
+            Text(String(localized: "settings.sessions.logging.footer.trail",
+                        defaultValue: "Despite the name, this switch covers everything the app remembers about your work — the documents you open and the text of the searches you run, grouped into sessions that end after 30 minutes of inactivity, plus the reading history behind a project's Recents. All of it is kept on this device and, if iCloud sync is on, in your private iCloud database. Turning it off stops every part of that recording, so Recents will thin out and eventually be empty: that is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it."))
             #endif
         }
     }
@@ -216,8 +227,12 @@ struct ResearchSessionsView: View {
         } header: {
             Text(String(localized: "settings.sessions.manage.header", defaultValue: "Manage"))
         } footer: {
-            Text(String(localized: "settings.sessions.manage.footer",
-                        defaultValue: "Deletes every recorded session and its events. Nothing else is touched — your notes, highlights, tags, collections and reading history are separate and stay put."))
+            // Reworded for Wave R-1. The old text called reading history "separate", which was
+            // true of the recording switch then and is not now — the switch above governs it.
+            // What is still separate is the *deletion*: this button reaches the session log only.
+            // Closing that is R-5's job; until then the copy must not imply otherwise.
+            Text(String(localized: "settings.sessions.manage.footer.trail",
+                        defaultValue: "Deletes every recorded session and its events. Nothing else is touched: your notes, highlights, tags and collections stay put, and so does the reading and search history the switch above also governs — this button does not reach that."))
         }
     }
 

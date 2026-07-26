@@ -106,8 +106,12 @@ struct SettingsPaneModelTests {
     /// pane called *Notes*. Those keywords belong to the pane that owns the switch.
     @Test("Research Sessions answers for the words a reader actually types")
     func researchSessionsKeywords() {
+        // "reading history" and "search history" were added in Wave R-1: the switch in this pane
+        // now gates those stores too, so a reader hunting for where they are governed must land
+        // here rather than concluding the app offers no control over them.
         for query in ["log research sessions", "logging", "session log", "history",
-                      "privacy", "recording", "trail", "delete history"] {
+                      "privacy", "recording", "trail", "delete history",
+                      "reading history", "search history", "recents"] {
             #expect(SettingsPane.researchSessions.matches(query), "no match for \(query)")
         }
         #expect(SettingsPane.researchSessions.group == .research)

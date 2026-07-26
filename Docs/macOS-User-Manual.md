@@ -1091,7 +1091,7 @@ its own.
 | | **Summarization** | Apple Intelligence availability, your standard and custom prompts, and **New Batch Run…**, which opens the run sheet. |
 | | **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters), a live **Sample** of what your settings keep with a "Keeps N of M terms" line, one hidden-words editor scoped to every cloud or to a single lens, and an **Appearance** section setting the cloud's font and density — device-local, not synced (Section 13.4). |
 | | **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag and text filters. Identical to the iOS pane. |
-| | **Research Sessions** | The **Log Research Sessions** switch and a plain statement of what it records; the **Session Log**, expandable to individual events; and **Delete Recorded Sessions…**. Note the platform difference the pane states: searches are recorded on iPhone and iPad but not in the macOS Search window. |
+| | **Research Sessions** | The **Log Research Sessions** switch and a plain statement of what it records; the **Session Log**, expandable to individual events; and **Delete Recorded Sessions…**. Despite its name the switch governs the whole research trail — the documents you open, the text of the searches you run, and the reading and search history the **History** menu and Complete History window (Section 17) and a project's **Recents** are built from. Turn it off and those surfaces thin out and eventually empty; that is the switch working. **Delete Recorded Sessions…** covers the session log only. |
 | **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and the default document mode. |
 | | **Search** | Default search scope, default document type, and **Result Preview** — how many lines of matched context a result shows (1–10). Honoured by the Search window (Section 5.1) and the Collections **Add Documents** previews (Section 10.2a), each of which can override it locally. |
 | **System** | **iCloud Sync** | The **Sync Settings Across Devices** toggle, which mirrors your word-cloud filters and stop lists, citation style, default document mode and research-logging preference to your other devices that have it enabled. Off by default. Live sync status is in the main window's status bar, not here. |
@@ -1177,6 +1177,11 @@ FRUS Explorer keeps a running record of every document you've opened and every s
 
 - Recently viewed documents — choose one to reopen it directly
 - Recently run searches — choose one to re-run it with its original query and filters intact
+
+This record is what **Settings → Research → Research Sessions → Log Research Sessions** governs
+(Section 16). With that switch off nothing new is recorded, so both lists here — and the
+Complete History window below — stop growing and eventually empty as you delete what is already
+there. Turn it back on and they refill from that point forward.
 
 `[SCREENSHOT: History menu open, showing recent documents and recent searches]`
 
