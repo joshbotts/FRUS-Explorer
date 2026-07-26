@@ -273,17 +273,19 @@ are rejected design history). Six sessions, ~7–9 PRs. This plan does not resta
 A full-bleed animated word cloud behind the first-run flow, driven by vectors generated at
 build time and bundled, so it renders with zero downloaded volumes — which is what lets the
 Add Volumes step preview a scope's vocabulary at the moment the user is choosing what to
-download. The handoff also asks for an every-launch splash; recon found its stated trigger
-does not exist (the stores open synchronously before first render), so **O-0-1 re-decides
-what that composition is for** — the leading candidate is the first download-and-index
-wait, which is minutes long and currently bare.
+download. The handoff also asks for an every-launch splash; recon found its stated trigger does not
+exist (the stores open synchronously before first render). **O-0-1 is answered:** the
+composition is spent on the first download-and-index wait — minutes long and bare today —
+plus a splash restricted to launches with a live reason (fresh install, running CloudKit
+import). Never on an ordinary warm start, and the two surfaces are arbitrated so they can
+never both claim the screen.
 
 | Session | What it does | Effort |
 |---|---|---|
-| **O-0** | Delete ~770 lines of dead `Onboarding/` code; add characterization tests for the live flow; measure the launch gap | S |
+| **O-0** | Two PRs: (1) delete ~770 lines of dead `Onboarding/` code, add characterization tests for the live flow, measure the launch gap; (2) **O-0-2** — `manifest.json` is decoded **twice** before first render (`VolumeLevelTagStore:59` + `ManifestStore:177`); decode once and take 782 KB of main-thread work out of every cold launch | S |
 | **O-1** | `WordCloudKit` extraction + `CloudVectorsGenerator` + the two bundled artifacts | L |
 | **O-2** | `WordCloudBackdropView`, layout extensions, lens cycle, Reduce Motion | M |
-| **O-3** | Where the cloud goes outside onboarding — launch splash *or* the indexing wait; **shape set by O-0-1, skipped entirely under one option** | S–M |
+| **O-3** | The cloud outside onboarding: backdrop behind the indexing banners + the occasional splash, under one arbiter | M |
 | **O-4** | The three steps in docked glass: segmented scope, transient sheet, scope-reactive backdrop | L |
 | **O-5** | Accessibility, both manuals, screenshot rows, acceptance walk-through | S–M |
 
