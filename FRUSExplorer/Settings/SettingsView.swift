@@ -1245,6 +1245,9 @@ private struct SummarizationPromptsSettingsView: View {
 /// Version history:
 ///   1.0 — Session 24: initial implementation as `ResetView`, all three rungs
 ///   1.1 — S-4b: reduced to the full erase; the two non-destructive rungs live on the door
+///   1.2 — Wave R-5: the warning names the research trail. `performReset` has deleted it since
+///          R-2a, but the copy still listed only notes/projects/tags/collections/highlights/
+///          summaries, so the screen under-stated its own reach. New key (`…warning.trail`)
 struct EraseEverythingView: View {
 
     @Environment(AppState.self) private var appState
@@ -1258,8 +1261,14 @@ struct EraseEverythingView: View {
     var body: some View {
         Form {
             Section {
-                Text(String(localized: "settings.erase.warning",
-                            defaultValue: "This deletes every downloaded volume, the search index, and all of your research notes, projects, tags, collections, highlights, and AI-generated summaries. Because your research data syncs, it goes from your other devices too. This cannot be undone."))
+                // New key for Wave R-5 (`…warning.trail`). R-2a extended `performReset` below to
+                // delete the whole research trail, and this list — the screen's entire account of
+                // what is about to go — was not updated with it. A destructive action that
+                // under-states its reach is the same fault the wave exists to fix, one screen
+                // over. Rewriting `settings.erase.warning` in place would be a silent collision:
+                // no String Catalog ships.
+                Text(String(localized: "settings.erase.warning.trail",
+                            defaultValue: "This deletes every downloaded volume, the search index, and all of your research notes, projects, tags, collections, highlights, and AI-generated summaries — along with your whole research trail: every document you opened, every search you ran, and every collection you exported. Because your research data syncs, it goes from your other devices too. This cannot be undone."))
                     .foregroundStyle(.secondary)
             } header: {
                 Text(String(localized: "settings.erase.header", defaultValue: "What This Removes"))

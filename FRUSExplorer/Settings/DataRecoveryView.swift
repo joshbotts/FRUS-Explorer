@@ -224,8 +224,8 @@ struct DataRecoveryView: View {
             link(.eraseEverything,
                  label: String(localized: "settings.dataRecovery.erase",
                                defaultValue: "Erase Everything…"),
-                 detail: String(localized: "settings.dataRecovery.erase.detail",
-                                defaultValue: "Every note, tag, collection and project, on every device"),
+                 detail: String(localized: "settings.dataRecovery.erase.detail.trail",
+                                defaultValue: "Every note, tag, collection, project and recorded session, on every device"),
                  destructive: true)
         } header: {
             Text(String(localized: "settings.dataRecovery.recovery.header",

@@ -28,8 +28,14 @@ struct ResearchDataExporterTests {
             DocumentHighlight.self,
             GeneratedSummary.self,
             SummarizationPrompt.self,
+            // Wave R-5: the three research-trail tables the envelope now carries.
+            ReadingHistoryEntry.self,
+            SearchHistoryEntry.self,
+            ExportHistoryEntry.self,
         ])
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        // `cloudKitDatabase: .none` — the test host is entitled, and an in-memory container
+        // without it spins up real sync and crashes.
+        let config = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: config)
     }
 
@@ -87,7 +93,36 @@ struct ResearchDataExporterTests {
         )
         context.insert(summary)
 
+        // The research trail (Wave R-5). Inserted **out of chronological order** on purpose: the
+        // exporter sorts oldest-first in the fetch descriptor, and a fixture already in order
+        // would let a sort that does nothing pass.
+        let visitLater = ReadingHistoryEntry(documentId: "d2", volumeId: "frus1969-76v01",
+                                             displayTitle: "Memorandum of Conversation",
+                                             projectId: project.id)
+        visitLater.accessedAt = Self.t(200)
+        context.insert(visitLater)
+
+        let visitEarlier = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01",
+                                               displayTitle: "Telegram 1234", projectId: nil)
+        visitEarlier.accessedAt = Self.t(100)
+        context.insert(visitEarlier)
+
+        // A recorded zero — the absence assertion the method appendix exists to preserve.
+        context.insert(SearchHistoryEntry(queryText: "mobilization base", resultCount: 0,
+                                          projectId: project.id, executedAt: Self.t(150)))
+        context.insert(SearchHistoryEntry(queryText: "Buy American", resultCount: 9,
+                                          projectId: nil, executedAt: Self.t(50)))
+
+        context.insert(ExportHistoryEntry(format: "zotero-api", documentCount: 3,
+                                          collectionName: "Vietnam Negotiations",
+                                          projectId: project.id, exportedAt: Self.t(250)))
+
         return (note, highlight)
+    }
+
+    /// A fixed instant `offset` seconds after a stable epoch, so trail ordering is deterministic.
+    private static func t(_ offset: TimeInterval) -> Date {
+        Date(timeIntervalSince1970: 1_700_000_000).addingTimeInterval(offset)
     }
 
     // MARK: - makeEnvelope
@@ -227,8 +262,104 @@ struct ResearchDataExporterTests {
         let expectedKeys: Set<String> = [
             "formatVersion", "exportedAt", "notes", "tags", "tagAssignments",
             "highlights", "collections", "prompts", "projects", "summaries",
+            // Wave R-5.
+            "readingHistory", "searchHistory", "exportHistory",
         ]
         #expect(Set(json.keys) == expectedKeys)
+    }
+
+    // MARK: - Wave R-5: the research trail
+
+    @Test("makeEnvelope carries all three trail tables, oldest first, unconditionally")
+    func makeEnvelopeCarriesTheTrail() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        seedFixtures(in: context)
+
+        // `includeGeneratedSummaries: false` — the trail is NOT behind that opt-in, or any other.
+        // Contract D5: the export is the method appendix, and an appendix behind an opt-out is
+        // not an appendix.
+        let envelope = try ResearchDataExporter.makeEnvelope(
+            modelContext: context, includeGeneratedSummaries: false)
+
+        #expect(envelope.summaries.isEmpty)
+
+        #expect(envelope.readingHistory.count == 2)
+        #expect(envelope.readingHistory.map(\.documentId) == ["d1", "d2"])       // oldest first
+        #expect(envelope.readingHistory.first?.displayTitle == "Telegram 1234")
+        #expect(envelope.readingHistory.first?.projectId == nil)
+        #expect(envelope.readingHistory.last?.projectId != nil)
+
+        #expect(envelope.searchHistory.count == 2)
+        #expect(envelope.searchHistory.map(\.queryText) == ["Buy American", "mobilization base"])
+        // The zero survives as evidence rather than being dropped as "no result".
+        #expect(envelope.searchHistory.last?.resultCount == 0)
+        #expect(envelope.searchHistory.first?.resultCount == 9)
+
+        #expect(envelope.exportHistory.count == 1)
+        #expect(envelope.exportHistory.first?.format == "zotero-api")
+        #expect(envelope.exportHistory.first?.documentCount == 3)
+        #expect(envelope.exportHistory.first?.collectionName == "Vietnam Negotiations")
+    }
+
+    @Test("The trail round-trips through JSON with its query text and counts intact")
+    func trailRoundTripsThroughJSON() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        seedFixtures(in: context)
+
+        let envelope = try ResearchDataExporter.makeEnvelope(
+            modelContext: context, includeGeneratedSummaries: false)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(
+            ResearchDataEnvelope.self, from: try ResearchDataExporter.exportJSONData(envelope))
+
+        #expect(decoded.readingHistory.map(\.id) == envelope.readingHistory.map(\.id))
+        #expect(decoded.searchHistory.map(\.queryText) == envelope.searchHistory.map(\.queryText))
+        #expect(decoded.searchHistory.map(\.resultCount) == envelope.searchHistory.map(\.resultCount))
+        #expect(decoded.exportHistory.map(\.format) == envelope.exportHistory.map(\.format))
+    }
+
+    @Test("A version-2 JSON (no trail keys) still decodes, with the trail empty")
+    func version2JSONDecodesWithEmptyTrail() throws {
+        // Swift's synthesized `Decodable` ignores a property's default value, so a non-optional
+        // array would have made every previously-exported file undecodable. This is the guard on
+        // `ResearchDataEnvelope.init(from:)`'s hand-written `decodeIfPresent … ?? []`.
+        let json = Data(#"{"formatVersion":2,"exportedAt":"2024-01-01T00:00:00Z","exportedForProjectName":"Cold War","notes":[],"tags":[],"tagAssignments":[],"highlights":[],"collections":[],"prompts":[],"projects":[],"summaries":[]}"#.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(ResearchDataEnvelope.self, from: json)
+
+        #expect(decoded.formatVersion == 2)
+        #expect(decoded.exportedForProjectName == "Cold War")
+        #expect(decoded.readingHistory.isEmpty)
+        #expect(decoded.searchHistory.isEmpty)
+        #expect(decoded.exportHistory.isEmpty)
+    }
+
+    @Test("A truncated file still fails loudly — only the trail keys are optional")
+    func missingRequiredKeyStillThrows() throws {
+        // The tolerance added for the trail must not have quietly made the whole envelope
+        // optional: a corrupt backup should not decode into a plausible-looking empty one.
+        let json = Data(#"{"formatVersion":3,"exportedAt":"2024-01-01T00:00:00Z","tags":[],"tagAssignments":[],"highlights":[],"collections":[],"prompts":[],"projects":[],"summaries":[]}"#.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        #expect(throws: (any Error).self) {
+            try decoder.decode(ResearchDataEnvelope.self, from: json)
+        }
+    }
+
+    @Test("trailCounts reports each table separately, and zero on an empty store")
+    func trailCountsReportsEachTable() throws {
+        let empty = try makeContainer()
+        let emptyCounts = ResearchDataExporter.trailCounts(modelContext: empty.mainContext)
+        #expect(emptyCounts == (visits: 0, searches: 0, exports: 0))
+
+        let container = try makeContainer()
+        seedFixtures(in: container.mainContext)
+        let counts = ResearchDataExporter.trailCounts(modelContext: container.mainContext)
+        #expect(counts == (visits: 2, searches: 2, exports: 1))
     }
 
     // MARK: - Markdown export
