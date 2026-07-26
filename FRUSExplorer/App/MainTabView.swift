@@ -297,6 +297,10 @@ struct MainTabView: View {
 ///   1.2 — Session 2026-06-07: observes `appState.pendingAnalytics` (Search's
 ///          over-cap "Visualize in Corpus Analytics" handoff) and presents the
 ///          sheet pre-seeded via `AnalyticsView(initialParameters:)`
+///   1.3 — #486: removed the tab-level `WorkingOnBanner` top `.safeAreaInset`. Applied to
+///          `BrowserView()` from outside its `NavigationStack`, the inset was composited over
+///          the navigation bar rather than pushing it down, clipping the back button, the
+///          title, and the trailing toolbar items. The banner moved inside the stack.
 struct BrowserTabView: View {
 
     // The Chronology/Analytics toolbar buttons, their sheets, and the pendingAnalytics/
@@ -304,13 +308,20 @@ struct BrowserTabView: View {
     // NavigationStack/NavigationSplitView). Declared here — on `BrowserView()` from outside its
     // navigation container — they were silently dropped and the features were unreachable on iOS.
     // This wrapper remains only to give `BrowserView`'s `@State` stable identity across tab switches.
+    // #486: the "Working on: <question>" banner used to be injected HERE, as a top
+    // `.safeAreaInset` on `BrowserView()` — i.e. from OUTSIDE its `NavigationStack`. That was wrong.
+    // A top safe-area inset applied TO a navigation container does not push the navigation bar down;
+    // SwiftUI composites the inset into the same top chrome band, drawing it OVER the bar. On iPhone
+    // the banner therefore sliced the back chevron, the inline title, and the trailing toolbar items
+    // at every Browse depth (the Browse root's large title escaped to its own row, but its three
+    // trailing toolbar buttons did not). The comment that stood here claimed the placement "never
+    // touches the #238/Session-121 top-inset occlusion math" — it did, and it is the whole bug.
+    //
+    // The banner now lives INSIDE `BrowserView`'s stack, on the corpus root and folded into the
+    // per-level breadcrumb inset, exactly as `SearchView` has always applied it (SearchView was never
+    // affected precisely because its inset is inside its own `NavigationStack`).
     var body: some View {
         BrowserView()
-            // #377 Phase 5: the ambient "Working on: <question>" lens, injected at the tab level —
-            // OUTSIDE BrowserView's NavigationStack/toolbar/breadcrumb, so it's visible at every
-            // Browse depth and never touches the #238/Session-121 top-inset occlusion math. Reserves
-            // zero height when no project with a research question is active.
-            .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
     }
 }
 

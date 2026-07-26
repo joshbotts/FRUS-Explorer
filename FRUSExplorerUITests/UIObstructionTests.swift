@@ -13,7 +13,7 @@ import UIKit
 
 /// UI tests verifying that composed views do not obstruct interactive content.
 ///
-/// Five obstruction scenarios are exercised:
+/// Six obstruction scenarios are exercised:
 ///   1. Tab bar (bottom) — does not cover the last row in a browser list
 ///   2. Breadcrumb bar (top safeAreaInset) — does not cover the first row of a pushed view
 ///   3. Software keyboard — does not cover the citation lookup field in CitationLookupView
@@ -21,6 +21,13 @@ import UIKit
 ///      the leading-sidebar and floating-top-tab-bar representations, asserted before and
 ///      after a live toggle (#238)
 ///   5. The same for Research content (#272)
+///   6. The "Working on:" project banner (top safeAreaInset) — does not cover the Browse
+///      NAVIGATION BAR or its controls (#486)
+///
+/// Scenarios 1–5 all assert on a list CELL. Scenario 6 is the first to assert on a navigation-bar
+/// control, which is why #486 — a banner drawn straight over the back button, title, and trailing
+/// toolbar items — shipped past a suite named for obstruction. When adding a scenario, ask which
+/// chrome it can prove innocent, not merely which one it exercises.
 ///
 /// Scenario 4 covers the Browse tab's ROOT list only; its drill-in asserted nothing and was
 /// removed (see 1.6). Scenario 5 now covers Research's root list AND the pushed detail level in
@@ -110,6 +117,14 @@ import UIKit
 ///          Research's are `NavigationLink(value:)`, and XCUITest drives the link but not the
 ///          button's action here. No drill-in is added (a red test is worse than a documented
 ///          gap); the measured finding is recorded in scenario 4's NOTE and on #312.
+///   2.0 — #486: added scenario 6, the first assertion in this suite against a NAVIGATION-BAR
+///          control rather than a list cell. Stages the state the banner needs (creates a project
+///          with a research question through Settings ▸ Projects ▸ New Project…, which the create
+///          branch of `ProjectEditorView.saveProject()` also makes active) and asserts both that
+///          the banner's frame clears the navigation bar and that bar controls stay hittable.
+///          iPhone-scoped: the banner is deliberately absent on regular-width iPad (#461/#462).
+///          Also corrects 1.9: `CorpusView` rows are not un-drivable, they are un-hittable off
+///          their text (no `.contentShape`) — a tap near the row's LEADING edge pushes.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
@@ -462,6 +477,14 @@ final class UIObstructionTests: XCTestCase {
         // cell/element tap but not the former's action here. So Browse's pushed-level coverage is a
         // genuine gap that needs a different driving mechanism (not just a tap target), tracked on
         // #312. The four assertions above are the real #238 regression gate and are unaffected.
+        //
+        // CORRECTION (#486, measured on iPhone 17 Pro / iOS 26.5 with raw simulator touch
+        // injection): the diagnosis above is wrong, and it is a tap TARGET after all. `CorpusView`
+        // rows carry no `.contentShape`, so only the label's glyphs are hit-testable and everything
+        // to their right — including the cell's centre, which is where both an element tap and a
+        // centred coordinate tap land — is dead space. A tap at dx ≈ 0.22 pushes every time
+        // (scenario 6 relies on this). Whether that also revives THIS scenario's iPad drill-in is
+        // untested; the correction is recorded so the next attempt does not re-derive it.
     }
 
     // MARK: - 5. iPad tab-bar representations do not obstruct Research content
@@ -650,5 +673,206 @@ final class UIObstructionTests: XCTestCase {
         // #272's bug lives in the DETAIL column. The repair above adopts e403faf's own suggested
         // oracle (`app.navigationBars[...]`) and adds the ordering its notes implied — drill in
         // BEFORE the swipe — which is what makes the launch-representation push reliable.
+    }
+
+    // MARK: - 6. The "Working on:" project banner does not obstruct the navigation bar (#486)
+
+    /// The research question given to the project this scenario creates. Distinctive enough that
+    /// the banner it produces cannot be confused with any other static text on screen.
+    private static let bannerQuestion = "Berlin crisis cable traffic"
+
+    /// The name of the project this scenario creates.
+    private static let bannerProjectName = "Banner Obstruction Fixture"
+
+    /// The `WorkingOnBanner` element, matched by the literal prefix it renders.
+    ///
+    /// Deliberately a `staticTexts` **label** match rather than an identifier: the banner is
+    /// production UI with no test hook, and adding one would let the test pass against a banner
+    /// that renders nothing.
+    private var workingOnBanner: XCUIElement {
+        // Built fresh on each access — see `sidebarToggleButton` for why a hoisted NSPredicate
+        // is a Swift 6 "sending" hazard in this nonisolated context.
+        app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH 'Working on:'")).firstMatch
+    }
+
+    /// Taps the first control carrying `label`, resolving across the representations a SwiftUI
+    /// `List` row can take (button, cell, or a cell containing the labelled text).
+    ///
+    /// - Returns: `true` if something was tapped.
+    @discardableResult
+    private func tapRow(_ label: String, timeout: TimeInterval = 5) -> Bool {
+        let candidates = [
+            app.buttons[label].firstMatch,
+            app.cells[label].firstMatch,
+            app.cells.containing(NSPredicate(format: "label CONTAINS[c] %@", label)).firstMatch,
+            app.staticTexts[label].firstMatch,
+        ]
+        for control in candidates where control.waitForExistence(timeout: timeout) {
+            control.tap()
+            return true
+        }
+        return false
+    }
+
+    /// Creates a project with a **non-blank research question** and leaves it active, which is the
+    /// only state in which `WorkingOnBanner` renders anything.
+    ///
+    /// Under `FRUS_UI_TEST_MODE` onboarding is bypassed and no project exists, so the banner is
+    /// invisible on a fresh install and an obstruction assertion would be vacuous. The create
+    /// branch of `ProjectEditorView.saveProject()` assigns `appState.activeProjectId`, so saving is
+    /// also what makes the new project active.
+    ///
+    /// The UI-test store is on **disk** (`makeLocalContainer`), so a project created by an earlier
+    /// run survives into this one. This is therefore idempotent: it returns early when the banner
+    /// is already on screen. Creating a redundant second project would also trip the one-time
+    /// second-project nudge alert (`SecondProjectNudgeModifier`) and block every later step.
+    private func ensureActiveProjectWithResearchQuestion() throws {
+        selectBrowseSection()
+        if workingOnBanner.waitForExistence(timeout: 3) { return }
+
+        selectSection("Settings")
+        XCTAssertTrue(tapRow("Projects", timeout: 10),
+                      "Could not find the Projects row in the Settings list")
+        XCTAssertTrue(tapRow("New Project…", timeout: 10),
+                      "Could not find the 'New Project…' row in the Projects pane")
+
+        let nameField = app.textFields["Project name"]
+        guard nameField.waitForExistence(timeout: 10) else {
+            throw XCTSkip("Project editor's name field did not appear — cannot stage the banner")
+        }
+        nameField.tap()
+        nameField.typeText(Self.bannerProjectName)
+
+        let questionField = app.textViews["Research question"]
+        XCTAssertTrue(questionField.waitForExistence(timeout: 5),
+                      "Project editor's research-question editor did not appear")
+        questionField.tap()
+        questionField.typeText(Self.bannerQuestion)
+
+        let save = app.buttons["Save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5), "Project editor's Save button did not appear")
+        save.tap()
+        Thread.sleep(forTimeInterval: 0.7)
+    }
+
+    /// The "Working on: <research question>" banner must sit **below** the Browse navigation bar,
+    /// not on top of it (#486).
+    ///
+    /// `BrowserTabView` applied the banner as a top `.safeAreaInset` to `BrowserView()` — from
+    /// OUTSIDE its `NavigationStack`. A top inset applied to a navigation container does not push
+    /// its bar down: SwiftUI composites the inset into the same top chrome band and draws it over
+    /// the bar, so on iPhone the banner sliced the back chevron, the title, and the trailing
+    /// toolbar items at every Browse depth. The fix moves the inset inside the stack.
+    ///
+    /// ## Why this is a new shape of assertion
+    /// Scenarios 1–5 all assert that a **list cell** is hittable. Not one of them ever touched a
+    /// navigation-bar control — which is precisely why #486 shipped through a suite named for
+    /// obstruction. This asserts on the bar itself, two ways:
+    ///
+    ///  1. **Geometry** — the banner's frame must not intersect the navigation bar's frame. This is
+    ///     the load-bearing oracle, and the ONLY one measured to discriminate the bug. Against the
+    ///     pre-fix build it fails with `banner.minY = 66.5` inside a bar spanning 62…168.
+    ///  2. **Hittability** — the Browse root's trailing "Analysis Tools" menu button must be
+    ///     hittable, and so must the Back button one level down. Keep these, but do NOT rely on
+    ///     them: measured against the pre-fix build with the order reversed, `isHittable` on
+    ///     "Analysis Tools" returned **true while the banner was drawn across the bar** — a
+    ///     non-interactive `Text` over a `.bar` material does not defeat SwiftUI's hit-testing, so
+    ///     a hittability-only version of this scenario would have been a false green. They cover a
+    ///     louder failure (chrome that genuinely swallows taps); geometry covers #486 itself.
+    ///
+    /// iPhone-scoped: on regular-width iPad `WorkingOnBanner` deliberately renders nothing and the
+    /// research question is a navigation subtitle instead (#461/#462), so there is no banner to
+    /// obstruct anything and the scenario would assert nothing.
+    func testWorkingOnBannerDoesNotObstructBrowseNavigationBar() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .phone,
+            "iPhone-only: on regular-width iPad the banner is suppressed in favour of a "
+                + "navigation subtitle (#461/#462), so there is nothing to obstruct"
+        )
+        #else
+        throw XCTSkip("iPhone-only test")
+        #endif
+
+        try ensureActiveProjectWithResearchQuestion()
+
+        // --- Browse ROOT (large title; three trailing toolbar items in the bar row) ---
+        selectBrowseSection()
+        XCTAssertTrue(workingOnBanner.waitForExistence(timeout: 10),
+                      "The 'Working on:' banner never appeared with an active project that has a "
+                          + "research question — this scenario cannot assert obstruction without it")
+
+        let rootBar = app.navigationBars.firstMatch
+        XCTAssertTrue(rootBar.waitForExistence(timeout: 5), "Browse navigation bar not found")
+        assertBannerClearsNavigationBar(rootBar, context: "Browse root")
+
+        let analysisMenu = app.buttons["Analysis Tools"]
+        XCTAssertTrue(analysisMenu.waitForExistence(timeout: 5),
+                      "The Browse root's 'Analysis Tools' toolbar button was not found")
+        XCTAssertTrue(
+            analysisMenu.isHittable,
+            "The Browse root's 'Analysis Tools' toolbar button is not hittable while the "
+                + "'Working on:' banner is displayed — the banner may be drawn over the "
+                + "navigation bar (#486)"
+        )
+
+        // --- A PUSHED level (inline title; back chevron + title share one bar row) ---
+        // This is where #486 was ugliest: with an inline title the bar is a single row, so the
+        // banner sliced the back chevron, the title, and the trailing rail toggle at once.
+        //
+        // The push is driven by a coordinate tap NEAR THE LEADING EDGE of the row, and the offset
+        // is load-bearing. #312 recorded that no tap on a `CorpusView` row pushes and blamed the
+        // `Button { navigationPath.append… } .buttonStyle(.plain)` construction. Re-measured here
+        // on iPhone 17 Pro (iOS 26.5) by injecting raw touches into the simulator: the cause is
+        // simpler and is not a harness quirk at all — those rows carry NO `.contentShape`, so only
+        // the label's own glyphs are hit-testable. A tap at the row's CENTRE lands in empty space
+        // to the right of the text and does nothing (for a real finger as much as for XCUITest);
+        // a tap at dx ≈ 0.22 lands on the word "People" and pushes reliably. That dead space is a
+        // real (pre-existing, out-of-scope) UX defect in `CorpusView` — see the CORRECTION note in
+        // scenario 4 — not something this scenario should paper over silently.
+        let peopleRow = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
+        XCTAssertTrue(peopleRow.waitForExistence(timeout: 10),
+                      "The corpus 'People' row did not appear")
+        peopleRow.coordinate(withNormalizedOffset: CGVector(dx: 0.22, dy: 0.5)).tap()
+
+        let back = app.buttons["BackButton"]
+        XCTAssertTrue(back.waitForExistence(timeout: 10),
+                      "Tapping the corpus 'People' row did not push a browse level — this "
+                          + "scenario's pushed-level half cannot run without it")
+
+        XCTAssertTrue(workingOnBanner.waitForExistence(timeout: 5),
+                      "The 'Working on:' banner is missing at a pushed Browse level — it must be "
+                          + "present at every depth (#377 Phase 5)")
+        let pushedBar = app.navigationBars.firstMatch
+        assertBannerClearsNavigationBar(pushedBar, context: "pushed Browse level")
+        XCTAssertTrue(
+            back.isHittable,
+            "The Back button is not hittable at a pushed Browse level while the 'Working on:' "
+                + "banner is displayed — the banner may be drawn over the navigation bar (#486)"
+        )
+    }
+
+    /// Asserts the "Working on:" banner's frame lies entirely below `bar`'s frame.
+    ///
+    /// The primary #486 oracle, and the only one measured to discriminate the bug: against the
+    /// pre-fix build `isHittable` on the clipped toolbar button still returned true, because the
+    /// banner is a non-interactive `Text` over a `.bar` material and taps fall straight through it.
+    /// Overlap does not fall through.
+    private func assertBannerClearsNavigationBar(_ bar: XCUIElement, context: String) {
+        guard bar.exists, workingOnBanner.exists else {
+            XCTFail("Missing navigation bar or banner while checking overlap (\(context))")
+            return
+        }
+        let barFrame = bar.frame
+        let bannerFrame = workingOnBanner.frame
+        XCTAssertGreaterThanOrEqual(
+            bannerFrame.minY, barFrame.maxY,
+            "The 'Working on:' banner (\(bannerFrame)) overlaps the navigation bar (\(barFrame)) "
+                + "at \(context) — a top .safeAreaInset applied to a NavigationStack is composited "
+                + "over its bar instead of pushing content below it; the inset belongs INSIDE the "
+                + "stack (#486)"
+        )
     }
 }

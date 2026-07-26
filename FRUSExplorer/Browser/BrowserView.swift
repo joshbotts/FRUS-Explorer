@@ -72,6 +72,11 @@ import SwiftUI
 ///   2.5 — Session 1 review: Fix A's breadcrumb suppression gated on pad idiom + regular
 ///          width (size class alone also fired on Plus/Max iPhones in landscape, where the
 ///          bottom tab bar never occludes the bar)
+///   2.6 — #486: the "Working on:" banner moved INSIDE the NavigationStack — a top
+///          `.safeAreaInset` on `BrowserView()` (applied by `BrowserTabView`) drew over the
+///          navigation bar rather than below it. It is now an inset on the `CorpusView` root
+///          and folded into the per-level breadcrumb inset, so it appears at every Browse
+///          depth and reserves space below the bar.
 ///   Session 09: `pendingBrowseVolume` resolves against the unfiltered manifest —
 ///         the filtered-groups lookup silently dropped hand-offs to undownloaded
 ///         volumes, which the subject pivot routinely targets.
@@ -343,6 +348,17 @@ struct BrowserView: View {
             set: { vm.navigationPath = $0 }
         )) {
             CorpusView(vm: vm)
+                // #486: the "Working on:" banner, INSIDE the NavigationStack. Applied to
+                // `BrowserView()` from the tab wrapper it was drawn over the navigation bar
+                // (a top inset on a navigation container is composited into the bar's chrome
+                // band, not pushed below it) and clipped the root's three trailing toolbar
+                // items. Here it reserves space below the bar, like the per-level breadcrumb.
+                // Pushed levels get it from `levelView(for:vm:)`'s inset, so the banner is
+                // present at every Browse depth (the #377 Phase 5 intent). Reserves zero
+                // height when no project with a research question is active, and renders
+                // nothing at all on regular-width iPad (#461/#462 — the research question is
+                // a navigation subtitle there instead; see `WorkingOnBanner`).
+                .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
                 .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
                 .navigationDestination(for: BrowserViewModel.BrowserLevel.self) { level in
                     levelView(for: level, vm: vm)
@@ -408,6 +424,13 @@ struct BrowserView: View {
     ///  - **Document level (any width, Session 121):** a full corpus-to-document path wraps to
     ///    2–3 rows (~100 pt) and, as a `.safeAreaInset` overlay, blocks the document header and
     ///    initial body content. The inline document title and back button suffice inside a document.
+    ///
+    /// ## "Working on:" banner (#486)
+    /// The same inset also carries `WorkingOnBanner`, stacked above the breadcrumb. It used to be
+    /// applied to `BrowserView()` from `BrowserTabView` — outside this `NavigationStack` — where it
+    /// was composited over the navigation bar instead of pushing content below it, clipping the back
+    /// button, the title, and the trailing toolbar items on iPhone. Unlike the breadcrumb it is
+    /// suppressed at no depth; the reasoning (and the measurement behind it) is at the inset itself.
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel, vm: BrowserViewModel) -> some View {
         Group {
@@ -426,6 +449,29 @@ struct BrowserView: View {
         // carries its own `.workingOnSubtitle()`; no level view sets a subtitle of its own to clobber.
         .workingOnSubtitle()
         .safeAreaInset(edge: .top, spacing: 0) {
+            // #486: banner ABOVE the breadcrumb, in ONE inset rather than a competing second one.
+            // Both children reserve zero height when inactive, so a level with neither (no active
+            // project, or any level on regular-width iPad) still insets nothing.
+            //
+            // The banner is NOT suppressed at any depth — including `.document`, unlike the
+            // breadcrumb. Measured on iPhone 17 Pro (iOS 26.5) with a real volume open: the
+            // document body is a `WKWebView` whose scroll view keeps the default
+            // `contentInsetAdjustmentBehavior`, so it adopts the reduced safe area and the prose
+            // starts BELOW the banner rather than under it. Session 121's document-level
+            // suppression exists because the breadcrumb wraps to 2–3 rows (~100 pt) and buries the
+            // document header; the banner is one ~22 pt line and does not.
+            VStack(spacing: 0) {
+                WorkingOnBanner()
+                breadcrumbBarIfAppropriate(for: level, vm: vm)
+            }
+        }
+    }
+
+    /// The breadcrumb bar for a pushed Browse level, or nothing.
+    @ViewBuilder
+    private func breadcrumbBarIfAppropriate(for level: BrowserViewModel.BrowserLevel,
+                                            vm: BrowserViewModel) -> some View {
+        Group {
             // Breadcrumb suppression (see doc comment above):
             //  - iPad (#238): a pinned `.safeAreaInset` breadcrumb is occluded by the iPadOS
             //    floating top tab bar (`.sidebarAdaptable`) and cannot be scrolled into view.
