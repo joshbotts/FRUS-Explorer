@@ -87,6 +87,8 @@ enum SettingsPlatform: Hashable, Sendable {
 ///          `.downloads` narrow to `[.iOS]` for the duration
 ///   1.2 — S-2c: the iOS hub lands, so `.volumesStorage` renders on both platforms and
 ///          `.storage`, `.downloads`, and `.sideload` are deleted. Library is one row now.
+///   1.3 — S-4a: `.connections` replaces `.naraAPI` and `.zotero` — both are the same kind of
+///          thing (an account elsewhere this app talks to) and now share one destination
 enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
 
     // Library
@@ -96,7 +98,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     // Reading & Search
     case display, search
     // System
-    case sync, syncDiagnostics, naraAPI, zotero, data, reset, about, researchGuide
+    case sync, syncDiagnostics, connections, data, reset, about, researchGuide
 
     var id: String { rawValue }
 
@@ -116,8 +118,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .search:          return String(localized: "settings.pane.search", defaultValue: "Search")
         case .sync:            return String(localized: "settings.pane.sync", defaultValue: "iCloud Sync")
         case .syncDiagnostics: return String(localized: "settings.pane.syncDiagnostics", defaultValue: "Sync Diagnostics")
-        case .naraAPI:         return String(localized: "settings.pane.naraAPI", defaultValue: "NARA API")
-        case .zotero:          return String(localized: "settings.pane.zotero", defaultValue: "Zotero")
+        case .connections:     return String(localized: "settings.pane.connections", defaultValue: "Connections")
         case .data:            return String(localized: "settings.pane.data", defaultValue: "Research Data")
         case .reset:           return String(localized: "settings.pane.reset", defaultValue: "Reset App")
         case .about:           return String(localized: "settings.pane.about", defaultValue: "About")
@@ -139,8 +140,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .search:          return "magnifyingglass"
         case .sync:            return "icloud"
         case .syncDiagnostics: return "stethoscope"
-        case .naraAPI:         return "key"
-        case .zotero:          return "books.vertical"
+        case .connections:     return "link"
         case .data:            return "square.and.arrow.up"
         case .reset:           return "arrow.counterclockwise"
         case .about:           return "info.circle"
@@ -159,7 +159,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
             return .research
         case .display, .search:
             return .readingAndSearch
-        case .sync, .syncDiagnostics, .naraAPI, .zotero, .data, .reset, .about, .researchGuide:
+        case .sync, .syncDiagnostics, .connections, .data, .reset, .about, .researchGuide:
             return .system
         }
     }
@@ -202,8 +202,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .search:          return ["scope", "snippet", "editorial notes", "defaults", "filters"]
         case .sync:            return ["icloud", "cloudkit", "devices"]
         case .syncDiagnostics: return ["icloud", "log", "troubleshoot", "errors"]
-        case .naraAPI:         return ["national archives", "catalog", "api key", "source explorer", "nara"]
-        case .zotero:          return ["citations", "library", "integration", "bibliography"]
+        case .connections:     return ["national archives", "catalog", "api key", "source explorer",
+                                       "nara", "zotero", "citations", "library", "integration",
+                                       "bibliography", "connect", "account"]
         case .data:            return ["export", "json", "markdown", "backup", "broken cross-references", "report"]
         case .reset:           return ["erase", "delete", "start over", "clear"]
         case .about:           return ["version", "build", "license", "credits", "acknowledgements"]
