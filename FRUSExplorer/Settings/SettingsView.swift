@@ -219,9 +219,6 @@ struct SettingsView: View {
             NavigationLink { ConnectionsView() } label: { paneLabel(pane) }
         case .dataRecovery:
             NavigationLink { DataRecoveryView() } label: { paneLabel(pane) }
-        case .researchGuide:
-            Button { appState.showResearchGuide = true } label: { paneLabel(pane) }
-                .buttonStyle(.plain)
         case .about:
             NavigationLink { AboutView() } label: { paneLabel(pane) }
         // macOS-only panes (see `SettingsPane.platforms`) — never listed on iOS.

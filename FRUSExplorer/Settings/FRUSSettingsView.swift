@@ -93,7 +93,7 @@ struct FRUSSettingsView: View {
             Group {
                 switch selection {
                 case .sync:           SettingsSyncPane()
-                case .about:          SettingsAboutPane()
+                case .about:          AboutView()
                 case .display:        SettingsDisplayPane()
                 case .search:         SettingsSearchPane()
                 case .projects:       SettingsProjectsPane()
@@ -105,11 +105,6 @@ struct FRUSSettingsView: View {
                 case .connections:    ConnectionsView()
                 case .dataRecovery:   DataRecoveryView()
                 case .summarization:  SettingsSummarizationPane()
-                // iOS-only panes (see `SettingsPane.platforms`): the sidebar never offers this,
-                // so it is unreachable here — but the switch must stay exhaustive over the shared
-                // enum, and an empty view is the honest thing to render if one is ever selected
-                // programmatically.
-                case .researchGuide: EmptyView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -171,46 +166,6 @@ private struct PaneSectionHeader: View {
             .kerning(0.6)
             .padding(.top, 16)
             .padding(.bottom, 4)
-    }
-}
-
-// MARK: - About Pane
-
-private struct SettingsAboutPane: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(title: "About")
-
-                HStack(spacing: 16) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("FRUS Explorer")
-                            .font(.system(size: 17, weight: .medium))
-                        Text("Version \(Bundle.main.shortVersionString)")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                        Text("Build \(Bundle.main.buildNumber)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.bottom, 20)
-
-                PaneSectionHeader(title: "Acknowledgements")
-                Text("FRUS Explorer uses the Foreign Relations of the United States corpus published by the Office of the Historian, U.S. Department of State at history.state.gov. The corpus is in the public domain.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.bottom, 12)
-
-                Link("Office of the Historian", destination: URL(string: "https://history.state.gov")!)
-                    .font(.system(size: 12))
-            }
-            .padding(24)
-        }
     }
 }
 
