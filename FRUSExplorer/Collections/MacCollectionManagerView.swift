@@ -222,7 +222,10 @@ struct MacCollectionManagerView: View {
                     .id(c.id)
             } else {
                 ContentUnavailableView {
-                    Label(String(localized: "collections.empty.title",
+                    // Its own key: `collections.empty.title` means "you have no collections" in
+                    // CollectionListView. This is the detail pane with nothing selected — the
+                    // opposite situation, and it was sharing that key.
+                    Label(String(localized: "collections.noSelection.title",
                                  defaultValue: "No Collection Selected"),
                           systemImage: "folder.badge.person.crop")
                 } description: {

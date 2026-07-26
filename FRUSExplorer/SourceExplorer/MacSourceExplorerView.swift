@@ -344,10 +344,12 @@ struct MacSourceExplorerView: View {
             VStack(alignment: .leading, spacing: 10) {
                 switch parsed {
                 case .centralFiles(let rg, let fileId):
+                    // Same one text as the iOS panel: `rg` carries the "RG-" prefix, normalised
+                    // to "RG 59" so this row reads like the lot-file Record Group row below.
                     provenanceRow(label: String(localized: "source.explorer.centralFiles.type",
                                                defaultValue: "Type"),
                                   value: String(localized: "source.explorer.centralFiles.typeValue",
-                                               defaultValue: "State Dept. Central Files (\(rg))"))
+                                               defaultValue: "State Dept. Central Files (\(rg.replacingOccurrences(of: "RG-", with: "RG ")))"))
                     if let fileId {
                         provenanceRow(label: String(localized: "source.explorer.centralFiles.identifier",
                                                    defaultValue: "File Identifier"),

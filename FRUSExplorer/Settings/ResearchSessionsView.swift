@@ -182,8 +182,16 @@ struct ResearchSessionsView: View {
                         defaultValue: "Recorded Activity"))
         } footer: {
             if summary.isEmpty {
+                // Fenced for the same reason the recording footer is: running a search records
+                // nothing on macOS, so telling a Mac user to try one would be a promise the app
+                // does not keep. The recording footer got this right and this one did not.
+                #if os(macOS)
+                Text(String(localized: "settings.sessions.activity.footer.empty.mac",
+                            defaultValue: "Nothing has been recorded yet. Open a document and it will appear here."))
+                #else
                 Text(String(localized: "settings.sessions.activity.footer.empty",
                             defaultValue: "Nothing has been recorded yet. Open a document or run a search and it will appear here."))
+                #endif
             } else {
                 Text(String(localized: "settings.sessions.activity.footer",
                             defaultValue: "No other part of the app reads this log — it is groundwork for a research-trail view. It is here so that what is recorded is something you can look at."))

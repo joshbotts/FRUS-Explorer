@@ -441,8 +441,12 @@ struct SourceExplorerView: View {
                        defaultValue: "Provenance")) {
             LabeledContent(
                 String(localized: "source.explorer.centralFiles.type", defaultValue: "Type"),
+                // `recordGroup` already carries the "RG-" prefix (e.g. "RG-59"), so interpolating
+                // it after a literal "RG " rendered "State Dept. Central Files (RG RG-59)".
+                // Normalised to "RG 59", matching the Record Group row in `lotFilePanel` and the
+                // macOS panel, which now share this one text under this one key.
                 value: String(localized: "source.explorer.centralFiles.typeValue",
-                              defaultValue: "State Dept. Central Files (RG \(recordGroup))")
+                              defaultValue: "State Dept. Central Files (\(recordGroup.replacingOccurrences(of: "RG-", with: "RG ")))")
             )
             if let fileIdentifier {
                 LabeledContent(
@@ -1097,7 +1101,7 @@ struct SourceExplorerView: View {
             )
             .font(.callout.weight(.medium))
             Text(String(localized: "source.explorer.noKey.explanation",
-                        defaultValue: "A free NARA Catalog API key is required to search for lot file and Presidential Library records. Add your key in Settings → NARA API."))
+                        defaultValue: "A free NARA Catalog API key is required to search for lot file and Presidential Library records. Add your key in Settings → Connections."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -289,7 +289,7 @@ private struct SettingsProjectsPane: View {
                 Text(String(localized: "settings.projects.related.header", defaultValue: "Related"))
             } footer: {
                 Text(String(localized: "settings.projects.related.footer",
-                            defaultValue: "Tags and scopes work the same way: tap a row to rename, merge or delete it."))
+                            defaultValue: "Open Tags to rename, merge or delete a tag. Open Volume Scopes to edit or delete a scope — scopes cannot be merged."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -832,8 +832,11 @@ private struct SettingsSummarizationPane: View {
 
     /// The count's caveat — see the iOS twin for why headnote drafts are excluded.
     private var headnoteFooter: String {
-        let base = String(localized: "settings.summarization.generate.footer",
-                          defaultValue: "Runs continue in the background if you allow it — set per run.")
+        // The "set per run" promise is an iOS one: the background-continuation choice is part of
+        // the iOS run sheet and macOS has no equivalent control, so the Mac footer says what the
+        // Mac actually does.
+        let base = String(localized: "settings.summarization.generate.footer.mac",
+                          defaultValue: "Runs continue while the app is open.")
         guard tally.headnoteDrafts > 0 else { return base }
         let drafts = tally.headnoteDrafts == 1
             ? String(localized: "settings.summarization.headnotes.one",

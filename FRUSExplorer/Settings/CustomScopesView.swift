@@ -58,6 +58,12 @@ struct CustomScopesView: View {
     @State private var editorTarget: CustomVolumeScope?
     /// Whether `editorTarget` is a not-yet-inserted draft (create) vs a live record (edit).
     @State private var editorIsDraft = false
+    /// The scope pending delete confirmation, or `nil`.
+    ///
+    /// A bare `.onDelete` was enabling SwiftUI's default full-swipe, so one uninterrupted gesture
+    /// destroyed a hand-curated volume set with no confirmation and no undo. macOS has always
+    /// asked ("Delete Scope?"); this asks the same question in the same words.
+    @State private var scopeToDelete: CustomVolumeScope?
 
     var body: some View {
         List {
@@ -76,13 +82,20 @@ struct CustomScopesView: View {
                             scopeRow(scope)
                         }
                         .buttonStyle(.plain)
+                        // `allowsFullSwipe: false` rather than a bare `.onDelete`: the swipe arms
+                        // the confirmation instead of performing the delete, so a stray full
+                        // swipe cannot destroy a hand-curated scope.
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                scopeToDelete = scope
+                            } label: {
+                                Label(String(localized: "common.delete", defaultValue: "Delete"),
+                                      systemImage: "trash")
+                            }
+                        }
                         .contextMenu {
                             wordCloudAction(scope)
                         }
-                    }
-                    .onDelete { offsets in
-                        for index in offsets { modelContext.delete(scopes[index]) }
-                        try? modelContext.save()
                     }
                 }
 
@@ -105,6 +118,27 @@ struct CustomScopesView: View {
         .sheet(item: $editorTarget) { target in
             CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
                 .environment(appState)
+        }
+        // The same dialog the macOS pane raises, in the same words and under the same keys.
+        .confirmationDialog(
+            String(localized: "settings.scopes.delete.title", defaultValue: "Delete Scope?"),
+            isPresented: Binding(get: { scopeToDelete != nil },
+                                 set: { if !$0 { scopeToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "common.delete", defaultValue: "Delete"),
+                   role: .destructive) {
+                if let scope = scopeToDelete {
+                    modelContext.delete(scope)
+                    try? modelContext.save()
+                }
+                scopeToDelete = nil
+            }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"),
+                   role: .cancel) { scopeToDelete = nil }
+        } message: {
+            Text(String(localized: "settings.scopes.delete.message",
+                        defaultValue: "Searches already run with this scope are unaffected."))
         }
     }
 

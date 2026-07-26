@@ -400,7 +400,7 @@ struct NARACatalogLookupView: View {
             if strategy != .centralURL && !hasAPIKey {
                 Label(
                     String(localized: "nara.lookup.noKey.warning",
-                           defaultValue: "A NARA Catalog API key is required for this strategy. Add your key in Settings → NARA API. The \"Central files identifier\" strategy does not require a key."),
+                           defaultValue: "A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The \"Central files identifier\" strategy does not require a key."),
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(.caption)

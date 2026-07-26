@@ -298,8 +298,11 @@ struct SettingsView: View {
                     label: String(localized: "settings.icloud.zoneMissing", defaultValue: "Private Zone Missing"),
                     systemImage: "exclamationmark.icloud.fill",
                     color: .red,
+                    // "Reset iCloud Sync below" named a control that no longer exists — the
+                    // recovery ladder moved into Data & Recovery in S-4b and the rung is called
+                    // "Fix iCloud Sync". Both platforms now name the one true path.
                     detail: String(localized: "settings.icloud.zoneMissing.detail",
-                                   defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or tap Reset iCloud Sync below.")
+                                   defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.")
                 )
             }
 
@@ -739,7 +742,7 @@ private struct ProjectsSettingsView: View {
                 Text(String(localized: "settings.projects.related.header", defaultValue: "Related"))
             } footer: {
                 Text(String(localized: "settings.projects.related.footer",
-                            defaultValue: "Tags and scopes work the same way: tap a row to rename, merge or delete it."))
+                            defaultValue: "Open Tags to rename, merge or delete a tag. Open Volume Scopes to edit or delete a scope — scopes cannot be merged."))
             }
         }
         .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
