@@ -131,14 +131,11 @@ actor WordFrequencyService {
             }
         }
 
-        let tokenizer = WordCloudTokenizer(
-            stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomaticStopwords)
-                .union(extraStopwords),
-            minimumLength: tuning.minimumLength,
-            foldPlurals: tuning.foldPlurals,
+        let tokenizer = WordCloudTokenizer.configured(
+            tuning: tuning,
             lens: lens,
-            lexicon: WordCloudLexicons.filter(for: lens),
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
+            includeDiplomatic: includeDiplomaticStopwords,
+            extraStopwords: extraStopwords
         )
         let total = keys.count
         var counts: [String: Int] = [:]
@@ -155,9 +152,13 @@ actor WordFrequencyService {
             progress?(min(index, total), total)
         }
 
-        let result = Self.finalize(counts: counts, documentCount: documentCount,
+        var result = Self.finalize(counts: counts, documentCount: documentCount,
                                    totalTokens: tokenTotal, limit: limit,
                                    minimumCount: tuning.minimumCount)
+        // Stamp the lens before persisting: the disk cache names files by a digest of the key,
+        // so this is the only way a later reader (the settings bench) can tell an entity cloud
+        // from a word cloud. See `WordCloudResult.lens`.
+        result.lens = lens
         store(result, for: cacheKey)
         if let diskKey { WordCloudDiskCache.save(result, key: diskKey) }
         return result

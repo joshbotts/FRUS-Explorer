@@ -156,6 +156,7 @@ struct MacVolumesStorageHub: View {
             advancedSection
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.hub.title", defaultValue: "Volumes & Storage"))
         .task {
             await loadReport()
             // The live catalog is what makes "Check for Corrections" possible (it diffs blob SHAs
@@ -217,12 +218,6 @@ struct MacVolumesStorageHub: View {
     @ViewBuilder
     private var heroSection: some View {
         Section {
-            PaneHeader(
-                title: String(localized: "settings.hub.title", defaultValue: "Volumes & Storage"),
-                subtitle: String(localized: "settings.hub.subtitle",
-                                 defaultValue: "Add, keep current, store and index — one destination.")
-            )
-
             SettingsHeroCard(
                 title: String(localized: "settings.hub.hero.title", defaultValue: "Storage used"),
                 value: ByteCountFormatter.string(

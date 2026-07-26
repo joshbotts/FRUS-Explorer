@@ -62,6 +62,54 @@ enum WordCloudDiskCache {
         return result
     }
 
+    /// The most recently written cached cloud computed under `lens`.
+    ///
+    /// Filenames are SHA-256 digests, so the key — and with it the scope and tuning — is not
+    /// recoverable from a cache file. This is deliberately a "some real cloud you looked at
+    /// recently", not a specific one: the Word Cloud settings bench uses it as sample material
+    /// to show what the current criteria would keep, and falls back to a canned list when there
+    /// is nothing suitable.
+    ///
+    /// The lens filter is load-bearing, not a nicety. Whether a cloud is persisted depends on
+    /// its **scope**, not its lens, so a subseries cloud viewed under People is written here
+    /// like any other — and its terms are multi-word names ("united states"), which the word
+    /// path rejects on sight for containing a space. Measuring one against `.allTerms` criteria
+    /// would report a near-total drop that says nothing about the user's settings. Entries
+    /// written before S-5b carry no lens stamp and are skipped for the same reason: unknown is
+    /// not the same as safe.
+    ///
+    /// Synchronous disk I/O: call it from a `.task`, never a view body.
+    ///
+    /// - Parameter lens: The lens an entry must have been computed under to qualify.
+    /// - Returns: The newest qualifying entry, or `nil` when there is none.
+    static func mostRecent(lens: WordCloudLens = .allTerms) -> WordCloudResult? {
+        guard let directory,
+              let entries = try? FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles])
+        else { return nil }
+
+        let newestFirst = entries
+            .filter { $0.pathExtension == "json" }
+            .compactMap { url -> (URL, Date)? in
+                guard let date = try? url.resourceValues(forKeys: [.contentModificationDateKey])
+                    .contentModificationDate else { return nil }
+                return (url, date)
+            }
+            .sorted { $0.1 > $1.1 }
+
+        for (url, _) in newestFirst {
+            if let data = try? Data(contentsOf: url),
+               let result = try? JSONDecoder().decode(WordCloudResult.self, from: data),
+               result.lens == lens,
+               !result.terms.isEmpty {
+                return result
+            }
+        }
+        return nil
+    }
+
     /// Saves `result` under `key`, overwriting any existing entry.
     static func save(_ result: WordCloudResult, key: String) {
         guard let url = fileURL(for: key),

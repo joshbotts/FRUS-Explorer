@@ -63,6 +63,14 @@ import AppKit
 ///   1.7 — S-2b: `SettingsStoragePane`, `SettingsAddVolumesPane`, and `ManageStorageSheet`
 ///          (1,618 lines) leave this file for the merged `MacVolumesStorageHub`; the stale
 ///          hand-copied sidebar tree in the doc above is replaced by a pointer to the model
+///   1.8 — S-5b: the last four hand-rolled `ScrollView`/`PaneHeader` panes go. Display,
+///          Search and Sync are deleted outright in favour of the cross-platform
+///          `DisplaySettingsView` / `SearchDefaultsView` / `SyncSettingsSection` — there was
+///          never a macOS-specific behaviour in them, only drifted copy. Notes is rewritten
+///          as a `Form` over a one-shot `NotesPaneSnapshot` (it held three live `@Query`s over
+///          every note, the documented CPU-peg shape) with the full list behind one door.
+///          `PaneSectionHeader`, `settingsPaneToggleRow`, and a dead `Bundle` extension go
+///          with them.
 struct FRUSSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -92,10 +100,13 @@ struct FRUSSettingsView: View {
         } detail: {
             Group {
                 switch selection {
-                case .sync:           SettingsSyncPane()
+                // Display, Search and Sync render the cross-platform views (S-5b). The macOS
+                // twins they replaced held no macOS-specific behaviour — only copy that had
+                // drifted from the iOS original.
+                case .sync:           SyncSettingsView()
                 case .about:          AboutView()
-                case .display:        SettingsDisplayPane()
-                case .search:         SettingsSearchPane()
+                case .display:        DisplaySettingsView()
+                case .search:         SearchDefaultsView()
                 case .projects:       SettingsProjectsPane()
                 case .tags:           SettingsTagsPane()
                 case .scopes:         SettingsScopesPane()
@@ -133,235 +144,6 @@ struct FRUSSettingsView: View {
 // (S-1) so both renderers share one declaration of every pane's label, icon, group, keywords, and
 // platform availability. The five hand-maintained sidebar section arrays are gone with it.
 
-// MARK: - Shared Pane Chrome
-
-/// Consistent header for every settings pane.
-///
-/// Not `private`: `MacVolumesStorageHub` lives in its own file (S-2b) and heads its form with
-/// the same title/subtitle pair, so the two must not drift.
-struct PaneHeader: View {
-    let title: String
-    var subtitle: String? = nil
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-            if let subtitle {
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.bottom, 12)
-    }
-}
-
-private struct PaneSectionHeader: View {
-    let title: String
-    var body: some View {
-        Text(title)
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.secondary)
-            .textCase(.uppercase)
-            .kerning(0.6)
-            .padding(.top, 16)
-            .padding(.bottom, 4)
-    }
-}
-
-// MARK: - Display Pane
-
-private struct SettingsDisplayPane: View {
-    @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
-    @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
-    @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
-    @AppStorage(ChartSeriesPalette.storageKey) private var chartSeriesCount = ChartSeriesPalette.defaultCount
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "Display",
-                    subtitle: "Adjust how documents are presented."
-                )
-
-                PaneSectionHeader(title: "Text size")
-                Picker("Document text size", selection: $textSize) {
-                    ForEach(TextSizePreference.allCases) { size in
-                        Text(size.label).tag(size)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 280)
-                .padding(.bottom, 8)
-
-                Text("Adjusts the body text size in the Document view.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-
-                PaneSectionHeader(title: "Citations")
-                Picker("Citation style", selection: $citationStyle) {
-                    ForEach(CitationStyle.allCases) { style in
-                        Text(style.displayName).tag(style)
-                    }
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-                .padding(.bottom, 8)
-
-                Text("Used for Copy Citation, Share Citation, and the citation popover's default. The popover can still switch styles per-presentation for comparison.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-
-                PaneSectionHeader(title: "Reading")
-                Picker("Open documents in", selection: $defaultDocumentMode) {
-                    ForEach(DefaultDocumentMode.allCases) { mode in
-                        Text(mode.label).tag(mode)
-                    }
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-                .padding(.bottom, 8)
-
-                Text("\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail alongside the document; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-
-                PaneSectionHeader(title: "Chart colors")
-                Stepper(value: $chartSeriesCount, in: ChartSeriesPalette.range) {
-                    Text("Distinctly-colored volumes: \(chartSeriesCount)")
-                }
-                .frame(maxWidth: 280)
-                .padding(.bottom, 8)
-
-                Text("How many volumes are shown as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(24)
-        }
-    }
-}
-
-// MARK: - Search Pane
-
-/// Optional cross-device settings sync (the device-local master toggle).
-private struct SettingsSyncPane: View {
-    @AppStorage(SettingsSyncCoordinator.enabledKey) private var syncSettingsEnabled = false
-    @Environment(AppState.self) private var appState
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "iCloud Sync",
-                    subtitle: "Optionally share your settings across devices signed in to the same iCloud account."
-                )
-
-                settingsPaneToggleRow(
-                    label: "Sync settings across devices",
-                    detail: "Word-cloud filters & stop lists, citation style, default document mode, and research logging.",
-                    isOn: $syncSettingsEnabled
-                )
-                .disabled(!appState.cloudKitSyncEnabled)
-                .onChange(of: syncSettingsEnabled) { _, newValue in
-                    appState.settingsSync?.handleEnabledChange(newValue)
-                }
-
-                Text(appState.cloudKitSyncEnabled
-                     ? "When on, this device shares those settings with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate."
-                     : "Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.top, 10)
-            }
-            .padding(24)
-        }
-    }
-}
-
-/// The local, redacted CloudKit sync-telemetry log (#188-C.1) — read, copy, export, or clear it
-/// to help diagnose iCloud sync problems. Everything shown is on the redaction allow-list: event
-/// types, timing, and error codes only.
-private struct SettingsSearchPane: View {
-    @AppStorage(SearchDefaults.scopeDocumentsKey) private var scopeDocuments  = true
-    @AppStorage(SearchDefaults.scopeNotesKey)     private var scopeNotes      = true
-    @AppStorage(SearchDefaults.scopeSummariesKey) private var scopeSummaries  = true
-    @AppStorage(SearchDefaults.typeFilterKey)     private var defaultTypeFilter = "all"
-    @AppStorage(SearchDefaults.snippetLineCountKey) private var snippetLineCount = SearchDefaults.defaultSnippetLineCount
-
-    /// Whether `scope` is the only search scope still enabled — see the iOS twin in
-    /// `SearchDefaultsView`. With all three off, `SearchService.makeMatchExpressions` throws
-    /// `FTS5Error.emptyQuery`, so every search fails instead of returning an honest empty result.
-    private func isOnlyEnabledScope(_ scope: Bool) -> Bool {
-        scope && [scopeDocuments, scopeNotes, scopeSummaries].filter { $0 }.count == 1
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "Search",
-                    subtitle: "Default scope and filter settings for the Search sheet."
-                )
-
-                PaneSectionHeader(title: "Default search scope")
-                Text("These toggles control which content types are searched by default. They can be overridden per-session in the Search sheet. At least one scope stays on — searching nothing has no result to show.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.bottom, 10)
-
-                settingsPaneToggleRow(
-                    label: "Documents",
-                    detail: "Search indexed FRUS document text.",
-                    isOn: $scopeDocuments,
-                    isDisabled: isOnlyEnabledScope(scopeDocuments)
-                )
-                settingsPaneToggleRow(
-                    label: "Research notes",
-                    detail: "Include your research notes in search results.",
-                    isOn: $scopeNotes,
-                    isDisabled: isOnlyEnabledScope(scopeNotes)
-                )
-                settingsPaneToggleRow(
-                    label: "AI summaries",
-                    detail: "Include generated summary text in search results.",
-                    isOn: $scopeSummaries,
-                    isDisabled: isOnlyEnabledScope(scopeSummaries)
-                )
-
-                PaneSectionHeader(title: "Default document type")
-                Picker("Default document type filter", selection: $defaultTypeFilter) {
-                    Text("Documents & Editorial Notes").tag("all")
-                    Text("Primary documents only").tag("documentsOnly")
-                    Text("Editorial notes only").tag("editorialNotesOnly")
-                }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
-
-                PaneSectionHeader(title: "Result preview")
-                Text("How many lines of matched context each search result shows. Individual search screens can override this default.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .padding(.bottom, 10)
-                Picker("Snippet length", selection: $snippetLineCount) {
-                    ForEach(1...10, id: \.self) { n in
-                        Text(SearchDefaults.snippetLinesLabel(n)).tag(n)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(maxWidth: 200, alignment: .leading)
-            }
-            .padding(24)
-        }
-    }
-}
-
 // MARK: - Projects Pane
 
 /// macOS Settings → Research → Projects — the hub for the research trio (S-3b).
@@ -377,7 +159,7 @@ private struct SettingsSearchPane: View {
 ///   where rename, merge and delete are visible rows with footers that say what each costs.
 /// - "New project" moves out of the pane header into a row at the end of the list it creates into.
 /// - Rows carry their tally, so the cost of a delete is visible before it is chosen.
-/// - Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + `PaneHeader` + card stack.
+/// - Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + card stack.
 ///   S-5 was going to convert this pane anyway; doing it here means not building it twice.
 private struct SettingsProjectsPane: View {
     @Environment(AppState.self) private var appState
@@ -397,12 +179,6 @@ private struct SettingsProjectsPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.projects.title", defaultValue: "Projects"),
-                    subtitle: String(localized: "settings.projects.pane.subtitle",
-                                     defaultValue: "Switch context up top; manage the list below.")
-                )
-
                 Picker(selection: Binding(get: { appState.activeProjectId },
                                           set: { appState.activeProjectId = $0 })) {
                     Text(String(localized: "settings.projects.active.global",
@@ -486,7 +262,7 @@ private struct SettingsProjectsPane: View {
                     showEditor = true
                 }
             } header: {
-                Text(String(localized: "settings.projects.list.header", defaultValue: "Projects"))
+                Text(String(localized: "settings.projects.list.header", defaultValue: "All Projects"))
             }
 
             Section {
@@ -515,6 +291,7 @@ private struct SettingsProjectsPane: View {
             }
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(isPresented: $showEditor) {
             ProjectEditorView(projectToEdit: nil,
@@ -630,15 +407,6 @@ private struct SettingsScopesPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.scopes.title",
-                                  defaultValue: "Volume Scopes"),
-                    subtitle: String(localized: "settings.scopes.pane.subtitle",
-                                     defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed.")
-                )
-            }
-
-            Section {
                 if scopes.isEmpty {
                     Text(String(localized: "settings.scopes.empty.detail",
                                 defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))
@@ -656,11 +424,13 @@ private struct SettingsScopesPane: View {
                     editorIsDraft = true
                     editorTarget = CustomVolumeScope(name: "")
                 }
-            } header: {
-                Text(String(localized: "settings.scopes.title", defaultValue: "Volume Scopes"))
+            } footer: {
+                Text(String(localized: "settings.scopes.pane.subtitle",
+                            defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed."))
             }
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.scopes.title", defaultValue: "Volume Scopes"))
         .sheet(item: $editorTarget) { target in
             CustomScopeEditorView(scope: target, isDraft: editorIsDraft)
                 .environment(appState)
@@ -787,14 +557,6 @@ private struct SettingsTagsPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.pane.tags", defaultValue: "Tags"),
-                    subtitle: String(localized: "settings.tags.pane.subtitle",
-                                     defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project.")
-                )
-            }
-
-            Section {
                 if tags.isEmpty {
                     Text(String(localized: "settings.tags.empty.where",
                                 defaultValue: "No tags yet. Tags are the labels you apply to research notes and documents as you read — create one here, or from any note."))
@@ -839,11 +601,13 @@ private struct SettingsTagsPane: View {
                     modelContext.insert(tag)
                     pendingNewTag = tag
                 }
-            } header: {
-                Text(String(localized: "settings.tags.list.header", defaultValue: "Tags"))
+            } footer: {
+                Text(String(localized: "settings.tags.pane.subtitle",
+                            defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project."))
             }
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.pane.tags", defaultValue: "Tags"))
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(item: $editingTag) { tag in
             TagEditorView(
@@ -873,177 +637,381 @@ private struct SettingsTagsPane: View {
 
 // MARK: - Notes Pane
 
+/// macOS Settings → Research → Notes — every research note on this Mac (S-5b).
+///
+/// ## What changed in S-5b
+/// - Native `Form(.grouped)` replaces the bespoke split layout (a padded header block, a
+///   `Divider`, then a greedy full-height `List`), which was the last hand-rolled pane.
+/// - The pane shows the five most recent notes and puts the whole list behind one door — the
+///   grammar the Volumes & Storage hub already ships for downloaded volumes. A `Form` cannot
+///   host a full-height scrolling list, and a `Section` of three hundred notes would be three
+///   hundred eagerly-composed rows inside another scroll view.
+/// - Three live `@Query`s become one `NotesPaneSnapshot`, refreshed on appear and after every
+///   mutation. See that type for why.
+/// - Rows are `Button`s, not `.onTapGesture` on a `VStack` — a tap gesture is invisible to
+///   VoiceOver and unreachable from the keyboard.
+/// - The "Untagged" project filter used to be tagged with the all-zeros UUID and matched with
+///   `projectIds.contains(_:)`, so it could never return anything. It is a real case now.
+/// - The editor sheet receives `indexingPipeline` and `AppState`, so a note edited here reaches
+///   FTS5 like one edited anywhere else. It did not before.
 private struct SettingsNotesPane: View {
+
+    /// How many notes the pane lists before deferring to the full-list sheet. The hub uses three
+    /// for one-line volume rows; note rows are two lines, and five is about a screen-third —
+    /// enough to answer "did my last note save?" without the pane becoming a list.
+    private static let inlineNoteLimit = 5
+
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
-    @Query private var projects: [Project]
-    @Query(sort: \UserTag.name) private var tags: [UserTag]
+    @Environment(AppState.self) private var appState
+    /// Whether the Settings window is the active one. On macOS Settings is a sibling window, not
+    /// a modal — the main window stays live behind it, so a note written or deleted there must
+    /// re-read here when the user comes back. A one-shot `.task` alone would show them the state
+    /// of the world when they opened the pane.
+    @Environment(\.controlActiveState) private var controlActiveState
 
     @AppStorage("researchSessionLoggingEnabled") private var loggingEnabled = true
 
-    @State private var filterProjectId: UUID? = nil
-    @State private var filterTagId: UUID? = nil
-    @State private var noteToEdit: ResearchNote? = nil
-    @State private var noteToDelete: ResearchNote? = nil
-    @State private var showDeleteConfirmation = false
+    @State private var snapshot: NotesPaneSnapshot = .empty
+    @State private var editingNote: ResearchNote?
+    @State private var showsAllNotes = false
 
-    private var filteredNotes: [ResearchNote] {
-        allNotes.filter { note in
-            let matchesProject: Bool = {
-                guard let pid = filterProjectId else { return true }
-                return note.projectIds.contains(pid)
-            }()
-            let matchesTag: Bool = {
-                guard let tid = filterTagId else { return true }
-                return note.userTagIds.contains(tid)
-            }()
-            return matchesProject && matchesTag
+    var body: some View {
+        Form {
+            notesSection
+            researchSessionsSection
+        }
+        .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.pane.notes", defaultValue: "Notes"))
+        .frame(maxWidth: .infinity)
+        .scrollIndicators(.visible)
+        .task { refresh() }
+        .onChange(of: controlActiveState) { _, state in
+            if state != .inactive { refresh() }
+        }
+        .sheet(isPresented: $showsAllNotes, onDismiss: refresh) {
+            MacAllNotesSheet(snapshot: snapshot, onChanged: refresh)
+        }
+        .sheet(item: $editingNote, onDismiss: refresh) { note in
+            noteEditorSheet(for: note)
+        }
+    }
+
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var notesSection: some View {
+        Section {
+            if snapshot.total == 0 {
+                Text(String(localized: "settings.notes.empty",
+                            defaultValue: "No notes yet. Notes you write from a document appear here."))
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(snapshot.rows.prefix(Self.inlineNoteLimit)) { row in
+                    noteRow(row)
+                }
+                Button {
+                    showsAllNotes = true
+                } label: {
+                    HStack {
+                        Label(String(localized: "settings.notes.showAll", defaultValue: "All Notes"),
+                              systemImage: "note.text")
+                            .labelStyle(.titleAndIcon)
+                        Spacer(minLength: 8)
+                        Text(NotesPaneSnapshot.noteCount(snapshot.total))
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        } header: {
+            Text(String(localized: "settings.notes.recent.header", defaultValue: "Recent Notes"))
+        } footer: {
+            if snapshot.total > 0 {
+                Text(NotesPaneSnapshot.showingCount(
+                    shown: min(Self.inlineNoteLimit, snapshot.total), of: snapshot.total))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var researchSessionsSection: some View {
+        Section {
+            Toggle(String(localized: "settings.notes.logging",
+                          defaultValue: "Log Research Sessions"),
+                   isOn: $loggingEnabled)
+        } header: {
+            Text(String(localized: "settings.notes.sessions.header",
+                        defaultValue: "Research Sessions"))
+        } footer: {
+            Text(String(localized: "settings.notes.logging.footer",
+                        defaultValue: "Records which documents you open and when, so History and Project Leads can show your trail. Turning it off stops new recording; sessions already recorded are kept."))
+        }
+    }
+
+    // MARK: - Rows
+
+    @ViewBuilder
+    private func noteRow(_ row: NotesPaneSnapshot.Row) -> some View {
+        Button {
+            // A nil lookup means the snapshot is stale — the note went away since the row was
+            // drawn. Re-read rather than leave a ghost row that does nothing when clicked.
+            guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+                refresh()
+                return
+            }
+            editingNote = note
+        } label: {
+            HStack {
+                SettingsNavRow(label: row.title,
+                               detail: row.detail,
+                               value: row.lastModified.map {
+                                   $0.formatted(date: .abbreviated, time: .omitted)
+                               })
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .lineLimit(2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(String(localized: "settings.notes.row.a11y",
+                                  defaultValue: "Opens the research note editor"))
+    }
+
+    // MARK: - Editor
+
+    private func noteEditorSheet(for note: ResearchNote) -> some View {
+        ResearchNoteEditorView(
+            documentId: note.documentId,
+            volumeId: note.volumeId,
+            activeProjectId: nil,
+            noteToEdit: note,
+            indexingPipeline: appState.indexingPipeline
+        )
+        .environment(appState)
+    }
+
+    // MARK: - State
+
+    private func refresh() {
+        snapshot = NotesPaneSnapshot.fetch(from: modelContext)
+    }
+}
+
+// MARK: - MacAllNotesSheet
+
+/// The whole note list, behind the Notes pane's one door (S-5b).
+///
+/// A real `List` rather than a `Form` section, because this is the surface that has to stay
+/// usable at three hundred notes. The filters the old pane crammed into a 180-point `HStack`
+/// live here as labelled controls and gain a text field — the thing actually missing once the
+/// list is long enough to need filtering at all.
+private struct MacAllNotesSheet: View {
+
+    /// The rows to browse. Passed in rather than re-fetched so the sheet and the pane behind it
+    /// cannot disagree about what exists.
+    let snapshot: NotesPaneSnapshot
+    /// Called after a delete, so the pane re-reads.
+    let onChanged: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Environment(AppState.self) private var appState
+
+    @State private var projectFilter: NotesPaneSnapshot.ProjectFilter = .any
+    @State private var tagFilter: UUID?
+    @State private var query = ""
+    @State private var editingNote: ResearchNote?
+    @State private var rowToDelete: NotesPaneSnapshot.Row?
+    @State private var localSnapshot: NotesPaneSnapshot?
+
+    /// The snapshot to render — the locally refreshed one once this sheet has deleted something,
+    /// otherwise the one handed in.
+    private var current: NotesPaneSnapshot { localSnapshot ?? snapshot }
+
+    private var filtered: [NotesPaneSnapshot.Row] {
+        let matches = current.filtered(project: projectFilter, tagId: tagFilter)
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return matches }
+        return matches.filter {
+            $0.bodyText.localizedCaseInsensitiveContains(trimmed)
+                || $0.volumeId.localizedCaseInsensitiveContains(trimmed)
+                || $0.documentId.localizedCaseInsensitiveContains(trimmed)
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header + filters
-            VStack(alignment: .leading, spacing: 0) {
-                PaneHeader(
-                    title: "Notes",
-                    subtitle: "Manage your research notes across all documents."
-                )
-
-                Toggle("Log Research Sessions", isOn: $loggingEnabled)
-                    .padding(.bottom, 8)
-
-                HStack(spacing: 12) {
-                    // Project filter
-                    Picker("Project", selection: $filterProjectId) {
-                        Text("All projects").tag(UUID?.none)
-                        Text("Untagged").tag(UUID?.some(UUID(uuidString: "00000000-0000-0000-0000-000000000000")!))
-                        ForEach(projects) { project in
-                            Text(project.name).tag(UUID?.some(project.id))
-                        }
-                    }
-                    .frame(maxWidth: 180)
-
-                    // Tag filter
-                    Picker("Tag", selection: $filterTagId) {
-                        Text("All tags").tag(UUID?.none)
-                        ForEach(tags) { tag in
-                            Text(tag.name).tag(UUID?.some(tag.id))
-                        }
-                    }
-                    .frame(maxWidth: 180)
-
-                    Spacer()
-
-                    Text("\(filteredNotes.count) note\(filteredNotes.count == 1 ? "" : "s")")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.bottom, 12)
-            }
-            .padding(24)
-            .padding(.bottom, 0)
-
+        VStack(spacing: 0) {
+            header
             Divider()
-
-            // Notes list
-            if filteredNotes.isEmpty {
-                ContentUnavailableView(
-                    "No Notes",
-                    systemImage: "note.text",
-                    description: Text(filterProjectId != nil || filterTagId != nil
-                        ? "No notes match the selected filters."
-                        : "Research notes you add from the document view will appear here.")
-                )
-            } else {
-                List {
-                    ForEach(filteredNotes) { note in
-                        noteRow(note)
-                            .contentShape(Rectangle())
-                            .onTapGesture { noteToEdit = note }
-                    }
-                }
-                .listStyle(.plain)
-            }
+            filters
+            Divider()
+            list
+            Divider()
+            footer
         }
-        .sheet(item: $noteToEdit) { note in
+        .frame(minWidth: 560, minHeight: 480)
+        .task { localSnapshot = NotesPaneSnapshot.fetch(from: modelContext) }
+        .sheet(item: $editingNote, onDismiss: refresh) { note in
             ResearchNoteEditorView(
                 documentId: note.documentId,
                 volumeId: note.volumeId,
                 activeProjectId: nil,
-                noteToEdit: note
+                noteToEdit: note,
+                indexingPipeline: appState.indexingPipeline
             )
+            .environment(appState)
         }
         .confirmationDialog(
-            "Delete Note?",
-            isPresented: $showDeleteConfirmation,
+            String(localized: "settings.notes.delete.title", defaultValue: "Delete Note?"),
+            isPresented: Binding(get: { rowToDelete != nil },
+                                 set: { if !$0 { rowToDelete = nil } }),
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) {
-                if let note = noteToDelete { modelContext.delete(note) }
+            Button(String(localized: "settings.notes.delete.confirm", defaultValue: "Delete"),
+                   role: .destructive) {
+                if let row = rowToDelete { delete(row) }
+                rowToDelete = nil
             }
-            Button("Cancel", role: .cancel) {}
+            Button(String(localized: "settings.notes.delete.cancel", defaultValue: "Cancel"),
+                   role: .cancel) { rowToDelete = nil }
         } message: {
-            Text("This note will be permanently deleted.")
+            Text(String(localized: "settings.notes.delete.message",
+                        defaultValue: "This note will be permanently deleted."))
         }
     }
 
-    private func noteRow(_ note: ResearchNote) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if note.bodyText.isEmpty {
-                Text("Empty note")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.tertiary)
-                    .italic()
-            } else {
-                Text(note.bodyText)
-                    .font(.system(size: 13))
-                    .lineLimit(2)
-            }
-            HStack(spacing: 6) {
-                Text("\(note.volumeId) / \(note.documentId)")
-                    .font(.system(size: 11))
+    // MARK: - Pieces
+
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "settings.notes.all.title", defaultValue: "All Notes"))
+                    .font(.headline)
+                Text(NotesPaneSnapshot.showingCount(shown: filtered.count, of: current.total))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                ForEach(projectNamesFor(note), id: \.self) { name in
-                    Text(name)
-                        .font(.system(size: 10))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(Color.accentColor.opacity(0.1))
-                        .foregroundStyle(Color.accentColor)
-                        .clipShape(Capsule())
-                }
-                ForEach(tagNamesFor(note), id: \.self) { name in
-                    Text("◆ \(name)")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if let date = note.lastModified {
-                    Text(date, style: .date)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                }
             }
+            Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .contextMenu {
-            Button(role: .destructive) {
-                noteToDelete = note
-                showDeleteConfirmation = true
-            } label: {
-                Label("Delete", systemImage: "trash")
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+    }
+
+    private var filters: some View {
+        HStack(spacing: 12) {
+            Picker(String(localized: "settings.notes.filter.project", defaultValue: "Project"),
+                   selection: $projectFilter) {
+                Text(String(localized: "settings.notes.filter.project.all",
+                            defaultValue: "All projects")).tag(NotesPaneSnapshot.ProjectFilter.any)
+                Text(String(localized: "settings.notes.filter.project.unfiled",
+                            defaultValue: "Not in a project")).tag(NotesPaneSnapshot.ProjectFilter.unfiled)
+                ForEach(current.projects, id: \.id) { project in
+                    Text(project.name).tag(NotesPaneSnapshot.ProjectFilter.id(project.id))
+                }
             }
+            .frame(maxWidth: 220)
+
+            Picker(String(localized: "settings.notes.filter.tag", defaultValue: "Tag"),
+                   selection: $tagFilter) {
+                Text(String(localized: "settings.notes.filter.tag.all",
+                            defaultValue: "All tags")).tag(UUID?.none)
+                ForEach(current.tags, id: \.id) { tag in
+                    Text(tag.name).tag(UUID?.some(tag.id))
+                }
+            }
+            .frame(maxWidth: 200)
+
+            TextField(String(localized: "settings.notes.filter.search",
+                             defaultValue: "Search notes…"), text: $query)
+                .textFieldStyle(.roundedBorder)
+                .frame(minWidth: 140)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
+    @ViewBuilder
+    private var list: some View {
+        if filtered.isEmpty {
+            ContentUnavailableView(
+                String(localized: "settings.notes.none.title", defaultValue: "No Notes"),
+                systemImage: "note.text",
+                description: Text(current.total == 0
+                    ? String(localized: "settings.notes.empty",
+                             defaultValue: "No notes yet. Notes you write from a document appear here.")
+                    : String(localized: "settings.notes.none.filtered",
+                             defaultValue: "No notes match the selected filters."))
+            )
+            .frame(maxHeight: .infinity)
+        } else {
+            List(filtered) { row in
+                Button {
+                    guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+                        refresh()
+                        return
+                    }
+                    editingNote = note
+                } label: {
+                    SettingsNavRow(label: row.title,
+                                   detail: row.detail,
+                                   value: row.lastModified.map {
+                                       $0.formatted(date: .abbreviated, time: .omitted)
+                                   })
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        rowToDelete = row
+                    } label: {
+                        Label(String(localized: "settings.notes.delete.confirm",
+                                     defaultValue: "Delete"), systemImage: "trash")
+                    }
+                }
+            }
+            .listStyle(.inset)
         }
     }
 
-    private func projectNamesFor(_ note: ResearchNote) -> [String] {
-        note.projectIds.compactMap { pid in projects.first { $0.id == pid }?.name }
+    private var footer: some View {
+        HStack {
+            Spacer()
+            Button(String(localized: "settings.notes.done", defaultValue: "Done")) { dismiss() }
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
     }
 
-    private func tagNamesFor(_ note: ResearchNote) -> [String] {
-        note.userTagIds.compactMap { tid in tags.first { $0.id == tid }?.name }
+    // MARK: - Mutations
+
+    private func delete(_ row: NotesPaneSnapshot.Row) {
+        guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+            // Already gone — the snapshot is stale, so re-read instead of silently doing nothing.
+            refresh()
+            return
+        }
+        modelContext.delete(note)
+        // Flush, so the cross-context @Query consumers (the Research window, Project Home)
+        // see the removal promptly — the same reason ResearchNoteEditorView saves after delete.
+        try? modelContext.save()
+        refresh()
+    }
+
+    private func refresh() {
+        localSnapshot = NotesPaneSnapshot.fetch(from: modelContext)
+        onChanged()
     }
 }
 
@@ -1072,13 +1040,6 @@ private struct SettingsSummarizationPane: View {
     var body: some View {
         Form {
             Section {
-                PaneHeader(
-                    title: String(localized: "settings.pane.summarization",
-                                  defaultValue: "Summarization"),
-                    subtitle: String(localized: "settings.summarization.pane.subtitle",
-                                     defaultValue: "Prompts, summaries and batch runs.")
-                )
-
                 if AppleIntelligenceProvider.shared.isAvailable {
                     SettingsStatusRow(
                         label: String(localized: "settings.summarization.availability.label",
@@ -1189,6 +1150,8 @@ private struct SettingsSummarizationPane: View {
             generateSection
         }
         .formStyle(.grouped)
+        .navigationTitle(String(localized: "settings.pane.summarization",
+                                defaultValue: "Summarization"))
         .task { refreshTally() }
         .sheet(item: $promptToEdit, onDismiss: refreshTally) { prompt in
             PromptEditorView(promptToEdit: prompt)
@@ -1275,45 +1238,6 @@ private struct SettingsSummarizationPane: View {
             promptText: prompt.promptText,
             fields: fields
         )
-    }
-}
-
-// MARK: - Shared Helpers
-
-/// Toggle row used across multiple settings panes.
-/// Named `settingsPaneToggleRow` to avoid collision with `settingsToggleRow` in SettingsView.swift.
-@ViewBuilder
-private func settingsPaneToggleRow(label: String,
-                                   detail: String,
-                                   isOn: Binding<Bool>,
-                                   isDisabled: Bool = false) -> some View {
-    HStack(alignment: .top, spacing: 12) {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.system(size: 13))
-            Text(detail)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-        }
-        Spacer()
-        Toggle("", isOn: isOn)
-            .labelsHidden()
-            .disabled(isDisabled)
-    }
-    .padding(10)
-    .background(Color.secondary.opacity(0.06))
-    .clipShape(RoundedRectangle(cornerRadius: 7))
-    .padding(.bottom, 6)
-}
-
-// MARK: - Bundle Helpers
-
-private extension Bundle {
-    var shortVersionString: String {
-        infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-    }
-    var buildNumber: String {
-        infoDictionary?["CFBundleVersion"] as? String ?? "—"
     }
 }
 

@@ -73,7 +73,8 @@ struct VolumeFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
-struct TermCount: Sendable, Identifiable, Codable {
+///   1.1 — S-5b: `Equatable`, so value types carrying term lists (`WordCloudBench`) can be too
+struct TermCount: Sendable, Identifiable, Codable, Equatable {
     let term: String
     let count: Int
     var id: String { term }

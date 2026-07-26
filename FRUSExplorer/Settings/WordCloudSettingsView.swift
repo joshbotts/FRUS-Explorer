@@ -11,13 +11,29 @@ import SwiftUI
 /// Settings pane for word-cloud filtering criteria and custom stop lists.
 ///
 /// Exposes the tunable criteria backing `WordCloudTuning` (minimum length/count,
-/// plural folding, markings and boilerplate filters) plus two user-managed stop
-/// lists: a global one applied to every cloud, and a per-lens one for words that
-/// should only be suppressed under a specific lens. Edits write through
+/// plural folding, markings and boilerplate filters) plus a user-managed stop list,
+/// scoped either to every cloud or to a single lens. Edits write through
 /// `WordCloudSettings`, which bumps a revision so any open cloud recomputes.
+///
+/// ## The bench (S-5b)
+/// Every control here is a threshold or a filter, and each used to state only what it *is* —
+/// "Minimum occurrences: 3" — never what it costs. The pane now opens with a live sample of the
+/// terms the current settings keep, and the Thresholds section carries a "Keeps N of M terms"
+/// line. Both come from ``WordCloudBench``, which measures against the user's most recent cached
+/// `.allTerms` cloud (or a canned list when there is no suitable one) and never touches the search
+/// index — opening Settings must not start indexing work.
 ///
 /// Version history:
 ///   1.0 — Word Cloud: tunable criteria + stop-list management
+///   1.1 — S-2a: background precompute moved here from Storage (it is a word-cloud behaviour,
+///          not a storage one), giving macOS a control it never had
+///   1.2 — S-5b: the bench — live sample row, "Keeps N of M terms" consequence line — and the
+///          two stop-list sections merged into one editor with a scope picker. Also observes
+///          `WordCloudSettings.Keys.revision`, so a stop-list change arriving from another
+///          device refreshes the sample; re-reads the sample when the Settings window becomes
+///          active again (it is a sibling window, not a modal); and drops `maxHeight: .infinity`,
+///          which Session 67 removed elsewhere because it stops the split-view detail column
+///          bounding the Form.
 struct WordCloudSettingsView: View {
 
     @AppStorage(WordCloudSettings.Keys.excludeBoilerplate) private var excludeBoilerplate = true
@@ -28,35 +44,105 @@ struct WordCloudSettingsView: View {
     @AppStorage(WordCloudSettings.Keys.fontDesign) private var fontDesignRaw = WordCloudFontDesign.rounded.rawValue
     @AppStorage(WordCloudSettings.Keys.density) private var densityRaw = WordCloudDensity.balanced.rawValue
     @AppStorage(WordCloudSettings.Keys.backgroundPrecompute) private var precomputeWordClouds = true
+    /// Bumped by every stop-list mutation, including ones arriving over iCloud. Observed so the
+    /// sample re-filters when a hidden word is added on another device.
+    @AppStorage(WordCloudSettings.Keys.revision) private var settingsRevision = 0
 
-    @State private var globalWords: [String] = []
-    @State private var newGlobalWord = ""
-    @State private var selectedLens: WordCloudLens = .people
-    @State private var lensWords: [String] = []
-    @State private var newLensWord = ""
+    #if os(macOS)
+    /// Whether the Settings window is active. Settings is a sibling window on macOS, so a user
+    /// can open a cloud in the main window and come straight back — re-read the sample then,
+    /// rather than keep telling them to go and do what they have just done.
+    @Environment(\.controlActiveState) private var controlActiveState
+    #endif
+
+    /// Which stop list the editor is showing — every cloud, or one lens.
+    @State private var stopListScope: StopListScope = .allLenses
+    @State private var words: [String] = []
+    @State private var newWord = ""
+
+    /// The sample terms, read from disk on appear and whenever this window becomes active again.
+    @State private var sample: [TermCount] = []
+    /// Whether `sample` is the user's own cached cloud rather than the canned list.
+    @State private var sampleIsFromUserCorpus = false
+
+    /// The sample re-filtered through the current criteria. Recomputed in `body`, which is cheap
+    /// — a `filter` over at most the cached term limit (220) — and keeps the number exact as the
+    /// user drags a stepper, which a `.task`-driven `@State` could not.
+    private var bench: WordCloudBench {
+        WordCloudBench.evaluate(
+            sample: sample,
+            tuning: WordCloudTuning(minimumLength: max(2, minLength),
+                                    minimumCount: max(1, minCount),
+                                    foldPlurals: foldPlurals,
+                                    filterMarkings: filterMarkings),
+            lens: stopListScope.lens ?? .allTerms,
+            includeDiplomatic: excludeBoilerplate,
+            extraStopwords: WordCloudSettings.extraStopwords(for: stopListScope.lens ?? .allTerms),
+            isFromUserCorpus: sampleIsFromUserCorpus
+        )
+    }
 
     var body: some View {
         Form {
+            sampleSection
             filteringSection
             thresholdsSection
             appearanceSection
-            globalStopwordsSection
-            lensStopwordsSection
+            stopListSection
             performanceSection
         }
         #if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
         .formStyle(.grouped)
         #endif
         .navigationTitle(String(localized: "settings.wordcloud.title", defaultValue: "Word Cloud"))
-        .onAppear {
-            globalWords = WordCloudSettings.globalStopwords
-            lensWords = WordCloudSettings.lensStopwords(selectedLens)
+        .task { loadSample() }
+        #if os(macOS)
+        .onChange(of: controlActiveState) { _, state in
+            if state != .inactive { loadSample() }
         }
-        .onChange(of: selectedLens) { _, lens in
-            lensWords = WordCloudSettings.lensStopwords(lens)
-            newLensWord = ""
+        #endif
+        .onChange(of: stopListScope) { _, scope in
+            words = scope.words
+            newWord = ""
         }
+        .onChange(of: settingsRevision) { _, _ in
+            words = stopListScope.words
+        }
+    }
+
+    // MARK: - Live sample
+
+    /// What the current settings actually produce, drawn from real terms.
+    ///
+    /// A row of terms sized by rank rather than a laid-out cloud: the pane is a form column a
+    /// few hundred points wide, and a miniature of the packed layout at that size would be
+    /// illegible and would misrepresent the real thing.
+    @ViewBuilder
+    private var sampleSection: some View {
+        Section {
+            if bench.kept.isEmpty {
+                Text(String(localized: "settings.wordcloud.sample.none",
+                            defaultValue: "These settings keep nothing from the sample. Lower a threshold or turn a filter off."))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                SampleTermsRow(terms: Array(bench.kept.prefix(12)),
+                               design: WordCloudFontDesign(rawValue: fontDesignRaw) ?? .rounded)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(sampleAccessibilityLabel)
+            }
+        } header: {
+            Text(String(localized: "settings.wordcloud.sample.header", defaultValue: "Sample"))
+        } footer: {
+            Text(bench.provenance)
+        }
+    }
+
+    private var sampleAccessibilityLabel: String {
+        String(format: String(localized: "settings.wordcloud.sample.a11y %@",
+                              defaultValue: "Sample of kept terms: %@"),
+               bench.kept.prefix(12).map(\.term).joined(separator: ", "))
     }
 
     // MARK: - Performance
@@ -112,11 +198,19 @@ struct WordCloudSettingsView: View {
                                             defaultValue: "Minimum occurrences: %lld"),
                             Int64(minCount)))
             }
+            // The consequence line, next to the controls that cause it.
+            LabeledContent {
+                Text(bench.summary)
+                    .foregroundStyle(bench.kept.isEmpty ? Color.red : Color.secondary)
+                    .monospacedDigit()
+            } label: {
+                Text(String(localized: "settings.wordcloud.bench.label", defaultValue: "Effect"))
+            }
         } header: {
             Text(String(localized: "settings.wordcloud.thresholds.header", defaultValue: "Thresholds"))
         } footer: {
             Text(String(localized: "settings.wordcloud.thresholds.footer",
-                        defaultValue: "Drop terms shorter than the minimum length or appearing fewer than the minimum number of times. Raising either makes a sparser, higher-signal cloud."))
+                        defaultValue: "Drop terms shorter than the minimum length or appearing fewer than the minimum number of times. Raising either makes a sparser, higher-signal cloud. Occurrences are counted across the whole scope before its top terms are chosen, so raising that one may not change the sample above — it thins the long tail you never see."))
         }
     }
 
@@ -146,110 +240,252 @@ struct WordCloudSettingsView: View {
         }
     }
 
-    // MARK: - Global stop list
+    // MARK: - Hidden words
 
-    private var globalStopwordsSection: some View {
-        Section {
-            stopwordEditor(
-                words: globalWords,
-                newWord: $newGlobalWord,
-                add: {
-                    WordCloudSettings.addGlobalStopword(newGlobalWord)
-                    newGlobalWord = ""
-                    globalWords = WordCloudSettings.globalStopwords
-                },
-                remove: { word in
-                    WordCloudSettings.removeGlobalStopword(word)
-                    globalWords = WordCloudSettings.globalStopwords
-                }
-            )
-        } header: {
-            Text(String(localized: "settings.wordcloud.global.header",
-                        defaultValue: "Hidden Words (All Lenses)"))
-        } footer: {
-            Text(String(localized: "settings.wordcloud.global.footer",
-                        defaultValue: "Words listed here are removed from every word cloud, on top of the built-in stop lists."))
-        }
-    }
-
-    // MARK: - Per-lens stop list
-
-    private var lensStopwordsSection: some View {
-        Section {
-            Picker(String(localized: "settings.wordcloud.lens.picker", defaultValue: "Lens"),
-                   selection: $selectedLens) {
-                ForEach(WordCloudLens.allCases) { lens in
-                    Text(lens.label).tag(lens)
-                }
-            }
-            stopwordEditor(
-                words: lensWords,
-                newWord: $newLensWord,
-                add: {
-                    WordCloudSettings.addLensStopword(newLensWord, lens: selectedLens)
-                    newLensWord = ""
-                    lensWords = WordCloudSettings.lensStopwords(selectedLens)
-                },
-                remove: { word in
-                    WordCloudSettings.removeLensStopword(word, lens: selectedLens)
-                    lensWords = WordCloudSettings.lensStopwords(selectedLens)
-                }
-            )
-        } header: {
-            Text(String(localized: "settings.wordcloud.lens.header",
-                        defaultValue: "Hidden Words (Per Lens)"))
-        } footer: {
-            Text(String(localized: "settings.wordcloud.lens.footer",
-                        defaultValue: "Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recogniser keeps mistaking) without affecting other lenses."))
-        }
-    }
-
-    // MARK: - Reusable editor
-
-    /// A small add-field plus a deletable list of the current words.
+    /// One stop-list editor with a scope control (S-5b).
+    ///
+    /// There used to be two near-identical sections — "Hidden Words (All Lenses)" and "Hidden
+    /// Words (Per Lens)" — each with its own text field, its own add button, and its own list,
+    /// which made the pane read as though the two lists did different *kinds* of thing. They do
+    /// the same thing at different scope, so scope is now a control rather than a section
+    /// boundary, and there is one editor to learn.
     @ViewBuilder
-    private func stopwordEditor(
-        words: [String],
-        newWord: Binding<String>,
-        add: @escaping () -> Void,
-        remove: @escaping (String) -> Void
-    ) -> some View {
-        HStack {
-            TextField(String(localized: "settings.wordcloud.addWord.prompt",
-                             defaultValue: "Add a word…"),
-                      text: newWord)
-                #if os(iOS)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                #endif
-                .onSubmit(add)
-            Button(action: add) {
-                Image(systemName: "plus.circle.fill")
-            }
-            .disabled(newWord.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty)
-            .buttonStyle(.borderless)
-        }
-        if words.isEmpty {
-            Text(String(localized: "settings.wordcloud.empty", defaultValue: "No custom words yet."))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        } else {
-            ForEach(words, id: \.self) { word in
-                HStack {
-                    Text(word)
-                    Spacer()
-                    Button(role: .destructive) {
-                        remove(word)
-                    } label: {
-                        Image(systemName: "minus.circle")
-                            .foregroundStyle(.red)
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(String(
-                        format: String(localized: "settings.wordcloud.remove %@",
-                                       defaultValue: "Remove %@"), word))
+    private var stopListSection: some View {
+        Section {
+            Picker(String(localized: "settings.wordcloud.stoplist.scope", defaultValue: "Applies to"),
+                   selection: $stopListScope) {
+                Text(String(localized: "settings.wordcloud.stoplist.allLenses",
+                            defaultValue: "Every cloud")).tag(StopListScope.allLenses)
+                ForEach(WordCloudLens.allCases) { lens in
+                    Text(lens.label).tag(StopListScope.lens(lens))
                 }
             }
+
+            HStack {
+                TextField(String(localized: "settings.wordcloud.addWord.prompt",
+                                 defaultValue: "Add a word…"),
+                          text: $newWord)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    #endif
+                    .onSubmit(add)
+                Button(action: add) {
+                    Image(systemName: "plus.circle.fill")
+                }
+                .disabled(newWord.trimmingCharacters(in: .whitespaces).isEmpty)
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "settings.wordcloud.add.a11y",
+                                           defaultValue: "Add hidden word"))
+            }
+
+            if words.isEmpty {
+                Text(String(localized: "settings.wordcloud.empty", defaultValue: "No custom words yet."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(words, id: \.self) { word in
+                    HStack {
+                        Text(word)
+                        Spacer()
+                        Button(role: .destructive) {
+                            remove(word)
+                        } label: {
+                            Image(systemName: "minus.circle")
+                                .foregroundStyle(.red)
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(String(
+                            format: String(localized: "settings.wordcloud.remove %@",
+                                           defaultValue: "Remove %@"), word))
+                    }
+                }
+            }
+        } header: {
+            Text(String(localized: "settings.wordcloud.stoplist.header", defaultValue: "Hidden Words"))
+        } footer: {
+            Text(stopListScope.footer)
         }
+    }
+
+    // MARK: - Mutations
+
+    /// Re-reads the sample from disk and the hidden-word list for the current scope.
+    private func loadSample() {
+        let loaded = WordCloudBench.loadSample()
+        sample = loaded.terms
+        sampleIsFromUserCorpus = loaded.isFromUserCorpus
+        words = stopListScope.words
+    }
+
+    private func add() {
+        switch stopListScope {
+        case .allLenses:
+            WordCloudSettings.addGlobalStopword(newWord)
+        case .lens(let lens):
+            WordCloudSettings.addLensStopword(newWord, lens: lens)
+        }
+        newWord = ""
+        words = stopListScope.words
+    }
+
+    private func remove(_ word: String) {
+        switch stopListScope {
+        case .allLenses:
+            WordCloudSettings.removeGlobalStopword(word)
+        case .lens(let lens):
+            WordCloudSettings.removeLensStopword(word, lens: lens)
+        }
+        words = stopListScope.words
+    }
+
+    // MARK: - StopListScope
+
+    /// Which stop list the single editor is editing.
+    enum StopListScope: Hashable {
+        /// The global list, applied to every cloud.
+        case allLenses
+        /// One lens's own list.
+        case lens(WordCloudLens)
+
+        /// The lens this scope names, or `nil` for the global list.
+        var lens: WordCloudLens? {
+            if case .lens(let lens) = self { return lens }
+            return nil
+        }
+
+        /// The words currently stored at this scope.
+        var words: [String] {
+            switch self {
+            case .allLenses:      return WordCloudSettings.globalStopwords
+            case .lens(let lens): return WordCloudSettings.lensStopwords(lens)
+            }
+        }
+
+        /// What hiding a word at this scope costs.
+        var footer: String {
+            switch self {
+            case .allLenses:
+                return String(localized: "settings.wordcloud.global.footer",
+                              defaultValue: "Words listed here are removed from every word cloud, on top of the built-in stop lists.")
+            case .lens:
+                return String(localized: "settings.wordcloud.lens.footer",
+                              defaultValue: "Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recogniser keeps mistaking) without affecting other lenses.")
+            }
+        }
+    }
+}
+
+// MARK: - SampleTermsRow
+
+/// The kept sample terms, sized by rank — the settings pane's miniature of a cloud.
+///
+/// Not a real `WordCloudLayout`: the pane is a form column a few hundred points wide, and a
+/// packed layout at that size would be illegible and would misrepresent what the cloud looks
+/// like at full size. A flowing row of rank-sized words carries the one thing the pane needs to
+/// show — which terms survive, and roughly how they rank — and reflows at any width.
+///
+/// Version history:
+///   1.0 — S-5b: initial implementation
+private struct SampleTermsRow: View {
+
+    /// The surviving terms, highest count first.
+    let terms: [TermCount]
+    /// The typeface the user has chosen for their clouds, so the sample looks like theirs.
+    let design: WordCloudFontDesign
+
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(Array(terms.enumerated()), id: \.element.id) { index, term in
+                Text(term.term)
+                    .font(.system(size: fontSize(forRank: index),
+                                  weight: index < 2 ? .semibold : .regular,
+                                  design: design.swiftUIDesign))
+                    .foregroundStyle(index < 3 ? Color.accentColor : Color.primary.opacity(0.75))
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    /// Ranks fall from 20pt to 11pt across the shown terms — enough spread to read as a cloud,
+    /// gentle enough that the last term is still legible.
+    private func fontSize(forRank rank: Int) -> CGFloat {
+        guard terms.count > 1 else { return 20 }
+        let t = CGFloat(rank) / CGFloat(terms.count - 1)
+        return 20 - (9 * t)
+    }
+}
+
+// MARK: - FlowLayout
+
+/// A minimal wrapping layout: lays children left to right, wrapping at the proposed width.
+///
+/// `SampleTermsRow` needs words of varying size to reflow inside a settings form whose width the
+/// user can change; no stock SwiftUI container does that.
+///
+/// Version history:
+///   1.0 — S-5b: initial implementation
+private struct FlowLayout: Layout {
+
+    /// Gap between items, horizontally and between rows.
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        let rows = arrange(subviews: subviews, in: width)
+        let height = rows.reduce(CGFloat.zero) { $0 + $1.height } +
+            spacing * CGFloat(max(0, rows.count - 1))
+        let widest = rows.map(\.width).max() ?? 0
+        return CGSize(width: min(width, max(widest, 0)), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize,
+                       subviews: Subviews, cache: inout ()) {
+        let rows = arrange(subviews: subviews, in: bounds.width)
+        var y = bounds.minY
+        for row in rows {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                // Clamp to the container: a single term wider than the row cannot be wrapped
+                // (it is one word with `lineLimit(1)`), so proposing its ideal width would draw
+                // it straight past the section's edge. Proposing the bound lets it ellipsize.
+                let width = min(size.width, bounds.width)
+                subviews[index].place(
+                    at: CGPoint(x: x, y: y + (row.height - size.height) / 2),
+                    proposal: ProposedViewSize(width: width, height: size.height))
+                x += width + spacing
+            }
+            y += row.height + spacing
+        }
+    }
+
+    private struct Row {
+        var indices: [Int] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+
+    private func arrange(subviews: Subviews, in width: CGFloat) -> [Row] {
+        var rows: [Row] = []
+        var current = Row()
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let needed = current.indices.isEmpty ? size.width : current.width + spacing + size.width
+            if needed > width, !current.indices.isEmpty {
+                rows.append(current)
+                current = Row()
+                current.indices = [index]
+                current.width = size.width
+                current.height = size.height
+            } else {
+                current.indices.append(index)
+                current.width = needed
+                current.height = max(current.height, size.height)
+            }
+        }
+        if !current.indices.isEmpty { rows.append(current) }
+        return rows
     }
 }
