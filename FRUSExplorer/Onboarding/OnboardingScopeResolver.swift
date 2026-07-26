@@ -66,9 +66,10 @@ enum OnboardingScopeChoice: String, CaseIterable, Equatable, Sendable {
 /// left alone rather than fixed in two places; retiring it is out of scope for this wave.
 ///
 /// Version history:
-///   1.0 — O-0: extracted from `OnboardingView` (`allVolumes`, `allSubseries`,
-///         `volumesBySubseries`, `startYear(from:)`, `canProceedFromScope`, and the scope
-///         switch inside `enqueueAndAdvance()`), plus the deterministic subseries tiebreak.
+///   1.0 — O-0: extracted from `OnboardingView` (`allVolumes` — which the view no longer
+///         keeps in any form — plus `allSubseries`, `volumesBySubseries`,
+///         `startYear(from:)`, `canProceedFromScope`, and the scope switch inside
+///         `enqueueAndAdvance()`), plus the deterministic subseries tiebreak.
 struct OnboardingScopeResolver: Equatable, Sendable {
 
     /// Manifest entries smaller than this are stubs, not volumes, and never offered.

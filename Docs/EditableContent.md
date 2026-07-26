@@ -103,10 +103,12 @@ FRUS Explorer is an independently-developed research tool and is not an official
 ### 2.1 Title and Body
 
 > **Corrected 2026-07-26 (Workstream O, O-0).** This section used to point at
-> `OnboardingIntroView.swift`, which was never instantiated anywhere in the app and has
-> been deleted. The subtitle recorded here — *"The Foreign Relations of the United States
-> series, searchable on your device."* — has therefore **never appeared on screen**;
-> editing it changed nothing. Below is what the Welcome step actually shows.
+> `OnboardingIntroView.swift`, which lost its last call site in Session 71 (`c031dabe`,
+> 2026-05-18) and has now been deleted. The subtitle recorded here — *"The Foreign
+> Relations of the United States series, searchable on your device."* — has **never
+> appeared on screen**: that wording only arrived on 2026-06-07 (`4429e786`), three weeks
+> after the view stopped rendering. Editing this section changed nothing. Below is what the
+> Welcome step actually shows.
 >
 > These three strings are raw `Text("…")` literals with **no localization keys**: the whole
 > of `OnboardingView.swift` predates the `String(localized:)` convention. Session O-4

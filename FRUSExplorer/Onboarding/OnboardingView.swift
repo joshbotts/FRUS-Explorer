@@ -385,8 +385,6 @@ struct OnboardingView: View {
         return OnboardingScopeResolver(manifestEntries: source)
     }
 
-    private var allVolumes: [VolumeManifestEntry] { scopeResolver.volumes }
-
     /// Subseries sorted newest-first by the leading four-digit year.
     private var allSubseries: [String] { scopeResolver.subseries }
 

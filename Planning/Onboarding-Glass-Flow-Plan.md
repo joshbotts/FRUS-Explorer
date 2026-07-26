@@ -249,9 +249,14 @@ main-thread work out of launch before anything is layered on top of it.
   `VolumeLevelTagStore`, whose parameterless `init()` stays for tests and previews.
 - ~763 KB of main-thread JSON leaves every cold launch — on the exact path the splash was
   meant to cover, which is why it lands before O-3 rather than after.
-- **Measured in O-0, and smaller than this plan first implied: 6.3 ms** (best of 7,
-  `JSONDecoder` over the shipped `manifest.json`, release-optimised, M-series Mac). So the
-  redundant decode costs ~6 ms on a Mac and plausibly 15–25 ms on an older iPhone — real,
+- **Measured in O-0, and smaller than this plan first implied: 7.8 ms** (best of 9,
+  `JSONDecoder().decode([VolumeManifestEntry].self, …)` over the shipped 763 KB / 552-entry
+  `manifest.json`, release-optimised, M-series Mac). A first pass measured 6.3 ms against a
+  proxy struct with a *synthesized* decoder and was 25% low: `VolumeManifestEntry` has a
+  custom `init(from:)` (`ManifestModels.swift:87–108`) that re-joins whitespace in every
+  title and de-duplicates `tags` with a linear `contains` per tag — quadratic on an entry
+  carrying up to 154 tags. Measure the type the app actually decodes, not one shaped like
+  it. So the redundant decode costs ~8 ms on a Mac and plausibly 20–32 ms on an older iPhone — real,
   and free to remove, but **not** the reason cold launch feels slow. The plan already
   suspected the true dominant term (`makeFRUSContainer()` on a large synced store); the
   owner's part-(i) Instruments trace is what settles it. If that trace shows the container
