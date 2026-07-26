@@ -229,9 +229,31 @@ actor SyncDiagnosticsLog {
 
     // MARK: Private
 
-    /// One-line environment header for the readable dump.
+    /// Environment header for the readable dump: build/OS/device, then the CloudKit schema-deploy
+    /// state (Wave R-7).
+    ///
+    /// The schema line is here rather than in a log row because #488 was reported by pasting
+    /// exactly this dump into an issue — a sync failure caused by an undeployed schema was
+    /// therefore described by an export that could not mention the schema. It costs nothing at
+    /// launch (the header is built only when someone reads or exports the log) and adds no rows,
+    /// so the 200-entry ring still holds 200 sync events.
+    ///
+    /// Only type and field *names this app defines* appear, so the redaction allow-list is intact.
     private func envHeader() -> String {
-        "FRUS Explorer \(Self.appVersion) (\(Self.appBuild)) · \(Self.osVersion) · \(Self.deviceModel)"
+        let head = "FRUS Explorer \(Self.appVersion) (\(Self.appBuild)) · "
+            + "\(Self.osVersion) · \(Self.deviceModel)"
+        guard !CloudKitSchemaInventory.isProductionSchemaCurrent else {
+            return head + "\n"
+                + "CloudKit schema: deployed through build "
+                + "\(CloudKitSchemaInventory.deployedThroughBuild) "
+                + "(\(CloudKitSchemaInventory.deployedOn)) — current for this build"
+        }
+        return head + "\n"
+            + "CloudKit schema: ⚠️ NEWER THAN DEPLOYED — last deploy build "
+            + "\(CloudKitSchemaInventory.deployedThroughBuild) "
+            + "(\(CloudKitSchemaInventory.deployedOn))\n"
+            + "  awaiting deploy: "
+            + CloudKitSchemaInventory.identifiersAwaitingDeploy.joined(separator: ", ")
     }
 
     /// Loads the persisted rows on first access, caching them in memory thereafter.

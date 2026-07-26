@@ -151,6 +151,27 @@ Conventions with **no** automated check — reviewer's responsibility:
 - **Doc comments**: every `public`/`internal` type, function, and property requires a doc comment. Nothing verifies that they are *accurate*, either — verify doc claims about runtime behaviour by running the app, not by reading neighbouring comments or commit messages.
 - **Debug logging**: use `#if DEBUG` blocks with `print("[TypeName] ...")` prefix.
 
+## CloudKit schema-deploy gate (Wave R-7)
+
+Adding or removing a `@Model` in `frusModelTypes` — **or a stored property on one** — changes the
+CloudKit schema and needs a Production deploy before the build ships. #488 is what happens when it
+does not: build 35 added four identifiers, Production was never promoted, and export failed for
+every user.
+
+`FRUSExplorerTests/CloudKitSchemaInventoryTests` fails the suite the moment the mirrored set
+changes, and its failure message carries the whole checklist plus the literal to paste. Follow it;
+do not hand-edit `CloudKitSchemaInventory.installedIdentifiers` to make the red go away. In short:
+
+1. Paste the printed list over `installedIdentifiers`.
+2. Add the new identifiers to `identifiersAwaitingDeploy` (the app then reports it at launch and
+   in Settings ▸ Data & Recovery ▸ iCloud Schema).
+3. Owner step: exercise the new type/field once on a Development build with iCloud signed in, then
+   CloudKit Dashboard → Schema → **Deploy Schema Changes to Production**.
+4. Clear `identifiersAwaitingDeploy`, re-run the suite, paste the count + digest it prints, and
+   update `deployedThroughBuild` / `deployedOn`.
+
+Only step 3 is outside the repo, and only step 3 cannot be verified by a test.
+
 ## Planning & Specification
 
 - `Planning/FRUS-Explorer-Specification.md` — complete design spec (1800+ lines); consult before adding features.
