@@ -196,6 +196,8 @@ struct SettingsView: View {
             NavigationLink { AboutView() } label: { paneLabel(pane) }
         case .notes:
             NavigationLink { NotesSettingsView() } label: { paneLabel(pane) }
+        case .researchSessions:
+            NavigationLink { ResearchSessionsView() } label: { paneLabel(pane) }
         // macOS-only pane (see `SettingsPane.platforms`): iOS renders sync as the inline section
         // at the top of this root, not as a pushed destination.
         case .sync:
