@@ -1006,7 +1006,7 @@ Charts how often that term appears across the whole corpus in Corpus Analytics; 
 
 #### Filtering footer — classification markings
 
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | filteringSection footer | lines: 76–77 | key: settings.wordcloud.markings.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | filteringSection footer | lines: 173–174 | key: settings.wordcloud.markings.footer | shared: iOS+macOS (single edit point) -->
 
 Classification markings include terms like “Top Secret”, “Confidential”, precedence words (“Priority”, “Immediate”), and month names — document chrome that otherwise leaks into clouds, especially named-entity lenses.
 
@@ -1014,35 +1014,69 @@ Classification markings include terms like “Top Secret”, “Confidential”,
 
 #### Thresholds footer
 
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | thresholdsSection footer | lines: 98–99 | key: settings.wordcloud.thresholds.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | thresholdsSection footer | lines: 203–204 | key: settings.wordcloud.thresholds.footer | shared: iOS+macOS (single edit point) -->
 
-Drop terms shorter than the minimum length or appearing fewer than the minimum number of times. Raising either makes a sparser, higher-signal cloud.
+Drop terms shorter than the minimum length or appearing fewer than the minimum number of times. Raising either makes a sparser, higher-signal cloud. Occurrences are counted across the whole scope before its top terms are chosen, so raising that one may not change the sample above — it thins the long tail you never see.
 
 <!-- END SOURCE: settings.wordcloud.thresholds.footer -->
 
 #### Appearance footer
 
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | appearanceSection footer | lines: 124–125 | key: settings.wordcloud.appearance.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | appearanceSection footer | lines: 229–230 | key: settings.wordcloud.appearance.footer | shared: iOS+macOS (single edit point) -->
 
 Choose the typeface the cloud is drawn in and how tightly its words pack together. Compact fits more terms; airy spaces them out for legibility. These settings apply on this device only.
 
 <!-- END SOURCE: settings.wordcloud.appearance.footer -->
 
-#### Global hidden-words footer
+#### Hidden-words footer — "Every cloud" scope
 
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | globalStopwordsSection footer | lines: 150–151 | key: settings.wordcloud.global.footer | shared: iOS+macOS (single edit point) -->
+<!-- S-5b merged the two hidden-words sections into one editor with an "Applies to" scope picker; these two footers are now the two branches of `StopListScope.footer`, not two separate sections. -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | StopListScope.footer (.allLenses) | lines: 352–353 | key: settings.wordcloud.global.footer | shared: iOS+macOS (single edit point) -->
 
 Words listed here are removed from every word cloud, on top of the built-in stop lists.
 
 <!-- END SOURCE: settings.wordcloud.global.footer -->
 
-#### Per-lens hidden-words footer
+#### Hidden-words footer — single-lens scope
 
-<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | lensStopwordsSection footer | lines: 182–183 | key: settings.wordcloud.lens.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | StopListScope.footer (.lens) | lines: 355–356 | key: settings.wordcloud.lens.footer | shared: iOS+macOS (single edit point) -->
 
 Words hidden only when the selected lens is active — useful for trimming a recurring false positive (for example, a place the recogniser keeps mistaking) without affecting other lenses.
 
 <!-- END SOURCE: settings.wordcloud.lens.footer -->
+
+#### Performance footer — background precompute
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | performanceSection footer | lines: 152–153 | key: settings.wordcloud.precompute.footer | shared: iOS+macOS (single edit point) -->
+
+When enabled, the most demanding clouds — the whole corpus, a subseries — are computed in the background after indexing, so they open instantly. Runs only while the device is idle.
+
+<!-- END SOURCE: settings.wordcloud.precompute.footer -->
+
+#### Sample footer — where the preview's terms come from
+
+<!-- S-5b. Two branches of `WordCloudBench.provenance`, chosen by whether a cached cloud was found. -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudBench.swift | WordCloudBench.provenance | key: settings.wordcloud.bench.source.cached | shared: iOS+macOS (single edit point) -->
+
+Sampled from your most recent word cloud.
+
+<!-- END SOURCE: settings.wordcloud.bench.source.cached -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudBench.swift | WordCloudBench.provenance | key: settings.wordcloud.bench.source.canned | shared: iOS+macOS (single edit point) -->
+
+A stand-in sample — open a corpus or subseries cloud and this becomes your own terms.
+
+<!-- END SOURCE: settings.wordcloud.bench.source.canned -->
+
+#### Sample empty state — the settings keep nothing
+
+<!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | sampleSection | lines: 116–117 | key: settings.wordcloud.sample.none | shared: iOS+macOS (single edit point) -->
+
+These settings keep nothing from the sample. Lower a threshold or turn a filter off.
+
+<!-- END SOURCE: settings.wordcloud.sample.none -->
 
 ---
 
@@ -1425,35 +1459,37 @@ Lens: the cloud is filtered to the "%@" word list, so this is a subset of the sc
 ### iCloud Sync, Settings Sync & Privacy
 
 #### Settings-sync toggle detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.body / iCloud section | lines: 97–98 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
+<!-- S-5b made the "single edit point" claim on the three keys below actually true: the macOS Sync pane used to hardcode its own near-identical copy (and had drifted — "shares those settings" vs "shares the settings above"). Both platforms now render `SyncSettingsSection`. -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1419–1420 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
 
 Word-cloud filters & stop lists, citation style, default document mode, and research logging.
 
 <!-- END SOURCE: settings.sync.toggle.detail -->
 
 #### Settings-sync unavailable notice
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.body / iCloud section | lines: 108–109 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1431–1432 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
 
 Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.
 
 <!-- END SOURCE: settings.sync.unavailable -->
 
 #### iCloud Sync section footer
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.body / iCloud section footer | lines: 116–117 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.footerText | lines: 1441–1442 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
 
 When on, this device shares the settings above with your other devices that also have this enabled. Turning it on adopts your existing iCloud settings; leave it off to keep this device's settings separate.
 
 <!-- END SOURCE: settings.sync.footer -->
 
 #### iCloud unavailable (Local Only) detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 278–279 | key: settings.icloud.localOnly.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 223–224 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.
 
 <!-- END SOURCE: settings.icloud.localOnly.detail -->
 
 #### iCloud zone-missing detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 351–352 | key: settings.icloud.zoneMissing.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 296–297 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or tap Reset iCloud Sync below.
 
@@ -1474,12 +1510,10 @@ Checks downloaded volumes against the FRUS repository for upstream corrections. 
 
 ### Storage & Backup
 
-#### Word-cloud precompute footer (iOS only)
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | StorageManagementView.body / word-cloud precompute section footer | lines: 1180–1181 | key: settings.storage.wordcloud.footer | iOS only (single edit point) -->
-
-When enabled, the most demanding word clouds are computed in the background after indexing, so they open instantly. Runs only while the device is idle.
-
-<!-- END SOURCE: settings.storage.wordcloud.footer -->
+<!-- The former "Word-cloud precompute footer (iOS only)" entry is gone: S-2a moved that control
+     out of Storage and into the Word Cloud pane, where it is now `settings.wordcloud.precompute.footer`
+     (see "Word Cloud Settings — section footers" above). The key `settings.storage.wordcloud.footer`
+     no longer exists anywhere in the source. -->
 
 #### Corpus-size reference footer
 <!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | StorageManagementView.body / Total Storage Used section footer | lines: 1190–1191 | key: settings.storage.aggregate.footer | shared: iOS+macOS (single edit point) -->
