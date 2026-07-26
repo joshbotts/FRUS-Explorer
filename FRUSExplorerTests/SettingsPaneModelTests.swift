@@ -88,11 +88,28 @@ struct SettingsPaneModelTests {
 
     /// The asymmetries are deliberate and documented; pinning them means a future change to one
     /// renderer has to change the model — which is the whole point.
+    ///
+    /// Notes used to be pinned here as macOS-only and no longer is. That assertion did its job:
+    /// it was the speed bump that made promoting the pane a decision rather than an accident.
+    /// The decision was taken because the pane owns the Log Research Sessions switch, which iOS
+    /// had no control for at all.
     @Test("Platform-specific panes stay platform-specific")
     func platformAsymmetry() {
-        #expect(SettingsPane.notes.platforms == [.macOS])
         #expect(SettingsPane.sync.platforms == [.macOS])
+        #expect(SettingsPane.notes.platforms == [.iOS, .macOS])
         #expect(SettingsPane.display.platforms == [.iOS, .macOS])
+    }
+
+    /// The reason Notes is on iOS at all. A reader who wants to stop the app recording their
+    /// searches will not think to look under "Notes", so the pane has to answer for the words
+    /// they actually type.
+    @Test("Notes answers for the research-session switch it owns")
+    func notesCarriesTheLoggingSwitch() {
+        for query in ["log research sessions", "logging", "sessions", "history",
+                      "privacy", "recording", "trail"] {
+            #expect(SettingsPane.notes.matches(query), "no match for \(query)")
+        }
+        #expect(SettingsPane.notes.platforms.contains(.iOS))
     }
 
     /// S-2 merged Storage + Add Volumes + Sideload into one destination on each platform. The

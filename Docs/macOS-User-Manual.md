@@ -1093,7 +1093,7 @@ Open Settings with **⌘,** or via the **FRUS Explorer → Settings** menu.
 | **Projects** | Create, rename, set defaults, delete projects |
 | **Tags** | Rename, merge, delete user tags |
 | **Volume Scopes** | Create, edit, and delete your named volume sets (Section 5.8) — **New Scope** opens the editor with its subseries-grouped volume picker and **Add Volumes By…** facets; each row shows live indexed coverage, Edit/Delete actions, and a Word Cloud button. Scopes sync via iCloud |
-| **Notes** | View notes filtered by project or tag; logging preferences |
+| **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag, and text filters; plus the **Log Research Sessions** switch. Identical to the iOS pane |
 | **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters), your custom global + per-lens hidden-word lists, and an **Appearance** section setting the cloud's font (Rounded / Default / Serif / Monospaced) and density (Compact / Balanced / Airy) — device-local, not synced (see Section 13.4) |
 
 ### Corpus

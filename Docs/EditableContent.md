@@ -1481,6 +1481,20 @@ When on, this device shares the settings above with your other devices that also
 
 <!-- END SOURCE: settings.sync.footer -->
 
+### Research Sessions
+
+<!-- Shared surface: NotesSettingsView is one view rendered on both platforms (Settings ▸ Research ▸ Notes). Single edit point. -->
+
+#### Research-session logging footer
+
+<!-- The sentence this replaced ("Records which documents you open and when, so History and Project Leads can show your trail") was false: History reads ReadingHistoryEntry/SearchHistoryEntry, Project Leads reads collections, notes and tags, and neither changes when this is off. The replacement states what is recorded, where it goes, and that nothing consumes it yet. -->
+
+<!-- SOURCE: FRUSExplorer/Settings/NotesSettingsView.swift | NotesSettingsView.researchSessionsSection footer | key: settings.notes.logging.footer | shared: iOS+macOS (single edit point) -->
+
+Records the documents you open and the text of the searches you run, grouped into sessions. Kept on this device and, if iCloud sync is on, in your private iCloud database. No part of the app reads this log yet — it is groundwork for a future research-trail view. Turning it off stops new recording; sessions already recorded are kept.
+
+<!-- END SOURCE: settings.notes.logging.footer -->
+
 #### iCloud unavailable (Local Only) detail
 <!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 223–224 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 

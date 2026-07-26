@@ -169,8 +169,6 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     /// asymmetries are all in Research and System.
     var platforms: Set<SettingsPlatform> {
         switch self {
-        // iOS has no standalone Notes pane; its note settings live with the research surfaces.
-        case .notes:         return [.macOS]
         // iOS presents iCloud sync as an inline toggle section, not a pushed destination.
         case .sync:          return [.macOS]
         default:             return [.iOS, .macOS]
@@ -194,7 +192,12 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .scopes:          return ["volume scope", "custom scope", "my volume scopes", "subset"]
         case .summarization:   return ["ai", "apple intelligence", "prompts", "summaries", "batch", "background"]
         case .wordCloud:       return ["stop words", "stopwords", "hidden words", "lens", "density", "typeface", "font"]
-        case .notes:           return ["research notes", "annotations"]
+        // "logging"/"sessions"/"history" are here because this pane owns the Log Research
+        // Sessions switch, which is the thing a reader is most likely to come hunting for and
+        // the least discoverable from the pane's name.
+        case .notes:           return ["research notes", "annotations", "log research sessions",
+                                       "logging", "sessions", "session log", "history", "privacy",
+                                       "recording", "trail"]
         case .display:         return ["text size", "font", "citations", "reading mode", "chart colors", "appearance"]
         case .search:          return ["scope", "snippet", "editorial notes", "defaults", "filters"]
         case .sync:            return ["icloud", "cloudkit", "devices"]
