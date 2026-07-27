@@ -280,32 +280,6 @@ struct MainTabView: View {
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
-
-    /// (c) — the word cloud behind the indexing banners.
-    ///
-    /// This is the wait the design hand-off's composition was re-aimed at: minutes long,
-    /// and bare today. Scoped to the volumes currently landing, so it re-aggregates as the
-    /// queue drains.
-    ///
-    /// **Backdrop, never a rival surface.** `IndexingEducationView` is what actually fills
-    /// this wait with something to read; the cloud sits behind the banner that opens it and
-    /// takes the quieter of the hand-off's two dim factors, so it can never compete with
-    /// content for attention.
-    @ViewBuilder
-    private var indexingCloudBackdrop: some View {
-        if CloudSurfaceArbiter.resolve(appState: appState) == .indexingBackdrop {
-            WordCloudBackdropView(
-                scope: CloudSurfaceArbiter.indexingScope(
-                    queuedVolumeIds: appState.downloadQueue,
-                    manifest: appState.manifestStore
-                ),
-                dim: FRUSTheme.cloudDimAddVolumes,
-                showsChip: false
-            )
-            .allowsHitTesting(false)
-            .transition(.opacity)
-        }
-    }
 }
 
 // MARK: - BrowserTabView

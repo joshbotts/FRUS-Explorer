@@ -609,9 +609,6 @@ struct OnboardingView: View {
 
     // MARK: - Helpers
 
-    private var hasIndexedVolume: Bool {
-        !appState.downloadQueue.isEmpty
-    }
 }
 
 // MARK: - OnboardingStep

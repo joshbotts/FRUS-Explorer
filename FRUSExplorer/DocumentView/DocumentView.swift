@@ -822,10 +822,6 @@ struct DocumentView: View {
 
     // MARK: - Tag Helpers
 
-    private var appliedUserTags: [UserTag] {
-        let assignedIds = Set(documentTagAssignments.map(\.tagId))
-        return allUserTags.filter { assignedIds.contains($0.id) }
-    }
 
     private func removeUserTag(_ tag: UserTag) {
         let vId = entry.volumeId
