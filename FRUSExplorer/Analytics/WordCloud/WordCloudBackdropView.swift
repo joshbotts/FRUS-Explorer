@@ -40,6 +40,8 @@ import SwiftUI
 ///   1.0 — O-2: initial implementation
 ///   1.1 — layout cache keyed on a quantised box and bounded, after an on-device probe
 ///          showed the strip's height animation re-running the packer inside `body`
+///   1.2 — P-1: opt-in `drift` renders the same words as particles in a Canvas
+///          (`WordCloudDriftCanvas`); the static Text path is unchanged
 struct WordCloudBackdropView: View {
 
     /// Which scope's vocabulary to show.
@@ -58,6 +60,16 @@ struct WordCloudBackdropView: View {
     /// Reports each lens change, so a host can label a chip it owns.
     var onLensChange: ((WordCloudLens) -> Void)?
 
+    /// Draw the words as drifting particles in a `Canvas` instead of static `Text` views.
+    ///
+    /// Opt-in per surface rather than a wholesale replacement, for two reasons. The first
+    /// is that it makes the A/B one flag: the same build, the same device, the same
+    /// vocabulary, one variable changed — which is the only way the `draw` number in the
+    /// frame probe means anything. The second is blast radius: the splash and the onboarding
+    /// dock are first-run surfaces whose composition has already been reviewed on device,
+    /// and there is no reason to re-open them to answer a question about the indexing strip.
+    var drift: Bool = false
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lensIndex = 0
     @State private var layouts: [LayoutKey: [PlacedWord]] = [:]
@@ -67,9 +79,16 @@ struct WordCloudBackdropView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let resolved = resolve(size: proxy.size)
+            // The static path's resolve is only needed for the words it draws and for the
+            // chip's provenance. In drift mode without a chip it is pure duplicate work.
+            let resolved = (drift && !showsChip) ? nil : resolve(size: proxy.size)
             ZStack(alignment: .topLeading) {
-                if let resolved {
+                if drift {
+                    if let snapshot = driftSnapshot(size: proxy.size) {
+                        WordCloudDriftCanvas(snapshot: snapshot, dim: dim,
+                                             reduceMotion: reduceMotion)
+                    }
+                } else if let resolved {
                     ForEach(Array(resolved.words.enumerated()), id: \.element.id) { rank, word in
                         Text(word.term)
                             .font(.system(size: word.fontSize, weight: .semibold, design: .serif))
@@ -80,7 +99,8 @@ struct WordCloudBackdropView: View {
                     }
                 }
             }
-            .opacity(dim)
+            // The drift canvas applies `dim` per particle, so it must not be applied twice.
+            .opacity(drift ? 1 : dim)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
             .overlay(alignment: .topLeading) {
@@ -99,7 +119,7 @@ struct WordCloudBackdropView: View {
                         .padding(.top, 64)
                 }
             }
-            .animation(crossfade, value: lensIndex)
+            .animation(drift ? nil : crossfade, value: lensIndex)
             .background(alignment: .center) { cadenceDriver }
             // Inert unless FRUS_FRAME_PROBE=1. The backdrop's frame cost is what gates the
             // drift work, and this is where it is measured.
@@ -139,6 +159,31 @@ struct WordCloudBackdropView: View {
         let height: Int
         let lens: WordCloudLens
         let scopeKey: String
+        /// The exclusion rects, quantised. **Load-bearing, and it was missing.**
+        ///
+        /// `exclusionZones` is fed straight into the packer but was not part of the cache
+        /// key, so two different exclusion rects at the same quantised box returned the
+        /// same placement. Onboarding derives its zone from `measuredDockHeight`, and O-5
+        /// introduced that measurement precisely because a hardcoded guess left words
+        /// underneath a dock that had grown at large accessibility text sizes. The cache
+        /// silently handed back the pre-growth layout and re-created the bug the
+        /// measurement existed to fix — visible only at a text size nobody re-tests at.
+        ///
+        /// Predates the drift work; surfaced here because both renderers now build the key
+        /// through one function.
+        let exclusion: [Int]
+    }
+
+    /// Collapses exclusion rects onto the same 8 pt grid the box uses.
+    ///
+    /// Quantised for the same reason the box is: the dock's measured height changes by
+    /// fractions of a point as type settles, and an exact key would miss on every one of
+    /// them and re-run the packer inside `body`.
+    static func exclusionSignature(_ zones: [CGRect]) -> [Int] {
+        zones.flatMap { rect in
+            [Int((rect.minX / 8).rounded()), Int((rect.minY / 8).rounded()),
+             Int((rect.width / 8).rounded()), Int((rect.height / 8).rounded())]
+        }
     }
 
     private struct Resolved {
@@ -170,17 +215,72 @@ struct WordCloudBackdropView: View {
         // the one being drawn, so a bucket boundary can never push a word outside the frame.
         let box = Self.quantised(size)
         let key = LayoutKey(width: Int(box.width), height: Int(box.height),
-                            lens: lens, scopeKey: scopeKey)
+                            lens: lens, scopeKey: scopeKey,
+                            exclusion: Self.exclusionSignature(exclusionZones))
         if let cached = layouts[key] {
             return Resolved(words: cached, provenance: source.provenance, maxCount: maxCount, lens: lens)
         }
         // The packer is deterministic given its inputs, so the seed is implicit: the same
         // scope at the same size always lays out identically, which is what makes the cache
         // sound and the cloud stable across relaunches.
+        let placed = layout(for: lens, terms: source.terms, box: box)
+        return Resolved(words: placed, provenance: source.provenance, maxCount: maxCount, lens: lens)
+    }
+
+    /// Builds the drift renderer's immutable input: one packed, coloured field per lens.
+    ///
+    /// Runs in `body`, deliberately. Everything expensive or observable lives here —
+    /// `BundledCloudVectors.terms`, the packer (behind its cache), and the sentiment
+    /// polarity lookup, which is a linear scan of an 865-entry vocabulary per word. The
+    /// render closure then reads nothing but the returned value. That is the rule
+    /// `CrossReferenceGraphView` already records for its own canvas; at 120 Hz it is the
+    /// difference between ~21,000 string comparisons every 4.2 seconds and 2.6 million a
+    /// second.
+    ///
+    /// All four lenses are built, not just the visible one, so the canvas can cross-fade and
+    /// cycle without ever invalidating this body.
+    private func driftSnapshot(size: CGSize) -> WordCloudDriftCanvas.Snapshot? {
+        guard size.width > 40, size.height > 40 else { return nil }
+        let box = Self.quantised(size)
+        var layers: [WordCloudDriftCanvas.Snapshot.Layer] = []
+
+        for candidate in lenses {
+            guard let source = BundledCloudVectors.terms(forScope: scope, lens: candidate),
+                  let maxCount = source.terms.first?.count else { continue }
+            // An empty placement is KEPT, not skipped. The chip reads its lens from
+            // `lensIndex`, the canvas derives its layer from the same clock, and the two
+            // agree only while layer index == lens index. Dropping a lens here would shift
+            // every later index by one and the chip would start naming the wrong lens —
+            // the same class of defect as the O-2 chip bug, which took looking at the
+            // screen to find. A lens with no vectors at all is still skipped, because then
+            // there is nothing to name either.
+            let placed = layout(for: candidate, terms: source.terms, box: box)
+            let field = WordCloudDriftField(placed: placed, rankCeiling: Self.maxWords)
+            var colors: [String: Color] = [:]
+            var sizes: [String: CGFloat] = [:]
+            for word in placed {
+                colors[word.term] = color(for: word, lens: candidate, maxCount: maxCount)
+                // Resolved at the ceiling so the renderer only ever scales down — a symbol's
+                // glyph outlines are resolution-independent but its layout metrics are not.
+                sizes[word.term] = word.fontSize * WordCloudDriftField.maximumScale
+            }
+            layers.append(.init(lens: candidate, field: field,
+                                colors: colors, symbolFontSizes: sizes))
+        }
+        guard !layers.isEmpty else { return nil }
+        return .init(layers: layers, size: box)
+    }
+
+    /// The packer result for one lens at one box, through the same cache the static path uses.
+    private func layout(for candidate: WordCloudLens, terms: [TermCount], box: CGSize) -> [PlacedWord] {
+        let key = LayoutKey(width: Int(box.width), height: Int(box.height),
+                            lens: candidate, scopeKey: scopeKey,
+                            exclusion: Self.exclusionSignature(exclusionZones))
+        if let cached = layouts[key] { return cached }
         let placed = WordCloudLayout.place(
-            terms: source.terms,
+            terms: terms,
             in: box,
-            maxWords: 25,
+            maxWords: Self.maxWords,
             minFontSize: 12,
             maxFontSize: min(42, max(28, box.width / 12)),
             exclusionZones: exclusionZones,
@@ -188,14 +288,15 @@ struct WordCloudBackdropView: View {
             sizeExponent: FRUSTheme.cloudSizeExponent
         )
         Task { @MainActor in
-            // Bounded. With quantised keys a single host produces a handful of entries, but
-            // four lenses across several scopes and both orientations still adds up over a
-            // long session, and nothing here ever evicted.
             if layouts.count >= Self.layoutCacheLimit { layouts.removeAll() }
             layouts[key] = placed
         }
-        return Resolved(words: placed, provenance: source.provenance, maxCount: maxCount, lens: lens)
+        return placed
     }
+
+    /// Words the packer is asked for. Also the rank ceiling the depth model normalises by,
+    /// so depth means the same thing whether or not words were dropped for want of room.
+    static let maxWords = 25
 
     /// Snaps a size down to the layout grid.
     ///
@@ -221,15 +322,25 @@ struct WordCloudBackdropView: View {
     // MARK: - Appearance
 
     private func color(for word: PlacedWord, resolved: Resolved) -> Color {
-        let weight = Double(word.count) / Double(max(1, resolved.maxCount))
-        if lens == .sentiment {
-            switch BundledCloudVectors.polarity(of: word.term, inScope: scope, lens: lens) {
+        color(for: word, lens: resolved.lens, maxCount: resolved.maxCount)
+    }
+
+    /// The same rule, with the lens passed in rather than read off live `@State`.
+    ///
+    /// The original read `lens` — the computed property off `lensIndex` — while taking
+    /// `resolved.lens` as its other input. Equal within one body pass, but the drift
+    /// snapshot colours four lenses in a single pass, so the live value is wrong for three
+    /// of them.
+    private func color(for word: PlacedWord, lens candidate: WordCloudLens, maxCount: Int) -> Color {
+        let weight = Double(word.count) / Double(max(1, maxCount))
+        if candidate == .sentiment {
+            switch BundledCloudVectors.polarity(of: word.term, inScope: scope, lens: candidate) {
             case 1:  return FRUSTheme.cloudSentimentPositive
             case -1: return FRUSTheme.cloudSentimentNegative
             default: break
             }
         }
-        if weight > FRUSTheme.cloudAccentThreshold { return FRUSTheme.cloudAccent(for: lens) }
+        if weight > FRUSTheme.cloudAccentThreshold { return FRUSTheme.cloudAccent(for: candidate) }
         // Ink, deepening with weight — the hand-off's rgba(58,62,72, 0.35 + 0.5 × w).
         return Color.primary.opacity(0.35 + 0.5 * weight)
     }

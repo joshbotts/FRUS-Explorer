@@ -57,7 +57,8 @@ struct IndexingCloudStrip: ViewModifier {
                         WordCloudBackdropView(
                             scope: scope,
                             dim: FRUSTheme.cloudDimIndexingStrip,
-                            showsChip: false
+                            showsChip: false,
+                            drift: true
                         )
                         .allowsHitTesting(false)
                         .clipped()
