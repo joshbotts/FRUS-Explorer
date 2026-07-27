@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  iOS launch screen — the static half of option (a) in the Workstream O hand-off (1a).
+
+  This covers the pre-render window, which O-0's Time Profiler trace measured at ~158 ms of
+  FRUSExplorerApp.init() alone — 137 ms of it a synchronous SwiftData store open with
+  nothing in it to delete. No SwiftUI overlay can draw there, because it is before the first
+  frame; only a launch screen can, and until now this was `UILaunchScreen: {}` — blank white.
+
+  A launch screen runs NO code: no gradients, no SF Symbol tinting, no Dynamic Type. So the
+  icon tile is a pre-rendered vector PDF (LaunchAppTile), the colours come from the asset
+  catalog so light and dark both work, and the two labels use fixed system-font sizes taken
+  from the hand-off. Deliberately identity only — the animated word cloud belongs to
+  LaunchSplashView in O-3, which takes over once SwiftUI is running.
+
+  Keep this composition in step with LaunchSplashView's: the two are meant to read as one
+  moment, not as a screen replaced by a different screen.
+-->
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22504"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <scene sceneID="EHf-IW-A2E">
+            <objects>
+                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="16" translatesAutoresizingMaskIntoConstraints="NO" id="stk-01-aaa">
+                                <rect key="frame" x="36" y="352" width="321" height="149"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchAppTile" translatesAutoresizingMaskIntoConstraints="NO" id="img-01-aaa">
+                                        <rect key="frame" x="116.5" y="0.0" width="88" height="88"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="88" id="img-w-aaa"/>
+                                            <constraint firstAttribute="height" constant="88" id="img-h-aaa"/>
+                                        </constraints>
+                                    </imageView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="FRUS Explorer" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lbl-t-aaa">
+                                        <rect key="frame" x="105" y="104" width="111" height="26"/>
+                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="22"/>
+                                        <color key="textColor" name="LaunchTitle"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Foreign Relations of the United States · since 1861" textAlignment="center" lineBreakMode="wordWrap" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lbl-c-aaa">
+                                        <rect key="frame" x="0.0" y="138" width="321" height="16"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="13"/>
+                                        <color key="textColor" name="LaunchCaption"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                            </stackView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+                        <color key="backgroundColor" name="LaunchBackground"/>
+                        <constraints>
+                            <constraint firstItem="stk-01-aaa" firstAttribute="centerX" secondItem="6Tk-OE-BBY" secondAttribute="centerX" id="cst-cx-aaa"/>
+                            <constraint firstItem="stk-01-aaa" firstAttribute="centerY" secondItem="6Tk-OE-BBY" secondAttribute="centerY" id="cst-cy-aaa"/>
+                            <constraint firstItem="stk-01-aaa" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="36" id="cst-ld-aaa"/>
+                            <constraint firstAttribute="trailing" secondItem="stk-01-aaa" secondAttribute="trailing" constant="36" id="cst-tr-aaa"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="53" y="375"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="LaunchAppTile" width="88" height="88"/>
+        <namedColor name="LaunchBackground">
+            <color red="0.94899999999999995" green="0.94899999999999995" blue="0.95699999999999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="LaunchCaption">
+            <color red="0.0" green="0.0" blue="0.0" alpha="0.45000000000000001" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+        <namedColor name="LaunchTitle">
+            <color red="0.0" green="0.0" blue="0.0" alpha="0.90000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+    </resources>
+</document>

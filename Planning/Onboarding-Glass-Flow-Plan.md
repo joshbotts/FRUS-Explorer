@@ -476,9 +476,27 @@ Two surfaces, one arbiter.
 - First-launch handoff: splash → 4a is cloud-to-cloud. Carry the lens phase and seed
   across so it reads as one surface rather than two that happen to look alike.
 
-**Explicitly not built:** the iOS launch-screen half of option (a). The pre-render window
-is addressed by removing work (O-0-2), not by drawing over it; `UILaunchScreen: {}`
-(`project.yml:97`) stays as it is.
+**~~Explicitly not built:~~ BUILT — owner decision 2026-07-26, after the measurement below.**
+The iOS launch-screen half of option (a) ships as `FRUSExplorer/Resources/LaunchScreen.storyboard`:
+the 1a identity block (gradient app tile, wordmark, caption) on an asset-catalog ground
+with light and dark variants, wired through `UILaunchStoryboardName` in `project.yml`.
+`UILaunchScreen: {}` is **removed**, not left alongside — iOS 14+ prefers the dictionary
+when both are present, which would silently ignore the storyboard.
+
+Constraints that shaped it, all inherent to launch screens: no code runs, so the gradient
+is a pre-rendered vector PDF rather than a drawn layer and the glyph is baked into it
+rather than tinted at runtime; no Dynamic Type; no localization. It is identity only — the
+animated cloud belongs to `LaunchSplashView` in O-3, which takes over once SwiftUI is up.
+**Keep the two compositions in step**: they are meant to read as one moment, which is the
+whole argument for option (a) having two halves. macOS has no launch-screen equivalent and
+is unchanged.
+
+One trap worth recording: the macOS target globs the same `FRUSExplorer/` directory, and
+`ibtool --target-device mac` **hard-errors** on an iOS storyboard rather than skipping it,
+so the file is excluded in the macOS target's `sources` — omitting that exclusion breaks
+the macOS build outright.
+
+<details><summary>The decision as it stood before it was made</summary>
 
 > ⚠️ **This rationale did not survive measurement — owner decision needed before O-3.**
 > O-0's trace puts `makeFRUSContainer()` at 137 ms of a 158 ms `FRUSExplorerApp.init()`,
@@ -503,6 +521,8 @@ is addressed by removing work (O-0-2), not by drawing over it; `UILaunchScreen: 
 > the gap is now known to be real and irreducible — but it reopens a question the owner
 > already answered once, so it is flagged rather than folded in. macOS has no launch-screen
 > equivalent and is unaffected either way.
+
+</details>
 - **UI-test bypass**: the splash must not appear under `FRUS_UI_TEST_MODE`, or every
   existing UI test's first element lookup races it. Same env check as
   `ContentView.swift:53`.
