@@ -54,12 +54,37 @@ public final class VolumeLevelTagStore {
 
     // MARK: - Initialization
 
+    /// Loads both the taxonomy and the manifest from the bundle.
+    ///
+    /// Kept for tests and previews, which want a store without arranging a `ManifestStore`
+    /// first. **`AppState` uses ``init(bundledManifestEntries:)`` instead** — see there for
+    /// why decoding `manifest.json` here as well is worth avoiding.
     public init() {
         entries = Self.loadBundledTaxonomy()
         let manifest = Self.loadBundledManifest()
         volumesByTag = Self.buildVolumesByTag(from: manifest)
         #if DEBUG
         print("[FRUSExplorer] VolumeLevelTagStore initialised: \(entries.count) tags, \(manifest.count) volumes.")
+        #endif
+    }
+
+    /// Loads the taxonomy from the bundle, but takes the manifest already decoded.
+    ///
+    /// `volumesByTag` needs nothing from the manifest but each entry's `volumeId` and
+    /// `tags`, and `ManifestStore` has already decoded exactly that. Before O-0-2 both
+    /// stores decoded `manifest.json` independently on `AppState`'s synchronous
+    /// pre-render path — 763 KB and ~8 ms of duplicated work on every cold launch, and,
+    /// more durably, two derived structures that could disagree if the file were ever
+    /// swapped between the two reads.
+    ///
+    /// The saving is small in launch terms: O-0's Time Profiler trace put
+    /// `makeFRUSContainer()` at 137 ms of a 158 ms `FRUSExplorerApp.init()`, so this is
+    /// ~5% of app init. One decode, one source of truth is the reason to prefer it.
+    init(bundledManifestEntries: [VolumeManifestEntry]) {
+        entries = Self.loadBundledTaxonomy()
+        volumesByTag = Self.buildVolumesByTag(from: bundledManifestEntries)
+        #if DEBUG
+        print("[FRUSExplorer] VolumeLevelTagStore initialised: \(entries.count) tags, \(bundledManifestEntries.count) volumes (manifest shared, not re-decoded).")
         #endif
     }
 

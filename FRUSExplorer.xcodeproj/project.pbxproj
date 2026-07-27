@@ -638,6 +638,7 @@
 		DA08A8C0BF8FE6E727A1DF46 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */; };
 		DA5CCD95653649CA642C6D7E /* RankingChartLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E84CC1816949B7BA8D1BF8D /* RankingChartLabels.swift */; };
 		DA6B539FB1A58D8F6DF50C04 /* CollectionGeneratedBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */; };
+		DA78884CE3616F12423237D8 /* SharedManifestDecodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59A2CFAD60CE319848BC6BA /* SharedManifestDecodeTests.swift */; };
 		DA9000E2612242921B11A749 /* BrokenRefExplanationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81C4772A87DD472F9B4BB3F /* BrokenRefExplanationSheet.swift */; };
 		DAC8121E5DC139C648C6EEA3 /* CentralFilesClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C3C5368784539EAAB2C4D5 /* CentralFilesClassifierTests.swift */; };
 		DAEB1497C60D24BF13153813 /* VolumeSubjectProfilesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE376BB484CCD0F72B4BE84D /* VolumeSubjectProfilesTests.swift */; };
@@ -1214,6 +1215,7 @@
 		E4B96612540EB50673701274 /* DecimalFileSegmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalFileSegmentTests.swift; sourceTree = "<group>"; };
 		E50B284089B05AB64EEAB04B /* SeriesScopeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesScopeBar.swift; sourceTree = "<group>"; };
 		E51A626491C155C769DF2F17 /* DocumentWindowID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentWindowID.swift; sourceTree = "<group>"; };
+		E59A2CFAD60CE319848BC6BA /* SharedManifestDecodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedManifestDecodeTests.swift; sourceTree = "<group>"; };
 		E62D6B16BC80A92DB71B8F3D /* IndexingSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingSummaryCard.swift; sourceTree = "<group>"; };
 		E66DF50A2864E16436FAB665 /* CloudKitErrorInspectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitErrorInspectorTests.swift; sourceTree = "<group>"; };
 		E7173CE609A9BBD12A098CB4 /* CrossReferenceStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceStatsTests.swift; sourceTree = "<group>"; };
@@ -1641,6 +1643,7 @@
 				C3A8477AB4239575B61ACC61 /* SettingsPaneModelTests.swift */,
 				32440919C109648E8B09B0A4 /* SettingsSyncTests.swift */,
 				EF2FEA0287FE0753D0A87291 /* SettingsTests.swift */,
+				E59A2CFAD60CE319848BC6BA /* SharedManifestDecodeTests.swift */,
 				ED7F3E8CAF5794488BA714FB /* SourceExplorerTests.swift */,
 				73EA7A4B00A0BB70F8F7587F /* SourceProvenanceDataTests.swift */,
 				9D2B69CD9C8F98784E45944C /* StorageIndexViewTests.swift */,
@@ -2967,6 +2970,7 @@
 				AD3013180AA3377F3B999CB4 /* SettingsPaneModelTests.swift in Sources */,
 				BF3CD663B7A4DE5D6531BA22 /* SettingsSyncTests.swift in Sources */,
 				824B7511DCDA79B9F9653C55 /* SettingsTests.swift in Sources */,
+				DA78884CE3616F12423237D8 /* SharedManifestDecodeTests.swift in Sources */,
 				D4CE96EDC0C1E65328FF4C7A /* SourceExplorerTests.swift in Sources */,
 				03F4A7475B21C2D730BC7ADB /* SourceProvenanceDataTests.swift in Sources */,
 				D04DE425EC9CFE49011EF558 /* StorageIndexViewTests.swift in Sources */,
