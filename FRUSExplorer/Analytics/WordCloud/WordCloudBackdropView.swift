@@ -268,7 +268,17 @@ struct WordCloudBackdropView: View {
                                 colors: colors, symbolFontSizes: sizes))
         }
         guard !layers.isEmpty else { return nil }
-        return .init(layers: layers, size: box)
+        // Flattened here rather than in the ViewBuilder: (lens, term) is unique by
+        // construction, where a nested ForEach keyed on the bare term is not.
+        let symbols = layers.flatMap { layer in
+            layer.field.particles.map { particle in
+                WordCloudDriftCanvas.Snapshot.Symbol(
+                    key: .init(lens: layer.lens, term: particle.term),
+                    fontSize: layer.symbolFontSizes[particle.term] ?? particle.baseFontSize,
+                    color: layer.colors[particle.term] ?? .primary)
+            }
+        }
+        return .init(layers: layers, symbols: symbols, size: box)
     }
 
     /// The packer result for one lens at one box, through the same cache the static path uses.

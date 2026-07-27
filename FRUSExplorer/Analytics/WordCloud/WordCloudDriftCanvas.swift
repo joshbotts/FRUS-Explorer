@@ -81,8 +81,33 @@ struct WordCloudDriftCanvas: View {
         }
 
         let layers: [Layer]
+
+        /// Every symbol to declare, flattened across all lenses and keyed by (lens, term).
+        ///
+        /// **Flat, and that is the whole point.** This was a `ForEach` over layers wrapping a
+        /// `ForEach` over each layer's particles, whose identity is `Particle.id` — the bare
+        /// term. SwiftUI does not namespace a nested `ForEach`'s ids by the outer one, so any
+        /// term appearing in two lenses produced two children with the same id and `Canvas`
+        /// trapped:
+        ///
+        ///     SwiftUICore/Canvas.swift:635: Fatal error: child view IDs must be unique
+        ///
+        /// Not an edge case. **All 108 bundled core scopes** have terms shared between their
+        /// top-25 lens lists — "war", "peace", "treaty", "aid" are common to concepts,
+        /// sentiment and topics — so the crash fired on the first frame of every scope.
+        let symbols: [Symbol]
+
         /// The canvas the particles were packed for. A different size means a new snapshot.
         let size: CGSize
+
+        /// One declared symbol: a term, at one lens, with the colour and size it draws at.
+        struct Symbol: Identifiable, Equatable {
+            let key: WordCloudDriftField.SymbolKey
+            let fontSize: CGFloat
+            let color: Color
+            /// The composite key, so no two symbols can collide however the lenses overlap.
+            var id: WordCloudDriftField.SymbolKey { key }
+        }
 
         static func == (a: Snapshot, b: Snapshot) -> Bool {
             a.size == b.size && a.layers == b.layers
@@ -156,14 +181,14 @@ struct WordCloudDriftCanvasFrame: View {
     /// views, paid once.
     @ViewBuilder
     private var symbols: some View {
-        ForEach(snapshot.layers, id: \.lens) { layer in
-            ForEach(layer.field.particles) { particle in
-                Text(particle.term)
-                    .font(.system(size: layer.symbolFontSizes[particle.term] ?? particle.baseFontSize,
-                                  weight: .semibold, design: .serif))
-                    .foregroundStyle(layer.colors[particle.term] ?? .primary)
-                    .tag(WordCloudDriftField.SymbolKey(lens: layer.lens, term: particle.term))
-            }
+        // ONE ForEach over a pre-flattened, composite-keyed list. A nested pair here is what
+        // crashed: the inner ForEach identified children by the bare term, SwiftUI does not
+        // namespace those by the outer loop, and every scope shares terms between lenses.
+        ForEach(snapshot.symbols) { symbol in
+            Text(symbol.key.term)
+                .font(.system(size: symbol.fontSize, weight: .semibold, design: .serif))
+                .foregroundStyle(symbol.color)
+                .tag(symbol.key)
         }
     }
 
