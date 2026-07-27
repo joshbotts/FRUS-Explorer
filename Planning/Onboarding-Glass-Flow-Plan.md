@@ -74,7 +74,7 @@ The handoff's reassurance that these tests "should need only cosmetic updates" i
 and for the wrong reason: **the code being rewritten has no behavioural coverage at all.**
 O-0 adds it before O-4 touches anything.
 
-### 3. ~770 lines of the `Onboarding/` directory are dead
+### 3. ~727 lines of the `Onboarding/` directory are dead
 
 Never instantiated anywhere in the app or tests:
 
@@ -83,10 +83,19 @@ Never instantiated anywhere in the app or tests:
 | `DownloadScopePickerView.swift` | 325 | Referenced only by a comment in a tombstone |
 | `OnboardingProjectSetupView.swift` | 245 | Dead |
 | `OnboardingIntroView.swift` | 107 | Dead (mentioned in an `InAppBrowserView.swift:17` doc comment) |
-| `IndexingSetupWizardView.swift` | 43 | Dead |
 | `OnboardingVolumePickerView.swift` | 16 | Tombstone — "retained so the Xcode project continues to compile without a pbxproj edit" |
 | `OnboardingDownloadView.swift` | 17 | Tombstone |
 | `OnboardingPromptSetupView.swift` | 17 | Tombstone |
+
+> **Corrected during O-0.** This table listed a seventh file,
+> `IndexingSetupWizardView.swift` (43 lines). **It is live.** The file declares
+> `WhileIndexingSheet`, not `IndexingSetupWizardView` — the wizard was deleted in Session
+> 163 and the filename never followed — and `IndexingQueueBannerView.swift:101` presents it
+> on iOS. Deleting it broke the build immediately, which is the only reason the error was
+> cheap. Both this recon and its verification pass had checked each file for references to
+> *the type its filename names*; neither looked at the types the files actually declare.
+> O-0 renamed it `WhileIndexingSheet.swift` so the next audit cannot repeat the mistake.
+> The lesson generalises: **a filename is not an inventory of a file's contents.**
 
 The tombstones' stated reason expired when the project moved to XcodeGen directory globs.
 Two audit backlogs point at this dead code as if it were live — UI-Audit §A5 cites
@@ -210,9 +219,13 @@ approximations of it.
 main-thread work out of launch before anything is layered on top of it.
 
 **PR 1 — dead code, tests, measurement.**
-- Delete the seven dead files in finding 3 (~770 lines). Drop the `InAppBrowserView.swift:17`
-  reference to `OnboardingIntroView`; retire the UI-Audit §A5 and Dynamic-Type-Worklist rows
-  that point at them (a line in each doc, not a code change).
+- Delete the six dead files in finding 3 (~727 lines), and rename the seventh —
+  `IndexingSetupWizardView.swift` → `WhileIndexingSheet.swift` — which is live, not dead.
+  Drop the `InAppBrowserView.swift:17` reference to `OnboardingIntroView`; retire the
+  UI-Audit §A5 and Dynamic-Type-Worklist rows that point at them (a line in each doc, not a
+  code change). `Docs/EditableContent.md` §2 needs correcting in the same PR rather than in
+  O-4: it documents the deleted `OnboardingIntroView`'s copy, which never rendered, and
+  §2.2's intro body loses its last reader with that file.
 - **Characterization tests for the live path.** Extract the pure logic currently inlined in
   `OnboardingView` — scope → volume set (`:373–395`), `canProceedFromScope` (`:397`),
   `startYear(from:)` (`:391`) — into a testable `OnboardingScopeResolver`, and pin:
@@ -234,8 +247,23 @@ main-thread work out of launch before anything is layered on top of it.
   and again by `ManifestStore.init()` (`ManifestStore.swift:177`). Decode once and share:
   `AppState` constructs `manifestStore` first and hands `bundledEntries` to
   `VolumeLevelTagStore`, whose parameterless `init()` stays for tests and previews.
-- ~782 KB of main-thread JSON leaves every cold launch — on the exact path the splash was
+- ~763 KB of main-thread JSON leaves every cold launch — on the exact path the splash was
   meant to cover, which is why it lands before O-3 rather than after.
+- **Measured in O-0, and smaller than this plan first implied: 7.8 ms** (best of 9,
+  `JSONDecoder().decode([VolumeManifestEntry].self, …)` over the shipped 763 KB / 552-entry
+  `manifest.json`, release-optimised, M-series Mac). A first pass measured 6.3 ms against a
+  proxy struct with a *synthesized* decoder and was 25% low: `VolumeManifestEntry` has a
+  custom `init(from:)` (`ManifestModels.swift:87–108`) that re-joins whitespace in every
+  title and de-duplicates `tags` with a linear `contains` per tag — quadratic on an entry
+  carrying up to 154 tags. Measure the type the app actually decodes, not one shaped like
+  it. So the redundant decode costs ~8 ms on a Mac and plausibly 20–32 ms on an older iPhone — real,
+  and free to remove, but **not** the reason cold launch feels slow. The plan already
+  suspected the true dominant term (`makeFRUSContainer()` on a large synced store); the
+  owner's part-(i) Instruments trace is what settles it. If that trace shows the container
+  dominating, PR 2 is still worth landing on its own merits — it deletes a duplicated
+  decode and an inconsistency hazard, two stores deriving from one source — but it should
+  not be sold as a launch fix, and O-3's "must not extend time-to-interactive" gate should
+  be measured against the container, not against this.
 - **Own PR, not a rider on a UI session:** this is a change to app startup ordering, and
   `AppState` init is the most load-bearing initialiser in the app.
 - Verify: re-run the (i) measurement and report the delta; `VolumeLevelTagStore`'s

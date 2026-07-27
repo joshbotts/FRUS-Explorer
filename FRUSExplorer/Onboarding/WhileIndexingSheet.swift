@@ -31,6 +31,9 @@ import SwiftUI
 ///   2.0 — Session 163: setup wizard removed; education-only, dismiss on completion
 ///   2.1 — Session 2026-07-04 (macOS UI audit B7): macOS presentation removed;
 ///          iOS-only from here on (view unchanged)
+///   2.2 — O-0: file renamed `IndexingSetupWizardView.swift` → `WhileIndexingSheet.swift`.
+///          The old name was the wizard Session 163 deleted, and it made this live,
+///          iOS-presented sheet read as dead code in two separate audits. View unchanged.
 struct WhileIndexingSheet: View {
 
     @Environment(\.dismiss) private var dismiss

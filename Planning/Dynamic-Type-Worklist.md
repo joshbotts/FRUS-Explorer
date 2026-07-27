@@ -27,7 +27,7 @@ Status key: **[x]** converted this pass · **[ ]** deferred · **LEAVE** decided
 |------|------:|------:|-----:|------------:|-------|
 | `Theme/FRUSTheme.swift` | 3 | 3 | — | — | `EditorialNoteBadge` + `FRUSTagChip` text → `captionFont`/`captionSmallFont`. Added the scalable tokens + convention comment. The 3 CGFloat constants (`captionSize`/`captionSmallSize`/`sectionLabelSize`) are **retained as layout metrics** for macOS chrome not yet migrated — they are not text sizes at their remaining call sites. |
 | `Onboarding/OnboardingView.swift` | 5 | 3 | — | 2 | Two 56pt hero glyphs → `@ScaledMetric heroGlyphSize` (cap AX3). StepDot `label` → `.caption2`. **LEAVE:** StepDot number (`12`) + checkmark (`11`) sit inside a fixed 28pt circle — scaling clips inside the badge; documented at the site. |
-| `Onboarding/OnboardingIntroView.swift` | 1 | 1 | — | — | 52pt hero glyph → `@ScaledMetric` (the pre-existing AX3 cap was **dead** against the former fixed size — now it actually scales). |
+| ~~`Onboarding/OnboardingIntroView.swift`~~ | 1 | 1 | — | — | 52pt hero glyph → `@ScaledMetric` (the pre-existing AX3 cap was **dead** against the former fixed size — now it actually scales). **Row retired 2026-07-26 (O-0): the file was never instantiated anywhere in the app and is deleted. The conversion was real work on unreachable code.** |
 | `App/IndexingBannerView.swift` | 6 | 4 | 2 | — | iOS-only. 4 caption texts + 2 paired status icons → `captionFont`/`captionSmallFont`. |
 | `App/IndexingQueueBannerView.swift` | 8 | 6 | 2 | — | iOS-only. All caption texts + paired icons (status, clock, chevron, learn-label) → scalable tokens. |
 | `App/IndexingContextCard.swift` | 1 | 1 | — | — | Series-context caption → `captionFont` (shared by the iOS banner + macOS detail). |
@@ -148,7 +148,8 @@ Three low-severity findings from the review of the pass:
    is a no-op for the glyph size: `@ScaledMetric` resolves its `CGFloat` from the *parent's*
    uncapped environment, and a `.system(size:)` font ignores the downstream environment the
    modifier changes — so glyphs grew past AX3 to their full AX5 size. Replaced the modifier
-   at all seven sites (OnboardingIntroView, OnboardingView ×2, SearchView, IndexingSummaryCard,
+   at all seven sites (OnboardingIntroView — since deleted as dead code in O-0, OnboardingView ×2,
+   SearchView, IndexingSummaryCard,
    DocumentView ×2) with a code clamp: `FRUSTheme.cappedGlyphSize(scaled, base: N)` =
    `min(scaled, base * 1.6)`, added to `FRUSTheme`. Glyphs still scale with Dynamic Type but
    now actually hold near the accessibility-large tier.

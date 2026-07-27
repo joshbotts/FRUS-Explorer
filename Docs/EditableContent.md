@@ -100,21 +100,43 @@ FRUS Explorer is an independently-developed research tool and is not an official
 
 ---
 
-### 2.1 Title and Subtitle
+### 2.1 Title and Body
 
-<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingIntroView.swift | lines: 59–60 | keys: onboarding.intro.title, onboarding.intro.subtitle -->
+> **Corrected 2026-07-26 (Workstream O, O-0).** This section used to point at
+> `OnboardingIntroView.swift`, which lost its last call site in Session 71 (`c031dabe`,
+> 2026-05-18) and has now been deleted. The subtitle recorded here — *"The Foreign
+> Relations of the United States series, searchable on your device."* — has **never
+> appeared on screen**: that wording only arrived on 2026-06-07 (`4429e786`), three weeks
+> after the view stopped rendering. Editing this section changed nothing. Below is what the
+> Welcome step actually shows.
+>
+> These three strings are raw `Text("…")` literals with **no localization keys**: the whole
+> of `OnboardingView.swift` predates the `String(localized:)` convention. Session O-4
+> rewrites this copy and introduces keys, at which point this section gains them.
+
+<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingView.swift | property: welcomeView | keys: none yet — raw literals, see O-4 -->
 
 **Title:** Welcome to FRUS Explorer
 
-**Subtitle:** The Foreign Relations of the United States series, searchable on your device.
+**Body:** FRUS Explorer gives you full-text search, cross-reference navigation, and AI-assisted research over the Foreign Relations of the United States documentary series — the official record of U.S. foreign policy since 1861.
 
-<!-- END SOURCE: onboarding.intro.title / subtitle -->
+**Footnote:** You can add volumes now or skip ahead and add them later from the Corpus Browser.
+
+<!-- END SOURCE: onboarding welcome step -->
 
 ---
 
-### 2.2 Intro Body Text
+### 2.2 Intro Body Text — *not currently displayed*
 
-*This is the scrollable body text below the title. It is a single Markdown block stored in `OnboardingViewModel.bundledIntroText`; keep the `[text](url)` link syntax intact.*
+> **Also corrected 2026-07-26 (O-0).** `OnboardingIntroView` was the only view that ever
+> rendered this text. With it deleted, `OnboardingViewModel.bundledIntroText` has no
+> reader: the property is still compiled and still covered by `EmbeddedMarkdownLinkTests`
+> (which checks its Markdown links parse), but **nothing in the app puts it on screen**.
+> It is kept here rather than dropped because it is good, accurate prose about the series
+> that a later session may want to rehome — the FRUS Research Guide (§3) is the obvious
+> candidate. Editing it today has no visible effect.
+
+*A single Markdown block stored in `OnboardingViewModel.bundledIntroText`; keep the `[text](url)` link syntax intact.*
 
 <!-- SOURCE: FRUSExplorer/Onboarding/OnboardingViewModel.swift | property: bundledIntroText | lines: 239–249 -->
 
