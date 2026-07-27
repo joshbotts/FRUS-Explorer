@@ -180,14 +180,6 @@ struct DataExportSections: View {
         }
     }
 
-    @ViewBuilder
-    private var preparingRow: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-            Text(String(localized: "settings.export.preparing", defaultValue: "Preparing export…"))
-                .foregroundStyle(.secondary)
-        }
-    }
 
     // MARK: - Export Preparation
 

@@ -1312,12 +1312,6 @@ struct CitationPopoverView: View {
         DocumentExportSupport.canonicalURL(entry: entry)
     }
 
-    private var accessedDate: String {
-        let f = DateFormatter()
-        f.dateFormat = "d MMM yyyy"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: Date())
-    }
 
     private func metaRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top, spacing: 0) {
