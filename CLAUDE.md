@@ -132,7 +132,18 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
 
 **SPM package targets** (separate from the app, in `Package.swift`):
 - `ManifestGenerator`, `TaxonomyGenerator`, `FTS5Store` (reusable SQLite FTS5 actor)
-- Test targets: `ManifestGeneratorTests`, `TaxonomyGeneratorTests`, `FTS5StoreTests`
+- `WordCloudKit` — the word-cloud tokenizer stack (`WordCloudTokenizer`,
+  `WordCloudMultiLensTokenizer`, `WordCloudLens`, `WordCloudTuning`, `TermCount`,
+  `WordCloudLexiconSet`, `WordCloudStopwordSet`). Compiled directly into the app
+  targets via `project.yml` (like `FTS5Store`/`SourceNoteKit`) **and** an SPM library
+  target, so `CloudVectorsGenerator` tokenises the corpus through the app's own code.
+  Lexicon/stopword payloads are **injected**, never read from `Bundle.main` — the app
+  supplies them from its bundle (`WordCloudStopwords`/`WordCloudLexicons`), the
+  generator from file URLs. `WordCloudMultiLensTokenizer` counts N lenses from one
+  `NLTagger` pass; `WordCloudKitTests` pins it against N single-lens runs, and that
+  parity suite is what makes the merge safe — do not weaken it.
+- Test targets: `ManifestGeneratorTests`, `TaxonomyGeneratorTests`, `FTS5StoreTests`,
+  `WordCloudKitTests`
 
 ## Coding Standards
 

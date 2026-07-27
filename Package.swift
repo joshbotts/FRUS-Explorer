@@ -418,6 +418,31 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - WordCloudKit
+
+        /// The word-cloud tokenizer stack, shared between the app targets (compiled
+        /// directly via `project.yml`, like FTS5Store and SourceNoteKit) and the offline
+        /// `CloudVectorsGenerator`.
+        ///
+        /// Lexicon and stopword payloads are **injected** rather than read from
+        /// `Bundle.main`, which a command-line tool does not have — and which would
+        /// otherwise let the app and the generator source different lists without anyone
+        /// noticing. The JSON shapes live here so both callers decode identically.
+        .target(
+            name: "WordCloudKit",
+            path: "WordCloudKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for WordCloudKit — chiefly the O-1-2 parity suite, which pins the
+        /// one-pass multi-lens tokenizer against four separate single-lens runs.
+        .testTarget(
+            name: "WordCloudKitTests",
+            dependencies: [.target(name: "WordCloudKit")],
+            path: "WordCloudKitTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - GeneratorKit
 
         /// Reusable utilities shared across the corpus-scanning generators: a deterministic

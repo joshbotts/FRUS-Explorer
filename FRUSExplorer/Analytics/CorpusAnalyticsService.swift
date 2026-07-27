@@ -69,16 +69,7 @@ struct VolumeFrequency: Sendable, Identifiable {
     var id: String { volumeId }
 }
 
-/// A term and its occurrence count within a scope (year, subseries, etc.).
-///
-/// Version history:
-///   1.0 — Session 98: initial implementation
-///   1.1 — S-5b: `Equatable`, so value types carrying term lists (`WordCloudBench`) can be too
-struct TermCount: Sendable, Identifiable, Codable, Equatable {
-    let term: String
-    let count: Int
-    var id: String { term }
-}
+// `TermCount` moved to `WordCloudKit` in O-1 — the generator emits the same type.
 
 /// Document frequency aggregated into ten-year buckets (1860s, 1870s, …).
 ///

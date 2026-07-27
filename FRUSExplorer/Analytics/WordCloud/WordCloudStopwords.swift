@@ -5,65 +5,63 @@
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import Foundation
 
-/// Loads and provides the bundled word-cloud stopword lists.
+/// The app's bundle-backed `WordCloudStopwordSet`.
 ///
-/// Two layers are maintained, mirroring `word-cloud-stopwords.json`:
-/// - **English** — standard high-frequency function words, always excluded.
-/// - **Diplomatic** — FRUS-domain boilerplate ("telegram", "department",
-///   "washington", …) that otherwise dominates every cloud. Editorially
-///   opinionated, so it is applied only when the caller opts in (the UI defaults
-///   it on but lets the researcher disable it).
+/// The lists and all set-building live in `WordCloudKit`; this is only the
+/// `Bundle.main` lookup, so the app and the offline generator decode the same JSON
+/// through the same code rather than keeping two copies that can drift.
 ///
-/// The lists are decoded once and cached for the process lifetime.
+/// A missing or malformed file degrades to empty lists rather than trapping: an
+/// unfiltered cloud is poor, but it is better than no Analytics tab at all. The
+/// generator makes the opposite choice and throws — see `WordCloudStopwordSet`.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   2.0 — O-1: reduced to a bundle loader; the payload shape, lowercasing, and
+///         `active(includeDiplomatic:)` moved to `WordCloudKit`
 enum WordCloudStopwords {
 
-    /// On-disk shape of `word-cloud-stopwords.json`.
-    private struct Payload: Decodable {
-        let english: [String]
-        let diplomatic: [String]
-        let markings: [String]?
-    }
-
-    /// Decoded payload, loaded lazily from the app bundle on first access.
-    private static let payload: Payload = {
-        guard
-            let url = Bundle.main.url(forResource: "word-cloud-stopwords", withExtension: "json"),
-            let data = try? Data(contentsOf: url),
-            let decoded = try? JSONDecoder().decode(Payload.self, from: data)
-        else {
+    /// The decoded set, loaded once from the app bundle on first access.
+    static let shared: WordCloudStopwordSet = {
+        guard let url = Bundle.main.url(forResource: "word-cloud-stopwords", withExtension: "json") else {
             #if DEBUG
-            print("[WordCloudStopwords] Failed to load word-cloud-stopwords.json; using empty lists.")
+            print("[WordCloudStopwords] word-cloud-stopwords.json not found in bundle; using empty lists.")
             #endif
-            return Payload(english: [], diplomatic: [], markings: [])
+            return .empty
         }
-        return decoded
+        do {
+            return try WordCloudStopwordSet(contentsOf: url)
+        } catch {
+            #if DEBUG
+            print("[WordCloudStopwords] Failed to load word-cloud-stopwords.json — \(error); using empty lists.")
+            #endif
+            return .empty
+        }
     }()
 
     /// The English function-word stopword set (lowercased).
-    static let english: Set<String> = Set(payload.english.map { $0.lowercased() })
+    static var english: Set<String> { shared.english }
 
     /// The diplomatic-boilerplate stopword set (lowercased).
-    static let diplomatic: Set<String> = Set(payload.diplomatic.map { $0.lowercased() })
+    static var diplomatic: Set<String> { shared.diplomatic }
 
-    /// Classification markings, handling caveats, precedence words, and calendar
-    /// terms (lowercased). These read as document chrome rather than content and are
-    /// a frequent source of named-entity false positives ("Top Secret" tagged as a
-    /// place), so they're filtered when the user's "filter markings" setting is on.
-    /// Includes multi-word phrases for the entity path's phrase check.
-    static let markings: Set<String> = Set((payload.markings ?? []).map { $0.lowercased() })
+    /// Classification markings, handling caveats, precedence words, and calendar terms.
+    static var markings: Set<String> { shared.markings }
 
     /// The active stopword set for a request.
     ///
-    /// - Parameter includeDiplomatic: When `true`, the diplomatic-boilerplate
-    ///   layer is unioned with the always-on English layer.
-    /// - Returns: The combined set of terms to exclude.
+    /// - Parameter includeDiplomatic: When `true`, the diplomatic-boilerplate layer is
+    ///   unioned with the always-on English layer.
     static func active(includeDiplomatic: Bool) -> Set<String> {
-        includeDiplomatic ? english.union(diplomatic) : english
+        shared.active(includeDiplomatic: includeDiplomatic)
     }
 }
