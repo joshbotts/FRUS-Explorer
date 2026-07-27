@@ -468,6 +468,13 @@ enum FRUSTheme {
     /// Dim factor for Add Volumes, whose dock is taller and denser.
     static let cloudDimAddVolumes: Double = 0.62
 
+    /// Dim factor for the indexing banner strip.
+    ///
+    /// Quieter than every other surface: this one sits directly behind live progress text
+    /// in a short band, and a backdrop that makes a progress read harder has failed at
+    /// being a backdrop.
+    static let cloudDimIndexingStrip: Double = 0.42
+
     /// Words above this normalised weight take the lens accent; the rest take ink.
     static let cloudAccentThreshold: Double = 0.66
 

@@ -743,6 +743,41 @@ forward:
 
 ---
 
+## (c) placement — corrected twice, settled 2026-07-27
+
+O-3 declared the backdrop in `MainTabView` and never placed it in the hierarchy, so it
+rendered on no device (#537). #537 then put it behind `IndexingEducationView` — which is
+reachable **only** from a "Learn about FRUS while you wait →" link that exists **only** in
+the multi-volume queue banner, because `indexingQueuePosition` requires
+`indexingBatchTotalAtStart >= 2`. A single-volume download therefore could not reach the
+education flow *or* the cloud. Neither state was visible to the owner during a real index.
+
+**Settled: the cloud is the banner strip's own background**, present for the whole wait
+with no tap. Two supporting changes: the strip has a **96 pt minimum height** (it was a
+~40 pt band in which a 25-word cloud placed two or three words and read as noise), and the
+single-volume banner gains the Learn route it never had.
+
+### macOS — (c) is deliberately not built
+
+The banners are `MainTabView` only; macOS surfaces indexing inside the **Volumes & Storage
+settings pane** (`MacVolumesStorageHub`). Three reasons not to put a cloud there:
+
+1. **A settings pane is not a wait.** People open it to change something, not to watch
+   progress. Animation behind a form is noise in a place that should be quiet.
+2. **The Mac wait is not bare.** The app is one window among many; a Mac user starts a
+   download and goes elsewhere, which is exactly the "nothing to look at" problem the
+   iPhone/iPad banner has and the Mac does not.
+3. **The main-window status bar is the wrong context** (owner, 2026-07-27) and it is the
+   only always-visible indexing surface Mac has.
+
+If a Mac home is wanted later, the honest one is the **`frus.researchGuide` window** —
+`IndexingEducationView` already opens there, so the cloud would back the same education
+content it backs on iOS, full-window, on a surface the user opened to read. That is a
+one-line `.background`, deliberately deferred until someone wants it rather than added
+because iOS has one.
+
+---
+
 ## Order and stop points
 
 ```
