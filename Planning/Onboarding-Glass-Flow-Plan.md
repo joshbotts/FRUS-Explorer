@@ -257,13 +257,40 @@ main-thread work out of launch before anything is layered on top of it.
   title and de-duplicates `tags` with a linear `contains` per tag — quadratic on an entry
   carrying up to 154 tags. Measure the type the app actually decodes, not one shaped like
   it. So the redundant decode costs ~8 ms on a Mac and plausibly 20–32 ms on an older iPhone — real,
-  and free to remove, but **not** the reason cold launch feels slow. The plan already
-  suspected the true dominant term (`makeFRUSContainer()` on a large synced store); the
-  owner's part-(i) Instruments trace is what settles it. If that trace shows the container
-  dominating, PR 2 is still worth landing on its own merits — it deletes a duplicated
-  decode and an inconsistency hazard, two stores deriving from one source — but it should
-  not be sold as a launch fix, and O-3's "must not extend time-to-interactive" gate should
-  be measured against the container, not against this.
+  and free to remove, but **not** the reason cold launch feels slow.
+
+- **✅ SETTLED by the owner's Time Profiler trace, 2026-07-26 (`AppStore` config).** The
+  suspicion was right, and by a wider margin than expected. `FRUSExplorerApp.init()` is
+  **158 ms**, of which:
+
+  | Symbol | Cost | Share of app init |
+  |---|---:|---:|
+  | `ModelContainer.makeFRUSContainer()` | **137 ms** | 87% |
+  | `AppState.init()` — *all four bundled decodes* | 21 ms | 13% |
+  | ↳ `VolumeLevelTagStore.init` (taxonomy + manifest #1) | 10 ms | |
+  | ↳ `ManifestStore.init` (manifest #2) | 8 ms | |
+  | ↳ `AdministrationProfilesStore.init` | 1 ms | |
+  | ↳ `NWPathMonitor.init` | 1 ms | |
+
+  `ManifestStore.init` at 8 ms corroborates the 7.8 ms standalone benchmark to within
+  measurement noise, so the redundant decode is exactly the 8 ms claimed. **It is 5% of app
+  init**, against a container open that is 17× larger.
+
+  **Consequences, all three of them:**
+  1. **PR 2 lands as hygiene, not performance.** One decode, one source of truth, no second
+     store deriving from a re-parse. Say so in the PR; do not claim a launch win.
+  2. **O-3's "must not extend time-to-interactive" gate is measured against the 137 ms**,
+     which is where the budget actually lives.
+  3. **The reason given below for not building option (a)'s launch-screen half no longer
+     holds** — see the note under *Explicitly not built* in O-3.
+
+  `makeFRUSContainer()` is two statements: `Schema(frusModelTypes)` over the 19 `@Model`
+  types, and one `ModelContainer(for:configurations:)` with CloudKit private-database
+  mirroring. There is nothing in it to delete — the 137 ms is SwiftData building the
+  managed object model by reflection and opening the store. Reducing it means changing
+  *when* the container is built, not what it does, and that is a restructure no session in
+  this plan is scoped for. **Still outstanding: the same trace on an iPhone**, where a
+  large synced store should make the figure worse, not better.
 - **Own PR, not a rider on a UI session:** this is a change to app startup ordering, and
   `AppState` init is the most load-bearing initialiser in the app.
 - Verify: re-run the (i) measurement and report the delta; `VolumeLevelTagStore`'s
@@ -452,6 +479,30 @@ Two surfaces, one arbiter.
 **Explicitly not built:** the iOS launch-screen half of option (a). The pre-render window
 is addressed by removing work (O-0-2), not by drawing over it; `UILaunchScreen: {}`
 (`project.yml:97`) stays as it is.
+
+> ⚠️ **This rationale did not survive measurement — owner decision needed before O-3.**
+> O-0's trace puts `makeFRUSContainer()` at 137 ms of a 158 ms `FRUSExplorerApp.init()`,
+> against 8 ms for the decode O-0-2 removes. "Removing work" addresses **5%** of the
+> window; the other 95% is a synchronous store open with nothing in it to delete. So the
+> pre-render gap is not going away, it is ~150 ms+ on a Mac and probably worse on a phone
+> with a large synced store, and on iOS every millisecond of it is a **blank white screen**
+> — `UILaunchScreen: {}` draws nothing at all.
+>
+> The choice is now between two honest positions, and it is a product call:
+> - **Accept the blank screen.** Defensible: it is brief, and a launch screen that apes the
+>   first frame can make an app feel slower when the transition is visible.
+> - **Build option (a)'s static half** — the 1a identity block (icon tile, wordmark,
+>   caption) as a real iOS launch screen. It cannot animate and cannot draw the cloud, so
+>   it is identity only, and it is *not* code: a launch-screen storyboard plus an
+>   `UILaunchScreen` dictionary in `project.yml`'s `info.properties`. It is the only thing
+>   that can appear during the 137 ms, and it composes with (d): the launch screen's
+>   composition hands off to `LaunchSplashView`'s identical one, which is exactly the
+>   "two halves read as one moment" the option described.
+>
+> Claude's recommendation is the second, on the narrow ground that it is nearly free and
+> the gap is now known to be real and irreducible — but it reopens a question the owner
+> already answered once, so it is flagged rather than folded in. macOS has no launch-screen
+> equivalent and is unaffected either way.
 - **UI-test bypass**: the splash must not appear under `FRUS_UI_TEST_MODE`, or every
   existing UI test's first element lookup races it. Same env check as
   `ContentView.swift:53`.
