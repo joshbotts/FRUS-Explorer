@@ -41,6 +41,17 @@ struct WordCloudDriftRenderTests {
     private let size = CGSize(width: 400, height: 140)
 
     /// A snapshot with two lenses of real-looking words.
+    ///
+    /// **The two lenses share terms, deliberately.** The first version of this helper used
+    /// disjoint word sets, and that single choice hid a crash that fired on every scope in
+    /// the app: a nested `ForEach` identified symbol children by the bare term, SwiftUI does
+    /// not namespace those by the outer loop, and `Canvas` traps on duplicate child ids.
+    /// All 108 bundled core scopes share terms between their top-25 lens lists — "war",
+    /// "peace", "treaty", "aid" recur across concepts, sentiment and topics — so the shipped
+    /// build could not render the indexing strip at all. Every render test here passed.
+    ///
+    /// Disjoint test data was not a small simplification. It was the one property that made
+    /// the suite blind.
     private func makeSnapshot() -> WordCloudDriftCanvas.Snapshot {
         func layer(_ lens: WordCloudLens, terms: [String]) -> WordCloudDriftCanvas.Snapshot.Layer {
             let placed = terms.enumerated().map { rank, term in
@@ -59,9 +70,40 @@ struct WordCloudDriftRenderTests {
             }
             return .init(lens: lens, field: field, colors: colors, symbolFontSizes: sizes)
         }
-        return .init(layers: [layer(.concepts, terms: ["policy", "treaty", "aid", "trade", "security", "talks"]),
-                              layer(.topics, terms: ["berlin", "cuba", "vietnam", "cairo", "moscow", "paris"])],
-                     size: size)
+        let layers = [
+            layer(.concepts, terms: ["policy", "treaty", "aid", "trade", "security", "talks"]),
+            // Four of six shared with concepts — mirroring the real artifacts, where every
+            // scope's lens lists overlap.
+            layer(.topics, terms: ["treaty", "aid", "berlin", "policy", "cuba", "security"]),
+        ]
+        let symbols = layers.flatMap { l in
+            l.field.particles.map { p in
+                WordCloudDriftCanvas.Snapshot.Symbol(
+                    key: .init(lens: l.lens, term: p.term),
+                    fontSize: l.symbolFontSizes[p.term] ?? p.baseFontSize,
+                    color: l.colors[p.term] ?? .primary)
+            }
+        }
+        return .init(layers: layers, symbols: symbols, size: size)
+    }
+
+    // MARK: - The crash
+
+    /// Renders a snapshot whose lenses share terms. Before the fix this trapped inside
+    /// SwiftUI with "child view IDs must be unique" rather than failing an assertion.
+    @Test("Lenses sharing terms render — duplicate symbol ids used to trap in Canvas")
+    func sharedTermsAcrossLensesRender() throws {
+        let snapshot = makeSnapshot()
+        let shared = Set(snapshot.layers[0].field.particles.map(\.term))
+            .intersection(snapshot.layers[1].field.particles.map(\.term))
+        #expect(!shared.isEmpty, "precondition: this fixture must overlap, or it proves nothing")
+
+        // Symbol ids must be unique across the whole flattened list, not merely within a lens.
+        #expect(Set(snapshot.symbols.map(\.id)).count == snapshot.symbols.count,
+                "duplicate symbol ids reach Canvas as duplicate child ids, which is a trap, not an error")
+
+        let (ink, _) = try inkFraction(at: Date(timeIntervalSinceReferenceDate: 102.5))
+        #expect(ink > 0.01)
     }
 
     /// Renders one frame and returns the fraction of pixels that are not transparent.
