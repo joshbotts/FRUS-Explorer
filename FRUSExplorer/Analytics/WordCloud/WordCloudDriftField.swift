@@ -46,6 +46,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — P-1: initial implementation
+///   1.1 — phase-corrected rest pose (t = 0 is now exactly the packed layout, which is what
+///         Reduce Motion shows) and drift-time exclusion-zone avoidance
 struct WordCloudDriftField: Sendable {
 
     /// One word, with everything the renderer needs to place it at any instant.
@@ -102,6 +104,16 @@ struct WordCloudDriftField: Sendable {
     /// The particles, ordered far-to-near so a painter's-algorithm pass is a plain loop.
     let particles: [Particle]
 
+    /// Rects the words must stay clear of, in canvas coordinates.
+    ///
+    /// **The packer alone is not enough once words move.** `WordCloudLayout.place` honours
+    /// zones as a placement rejection and nothing consults them afterwards, so a particle
+    /// that drifts 14 pt sideways can settle straight over the dock or identity block the
+    /// zone existed to protect. Latent rather than live today — the one drifting surface
+    /// passes no zones — but it lights up the moment any full-bleed surface drifts, which is
+    /// exactly what a search or splash backdrop would be.
+    let exclusionZones: [CGRect]
+
     /// Builds a field from a packer result.
     ///
     /// - Parameter placed: `WordCloudLayout.place` output — already descending by count,
@@ -109,7 +121,8 @@ struct WordCloudDriftField: Sendable {
     /// - Parameter rankCeiling: the rank that maps to maximum depth. Passing the *requested*
     ///   word count rather than the placed count keeps depth meaning the same thing whether
     ///   or not words were dropped.
-    init(placed: [PlacedWord], rankCeiling: Int) {
+    init(placed: [PlacedWord], rankCeiling: Int, exclusionZones: [CGRect] = []) {
+        self.exclusionZones = exclusionZones
         let ceiling = Double(max(1, rankCeiling - 1))
         particles = placed.map { word in
             // colorIndex, not the array index — see the type's discussion.
@@ -134,7 +147,8 @@ struct WordCloudDriftField: Sendable {
     /// - Parameter time: seconds since an arbitrary but fixed epoch. `0` yields the rest
     ///   pose, which is what Reduce Motion draws.
     /// - Parameter size: the canvas, used only to keep words inside it.
-    static func state(of p: Particle, at time: Double, in size: CGSize) -> State {
+    static func state(of p: Particle, at time: Double, in size: CGSize,
+                      avoiding zones: [CGRect] = []) -> State {
         // Parallax: near words swing wider and faster than far ones. This is the whole of
         // the depth illusion — the eye reads differential motion as distance long before it
         // reads size.
@@ -143,15 +157,24 @@ struct WordCloudDriftField: Sendable {
             + (Tuning.nearAmplitude - Tuning.farAmplitude) * nearness
         let rate = Tuning.farRate + (Tuning.nearRate - Tuning.farRate) * nearness
 
-        let dx = sin(time * rate + p.phase.x) * amplitude
+        // Phase-corrected, so t = 0 is EXACTLY the packed layout.
+        //
+        // `sin(0 + phase)` is not zero, so the first version's rest pose sat every word up to
+        // 14 pt off its packed home. Harmless in isolation — but Reduce Motion pins the clock
+        // to 0, so that displaced pose is what a Reduce Motion user sees permanently, and it
+        // is a pose the packer never sanctioned: it can sit inside an exclusion zone, which
+        // the packer exists to keep words out of. Subtracting the phase term costs one extra
+        // `sin` per axis and makes the frozen frame the real layout.
+        let dx = (sin(time * rate + p.phase.x) - sin(p.phase.x)) * amplitude
         // Vertically shallower: a strip is much wider than it is tall, and equal excursion
         // in both axes reads as jitter rather than float.
-        let dy = sin(time * rate * Tuning.verticalRateRatio + p.phase.y)
+        let dy = (sin(time * rate * Tuning.verticalRateRatio + p.phase.y) - sin(p.phase.y))
             * amplitude * Tuning.verticalAmplitudeRatio
 
         // Size breathes independently of position, so the two never look geared together.
         let baseScale = Tuning.farScale + (Tuning.nearScale - Tuning.farScale) * nearness
-        let breath = 1 + sin(time * Tuning.breathRate + p.phase.z) * Tuning.breathDepth
+        let breath = 1 + (sin(time * Tuning.breathRate + p.phase.z) - sin(p.phase.z))
+            * Tuning.breathDepth
         let scale = baseScale * breath
 
         // Nearer is brighter. Combined with scale this is the second depth cue, and the one
@@ -159,9 +182,50 @@ struct WordCloudDriftField: Sendable {
         let opacity = Tuning.farOpacity + (Tuning.nearOpacity - Tuning.farOpacity) * nearness
 
         let drifted = CGPoint(x: p.home.x + dx, y: p.home.y + dy)
-        return State(position: clamp(drifted, halfSize: p.halfSize, scale: scale, in: size),
-                     scale: scale,
-                     opacity: opacity)
+        let bounded = clamp(drifted, halfSize: p.halfSize, scale: scale, in: size)
+        let clear = push(bounded, halfSize: p.halfSize, scale: scale, outOf: zones, in: size)
+        return State(position: clear, scale: scale, opacity: opacity)
+    }
+
+    /// Pushes a word clear of any exclusion zone it has drifted into.
+    ///
+    /// Along the shortest axis, which keeps the correction imperceptible: the packer already
+    /// placed the home outside every zone and the excursion is at most ~14 pt, so this is a
+    /// nudge, not a relocation. A word that cannot escape — larger than the gap the zones
+    /// leave — is left where the canvas clamp put it rather than teleported somewhere worse.
+    static func push(_ point: CGPoint, halfSize: CGSize, scale: CGFloat,
+                     outOf zones: [CGRect], in size: CGSize) -> CGPoint {
+        guard !zones.isEmpty else { return point }
+        var result = point
+        let halfW = halfSize.width * scale
+        let halfH = halfSize.height * scale
+        for zone in zones {
+            let box = CGRect(x: result.x - halfW, y: result.y - halfH,
+                             width: halfW * 2, height: halfH * 2)
+            guard box.intersects(zone) else { continue }
+            let left = zone.minX - (result.x + halfW)     // negative when overlapping
+            let right = zone.maxX - (result.x - halfW)
+            let up = zone.minY - (result.y + halfH)
+            let down = zone.maxY - (result.y - halfH)
+            let moves = [left, right, up, down]
+            guard let shortest = moves.min(by: { abs($0) < abs($1) }) else { continue }
+            // Push a hair PAST the edge, not onto it. Landing exactly on the boundary
+            // leaves a sub-nanometre overlap after rounding, which `CGRect.intersects` still
+            // reports — and a word resting flush against a dock reads as a collision anyway.
+            let clearance: CGFloat = Tuning.zoneClearance
+            var candidate = result
+            if shortest == left || shortest == right {
+                candidate.x += shortest + (shortest < 0 ? -clearance : clearance)
+            } else {
+                candidate.y += shortest + (shortest < 0 ? -clearance : clearance)
+            }
+            // Only accept a push that stays on the canvas; otherwise leave it be.
+            let reclamped = clamp(candidate, halfSize: halfSize, scale: scale, in: size)
+            if abs(reclamped.x - candidate.x) < 0.5, abs(reclamped.y - candidate.y) < 0.5 {
+                result = candidate
+            }
+        }
+        return result
     }
 
     /// Keeps a drifting word inside the canvas.
@@ -192,7 +256,14 @@ struct WordCloudDriftField: Sendable {
     /// small and blown up is measurably wider than the same text set large. Resolving at the
     /// ceiling keeps the metrics honest at every size.
     static var maximumScale: CGFloat {
-        Tuning.nearScale * (1 + Tuning.breathDepth)
+        // TWICE the breath depth. The breath term is `sin(wt + phase) - sin(phase)`, whose
+        // range is [-2, 2], not [-1, 1] — phase-correcting the oscillator to fix the rest
+        // pose silently doubled the amplitude of every one of them. Caught only because
+        // `scaleNeverExceedsTheResolvedCeiling` compares against this constant; the visible
+        // symptom would have been text a few percent wider than it should be, forever,
+        // because a symbol drawn above its resolved size keeps the metrics it was resolved
+        // with.
+        Tuning.nearScale * (1 + 2 * Tuning.breathDepth)
     }
 
     // MARK: - Determinism
@@ -254,6 +325,9 @@ struct WordCloudDriftField: Sendable {
         /// Slow size pulse, independent of position.
         static let breathRate: Double = 0.21
         static let breathDepth: Double = 0.05
+        /// Points of daylight left between a pushed word and the zone it was pushed out of.
+        static let zoneClearance: CGFloat = 1
+
         /// Depth dimming, before the surface's own `dim` multiplier.
         static let nearOpacity: Double = 1.0
         static let farOpacity: Double = 0.55

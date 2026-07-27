@@ -255,7 +255,8 @@ struct WordCloudBackdropView: View {
             // screen to find. A lens with no vectors at all is still skipped, because then
             // there is nothing to name either.
             let placed = layout(for: candidate, terms: source.terms, box: box)
-            let field = WordCloudDriftField(placed: placed, rankCeiling: Self.maxWords)
+            let field = WordCloudDriftField(placed: placed, rankCeiling: Self.maxWords,
+                                            exclusionZones: exclusionZones)
             var colors: [String: Color] = [:]
             var sizes: [String: CGFloat] = [:]
             for word in placed {
