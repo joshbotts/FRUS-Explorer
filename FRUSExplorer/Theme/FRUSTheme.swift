@@ -500,6 +500,45 @@ enum FRUSTheme {
     /// Negative-polarity sentiment word colour (`#BC4740`).
     static let cloudSentimentNegative = Color(red: 0.737, green: 0.278, blue: 0.251)
 
+    // MARK: - Onboarding docked glass (O-4)
+
+    /// Corner radius of the onboarding dock.
+    ///
+    /// The hand-off's blur/saturate/ring/shadow values are **not** reproduced: they are CSS
+    /// approximations of a material the OS provides, and the deployment target is 26.0, so
+    /// the dock uses `.glassEffect` and inherits the real thing — including its behaviour
+    /// under Reduce Transparency, which a hand-rolled stack would have to reimplement.
+    /// Geometry the OS does not decide still lives here.
+    #if os(macOS)
+    static let onboardingDockRadius: CGFloat = 18
+    /// Corner radius of the transient scope sheet floating above the dock.
+    static let onboardingSheetRadius: CGFloat = 16
+    /// Margin from the dock to the window edge.
+    static let onboardingDockMargin: CGFloat = 16
+    #else
+    static let onboardingDockRadius: CGFloat = 26
+    /// Corner radius of the transient scope sheet floating above the dock.
+    static let onboardingSheetRadius: CGFloat = 22
+    /// Margin from the dock to the screen edge.
+    static let onboardingDockMargin: CGFloat = 16
+    #endif
+
+    /// Gap between the transient sheet and the dock it floats above.
+    static let onboardingSheetGap: CGFloat = 10
+
+    /// Maximum height of the subseries / volume sheet. The subseries list is 107 rows, so
+    /// this is always a scroll view, never a list that happens to fit.
+    #if os(macOS)
+    static let onboardingSheetMaxHeight: CGFloat = 196
+    #else
+    static let onboardingSheetMaxHeight: CGFloat = 240
+    #endif
+
+    /// Page-dot geometry: idle diameter, and the width the current dot stretches to.
+    static let onboardingDotSize: CGFloat = 6
+    /// Width of the current step's accent pill.
+    static let onboardingCurrentDotWidth: CGFloat = 17
+
     // MARK: - Settings chrome (S-2)
 
     /// Corner radius for a settings card. Before S-2 the app hard-coded 6/7/8/10/12/16 at

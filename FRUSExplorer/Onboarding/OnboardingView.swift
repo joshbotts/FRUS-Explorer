@@ -48,6 +48,14 @@ import SwiftData
 ///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
 ///         unchanged but for the now-deterministic subseries tiebreak, which is
 ///         documented at `OnboardingScopeResolver.subseries`.
+///   4.0 — O-4: rebuilt around the word-cloud backdrop per the design hand-off's
+///         4a/4b/4c. The three steps now float in one docked glass panel over a
+///         full-bleed `WordCloudBackdropView`; `StepDot` became page dots and
+///         `ScopeCard` a segmented control, with the subseries and volume pickers
+///         moved into a transient sheet above the dock. All copy is localised.
+///         **The flow's behaviour is unchanged** — `enqueueAndAdvance()`,
+///         `completeOnboarding()` and `OnboardingScopeResolver` are called exactly
+///         as before, and O-0's characterization tests pass untouched.
 @MainActor
 struct OnboardingView: View {
 
@@ -70,301 +78,438 @@ struct OnboardingView: View {
 
     // MARK: - Body
 
+    /// Which scope the backdrop previews. Tracks the segmented control on step 2, so the
+    /// cloud re-aggregates as the user chooses — the reason the vectors are bundled at all.
+    private var backdropScope: BundledCloudVectors.Scope {
+        guard step == .addVolumes else { return .corpus }
+        switch scopeChoice {
+        case .corpus:
+            return .corpus
+        case .subseries:
+            return selectedSubseries.isEmpty ? .corpus : .subseries(selectedSubseries)
+        case .volume:
+            guard !selectedVolumeId.isEmpty,
+                  let entry = scopeResolver.volumes.first(where: { $0.volumeId == selectedVolumeId })
+            else { return .corpus }
+            return .volume(volumeId: entry.volumeId, subseries: entry.subseries)
+        }
+    }
+
+    /// Dim factor per surface, from the hand-off: the denser Add Volumes dock needs a
+    /// quieter field behind it than Welcome or Ready.
+    private var backdropDim: Double {
+        step == .addVolumes ? FRUSTheme.cloudDimAddVolumes : FRUSTheme.cloudDimDocked
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            if !appState.isOnline {
-                offlineBanner
-            }
+        GeometryReader { proxy in
+            ZStack(alignment: .bottom) {
+                WordCloudBackdropView(
+                    scope: backdropScope,
+                    dim: backdropDim,
+                    // Keep words out from under the dock. Estimated rather than measured:
+                    // feeding a measured height back into the layout that determines the
+                    // height is a loop, and the packer only needs to know roughly where not
+                    // to go.
+                    exclusionZones: [dockExclusionZone(in: proxy.size)]
+                )
+                .ignoresSafeArea()
 
-            stepIndicator
-                .padding(.top, 24)
-                .padding(.bottom, 20)
-
-            Group {
-                switch step {
-                case .welcome:    welcomeView
-                case .addVolumes: scopePickerView
-                case .ready:      readyView
+                VStack(spacing: FRUSTheme.onboardingSheetGap) {
+                    if !appState.isOnline { offlineBanner }
+                    if let sheet = transientSheet { sheet }
+                    dock
                 }
+                .padding(.horizontal, FRUSTheme.onboardingDockMargin)
+                .padding(.bottom, dockBottomInset)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            navigationRow
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-                .padding(.top, 16)
         }
         #if os(macOS)
         .frame(width: 560, height: 540)
         #endif
         .animation(.easeInOut(duration: 0.2), value: appState.isOnline)
         .animation(.easeInOut(duration: 0.22), value: step)
+        .animation(.easeOut(duration: 0.3), value: scopeChoice)
     }
 
-    // MARK: - Step Indicator
-
-    private var stepIndicator: some View {
-        HStack(spacing: 10) {
-            ForEach(OnboardingStep.allCases) { s in
-                StepDot(index: s.index, label: s.label, isCurrent: s == step, isPast: s.index < step.index)
-            }
-        }
+    /// Space below the dock. iOS lifts it clear of the home indicator per the hand-off.
+    private var dockBottomInset: CGFloat {
+        #if os(macOS)
+        FRUSTheme.onboardingDockMargin
+        #else
+        28
+        #endif
     }
 
-    // MARK: - Welcome Step
-
-    private var welcomeView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: FRUSTheme.cappedGlyphSize(heroGlyphSize, base: 56)))
-                .foregroundStyle(.tint)
-                .padding(.bottom, 4)
-
-            Text("Welcome to FRUS Explorer")
-                .font(.title2.weight(.semibold))
-
-            Text("""
-                FRUS Explorer gives you full-text search, cross-reference navigation, \
-                and AI-assisted research over the Foreign Relations of the United States \
-                documentary series — the official record of U.S. foreign policy since 1861.
-                """)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-
-            Text("You can add volumes now or skip ahead and add them later from the Corpus Browser.")
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-        }
-        .padding(.horizontal, 24)
+    /// The region the dock (and any sheet above it) occupies, for the backdrop to avoid.
+    private func dockExclusionZone(in size: CGSize) -> CGRect {
+        let sheetHeight = transientSheet == nil ? 0 : FRUSTheme.onboardingSheetMaxHeight + FRUSTheme.onboardingSheetGap
+        let estimatedDockHeight: CGFloat = step == .addVolumes ? 170 : 130
+        let height = estimatedDockHeight + sheetHeight + dockBottomInset
+        return CGRect(x: 0, y: max(0, size.height - height), width: size.width, height: height)
     }
 
-    // MARK: - Scope Picker Step
+    // MARK: - Dock
 
-    private var scopePickerView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            VStack(alignment: .leading, spacing: 4) {
-                Text("What Would You Like to Download?")
-                    .font(.title3.weight(.semibold))
-                Text("You can download more volumes later from Settings.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
-
-            // Scope option cards
-            VStack(spacing: 8) {
-                ScopeCard(
-                    isSelected: scopeChoice == .corpus,
-                    systemImage: "square.stack.3d.up",
-                    title: "Entire Corpus",
-                    detail: "552+ volumes · ≈ 3.3 GB. Download everything for full offline search."
-                ) { scopeChoice = .corpus }
-
-                ScopeCard(
-                    isSelected: scopeChoice == .subseries,
-                    systemImage: "calendar",
-                    title: "A Subseries",
-                    detail: "Choose a decade or diplomatic era."
-                ) { scopeChoice = .subseries; selectedSubseries = "" }
-
-                ScopeCard(
-                    isSelected: scopeChoice == .volume,
-                    systemImage: "doc.text",
-                    title: "A Single Volume",
-                    detail: "Find and download one volume to explore."
-                ) { scopeChoice = .volume; selectedVolumeId = "" }
-            }
-            .padding(.horizontal, 24)
-
-            // Conditional picker
-            switch scopeChoice {
-            case .corpus:
-                Spacer()
-            case .subseries:
-                Divider().padding(.top, 12)
-                subseriesPickerView
-            case .volume:
-                Divider().padding(.top, 12)
-                volumeGroupedPickerView
+    /// The one glass surface every step floats in.
+    private var dock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            switch step {
+            case .welcome:    welcomeDock
+            case .addVolumes: scopeDock
+            case .ready:      readyDock
             }
         }
-        .task {
-            if appState.isOnline {
-                await appState.manifestStore.refresh()
-            }
-        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(.regular, in: .rect(cornerRadius: FRUSTheme.onboardingDockRadius))
     }
 
-    // MARK: - Subseries Picker
+    // MARK: - 4a Welcome
 
-    private var subseriesPickerView: some View {
-        List(allSubseries, id: \.self) { sub in
-            Button {
-                selectedSubseries = sub
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(sub)
-                            .font(.callout)
-                            .foregroundStyle(.primary)
-                        let count = scopeResolver.volumeCount(inSubseries: sub)
-                        Text("\(count) volume\(count == 1 ? "" : "s")")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    if selectedSubseries == sub {
-                        Image(systemName: "checkmark")
-                            .foregroundStyle(Color.accentColor)
-                            .fontWeight(.semibold)
-                    }
+    private var welcomeDock: some View {
+        dockLayout(
+            content: {
+                VStack(alignment: .leading, spacing: 6) {
+                    pageDots
+                    Text(Self.welcomeTitle).font(.system(size: titleSize, weight: .semibold))
+                    Text(Self.welcomeBody)
+                        .font(.system(size: bodySize))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 340, alignment: .leading)
                 }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .listStyle(.plain)
+            },
+            actions: { primaryButton(step.continueLabel) { advance() } }
+        )
     }
 
-    // MARK: - Volume Grouped Picker
+    // MARK: - 4b Add Volumes
 
-    private var volumeGroupedPickerView: some View {
-        List {
-            ForEach(volumesBySubseries, id: \.subseries) { group in
-                DisclosureGroup {
-                    ForEach(group.volumes) { vol in
-                        Button {
-                            selectedVolumeId = vol.volumeId
-                        } label: {
-                            HStack(alignment: .top, spacing: 10) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(vol.title)
-                                        .font(.callout)
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(2)
-                                    Text(vol.volumeId)
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                Spacer()
-                                if selectedVolumeId == vol.volumeId {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(Color.accentColor)
-                                        .fontWeight(.semibold)
-                                        .padding(.top, 2)
+    private var scopeDock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            dockLayout(
+                content: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        pageDots
+                        Text(Self.scopeTitle).font(.system(size: denseTitleSize, weight: .semibold))
+                        #if !os(macOS)
+                        scopeSegmentedControl
+                        #endif
+                    }
+                },
+                actions: {
+                    #if os(macOS)
+                    scopeSegmentedControl
+                    #else
+                    EmptyView()
+                    #endif
+                }
+            )
+
+            // Row 2. macOS puts the caption and the actions side by side; iPhone stacks
+            // them. Sharing one row on a phone starves the primary button until its label
+            // wraps a character per line — verified on screen, where "Continue" rendered
+            // as a four-line vertical sliver.
+            dockLayout(
+                content: {
+                    Text(scopeCaption)
+                        .font(.system(size: bodySize))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                },
+                actions: {
+                    HStack(spacing: 14) {
+                        plainButton(Self.backLabel) { if let prev = step.previous { step = prev } }
+                        plainButton(Self.skipLabel) { step = .ready }
+                        primaryButton(step.continueLabel) { advance() }
+                            .disabled(!canProceedFromScope)
+                    }
+                    // Never let the caption squeeze the actions below their natural width.
+                    .fixedSize(horizontal: true, vertical: false)
+                    .layoutPriority(1)
+                }
+            )
+        }
+    }
+
+    /// The three scopes. Full labels on macOS, short on iOS — the hand-off's split, because
+    /// three full labels do not fit an iPhone segment at equal widths.
+    private var scopeSegmentedControl: some View {
+        Picker(Self.scopeTitle, selection: $scopeChoice) {
+            ForEach(OnboardingScopeChoice.allCases, id: \.self) { choice in
+                Text(segmentLabel(choice)).tag(choice)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .onChange(of: scopeChoice) { _, new in
+            // Clear the other scope's selection, matching the pre-O-4 ScopeCard taps. The
+            // resolver ignores the irrelevant field, but leaving it set would make the
+            // backdrop preview a scope the user is no longer choosing.
+            switch new {
+            case .corpus:    selectedSubseries = ""; selectedVolumeId = ""
+            case .subseries: selectedVolumeId = ""
+            case .volume:    selectedSubseries = ""
+            }
+            if new == .volume { Task { await BundledCloudVectors.prepareVolumes() } }
+        }
+        #if os(macOS)
+        .frame(maxWidth: 320)
+        #endif
+    }
+
+    /// The caption swaps with the selection (hand-off 4b, dock row 2).
+    private var scopeCaption: String {
+        switch scopeChoice {
+        case .corpus:    return Self.captionCorpus
+        case .subseries: return Self.captionSubseries
+        case .volume:    return Self.captionVolume
+        }
+    }
+
+    // MARK: - Transient sheet
+
+    /// The picker floats above the dock, and **only** for the scopes that need one.
+    /// Entire Corpus shows none, leaving the cloud unobstructed — hand-off 4b.
+    @ViewBuilder
+    private var transientSheet: (some View)? {
+        if step == .addVolumes, scopeChoice != .corpus {
+            VStack(spacing: 0) {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        if scopeChoice == .subseries {
+                            ForEach(allSubseries, id: \.self) { sub in
+                                sheetRow(title: sub,
+                                         detail: subseriesDetail(count: scopeResolver.volumeCount(inSubseries: sub)),
+                                         isSelected: selectedSubseries == sub) { selectedSubseries = sub }
+                            }
+                        } else {
+                            ForEach(scopeResolver.volumes) { volume in
+                                sheetRow(title: volume.title, detail: volume.volumeId,
+                                         isSelected: selectedVolumeId == volume.volumeId) {
+                                    selectedVolumeId = volume.volumeId
                                 }
                             }
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
-                        .padding(.leading, 4)
                     }
-                } label: {
-                    HStack {
-                        Text(group.subseries)
-                            .font(.callout.weight(.medium))
-                        Spacer()
-                        Text("\(group.volumes.count) vol\(group.volumes.count == 1 ? "" : "s")")
-                            .font(.caption)
+                }
+            }
+            .frame(maxHeight: FRUSTheme.onboardingSheetMaxHeight)
+            .glassEffect(.regular, in: .rect(cornerRadius: FRUSTheme.onboardingSheetRadius))
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    private func sheetRow(title: String, detail: String, isSelected: Bool,
+                          select: @escaping () -> Void) -> some View {
+        Button(action: select) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.system(size: rowTitleSize, weight: .medium))
+                        .foregroundStyle(.primary).lineLimit(2)
+                    Text(detail).font(.system(size: rowDetailSize)).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor).fontWeight(.semibold)
+                }
+            }
+            // A greedy frame FIRST, then contentShape — `contentShape` alone does not widen
+            // a plain-Button row's tap target.
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    // MARK: - 4c Ready
+
+    private var readyDock: some View {
+        dockLayout(
+            content: {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: readyGlyphSize))
+                        .foregroundStyle(Color.green)
+                    VStack(alignment: .leading, spacing: 6) {
+                        pageDots
+                        Text(Self.readyTitle).font(.system(size: titleSize, weight: .semibold))
+                        Text(Self.readyBody)
+                            .font(.system(size: bodySize))
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-            }
-        }
-        .listStyle(.plain)
-    }
-
-    // MARK: - Ready Step
-
-    private var readyView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: FRUSTheme.cappedGlyphSize(heroGlyphSize, base: 56)))
-                .foregroundStyle(.green)
-                .padding(.bottom, 4)
-
-            Text("You're all set")
-                .font(.title2.weight(.semibold))
-
-            if hasIndexedVolume {
-                Text("Your volumes are being indexed. Search and cross-reference navigation will be available shortly.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            } else {
-                #if os(macOS)
-                Text("Download volumes whenever you like from the Corpus Browser (⇧⌘B) to search and read them offline.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                #else
-                Text("Download volumes whenever you like from the Browse tab to search and read them offline.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                #endif
-            }
-
-            Text("A default research project has been created for you. You can rename it or create additional projects from the project picker.")
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-        }
-        .padding(.horizontal, 24)
-    }
-
-    // MARK: - Navigation Row
-
-    private var navigationRow: some View {
-        HStack {
-            if step != .welcome {
-                Button("Back") {
-                    if let prev = step.previous { step = prev }
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            if step == .addVolumes {
-                Button("Skip") { step = .ready }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .padding(.trailing, 8)
-            }
-
-            Button(step.continueLabel) {
-                if step == .addVolumes {
-                    Task { await enqueueAndAdvance() }
-                } else if let next = step.next {
-                    step = next
-                } else {
-                    Task { await completeOnboarding() }
+            },
+            actions: {
+                HStack(spacing: 14) {
+                    plainButton(Self.backLabel) { if let prev = step.previous { step = prev } }
+                    primaryButton(step.continueLabel) { advance() }
                 }
             }
+        )
+    }
+
+    // MARK: - Dock chrome
+
+    /// macOS lays the dock out in one row (content left, actions right); iOS stacks them
+    /// with a full-width primary button. Hand-off 4a.
+    @ViewBuilder
+    private func dockLayout<C: View, A: View>(
+        @ViewBuilder content: () -> C,
+        @ViewBuilder actions: () -> A
+    ) -> some View {
+        #if os(macOS)
+        HStack(alignment: .bottom, spacing: 16) {
+            content()
+            Spacer(minLength: 12)
+            actions()
+        }
+        #else
+        VStack(alignment: .leading, spacing: 14) {
+            content()
+            actions().frame(maxWidth: .infinity)
+        }
+        #endif
+    }
+
+    /// Page dots — position only, no numbers. `StepDot`'s numbered badges were the old
+    /// full-screen indicator; in a dock they are chrome competing with the copy.
+    private var pageDots: some View {
+        HStack(spacing: 5) {
+            ForEach(OnboardingStep.allCases) { s in
+                Capsule()
+                    .fill(dotColor(for: s))
+                    .frame(width: s == step ? FRUSTheme.onboardingCurrentDotWidth : FRUSTheme.onboardingDotSize,
+                           height: FRUSTheme.onboardingDotSize)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: step)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(stepPositionLabel))
+    }
+
+    private func dotColor(for s: OnboardingStep) -> Color {
+        if s == step { return .accentColor }
+        return s.index < step.index ? Color.accentColor.opacity(0.45) : Color.primary.opacity(0.18)
+    }
+
+    private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(step == .addVolumes && !canProceedFromScope)
+    }
+
+    private func plainButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+    }
+
+    /// Continue / Get Started / Finish, routed exactly as before O-4.
+    private func advance() {
+        if step == .addVolumes {
+            Task { await enqueueAndAdvance() }
+        } else if let next = step.next {
+            step = next
+        } else {
+            Task { await completeOnboarding() }
         }
     }
+
+    // MARK: - Copy
+    //
+    // Verbatim from the design hand-off (4a/4b/4c). Every string is localised — before O-4
+    // this view carried 14 raw `Text("…")` literals and not one `String(localized:)`, a
+    // standing violation of the house convention with no mechanical gate behind it. Mirrored
+    // in `Docs/EditableContent.md` §2 in the same commit.
+
+    static let welcomeTitle = String(localized: "onboarding.welcome.title",
+        defaultValue: "Welcome to FRUS Explorer")
+    static let welcomeBody = String(localized: "onboarding.welcome.body",
+        defaultValue: "The official documentary record of U.S. foreign policy since 1861 — searchable, cross-referenced, on your device.")
+
+    static let scopeTitle = String(localized: "onboarding.scope.title",
+        defaultValue: "What would you like to download?")
+    static let captionCorpus = String(localized: "onboarding.scope.caption.corpus",
+        defaultValue: "552+ volumes · ≈ 3.3 GB — the entire series, fully offline.")
+    static let captionSubseries = String(localized: "onboarding.scope.caption.subseries",
+        defaultValue: "A decade or diplomatic era — the recommended starting point.")
+    static let captionVolume = String(localized: "onboarding.scope.caption.volume",
+        defaultValue: "One volume to explore — typically a few MB.")
+
+    static let readyTitle = String(localized: "onboarding.ready.title",
+        defaultValue: "You're all set")
+    static let readyBody = String(localized: "onboarding.ready.body",
+        defaultValue: "Volumes download and index automatically — search unlocks in minutes. Your project \u{201C}My Research\u{201D} is ready.")
+
+    static let offlineBannerText = String(localized: "onboarding.offline.banner",
+        defaultValue: "You are offline. Showing bundled catalog only.")
+
+    static let backLabel = String(localized: "onboarding.action.back", defaultValue: "Back")
+    static let skipLabel = String(localized: "onboarding.action.skip", defaultValue: "Skip")
+
+    /// Segment labels. macOS gets the full phrasing; iOS gets short ones, because three
+    /// full labels cannot share an iPhone's segment width without truncating.
+    private func segmentLabel(_ choice: OnboardingScopeChoice) -> String {
+        #if os(macOS)
+        switch choice {
+        case .corpus:    return String(localized: "onboarding.scope.segment.corpus.long", defaultValue: "Entire Corpus")
+        case .subseries: return String(localized: "onboarding.scope.segment.subseries.long", defaultValue: "A Subseries")
+        case .volume:    return String(localized: "onboarding.scope.segment.volume.long", defaultValue: "A Single Volume")
+        }
+        #else
+        switch choice {
+        case .corpus:    return String(localized: "onboarding.scope.segment.corpus.short", defaultValue: "Corpus")
+        case .subseries: return String(localized: "onboarding.scope.segment.subseries.short", defaultValue: "Subseries")
+        case .volume:    return String(localized: "onboarding.scope.segment.volume.short", defaultValue: "Volume")
+        }
+        #endif
+    }
+
+    private func subseriesDetail(count: Int) -> String {
+        String(localized: "onboarding.scope.sheet.volumeCount",
+               defaultValue: "\(count) volume\(count == 1 ? "" : "s")",
+               comment: "Row detail in the subseries sheet: how many volumes an era contains")
+    }
+
+    /// Spoken position for the page dots, which are decorative on their own.
+    private var stepPositionLabel: String {
+        String(localized: "onboarding.step.position",
+               defaultValue: "Step \(step.index + 1) of \(OnboardingStep.allCases.count): \(step.label)",
+               comment: "VoiceOver label for the onboarding page dots")
+    }
+
+    // MARK: - Metrics
+
+    #if os(macOS)
+    private var titleSize: CGFloat { 15 }
+    private var denseTitleSize: CGFloat { 13 }
+    private var bodySize: CGFloat { 12 }
+    private var rowTitleSize: CGFloat { 12 }
+    private var rowDetailSize: CGFloat { 10 }
+    private var readyGlyphSize: CGFloat { 30 }
+    #else
+    private var titleSize: CGFloat { 20 }
+    private var denseTitleSize: CGFloat { 17 }
+    private var bodySize: CGFloat { 15 }
+    private var rowTitleSize: CGFloat { 15 }
+    private var rowDetailSize: CGFloat { 12 }
+    private var readyGlyphSize: CGFloat { 26 }
+    #endif
 
     // MARK: - Offline Banner
 
     private var offlineBanner: some View {
         HStack(spacing: 8) {
             Image(systemName: "wifi.slash")
-            Text("You are offline. Showing bundled catalog only.")
+            Text(Self.offlineBannerText)
                 .font(.subheadline)
         }
         .frame(maxWidth: .infinity)
@@ -478,84 +623,5 @@ private enum OnboardingStep: CaseIterable, Identifiable {
         case .addVolumes: return .welcome
         case .ready:      return .addVolumes
         }
-    }
-}
-
-// MARK: - StepDot
-
-private struct StepDot: View {
-    let index: Int
-    let label: String
-    let isCurrent: Bool
-    let isPast: Bool
-
-    var body: some View {
-        VStack(spacing: 4) {
-            ZStack {
-                Circle()
-                    .fill(isCurrent ? Color.accentColor : (isPast ? Color.accentColor.opacity(0.3) : Color.secondary.opacity(0.15)))
-                    .frame(width: 28, height: 28)
-                // The number / checkmark sits inside a fixed 28 pt circle, so its
-                // glyph stays a fixed point size — scaling it with Dynamic Type
-                // would clip inside the badge. The label below scales freely.
-                if isPast {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
-                } else {
-                    Text("\(index + 1)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isCurrent ? .white : .secondary)
-                }
-            }
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(isCurrent ? Color.accentColor : .secondary)
-        }
-    }
-}
-
-// MARK: - ScopeCard
-
-private struct ScopeCard: View {
-    let isSelected: Bool
-    let systemImage: String
-    let title: String
-    let detail: String
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                    .frame(width: 28, alignment: .top)
-                    .padding(.top, 1)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    Text(detail)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.3),
-                            lineWidth: isSelected ? 2 : 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityHint(detail)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
