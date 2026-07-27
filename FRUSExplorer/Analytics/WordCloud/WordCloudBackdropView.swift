@@ -99,6 +99,9 @@ struct WordCloudBackdropView: View {
             }
             .animation(crossfade, value: lensIndex)
             .background(alignment: .center) { cadenceDriver }
+            // Inert unless FRUS_FRAME_PROBE=1. The backdrop's frame cost is what gates the
+            // drift work, and this is where it is measured.
+            .frameTimeProbe()
         }
     }
 
