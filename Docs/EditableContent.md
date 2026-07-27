@@ -100,29 +100,52 @@ FRUS Explorer is an independently-developed research tool and is not an official
 
 ---
 
-### 2.1 Title and Body
+### 2.1 Onboarding copy (all three steps)
 
-> **Corrected 2026-07-26 (Workstream O, O-0).** This section used to point at
-> `OnboardingIntroView.swift`, which lost its last call site in Session 71 (`c031dabe`,
-> 2026-05-18) and has now been deleted. The subtitle recorded here — *"The Foreign
-> Relations of the United States series, searchable on your device."* — has **never
-> appeared on screen**: that wording only arrived on 2026-06-07 (`4429e786`), three weeks
-> after the view stopped rendering. Editing this section changed nothing. Below is what the
-> Welcome step actually shows.
+> **Rewritten 2026-07-27 (Workstream O, O-4).** The flow now floats in one docked glass
+> panel over an animated word cloud, and every string below is a real
+> `String(localized:)` key — before O-4 this view carried 14 raw `Text("…")` literals and
+> not one localised string. The keys are listed so a translator or an editor can find them.
 >
-> These three strings are raw `Text("…")` literals with **no localization keys**: the whole
-> of `OnboardingView.swift` predates the `String(localized:)` convention. Session O-4
-> rewrites this copy and introduces keys, at which point this section gains them.
+> The section previously documented `OnboardingIntroView.swift`, which never rendered; see
+> §2.2 for what became of its body text.
 
-<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingView.swift | property: welcomeView | keys: none yet — raw literals, see O-4 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/OnboardingView.swift | property: Copy | keys: onboarding.* -->
 
-**Title:** Welcome to FRUS Explorer
+**Step 1 — Welcome**
 
-**Body:** FRUS Explorer gives you full-text search, cross-reference navigation, and AI-assisted research over the Foreign Relations of the United States documentary series — the official record of U.S. foreign policy since 1861.
+- `onboarding.welcome.title` — **Welcome to FRUS Explorer**
+- `onboarding.welcome.body` — The official documentary record of U.S. foreign policy since 1861 — searchable, cross-referenced, on your device.
 
-**Footnote:** You can add volumes now or skip ahead and add them later from the Corpus Browser.
+**Step 2 — Add Volumes**
 
-<!-- END SOURCE: onboarding welcome step -->
+- `onboarding.scope.title` — What would you like to download?
+- `onboarding.scope.segment.corpus.long` / `.short` — Entire Corpus · Corpus
+- `onboarding.scope.segment.subseries.long` / `.short` — A Subseries · Subseries
+- `onboarding.scope.segment.volume.long` / `.short` — A Single Volume · Volume
+
+  *The long labels are macOS; iOS uses the short ones, because three full labels cannot
+  share an iPhone's segment width without truncating.*
+
+- `onboarding.scope.caption.corpus` — 552+ volumes · ≈ 3.3 GB — the entire series, fully offline.
+- `onboarding.scope.caption.subseries` — A decade or diplomatic era — the recommended starting point.
+- `onboarding.scope.caption.volume` — One volume to explore — typically a few MB.
+- `onboarding.scope.sheet.volumeCount` — *N* volume / volumes
+
+**Step 3 — Ready**
+
+- `onboarding.ready.title` — **You're all set**
+- `onboarding.ready.body` — Volumes download and index automatically — search unlocks in minutes. Your project “My Research” is ready.
+
+**Shared** — `onboarding.action.back` (Back), `onboarding.action.skip` (Skip),
+`onboarding.offline.banner` (You are offline. Showing bundled catalog only.).
+"Get Started" / "Continue" / "Finish" come from `OnboardingStep.continueLabel`.
+
+**Accessibility** — `onboarding.step.position` gives the page dots a spoken position
+("Step 2 of 3: Scope"); `wordcloud.backdrop.chip.era` labels the backdrop's lens chip when
+a volume's cloud falls back to its era's vocabulary.
+
+<!-- END SOURCE: onboarding copy -->
 
 ---
 

@@ -641,13 +641,25 @@ screen.
 
 **Data & migration:** none. **Prereq:** O-2. **Needs xcodegen:** only if split into new files.
 
-**Decision point (O-4-1).** The 4c "what happens next" list was cut for space. If product
-wants it, it goes behind a disclosure — decide before building, not after the dock is
-measured.
+### ✅ O-4-1 — decided during O-4: **not built**
 
-**Decision point (O-4-2).** How the chip signals a subseries fallback on a thin volume
-(finding 9). Recommend an explicit qualifier; the alternative is a cloud that misdescribes
-the volume the user is about to download.
+The 4c "what happens next" list stays cut. The Ready dock's one line already says what
+happens ("Volumes download and index automatically — search unlocks in minutes"), and a
+disclosure on a terminal step users tap through in about two seconds is a control nobody
+opens. **Cheap to reverse** — it is one `DisclosureGroup` in `readyDock` — so this is
+recorded as a call made, not a door closed.
+
+### ✅ O-4-2 — built in O-2, and it turns out to have no work to do
+
+The chip carries an explicit `"{Lens} · {era} (era)"` qualifier, and
+`BundledCloudVectorsTests` pins that a thin volume — **or one whose vectors have not loaded
+yet**, which is the ordinary state on first selection — is marked rather than silently
+substituted.
+
+But O-1's corpus pass found **zero below-signal (scope, lens) pairs across all 2,208**. At
+volume grain, for these four lenses, the hand-off's `minimumSignalTerms` fallback never
+fires. The machinery is correct, tested, and unexercised; the only path that actually
+reaches it today is the pre-load one. **Do not spend further design on it.**
 
 **Verify.** O-0's characterization tests pass **unchanged** — that is the session's real
 oracle. Then on device, both platforms: each scope enqueues what it enqueued before, Skip
