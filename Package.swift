@@ -443,6 +443,36 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - CloudVectorsGenerator
+
+        /// Core logic for the onboarding cloud-vector generator (Workstream O, O-1):
+        /// byte-scans every shippable volume for `<div type="document">` body text,
+        /// tokenises all four bundled lenses in ONE `NLTagger` pass via `WordCloudKit`,
+        /// rolls raw counts up volume → subseries → corpus, and packs two int-indexed
+        /// artifacts.
+        .target(
+            name: "CloudVectorsGeneratorCore",
+            dependencies: [.target(name: "WordCloudKit"), .target(name: "GeneratorKit")],
+            path: "CloudVectorsGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        .executableTarget(
+            name: "CloudVectorsGenerator",
+            dependencies: [.target(name: "CloudVectorsGeneratorCore")],
+            path: "CloudVectorsGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests: TEI extraction, deterministic packing, int-index round-trip,
+        /// sentiment polarity, and the below-signal flag.
+        .testTarget(
+            name: "CloudVectorsGeneratorTests",
+            dependencies: [.target(name: "CloudVectorsGeneratorCore")],
+            path: "CloudVectorsGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - GeneratorKit
 
         /// Reusable utilities shared across the corpus-scanning generators: a deterministic
