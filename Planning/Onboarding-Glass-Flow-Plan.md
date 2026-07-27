@@ -256,25 +256,53 @@ main-thread work out of launch before anything is layered on top of it.
   custom `init(from:)` (`ManifestModels.swift:87–108`) that re-joins whitespace in every
   title and de-duplicates `tags` with a linear `contains` per tag — quadratic on an entry
   carrying up to 154 tags. Measure the type the app actually decodes, not one shaped like
-  it. So the redundant decode costs ~8 ms on a Mac and plausibly 20–32 ms on an older iPhone — real,
-  and free to remove, but **not** the reason cold launch feels slow.
+  it. So the redundant decode costs ~8 ms on a Mac and, measured since, **~10 ms on an
+  iPhone** — real, and free to remove, but **not** the reason cold launch feels slow.
 
-- **✅ SETTLED by the owner's Time Profiler trace, 2026-07-26 (`AppStore` config).** The
-  suspicion was right, and by a wider margin than expected. `FRUSExplorerApp.init()` is
-  **158 ms**, of which:
+- **✅ SETTLED by the owner's Time Profiler traces, 2026-07-26 (`AppStore` config).** The
+  suspicion was right, and by a wider margin than expected. Two traces:
 
-  | Symbol | Cost | Share of app init |
+  | Symbol | **Mac**, loaded store | **iPhone**, fresh install (empty store) |
   |---|---:|---:|
-  | `ModelContainer.makeFRUSContainer()` | **137 ms** | 87% |
-  | `AppState.init()` — *all four bundled decodes* | 21 ms | 13% |
-  | ↳ `VolumeLevelTagStore.init` (taxonomy + manifest #1) | 10 ms | |
-  | ↳ `ManifestStore.init` (manifest #2) | 8 ms | |
-  | ↳ `AdministrationProfilesStore.init` | 1 ms | |
-  | ↳ `NWPathMonitor.init` | 1 ms | |
+  | `FRUSExplorerApp.init()` | **158 ms** | **119.9 ms** |
+  | ↳ `ModelContainer.makeFRUSContainer()` | 137 ms — 87% | **86.3 ms — 72%** |
+  | ↳ `AppState.init()` | 21 ms — 13% | 33.3 ms — 28% |
+  | ↳↳ `VolumeLevelTagStore.init` (taxonomy + manifest #1) | 10 ms | 15.6 ms |
+  | ↳↳ `ManifestStore.init` (manifest #2) | 8 ms | 10.0 ms |
+  | ↳↳ `AppState.startNetworkMonitor()` | (1 ms, as `NWPathMonitor.init`) | **5.0 ms**, all self |
+  | ↳↳ `DocumentASTCache.init(capacity:)` | — | 2.0 ms |
+  | ↳↳ `AdministrationProfilesStore.init` / `SourceProvenanceStore.init` | 1 ms | 0.7 ms |
+  | ↳ `FRUSExplorerApp.configureTipKit()` | — | 0.2 ms |
 
-  `ManifestStore.init` at 8 ms corroborates the 7.8 ms standalone benchmark to within
-  measurement noise, so the redundant decode is exactly the 8 ms claimed. **It is 5% of app
-  init**, against a container open that is 17× larger.
+  On the Mac, `ManifestStore.init` at 8 ms corroborates the 7.8 ms standalone benchmark to
+  within measurement noise, so the redundant decode is exactly the 8 ms claimed — **5% of
+  app init** there, and **~8% (10 ms of 120 ms)** on the phone.
+
+  **The iPhone trace is the more interesting one, for a reason that was not the plan.** It
+  was taken on a *fresh install with no downloaded or indexed volumes* — the owner deleted
+  the TestFlight build first, following an instruction meant for the launch-screen visual
+  check rather than for this trace. That accident produced the control case: **86 ms of
+  container open with an empty store.** So the container's cost is mostly **fixed** —
+  `Schema(frusModelTypes)` building a managed object model over 19 `@Model` types by
+  reflection, plus store setup and CloudKit mirroring — and not something that grows into
+  existence as a user accumulates data.
+
+  That matters more than the absolute number: **every user pays most of this on their very
+  first launch, before any data exists.** It is not "the owner's store got big." It is the
+  strongest argument for the launch screen, which is the only thing that can draw there.
+
+  **Still unmeasured:** an iPhone cold launch against a *loaded* store. Mac-loaded (137 ms)
+  versus iPhone-empty (86 ms) cannot be subtracted — different hardware and different store
+  size at once. That number sets O-3's gate and is worth having before O-3, not before O-1.
+
+  **New, and not previously visible: `startNetworkMonitor()` costs 5 ms of main-thread self
+  time at init** — 4% of app init, spent starting an `NWPathMonitor` whose only product is
+  `isOnline`, which nothing needs at frame zero (onboarding's offline banner could start
+  optimistic and correct itself on the first path update). Deferring it past first frame
+  looks like a one-line change for 5 ms. **Flagged, deliberately not folded into O-0-2** —
+  it is a behaviour change to network-state timing, not a decode dedup, and it belongs in
+  its own PR with its own reasoning. Same rule as the `ContentView` in-`body` filesystem
+  scan in finding 9.
 
   **Consequences, all three of them:**
   1. **PR 2 lands as hygiene, not performance.** One decode, one source of truth, no second
@@ -286,8 +314,9 @@ main-thread work out of launch before anything is layered on top of it.
 
   `makeFRUSContainer()` is two statements: `Schema(frusModelTypes)` over the 19 `@Model`
   types, and one `ModelContainer(for:configurations:)` with CloudKit private-database
-  mirroring. There is nothing in it to delete — the 137 ms is SwiftData building the
-  managed object model by reflection and opening the store. Reducing it means changing
+  mirroring. There is nothing in it to delete — the cost is SwiftData building the
+  managed object model by reflection and opening the store, which the empty-store trace
+  confirms is largely fixed work rather than data-proportional. Reducing it means changing
   *when* the container is built, not what it does, and that is a restructure no session in
   this plan is scoped for. **Still outstanding: the same trace on an iPhone**, where a
   large synced store should make the figure worse, not better.
@@ -476,9 +505,27 @@ Two surfaces, one arbiter.
 - First-launch handoff: splash → 4a is cloud-to-cloud. Carry the lens phase and seed
   across so it reads as one surface rather than two that happen to look alike.
 
-**Explicitly not built:** the iOS launch-screen half of option (a). The pre-render window
-is addressed by removing work (O-0-2), not by drawing over it; `UILaunchScreen: {}`
-(`project.yml:97`) stays as it is.
+**~~Explicitly not built:~~ BUILT — owner decision 2026-07-26, after the measurement below.**
+The iOS launch-screen half of option (a) ships as `FRUSExplorer/Resources/LaunchScreen.storyboard`:
+the 1a identity block (gradient app tile, wordmark, caption) on an asset-catalog ground
+with light and dark variants, wired through `UILaunchStoryboardName` in `project.yml`.
+`UILaunchScreen: {}` is **removed**, not left alongside — iOS 14+ prefers the dictionary
+when both are present, which would silently ignore the storyboard.
+
+Constraints that shaped it, all inherent to launch screens: no code runs, so the gradient
+is a pre-rendered vector PDF rather than a drawn layer and the glyph is baked into it
+rather than tinted at runtime; no Dynamic Type; no localization. It is identity only — the
+animated cloud belongs to `LaunchSplashView` in O-3, which takes over once SwiftUI is up.
+**Keep the two compositions in step**: they are meant to read as one moment, which is the
+whole argument for option (a) having two halves. macOS has no launch-screen equivalent and
+is unchanged.
+
+One trap worth recording: the macOS target globs the same `FRUSExplorer/` directory, and
+`ibtool --target-device mac` **hard-errors** on an iOS storyboard rather than skipping it,
+so the file is excluded in the macOS target's `sources` — omitting that exclusion breaks
+the macOS build outright.
+
+<details><summary>The decision as it stood before it was made</summary>
 
 > ⚠️ **This rationale did not survive measurement — owner decision needed before O-3.**
 > O-0's trace puts `makeFRUSContainer()` at 137 ms of a 158 ms `FRUSExplorerApp.init()`,
@@ -503,6 +550,8 @@ is addressed by removing work (O-0-2), not by drawing over it; `UILaunchScreen: 
 > the gap is now known to be real and irreducible — but it reopens a question the owner
 > already answered once, so it is flagged rather than folded in. macOS has no launch-screen
 > equivalent and is unaffected either way.
+
+</details>
 - **UI-test bypass**: the splash must not appear under `FRUS_UI_TEST_MODE`, or every
   existing UI test's first element lookup races it. Same env check as
   `ContentView.swift:53`.

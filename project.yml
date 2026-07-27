@@ -94,7 +94,19 @@ targets:
         # keeps the Info.plist sources consistent across platforms.)
         LSApplicationCategoryType: "public.app-category.reference"
         UIApplicationSupportsIndirectInputEvents: YES
-        UILaunchScreen: {}
+        # Launch screen — the static half of Workstream O's option (a).
+        #
+        # This was `UILaunchScreen: {}`, an empty dictionary, which draws a blank white
+        # screen for the whole pre-render window. O-0's Time Profiler trace measured
+        # `FRUSExplorerApp.init()` at 158 ms — 137 ms of it `makeFRUSContainer()`, a
+        # synchronous SwiftData store open with nothing in it to delete — so that window is
+        # real, is not going away, and is the only part of launch a SwiftUI overlay can
+        # never reach.
+        #
+        # `UILaunchScreen` and `UILaunchStoryboardName` are mutually exclusive: iOS 14+
+        # prefers the dictionary if BOTH are present, which would silently ignore the
+        # storyboard. The dictionary is therefore removed, not left alongside.
+        UILaunchStoryboardName: LaunchScreen
         # Multi-window support (Stage Manager / iPadOS windowed apps). This key MUST be nested
         # under `UIApplicationSceneManifest` — a TOP-LEVEL `UIApplicationSupportsMultipleScenes`
         # is silently ignored by iOS, which left `@Environment(\.supportsMultipleWindows)` FALSE
@@ -201,6 +213,11 @@ targets:
         excludes:
           - "Info.plist"
           - "Info-macOS.plist"
+          # macOS has no launch screen, and this is not merely dead weight here: `ibtool
+          # --target-device mac` HARD-ERRORS on an iOS storyboard ("iOS storyboards do not
+          # support target device type 'mac'"), so leaving it in the shared glob breaks
+          # the macOS build outright.
+          - "Resources/LaunchScreen.storyboard"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
       # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).

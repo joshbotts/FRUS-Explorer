@@ -302,6 +302,7 @@
 		68D62986C8C96F92E90045BD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9863245E183A705A15D03E63 /* Assets.xcassets */; };
 		68FDBB1B8324188D36A0952C /* TEIParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07C56177C2677EF390399D4 /* TEIParserTests.swift */; };
 		6941439C522C0B07279EC5A7 /* DataRecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A2243892329FD25918D4628 /* DataRecoveryView.swift */; };
+		69BDBDC18136770734179CBE /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E4F0A106DA9F8FD94920CAAA /* LaunchScreen.storyboard */; };
 		69C1DD7E04511ED92674BB11 /* FRUSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C1CE86F4937BA9A1EAF837 /* FRUSSettingsView.swift */; };
 		6A985C58E55942716597C195 /* DuplicateRecordCleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078660F095019CC757BF43C4 /* DuplicateRecordCleanup.swift */; };
 		6AA06DB34AFE168781188531 /* DecimalFileSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E461B1FE16124B538FDE8A89 /* DecimalFileSegment.swift */; };
@@ -1213,6 +1214,7 @@
 		E461B1FE16124B538FDE8A89 /* DecimalFileSegment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalFileSegment.swift; sourceTree = "<group>"; };
 		E4B65486DB710458B49C37EE /* BatchRunSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRunSheet.swift; sourceTree = "<group>"; };
 		E4B96612540EB50673701274 /* DecimalFileSegmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalFileSegmentTests.swift; sourceTree = "<group>"; };
+		E4F0A106DA9F8FD94920CAAA /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		E50B284089B05AB64EEAB04B /* SeriesScopeBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesScopeBar.swift; sourceTree = "<group>"; };
 		E51A626491C155C769DF2F17 /* DocumentWindowID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentWindowID.swift; sourceTree = "<group>"; };
 		E59A2CFAD60CE319848BC6BA /* SharedManifestDecodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedManifestDecodeTests.swift; sourceTree = "<group>"; };
@@ -1736,6 +1738,7 @@
 				048277CFCB4CE54315008DB9 /* frus-offset-engine.js */,
 				39BF8068D53FC3128464360F /* frus-print.css */,
 				536A71597B7315E933F81136 /* frus-selection.js */,
+				E4F0A106DA9F8FD94920CAAA /* LaunchScreen.storyboard */,
 				F1D767EB095F342A813EA1D2 /* manifest.json */,
 				D5F8698F22479B30B2FFFB1F /* person-authority-index.json */,
 				91C3D7D7C865E52E2876AF0C /* source-provenance-index.json */,
@@ -2187,6 +2190,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F98B32B579F89D6B63DB432A /* Assets.xcassets in Resources */,
+				69BDBDC18136770734179CBE /* LaunchScreen.storyboard in Resources */,
 				F38326ED7268F68B3EC17242 /* Localizable.strings in Resources */,
 				1ABE3B47C6F5729270EF8CA6 /* administration-profiles-index.json in Resources */,
 				2B012290A4842846E664143D /* administrations.json in Resources */,
