@@ -605,10 +605,28 @@ the macOS build outright.
 **Data & migration:** none. **Prereq:** O-2 (the cloud), O-0 PR 2 (so the launch baseline
 is the improved one). **Needs xcodegen:** yes (new files).
 
-**Decision point (O-3-1).** Whether the splash may appear *over* onboarding on a fresh
-install, or only before it. Recommend before-only: two full-bleed cloud surfaces stacked
-is the shape most likely to read as a stutter on the one launch that forms a first
-impression.
+### ✅ O-3-1 — decided during O-3: **before onboarding, never over it**
+
+The splash holds briefly on a fresh install and dismisses into onboarding's own cloud.
+Stacking two full-bleed cloud surfaces was the shape most likely to read as a stutter on
+the one launch that forms a first impression.
+
+**The fresh-install hold, and why it is not the thing the plan forbids.** A `.freshInstall`
+splash has nothing to wait for, so it holds ~1.6 s. That is **once per install**, not the
+"fixed display floor on every cold launch" O-0-1 rules out as a permanent tax on a tool
+people open repeatedly. The other reason, `.cloudKitImport`, has a real wait and dismisses
+when `hasInitialProjectSyncSettled` flips — never on a timer.
+
+**Both (d) predicates are required together, not either/or.**
+`hasInitialProjectSyncSettled` alone is false forever on a device with no iCloud account,
+which would have shown a splash waiting for something that is never going to arrive. The
+arbiter therefore requires `cloudKitSyncState == .syncing` as well.
+
+**The arbiter is a `switch`, and that is the point.** `CloudSurfaceArbiter.resolve` returns
+one `CloudSurface`, so "both surfaces at once" is unrepresentable rather than merely
+untested — the failure the plan warned about cannot be expressed. `CloudSurfaceArbiterTests`
+sweeps all 32 input combinations, pins that pending corpus work always wins, and asserts
+every branch is reachable so the suite cannot pass vacuously.
 
 **Verify.** `UIObstructionTests` and `FRUSExplorerUITests` green unchanged — the splash
 must not appear under `FRUS_UI_TEST_MODE` or it races every first element lookup. Cold
