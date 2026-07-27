@@ -26,30 +26,30 @@ import NaturalLanguage
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
-struct WordCloudTokenizer: Sendable {
+public struct WordCloudTokenizer: Sendable {
 
     /// Shortest token length kept. Two characters and below are almost always
     /// noise (initials, abbreviations) once stopwords are removed.
-    let minimumLength: Int
+    public let minimumLength: Int
 
     /// The set of terms to drop after normalisation.
-    let stopwords: Set<String>
+    public let stopwords: Set<String>
 
     /// When `true`, a conservative plural→singular fold is applied to tokens the
     /// lemmatiser leaves unchanged, so e.g. "treaties" merges with "treaty".
-    let foldPlurals: Bool
+    public let foldPlurals: Bool
 
     /// The semantic filter. `.allTerms` keeps all content words; the entity and
     /// part-of-speech lenses keep only matching tokens (via `NaturalLanguage`).
-    let lens: WordCloudLens
+    public let lens: WordCloudLens
 
     /// For the lexicon-backed lenses (`.concepts`, `.sentiment`), the set of
     /// base-form words a token must belong to; `nil` for all other lenses.
-    let lexicon: Set<String>?
+    public let lexicon: Set<String>?
 
     /// Classification markings and other document-chrome terms (single words and
     /// multi-word phrases) to reject across every lens. Empty disables the filter.
-    let markings: Set<String>
+    public let markings: Set<String>
 
     /// Creates a tokenizer.
     /// - Parameters:
@@ -59,7 +59,7 @@ struct WordCloudTokenizer: Sendable {
     ///   - lens: Semantic filter to apply. Default `.allTerms`.
     ///   - lexicon: Membership set for lexicon-backed lenses. Default `nil`.
     ///   - markings: Classification/chrome terms to reject across all lenses.
-    init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true,
+    public init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true,
          lens: WordCloudLens = .allTerms, lexicon: Set<String>? = nil,
          markings: Set<String> = []) {
         self.stopwords = stopwords
@@ -102,7 +102,7 @@ struct WordCloudTokenizer: Sendable {
     ///   - counts: A running `term → count` tally, mutated in place.
     /// - Returns: The number of surviving tokens contributed by `text`.
     @discardableResult
-    func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
+    public func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
         guard !text.isEmpty else { return 0 }
         return lens.isEntity
             ? accumulateEntities(from: text, into: &counts)
@@ -202,7 +202,7 @@ struct WordCloudTokenizer: Sendable {
     /// Guards against common `-is`/`-us`/`-ss`/`-ous` endings and a fixed
     /// exception set, so only high-confidence plurals are reduced. Applied only as
     /// a fallback when the lemmatiser yields no lemma.
-    static func singularize(_ word: String) -> String {
+    public static func singularize(_ word: String) -> String {
         guard word.count > 4, !pluralExceptions.contains(word) else { return word }
         if word.hasSuffix("ss") || word.hasSuffix("us")
             || word.hasSuffix("is") || word.hasSuffix("ous") { return word }
@@ -212,35 +212,6 @@ struct WordCloudTokenizer: Sendable {
             || word.hasSuffix("zes") { return String(word.dropLast(2)) }     // boxes → box
         if word.hasSuffix("s") { return String(word.dropLast(1)) }           // documents → document
         return word
-    }
-
-    /// Builds the tokenizer the app actually uses, from a tuning and a lens.
-    ///
-    /// Three call sites assembled this six-line expression independently — the frequency
-    /// service, the collection-cloud exporter, and (as of S-5b) the settings bench. A settings
-    /// preview built from a *different* assembly than the cloud would be a preview of nothing,
-    /// so the assembly is stated once.
-    ///
-    /// - Parameters:
-    ///   - tuning: The user's tunable criteria.
-    ///   - lens: The semantic filter in force.
-    ///   - includeDiplomatic: Whether the diplomatic-boilerplate stopword layer is active
-    ///     (the `excludeBoilerplate` setting — deliberately not a `WordCloudTuning` field,
-    ///     since it selects a stopword layer rather than tuning a threshold).
-    ///   - extraStopwords: The user's global + per-lens hidden words, plus any per-scope ones.
-    static func configured(tuning: WordCloudTuning,
-                           lens: WordCloudLens = .allTerms,
-                           includeDiplomatic: Bool,
-                           extraStopwords: Set<String> = []) -> WordCloudTokenizer {
-        WordCloudTokenizer(
-            stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomatic)
-                .union(extraStopwords),
-            minimumLength: tuning.minimumLength,
-            foldPlurals: tuning.foldPlurals,
-            lens: lens,
-            lexicon: WordCloudLexicons.filter(for: lens),
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
-        )
     }
 
     /// Whether an already-normalised term survives every criterion this tokenizer applies.
@@ -257,7 +228,7 @@ struct WordCloudTokenizer: Sendable {
     ///
     /// - Parameter term: A lowercased, already-lemmatised candidate.
     /// - Returns: `true` when the term would be counted.
-    func accepts(_ term: String) -> Bool {
+    public func accepts(_ term: String) -> Bool {
         if let lexicon, !lexicon.contains(term) { return false }
         if markings.contains(term) { return false }
         return lens.isEntity ? isAcceptableEntity(term) : isAcceptable(term)

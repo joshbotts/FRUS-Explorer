@@ -66,6 +66,11 @@ targets:
           - "Info-macOS.plist"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
+      # WordCloudKit source files are compiled directly into the app (not via SPM product
+      # linkage), like FTS5Store and SourceNoteKit. The same sources are an SPM library
+      # target so CloudVectorsGenerator tokenises the corpus through the app's own code
+      # rather than a second copy — see Package.swift.
+      - path: WordCloudKit
       # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).
       # eval-baseline.txt / eval-report.txt are the committed SourceNoteEvalGenerator
       # BEFORE/AFTER snapshots, not app content.
@@ -220,6 +225,11 @@ targets:
           - "Resources/LaunchScreen.storyboard"
       # FTS5Store source files are compiled directly into the app (not via SPM product linkage).
       - path: FTS5Store
+      # WordCloudKit source files are compiled directly into the app (not via SPM product
+      # linkage), like FTS5Store and SourceNoteKit. The same sources are an SPM library
+      # target so CloudVectorsGenerator tokenises the corpus through the app's own code
+      # rather than a second copy — see Package.swift.
+      - path: WordCloudKit
       # SourceNoteKit source files are compiled directly into the app (not via SPM product linkage).
       # eval-baseline.txt / eval-report.txt are the committed SourceNoteEvalGenerator
       # BEFORE/AFTER snapshots, not app content.
