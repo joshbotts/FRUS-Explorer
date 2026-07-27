@@ -212,9 +212,16 @@ struct WordCloudDriftFieldTests {
                 #expect(scale > 0)
             }
         }
-        // And the ceiling must not be wastefully high, or every symbol is resolved much
-        // larger than it is ever drawn.
-        #expect(observedMax > ceiling * 0.98, "the ceiling should be reached, not merely respected")
+        // And the ceiling must not be wastefully high, or every symbol is resolved far larger
+        // than it is ever drawn.
+        //
+        // Not tight, deliberately. The breath term is `sin(wt + phase) - sin(phase)`, whose
+        // supremum over `wt` is `1 - sin(phase)` — it reaches the global bound of 2 only for
+        // a particle whose phase happens to put `sin(phase)` at -1. With 25 particles the
+        // closest one lands around 96% of the ceiling. The guard still catches a ceiling set
+        // wildly high, which is what it is for.
+        #expect(observedMax > ceiling * 0.9,
+                "observed \(observedMax) against ceiling \(ceiling) — symbols would be resolved far larger than drawn")
     }
 
     // MARK: - Determinism
@@ -256,7 +263,14 @@ struct WordCloudDriftFieldTests {
     /// Pinning the clock, not pausing the schedule. Pausing alone freezes whatever pose the
     /// field happened to be in, which reads as a rendering fault; `t = 0` is a deliberate
     /// rest pose and it is the same one every time.
-    @Test("At t=0 every particle sits at its home position")
+    /// t = 0 must be the packed layout EXACTLY, not merely near it.
+    ///
+    /// The first version accepted "home plus each word's own fixed offset, bounded by the
+    /// amplitude" and documented that as fine. It is not: Reduce Motion pins the clock to 0,
+    /// so that displaced pose is what a Reduce Motion user sees permanently — and it is a
+    /// pose the packer never sanctioned, which means it can sit inside an exclusion zone the
+    /// packer exists to keep words out of. The oscillators are phase-corrected now.
+    @Test("At t=0 every particle sits exactly at its packed home")
     func restPoseIsTheHomeLayout() {
         let size = CGSize(width: 400, height: 300)
         let homes = [CGPoint(x: 100, y: 100), CGPoint(x: 250, y: 180), CGPoint(x: 300, y: 60)]
@@ -265,16 +279,54 @@ struct WordCloudDriftFieldTests {
 
         for particle in field.particles {
             let state = WordCloudDriftField.state(of: particle, at: 0, in: size)
-            let dx = abs(state.position.x - particle.home.x)
-            let dy = abs(state.position.y - particle.home.y)
-            // sin(0 + phase) is not zero, so the rest pose is the home plus each word's own
-            // fixed offset — stable, bounded, and identical on every launch. What matters is
-            // that it does not wander.
-            #expect(dx <= WordCloudDriftField.Tuning.nearAmplitude + 0.001)
-            #expect(dy <= WordCloudDriftField.Tuning.nearAmplitude + 0.001)
+            #expect(abs(state.position.x - particle.home.x) < 0.001,
+                    "\(particle.term) rests \(state.position.x - particle.home.x) pt off home")
+            #expect(abs(state.position.y - particle.home.y) < 0.001,
+                    "\(particle.term) rests \(state.position.y - particle.home.y) pt off home")
 
             let again = WordCloudDriftField.state(of: particle, at: 0, in: size)
             #expect(again == state, "the rest pose must be a function, not a sample")
+        }
+    }
+
+    // MARK: - Exclusion zones survive the drift
+
+    /// The packer keeps words out of a zone at PLACEMENT time and nothing consulted them
+    /// afterwards, so a word could drift straight over the dock or identity block the zone
+    /// existed to protect.
+    @Test("A word that drifts into an exclusion zone is pushed back out")
+    func driftRespectsExclusionZones() {
+        let size = CGSize(width: 400, height: 300)
+        // A bottom dock, as onboarding passes. The word is packed just above it — close
+        // enough that an unchecked 14 pt excursion carries it in.
+        let dock = CGRect(x: 0, y: 210, width: 400, height: 90)
+        let placed = [word("negotiation", rank: 0, at: CGPoint(x: 200, y: 196), fontSize: 20)]
+        let field = WordCloudDriftField(placed: placed, rankCeiling: 25, exclusionZones: [dock])
+        let particle = field.particles[0]
+
+        var everOverlapped = false
+        for step in 0..<2000 {
+            let state = WordCloudDriftField.state(of: particle, at: Double(step) / 20,
+                                                  in: size, avoiding: field.exclusionZones)
+            let box = CGRect(x: state.position.x - particle.halfSize.width * state.scale,
+                             y: state.position.y - particle.halfSize.height * state.scale,
+                             width: particle.halfSize.width * state.scale * 2,
+                             height: particle.halfSize.height * state.scale * 2)
+            if box.intersects(dock) { everOverlapped = true; break }
+        }
+        #expect(!everOverlapped, "a drifting word settled on top of the dock")
+    }
+
+    @Test("Without zones the push is a no-op — the ordinary path is unchanged")
+    func noZonesLeavesPositionAlone() {
+        let size = CGSize(width: 400, height: 300)
+        let placed = [word("policy", rank: 3, at: CGPoint(x: 200, y: 150))]
+        let field = WordCloudDriftField(placed: placed, rankCeiling: 25)
+        for step in 0..<200 {
+            let t = Double(step) / 10
+            let withNone = WordCloudDriftField.state(of: field.particles[0], at: t, in: size)
+            let explicit = WordCloudDriftField.state(of: field.particles[0], at: t, in: size, avoiding: [])
+            #expect(withNone == explicit)
         }
     }
 

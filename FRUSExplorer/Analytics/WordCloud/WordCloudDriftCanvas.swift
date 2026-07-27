@@ -230,7 +230,8 @@ struct WordCloudDriftCanvasFrame: View {
                 id: WordCloudDriftField.SymbolKey(lens: layer.lens, term: particle.term)
             ) else { continue }
 
-            let state = WordCloudDriftField.state(of: particle, at: time, in: size)
+            let state = WordCloudDriftField.state(of: particle, at: time, in: size,
+                                                  avoiding: layer.field.exclusionZones)
 
             // A per-particle context COPY, never `drawLayer`. `drawLayer` opens a real
             // transparency group — an offscreen buffer per particle — which at 25 particles
