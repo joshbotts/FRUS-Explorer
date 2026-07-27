@@ -1039,29 +1039,30 @@ final class AppState {
 
     // MARK: - Queue tracking (Session 116)
 
-    /// Number of volumes that have completed indexing in the current batch session.
+    /// The indexing queue currently in flight, if any.
     ///
-    /// Reset at the start of each new batch. Used to compute `indexingQueuePosition.current`.
-    /// Volumes finished in the current batch. Internal alongside
-    /// ``indexingBatchTotalAtStart`` so the position can be tested directly.
-    var indexingBatchCompletedCount: Int = 0
+    /// **Queue-grained, deliberately.** The per-volume signal
+    /// (``currentIndexingProgress``) goes `nil` between volumes, so a banner keyed on it
+    /// flashed in and out once per volume — the user sees a strobe rather than a state.
+    /// What a researcher actually needs to know is *when everything they downloaded is
+    /// ready*, which is a property of the queue, not of whichever volume happens to be
+    /// parsing. This value is created when indexing starts and survives until the backlog
+    /// is empty.
+    var indexingBatch: IndexingBatch?
 
-    /// The total number of volumes estimated at the start of the current batch.
-    ///
-    /// Captured as `downloadQueue.count + 1` when the first volume of a new batch begins
-    /// indexing. Stays fixed for the duration of the batch (does not shrink as downloads
-    /// complete) so the denominator in "Volume 3 of 12" remains stable.
-    /// Volumes in the current indexing batch.
-    ///
-    /// Internal rather than private so `IndexingBatchPositionTests` can drive
-    /// ``indexingQueuePosition`` directly — the property returned `nil` for whole
-    /// multi-volume batches and nothing could observe that.
-    var indexingBatchTotalAtStart: Int = 0
+    /// Volumes made searchable by the queue that just finished, when it held more than
+    /// one — the summary card's queue-grain line. `nil` for a single-volume queue, whose
+    /// per-volume card already says everything true about it.
+    var completedIndexingBatchVolumeCount: Int?
 
-    /// Timestamp of the most recent `.complete` event. Used to distinguish a batch
-    /// continuation (brief nil gap between volumes) from a fresh start (long idle period
-    /// or empty queue).
-    private var lastIndexingCompletionTime: Date? = nil
+    /// Ends a queue that has stopped making progress.
+    ///
+    /// The backlog is the queue's authority for when it is finished, and a volume that
+    /// cannot be indexed — a truncated download, a parse failure — stays in that backlog
+    /// forever. Without a watchdog the banner would be pinned to the screen for the rest
+    /// of the session, telling the user their library is still being prepared while
+    /// nothing at all is running.
+    private var indexingBatchWatchdog: Task<Void, Never>?
 
     /// Rolling mean throughput across completed volumes in the current batch (docs/s).
     ///
@@ -1074,38 +1075,109 @@ final class AppState {
     /// Falls back to 600 (approximate corpus mean) until at least one volume completes.
     var indexingQueueAverageDocumentCount: Int = 600
 
-    /// The current volume's position within a multi-volume download-and-index batch.
+    /// The current volume's position within a multi-volume queue.
     ///
-    /// Returns `nil` when only one volume is in flight (single-volume mode) or when
-    /// the current batch was not triggered by a download queue (e.g. manual reindex).
-    /// `current` is 1-based. Used to drive `IndexingQueueBannerView`.
+    /// Returns `nil` for a single-volume queue and when nothing is queued. `current` is
+    /// 1-based. Drives `IndexingQueueBannerView`.
+    ///
+    /// Reads the queue, not the volume: it stays non-nil through the gaps between
+    /// volumes, which is what stops the banner strobing once per volume.
     ///
     /// Version history:
     ///   1.0 — Session 116: initial implementation
+    ///   2.0 — queue-grained: derived from ``indexingBatch`` rather than from
+    ///         `currentIndexingProgress` plus two loose counters
     var indexingQueuePosition: (current: Int, total: Int)? {
-        guard currentIndexingProgress != nil, indexingBatchTotalAtStart >= 2 else { return nil }
-        return (current: indexingBatchCompletedCount + 1, total: indexingBatchTotalAtStart)
+        guard let batch = indexingBatch, batch.total >= 2 else { return nil }
+        return (current: min(batch.completed + 1, batch.total), total: batch.total)
     }
 
-    /// Replaces the provisional batch total with the real backlog: volumes on disk that
-    /// are downloaded but not yet indexed.
+    /// Re-reads the real backlog and either raises the queue's total or ends the queue.
     ///
-    /// `downloadQueue.count + 1` only describes a batch whose downloads are still in
+    /// `downloadQueue.count + 1` only describes a queue whose downloads are still in
     /// flight. When the downloads finished first — a subseries on a fast connection — the
-    /// provisional total is 1 while there may be dozens of volumes waiting, which is what
-    /// hid the queue banner. `unindexedDownloadedVolumeIds()` is the authoritative answer
-    /// and is what the background indexing pass already uses to decide its own work.
+    /// provisional total is 1 while dozens of volumes wait, which is what hid the queue
+    /// banner (#541). `unindexedDownloadedVolumeIds()` is the authoritative answer, and is
+    /// what the background indexing pass already uses to decide its own work.
+    ///
+    /// - Parameter mayEnd: `true` after a volume completes, when an empty backlog means
+    ///   the whole queue is done. `false` at queue start, where an empty result could only
+    ///   be a race with the volume that is indexing right now.
     ///
     /// Runs off the main actor (`IndexingPipeline` is an actor) and only ever raises the
     /// total, so a slow query cannot retract a count the banner is already showing.
-    private func refineIndexingBatchTotal() {
-        guard let pipeline = indexingPipeline else { return }
+    private func syncIndexingBatchWithBacklog(mayEnd: Bool) {
+        guard let pipeline = indexingPipeline else {
+            // Nothing can answer "is there more?", so ending on the volume that just
+            // finished beats leaving a banner up with nothing driving it.
+            if mayEnd { endIndexingBatch() }
+            return
+        }
         Task { @MainActor [weak self] in
-            guard let backlog = try? await pipeline.unindexedDownloadedVolumeIds() else { return }
-            guard let self else { return }
-            self.indexingBatchTotalAtStart = max(self.indexingBatchTotalAtStart, backlog.count)
+            let backlog = try? await pipeline.unindexedDownloadedVolumeIds()
+            guard let self, var batch = self.indexingBatch else { return }
+            guard let backlog else { return }  // transient failure: retry on the next volume
+            if mayEnd, backlog.isEmpty, self.currentIndexingProgress == nil {
+                self.endIndexingBatch()
+            } else {
+                batch.total = max(batch.total, batch.completed + backlog.count)
+                // Union, never replace: the backlog shrinks as volumes are indexed, and
+                // the cloud's scope must describe the queue the user started, not what is
+                // left of it.
+                let known = Set(batch.volumeIds)
+                batch.volumeIds += backlog.filter { !known.contains($0) }.sorted()
+                self.indexingBatch = batch
+                if mayEnd { self.armIndexingBatchWatchdog(generation: batch.generation) }
+            }
         }
     }
+
+    /// Tears the queue down and hands the summary card its queue-grain count.
+    private func endIndexingBatch() {
+        indexingBatchWatchdog?.cancel()
+        indexingBatchWatchdog = nil
+        guard let batch = indexingBatch else { return }
+        completedIndexingBatchVolumeCount = batch.completed > 1 ? batch.completed : nil
+        indexingBatch = nil
+    }
+
+    /// Arms the stall timeout described on ``indexingBatchWatchdog``.
+    ///
+    /// Keyed on the queue's generation, so any real progress in the interim — including
+    /// the `.optimizing` stage, which is reported like any other — makes the pending
+    /// timeout inert without needing to cancel it.
+    ///
+    /// **A pending download is not a stall.** Indexing routinely catches up with a slow
+    /// connection and then sits idle waiting for the next file to land, which on cellular
+    /// can be minutes. Tearing the queue down there would re-create the strobe at a slower
+    /// cadence, and would be wrong on the merits: the user's volumes are not ready yet.
+    /// So while `downloadQueue` is non-empty the watchdog re-arms instead of firing.
+    private func armIndexingBatchWatchdog(generation: Int) {
+        indexingBatchWatchdog?.cancel()
+        indexingBatchWatchdog = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(Self.indexingBatchStallTimeout))
+            guard !Task.isCancelled, let self, let batch = self.indexingBatch else { return }
+            guard batch.generation == generation, self.currentIndexingProgress == nil else { return }
+            guard self.downloadQueue.isEmpty else {
+                self.armIndexingBatchWatchdog(generation: generation)
+                return
+            }
+            self.endIndexingBatch()
+        }
+    }
+
+    /// Seconds with nothing reported at all — no progress, no new volume — before a queue
+    /// is presumed finished and torn down.
+    ///
+    /// The backlog is the queue's primary end condition; this is the backstop for a volume
+    /// that can never be indexed and so never leaves it, and for a manual reindex of one
+    /// volume while other unindexed volumes happen to sit on disk. Long enough that the
+    /// ordinary gap between two volumes — an FTS5 write, sometimes an `optimize()` — can
+    /// never trip it, short enough that a finished queue does not linger.
+    ///
+    /// `var` so `IndexingBatchLifecycleTests` can shorten it; main-actor-isolated, like
+    /// everything else on `AppState`, so there is nothing to race.
+    static var indexingBatchStallTimeout: Double = 15
 
     /// Volume titles for the volumes currently waiting in the download queue, in order.
     ///
@@ -1158,22 +1230,28 @@ final class AppState {
                         let completedVolumeId = update.volumeId
                         Task { await engine.noteVolumeDownloaded(completedVolumeId) }
                     }
-                    self.lastIndexingCompletionTime = Date()
-                    self.indexingBatchCompletedCount += 1
+                    if var batch = self.indexingBatch {
+                        batch.completed += 1
+                        batch.total = max(batch.total, batch.completed)
+                        batch.generation += 1
+                        self.indexingBatch = batch
+                    }
+                    let completedInBatch = Double(max(1, self.indexingBatch?.completed ?? 1))
                     // Update rolling throughput average (Welford online mean).
                     if update.docsPerSecond > 0 {
-                        let n = Double(self.indexingBatchCompletedCount)
                         self.indexingQueueAverageDocsPerSecond +=
-                            (update.docsPerSecond - self.indexingQueueAverageDocsPerSecond) / n
+                            (update.docsPerSecond - self.indexingQueueAverageDocsPerSecond) / completedInBatch
                     }
                     // Update rolling document-count average.
                     if let meta = self.completedIndexingMetadata, meta.totalDocuments > 0 {
-                        let n = Double(self.indexingBatchCompletedCount)
                         self.indexingQueueAverageDocumentCount = Int(
                             Double(self.indexingQueueAverageDocumentCount) +
-                            (Double(meta.totalDocuments) - Double(self.indexingQueueAverageDocumentCount)) / n
+                            (Double(meta.totalDocuments) - Double(self.indexingQueueAverageDocumentCount)) / completedInBatch
                         )
                     }
+                    // Is the whole queue done, or is there more on disk waiting? Only the
+                    // backlog knows, and only it may end the queue.
+                    self.syncIndexingBatchWithBacklog(mayEnd: true)
                     // The index content just changed. Flush the word-cloud service's
                     // in-memory result cache — unlike its disk cache, the in-memory
                     // key carries no index fingerprint, so without this an empty
@@ -1207,33 +1285,30 @@ final class AppState {
                     if isNewVolume {
                         self.lastDiscoveredMetadata = nil
                     }
-                    if self.currentIndexingProgress == nil {
-                        // Transitioning from idle: decide whether this is a new batch or a
-                        // batch continuation (brief nil gap between sequential volumes).
-                        //
-                        // The test used to be `gap > 30 || downloadQueue.isEmpty`, and the
-                        // second clause was wrong. `downloadQueue` holds volumes still
-                        // DOWNLOADING, not volumes awaiting indexing — and a subseries
-                        // downloads far faster than it indexes, so the queue drains first.
-                        // `isEmpty` was then true at EVERY volume transition, which re-fired
-                        // this reset for each one: the total became 0 + 1 = 1, so
-                        // `indexingQueuePosition` returned nil and the queue banner never
-                        // appeared, and `indexingBatchCompletedCount` returned to zero so
-                        // progress never accumulated. "Indexing 3 of 27" was unreachable
-                        // whenever downloads outpaced indexing — the common case.
-                        //
-                        // A short gap now means continuation, full stop.
-                        let gap = self.lastIndexingCompletionTime
-                            .map { Date().timeIntervalSince($0) } ?? Double.infinity
-                        if gap > 30 {
-                            self.indexingBatchCompletedCount = 0
-                            // Provisional: correct for a download-led batch, an undercount
-                            // when the downloads already finished. Refined below.
-                            self.indexingBatchTotalAtStart = self.downloadQueue.count + 1
-                            self.indexingQueueAverageDocsPerSecond = 0
-                            self.indexingQueueAverageDocumentCount = 600
-                            self.refineIndexingBatchTotal()
-                        }
+                    if var batch = self.indexingBatch {
+                        // A queue already in flight simply advances. There is no
+                        // idle-gap heuristic any more: #541 fixed one wrong reading of
+                        // "is this a new batch?" (`downloadQueue.isEmpty`, which is true
+                        // at every transition once downloads outpace indexing) and a
+                        // 30-second timer was only ever a second guess at the same
+                        // question. The queue's own presence is the answer.
+                        batch.latest = update
+                        batch.generation += 1
+                        self.indexingBatch = batch
+                    } else {
+                        // A new queue. The provisional total is correct for a
+                        // download-led queue and an undercount when the downloads already
+                        // finished; the backlog query below replaces it either way.
+                        self.indexingBatch = IndexingBatch(
+                            total: max(1, self.downloadQueue.count + 1),
+                            completed: 0,
+                            latest: update,
+                            volumeIds: self.downloadQueue + [update.volumeId]
+                        )
+                        self.completedIndexingBatchVolumeCount = nil
+                        self.indexingQueueAverageDocsPerSecond = 0
+                        self.indexingQueueAverageDocumentCount = 600
+                        self.syncIndexingBatchWithBacklog(mayEnd: false)
                     }
                     self.currentIndexingProgress = update
                     #if os(iOS)

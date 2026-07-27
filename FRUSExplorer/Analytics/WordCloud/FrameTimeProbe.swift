@@ -38,10 +38,14 @@ import SwiftUI
 ///
 /// ## Reading it
 /// ```
-///  p50 8.1  p95 16.9  over 4%   120Hz
+///  p50 8.3  p95 8.3  max 17  over 4%  120Hz
 /// ```
-/// `p50`/`p95` are frame *intervals* in milliseconds; `over` is the share of frames that
-/// missed the display's budget. On a 120 Hz panel the budget is 8.3 ms, on 60 Hz it is
+/// `p50`/`p95`/`max` are frame *intervals* in milliseconds; `over` is the share of frames
+/// that missed the display's budget by half again.
+///
+/// **`max` is the number that decides an argument.** `over` alone cannot distinguish five
+/// single-frame drops to 60 Hz — imperceptible — from five 200 ms stalls, which are not.
+/// A `max` near 2× budget is a shrug; a `max` in the hundreds is a stutter you can see. On a 120 Hz panel the budget is 8.3 ms, on 60 Hz it is
 /// 16.7 ms — which is why the refresh rate is shown rather than assumed.
 ///
 /// **The probe is not free.** It costs one `TimelineView` tick and a small array append per
@@ -50,6 +54,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — P-0: initial implementation
+///   1.1 — worst-frame reporting, after a during-indexing reading of "over 4%" turned out
+///         to be unactionable without knowing the magnitude of the overs
 struct FrameTimeProbe: ViewModifier {
 
     /// Set `FRUS_FRAME_PROBE=1` in the scheme's Run/Profile environment to show it.
@@ -108,8 +114,12 @@ struct FrameTimeProbe: ViewModifier {
         let p95 = sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))]
         let budget = Self.frameBudgetMilliseconds
         let over = Double(sorted.filter { $0 > budget * 1.5 }.count) / Double(sorted.count)
-        summary = String(format: "p50 %.1f  p95 %.1f  over %.0f%%  %.0fHz",
-                         p50, p95, over * 100, 1000 / budget)
+        // `over` counts frames past budget but not how far past — five single-frame drops
+        // to 60Hz and five 200ms stalls report the same 4%, and feel completely different.
+        // `max` is what separates them, so it is reported alongside.
+        let worst = sorted[sorted.count - 1]
+        summary = String(format: "p50 %.1f  p95 %.1f  max %.0f  over %.0f%%  %.0fHz",
+                         p50, p95, worst, over * 100, 1000 / budget)
     }
 
     /// Vertical offset that clears the status bar / Dynamic Island on a full-bleed host.

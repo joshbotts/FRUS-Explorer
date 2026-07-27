@@ -303,7 +303,7 @@ struct StatusBarView: View {
             // queue panel (which also has the button) isn't open. Opens the
             // frus.researchGuide window (UI audit B7) — a click-through, never
             // an auto-presented modal.
-            if appState.currentIndexingProgress != nil {
+            if appState.indexingBatch != nil {
                 Button {
                     openResearchGuide()
                 } label: {
@@ -334,9 +334,11 @@ struct StatusBarView: View {
             try? await Task.sleep(for: .seconds(6))
             appState.completedIndexingMetadata = nil
         }
-        // Close the queue popover when indexing finishes.
-        .onChange(of: appState.currentIndexingProgress) { _, progress in
-            if progress == nil { showQueuePopover = false }
+        // Close the queue popover when the whole QUEUE finishes. Keyed on the queue
+        // rather than on `currentIndexingProgress`, which goes nil between every pair of
+        // volumes and used to snap the popover shut mid-batch.
+        .onChange(of: appState.indexingBatch == nil) { _, isIdle in
+            if isIdle { showQueuePopover = false }
         }
         // No auto-presented education modal on macOS (UI audit B7): the sheet that
         // popped 0.6 s after indexing started interrupted first-run exploration.
@@ -375,8 +377,11 @@ struct StatusBarView: View {
     }
 
     private var activeTask: ActiveTask? {
-        // Post-index summary (highest priority — replaces the in-progress task).
-        if let meta = appState.completedIndexingMetadata {
+        // Post-index summary — but only once the whole QUEUE is done. It is set once per
+        // volume, and while a queue is running it would otherwise displace the progress
+        // row after every volume, so the status bar flickered between "Indexing…" and
+        // "Indexed …" all the way through a subseries.
+        if appState.indexingBatch == nil, let meta = appState.completedIndexingMetadata {
             let title = appState.manifestStore.entry(forVolumeId: meta.volumeId)?.title
                 ?? meta.volumeId
             var summary = "Indexed \(title)"
@@ -395,7 +400,9 @@ struct StatusBarView: View {
             )
         }
 
-        if let update = appState.currentIndexingProgress {
+        // The queue's own last update, which — unlike `currentIndexingProgress` —
+        // survives the gap between two volumes.
+        if let update = appState.indexingBatch?.latest {
             // Special case: during the post-batch FTS5 optimise phase the update
             // carries an empty volumeId and stage == .optimizing. Render a clear
             // "Finalizing index…" label so the status bar doesn't show
@@ -598,7 +605,7 @@ struct StatusBarView: View {
     @ViewBuilder
     private func activeTaskView(_ task: ActiveTask) -> some View {
         if appState.indexingQueuePosition != nil,
-           let update = appState.currentIndexingProgress {
+           let update = appState.indexingBatch?.latest {
             Button {
                 showQueuePopover.toggle()
             } label: {

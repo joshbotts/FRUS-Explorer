@@ -17,7 +17,7 @@ import SwiftUI
 /// display (Session 162, user request):
 ///
 /// 1. **Status** — whether the index is being updated right now
-///    (`AppState.currentIndexingProgress != nil`), has a version-triggered
+///    (`AppState.indexingBatch != nil`), has a version-triggered
 ///    update pending (`needsDateReindex` / `needsFTSRebuildReindex` — normally
 ///    started automatically at launch), or is current.
 /// 2. **Format version** — the installed date-index version vs.
@@ -71,7 +71,9 @@ struct IndexHealthView: View {
     }
 
     private var status: HealthStatus {
-        if appState.currentIndexingProgress != nil { return .updating }
+        // Queue-grained: per volume this dropped back to `.upToDate` in every gap,
+        // so the chip alternated all the way through a multi-volume download.
+        if appState.indexingBatch != nil { return .updating }
         if let pipeline = appState.indexingPipeline,
            pipeline.needsDateReindex || pipeline.needsFTSRebuildReindex {
             return .updatePending

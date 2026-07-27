@@ -166,7 +166,7 @@ Documents are rendered from TEI XML into native SwiftUI, matching the typography
 
 The status bar at the bottom of the main window provides at-a-glance information about background tasks:
 
-- **Indexing progress** — Volume name and percentage complete during initial indexing.
+- **Indexing progress** — Volume name and percentage complete during initial indexing. When several volumes are queued it reads "*Indexing … (3/27)*" and stays put for the life of the queue — the volume it names changes as work moves along, but the row itself does not appear and disappear between volumes. Click it for the queue panel (remaining volumes, estimated time, and the **Learn** link). When the last volume is done the row becomes a brief "*27 volumes ready to search*" confirmation.
 - **iCloud sync** — Current CloudKit sync state: idle (checkmark), syncing (spinner), succeeded, or sync error with full error detail in a tooltip. Two additional warnings may appear:
   - **Zone Missing** (red) — the iCloud private sync zone is absent; records cannot upload or download. Force-quit and relaunch to trigger zone recreation, or use Reset iCloud Sync in Settings.
   - **Not Signed In** (orange) — iCloud account is unavailable; data will not sync until you sign in via System Settings → Apple ID.

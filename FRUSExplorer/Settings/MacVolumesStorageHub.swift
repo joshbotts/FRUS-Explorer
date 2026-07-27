@@ -496,7 +496,8 @@ struct MacVolumesStorageHub: View {
     @ViewBuilder
     private var storageAndIndexSection: some View {
         Section {
-            if settingsBatch != nil || appState.currentIndexingProgress != nil {
+            // The queue, so the card does not appear and disappear once per volume.
+            if settingsBatch != nil || appState.indexingBatch != nil {
                 indexingQueueCard
             }
 
@@ -680,7 +681,10 @@ struct MacVolumesStorageHub: View {
                 }
             }
 
-            if let update = appState.currentIndexingProgress {
+            // `indexingBatch?.latest` rather than `currentIndexingProgress`: the
+            // retained update keeps a volume name and a progress bar in the card during
+            // the moment between two volumes, instead of blanking its body.
+            if let update = appState.indexingBatch?.latest {
                 Text(appState.manifestStore.entry(forVolumeId: update.volumeId)?.title
                      ?? update.volumeId)
                     .font(.caption)
@@ -729,7 +733,7 @@ struct MacVolumesStorageHub: View {
     /// Combined ETA for the current batch: remaining docs in the active volume
     /// plus remaining queued volumes (for "Index Remaining" batches).
     private var queueETAString: String? {
-        guard let update = appState.currentIndexingProgress else { return nil }
+        guard let update = appState.indexingBatch?.latest else { return nil }
         var totalSeconds = 0.0
 
         if update.docsPerSecond > 0, update.totalDocuments > update.completedDocuments {
@@ -804,7 +808,7 @@ struct MacVolumesStorageHub: View {
     /// Whether an indexing operation of any kind is in flight.
     private var actionsBusy: Bool {
         settingsBatch != nil
-            || appState.currentIndexingProgress != nil
+            || appState.indexingBatch != nil
             || reindexingInterruptedId != nil
             || reindexingVolumeId != nil
     }
