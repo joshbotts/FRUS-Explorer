@@ -168,8 +168,7 @@ struct IndexingBannerView: View {
         }
         .indexingCloudStrip(
             scope: CloudSurfaceArbiter.indexingScope(
-                queuedVolumeIds: appState.downloadQueue.isEmpty
-                    ? [update.volumeId] : appState.downloadQueue,
+                queuedVolumeIds: appState.indexingBatch?.volumeIds ?? [update.volumeId],
                 manifest: appState.manifestStore
             ),
             isActive: CloudSurfaceArbiter.resolve(appState: appState) == .indexingBackdrop

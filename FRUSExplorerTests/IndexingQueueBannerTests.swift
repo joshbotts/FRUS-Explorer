@@ -72,32 +72,13 @@ struct IndexingQueueBannerTests {
     }
 
     // MARK: - Queue position
-
-    @Test("Single-volume indexing has no queue position (indexingQueuePosition is nil for batch < 2)")
-    func singleVolumeNoQueuePosition() {
-        // indexingQueuePosition requires indexingBatchTotalAtStart >= 2.
-        // We test the guard condition directly.
-        let batchTotal = 1
-        let isMultiVolume = batchTotal >= 2
-        #expect(!isMultiVolume,
-                "A batch of 1 volume must not show the multi-volume queue banner")
-    }
-
-    @Test("Queue position reports current as completed + 1")
-    func queuePositionCurrent() {
-        let completed = 2
-        let total = 5
-        let current = completed + 1  // mirrors AppState.indexingQueuePosition
-        #expect(current == 3)
-        #expect(current <= total)
-    }
-
-    @Test("Queue position total matches batch total at start")
-    func queuePositionTotal() {
-        let batchTotalAtStart = 12
-        let position = (current: 3, total: batchTotalAtStart)
-        #expect(position.total == 12)
-    }
+    //
+    // Covered by `IndexingBatchPositionTests`, against the real
+    // `AppState.indexingQueuePosition`. Three tests here re-implemented the property's
+    // arithmetic in local constants and asserted on that — `completed + 1 == 3` — so they
+    // passed for the whole period the property returned `nil` for every multi-volume
+    // batch (#541). They were removed rather than repaired: a copy of the code under test
+    // is not a test of it.
 
     // MARK: - ETA formatting
 

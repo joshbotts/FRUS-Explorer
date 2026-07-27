@@ -35,6 +35,8 @@ import SwiftUI
 ///   1.2 — Dynamic Type review 2026-07-04: glyph cap enforced in code via
 ///          `FRUSTheme.cappedGlyphSize` (the `.dynamicTypeSize` cap was inert
 ///          on a `.system(size:)` font).
+///   1.3 — `queueVolumeCount`: the card now fires once per indexing QUEUE rather than
+///          once per volume, so it can say how many volumes became searchable.
 struct IndexingSummaryCard: View {
 
     /// Aggregate metrics from the completed indexing pass.
@@ -42,6 +44,14 @@ struct IndexingSummaryCard: View {
     /// Human-readable volume title resolved from `ManifestStore`, or `nil` to fall back
     /// to `metadata.volumeId`.
     let volumeTitle: String?
+    /// Volumes made searchable by the queue that just finished, when it held more than
+    /// one. `nil` — the default, and what every per-volume caller passes — keeps the
+    /// original single-volume wording.
+    ///
+    /// The card fires once per *queue* now rather than once per volume, so after a
+    /// subseries download the honest headline is "27 volumes ready to search", not the
+    /// name of whichever volume happened to finish last.
+    var queueVolumeCount: Int?
     /// Called when the user taps "Search this volume". The caller sets `pendingSearch`
     /// and switches to Search, then calls `onDismiss` to clear the card.
     let onSearchVolume: (String) -> Void
@@ -62,6 +72,25 @@ struct IndexingSummaryCard: View {
         #endif
     }
 
+    /// The banner headline: queue-grained when a multi-volume queue just finished,
+    /// per-volume otherwise.
+    private var headlineText: String {
+        if let count = queueVolumeCount, count > 1 { return queueHeadline(count) }
+        return String(
+            localized: "indexing.summary.banner.title",
+            defaultValue: "Indexed \(volumeTitle ?? metadata.volumeId)"
+        )
+    }
+
+    /// "27 volumes ready to search" — the thing the user was actually waiting to learn.
+    private func queueHeadline(_ count: Int) -> String {
+        String(
+            localized: "indexing.summary.queue.title",
+            defaultValue: "\(count) volumes ready to search",
+            comment: "Shown when a whole download queue finishes indexing; count is always > 1"
+        )
+    }
+
     // MARK: - iOS Banner Layout
 
     #if os(iOS)
@@ -74,10 +103,7 @@ struct IndexingSummaryCard: View {
                         .font(FRUSTheme.captionFont)
                         .foregroundStyle(.green)
 
-                    Text(String(
-                        localized: "indexing.summary.banner.title",
-                        defaultValue: "Indexed \(volumeTitle ?? metadata.volumeId)"
-                    ))
+                    Text(headlineText)
                     .font(FRUSTheme.captionFont)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -123,7 +149,7 @@ struct IndexingSummaryCard: View {
                 .foregroundStyle(.green)
 
             VStack(spacing: 6) {
-                Text(volumeTitle ?? metadata.volumeId)
+                Text(queueVolumeCount.map { queueHeadline($0) } ?? (volumeTitle ?? metadata.volumeId))
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)

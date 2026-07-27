@@ -232,49 +232,59 @@ struct MainTabView: View {
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.
     ///
     /// Priority order:
-    /// 1. `completedIndexingMetadata` non-nil → `IndexingSummaryCard` (post-index success)
-    /// 2. `currentIndexingProgress` non-nil, queue position non-nil → `IndexingQueueBannerView`
-    /// 3. `currentIndexingProgress` non-nil, single volume → `IndexingBannerView`
+    /// 1. `indexingBatch` non-nil, queue position non-nil → `IndexingQueueBannerView`
+    /// 2. `indexingBatch` non-nil, single volume → `IndexingBannerView`
+    /// 3. `indexingBatch` nil, `completedIndexingMetadata` non-nil → `IndexingSummaryCard`
     /// 4. Both nil → `EmptyView` (no height inset)
+    ///
+    /// **The queue outranks the summary card**, which is the inverse of the original
+    /// order and the whole point. `completedIndexingMetadata` is set once per *volume*,
+    /// so with the card on top a 27-volume download played banner → card → banner → card
+    /// twenty-seven times. Now the banner holds for the life of the queue and the card
+    /// appears once, when everything downloaded is searchable.
     ///
     /// Transitions use `.move(edge: .bottom).combined(with: .opacity)` so the card
     /// slides up from the tab bar edge when indexing completes.
     @ViewBuilder
     private var indexingBanner: some View {
-        if let meta = appState.completedIndexingMetadata {
+        if let batch = appState.indexingBatch {
+            if let queuePosition = appState.indexingQueuePosition {
+                IndexingQueueBannerView(
+                    update: batch.latest,
+                    queuePosition: queuePosition,
+                    volumeTitles: appState.indexingQueueVolumeTitles,
+                    metadata: appState.lastDiscoveredMetadata,
+                    averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
+                    averageDocumentCount: appState.indexingQueueAverageDocumentCount
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else {
+                IndexingBannerView(
+                    update: batch.latest,
+                    metadata: appState.lastDiscoveredMetadata,
+                    volume: appState.manifestStore.entry(forVolumeId: batch.latest.volumeId),
+                    onPersonSearch: { name in
+                        appState.openSearch(SearchParameters(keywords: name), from: SceneID(sceneIDToken))
+                        appState.openTab(.search, from: SceneID(sceneIDToken))
+                    }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        } else if let meta = appState.completedIndexingMetadata {
             let title = appState.manifestStore.entry(forVolumeId: meta.volumeId)?.title
             IndexingSummaryCard(
                 metadata: meta,
                 volumeTitle: title,
+                queueVolumeCount: appState.completedIndexingBatchVolumeCount,
                 onSearchVolume: { volumeId in
                     appState.openSearch(SearchParameters(volumeIds: [volumeId]), from: SceneID(sceneIDToken))
                     appState.openTab(.search, from: SceneID(sceneIDToken))
                     appState.completedIndexingMetadata = nil
+                    appState.completedIndexingBatchVolumeCount = nil
                 },
                 onDismiss: {
                     appState.completedIndexingMetadata = nil
-                }
-            )
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        } else if let update = appState.currentIndexingProgress,
-                  let queuePosition = appState.indexingQueuePosition {
-            IndexingQueueBannerView(
-                update: update,
-                queuePosition: queuePosition,
-                volumeTitles: appState.indexingQueueVolumeTitles,
-                metadata: appState.lastDiscoveredMetadata,
-                averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
-                averageDocumentCount: appState.indexingQueueAverageDocumentCount
-            )
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        } else if let update = appState.currentIndexingProgress {
-            IndexingBannerView(
-                update: update,
-                metadata: appState.lastDiscoveredMetadata,
-                volume: appState.manifestStore.entry(forVolumeId: update.volumeId),
-                onPersonSearch: { name in
-                    appState.openSearch(SearchParameters(keywords: name), from: SceneID(sceneIDToken))
-                    appState.openTab(.search, from: SceneID(sceneIDToken))
+                    appState.completedIndexingBatchVolumeCount = nil
                 }
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))

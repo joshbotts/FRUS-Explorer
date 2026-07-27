@@ -1809,7 +1809,11 @@ struct FRUSExplorerApp: App {
             queue: .main
         ) { [appState] _ in
             Task { @MainActor in
-                let hasIndexingWork = appState.currentIndexingProgress != nil
+                // Keyed on the QUEUE. `currentIndexingProgress` is nil in the gap
+                // between two volumes, and backgrounding the app in that gap left a
+                // 26-volume queue with no BGProcessingTask submitted — the rest of the
+                // download simply did not index until the app was reopened.
+                let hasIndexingWork = appState.indexingBatch != nil
                     || !appState.interruptedVolumeIds.isEmpty
                 let hasPrecomputeWork = WordCloudPrecomputeQueue.isEnabled
                     && WordCloudPrecomputeQueue.hasPending

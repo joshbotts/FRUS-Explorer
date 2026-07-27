@@ -98,8 +98,12 @@ enum CloudSurfaceArbiter {
     static func resolve(appState: AppState) -> CloudSurface {
         resolve(Inputs(
             isCoreReady: BundledCloudVectors.isCoreReady,
+            // The QUEUE, not the volume. `currentIndexingProgress` goes nil between
+            // volumes, so this used to blink false once per volume and take the cloud
+            // down with it — the strip appeared "for a second or two" and vanished,
+            // repeatedly, which is what the owner reported on device.
             hasPendingCorpusWork: !appState.downloadQueue.isEmpty
-                || appState.currentIndexingProgress != nil,
+                || appState.indexingBatch != nil,
             hasCompletedOnboarding: appState.hasCompletedOnboarding,
             // Both halves are required: `hasInitialProjectSyncSettled` alone is false on a
             // device that will never sync (no iCloud account), which would show a splash

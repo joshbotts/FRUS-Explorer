@@ -143,9 +143,11 @@ FRUS Explorer on iPhone and iPad is organized around a **tab bar** with five tab
 
 When volumes are downloading or being indexed for search, a banner appears just above the tab bar. It shows progress for the current volume (and, when several are queued, your position in the queue and an estimated time to completion). Tapping a name mentioned in the banner — such as a person discovered while indexing — can jump you straight to a search for that name.
 
+The banner tracks the whole **queue**, not one volume at a time: download a subseries and it appears once, when indexing begins, and stays until every volume you downloaded is ready to search. The volume named inside it changes as work moves along; the banner itself does not come and go.
+
 `[SCREENSHOT: Indexing banner above the tab bar showing progress for a volume]`
 
-When indexing finishes, the banner becomes a brief summary card offering to search the newly indexed volume. A small dot badge also appears on the **Browse** tab whenever downloaded volumes are still waiting to be indexed.
+When the whole queue finishes, the banner becomes a brief summary card — "*27 volumes ready to search*" after a subseries, or the volume's title when you indexed just one — offering to search what was added. A small dot badge also appears on the **Browse** tab whenever downloaded volumes are still waiting to be indexed.
 
 > **After a big update:** occasionally an app update improves how documents are indexed and needs to rebuild the search index for volumes you already have. When that happens, indexing runs by itself right after you update — the banner explains what's happening and your reading isn't interrupted. (The current update does this to rebuild the cross-reference index; see Section 8.)
 
