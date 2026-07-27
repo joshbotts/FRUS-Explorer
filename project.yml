@@ -40,6 +40,25 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     DEVELOPMENT_TEAM: 828S8SXVLC
+    # Xcode's "Update to recommended settings", adopted 2026-07-27. Declared HERE, not
+    # accepted in the Xcode UI: `xcodegen generate` rewrites project.pbxproj wholesale, so
+    # anything Xcode writes there is discarded on the next run. Each was checked before
+    # adopting rather than taken on Xcode's word:
+    #   - ENABLE_USER_SCRIPT_SANDBOXING is the one that can break a build, by denying a
+    #     run-script phase access to files outside its declared inputs/outputs. This project
+    #     has ZERO shell-script build phases, so there is nothing to deny.
+    #   - STRING_CATALOG_GENERATE_SYMBOLS is a no-op today (no `.xcstrings` ships) and is
+    #     adopted for whenever one does.
+    #   - ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS turns
+    #     `Image("LaunchAppTile")` into a compile-checked `Image(.launchAppTile)`.
+    #
+    # Xcode ALSO tried to rewrite the DirectDistribution `CODE_SIGN_IDENTITY` from
+    # "Developer ID Application" to "Apple Development", which would break the notarized
+    # DMG. That was NOT adopted; the correct value is declared below and xcodegen restores it.
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
 
 # ---------------------------------------------------------------------------
 # Targets

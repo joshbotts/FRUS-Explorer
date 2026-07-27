@@ -75,7 +75,9 @@ struct LaunchSplashView: View {
     /// composition so the hand-off between them is invisible.
     private var identityBlock: some View {
         VStack(spacing: 14) {
-            Image("LaunchAppTile")
+            // Compile-checked symbol, not a string — a typo here used to be a blank tile
+            // at runtime. Enabled by ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS.
+            Image(.launchAppTile)
                 .resizable()
                 .frame(width: tileSize, height: tileSize)
             Text(Self.wordmark)
