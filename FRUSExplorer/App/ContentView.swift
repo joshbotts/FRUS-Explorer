@@ -62,3 +62,60 @@ struct ContentView: View {
         }
     }
 }
+
+// MARK: - Splash host
+
+/// Hosts `ContentView` and the occasional launch splash above it (O-3, decision (d)).
+///
+/// Separate from `ContentView` so the routing decision and the splash decision stay
+/// independent — and because `ContentView`'s `body` already does a filesystem scan on every
+/// render pass (`hasDownloadedVolumes(in:)`, finding 9 in the Workstream O plan). That is
+/// pre-existing and **flagged, not silently fixed here**: it belongs in its own change with
+/// its own reasoning, not folded into a UI PR.
+///
+/// Version history:
+///   1.0 — O-3: initial implementation
+struct ContentViewWithSplash: View {
+
+    @Environment(AppState.self) private var appState
+    @State private var splashReason: CloudSurface.SplashReason?
+    @State private var hasResolvedOnce = false
+
+    var body: some View {
+        ContentView()
+            .overlay {
+                if let splashReason {
+                    LaunchSplashView(reason: splashReason)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: splashReason == nil)
+            .task { await resolveSplash() }
+            .onChange(of: appState.hasInitialProjectSyncSettled) { _, settled in
+                // A CloudKit splash dismisses when its wait actually ends, not on a timer.
+                if settled, splashReason == .cloudKitImport { splashReason = nil }
+            }
+    }
+
+    /// Asks the arbiter once, after the first frame, and honours the reason's own dismissal.
+    private func resolveSplash() async {
+        guard !hasResolvedOnce else { return }
+        hasResolvedOnce = true
+
+        switch CloudSurfaceArbiter.resolve(appState: appState) {
+        case .splash(let reason):
+            splashReason = reason
+            if reason == .freshInstall {
+                // Nothing to wait for, so hold briefly and flow into onboarding's own
+                // cloud. ONCE PER INSTALL — not a per-launch floor, which the plan rules
+                // out as a permanent tax on a tool people open repeatedly.
+                try? await Task.sleep(for: .seconds(1.6))
+                splashReason = nil
+            }
+        case .indexingBackdrop, .none:
+            // (c) owns the screen, or nothing does. Either way, no splash — the precedence
+            // lives in the arbiter, not here.
+            splashReason = nil
+        }
+    }
+}

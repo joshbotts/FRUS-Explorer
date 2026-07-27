@@ -1044,7 +1044,7 @@ struct FRUSExplorerApp: App {
     /// The primary `WindowGroup` scene, with macOS-specific modifiers applied conditionally.
     private var mainWindowScene: some Scene {
         WindowGroup {
-            ContentView()
+            ContentViewWithSplash()
                 .environment(appState)
                 .modelContainer(modelContainer)
                 #if os(macOS)
