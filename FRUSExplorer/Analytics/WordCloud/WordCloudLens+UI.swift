@@ -39,6 +39,26 @@ extension WordCloudLens {
         }
     }
 
+    /// The bare lens name, for the onboarding backdrop's chip.
+    ///
+    /// Distinct from ``label``, which is the Analytics *menu* label and carries a
+    /// disambiguating parenthetical — "Topics (nouns)", "Actions (verbs)". That reads as
+    /// documentation in a menu and as noise on a decorative chip, where the hand-off
+    /// specifies just the lens name.
+    var shortLabel: String {
+        switch self {
+        case .allTerms:      return String(localized: "wordcloud.lens.short.all", defaultValue: "All terms")
+        case .people:        return String(localized: "wordcloud.lens.short.people", defaultValue: "People")
+        case .places:        return String(localized: "wordcloud.lens.short.places", defaultValue: "Places")
+        case .organizations: return String(localized: "wordcloud.lens.short.orgs", defaultValue: "Organizations")
+        case .topics:        return String(localized: "wordcloud.lens.short.topics", defaultValue: "Topics")
+        case .actions:       return String(localized: "wordcloud.lens.short.actions", defaultValue: "Actions")
+        case .descriptors:   return String(localized: "wordcloud.lens.short.descriptors", defaultValue: "Descriptors")
+        case .concepts:      return String(localized: "wordcloud.lens.short.concepts", defaultValue: "Concepts")
+        case .sentiment:     return String(localized: "wordcloud.lens.short.sentiment", defaultValue: "Sentiment")
+        }
+    }
+
     /// SF Symbol for the lens menu.
     var systemImage: String {
         switch self {

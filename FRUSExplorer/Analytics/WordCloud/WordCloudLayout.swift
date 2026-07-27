@@ -46,6 +46,9 @@ struct PlacedWord: Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — O-2: `exclusionZones` / `yCompression` / `sizeExponent` added for the onboarding
+///         backdrop, all defaulted to the shipped behaviour and pinned by
+///         `WordCloudLayoutRegressionTests`
 enum WordCloudLayout {
 
     /// Computes word placements for the given terms within `size`.
@@ -60,7 +63,22 @@ enum WordCloudLayout {
     ///     packs denser, above 1 spreads words apart. Drives the density preference.
     ///   - widthFactor: Average glyph-advance ratio (× point size) for text-extent
     ///     estimation; varies with the chosen font design.
+    ///   - exclusionZones: Rects no word may overlap — used by the onboarding backdrop to
+    ///     keep words out from under fixed UI (the splash identity block, the docked glass
+    ///     panel, the lens chip). Empty means no exclusions, the shipped behaviour.
+    ///   - yCompression: Multiplier on the spiral's vertical reach. `1` is the shipped
+    ///     circular-ish field; the backdrop passes `0.62` for the hand-off's elliptical
+    ///     full-bleed field.
+    ///   - sizeExponent: Curve applied to the normalised count when mapping to point size.
+    ///     `nil` keeps the shipped square-root (area-proportional) scale; the backdrop
+    ///     passes `1.45` for the hand-off's steeper contrast. **`nil` rather than `0.5`
+    ///     deliberately** — `pow(t, 0.5)` and `sqrt(t)` can differ in the last bit, and a
+    ///     one-ulp font-size change can move a word to a different spiral slot.
     /// - Returns: The successfully placed words. Words that found no free spot are omitted.
+    ///
+    /// Every parameter added for the onboarding backdrop (O-2) defaults to the shipped
+    /// behaviour, and `WordCloudLayoutRegressionTests` pins that the existing Word Cloud's
+    /// placements are byte-for-byte unchanged.
     static func place(
         terms: [TermCount],
         in size: CGSize,
@@ -68,7 +86,10 @@ enum WordCloudLayout {
         minFontSize: CGFloat = 13,
         maxFontSize: CGFloat = 64,
         spacingScale: CGFloat = 1,
-        widthFactor: CGFloat = 0.54
+        widthFactor: CGFloat = 0.54,
+        exclusionZones: [CGRect] = [],
+        yCompression: CGFloat = 1,
+        sizeExponent: CGFloat? = nil
     ) -> [PlacedWord] {
         let words = Array(terms.prefix(maxWords))
         guard size.width > 0, size.height > 0,
@@ -82,7 +103,8 @@ enum WordCloudLayout {
 
         for (rank, term) in words.enumerated() {
             let fontSize = fontSize(for: term.count, minCount: minCount, maxCount: maxCount,
-                                    minFontSize: minFontSize, maxFontSize: maxFontSize)
+                                    minFontSize: minFontSize, maxFontSize: maxFontSize,
+                                    sizeExponent: sizeExponent)
             // Keep the largest words horizontal (most readable); rotate every third
             // of the rest 90° to fill vertical gaps. Rank-based so it's deterministic
             // and always produces some vertical words regardless of the term set.
@@ -101,7 +123,7 @@ enum WordCloudLayout {
                 let radius = spiralTightness * angle
                 let point = CGPoint(
                     x: center.x + radius * cos(angle) * 1.7,
-                    y: center.y + radius * sin(angle)
+                    y: center.y + radius * sin(angle) * yCompression
                 )
                 let rect = CGRect(
                     x: point.x - estimate.width / 2,
@@ -110,6 +132,7 @@ enum WordCloudLayout {
                     height: estimate.height
                 )
                 if bounds.contains(rect),
+                   !exclusionZones.contains(where: { $0.intersects(rect) }),
                    !occupied.contains(where: { $0.intersects(rect) }) {
                     slot = rect
                     break
@@ -135,17 +158,25 @@ enum WordCloudLayout {
     }
 
 
-    /// Maps a term count onto a point size using a square-root (area-proportional) scale.
+    /// Maps a term count onto a point size.
+    ///
+    /// - Parameter sizeExponent: `nil` (the default) uses the square-root,
+    ///   area-proportional scale the Word Cloud has always used — a word's *area*, not its
+    ///   height, is roughly proportional to its count. A value applies `pow(t, exponent)`
+    ///   instead; the onboarding backdrop passes `1.45`, which suppresses the long tail so
+    ///   a few terms dominate a full-bleed field.
     static func fontSize(
         for count: Int,
         minCount: Int,
         maxCount: Int,
         minFontSize: CGFloat,
-        maxFontSize: CGFloat
+        maxFontSize: CGFloat,
+        sizeExponent: CGFloat? = nil
     ) -> CGFloat {
         guard maxCount > minCount else { return (minFontSize + maxFontSize) / 2 }
-        let t = CGFloat(count - minCount) / CGFloat(maxCount - minCount)
-        return minFontSize + (maxFontSize - minFontSize) * sqrt(max(0, min(1, t)))
+        let t = max(0, min(1, CGFloat(count - minCount) / CGFloat(maxCount - minCount)))
+        let curve = sizeExponent.map { pow(t, $0) } ?? sqrt(t)
+        return minFontSize + (maxFontSize - minFontSize) * curve
     }
 
     /// Estimates the rendered bounding box of a term at a given point size.

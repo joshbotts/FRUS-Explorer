@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import Foundation
-import WordCloudKit
 
 /// The bundled cloud-vector artifact: pre-computed word-cloud term lists for every
 /// scope the onboarding backdrop can show, so the cloud renders before a single volume
@@ -39,6 +38,10 @@ import WordCloudKit
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation
+///   1.1 — O-2: moved from `CloudVectorsGeneratorCore` into `WordCloudKit`. The app has to
+///         DECODE what the generator ENCODES, and a second app-side copy of this schema is
+///         exactly the drift `WordCloudLexiconSet` was created to prevent. One type, one
+///         shape, both sides.
 public struct CloudVectorsFile: Codable, Sendable, Equatable {
 
     /// Schema version. Bump when the shape changes in a way a shipped reader would misread.
