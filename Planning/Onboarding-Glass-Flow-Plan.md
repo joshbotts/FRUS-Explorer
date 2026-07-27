@@ -706,6 +706,43 @@ still reaches Ready, and the default project is still created.
 
 ---
 
+## ✅ Workstream O — complete (O-0 … O-5, PRs #525–#535)
+
+| Session | PRs | What shipped |
+|---|---|---|
+| O-0 | #525, #527 | 727 dead lines gone, 20 characterization tests, one manifest decode |
+| — | #526, #529 | the launch traces, and option (a)'s static launch screen |
+| O-1 | #530, #531 | `WordCloudKit` + parity + one-pass; the generator and both artifacts |
+| O-2 | #532 | the animated backdrop, layout extensions, regression guard |
+| O-4 | #533 | the three steps in docked glass, fully localised |
+| O-3 | #534 | indexing backdrop + occasional splash, under one arbiter |
+| O-5 | #535 | Dynamic Type, Reduce Transparency, manuals, closeout |
+
+**Four decisions were reversed or narrowed by evidence**, which is the part worth carrying
+forward:
+
+1. **The splash's premise was false** (recon) — and the launch traces then showed the
+   pre-render gap is ~86 ms of *fixed* SwiftData container cost even on an empty store, so
+   "remove the work instead" addressed 5% of it. Option (a)'s launch screen got built after
+   all.
+2. **End-to-end tokenizer parity is impossible** (O-1-1) — three independent reasons. The
+   achievable claim, tokenizer parity, is narrower and actually true.
+3. **The hand-off's artifact schema contradicted itself** — normalised weights cannot be
+   summed, and 4b's Subseries segment is already a multi-volume scope. Raw counts instead.
+4. **The `minimumSignalTerms` fallback has no work to do** — zero below-signal pairs across
+   all 2,208. Built, tested, unexercised.
+
+**Owner-side items still open** (none block the release):
+- macOS visual review of the O-4 dock, and the splash at window size
+- Reduce Motion and Reduce Transparency *feel* on device — the code paths are verified, the
+  experience is not
+- An animation-instrument measurement on the oldest supported iPhone (~25 animating words)
+- (c) against a **real** first download, and the arbiter verified by starting a download and
+  relaunching
+- The ⚙️ fresh-install screenshot captures for #106
+
+---
+
 ## Order and stop points
 
 ```

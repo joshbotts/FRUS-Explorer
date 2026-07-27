@@ -38,6 +38,7 @@ struct LaunchSplashView: View {
     let reason: CloudSurface.SplashReason
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         GeometryReader { proxy in
@@ -54,7 +55,15 @@ struct LaunchSplashView: View {
                 )
                 .ignoresSafeArea()
 
-                identityBlock
+                // Under Reduce Transparency the identity block gets an opaque card, so it
+                // never has to be read against moving words.
+                if reduceTransparency {
+                    identityBlock
+                        .padding(24)
+                        .cloudSurfaceBackground(cornerRadius: 20, solid: true)
+                } else {
+                    identityBlock
+                }
             }
         }
         .accessibilityElement(children: .contain)
