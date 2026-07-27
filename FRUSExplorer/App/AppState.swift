@@ -1117,8 +1117,25 @@ final class AppState {
             let backlog = try? await pipeline.unindexedDownloadedVolumeIds()
             guard let self, var batch = self.indexingBatch else { return }
             guard let backlog else { return }  // transient failure: retry on the next volume
-            if mayEnd, backlog.isEmpty, self.currentIndexingProgress == nil {
-                self.endIndexingBatch()
+            if mayEnd, backlog.isEmpty {
+                // Deliberately does NOT end here.
+                //
+                // `unindexedDownloadedVolumeIds()` subtracts every volume that has rows in
+                // `document_cache` — and a volume that is halfway through storing already
+                // has rows. When downloads drive indexing (`onVolumeDownloaded` spawns an
+                // unstructured Task per completed download, uncapped) several volumes are
+                // storing at once, so this query can come back empty while real work is
+                // still in flight. Ending the queue on that reading tore the banner and its
+                // cloud down and rebuilt them once per volume — which is what the owner saw
+                // as the frame probe resetting on every volume, since a rebuilt backdrop
+                // gets fresh @State.
+                //
+                // So an empty backlog only *starts a countdown*. Any progress at all bumps
+                // the generation and makes it inert, which is the property this needs: the
+                // question "is anything still happening?" is answered by watching, not by
+                // asking a table that cannot distinguish started from finished.
+                self.armIndexingBatchWatchdog(generation: batch.generation,
+                                              seconds: Self.indexingBatchSettleSeconds)
             } else {
                 batch.total = max(batch.total, batch.completed + backlog.count)
                 // Union, never replace: the backlog shrinks as volumes are indexed, and
@@ -1127,7 +1144,10 @@ final class AppState {
                 let known = Set(batch.volumeIds)
                 batch.volumeIds += backlog.filter { !known.contains($0) }.sorted()
                 self.indexingBatch = batch
-                if mayEnd { self.armIndexingBatchWatchdog(generation: batch.generation) }
+                if mayEnd {
+                    self.armIndexingBatchWatchdog(generation: batch.generation,
+                                                  seconds: Self.indexingBatchStallTimeout)
+                }
             }
         }
     }
@@ -1147,24 +1167,35 @@ final class AppState {
     /// the `.optimizing` stage, which is reported like any other — makes the pending
     /// timeout inert without needing to cancel it.
     ///
+    /// Called with ``indexingBatchSettleSeconds`` when the backlog says the queue is done
+    /// and with ``indexingBatchStallTimeout`` when it says work remains; the difference is
+    /// only how much quiet is required before believing it.
+    ///
     /// **A pending download is not a stall.** Indexing routinely catches up with a slow
     /// connection and then sits idle waiting for the next file to land, which on cellular
     /// can be minutes. Tearing the queue down there would re-create the strobe at a slower
     /// cadence, and would be wrong on the merits: the user's volumes are not ready yet.
     /// So while `downloadQueue` is non-empty the watchdog re-arms instead of firing.
-    private func armIndexingBatchWatchdog(generation: Int) {
+    private func armIndexingBatchWatchdog(generation: Int, seconds: Double) {
         indexingBatchWatchdog?.cancel()
         indexingBatchWatchdog = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(Self.indexingBatchStallTimeout))
+            try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, let self, let batch = self.indexingBatch else { return }
             guard batch.generation == generation, self.currentIndexingProgress == nil else { return }
             guard self.downloadQueue.isEmpty else {
-                self.armIndexingBatchWatchdog(generation: generation)
+                self.armIndexingBatchWatchdog(generation: generation, seconds: seconds)
                 return
             }
             self.endIndexingBatch()
         }
     }
+
+    /// Seconds of quiet required after an empty backlog before the queue is called done.
+    ///
+    /// Short, because by this point the evidence already points at "finished" — this only
+    /// has to outlast the window in which a concurrently-storing volume looks indexed to
+    /// `unindexedDownloadedVolumeIds()` but has not yet emitted its next progress update.
+    static var indexingBatchSettleSeconds: Double = 2
 
     /// Seconds with nothing reported at all — no progress, no new volume — before a queue
     /// is presumed finished and torn down.
@@ -1198,7 +1229,12 @@ final class AppState {
     func seedIndexedVolumeIds(pipeline: IndexingPipeline) {
         Task.detached(priority: .utility) { [weak self] in
             let ids = (try? pipeline.allIndexedVolumeIds()) ?? []
-            await MainActor.run { [weak self] in self?.indexedVolumeIds = ids }
+            await MainActor.run { [weak self] in
+                self?.indexedVolumeIds = ids
+                #if os(iOS)
+                self?.refreshUnindexedVolumeCount()
+                #endif
+            }
         }
     }
 
@@ -1221,6 +1257,11 @@ final class AppState {
                     self.currentIndexingProgress = nil
                     self.interruptedVolumeIds.remove(update.volumeId)
                     self.indexedVolumeIds.insert(update.volumeId)
+                    #if os(iOS)
+                    // The Browse-tab badge counts downloaded-but-unindexed volumes, and one
+                    // just left that set.
+                    self.refreshUnindexedVolumeCount()
+                    #endif
                     // The volume just became locally available — teach the citation
                     // matching engine about it. Its downloaded-volume set is otherwise
                     // a boot-time snapshot, which broke the "download this volume,
@@ -1538,18 +1579,37 @@ final class AppState {
     /// Used to drive the Settings tab badge, prompting the user to run Reindex.
     /// Returns 0 before `downloadManager` is available (i.e. during boot).
     ///
-    /// Uses `indexedVolumeIds` (a cached Set seeded at boot) for O(1) per-volume
-    /// lookup instead of a live SQLite query, keeping the render loop free of I/O.
+    /// Stored, not computed — recomputed off the main thread when its inputs change.
+    ///
+    /// It used to be a computed property, and `MainTabView` reads it in a `.badge(…)` on
+    /// every one of its five tabs. `isVolumeDownloaded` is a `FileManager.fileExists`, so
+    /// each read was ~552 `stat(2)` syscalls on the main thread — against the very
+    /// directory the downloader is writing into — repeated five times per body evaluation,
+    /// at roughly ten body evaluations a second during an indexing run. The 1.1 doc comment
+    /// claimed this kept "the render loop free of I/O", which was true of the SQLite query
+    /// it replaced and never true of the `stat`s that took its place. Reading a stale count
+    /// for a fraction of a second is not a defect; blocking the render loop on the
+    /// filesystem is.
     ///
     /// Version history:
     ///   1.0 — Session 45: initial implementation
     ///   1.1 — Session 131: switched to `indexedVolumeIds` cache; no SQLite in render loop
-    var unindexedVolumeCount: Int {
-        guard let dm = downloadManager else { return 0 }
-        let all = manifestStore.diffResult?.known ?? manifestStore.bundledEntries
-        return all.filter { entry in
-            dm.isVolumeDownloaded(entry.volumeId) && !indexedVolumeIds.contains(entry.volumeId)
-        }.count
+    ///   2.0 — stored and refreshed off-main; the render loop now does no I/O for real
+    private(set) var unindexedVolumeCount: Int = 0
+
+    /// Recomputes ``unindexedVolumeCount`` on a background task.
+    ///
+    /// Idempotent and cheap to over-call: worst case it does the same filesystem sweep
+    /// twice and writes the same number.
+    func refreshUnindexedVolumeCount() {
+        guard let dm = downloadManager else { return }
+        let entries = (manifestStore.diffResult?.known ?? manifestStore.bundledEntries)
+            .map(\.volumeId)
+        let indexed = indexedVolumeIds
+        Task.detached(priority: .utility) { [weak self] in
+            let count = entries.filter { dm.isVolumeDownloaded($0) && !indexed.contains($0) }.count
+            await MainActor.run { [weak self] in self?.unindexedVolumeCount = count }
+        }
     }
     #endif
 

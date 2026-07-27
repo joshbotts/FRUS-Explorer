@@ -38,6 +38,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — O-2: initial implementation
+///   1.1 — layout cache keyed on a quantised box and bounded, after an on-device probe
+///          showed the strip's height animation re-running the packer inside `body`
 struct WordCloudBackdropView: View {
 
     /// Which scope's vocabulary to show.
@@ -154,7 +156,20 @@ struct WordCloudBackdropView: View {
               let maxCount = source.terms.first?.count
         else { return nil }
 
-        let key = LayoutKey(width: Int(size.width.rounded()), height: Int(size.height.rounded()),
+        // Quantised to a coarse grid, and PACKED at the quantised size, not the real one.
+        //
+        // The key used to be the exact rounded pixel size. The indexing strip animates its
+        // own height (and the banner grows when its queue list expands), so a single
+        // animation swept the GeometryReader through every intermediate height — each a
+        // fresh key, each a full cache miss, each running the Archimedean packer
+        // synchronously inside `body` on the main thread, and each leaving a permanent
+        // entry in an unbounded dictionary. Bucketing collapses that whole sweep to at most
+        // a handful of layouts.
+        //
+        // Rounding DOWN matters: the packer then places words inside a box no larger than
+        // the one being drawn, so a bucket boundary can never push a word outside the frame.
+        let box = Self.quantised(size)
+        let key = LayoutKey(width: Int(box.width), height: Int(box.height),
                             lens: lens, scopeKey: scopeKey)
         if let cached = layouts[key] {
             return Resolved(words: cached, provenance: source.provenance, maxCount: maxCount, lens: lens)
@@ -164,17 +179,36 @@ struct WordCloudBackdropView: View {
         // sound and the cloud stable across relaunches.
         let placed = WordCloudLayout.place(
             terms: source.terms,
-            in: size,
+            in: box,
             maxWords: 25,
             minFontSize: 12,
-            maxFontSize: min(42, max(28, size.width / 12)),
+            maxFontSize: min(42, max(28, box.width / 12)),
             exclusionZones: exclusionZones,
             yCompression: FRUSTheme.cloudYCompression,
             sizeExponent: FRUSTheme.cloudSizeExponent
         )
-        Task { @MainActor in layouts[key] = placed }
+        Task { @MainActor in
+            // Bounded. With quantised keys a single host produces a handful of entries, but
+            // four lenses across several scopes and both orientations still adds up over a
+            // long session, and nothing here ever evicted.
+            if layouts.count >= Self.layoutCacheLimit { layouts.removeAll() }
+            layouts[key] = placed
+        }
         return Resolved(words: placed, provenance: source.provenance, maxCount: maxCount, lens: lens)
     }
+
+    /// Snaps a size down to the layout grid.
+    ///
+    /// 8 pt is fine enough that the cloud never looks mis-fitted inside its box and coarse
+    /// enough that a height animation crosses only a few buckets.
+    private static func quantised(_ size: CGSize) -> CGSize {
+        let grid: CGFloat = 8
+        return CGSize(width: max(grid, (size.width / grid).rounded(.down) * grid),
+                      height: max(grid, (size.height / grid).rounded(.down) * grid))
+    }
+
+    /// Layouts kept before the cache is dropped wholesale.
+    private static let layoutCacheLimit = 32
 
     private var scopeKey: String {
         switch scope {

@@ -169,12 +169,13 @@ public final class ManifestStore {
     /// Testing initializer — bypasses bundle I/O and uses provided entries directly.
     init(bundledEntries: [VolumeManifestEntry]) {
         self.bundledEntries = bundledEntries
+        rebuildEntryIndex()
     }
 
     // MARK: - Initialization
 
     public init() {
-        bundledEntries = Self.loadBundledManifest()
+        setBundledEntries(Self.loadBundledManifest())
         #if DEBUG
         print("[FRUSExplorer] ManifestStore initialised with \(bundledEntries.count) bundled entries.")
         #endif
@@ -191,7 +192,49 @@ public final class ManifestStore {
     /// Version history:
     ///   1.0 — New UI scaffolding
     public func entry(forVolumeId id: String) -> VolumeManifestEntry? {
-        (diffResult?.known ?? bundledEntries).first { $0.volumeId == id }
+        entryIndex[id]
+    }
+
+    /// `volumeId` → entry, over whichever list ``entry(forVolumeId:)`` is answering from.
+    ///
+    /// This was a `.first { $0.volumeId == id }` scan over all 552 manifest entries, and it
+    /// is the O(n) primitive under a surprising amount of the render loop. During a
+    /// subseries index the indexing banner alone resolved it once per queued volume for the
+    /// word-cloud scope and once per download-queue entry for the pending list — five times
+    /// over, because `MainTabView` attaches the banner to each of its five tabs — at roughly
+    /// ten body evaluations a second. For a 66-volume subseries that is on the order of
+    /// 10⁵ string comparisons per pass, on the main thread, while the indexer is writing
+    /// FTS5 segments. Nobody wrote a slow lookup on purpose; it was written when the only
+    /// caller was a detail view resolving one title.
+    ///
+    /// Rebuilt on the two writes that can change the answer, which is why they funnel
+    /// through ``setBundledEntries(_:)`` and ``setDiffResult(_:)`` rather than assigning
+    /// the stored properties directly.
+    private var entryIndex: [String: VolumeManifestEntry] = [:]
+
+    /// Replaces the bundled entries and rebuilds ``entryIndex``.
+    private func setBundledEntries(_ entries: [VolumeManifestEntry]) {
+        bundledEntries = entries
+        rebuildEntryIndex()
+    }
+
+    /// Replaces the diff result and rebuilds ``entryIndex``.
+    ///
+    /// `known` takes over from `bundledEntries` as the lookup source the moment it exists,
+    /// exactly as the old expression's `??` did.
+    private func setDiffResult(_ result: ManifestDiffResult?) {
+        diffResult = result
+        rebuildEntryIndex()
+    }
+
+    /// Rebuilds the id → entry map from the current lookup source.
+    ///
+    /// Last-write-wins on a duplicate id, which matches `first { }`'s behaviour only when
+    /// ids are unique — they are, and a duplicate would be a manifest defect either way.
+    private func rebuildEntryIndex() {
+        let source = diffResult?.known ?? bundledEntries
+        entryIndex = Dictionary(source.map { ($0.volumeId, $0) },
+                                uniquingKeysWith: { first, _ in first })
     }
 
     /// Convenience alias for `fetchLiveManifest()` used by the new app entry point.
@@ -223,7 +266,7 @@ public final class ManifestStore {
 
         do {
             let liveEntries = try await fetchGitHubListing(session: session)
-            diffResult = diff(bundled: bundledEntries, live: liveEntries)
+            setDiffResult(diff(bundled: bundledEntries, live: liveEntries))
             #if DEBUG
             let d = diffResult!
             print("[FRUSExplorer] ManifestStore: diff complete — \(d.known.count) known, \(d.newlyAvailable.count) new, \(d.noLongerPublished.count) removed.")
