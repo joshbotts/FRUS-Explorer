@@ -103,6 +103,7 @@
 		1D6FE4751C31E4AE5627D203 /* WordCloudModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD4B79D4110F10E75A4E67 /* WordCloudModels.swift */; };
 		1E725EEC83D2F0B83B81523F /* ProjectContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3072096E5D180CCA514717CA /* ProjectContextView.swift */; };
 		1E9C0A2CDFE9A3CA083C51D2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
+		1F1FEF449315E6A3CE38757B /* CloudSurfaceBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B0CA2F61C314585BC498A6 /* CloudSurfaceBackground.swift */; };
 		1F63F2D832C63DBA55439C17 /* FRUSASTNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5A88FD6AE12C259469664C /* FRUSASTNode.swift */; };
 		1F650339D24571AB59FF0D52 /* SeriesGeographyDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C137D8C090CFE9C39769E /* SeriesGeographyDashboard.swift */; };
 		1F9934683E4ACA22BE6F146E /* MacSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */; };
@@ -447,6 +448,7 @@
 		946AA967DCEFE8A5B2525C0E /* SettingsComponentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1833B983A1F48A74A952442 /* SettingsComponentsTests.swift */; };
 		949DEFCEC1F6C0C25CBBD918 /* CustomScopesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2F9B965F27786F60BE298A /* CustomScopesView.swift */; };
 		94A856DF4268B8DE6596AEBB /* DocumentWindowID.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A626491C155C769DF2F17 /* DocumentWindowID.swift */; };
+		94BC00BF905453BE083AA9F2 /* CloudSurfaceBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B0CA2F61C314585BC498A6 /* CloudSurfaceBackground.swift */; };
 		9508E24FC4CA4A4009814881 /* OrphanedTagRepairTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8097E38779F64B29F7357C /* OrphanedTagRepairTests.swift */; };
 		95187F239510AA27632ECD32 /* FRUSParserSession07Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AC3AEBAE1592338041CD61C /* FRUSParserSession07Tests.swift */; };
 		96713B6E46558012E34B0698 /* WordCloudLens.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A33EBFCE9A063865BB3BFC /* WordCloudLens.swift */; };
@@ -918,6 +920,7 @@
 		3257BE739AE015806EC2C95E /* DocumentSubjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentSubjectStore.swift; sourceTree = "<group>"; };
 		341129410232AE0449660A8B /* SourceProvenanceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceProvenanceStore.swift; sourceTree = "<group>"; };
 		3447C0BB07826D0945C2CAA5 /* WordCloudTokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudTokenizer.swift; sourceTree = "<group>"; };
+		34B0CA2F61C314585BC498A6 /* CloudSurfaceBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSurfaceBackground.swift; sourceTree = "<group>"; };
 		34E0D9272977D9EFB4A94EE1 /* FRUSExplorerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FRUSExplorerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		34E1CEB90BE3E3FC8CDCE738 /* IndexingSummaryCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingSummaryCardTests.swift; sourceTree = "<group>"; };
 		358C5961FA43410821148C63 /* CitationMatchingEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationMatchingEngineTests.swift; sourceTree = "<group>"; };
@@ -1742,6 +1745,7 @@
 			children = (
 				DBE157BE22FD0C22F3BB4DB4 /* BundledCloudVectors.swift */,
 				A85B67A1F51C34859B280F1C /* CloudSurfaceArbiter.swift */,
+				34B0CA2F61C314585BC498A6 /* CloudSurfaceBackground.swift */,
 				2DAE9D95262F0B49E214F98B /* LaunchSplashView.swift */,
 				852F2B32F82C02E9DCC42E16 /* WordCloudBackdropView.swift */,
 				2B722F3C30E93C9D676CAE39 /* WordCloudBench.swift */,
@@ -2388,6 +2392,7 @@
 				0960F483F9DD37160CE169AC /* CloudKitErrorInspector.swift in Sources */,
 				7F5A47CF5DB1403E23664147 /* CloudKitSchemaInventory.swift in Sources */,
 				1D3E27573F2F4A3F5767702E /* CloudSurfaceArbiter.swift in Sources */,
+				94BC00BF905453BE083AA9F2 /* CloudSurfaceBackground.swift in Sources */,
 				01878C1C29A1E81973C2938F /* CloudVectors.swift in Sources */,
 				98DC9161A1F13BF9903E89D6 /* Collection.swift in Sources */,
 				816481E4224407B8BE51F853 /* CollectionAddDocumentsSheet.swift in Sources */,
@@ -2707,6 +2712,7 @@
 				AEFEB96B8DD94B9DD8E56DFC /* CloudKitErrorInspector.swift in Sources */,
 				33C4DB46D922B6D6F54B7BC0 /* CloudKitSchemaInventory.swift in Sources */,
 				2D67FDE0D35EB76EF8E69827 /* CloudSurfaceArbiter.swift in Sources */,
+				1F1FEF449315E6A3CE38757B /* CloudSurfaceBackground.swift in Sources */,
 				D509A2013E28CA4D0DD2FB8E /* CloudVectors.swift in Sources */,
 				321C4E617AC35374258139A6 /* Collection.swift in Sources */,
 				9ADB0846B78007AA85B92C80 /* CollectionAddDocumentsSheet.swift in Sources */,

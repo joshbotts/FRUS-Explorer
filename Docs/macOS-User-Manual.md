@@ -61,6 +61,18 @@ Install FRUS Explorer from the Mac App Store or from the `.dmg` distributed dire
 
 ### Onboarding
 
+
+Onboarding is now a **word cloud** drawn from the series itself, with the controls floating
+above it in a compact panel. The cloud cycles every few seconds through four views of the
+vocabulary — **Concepts**, **Topics**, **Actions**, and **Sentiment** (positive words green,
+negative red) — and a small chip in the corner names whichever you are looking at.
+
+The words are real: they are counted from the actual FRUS text at build time and shipped
+with the app, so the cloud appears **before you have downloaded anything**. That is what
+makes step 2 useful rather than decorative — pick *A Subseries* and choose 1969–76, and the
+cloud becomes that era's vocabulary (*kissinger, nixon, soviet, capability, balance*)
+before you commit to the download.
+
 When you launch FRUS Explorer for the first time, an onboarding flow walks you through initial setup.
 
 **Step 1 — Welcome**

@@ -62,6 +62,11 @@ struct OnboardingView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
+    /// When on, glass is replaced by a solid card. `.glassEffect` degrades on its own, but
+    /// not to an opaque surface — and the dock sits over a moving word cloud, so anything
+    /// translucent leaves text competing with drifting serif words underneath it.
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     @State private var step: OnboardingStep = .welcome
 
     /// Point size of the welcome / ready hero glyphs, scaled with Dynamic Type
@@ -71,6 +76,17 @@ struct OnboardingView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var heroGlyphSize: CGFloat = 56
 
     // MARK: - Step 2 State
+
+    /// The Ready step's check glyph, scaled with Dynamic Type and clamped by
+    /// `FRUSTheme.cappedGlyphSize` — the `.dynamicTypeSize` cap is inert on a
+    /// `.system(size:)` font, which is why the clamp is applied in code.
+    @ScaledMetric(relativeTo: .title3) private var scaledReadyGlyph: CGFloat = 26
+
+    /// Measured height of the dock stack, including any transient sheet above it.
+    ///
+    /// Feeds the backdrop's exclusion zone so the words clear whatever the dock actually
+    /// occupies at the reader's type size — not what it occupied at the default one.
+    @State private var measuredDockHeight: CGFloat = 0
 
     @State private var scopeChoice: OnboardingScopeChoice = .corpus
     @State private var selectedSubseries: String = ""
@@ -107,10 +123,13 @@ struct OnboardingView: View {
                 WordCloudBackdropView(
                     scope: backdropScope,
                     dim: backdropDim,
-                    // Keep words out from under the dock. Estimated rather than measured:
-                    // feeding a measured height back into the layout that determines the
-                    // height is a loop, and the packer only needs to know roughly where not
-                    // to go.
+                    // Keep words out from under the dock — measured, not estimated.
+                    //
+                    // This was a hardcoded height guess, which O-5 caught at an
+                    // accessibility text size: the dock grows to fit the reader's type, the
+                    // guess does not, and words were being placed where the dock had since
+                    // expanded to. There is no feedback loop to fear here — the dock's
+                    // height depends on its text, never on the backdrop.
                     exclusionZones: [dockExclusionZone(in: proxy.size)]
                 )
                 .ignoresSafeArea()
@@ -122,6 +141,13 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, FRUSTheme.onboardingDockMargin)
                 .padding(.bottom, dockBottomInset)
+                .background {
+                    GeometryReader { dockProxy in
+                        Color.clear.preference(key: DockHeightKey.self,
+                                               value: dockProxy.size.height)
+                    }
+                }
+                .onPreferenceChange(DockHeightKey.self) { measuredDockHeight = $0 }
             }
         }
         #if os(macOS)
@@ -142,10 +168,13 @@ struct OnboardingView: View {
     }
 
     /// The region the dock (and any sheet above it) occupies, for the backdrop to avoid.
+    ///
+    /// Uses the measured height once it is known, falling back to a first-frame estimate
+    /// for the single pass before the preference resolves.
     private func dockExclusionZone(in size: CGSize) -> CGRect {
-        let sheetHeight = transientSheet == nil ? 0 : FRUSTheme.onboardingSheetMaxHeight + FRUSTheme.onboardingSheetGap
-        let estimatedDockHeight: CGFloat = step == .addVolumes ? 170 : 130
-        let height = estimatedDockHeight + sheetHeight + dockBottomInset
+        let height = measuredDockHeight > 0
+            ? measuredDockHeight + dockBottomInset
+            : (step == .addVolumes ? 170 : 130) + dockBottomInset
         return CGRect(x: 0, y: max(0, size.height - height), width: size.width, height: height)
     }
 
@@ -163,7 +192,8 @@ struct OnboardingView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: FRUSTheme.onboardingDockRadius))
+        .cloudSurfaceBackground(cornerRadius: FRUSTheme.onboardingDockRadius,
+                                solid: reduceTransparency)
     }
 
     // MARK: - 4a Welcome
@@ -173,9 +203,9 @@ struct OnboardingView: View {
             content: {
                 VStack(alignment: .leading, spacing: 6) {
                     pageDots
-                    Text(Self.welcomeTitle).font(.system(size: titleSize, weight: .semibold))
+                    Text(Self.welcomeTitle).font(.system(titleStyle, weight: .semibold))
                     Text(Self.welcomeBody)
-                        .font(.system(size: bodySize))
+                        .font(.system(bodyStyle))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: 340, alignment: .leading)
@@ -193,7 +223,7 @@ struct OnboardingView: View {
                 content: {
                     VStack(alignment: .leading, spacing: 8) {
                         pageDots
-                        Text(Self.scopeTitle).font(.system(size: denseTitleSize, weight: .semibold))
+                        Text(Self.scopeTitle).font(.system(denseTitleStyle, weight: .semibold))
                         #if !os(macOS)
                         scopeSegmentedControl
                         #endif
@@ -215,7 +245,7 @@ struct OnboardingView: View {
             dockLayout(
                 content: {
                     Text(scopeCaption)
-                        .font(.system(size: bodySize))
+                        .font(.system(bodyStyle))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 },
@@ -297,7 +327,8 @@ struct OnboardingView: View {
                 }
             }
             .frame(maxHeight: FRUSTheme.onboardingSheetMaxHeight)
-            .glassEffect(.regular, in: .rect(cornerRadius: FRUSTheme.onboardingSheetRadius))
+            .cloudSurfaceBackground(cornerRadius: FRUSTheme.onboardingSheetRadius,
+                                    solid: reduceTransparency)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -307,9 +338,9 @@ struct OnboardingView: View {
         Button(action: select) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: rowTitleSize, weight: .medium))
+                    Text(title).font(.system(rowTitleStyle, weight: .medium))
                         .foregroundStyle(.primary).lineLimit(2)
-                    Text(detail).font(.system(size: rowDetailSize)).foregroundStyle(.secondary)
+                    Text(detail).font(.system(rowDetailStyle)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
                 if isSelected {
@@ -335,13 +366,13 @@ struct OnboardingView: View {
             content: {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: readyGlyphSize))
+                        .font(.system(size: FRUSTheme.cappedGlyphSize(scaledReadyGlyph, base: readyGlyphSize)))
                         .foregroundStyle(Color.green)
                     VStack(alignment: .leading, spacing: 6) {
                         pageDots
-                        Text(Self.readyTitle).font(.system(size: titleSize, weight: .semibold))
+                        Text(Self.readyTitle).font(.system(titleStyle, weight: .semibold))
                         Text(Self.readyBody)
-                            .font(.system(size: bodySize))
+                            .font(.system(bodyStyle))
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -488,19 +519,24 @@ struct OnboardingView: View {
 
     // MARK: - Metrics
 
+    // Dynamic Type. The hand-off specifies point sizes; these are the nearest text STYLES,
+    // so the dock scales with the reader's setting instead of pinning at one size. The
+    // house convention is that text scales and only the word cloud is exempt — its size
+    // encodes frequency, so scaling it would destroy the encoding rather than aid
+    // legibility (documented at `FRUSTheme.swift` and at `WordCloudBackdropView`).
+    //
+    // iOS defaults line up almost exactly with the hand-off: .title3 = 20 pt, .headline =
+    // 17 pt, .subheadline = 15 pt, .caption = 12 pt.
+
+    private var titleStyle: Font.TextStyle { .title3 }
+    private var denseTitleStyle: Font.TextStyle { .headline }
+    private var bodyStyle: Font.TextStyle { .subheadline }
+    private var rowTitleStyle: Font.TextStyle { .subheadline }
+    private var rowDetailStyle: Font.TextStyle { .caption }
+
     #if os(macOS)
-    private var titleSize: CGFloat { 15 }
-    private var denseTitleSize: CGFloat { 13 }
-    private var bodySize: CGFloat { 12 }
-    private var rowTitleSize: CGFloat { 12 }
-    private var rowDetailSize: CGFloat { 10 }
     private var readyGlyphSize: CGFloat { 30 }
     #else
-    private var titleSize: CGFloat { 20 }
-    private var denseTitleSize: CGFloat { 17 }
-    private var bodySize: CGFloat { 15 }
-    private var rowTitleSize: CGFloat { 15 }
-    private var rowDetailSize: CGFloat { 12 }
     private var readyGlyphSize: CGFloat { 26 }
     #endif
 
@@ -623,5 +659,18 @@ private enum OnboardingStep: CaseIterable, Identifiable {
         case .addVolumes: return .welcome
         case .ready:      return .addVolumes
         }
+    }
+}
+
+// MARK: - DockHeightKey
+
+/// Carries the measured dock height up to the backdrop's exclusion zone.
+///
+/// Version history:
+///   1.0 — O-5: initial implementation
+private struct DockHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }

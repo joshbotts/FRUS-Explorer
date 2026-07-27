@@ -74,15 +74,30 @@ Install FRUS Explorer from the App Store. Search for "FRUS Explorer" or follow a
 
 The first time you launch FRUS Explorer, a short onboarding flow walks you through initial setup.
 
+Onboarding is now a **word cloud** drawn from the series itself, with the controls floating
+above it in a compact panel. The cloud cycles every few seconds through four views of the
+vocabulary — **Concepts**, **Topics**, **Actions**, and **Sentiment** (positive words green,
+negative red) — and a small chip in the corner names whichever you are looking at.
+
+The words are real: they are counted from the actual FRUS text at build time and shipped
+with the app, so the cloud appears **before you have downloaded anything**. That is what
+makes step 2 useful rather than decorative — pick *A Subseries* and choose 1969–76, and the
+cloud becomes that era's vocabulary (*kissinger, nixon, soviet, capability, balance*)
+before you commit to the download.
+
 **Step 1 — Welcome**
 
-A brief overview of the FRUS series appears, including the scope of the corpus (number of volumes, date range, total document count). You can proceed immediately, or tap the embedded link to read more about the series at history.state.gov in FRUS Explorer's built-in browser (see "The Embedded Browser" below).
+A one-line introduction to the series, with **Get Started**.
 
-`[SCREENSHOT: Onboarding welcome screen with corpus overview statistics on iPhone]`
+`[SCREENSHOT: Onboarding Welcome — docked panel over the animated word cloud, iPhone]`
 
 **Step 2 — Add Volumes**
 
-Choose how much of the corpus to download to your device now. You can always add or remove volumes later from **Settings → Volumes & Storage**.
+Choose how much of the corpus to download to your device now, using the segmented control. You can always add or remove volumes later from **Settings → Volumes & Storage**.
+
+Choosing *A Subseries* or *A Single Volume* opens a short list above the panel; *Corpus* opens
+none, leaving the cloud unobstructed. Whatever you pick, the cloud behind the panel
+re-aggregates to preview it.
 
 | Option | Description |
 |--------|-------------|
@@ -90,7 +105,7 @@ Choose how much of the corpus to download to your device now. You can always add
 | **A Subseries** | One publication era, e.g., *1969–1976* (Nixon/Ford) or *1977–1980* (Carter) |
 | **A Single Volume** | One specific volume chosen from a grouped picker |
 
-`[SCREENSHOT: Onboarding scope picker with three options and subseries list visible]`
+`[SCREENSHOT: Onboarding Add Volumes — segmented control, subseries sheet, cloud showing the chosen era, iPhone]`
 
 Estimated storage requirements appear before you confirm — useful on space-constrained iPhones. If you start the download while offline, it queues automatically and resumes once you're back online.
 
