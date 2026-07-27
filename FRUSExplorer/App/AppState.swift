@@ -453,11 +453,17 @@ final class AppState {
     // MARK: - Tag Stores
 
     /// Resolves volume-level tag slugs and provides volume-by-tag queries.
-    /// Loaded synchronously from `volume-tag-taxonomy.json` and `manifest.json` at init.
-    let volumeLevelTagStore: VolumeLevelTagStore = VolumeLevelTagStore()
+    ///
+    /// Loaded synchronously at init from `volume-tag-taxonomy.json`, plus the manifest
+    /// entries ``manifestStore`` has already decoded — see `init()`. Assigned there rather
+    /// than here because the order of the two matters.
+    let volumeLevelTagStore: VolumeLevelTagStore
 
     /// Loads and merges the volume manifest. Loaded from bundle at init; live data fetched at boot.
-    var manifestStore: ManifestStore = ManifestStore()
+    ///
+    /// Constructed **first** among the stores, because it owns the one decode of
+    /// `manifest.json` that the rest share.
+    var manifestStore: ManifestStore
 
     /// Holds the bundled `source-provenance-index.json` aggregate (Series Analytics
     /// SA-3a), the offline data source for the "Archival Sourcing Over Time"
@@ -1455,6 +1461,24 @@ final class AppState {
     // MARK: - Initialization
 
     init() {
+        // O-0-2 — `manifest.json` is decoded ONCE, here, and shared.
+        //
+        // These two stores used to be default-valued stored properties, each calling a
+        // parameterless init that reached into the bundle for `manifest.json`
+        // independently: 763 KB decoded twice on the synchronous path before the first
+        // frame. Building them in order and passing the entries across removes the second
+        // decode (~8 ms) and, more importantly, means the tag index and the manifest can
+        // never derive from two different reads of the file.
+        //
+        // The order is load-bearing: `manifestStore` owns the decode, so it must exist
+        // first. Keep any future store that needs the manifest below these two, and give
+        // it the entries rather than a third decode.
+        let manifestStore = ManifestStore()
+        self.manifestStore = manifestStore
+        self.volumeLevelTagStore = VolumeLevelTagStore(
+            bundledManifestEntries: manifestStore.bundledEntries
+        )
+
         if let raw = UserDefaults.standard.string(forKey: Keys.activeProjectId),
            let uuid = UUID(uuidString: raw) {
             activeProjectId = uuid
