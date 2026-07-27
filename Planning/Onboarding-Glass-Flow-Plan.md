@@ -425,15 +425,42 @@ before/after (i) measurement on both platforms.
 **Data & migration:** two new bundled resources. **Prereq:** none.
 **Needs xcodegen:** yes (new resources + `Package.swift` targets).
 
-**Decision point (O-1-1).** Whether the generator's counts must match the app's word cloud
-*exactly* for a given volume. Recommend yes, and enforce it — a parity test that runs
-`WordCloudKit` over one volume's extracted text and compares against the app's
-`WordFrequencyService` output for the same volume. If they may differ (because the app
-counts indexed documents and the generator counts the whole volume), that difference is a
-documented property, not a discovered surprise.
+### ✅ O-1-1 / O-1-2 — ANSWERED, owner decision 2026-07-27
 
-**Decision point (O-1-2).** One `NLTagger` pass with four accumulators versus four passes
-(finding 6). Recommend one pass; measure both on ten volumes and put the number in the PR.
+**O-1-1 — parity at the tokenizer, not end to end.** The original framing ("must the
+generator's counts match the app's cloud exactly") turned out to be unachievable, for three
+independent reasons rather than one: the app tokenises FTS5 `body_text` from the parsed AST
+while the generator byte-scans TEI; user tuning, custom stop lists and per-scope hidden
+words are all live inputs a build-time artifact cannot follow; and the app counts only
+*indexed* documents, so someone with 3 of a subseries' 44 volumes sees a 3-volume cloud.
+
+So the pinned property is narrower and actually true: **same text and same sets in → same
+counts out**, enforced by `WordCloudKitTests`. The generator additionally *mimics the app's
+input* — document bodies only, footnotes included, matching `FRUSASTNode.plainText` — rather
+than tokenising whole TEI files, so the two converge as far as the architecture allows. The
+residue is documented on `CloudVectorsAggregator`, not papered over. End-to-end parity was
+rejected: it would mean lifting `FRUSDocumentParser` (2,243 lines) into SPM and would still
+be false for any user who touched a setting.
+
+**O-1-2 — one pass, and it is verified rather than assumed.** All four lenses share the
+same `enumerateTags(scheme: .lemma)` walk and differ only in the final filter, so the merge
+is a refactor. The one real risk was whether requesting `.lexicalClass` alongside `.lemma`
+perturbs the lemma — an assumption about a closed-source framework. The parity suite runs
+the merged tokenizer against four single-lens runs and requires exact agreement, including
+a **lexicon-only** request where the merged path asks for `[.lemma]` alone. 8/8 pass. If it
+ever breaks, the fallback is two passes, not four.
+
+**Schema consequence found while settling these.** The hand-off specifies `[term, weight]`
+normalised 0–100 (`README.md:37`) *and* "future multi-volume scopes sum raw counts then
+re-rank" (`:39`). **Those are incompatible** — a term at 100 in a 40-document volume and 100
+in a 4,000-document volume are not the same quantity, and 4b's Subseries segment is already
+a multi-volume scope. The artifact therefore stores **raw counts**, and the loader
+normalises against the first (largest) entry. Summation stays exact; the renderer still
+gets its 0–100.
+
+**Session split into two PRs**, because perfect input parity is gated on a parser lift that
+is its own session: PR 1 = `WordCloudKit` + both decisions; PR 2 = `CloudVectorsGenerator`,
+the TEI extraction, and the artifacts.
 
 **Verify.** `swift test --filter CloudVectorsGeneratorTests` (determinism: two runs are
 byte-identical; int-index round-trips; sentiment polarity survives; the
