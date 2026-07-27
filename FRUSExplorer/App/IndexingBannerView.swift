@@ -52,6 +52,11 @@ struct IndexingBannerView: View {
     var onPersonSearch: ((String) -> Void)? = nil
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(AppState.self) private var appState
+
+    /// Presents the education flow. Added in O-3b — this banner previously had no route
+    /// to it, so a single-volume index could not reach it.
+    @State private var showWhileIndexing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -132,6 +137,24 @@ struct IndexingBannerView: View {
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
             .padding(.vertical, 5)
 
+            // "Learn while you wait" — the education flow.
+            //
+            // This link previously existed ONLY in the multi-volume queue banner, so a
+            // single-volume download could not reach `IndexingEducationView` at all. The
+            // wait is the same length either way; the route should be too.
+            Button { showWhileIndexing = true } label: {
+                Label(
+                    String(localized: "indexing.learnWhileWaiting",
+                           defaultValue: "Learn about FRUS while you wait →"),
+                    systemImage: "book.pages"
+                )
+                .font(FRUSTheme.captionSmallFont)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
+            .padding(.bottom, 6)
+
             // Context card: shown only on iPad (regular width) where vertical space permits.
             if horizontalSizeClass == .regular, let vol = volume {
                 IndexingContextCard(
@@ -143,7 +166,15 @@ struct IndexingBannerView: View {
                 .padding(.bottom, 6)
             }
         }
-        .background(.bar)
+        .indexingCloudStrip(
+            scope: CloudSurfaceArbiter.indexingScope(
+                queuedVolumeIds: appState.downloadQueue.isEmpty
+                    ? [update.volumeId] : appState.downloadQueue,
+                manifest: appState.manifestStore
+            ),
+            isActive: CloudSurfaceArbiter.resolve(appState: appState) == .indexingBackdrop
+        )
+        .sheet(isPresented: $showWhileIndexing) { WhileIndexingSheet() }
     }
 
     private var etaString: String? {

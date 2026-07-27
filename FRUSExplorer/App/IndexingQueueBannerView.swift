@@ -94,7 +94,14 @@ struct IndexingQueueBannerView: View {
             }
             .padding(.horizontal, FRUSTheme.documentHorizontalPadding)
             .padding(.vertical, 5)
-            .background(.bar)
+            .indexingCloudStrip(
+                scope: CloudSurfaceArbiter.indexingScope(
+                    queuedVolumeIds: appState.downloadQueue.isEmpty
+                        ? [update.volumeId] : appState.downloadQueue,
+                    manifest: appState.manifestStore
+                ),
+                isActive: CloudSurfaceArbiter.resolve(appState: appState) == .indexingBackdrop
+            )
         }
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
         .sheet(isPresented: $showWhileIndexing) {
