@@ -492,10 +492,28 @@ tolerance to widen.
 
 **Data & migration:** none. **Prereq:** O-1. **Needs xcodegen:** yes.
 
-**Decision point (O-2-1).** Where the 4.2 s lens cadence lives. Recommend a single
-`CloudCadence` constant in `FRUSTheme` rather than a settings toggle — the handoff calls it
-"design-tweakable", not user-facing, and the Word Cloud pane already carries the settings
-this feature could be confused with.
+### ✅ O-2-1 — ANSWERED, owner decision 2026-07-27: **a constant, no toggle**
+
+`FRUSTheme.cloudLensCadence`. The hand-off calls the cadence "design-tweakable", meaning
+tweakable by whoever is designing it, not by the reader — and the Word Cloud settings pane
+already carries controls a user could confuse it with.
+
+**Two defects the visual check caught that no build or test would have.** Both are the kind
+only looking finds, which is why O-2 mounted the backdrop temporarily to screenshot it
+rather than shipping a view nothing hosts:
+
+1. **The chip named a lens that was not on screen.** It switched the instant the lens index
+   changed, while the outgoing words were still fading (0.95 s) and the incoming ones still
+   staggering in (~1 s) — so for most of every transition it lied. The chip now carries the
+   lens through the same resolved value as the words and crossfades at the transition's
+   midpoint.
+2. **The chip read "Topics (nouns)"** — `WordCloudLens.label` is the *Analytics menu* label,
+   and its disambiguating parenthetical reads as documentation in a menu and as noise on a
+   decorative chip. Added `shortLabel`.
+
+**One finding for O-4:** the backdrop has no host until O-4 places it, so O-2's own visual
+verification required temporarily mounting it. Expect the same for any later session that
+builds a view before its host exists — budget it rather than skipping the look.
 
 **Verify.** Layout regression test green. On device, both platforms: the cloud renders with
 **zero downloaded volumes** and airplane mode on — that is the whole point of bundling.

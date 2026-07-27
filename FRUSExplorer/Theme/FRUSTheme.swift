@@ -442,6 +442,64 @@ enum FRUSTheme {
 
     // MARK: Chrome
 
+    // MARK: - Onboarding cloud backdrop (O-2)
+
+    /// How long each lens holds before the backdrop crossfades to the next.
+    ///
+    /// **A constant, not a setting — owner decision 2026-07-27 (O-2-1).** The design
+    /// hand-off calls the cadence "design-tweakable", meaning tweakable by whoever is
+    /// designing it, not by the reader; and the Word Cloud settings pane already carries
+    /// controls a user could easily confuse this with. Tune it here.
+    static let cloudLensCadence: TimeInterval = 4.2
+
+    /// Vertical squash applied to the backdrop's spiral, making the field elliptical rather
+    /// than round so it fills a full-bleed screen instead of pooling in the middle.
+    static let cloudYCompression: CGFloat = 0.62
+
+    /// Count → point-size curve for the backdrop. Steeper than the Word Cloud's square
+    /// root, so a few head terms dominate and the tail recedes into texture.
+    static let cloudSizeExponent: CGFloat = 1.45
+
+    /// Word opacity multiplier per surface, from the hand-off. The splash carries the cloud
+    /// at full strength; the onboarding steps dim it so docked glass stays legible over it.
+    static let cloudDimSplash: Double = 1.0
+    /// Dim factor for the Welcome and Ready steps.
+    static let cloudDimDocked: Double = 0.68
+    /// Dim factor for Add Volumes, whose dock is taller and denser.
+    static let cloudDimAddVolumes: Double = 0.62
+
+    /// Words above this normalised weight take the lens accent; the rest take ink.
+    static let cloudAccentThreshold: Double = 0.66
+
+    /// Crossfade timings, in seconds (hand-off §"Lens cycle").
+    static let cloudFadeOutDuration: Double = 0.95
+    /// Duration of the incoming words' scale/position settle.
+    static let cloudTransformDuration: Double = 1.15
+    /// Per-word delay multiplier for outgoing words.
+    static let cloudStaggerOut: Double = 0.014
+    /// Per-word delay multiplier for incoming words.
+    static let cloudStaggerIn: Double = 0.038
+
+    /// The accent colour for a lens, used by the backdrop's chip and its loudest words.
+    ///
+    /// Hex values are the hand-off's: Concepts `#4F5BD5`, Topics `#0E7C86`,
+    /// Actions `#B25A00`, Sentiment `#6B7280` (chip only — sentiment words colour by
+    /// polarity instead).
+    static func cloudAccent(for lens: WordCloudLens) -> Color {
+        switch lens {
+        case .concepts:  return Color(red: 0.310, green: 0.357, blue: 0.835)
+        case .topics:    return Color(red: 0.055, green: 0.486, blue: 0.525)
+        case .actions:   return Color(red: 0.698, green: 0.353, blue: 0.000)
+        case .sentiment: return Color(red: 0.420, green: 0.447, blue: 0.502)
+        default:         return .accentColor
+        }
+    }
+
+    /// Positive-polarity sentiment word colour (`#33804B`).
+    static let cloudSentimentPositive = Color(red: 0.200, green: 0.502, blue: 0.294)
+    /// Negative-polarity sentiment word colour (`#BC4740`).
+    static let cloudSentimentNegative = Color(red: 0.737, green: 0.278, blue: 0.251)
+
     // MARK: - Settings chrome (S-2)
 
     /// Corner radius for a settings card. Before S-2 the app hard-coded 6/7/8/10/12/16 at

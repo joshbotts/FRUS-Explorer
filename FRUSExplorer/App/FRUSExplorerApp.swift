@@ -1058,6 +1058,13 @@ struct FRUSExplorerApp: App {
                 #endif
                 .task {
                     await bootDownloadManager()
+                    // O-2: decode the core cloud vectors AFTER the first frame and off the
+                    // main actor. Deliberately last in this task and never in a view body:
+                    // O-0's trace put `FRUSExplorerApp.init()` at 119–158 ms, most of it a
+                    // synchronous store open, and adding a decode to that window would make
+                    // the launch this backdrop exists to decorate measurably worse. Until
+                    // it resolves, `WordCloudBackdropView` renders nothing.
+                    await BundledCloudVectors.prepareCore()
                 }
                 .onChange(of: appState.isOnline) { _, isOnline in
                     guard let dm = appState.downloadManager else { return }
