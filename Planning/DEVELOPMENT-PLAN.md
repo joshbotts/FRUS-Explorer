@@ -1887,3 +1887,32 @@ regression recurring — this makes the *next* one describable. **It fixes no sy
   **1815/1815** pass on a booted iPhone 17 simulator; iOS and macOS build with no new warnings.
   **Not verified:** anything against a real CloudKit rejection — every shape is reconstructed —
   and the on-device render of the new Sync Log row wording on either platform.
+
+### Session 2026-07-27 — Lexical similarity neighbors: feasibility & value assessment
+
+Assessment only — no code changes. New `Planning/Lexical-Similarity-Neighbors-Assessment.md`
+answers whether a bundled document-level lexical-similarity neighbor index (a
+`CloudVectorsGenerator` sibling) can power a new Related Documents / Project Leads axis.
+
+- **Verdict: feasible and valuable, but only precision-first.** Full-corpus top-10 k-NN is
+  ~40–45 MB of JSON (calibrated at ~11.7 B per compact int entry from
+  `cloud-vectors-volumes.json`) — rejected outright. A thresholded strong-pairs index
+  (~100–150k pairs, k ≤ 5, ~2–3.5 MB) fits the `central-files-index.json` size precedent and
+  concentrates on cross-volume topical cousins no existing axis can produce.
+- **Why it matters:** the #308 candidate universe is the union of the two generators only
+  (archival provenance + explicit cross-references); doc-grain topical relatedness has been a
+  hole since `sharedSubjects` shipped inert. A lexical index is generator-shaped (bounded keyed
+  lookup), and `ProjectLeadsService.effectiveWeights` already back-fills a future axis's
+  default weight. Phase A is CloudKit-neutral (no `ProjectLeadEntry` change).
+- **Reuse map:** enumerator, `TEIBodyTextExtractor`, one-pass multi-lens tokenizer
+  (`topics` noun lens as the vector basis), determinism idioms, `BundledCloudVectors` loader
+  pattern; measured 18m53s O-1 full-corpus pass bounds the I/O cost. The one new algorithm —
+  all-pairs similarity over ~314k sparse TF-IDF vectors — is rated the main schedule risk
+  (medium), with df-ceiling pruning + prefix filtering as the standard escalations.
+- **Proposed workstream:** L-1 generator + subseries-slice calibration; L-2 full run +
+  spot-check panel + acceptance bar (≤3.5 MB, ≥15% coverage, else a finding); L-3 axis +
+  loader + both surfaces; L-4 optional off-index "volumes you haven't downloaded" leads tier
+  (separate section per the I-3 no-blending rule, volume-grain rollup + Download affordance).
+  Six owner decisions queued in the assessment §10.
+- **Not verified** (corpus absent from this container): score distributions, coverage at any
+  threshold, APSS wall-clock, non-`"dN"` xml:id share — all measurable in L-1.
