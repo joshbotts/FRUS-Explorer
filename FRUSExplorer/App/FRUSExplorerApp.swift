@@ -1621,6 +1621,11 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.removeVolume(volumeId)
                     await MainActor.run {
                         _ = appState.indexedVolumeIds.remove(volumeId)
+                        #if os(iOS)
+                        // Both inputs to the Browse-tab badge just changed: the volume left
+                        // the indexed set AND left the disk.
+                        appState.refreshUnindexedVolumeCount()
+                        #endif
                     }
                     // Drop any cached document ASTs so a re-download can never
                     // serve stale content from the deleted file.
