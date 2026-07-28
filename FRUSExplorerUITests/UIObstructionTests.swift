@@ -878,6 +878,26 @@ final class UIObstructionTests: XCTestCase {
     /// - Returns: `true` if something was tapped.
     @discardableResult
     private func tapRow(_ label: String, timeout: TimeInterval = 5) -> Bool {
+        if tapRowWithoutScrolling(label, timeout: timeout) { return true }
+
+        // Not on screen is not the same as not present. A `List` is lazy: a row below the
+        // fold has not been materialised, so every query legitimately reports non-existence
+        // and `waitForExistence` — which never scrolls — waits the full timeout for something
+        // that cannot appear on its own.
+        //
+        // This is exactly how `testWorkingOnBannerDoesNotObstructBrowseNavigationBar` began
+        // failing: accumulated fixture projects pushed "New Project…" below the fold, and the
+        // failure read as "the row is missing" rather than "the list is long".
+        guard let scroller = firstScrollContainer else { return false }
+        for _ in 0..<6 {
+            scroller.swipeUp()
+            if tapRowWithoutScrolling(label, timeout: 0.5) { return true }
+        }
+        return false
+    }
+
+    /// One pass of the four query shapes, with no scrolling.
+    private func tapRowWithoutScrolling(_ label: String, timeout: TimeInterval) -> Bool {
         let candidates = [
             app.buttons[label].firstMatch,
             app.cells[label].firstMatch,
@@ -889,6 +909,15 @@ final class UIObstructionTests: XCTestCase {
             return true
         }
         return false
+    }
+
+    /// The scrollable container to swipe when a row is below the fold.
+    private var firstScrollContainer: XCUIElement? {
+        for candidate in [app.collectionViews.firstMatch, app.tables.firstMatch,
+                          app.scrollViews.firstMatch] where candidate.exists {
+            return candidate
+        }
+        return nil
     }
 
     /// Creates a project with a **non-blank research question** and leaves it active, which is the
