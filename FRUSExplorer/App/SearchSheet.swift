@@ -175,6 +175,17 @@ struct MacSearchWindowView: View {
                 timelineView
             } else {
                 resultsList
+                    // FIRST QUERY ONLY. macOS deliberately keeps the previous results on
+                    // screen while a new search runs — a decision recorded in
+                    // `MacSearchViewModel` — so this must not paint over them. Gating on an
+                    // empty result set means the cloud fills the blank list a fresh window
+                    // opens with, and never intrudes on a re-query.
+                    .pendingCloudBackdrop(
+                        scope: CloudSurfaceArbiter.searchScope(
+                            volumeIds: searchVM.parameters.volumeIds,
+                            manifest: appState.manifestStore),
+                        isPending: searchVM.isSearching && searchVM.results.isEmpty
+                    )
 
                 if searchVM.totalPages > 1 {
                     Divider()

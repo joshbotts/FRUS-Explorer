@@ -475,6 +475,14 @@ enum FRUSTheme {
     /// being a backdrop.
     static let cloudDimIndexingStrip: Double = 0.42
 
+    /// Word opacity behind an empty surface that is waiting — the search pending state.
+    ///
+    /// Between the docked value and the indexing strip's. There is no live progress text to
+    /// stay legible under, as on the strip, but a spinner and (on iOS) a navigation bar sit
+    /// over it, and the words must not compete with them for attention: the surface is a
+    /// wait, not a display.
+    static let cloudDimPendingSurface: Double = 0.5
+
     /// Words above this normalised weight take the lens accent; the rest take ink.
     static let cloudAccentThreshold: Double = 0.66
 
