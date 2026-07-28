@@ -255,8 +255,9 @@ struct WordCloudBackdropView: View {
             // screen to find. A lens with no vectors at all is still skipped, because then
             // there is nothing to name either.
             let placed = layout(for: candidate, terms: source.terms, box: box)
-            let field = WordCloudDriftField(placed: placed, rankCeiling: Self.maxWords,
-                                            exclusionZones: exclusionZones)
+            let field = WordCloudDriftField(placed: placed, rankCeiling: Self.rankCeiling,
+                                            exclusionZones: exclusionZones,
+                                            canvas: box, fill: Self.fillFactor(for: box))
             var colors: [String: Color] = [:]
             var sizes: [String: CGFloat] = [:]
             for word in placed {
@@ -291,7 +292,7 @@ struct WordCloudBackdropView: View {
         let placed = WordCloudLayout.place(
             terms: terms,
             in: box,
-            maxWords: Self.maxWords,
+            maxWords: Self.wordCount(for: box),
             minFontSize: 12,
             maxFontSize: min(42, max(28, box.width / 12)),
             exclusionZones: exclusionZones,
@@ -305,9 +306,42 @@ struct WordCloudBackdropView: View {
         return placed
     }
 
-    /// Words the packer is asked for. Also the rank ceiling the depth model normalises by,
-    /// so depth means the same thing whether or not words were dropped for want of room.
-    static let maxWords = 25
+    /// The rank ceiling the depth model normalises by, so depth means the same thing on
+    /// every surface regardless of how many words a given frame could fit.
+    static let rankCeiling = 50
+
+    /// Words to ask the packer for, scaled to the frame.
+    ///
+    /// A 96 pt strip and a 1200 pt window are not the same brief. Twenty-five words is right
+    /// for a band; on a full window it is a handful of terms in a large void, which is the
+    /// complaint this answers. Every bundled `(scope, lens)` list holds exactly fifty
+    /// entries, so fifty is the ceiling the data supports — asking for more would silently
+    /// get fewer.
+    ///
+    /// Measured cost at the top of that range: 50 words across two lenses is 100 particles
+    /// mid-crossfade, ~2.6 ms per frame in the worst (fully cold) measurement and far less
+    /// warm. 200 particles was 6.2 ms — three quarters of a 120 Hz budget — which is why
+    /// this stops at fifty rather than scaling indefinitely.
+    static func wordCount(for box: CGSize) -> Int {
+        // Height first, and area only after — the same discriminator `fillFactor` uses, so
+        // the two cannot disagree about what a band is. Area alone got this wrong: an
+        // 820 x 96 strip is 78,720 pt², indistinguishable by area from a small square, and
+        // the strip was handed 35 words for a space that fits fifteen.
+        guard box.height >= Self.bandHeight else { return 25 }
+        return box.width * box.height < 250_000 ? 35 : 50
+    }
+
+    /// Below this height a surface is a band, not a window: no extra words, no bleed.
+    static let bandHeight: CGFloat = 160
+
+    /// How much of the frame the field should occupy, and whether it may bleed off the edge.
+    ///
+    /// A short strip stays fully contained — a word clipped by a 96 pt band reads as a
+    /// rendering fault, not as depth. A large surface spreads past its own edges, which is
+    /// what separates being inside a cloud from looking at a picture of one.
+    static func fillFactor(for box: CGSize) -> CGFloat {
+        box.height < Self.bandHeight ? 0.98 : 1.12
+    }
 
     /// Snaps a size down to the layout grid.
     ///

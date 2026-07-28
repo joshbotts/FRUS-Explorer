@@ -432,4 +432,109 @@ struct WordCloudDriftFieldTests {
         let b = WordCloudBackdropView.exclusionSignature([CGRect(x: 0, y: 401.3, width: 390, height: 199.4)])
         #expect(a == b, "a 1 pt wobble in a measured height must not thrash the cache")
     }
+
+    // MARK: - Filling the frame
+
+    /// The packer's spiral reach is a function of the words' own point sizes, not of the
+    /// canvas, so 25 words settle into the same few-hundred-point clump whether the frame is
+    /// a strip or a 1200 pt window. On a large surface that reads as a small cloud stranded
+    /// in an empty expanse.
+    @Test("A packed field is spread to reach its frame's edges")
+    func expansionFillsALargeFrame() {
+        let canvas = CGSize(width: 820, height: 500)
+        // A compact clump near the centre, as the packer produces.
+        let placed = (0..<12).map { rank in
+            word("w\(rank)", rank: rank,
+                 at: CGPoint(x: 410 + CGFloat((rank % 4) - 2) * 45,
+                             y: 250 + CGFloat((rank / 4) - 1) * 30))
+        }
+        let tight = WordCloudDriftField(placed: placed, rankCeiling: 50)
+        let spread = WordCloudDriftField(placed: placed, rankCeiling: 50,
+                                         canvas: canvas, fill: 1.12)
+
+        #expect(tight.expansion == CGSize(width: 1, height: 1), "no canvas, no expansion")
+        #expect(spread.expansion.width > 1.5)
+        #expect(spread.expansion.height > 1.5)
+
+        func reach(_ field: WordCloudDriftField) -> CGFloat {
+            field.particles.reduce(0) { max($0, abs($1.home.y - 250)) }
+        }
+        #expect(reach(spread) > reach(tight) * 1.5,
+                "the spread field must actually occupy more of the frame")
+    }
+
+    /// Scaling every displacement from the centre by a constant grows all gaps, so it cannot
+    /// create an overlap the packer had already ruled out. That is why this happens here
+    /// rather than in `WordCloudLayout.place`, whose placements are pinned exactly by
+    /// `WordCloudLayoutRegressionTests` and are shared with the analytics Word Cloud.
+    @Test("Expansion cannot introduce an overlap")
+    func expansionPreservesNonOverlap() {
+        let canvas = CGSize(width: 900, height: 600)
+        let placed = (0..<16).map { rank in
+            word("term\(rank)", rank: rank,
+                 at: CGPoint(x: 450 + CGFloat((rank % 4) - 2) * 80,
+                             y: 300 + CGFloat((rank / 4) - 2) * 50),
+                 fontSize: 14)
+        }
+        let field = WordCloudDriftField(placed: placed, rankCeiling: 50,
+                                        canvas: canvas, fill: 1.1)
+        let boxes = field.particles.map { p in
+            CGRect(x: p.home.x - p.halfSize.width, y: p.home.y - p.halfSize.height,
+                   width: p.halfSize.width * 2, height: p.halfSize.height * 2)
+        }
+        for i in boxes.indices {
+            for j in boxes.indices where j > i {
+                #expect(!boxes[i].intersects(boxes[j]),
+                        "expansion created an overlap between \(i) and \(j)")
+            }
+        }
+    }
+
+    @Test("The two axes cannot diverge far enough to smear the composition")
+    func axisSkewIsBounded() {
+        // A frame far taller than it is wide, against a wide-and-short packed field.
+        let canvas = CGSize(width: 300, height: 1400)
+        let placed = (0..<8).map { rank in
+            word("w\(rank)", rank: rank, at: CGPoint(x: 150 + CGFloat(rank - 4) * 30, y: 700))
+        }
+        let field = WordCloudDriftField(placed: placed, rankCeiling: 50,
+                                        canvas: canvas, fill: 1.0)
+        let ratio = max(field.expansion.width, field.expansion.height)
+            / max(0.001, min(field.expansion.width, field.expansion.height))
+        #expect(ratio <= WordCloudDriftField.Tuning.maximumAxisSkew + 0.001,
+                "axes diverged by \(ratio)x, which stretches the composition into a line")
+    }
+
+    /// A word clipped by a 96 pt band reads as a rendering fault; one running off the edge of
+    /// a full window reads as depth. So bleed is a property of the host, and the strip's
+    /// contract is that everything stays inside it.
+    @Test("A strip-shaped host neither bleeds nor expands past its frame")
+    @MainActor
+    func stripHostStaysContained() {
+        let strip = CGSize(width: 820, height: 96)
+        #expect(WordCloudBackdropView.fillFactor(for: strip) <= 1,
+                "the strip must not be given a bleed allowance")
+        #expect(WordCloudBackdropView.wordCount(for: strip) == 25,
+                "and it keeps the original word count — a band is not a window")
+
+        let window = CGSize(width: 820, height: 500)
+        #expect(WordCloudBackdropView.fillFactor(for: window) > 1)
+        #expect(WordCloudBackdropView.wordCount(for: window) == 50,
+                "fifty is what the bundled lists hold; asking for more silently gets fewer")
+    }
+
+    @Test("Bleed lets a word hang off the edge, and zero bleed does not")
+    func bleedAllowsOverhang() {
+        let size = CGSize(width: 400, height: 300)
+        let half = CGSize(width: 60, height: 10)
+        // Pushed hard against the right edge.
+        let contained = WordCloudDriftField.clamp(CGPoint(x: 500, y: 150), halfSize: half,
+                                                  scale: 1, in: size, bleed: 0)
+        #expect(contained.x + half.width <= size.width + 0.001, "no bleed means fully inside")
+
+        let bleeding = WordCloudDriftField.clamp(CGPoint(x: 500, y: 150), halfSize: half,
+                                                 scale: 1, in: size, bleed: 0.5)
+        #expect(bleeding.x > contained.x, "with bleed the word is allowed further out")
+        #expect(bleeding.x + half.width > size.width, "and part of it genuinely leaves the frame")
+    }
 }

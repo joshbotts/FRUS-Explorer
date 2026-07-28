@@ -48,6 +48,8 @@ import Foundation
 ///   1.0 — P-1: initial implementation
 ///   1.1 — phase-corrected rest pose (t = 0 is now exactly the packed layout, which is what
 ///         Reduce Motion shows) and drift-time exclusion-zone avoidance
+///   1.2 — the field expands to fill its host frame, so a large window shows a cloud you are
+///         inside rather than a clump stranded in an empty expanse
 struct WordCloudDriftField: Sendable {
 
     /// One word, with everything the renderer needs to place it at any instant.
@@ -104,6 +106,32 @@ struct WordCloudDriftField: Sendable {
     /// The particles, ordered far-to-near so a painter's-algorithm pass is a plain loop.
     let particles: [Particle]
 
+    /// Per-axis multiplier applied to each word's offset from the centre.
+    ///
+    /// **This is what makes the cloud fill its frame.** `WordCloudLayout.place` marches an
+    /// Archimedean spiral outward from the centre and takes the first free slot, and the
+    /// spiral's reach is a function of the words' own point sizes — `max(height, minFont) *
+    /// 0.22` per radian — not of the canvas. Twenty-five words therefore settle into a tight
+    /// clump a few hundred points across whether the frame is a 96 pt strip or a 1200 pt
+    /// window, which on a large surface reads as a small cloud stranded in an empty expanse
+    /// rather than as a field you are inside.
+    ///
+    /// Expanding here rather than in the packer is deliberate: `place` is shared with the
+    /// shipped analytics Word Cloud and its placements are pinned *exactly* by
+    /// `WordCloudLayoutRegressionTests`. Scaling every word's displacement from the centre by
+    /// a constant cannot introduce an overlap — all gaps grow — so the packer's composition
+    /// and its non-overlap guarantee both survive untouched.
+    let expansion: CGSize
+
+    /// How far outside the frame a word may hang, as a fraction of its own half-extent.
+    ///
+    /// Zero on a small host, where a clipped word reads as a rendering fault. Non-zero on a
+    /// full-bleed surface, where it is the point: a field whose every member is fully
+    /// contained reads as a picture *of* a cloud, and one whose outermost members run off the
+    /// edges reads as a cloud you are *in*. That difference is most of the sensation being
+    /// asked for, and it costs nothing.
+    let bleed: CGFloat
+
     /// Rects the words must stay clear of, in canvas coordinates.
     ///
     /// **The packer alone is not enough once words move.** `WordCloudLayout.place` honours
@@ -121,8 +149,18 @@ struct WordCloudDriftField: Sendable {
     /// - Parameter rankCeiling: the rank that maps to maximum depth. Passing the *requested*
     ///   word count rather than the placed count keeps depth meaning the same thing whether
     ///   or not words were dropped.
-    init(placed: [PlacedWord], rankCeiling: Int, exclusionZones: [CGRect] = []) {
+    /// - Parameter canvas: the frame the words will be drawn in. Together with `fill` this
+    ///   decides how far the packed composition is spread to occupy it.
+    /// - Parameter fill: the fraction of each half-axis the outermost word should reach.
+    ///   `1` puts the outermost box exactly against the edge; above `1` lets the field bleed
+    ///   off-frame, which is the strongest cue for being *inside* a cloud rather than looking
+    ///   at one. `0` disables expansion entirely, for hosts too small to spread into.
+    init(placed: [PlacedWord], rankCeiling: Int, exclusionZones: [CGRect] = [],
+         canvas: CGSize = .zero, fill: CGFloat = 0) {
         self.exclusionZones = exclusionZones
+        let expansion = Self.expansion(for: placed, canvas: canvas, fill: fill)
+        self.expansion = expansion
+        self.bleed = max(0, fill - 1)
         let ceiling = Double(max(1, rankCeiling - 1))
         particles = placed.map { word in
             // colorIndex, not the array index — see the type's discussion.
@@ -131,7 +169,7 @@ struct WordCloudDriftField: Sendable {
                                                    fontSize: word.fontSize,
                                                    rotated: word.rotationDegrees != 0)
             return Particle(term: word.term,
-                            home: word.center,
+                            home: Self.expand(word.center, canvas: canvas, by: expansion),
                             baseFontSize: word.fontSize,
                             rotationDegrees: word.rotationDegrees,
                             depth: depth,
@@ -142,13 +180,54 @@ struct WordCloudDriftField: Sendable {
         .sorted { $0.depth > $1.depth }
     }
 
+    /// The per-axis multiplier that spreads a packed field across its canvas.
+    ///
+    /// Computed per axis, not uniformly. A uniform factor preserves the composition's aspect
+    /// ratio but leaves a wide-and-short field floating in a tall frame with bands of nothing
+    /// above and below it — the exact complaint this exists to answer. Positions stretch;
+    /// glyphs do not, so nothing is distorted, only redistributed.
+    ///
+    /// The axes are kept within `maximumAxisSkew` of each other so an extreme frame cannot
+    /// smear the composition into a line.
+    static func expansion(for placed: [PlacedWord], canvas: CGSize, fill: CGFloat) -> CGSize {
+        guard fill > 0, canvas.width > 0, canvas.height > 0, !placed.isEmpty else {
+            return CGSize(width: 1, height: 1)
+        }
+        let center = CGPoint(x: canvas.width / 2, y: canvas.height / 2)
+        var reachX: CGFloat = 0
+        var reachY: CGFloat = 0
+        for word in placed {
+            let half = estimatedHalfSize(term: word.term, fontSize: word.fontSize,
+                                         rotated: word.rotationDegrees != 0)
+            reachX = max(reachX, abs(word.center.x - center.x) + half.width)
+            reachY = max(reachY, abs(word.center.y - center.y) + half.height)
+        }
+        guard reachX > 1, reachY > 1 else { return CGSize(width: 1, height: 1) }
+
+        // Never contract: a field already wider than its frame is the packer's business.
+        var x = max(1, canvas.width / 2 * fill / reachX)
+        var y = max(1, canvas.height / 2 * fill / reachY)
+        let skew = Tuning.maximumAxisSkew
+        x = min(x, y * skew)
+        y = min(y, x * skew)
+        return CGSize(width: x, height: y)
+    }
+
+    /// Applies ``expansion`` to one packed centre.
+    static func expand(_ point: CGPoint, canvas: CGSize, by expansion: CGSize) -> CGPoint {
+        guard canvas.width > 0, canvas.height > 0 else { return point }
+        let center = CGPoint(x: canvas.width / 2, y: canvas.height / 2)
+        return CGPoint(x: center.x + (point.x - center.x) * expansion.width,
+                       y: center.y + (point.y - center.y) * expansion.height)
+    }
+
     /// Where a particle is, how big, and how bright, at `time`.
     ///
     /// - Parameter time: seconds since an arbitrary but fixed epoch. `0` yields the rest
     ///   pose, which is what Reduce Motion draws.
     /// - Parameter size: the canvas, used only to keep words inside it.
     static func state(of p: Particle, at time: Double, in size: CGSize,
-                      avoiding zones: [CGRect] = []) -> State {
+                      avoiding zones: [CGRect] = [], bleed: CGFloat = 0) -> State {
         // Parallax: near words swing wider and faster than far ones. This is the whole of
         // the depth illusion — the eye reads differential motion as distance long before it
         // reads size.
@@ -182,7 +261,7 @@ struct WordCloudDriftField: Sendable {
         let opacity = Tuning.farOpacity + (Tuning.nearOpacity - Tuning.farOpacity) * nearness
 
         let drifted = CGPoint(x: p.home.x + dx, y: p.home.y + dy)
-        let bounded = clamp(drifted, halfSize: p.halfSize, scale: scale, in: size)
+        let bounded = clamp(drifted, halfSize: p.halfSize, scale: scale, in: size, bleed: bleed)
         let clear = push(bounded, halfSize: p.halfSize, scale: scale, outOf: zones, in: size)
         return State(position: clear, scale: scale, opacity: opacity)
     }
@@ -237,9 +316,12 @@ struct WordCloudDriftField: Sendable {
     ///
     /// Words wider than the canvas — routinely the case on a 96 pt indexing strip — clamp to
     /// the centre rather than inverting their bounds.
-    static func clamp(_ point: CGPoint, halfSize: CGSize, scale: CGFloat, in size: CGSize) -> CGPoint {
-        let halfW = halfSize.width * scale
-        let halfH = halfSize.height * scale
+    static func clamp(_ point: CGPoint, halfSize: CGSize, scale: CGFloat, in size: CGSize,
+                      bleed: CGFloat = 0) -> CGPoint {
+        // `bleed` shrinks the effective half-extent, which lets that fraction of the word
+        // hang off the edge while the rest of the clamp works exactly as before.
+        let halfW = halfSize.width * scale * (1 - min(0.95, bleed))
+        let halfH = halfSize.height * scale * (1 - min(0.95, bleed))
         let minX = min(halfW, size.width / 2)
         let maxX = max(size.width - halfW, size.width / 2)
         let minY = min(halfH, size.height / 2)
@@ -325,6 +407,9 @@ struct WordCloudDriftField: Sendable {
         /// Slow size pulse, independent of position.
         static let breathRate: Double = 0.21
         static let breathDepth: Double = 0.05
+        /// How far the two expansion axes may diverge before the composition looks smeared.
+        static let maximumAxisSkew: CGFloat = 2.2
+
         /// Points of daylight left between a pushed word and the zone it was pushed out of.
         static let zoneClearance: CGFloat = 1
 
