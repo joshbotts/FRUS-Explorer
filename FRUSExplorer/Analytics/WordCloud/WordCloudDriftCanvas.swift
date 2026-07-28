@@ -231,7 +231,8 @@ struct WordCloudDriftCanvasFrame: View {
             ) else { continue }
 
             let state = WordCloudDriftField.state(of: particle, at: time, in: size,
-                                                  avoiding: layer.field.exclusionZones)
+                                                  avoiding: layer.field.exclusionZones,
+                                                  bleed: layer.field.bleed)
 
             // A per-particle context COPY, never `drawLayer`. `drawLayer` opens a real
             // transparency group — an offscreen buffer per particle — which at 25 particles
