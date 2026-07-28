@@ -44,6 +44,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — P-2: initial implementation, search as the first consumer
+///   1.1 — the spinner fades out once the cloud is up: same message, and two indicators
+///         competing reads worse than either alone
 struct PendingCloudBackdrop: ViewModifier {
 
     /// Which scope's vocabulary to show — normally what the user filtered the wait down to.
@@ -55,6 +57,12 @@ struct PendingCloudBackdrop: ViewModifier {
     @Environment(AppState.self) private var appState
     @State private var isShowing = false
 
+    /// How long the spinner takes to yield to the cloud.
+    ///
+    /// Slower than the cloud's own fade-in, so the two overlap briefly rather than one
+    /// snapping out as the other arrives.
+    static let handoverDuration: Double = 0.6
+
     /// How long a wait must last before the cloud appears.
     ///
     /// Long enough that the fast half of the search latency distribution never sees it, short
@@ -63,6 +71,18 @@ struct PendingCloudBackdrop: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // The spinner hands over to the cloud rather than sitting on top of it. Both are
+            // saying the same thing — "still working" — and once the cloud is up it says it
+            // more pleasantly; a spinner rotating in front of a drifting field just reads as
+            // two indicators competing.
+            //
+            // `.opacity`, NOT a conditional. A removed `ProgressView` leaves the accessibility
+            // tree with nothing announcing that work is in progress, because the cloud is
+            // `accessibilityHidden` by contract — it carries no information a screen-reader
+            // user can act on. At zero opacity the spinner keeps announcing while showing
+            // nothing, which is what this state needs.
+            .opacity(isShowing ? 0 : 1)
+            .animation(.easeInOut(duration: Self.handoverDuration), value: isShowing)
             .background {
                 if isShowing {
                     WordCloudBackdropView(

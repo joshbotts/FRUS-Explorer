@@ -124,4 +124,19 @@ struct PendingCloudBackdropTests {
         #expect(CloudSurfaceArbiter.searchScope(volumeIds: ["not-a-real-volume"],
                                                 manifest: store()) == .corpus)
     }
+
+    // MARK: - The hand-over
+
+    /// The spinner yields to the cloud rather than sitting on top of it. Both say "still
+    /// working"; two indicators competing reads worse than either alone.
+    @Test("The hand-over outlasts the cloud's own fade, so they overlap rather than snap")
+    func handoverOutlastsTheFadeIn() {
+        // The cloud fades in over 0.45 s (WordCloudBackdropView's transition). If the spinner
+        // vanished faster than that, there would be a moment with neither indicator visible —
+        // a blank waiting screen, which is worse than what this replaced.
+        #expect(PendingCloudBackdrop.handoverDuration >= 0.45,
+                "the spinner must not clear before the cloud has arrived")
+        #expect(PendingCloudBackdrop.handoverDuration < 1.5,
+                "and it should not linger over the cloud once it has")
+    }
 }
