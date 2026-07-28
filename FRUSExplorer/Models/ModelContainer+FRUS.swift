@@ -29,6 +29,8 @@ extension ModelContainer {
     ///          for executed search queries) — backs the new macOS "History" menu and
     ///          "Complete History" window
     ///   1.3 — Session 2026-06-07: `makeFRUSContainer()` return tuple gained `initError: NSError?`
+    ///   1.4 — test processes get an EPHEMERAL in-memory store rather than the shared on-disk
+    ///          one, so no test run can leave state behind for another to trip over
     ///          so callers can run the actual CloudKit init failure through
     ///          `FRUSExplorerApp.cloudKitDiagnostic(_:)` and surface the real domain/code/
     ///          description in the UI, instead of a hardcoded "check console" placeholder
@@ -164,8 +166,8 @@ extension ModelContainer {
         guard !isTestHost else {
             let reason = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
                 ? "UI test mode" : "XCTest host"
-            print("[SwiftData] \(reason) detected — using local store (no CloudKit)")
-            return (makeLocalContainer(), false, nil)
+            print("[SwiftData] \(reason) detected — using an in-memory store (no CloudKit)")
+            return (makeEphemeralContainer(), false, nil)
         }
 
         // Use a fresh schema for the CloudKit attempt.
@@ -226,6 +228,50 @@ extension ModelContainer {
     ///
     /// Used as the fallback when CloudKit init fails, and as the primary container
     /// when running under the XCTest host.
+    /// A store that exists only for the lifetime of a test process.
+    ///
+    /// ## Why this is not the on-disk local store
+    /// It was, and that made every test run share one mutable database with every other test
+    /// run, forever. There is no reset between runs, none between suites, and none between
+    /// the unit-test host and the UI-test app process.
+    ///
+    /// The failure that exposed it is worth recording, because nothing about it pointed here.
+    /// A UI test's fixture helper created a project each time it ran, with no idempotence
+    /// guard. Seven accumulated over one afternoon. Each project row renders a three-line
+    /// detail, so at seven rows an unrelated suite's "New Project…" row was pushed below the
+    /// fold of a lazy `List` — not merely off-screen but never materialised — and that suite
+    /// began failing with "Could not find the 'New Project…' row". A fixture in one file
+    /// broke an assertion in another through a database neither of them mentions.
+    ///
+    /// Idempotent fixtures (fixed in #554) stop that particular leak. This stops the class:
+    /// no file, so nothing can accumulate, and every launch starts from the same empty state.
+    ///
+    /// ## Safe because nothing needs to outlive a launch
+    /// Every UI test calls `XCUIApplication.launch()` exactly once and none terminates and
+    /// relaunches, so no test depends on state surviving a process boundary. In-memory data
+    /// persists for the whole process, which is all any of them use.
+    ///
+    /// Unit tests are unaffected either way: they build their own in-memory containers and
+    /// never call ``makeFRUSContainer()``. They reach this path only as the app-hosted test
+    /// runner's incidental app launch, which likewise wants a clean slate.
+    ///
+    /// Version history:
+    ///   1.0 — after a leaked fixture in one UI suite broke an assertion in another
+    private static func makeEphemeralContainer() -> ModelContainer {
+        do {
+            let schema = Schema(frusModelTypes)
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true,
+                                            cloudKitDatabase: .none)
+            return try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            // The schema itself is broken, which fails every path. Falling back to the local
+            // store keeps the app launchable so the real failure is visible in the test
+            // output rather than masked by a crash at init.
+            print("[SwiftData] In-memory test store failed (\(error)); falling back to the local store")
+            return makeLocalContainer()
+        }
+    }
+
     private static func makeLocalContainer() -> ModelContainer {
         do {
             let localSchema = Schema(frusModelTypes)
