@@ -173,19 +173,31 @@ struct MacSearchWindowView: View {
                 allReviewedEmptyState
             } else if showTimeline {
                 timelineView
+            } else if searchVM.isSearching, searchVM.results.isEmpty {
+                // A dedicated branch, NOT a background on `resultsList`.
+                //
+                // The first attempt attached the cloud as `.background` of the List and it
+                // was never visible on macOS. Measured on this platform, rendering the same
+                // composition off-screen and counting pixels of a solid backdrop colour:
+                //
+                //     control, no List ......................... 100.0%
+                //     List(.plain) + .background ................ 20.8%   <- what shipped
+                //     List(.plain) + scrollContentBackground(.hidden)  20.8%
+                //     EMPTY List(.plain) + .background .......... 20.8%
+                //     greedy ProgressView + .background ......... 98.7%   <- this branch
+                //
+                // Two things worth keeping from that. An EMPTY list occludes just as much as
+                // a populated one, so "the list has no rows, the background will show" is
+                // false. And `.scrollContentBackground(.hidden)` — the obvious fix, and the
+                // one the P-2 integration map suggested — changes nothing here at all.
+                //
+                // Replacing the list is sound precisely because this branch requires
+                // `results.isEmpty`: there is nothing on screen to preserve. macOS's
+                // deliberate keep-the-previous-results behaviour is untouched, because that
+                // case takes the `else` below.
+                firstSearchPendingView
             } else {
                 resultsList
-                    // FIRST QUERY ONLY. macOS deliberately keeps the previous results on
-                    // screen while a new search runs — a decision recorded in
-                    // `MacSearchViewModel` — so this must not paint over them. Gating on an
-                    // empty result set means the cloud fills the blank list a fresh window
-                    // opens with, and never intrudes on a re-query.
-                    .pendingCloudBackdrop(
-                        scope: CloudSurfaceArbiter.searchScope(
-                            volumeIds: searchVM.parameters.volumeIds,
-                            manifest: appState.manifestStore),
-                        isPending: searchVM.isSearching && searchVM.results.isEmpty
-                    )
 
                 if searchVM.totalPages > 1 {
                     Divider()
@@ -663,6 +675,22 @@ struct MacSearchWindowView: View {
                 .help(documentTypeHelpText(for: option.filter))
             }
         }
+    }
+
+    /// The blank area a fresh Search window shows while its first query runs.
+    ///
+    /// Only reachable with an empty result set, so it never displaces results. The sort
+    /// bar's own "Searching…" indicator stays as it is — this fills the space below it.
+    private var firstSearchPendingView: some View {
+        ProgressView()
+            .controlSize(.large)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .pendingCloudBackdrop(
+                scope: CloudSurfaceArbiter.searchScope(
+                    volumeIds: searchVM.parameters.volumeIds,
+                    manifest: appState.manifestStore),
+                isPending: true
+            )
     }
 
     // MARK: - Sort Bar
