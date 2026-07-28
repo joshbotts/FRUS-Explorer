@@ -1,6 +1,6 @@
 # Consolidated Development Plan — August 2026
 
-**Date:** 2026-07-25 (revised 2026-07-26 — see *Status*) · **Inputs:** (1) the Settings
+**Date:** 2026-07-25 (revised 2026-07-28 — see *Status*) · **Inputs:** (1) the Settings
 North Star design handoff (`design_handoff_settings_northstar/`, dated 2026-07-24, all 10
 panes settled); (2) `Planning/Query-And-Corpus-Analysis-Session-Plan.md` (13 sessions, 5
 milestones, dated 2026-07-24); (3) the seven open NARA Catalog issues (#235, #354, #355,
@@ -10,19 +10,21 @@ options 1a/4a–4c settled), planned in `Planning/Onboarding-Glass-Flow-Plan.md`
 
 **Where this picks up.** The analytics design program is complete and merged: quick-win
 Waves A–C, D1 compare terms (#470–#473), and D3 research-grade export (#474–#479). The
-research-rail program is complete; `ResearchStripView` no longer exists (four stale
-doc-comment mentions remain — swept in S-0). Those completions moot parts of #368; see
-the issue-disposition table at the end.
+research-rail program is complete and `ResearchStripView` no longer exists — the stale
+doc-comment mentions were swept in S-0. Those completions moot parts of #368; see the
+issue-disposition table at the end.
 
-**Status, 2026-07-26 (revised after #521).** Workstream **S is complete** — S-0…S-6
-shipped as PRs #485–#505; #368's settings paragraph is closed by comment. Wave R (the
-research trail, `Planning/Wave-R-Research-Trail-2026-08.md`) ran after it and is now
-**complete but for R-2b**: R-1 and R-3…R-9 shipped as PRs #510–#521, and R-2b (retiring
-`ResearchSession`/`SessionEvent` from `frusModelTypes`, 19 record types → 17) deliberately
-waits for the R-2a build to have been in the field, since the migration must still be able
-to read the rows it converts. The lanes still open are **Q**, **N**, and the new **O**;
-the slot table below is kept as the plan of record, with the live remainder in
-*What is left*.
+**Status, 2026-07-28.** **Three of four workstreams are complete.** **S** shipped as
+PRs #485–#505. **Wave R** (`Planning/Wave-R-Research-Trail-2026-08.md`) is complete but
+for **R-2b** (retiring `ResearchSession`/`SessionEvent` from `frusModelTypes`, 19 record
+types → 17), which deliberately waits for the R-2a build to have been in the field, since
+the migration must still be able to read the rows it converts. **O** shipped as PRs
+#525–#535 (+ #537/#540 fixes), and an unplanned **P** tail followed it — see *Delivered
+since 2026-07-26*.
+
+**The lanes still open are Q and N.** Both are re-verified against the tree as of
+2026-07-28; corrections are marked **[2026-07-28]** inline. The slot table below is kept
+as the plan of record; the live remainder is in *What is left*.
 
 Four workstreams, deliberately independent lanes: **S** (Settings North Star — complete),
 **Q** (Query & Corpus Analysis), **N** (NARA Catalog), **O** (Onboarding overhaul). Any
@@ -31,9 +33,10 @@ in *Sequencing*.
 
 House rules that bind every session below: implementer ≠ reviewer; UI PRs carry a
 visual-review checklist (owner verifies on device); `build-for-testing` before claiming
-green; dual settings surfaces are **parallel** — every settings change edits
-`SettingsView.swift` *and* `FRUSSettingsView.swift` until the shared-model work lands
-(that duplication is precisely what S-1 begins retiring); `CATALOG_API_KEY` is
+green; settings changes edit **the shared model plus at most two renderers**
+(S-1 landed `SettingsPaneModel`; the older "every change edits both `SettingsView.swift`
+*and* `FRUSSettingsView.swift`" rule has relaxed by its own terms, and the
+`dual_settings_views` note is partially superseded) **[2026-07-28]**; `CATALOG_API_KEY` is
 owner-held — keyed generator runs are owner-executed, never Claude-executed.
 
 ---
@@ -160,8 +163,10 @@ Project Home corpus-profile card, Q-2's inspector labels project scopes and dual
 empty conjuncts, M-3 gains the Home verify-quotations entry point. One appetite-driven
 addition rides the 17+ tail: **Q-V project-vocabulary leads** (keyness of the engaged
 set → distinctive-vocabulary lead source, presented beside — never blended into — the
-#308 axis leads). Four owner decisions (A–D) are tabled in the assessment; none blocks
-Q-M1.
+#308 axis leads). The assessment tables four owner decisions (A–D). **[2026-07-28]** A was settled by the
+design hand-back; **B was overtaken by Wave R-2a**, which retired `SessionEvent` and left
+`SearchHistoryEntry.projectId` as the attribution home — *owner to confirm B is closed
+rather than merely re-homed*. C and D remain open. None blocks Q-M1.
 
 **Cross-lane edges (the only ones):**
 
@@ -180,18 +185,43 @@ Q-M1.
    it is born into the 1c tree and the shared pane model, not re-homed later. M-1's
    editor should reuse S-3's list-grammar components (row → editor, counts on rows) —
    another reason S-3 precedes it.
-3. **Q-M3's keyness mode** rides the existing word cloud; if S-5 has already rebuilt
-   `WordCloudSettingsView` to the 6a bench, the keyness toggle documents itself via the
-   bench's consequence line. Either order compiles; S-5-first reads better.
-4. **Corpus prerequisite:** before Q-M2, index a substantial slice on the Mac (the
-   verification oracles assume it — R-1's procurement-report facet check, R-2's Article
-   43/51 crossover). This is owner wall-clock, not engineering time; start the index
-   while Q-M1 is in review.
+3. **Q-M3's keyness mode** rides the existing word cloud. **[2026-07-28] The ordering
+   question is spent — S-5 and O both landed.** The live edge is newer: the cloud is now an
+   animated surface with a per-frame drift canvas and a frame-cost probe (`DrawCostMeter`),
+   so a keyness re-tokenize must not run on the surface the canvas is animating. The cloud
+   has also entered the Q lane's own screens — `CloudSurfaceArbiter.searchScope` backs the
+   search empty/pending state (`Search/SearchView.swift:650`, `App/SearchSheet.swift:688`) —
+   so Q-2/R-1/R-3 must coexist with it. A real cross-lane edge now, not a hypothetical.
+4. **Corpus prerequisite — [2026-07-28] MET.** The Mac index is effectively the whole
+   corpus (552 volumes, ~314k documents, a 6.3 GB store); this is no longer owner wall-clock
+   to schedule. Two consequences replace it: (a) a future `currentDateIndexVersion` bump now
+   costs a multi-hour full reindex, so an index migration inside Q is a scheduling event in
+   its own right; (b) base query latency at that scale is **measured and material** — a
+   common term is 6–12 s in SQLite before any snippet work (#548). Q-2's inspector and R-1's
+   facets both sit on that, and the 7,500-row macOS fetch is an architectural pagination
+   issue. **Treat result-set pagination as an explicit Q-M2 prerequisite rather than
+   discovering it in R-1.**
+
+**[2026-07-28] A hazard the plan did not name — Q-2's stem line.** The inspector is
+specified to show the stem a term resolves to, but the app has *two* stemmers: the Swift
+`PorterStemmer` (`FTS5Store/FTS5Tokenizer.swift`) and SQLite's `porter unicode61`
+tokenizer, which is what actually built the index. Nothing asserts they agree, so the
+inspector could confidently display a stem the engine never computed. Either source the
+line from `fts5vocab` (SQLite's real stems — the session plan permits inverting Q-2 and
+Q-3) or add a parity test and label the line an approximation. Related: #548 made
+`makeContextSnippet` reject words on their first character before stemming, sound only
+because Porter never alters a first character; that invariant is pinned by
+`SearchSnippetCostTests.stemmingPreservesTheFirstCharacter` and Q work touching stemming
+must keep it true.
 
 **Verification discipline carried over:** the two source reports are the test oracle
 (`NEAR("military guarantee" Europe, 30)` → 0/0/0/3 across 1945–48; Article 43: 42/29/26/8
 against Article 51: 10/28/32/18; the OSP within-corpus counts 9/8/0). A mismatch is a
-finding about indexed scope, not a test to relax.
+finding about indexed scope, not a test to relax. **[2026-07-28] These numbers live only in
+this plan** — the source reports are not in the repo, so the oracles have no primary source
+to check against. Deposit the reports (or their count tables) under `Planning/`, or drop
+the OSP clause: an unfalsifiable oracle is worse than none in a lane whose discipline is
+that a mismatch is a finding.
 
 ---
 
@@ -238,19 +268,46 @@ lots (54D270/Marshall Mission = 1,063 records, M-88/CFM = 697, … — 54% of th
 `lot → NAID` override the generator reads (same pattern as the presidential-library
 curation) and re-baselines. Cheap, high-yield, no API dependency.
 
-**N-4 — #355 presidential-library curated NAIDs** *(Effort M; **verify blocker first**)*
-~20 curated (library, collection) → NAID entries covering ~66% of the 29k-record
-presidentialLibrary bucket. The issue marks this **blocked on §3.7 domain tagging** from
-the bundle-hygiene work — confirm whether #351 delivered §3.7 before scheduling;
-repository-blind matching would multiply wrong links. Includes neighbor-key
-normalization ("NSF" variants, "Dulles papers" casing).
+**N-4 — #355 presidential-library curated NAIDs** *(Effort M)*
+**~6** curated (library, collection) → NAID entries reach ~66% of the 29k-record
+presidentialLibrary bucket; ~20 entries reach ~81% **[2026-07-28: the plan previously
+attributed ~66% to ~20 entries]**.
+
+**Gate answered 2026-07-28 — §3.7 is HALF delivered, and the missing half is the one this
+session depends on.** #351 (PR #370) shipped the cross-domain *refusal*
+(`CollectionAuthorityIndex.domainFiltered`, `CollectionAuthority.swift:270`, applied :261)
+and #373 extended it to the front-matter path (:295–298); the Carter-Library canary is
+closed and tested. But domain **tagging** was never built: `AuthorityCollectionRecord` has
+no domain field, the guard is a single hard-coded presidentialLibrary × `lot:` pair, and
+lookup step 4 (`uniqueRecord(forAliasNorm:)`, :306) is still repository-blind over a global
+`byAlias` map holding 379 globally-unique alias norms owned by library clusters (e.g.
+"administrative histories" → Johnson only). A note from library A can still land on
+library B's cluster — precisely what seeding curated NAIDs would weaponise.
+
+**N-4 is therefore schedulable, with two conditions folded into its scope:** (i) key the
+curated entries repository-first and make lookup repository-aware for library parses
+*before* seeding; (ii) keep neighbor-key normalization ("NSF" variants, "Dulles papers"
+casing) off the repository-blind alias step. Unguarded but lower risk, for the record:
+`namedFileSeries` carries no repository at all and can reach a `lot:` cluster.
 
 **N-5 — #372 lot-map consolidation** *(Effort M, architectural)*
 After N-0's regen: fold volume-sources' surviving lots into central-files at generation
-(skipping fileUnit-level entries), repoint `VolumeSourcesView:282` and
-`CollectionContentResolver:1275` to `CentralFilesIndexStore.lotFile(forRawLot:)`, drop
-the `lots` map from the volume-sources artifact — **keeping** `resolution()`'s
-record-group arm, which central-files does not carry. Ends the two-parallel-maps risk
+(skipping fileUnit-level entries), repoint the readers to
+`CentralFilesIndexStore.lotFile(forRawLot:)`, drop the `lots` map from the volume-sources
+artifact — **keeping** `resolution()`'s record-group arm.
+
+**[2026-07-28] Anchors corrected and the reader list completed.** The app sites are
+`VolumeSourcesView.swift:291` (the plan said :282, which is a closing brace and never was
+the call site) and `CollectionContentResolver.swift:1275–1276` (correct as written). Two
+**generator-side** readers were missing from the plan and break if `lots` is dropped
+without them: `SourceExplorerExportGeneratorCore/SourceExplorerExportRunner.swift:218`
+(the export's diagnostic resolution column) and
+`CollectionAuthorityGeneratorCore/OfflineNAIDResolver.swift:57/62–66` (decodes the `lots`
+map to feed collection-authority clusters, and carries its own fileUnit guard that becomes
+redundant once central-files is the single source). On keeping the record-group arm: it is
+not that central-files lacks record groups entirely — each of its 971 lot entries carries
+an RG *number* — but it holds no RG *header records*, so volume-sources' 31 resolved RG
+headers (170, 200, 218, 319, 383 …) exist nowhere else. Ends the two-parallel-maps risk
 (`project_source_explorer_bundle_propagation`).
 
 **N-6 — #235 Simplify NARA Lookup** *(Effort M, app UI)*
@@ -267,7 +324,11 @@ namedFileSeries route it would build on.
 
 ---
 
-## Workstream O — Onboarding overhaul ("Glass over Word Clouds")
+## Workstream O — Onboarding overhaul ("Glass over Word Clouds") — **COMPLETE**
+
+**[2026-07-28] Shipped as PRs #525–#535, plus #537/#540.** Retained below as the record
+of what was built and why; nothing here is outstanding. An unplanned drift-engine tail
+followed it — see *Delivered since 2026-07-26*.
 
 **Source of truth:** `Planning/Onboarding-Glass-Flow-Plan.md` (2026-07-26), against
 `design_handoff_onboarding_glass_flow/` (canonical options **1a, 4a, 4b, 4c**; turns 2–3
@@ -296,8 +357,11 @@ never both claim the screen.
 **Why this lane is cheap to schedule.** It adds **no `@Model` type**, so
 `CloudKitSchemaInventoryTests` never fires and no Production schema deploy gates the
 release — the release-blocking dependency Q's M-1 and M-2 both carry, and the one R-2b
-carries too. It is independent of R-2b. Its only file shared with another lane is
-`FRUSTheme.swift`, and only additively.
+carries too. It is independent of R-2b. **[2026-07-28] The "only shared file is `FRUSTheme.swift`,
+and only additively" claim did not survive the workstream.** The cloud now backs the
+search empty/pending state on both platforms (`Search/SearchView.swift:650`,
+`App/SearchSheet.swift:688`) via `CloudSurfaceArbiter.searchScope`, so O's output sits
+inside Q's own surfaces — recorded as cross-lane edge 3.
 
 **Why it is expensive to slice.** Unlike Q — whose Q-1 ships alone in one small session —
 every O screen sits on the backdrop, the backdrop sits on the bundled artifacts, and the
@@ -352,37 +416,73 @@ Natural pause points: after slot 5 (Q-M1 shipped + settings regrouped), after sl
 (result-set object complete), after slot 15 (settings program complete). Milestones
 Q-M3/Q-M5 and N-6 are appetite-driven tails, not commitments.
 
-### What is left — the live interleave (2026-07-26)
+### What is left — the live interleave (2026-07-28)
 
-The S slots above are done and Wave R has run; this is the remainder, three lanes and one
-implementer. O-0 is placed first because it is small, independent, and stops the next
-reader of `Onboarding/` being misled by dead code.
+**Two lanes now.** S, O and Wave R (but for R-2b) are complete; the O rows are gone from
+this table. One implementer, so the constraint remains review-and-verify bandwidth.
 
 | Slot | Lane | Session |
 |---|---|---|
-| 1 | O | **O-0** clear the ground (two PRs; the second is the single manifest decode) |
-| 2 | Q | Q-1 NEAR |
-| 3 | O | **O-1** `WordCloudKit` + `CloudVectorsGenerator` *(owner runs the corpus pass)* |
-| 4 | Q | Q-2 Query Inspector |
-| 5 | O | **O-2** backdrop |
-| 6 | Q | Q-3 fts5vocab + exact-word *(start the big Mac index in the background)* |
-| 7 | N | N-1 #353 parser session |
-| 8 | O | **O-4** the three steps |
-| 9 | Q | R-1 facets *(needs the indexed corpus)* |
-| 10 | O | **O-3** indexing backdrop + occasional splash |
-| 11 | O | **O-5** accessibility + docs closeout |
-| 12 | Q | R-2 + R-3 |
-| 13 | N | N-2 #354 routing (+ N-3 curation riding along) |
-| 14+ | Q · N | M-1 → M-2/M-3; N-5 · N-4 if unblocked · N-6; then Q-M3/Q-M5 as appetite allows |
+| 1 | Q | **Q-3** fts5vocab + exact-word — *promoted ahead of Q-2, see note* |
+| 2 | Q | **Q-1** NEAR |
+| 3 | N | **N-1** #353 parser session *(the biggest coverage lever)* |
+| 4 | Q | **Q-2** Query Inspector *(consumes Q-3's vocab table for the stem line)* |
+| 5 | Q | **R-1** facets — *carrying the pagination prerequisite* |
+| 6 | N | **N-2** #354 routing (+ **N-3** curation riding along, after the export re-baseline) |
+| 7 | Q | **R-2** + **R-3** |
+| 8 | N | **N-5** consolidation · **N-4** now unblocked-with-conditions · **N-6** lookup |
+| 9+ | Q · N | M-1 → M-2/M-3; then Q-M3/Q-M5 as appetite allows |
 
-O-1 and Q-3 are the two slots with owner wall-clock attached (the corpus generator pass and
-the big Mac index); running them in adjacent slots lets both proceed while review happens.
-O-3 and O-4 both hang off O-2 and are order-independent; O-4 goes first because it is the
-half the handoff is actually about, and O-5 needs both.
+**Why Q-3 moved to the front [2026-07-28].** The session plan always permitted inverting
+Q-2 and Q-3 ("Prereq: none (Q-2 consumes it, but the order can invert)"). Doing Q-3 first
+gives Q-2's stem line a source of truth — SQLite's own stems via `fts5vocab` — instead of
+a second Swift stemmer nothing proves agrees with the index. That was the hazard the
+premise re-verification turned up, and reordering is the cheapest way to close it.
 
-**R-2b is the only Wave-R item left and stays out of this table** — it waits for the R-2a
-build to have been in the field, and carries its own Production schema deploy through the
-#488 gate.
+**Owner wall-clock is no longer on the critical path.** Both of the slots that carried it
+are spent: O-1's corpus generator pass ran, and the Mac index is now effectively the whole
+corpus. What replaces it is the opposite constraint — an index-version bump is now a
+multi-hour reindex, so any Q session contemplating one should say so up front.
+
+**N-0 (owner, ~10 min) can run any time** and should precede N-3: the keyed
+`VolumeSourcesIndexGenerator` regen, then **run-book Step 5 to re-baseline the export**,
+without which N-3 curates from a stale ranking that omits its own #3 entry.
+
+**R-2b remains out of this table** — it waits for the R-2a build to have been in the field
+and carries its own Production schema deploy through the #488 gate.
+
+---
+
+## Delivered since 2026-07-26 (unplanned)
+
+Recorded because the plan had no lane for it and because two items change Q's premises.
+
+**Workstream O — complete.** #525/#527 (O-0), #529 (launch screen; #528 landed on a dead
+base and was re-landed), #530/#531 (O-1), #532 (O-2), #533 (O-4), #534 (O-3), #535 (O-5),
+plus #537 and #540 fixing a backdrop that rendered on no device and moving the indexing
+cloud onto the banner.
+
+**A "P" tail — the drift engine.** Owner-requested after O closed: words as particles in
+simulated 3-D. #545 (P-1, indexing strip), #549 (P-2, empty search pending state on both
+platforms), #551 (fills the frame instead of clumping), #552 (spinner hands over), with
+#546/#547/#550 fixing defects introduced inside the same cycle. **This is why the cloud is
+now a Q-lane concern** — see cross-lane edge 3.
+
+**Search and indexing performance.** #548 stopped Porter-stemming every word of every
+result body — a measured 41 s → ~1.7 s on the macOS worst case, and the origin of the
+stem-invariant note in Workstream Q. #541/#542/#543 made the indexing banner queue-grained
+and took 552 `stat` calls plus O(n) manifest scans out of the render loop.
+
+**Instrumentation and test infrastructure.** #539/#544 (an in-app frame probe, after three
+failed Instruments attempts), #554/#555 (UI-test fixture leak, then an ephemeral store so
+no test run can pollute another — the cause of a UI failure that had been misreported as
+pre-existing for several PRs).
+
+**A candidate lane, not scheduled.** #536 assessed a bundled lexical-similarity neighbour
+index and proposes L-1…L-4 with six queued owner decisions
+(`Planning/Lexical-Similarity-Neighbors-Assessment.md`). It competes for the same single
+implementer as Q and N; it is listed here so the competition is explicit, not to schedule
+it.
 
 ---
 
@@ -390,16 +490,16 @@ build to have been in the field, and carries its own Production schema deploy th
 
 | Issue | Disposition under this plan |
 |---|---|
-| #368 design pass (doc/analytics/settings) | **Recommend closing with a comment.** Settings → superseded by the North Star handoff (Workstream S). Analytics → delivered by Waves A–C + D1 + D3 (#466–#479). Document view → `ResearchStripView` no longer exists; the rail is collapsible via the C2 titlebar toggle, so the minimum-width complaint is structurally addressed (owner sanity-check on a narrow window before closing). |
+| #368 design pass (doc/analytics/settings) | **Closed 2026-07-28.** Settings → superseded by the North Star handoff (Workstream S). Analytics → delivered by Waves A–C + D1 + D3 (#466–#479). Document view → `ResearchStripView` no longer exists; the rail is collapsible via the C2 titlebar toggle, so the minimum-width complaint is structurally addressed (owner sanity-check on a narrow window before closing). |
 | #376 / #353 / #354 / #375 / #355 / #372 / #235 | Scheduled as N-0 … N-6 above. |
 | #405 | Parked pending product decision (see N-parked). |
 | #306 in-chart scrubber | **Not mooted** by the analytics redesign — still a valid enhancement; unscheduled. |
 | #268 shared AXChartDescriptor | **Not mooted** — accessibility work, unscheduled here; pairs naturally with any future analytics session. |
 | #266 saved-search freshness | Adjacent to Q-M4 (M-2's log knows last-run hit counts) — fold into M-2's decision points rather than scheduling separately. |
 | #308 / #261 / #260 / #259 / #234 | FRUS-subjects & person-authority programs — untouched by this plan. |
-| #262 / #263 / #265 / #279 / #312 / #358 | Backlog, untouched. |
+| #262 / #263 / #265 / #279 / #312 / #358 / #553 | Backlog, untouched. |
 | #270 GeneratorKit migration | Still backlog, but O-1's new `WordCloudKit`/`CloudVectorsGenerator` starts on `GeneratorKit` — a worked example for the older five rather than a sixth exception. |
-| #106 screenshot checklist | Gains the onboarding/splash rows in O-5; the existing ⚙️ fresh-install onboarding captures are re-shot there rather than in a separate pass. |
+| #106 screenshot checklist | **[2026-07-28] Not delivered by O-5** — the Onboarding plan's own closeout still lists the ⚙️ fresh-install captures as owner-open. Now **unscheduled**; needs a small follow-up rather than riding a closed workstream. |
 
 ---
 
