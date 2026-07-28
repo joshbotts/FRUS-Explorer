@@ -238,6 +238,9 @@ final class AnalyticsRotationTests: XCTestCase {
     ///
     /// Skips rather than fails if the Settings project path has moved: this is scaffolding for the
     /// banner test, not the thing under test.
+    /// The one project this suite stages. Named so the idempotence check can find it again.
+    private static let fixtureProjectName = "Supply Chain"
+
     private func giveActiveProjectAResearchQuestion() throws {
         let settings = app.buttons["Settings"].firstMatch
         guard settings.waitForExistence(timeout: 10) else { throw XCTSkip("Settings tab not found") }
@@ -246,6 +249,24 @@ final class AnalyticsRotationTests: XCTestCase {
         let projects = app.buttons["Projects"].firstMatch
         guard projects.waitForExistence(timeout: 10) else { throw XCTSkip("Projects pane not found") }
         projects.tap()
+
+        // Reuse the fixture project if a previous run already created it.
+        //
+        // This helper had no idempotence guard and created a new "Supply Chain" project on
+        // EVERY run. Under FRUS_UI_TEST_MODE the SwiftData store is the simulator's real
+        // on-disk one, shared by every suite and never reset, so the projects accumulated —
+        // seven of them in a single afternoon of repeated full-suite runs.
+        //
+        // That is not merely untidy. Each row renders a three-line detail with no line limit,
+        // so at seven rows "New Project…" is pushed below the fold of the Projects pane, and
+        // SwiftUI's lazy List has not materialised it. `waitForExistence` does not scroll, so
+        // it reports non-existence and `UIObstructionTests` fails on a completely unrelated
+        // assertion — with a message about a missing row that is really a message about
+        // fixture debris.
+        let existing = app.buttons[Self.fixtureProjectName].firstMatch
+        if existing.waitForExistence(timeout: 2) {
+            return   // already staged by an earlier run; nothing to create
+        }
 
         let newProject = app.buttons["New Project…"].firstMatch
         guard newProject.waitForExistence(timeout: 10) else {
@@ -256,7 +277,7 @@ final class AnalyticsRotationTests: XCTestCase {
         let name = app.textFields["Project name"].firstMatch
         guard name.waitForExistence(timeout: 10) else { throw XCTSkip("Project name field not found") }
         name.tap()
-        name.typeText("Supply Chain")
+        name.typeText(Self.fixtureProjectName)
 
         let question = app.textViews["Research question"].firstMatch
         guard question.waitForExistence(timeout: 10) else {
