@@ -296,6 +296,8 @@ You can control how much context each snippet shows — anywhere from **1 to 10 
 
 Results are shown a page at a time — 25 per page, with **‹ Page X of Y ›** controls in the results header — so a large result set stays fast to scroll. Up to 1,000 matches are loaded; if a query matches more, the header says so, and you can narrow your terms or use **Visualize in Corpus Analytics** (Section 5.5) to chart and tighten the result set.
 
+**While a search runs**, the results area shows a spinner — and if the wait lasts longer than a moment, the drifting word cloud (Section 3.1) fades in behind it, showing the common vocabulary of whatever you scoped the search to. Quick searches never show it; only a search long enough to notice grows a backdrop. The words are the *scope's* ambient vocabulary, not your results — those don't exist yet — which is why the cloud only ever appears on an empty waiting screen and never behind a list you're reading.
+
 A **Sort results** menu (the up-and-down arrows) in the actions bar below the search field reorders the list — **Relevance** (the default), **Date ↑**, or **Date ↓** — so you can read a result set oldest-first or newest-first without leaving the ranked view. The icon fills in whenever a non-default order is active.
 
 ### 5.2 Search Syntax

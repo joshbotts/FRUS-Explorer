@@ -641,8 +641,17 @@ struct SearchView: View {
     @ViewBuilder
     private var resultsSection: some View {
         if vm.isSearching {
+            // iOS unmounts the whole results area while searching — count header, List and
+            // pagination all go — so this is already an empty pending surface and the cloud
+            // fights nothing. It is also why the delay matters here: a rare term returns in
+            // tens of milliseconds and this branch would otherwise flash.
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .pendingCloudBackdrop(
+                    scope: CloudSurfaceArbiter.searchScope(volumeIds: vm.effectiveVolumeIds,
+                                                           manifest: appState.manifestStore),
+                    isPending: vm.isSearching
+                )
         } else if let err = vm.searchError {
             ContentUnavailableView(
                 String(localized: "search.error.title", defaultValue: "Search Error"),

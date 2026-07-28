@@ -291,6 +291,8 @@ FRUS Explorer searches across:
 - Generated summaries
 - User tag names
 
+**While a search runs**, the sort bar shows "Searching…" and the previous results stay on screen so you can keep reading them. On the *first* search in a window — when there are no previous results, and the list would otherwise be blank — the drifting word cloud (Section 3.4) fades in behind it after a moment, showing the common vocabulary of whatever you scoped the search to. Quick searches never show it. The words are the *scope's* ambient vocabulary, not your results; the cloud never paints over a list you're reading.
+
 Each result shows a highlighted snippet of the matching text. You can control how much context that snippet shows — anywhere from **1 to 10 lines** — from the **Result Preview** control in the Filters panel (Section 5.3). The length starts from a global default set in **Settings → Search** (Section 16); the main Search window and the Collections *Add Documents* sheet (Section 10.2a) each keep their own override of that default.
 
 ### 5.2 Query Syntax
