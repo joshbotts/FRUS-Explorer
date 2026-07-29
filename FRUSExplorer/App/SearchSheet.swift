@@ -1150,6 +1150,7 @@ struct MacSearchWindowView: View {
                 TipItem(code: "-word",            description: "exclude documents containing this word (also: capital NOT)")
                 TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
                 TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match (capital OR inside parens)")
+                TipItem(code: "NEAR(a b, 30)",    description: "proximity — both within 30 words of each other; operands may be phrases or term*")
                 TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")
                 TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
                 TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")

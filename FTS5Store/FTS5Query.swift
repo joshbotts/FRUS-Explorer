@@ -20,12 +20,17 @@
 /// | Boolean NOT | `cold NOT korea` | Use `.excludedTerms` |
 /// | Prefix wildcard | `negoti*` | Use `.prefixWildcard`; prefix must be ≥ 1 char |
 /// | Column filter | `header:cold` | Use `.columns` to restrict search scope |
+/// | Proximity | `NEAR("military guarantee" europe, 30)` | Inline only, via `FTS5InlineQueryParser`; operands may be words, phrases or prefixes — never booleans |
 ///
 /// ## Limitations (document in UI help text)
 /// - **Suffix wildcard is not supported**: `*gotiate` is not valid FTS5 syntax.
-/// - **Near operators** (`NEAR/n`) are not exposed; add to a future version if needed.
 /// - **Column filters and phrase search** are mutually exclusive in this builder;
-///   phrase search always spans all indexed columns.
+///   phrase search always spans all indexed columns. The one exception is a phrase
+///   inside a `NEAR`, which FTS5 gives no way to exempt from the operator's own
+///   column prefix.
+/// - **`NEAR` is an inline-syntax feature**, not a structured field: it is recognised
+///   by `FTS5InlineQueryParser` from the search box, so it reaches this builder already
+///   rendered in `keywordExpression` and is never passed through `sanitizeTerm`.
 ///
 /// ## Injection Safety
 /// All user-supplied term strings are sanitised via `sanitizeTerm(_:)` before
@@ -44,6 +49,10 @@
 ///          `SearchService` from `FTS5InlineQueryParser` so the main search box can
 ///          parse real Google-style inline syntax (`OR`, `"phrases"`, `-exclusions`,
 ///          `term*`) instead of the previous naive whitespace split that mangled it.
+///   2.1 — Q-1 (2026-07-29): `NEAR` documented as supported. It arrives pre-rendered in
+///          `keywordExpression` from `FTS5InlineQueryParser`, so `sanitizeTerm` — which
+///          strips `(`, `)`, `:`, `*` and would destroy a NEAR — never sees it. The
+///          structured `keywords` path is unchanged and still fully sanitised.
 ///   2.0 — Session 2026-06-09: query-side stemming removed. The `porter unicode61`
 ///          tokenizer stems both index entries and query terms inside SQLite, so the
 ///          rendered MATCH expression now carries the user's original (sanitised,

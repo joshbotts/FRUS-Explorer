@@ -100,6 +100,17 @@
 ///          uppercase), matching history.state.gov. The parser tests now also *execute*
 ///          their rendered output against a real FTS5 table so invalid output can no
 ///          longer pass.
+///   4.0 — Q-1 (2026-07-29): `NEAR(a b, N)` proximity search. Recognised before ordinary
+///          grouping (the parens are the operator's argument list, not a boolean group),
+///          rendered as one opaque operand so it composes with `AND`/`OR`/`NOT` and nests
+///          in groups through the existing pipeline. Case-insensitive on input, always
+///          emitted uppercase because FTS5 rejects `near(`. `NEAR/N(a b)` is accepted as
+///          an alias and *translated* — it is not valid FTS5 in any spelling. The column
+///          prefix wraps the whole operator, which FTS5 requires and which makes a phrase
+///          inside a NEAR column-scoped where a bare phrase is not. Contents FTS5 forbids
+///          inside a NEAR (booleans, negation, nested groups) and any distance it will not
+///          parse (negative, decimal, signed, empty, non-numeric) degrade to an ordinary
+///          boolean group over the same words rather than reaching SQLite.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -146,6 +157,30 @@ public enum FTS5InlineQueryParser {
         var index = 0
         while index < tokens.count {
             let rawToken = tokens[index]
+
+            // `NEAR(...)` is recognised before ordinary grouping, because its parentheses
+            // are the operator's own argument list rather than a boolean group — the two
+            // are spelled identically and only the preceding keyword distinguishes them.
+            if let near = nearOperator(rawToken),
+               index + 1 < tokens.count, tokens[index + 1] == "(",
+               let group = matchingGroup(in: tokens, openAt: index + 1) {
+                if let rendered = renderNear(inner: group.inner,
+                                             aliasDistance: near.aliasDistance,
+                                             columnPrefix: columnPrefix) {
+                    resolved.append(.operand(rendered: rendered, isPositive: true))
+                    index = group.closeIndex + 1
+                    continue
+                }
+                // Malformed NEAR — an operand FTS5 forbids inside one (a boolean, a
+                // negation, a nested group), or a distance that is not a bare
+                // non-negative integer. Drop *only* the `NEAR` keyword and let the very
+                // next iteration render `(...)` as an ordinary boolean group, so the
+                // words the user typed are still searched. This is the established
+                // graceful-degradation contract: never emit invalid FTS5, never silently
+                // return nothing.
+                index += 1
+                continue
+            }
 
             if rawToken == "(", let group = matchingGroup(in: tokens, openAt: index) {
                 if let rendered = renderTokens(group.inner, columnPrefix: columnPrefix) {
@@ -197,6 +232,152 @@ public enum FTS5InlineQueryParser {
             i += 1
         }
         return nil
+    }
+
+    // MARK: - NEAR
+
+    /// FTS5's own default proximity when `NEAR(a b)` omits the distance.
+    ///
+    /// Rendered explicitly rather than left implicit: the Query Inspector shows the
+    /// expression that went to SQLite, and a researcher copying it into a method
+    /// appendix should see the distance that actually applied.
+    private static let defaultNearDistance = 10
+
+    /// A recognised `NEAR` operator keyword, with the distance if it was spelled in the
+    /// FTS3/4 `NEAR/N` alias form.
+    private struct NearOperator {
+        /// The digits after `NEAR/`, or `nil` for the canonical `NEAR(a b, N)` spelling.
+        var aliasDistance: String?
+    }
+
+    /// Recognises the `NEAR` keyword, in any case, in either accepted spelling.
+    ///
+    /// Two spellings are accepted on input and **one** is emitted. The canonical
+    /// `NEAR(a b, N)` is FTS5's own form and the one published method appendices use, so
+    /// it is what a researcher pastes. `NEAR/N(a b)` is SQLite's older FTS3/4 spelling,
+    /// accepted as a convenience alias — but note it is **not valid FTS5 at all**
+    /// (`NEAR/5(a b)` and `a NEAR/5 b` are both hard syntax errors against a real FTS5
+    /// table), so this is a genuine translation, not a pass-through. The infix
+    /// `a NEAR/5 b` form is deliberately *not* accepted: it would change operator arity
+    /// in the token stream for a spelling the engine never supported.
+    ///
+    /// Case-insensitive on input, matching this parser's `AND`/`OR`/`NOT` handling —
+    /// but FTS5 requires the keyword uppercase, so `renderNear` always emits `NEAR`.
+    private static func nearOperator(_ token: String) -> NearOperator? {
+        let upper = token.uppercased()
+        if upper == "NEAR" { return NearOperator(aliasDistance: nil) }
+        guard upper.hasPrefix("NEAR/") else { return nil }
+        let digits = String(upper.dropFirst("NEAR/".count))
+        guard isNearDistance(digits) else { return nil }
+        return NearOperator(aliasDistance: digits)
+    }
+
+    /// Whether `text` is a distance FTS5 will accept: a non-empty run of ASCII digits.
+    ///
+    /// Deliberately strict, and verified against a real FTS5 table — SQLite rejects a
+    /// negative (`, -1`), a decimal (`, 3.5`), a signed (`, +5`), an empty (`, )`) and a
+    /// non-numeric (`, x`) distance outright. `isNumber` alone would also admit
+    /// non-ASCII digit scalars, which FTS5 does not parse, so the ASCII check is load-
+    /// bearing rather than decorative.
+    private static func isNearDistance(_ text: String) -> Bool {
+        !text.isEmpty && text.allSatisfy { $0.isASCII && $0.isNumber }
+    }
+
+    /// Renders `NEAR(...)`'s inner tokens into a complete FTS5 `NEAR` expression, or
+    /// `nil` when the contents are something FTS5 forbids inside one.
+    ///
+    /// ## What FTS5 permits inside `NEAR`, verified against a real table
+    /// Operands may be bare words, phrases, or prefix terms — including this parser's
+    /// own quoted-prefix render form (`"milit"*`), which executes cleanly. One operand
+    /// is accepted (degenerate but valid); three or more are fine. Everything else is a
+    /// syntax error and must therefore be rejected here rather than handed to SQLite:
+    /// booleans (`NEAR(a OR b, 5)`), negation, nested groups (`NEAR((a b), 5)`), and
+    /// column filters on the inner operands (`NEAR({body_text}: a b, 5)`).
+    ///
+    /// ## Column scoping wraps the whole operator
+    /// The prefix goes in front of `NEAR(`, never on the inner operands — `{body_text}:
+    /// NEAR(a b, 5)` is valid and `NEAR({body_text}: a b, 5)` is not. This is the one
+    /// place the parser's usual per-operand prefixing cannot apply, and it has a visible
+    /// consequence: a phrase inside a `NEAR` **is** column-scoped, whereas a bare phrase
+    /// elsewhere deliberately spans all columns (see `render`). FTS5 offers no way to
+    /// express the latter inside a `NEAR`, so the scoping is the honest reading of what
+    /// the user asked for.
+    private static func renderNear(
+        inner: [String], aliasDistance: String?, columnPrefix: String
+    ) -> String? {
+        let operandTokens: [String]
+        let distance: String
+
+        if let aliasDistance {
+            // `NEAR/N(...)` — a comma inside would then be a second, conflicting
+            // distance. Reject rather than silently preferring one.
+            guard !inner.contains(where: { $0.contains(",") }) else { return nil }
+            operandTokens = inner
+            distance = aliasDistance
+        } else {
+            guard let split = splitTrailingDistance(inner) else { return nil }
+            operandTokens = split.operands
+            distance = split.distance ?? String(defaultNearDistance)
+        }
+
+        var rendered: [String] = []
+        for token in operandTokens {
+            // A paren surviving into the operand list means a nested group, which FTS5
+            // rejects inside NEAR.
+            guard token != "(", token != ")" else { return nil }
+            guard let classified = classify(token) else { continue }
+            // An operator keyword inside NEAR is a syntax error, not a search word:
+            // rejecting sends the whole thing down the degradation path, where the
+            // user's words are still searched as an ordinary boolean group.
+            guard case .operand(let operand) = classified else { return nil }
+            guard !operand.negated else { return nil }
+            // Column prefix is applied to the whole NEAR below, never per operand.
+            guard let piece = render(operand, columnPrefix: "") else { continue }
+            rendered.append(piece)
+        }
+        guard !rendered.isEmpty else { return nil }
+
+        return "\(columnPrefix)NEAR(\(rendered.joined(separator: " ")), \(distance))"
+    }
+
+    /// Splits `NEAR`'s inner tokens at its trailing `, N`, returning the operand tokens
+    /// and the distance digits (`nil` distance when none was given).
+    ///
+    /// Returns `nil` — meaning "malformed, degrade" — when a distance position exists
+    /// but does not hold a valid distance, matching what FTS5 itself rejects.
+    ///
+    /// The scan is quote-aware for a reason that is easy to miss: `tokenize` does not
+    /// split on commas, so a comma inside a phrase (`NEAR("cold, war" europe)`) is
+    /// indistinguishable from the distance separator by position alone. Taking the last
+    /// comma naively would read `war" europe` as the distance and reject a perfectly
+    /// good query. Commas outside quotes that are *not* the separator (`NEAR(a, b, 5)`)
+    /// are dropped from the operand text rather than surviving into a rendered operand
+    /// as `"a,"`.
+    private static func splitTrailingDistance(
+        _ tokens: [String]
+    ) -> (operands: [String], distance: String?)? {
+        let joined = tokens.joined(separator: " ")
+        var segments: [String] = []
+        var current = ""
+        var inQuotes = false
+        for character in joined {
+            if character == "\"" {
+                inQuotes.toggle()
+                current.append(character)
+            } else if character == ",", !inQuotes {
+                segments.append(current)
+                current = ""
+            } else {
+                current.append(character)
+            }
+        }
+        segments.append(current)
+
+        guard segments.count > 1 else { return (tokens, nil) }
+
+        let tail = segments.removeLast().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isNearDistance(tail) else { return nil }
+        return (tokenize(segments.joined(separator: " ")), tail)
     }
 
     /// Resolves operator placement and joins the surviving pieces into the final

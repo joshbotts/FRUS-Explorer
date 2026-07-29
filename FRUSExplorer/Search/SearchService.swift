@@ -278,6 +278,91 @@ public actor SearchService {
 
     // MARK: - Snippet Generation
 
+    /// Rewrites `NEAR(...)` spans down to just their operand words, so the snippet
+    /// highlighter bolds what the researcher searched for rather than the operator
+    /// scaffolding around it.
+    ///
+    /// Without this, `NEAR("military guarantee" europe, 30)` splits on whitespace into
+    /// `NEAR("military`, `guarantee"`, `europe,` and `30)` — none of which the existing
+    /// operator/quote/dash cleanup recognises — so the snippet would bold the literal
+    /// text `NEAR("military` and the distance `30`. Both are syntax, not content.
+    ///
+    /// Deliberately a surface rewrite in the same spirit as the cleanup it feeds, not a
+    /// second parser: it removes the keyword (in either accepted spelling), the operator's
+    /// parentheses, and a trailing `, N` distance, and leaves every operand — including
+    /// quoted phrases — for the existing loop to handle exactly as it already handles a
+    /// bare phrase.
+    ///
+    /// The distance is only dropped when it sits in the distance position. A bare `1948`
+    /// typed as an operand is a real search term and survives.
+    static func strippingNearScaffolding(_ raw: String) -> String {
+        // Cheap bail-out: the overwhelming majority of queries contain no NEAR at all.
+        guard raw.range(of: "near", options: .caseInsensitive) != nil else { return raw }
+
+        var out = ""
+        var rest = Substring(raw)
+        while let keyword = rest.range(of: #"(?i)\bNEAR(/[0-9]+)?\s*\("#, options: .regularExpression) {
+            out += rest[..<keyword.lowerBound]
+            // Walk to the operator's matching close paren, tracking depth and quotes so a
+            // paren inside a phrase cannot terminate the span early.
+            var depth = 0
+            var inQuotes = false
+            var index = keyword.upperBound
+            var closed = false
+            // `keyword` ends just past the opening paren, so depth starts at one.
+            depth = 1
+            while index < rest.endIndex {
+                let character = rest[index]
+                if character == "\"" {
+                    inQuotes.toggle()
+                } else if !inQuotes, character == "(" {
+                    depth += 1
+                } else if !inQuotes, character == ")" {
+                    depth -= 1
+                    if depth == 0 { closed = true; break }
+                }
+                index = rest.index(after: index)
+            }
+            guard closed else {
+                // Unbalanced — emit the remainder untouched rather than guessing.
+                out += rest[keyword.lowerBound...]
+                return out
+            }
+            var body = String(rest[keyword.upperBound..<index])
+            // Drop a trailing `, N` distance, quote-aware so `NEAR("cold, war" x)` keeps
+            // its phrase intact.
+            if let separator = Self.lastUnquotedComma(in: body) {
+                let tail = body[body.index(after: separator)...]
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !tail.isEmpty, tail.allSatisfy({ $0.isASCII && $0.isNumber }) {
+                    body = String(body[..<separator])
+                }
+            }
+            out += " " + body + " "
+            rest = rest[rest.index(after: index)...]
+        }
+        out += rest
+        return out
+    }
+
+    /// The index of the last comma in `text` that is not inside a double-quoted phrase,
+    /// or `nil` when there is none.
+    static func lastUnquotedComma(in text: String) -> String.Index? {
+        var inQuotes = false
+        var found: String.Index? = nil
+        var index = text.startIndex
+        while index < text.endIndex {
+            let character = text[index]
+            if character == "\"" {
+                inQuotes.toggle()
+            } else if character == ",", !inQuotes {
+                found = index
+            }
+            index = text.index(after: index)
+        }
+        return found
+    }
+
     /// Returns the set of positive search terms (keywords + phrase words + prefix)
     /// that should be highlighted in the result snippet. Excluded terms are not
     /// included.
@@ -294,7 +379,8 @@ public actor SearchService {
             // "korea" (which can never appear in a result anyway, since it's excluded)
             // or rendering quote/dash/asterisk characters in the snippet.
             var skipNextAsExcluded = false
-            for rawToken in kw.split(whereSeparator: \.isWhitespace).map(String.init) {
+            for rawToken in Self.strippingNearScaffolding(kw)
+                .split(whereSeparator: \.isWhitespace).map(String.init) {
                 guard !rawToken.isEmpty else { continue }
                 if skipNextAsExcluded {
                     skipNextAsExcluded = false
