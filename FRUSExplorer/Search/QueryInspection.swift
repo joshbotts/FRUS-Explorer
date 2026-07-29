@@ -140,9 +140,14 @@ struct InspectedOperand: Sendable, Equatable {
 ///   each word's stem, and does one `fts5vocab` lookup per operand. No search runs. This
 ///   is the pass that can be driven live from typing.
 /// - ``scopedCounts(for:parameters:)`` and ``emptyConjuncts(in:parameters:)`` are
-///   **expensive**: one `searchCount` per operand, each a real query. At full corpus a
-///   common term is 6–12 s, so these run on demand — the zero path, or an explicit
-///   request — never on a keystroke.
+///   **expensive**: one `searchCount` per operand, each a real query, run serially.
+///
+///   This doc previously put a common term at 6–12 s, which was measured but misattributed.
+///   The Q-M2 prerequisite work found the cost was the unfiltered count's redundant join
+///   against a 1.8 GB table; removing it took `"government"` (195,519 matches on the real
+///   store) from **2.55 s to 0.011 s** cold for the same answer. A per-operand pass is now
+///   sub-second per operand rather than ~9 s. It stays on demand anyway — serial, N
+///   queries, and unbounded in N — but it is no longer the head-of-line blocker it was.
 ///
 /// The split is the whole reason decision Q-2-1 lands where it does: the unscoped estimate
 /// is what a type-ahead can afford, and the scoped exact count is what a published claim

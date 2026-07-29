@@ -210,14 +210,41 @@ final class MacSearchViewModel {
     var isSearching: Bool = false
     var searchError: Error? = nil
 
-    /// True total number of matches across the full corpus for the current query,
-    /// independent of `searchHardLimit`. Updated in parallel with `results` by
-    /// `performSearch`. When `totalMatchCount > results.count`, results have been
-    /// truncated to fit `searchHardLimit` and the UI shows an over-cap advisory.
-    var totalMatchCount: Int = 0
+    /// True total number of matches for the current query, independent of
+    /// `searchHardLimit` — or `nil` when the count could not be obtained.
+    ///
+    /// ## Why this is optional
+    /// It used to fall back to `results.count` when the concurrent `COUNT(*)` threw. That
+    /// silently made the total equal the fetch cap **and switched off both truncation
+    /// signals**, because `isResultSetTruncated` compares the two: a truncated set rendered
+    /// as "7,500 loaded · 7,500 total" with the orange triangle and the over-cap advisory
+    /// both gone, and that number was what `recordSearchHistory` wrote to the research
+    /// trail. Not a wrong number in a corner — a wrong number that erased its own warning.
+    ///
+    /// `nil` now means "unknown", the surfaces say so, and the truncation warning is driven
+    /// by whether the fetch actually hit its cap rather than by a comparison against a
+    /// number that may not exist.
+    var totalMatchCount: Int?
 
-    /// True iff the displayed `results` are a truncated subset of `totalMatchCount`.
-    var isResultSetTruncated: Bool { totalMatchCount > results.count }
+    /// Whether the displayed `results` are a truncated subset of the real match set.
+    ///
+    /// Keyed on the fetch hitting its own cap, which is knowable without the count. When
+    /// the count *is* available and exceeds the fetch, that also counts — a filter applied
+    /// after the limit could otherwise hide the truncation.
+    var isResultSetTruncated: Bool {
+        if results.count >= Self.searchHardLimit { return true }
+        if let totalMatchCount { return totalMatchCount > results.count }
+        return false
+    }
+
+    /// The count to display, and whether it is the real total.
+    ///
+    /// Callers must not print `resultCountForDisplay` without consulting
+    /// ``isTotalCountAvailable`` — that pairing is the whole point of the type change.
+    var resultCountForDisplay: Int { totalMatchCount ?? results.count }
+
+    /// Whether the displayed count is the true total rather than just what was fetched.
+    var isTotalCountAvailable: Bool { totalMatchCount != nil }
 
     /// Hard upper bound on the number of results materialised by `performSearch`.
     /// Raised from 500 → 7,500 in Session 120 (PR #45). At ~5 KB body-text average
@@ -679,7 +706,7 @@ final class MacSearchViewModel {
         let hasPersonFilter = parameters.personRef != nil || parameters.personRollupId != nil
         guard (!query.isEmpty || hasPersonFilter), let service else {
             results = []
-            totalMatchCount = 0
+            totalMatchCount = nil
             return
         }
 
@@ -691,7 +718,7 @@ final class MacSearchViewModel {
         // technical error string.
         guard params.includeDocumentText || params.includeSummaries || params.includeNotes else {
             results = []
-            totalMatchCount = 0
+            totalMatchCount = nil
             searchError = MacSearchError.emptyScope
             return
         }
@@ -728,9 +755,16 @@ final class MacSearchViewModel {
         async let countTask    = service.searchCount(parameters: frozenParams)
         do {
             let fetched = try await resultsTask
-            let total   = (try? await countTask) ?? fetched.count
             results = fetched
-            totalMatchCount = max(total, fetched.count)
+            // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
+            // equal to what happened to be fetched — see `totalMatchCount`.
+            if let total = try? await countTask {
+                // `max` guards the reverse inconsistency: a count that somehow came back
+                // below the fetch would understate the result set.
+                totalMatchCount = max(total, fetched.count)
+            } else {
+                totalMatchCount = nil
+            }
             // Clamp page index to the new result set.
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
             #if DEBUG
@@ -742,7 +776,7 @@ final class MacSearchViewModel {
             guard !(error is CancellationError) else { return }
             searchError = error
             results = []
-            totalMatchCount = 0
+            totalMatchCount = nil
             #if DEBUG
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
@@ -793,14 +827,20 @@ final class MacSearchViewModel {
         guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
         lastRecordedHistoryQuery = query
 
+        // The research trail gets the true total when there is one, and the fetched count
+        // otherwise. Before Q-M2 an unavailable count was written as exactly the fetch cap,
+        // so a trail entry could record "7,500" for a query matching 195,519 — a number a
+        // researcher may later cite. `resultCount` cannot express "unknown" (widening it is
+        // Decision E / M-2 territory), so the honest fallback is what was actually seen.
+        let recorded = resultCountForDisplay
         let record = SearchHistoryEntry(
             queryText: query,
-            resultCount: totalMatchCount,
+            resultCount: recorded,
             projectId: projectId
         )
         context.insert(record)
         #if DEBUG
-        print("[MacSearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(totalMatchCount)")
+        print("[MacSearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(recorded) exact=\(isTotalCountAvailable)")
         #endif
     }
 }

@@ -912,7 +912,10 @@ struct MacSearchWindowView: View {
         // `total`  = the true uncapped match count returned by FTS5 COUNT(*) (unaffected by
         // the client-side reviewed filter, so the over-cap advisory still reflects the raw fetch).
         let loaded   = searchVM.displayedResults.count
-        let total    = max(searchVM.totalMatchCount, loaded)
+        // `nil` when the concurrent COUNT(*) did not come back. Previously this fell back
+        // to the fetched count, which made a truncated set look complete — see
+        // `MacSearchViewModel.totalMatchCount`.
+        let total: Int? = searchVM.totalMatchCount.map { max($0, loaded) }
         let start    = searchVM.currentPage * searchVM.pageSize + 1
         let end      = min(start + searchVM.pageSize - 1, loaded)
         let truncated = searchVM.isResultSetTruncated
@@ -921,11 +924,17 @@ struct MacSearchWindowView: View {
             if loaded == 0 {
                 Text("No results")
                     .font(.system(size: 11, weight: .medium))
-            } else if loaded <= searchVM.pageSize {
+            } else if let total, loaded <= searchVM.pageSize {
                 Text("\(loaded) of \(total.formatted()) result\(total == 1 ? "" : "s")")
                     .font(.system(size: 11, weight: .medium))
-            } else {
+            } else if let total {
                 Text("\(start)–\(end) of \(loaded.formatted()) loaded · \(total.formatted()) total")
+                    .font(.system(size: 11, weight: .medium))
+            } else if loaded <= searchVM.pageSize {
+                Text("\(loaded) loaded · total unavailable")
+                    .font(.system(size: 11, weight: .medium))
+            } else {
+                Text("\(start)–\(end) of \(loaded.formatted()) loaded · total unavailable")
                     .font(.system(size: 11, weight: .medium))
             }
 
@@ -934,10 +943,16 @@ struct MacSearchWindowView: View {
                     .font(.system(size: 9))
                     .foregroundStyle(.orange)
                     .help(
-                        String(
-                            localized: "search.cap.tooltip",
+                        total.map {
+                            String(
+                                localized: "search.cap.tooltip",
+                                defaultValue:
+                                    "Showing \(loaded.formatted()) of \($0.formatted()) matches. Narrow your search with a date range, volume filter, or more specific terms to see every result."
+                            )
+                        } ?? String(
+                            localized: "search.cap.tooltip.unknownTotal",
                             defaultValue:
-                                "Showing \(loaded.formatted()) of \(total.formatted()) matches. Narrow your search with a date range, volume filter, or more specific terms to see every result."
+                                "Showing the first \(loaded.formatted()) matches. The total could not be counted, so there may be many more — narrow your search with a date range, volume filter, or more specific terms."
                         )
                     )
             }
@@ -969,13 +984,16 @@ struct MacSearchWindowView: View {
     private var overCapAdvisory: some View {
         if searchVM.isResultSetTruncated {
             let loaded = searchVM.results.count.formatted()
-            let total  = searchVM.totalMatchCount.formatted()
+            let total  = searchVM.totalMatchCount?.formatted()
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Showing \(loaded) of \(total) matches")
+                    // The warning must survive an unavailable count — that combination is
+                    // exactly the case that used to render as "complete".
+                    Text(total.map { "Showing \(loaded) of \($0) matches" }
+                         ?? "Showing the first \(loaded) matches — the total is unavailable")
                         .font(.system(size: 11, weight: .medium))
                     Text("Narrow your search with a date range, volume filter, or more specific terms to load every match.")
                         .font(.system(size: 10))

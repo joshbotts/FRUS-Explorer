@@ -2092,6 +2092,31 @@ public actor IndexingPipeline {
                 \(whereClause)
                 """
             binds = filterBinds
+        } else if whereClause.isEmpty {
+            // No filters: the joins cannot change the answer, so do not pay for them.
+            //
+            // This is the DEFAULT case, not an edge case — `includeFrontMatter` defaults
+            // true and `.all` document type emits no condition, so an ordinary unfiltered
+            // search took this path and joined a 1.8 GB table once per matched row to
+            // answer a question that needs only the match set's cardinality.
+            //
+            // Measured against the real 6.3 GB store, `"government"` (195,519 matches),
+            // identical answers:
+            //
+            //     with the joins ....... 2.55 s cold / 0.237 s warm
+            //     without .............. 0.011 s cold / 0.003 s warm
+            //
+            // The join is safe to drop rather than merely unnecessary: both FTS tables are
+            // `content='document_cache', content_rowid='rowid'` with the full trigger set,
+            // and each `_docsize` shadow holds exactly as many rows as `document_cache`, so
+            // an FTS rowid with no content row cannot exist. `countMatchesTheJoinedShape`
+            // pins that rather than trusting it.
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            sql = """
+                \(matchCTE)
+                SELECT COUNT(*) FROM merged m
+                """
+            binds = matchBinds
         } else {
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             sql = """
@@ -2143,6 +2168,64 @@ public actor IndexingPipeline {
                 """
             return (sql, [corpus, user])
         }
+    }
+
+    // MARK: - Test Hooks (Q-M2)
+
+    /// The pre-optimisation count shape, kept solely so a test can assert the optimised one
+    /// returns the same number.
+    ///
+    /// Not used by the app. It exists because "dropping this join cannot change the answer"
+    /// is a claim about SQLite's external-content invariants, and a claim like that should
+    /// be pinned by an equivalence test rather than by a comment.
+    func searchDocumentsCountJoinedForTesting(
+        corpusMatch: String?, userContentMatch: String?
+    ) throws -> Int {
+        let (matchCTE, matchBinds) = try Self.matchCTE(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+        let sql = """
+            \(matchCTE)
+            SELECT COUNT(*)
+            FROM merged m
+            JOIN document_cache dc ON dc.rowid = m.docrowid
+            LEFT JOIN document_dates dd
+                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, bind) in matchBinds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard try auxStep(stmt) else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    /// The names of every index on `table`, for tests that assert an index exists.
+    func indexNamesForTesting(onTable table: String) throws -> [String] {
+        let stmt = try auxPrepare(
+            "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, table, -1, SQLITE_TRANSIENT_IP)
+        var names: [String] = []
+        while try auxStep(stmt) {
+            if let raw = sqlite3_column_text(stmt, 0) { names.append(String(cString: raw)) }
+        }
+        return names
+    }
+
+    /// `EXPLAIN QUERY PLAN` output for `sql`, joined into one string.
+    ///
+    /// The facet work's acceptance criterion is the plan, not a stopwatch: a test fixture
+    /// small enough to run fast cannot distinguish a covering index from a full scan, but
+    /// the plan says which one SQLite chose.
+    func queryPlanForTesting(_ sql: String) throws -> String {
+        let stmt = try auxPrepare("EXPLAIN QUERY PLAN \(sql)")
+        defer { sqlite3_finalize(stmt) }
+        var lines: [String] = []
+        while try auxStep(stmt) {
+            if let raw = sqlite3_column_text(stmt, 3) { lines.append(String(cString: raw)) }
+        }
+        return lines.joined(separator: " | ")
     }
 
     /// Registers `frus_exact_word(text, word)` on `handle`, returning 1 when `text`
@@ -3970,6 +4053,29 @@ public actor IndexingPipeline {
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_ref ON person_mentions(person_ref)")
         try exec("CREATE INDEX IF NOT EXISTS idx_person_mentions_doc ON person_mentions(volume_id, document_id)")
+        // The facet-panel covering index (Q-M2 prerequisite, before R-1).
+        //
+        // `document_cache` had exactly one index — its PK autoindex — and the two flag
+        // columns sit after `body_text` in the row, so any aggregate touching them read the
+        // whole 1.8 GB table. Measured against the real 6.3 GB store, `"government"`
+        // (195,519 matches):
+        //
+        //     document-type aggregate ... 11.6-14.4 s  ->  0.038 s
+        //     volumes aggregate,
+        //       front matter EXCLUDED ...      13.0 s  ->  0.043 s
+        //
+        // That second row is why this is not just about one two-row chart: with front
+        // matter off — a user setting — the *whole* panel paid the scan. 8.47 MB, and the
+        // planner picks it unprompted as `USING COVERING INDEX`.
+        //
+        // Column order is deliberate: the two filter flags first so they can be seeked,
+        // then the identity pair so volume aggregation stays inside the index.
+        //
+        // No `currentDateIndexVersion` bump — an index is derived, not parse output.
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_document_cache_facet
+            ON document_cache(is_front_matter, is_editorial_note, volume_id, document_id)
+            """)
         try exec("""
             CREATE TABLE IF NOT EXISTS persons (
                 volume_id    TEXT NOT NULL,
