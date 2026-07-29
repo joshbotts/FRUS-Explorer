@@ -155,6 +155,28 @@ final class MacSearchViewModel {
     /// text field; only `submitSearch()` (Return key) updates `submittedQuery`.
     var searchTrigger: String { "\(submittedQuery)|\(parametersVersion)" }
 
+    /// The parameters a search would run with *right now*, from the live text field.
+    ///
+    /// Distinct from what `performSearch` uses, which reads `submittedQuery`. The Query
+    /// Inspector wants the live text so the expression updates as the researcher types —
+    /// that is how someone learns `NEAR` from watching it — while the search itself stays
+    /// on Return, as it must at this corpus size.
+    var liveSearchParameters: SearchParameters {
+        var params = parameters
+        let trimmed = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        params.keywords = trimmed.isEmpty ? nil : trimmed
+        return params
+    }
+
+    /// The parameters of the search that actually ran — for the zero-result decomposition,
+    /// which must decompose the executed query rather than whatever is in the field now.
+    var submittedSearchParameters: SearchParameters {
+        var params = parameters
+        let trimmed = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        params.keywords = trimmed.isEmpty ? nil : trimmed
+        return params
+    }
+
     // MARK: - Advanced Filter ViewModel
 
     /// Backing view model for `SearchFilterView` presented as a sheet.

@@ -69,7 +69,7 @@ struct QueryInspectionTests {
             fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
         try await pipeline.indexVolume("vol1")
         let service = SearchService(fts5Store: fts5, pipeline: pipeline)
-        return (dir, QueryInspector(fts5Store: fts5, searchService: service))
+        return (dir, QueryInspector(searchService: service))
     }
 
     private func cleanUp(_ dir: URL) { try? FileManager.default.removeItem(at: dir) }

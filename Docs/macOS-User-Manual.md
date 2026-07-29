@@ -347,6 +347,28 @@ Prefix a term with `=` to search for the literal word instead:
   (`=negoti*`), and on anything that is not a single word (`="co-operate"`). The query still
   runs, stemmed.
 
+**The Query Inspector.** Under the search controls is a strip showing the **FTS5 expression
+your query actually became** — the string that went to the database, not a paraphrase of it.
+Expand it with the chevron to see, for each term:
+
+- the **index form** it was reduced to, with a warning when that is broader than what you
+  typed (`containment` is searched as `contain`);
+- how many documents contain it **across everything you have indexed**, which is free to
+  compute and updates as you type;
+- and, on request, the **exact count within your current filters** — that one runs a real
+  query per term, so it is behind a button rather than automatic.
+
+The two counts are both shown because the gap between them is information: a term that is
+common in the corpus but rare in your scope is telling you something about your scope.
+
+The expression line never hides. If you publish method appendices, it is the line you copy.
+
+**When a search returns nothing**, the app no longer says "try different keywords." It runs
+each of your terms on its own and names the one that matched nothing — so a typo, a stemming
+surprise and a genuine historical absence stop looking alike. If every term matches on its
+own, it says that too: the combination is what appears in no single document. Either way the
+denominator is stated, because "0 results" means "0 in the volumes indexed on this device."
+
 > **Note:** Suffix wildcards (e.g., `*tion`) are not supported. Use prefix wildcards only.
 
 ### 5.3 Advanced Filters
