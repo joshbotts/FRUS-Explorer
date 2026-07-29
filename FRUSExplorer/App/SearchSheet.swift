@@ -106,6 +106,14 @@ struct MacSearchWindowView: View {
     @Environment(\.openWindow) private var openWindow
 
     @State private var searchVM = MacSearchViewModel()
+
+    /// The Query Inspector's state for this window (Q-2).
+    @State private var inspectorController = QueryInspectorController()
+
+    /// Whether the inspector's detail rows are showing. `@SceneStorage` so the choice is
+    /// remembered per window, as the design asks, rather than globally.
+    @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
+
     @State private var showAdvancedFilters = false
     @State private var showTimeline = false
     @State private var showSaveSearchSheet = false
@@ -158,6 +166,8 @@ struct MacSearchWindowView: View {
 
             Divider()
 
+            queryInspectorStrip
+
             sortBar
                 .padding(.horizontal, 16)
                 .padding(.vertical, 6)
@@ -171,6 +181,31 @@ struct MacSearchWindowView: View {
             if searchVM.checklistMode && searchVM.displayedResults.isEmpty && !searchVM.results.isEmpty {
                 // Checklist mode has hidden every result (#189-D).
                 allReviewedEmptyState
+            } else if hasZeroResults {
+                // macOS had NO zero-result state at all before Q-2: the chain fell through
+                // to `resultsList`, which rendered an empty `List`, and the only zero-result
+                // copy anywhere was the sort bar's "No results".
+                //
+                // Placement is load-bearing. This must precede `showTimeline`, which has no
+                // emptiness condition of its own — after it, a zero-result search with the
+                // timeline toggled on would render an empty timeline and the decomposition
+                // would never evaluate. There is nothing to preserve in either mode when
+                // the result set is empty.
+                //
+                // `MacSearchViewModel` has no `hasSearched`; `submittedQuery` is the
+                // equivalent, since only `submitSearch()` sets it.
+                QueryZeroResultView(
+                    inspection: inspectorController.inspection
+                        ?? QueryInspection(expression: nil, operands: [],
+                                           indexedVolumeCount: appState.indexedVolumeIds.count,
+                                           isFilterOnly: false),
+                    emptyConjuncts: inspectorController.emptyConjuncts)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .task(id: searchVM.searchTrigger) {
+                        await inspectorController.decomposeZeroResult(
+                            parameters: searchVM.submittedSearchParameters,
+                            service: appState.searchService)
+                    }
             } else if showTimeline {
                 timelineView
             } else if searchVM.isSearching, searchVM.results.isEmpty {
@@ -221,6 +256,16 @@ struct MacSearchWindowView: View {
         .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
             searchVM.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
+        }
+        // Keyed on the *live* text plus the filter version, not `searchTrigger`, so the
+        // inspector explains the query as it is being typed — the design's "a researcher
+        // learns NEAR by watching the expression change". The controller debounces, so a
+        // keystroke costs nothing until typing settles.
+        .task(id: "\(searchVM.queryText)|\(searchVM.parametersVersion)") {
+            await inspectorController.refresh(
+                parameters: searchVM.liveSearchParameters,
+                service: appState.searchService,
+                indexedVolumeCount: appState.indexedVolumeIds.count)
         }
         .task {
             // Consume search parameters set *before* this window was opened.
@@ -694,6 +739,63 @@ struct MacSearchWindowView: View {
     }
 
     // MARK: - Sort Bar
+
+    /// Whether a search has run and returned nothing.
+    ///
+    /// `MacSearchViewModel` has no `hasSearched` flag; `submittedQuery` is non-empty only
+    /// after `submitSearch()`, which is the same signal.
+    private var hasZeroResults: Bool {
+        !searchVM.isSearching
+            && searchVM.results.isEmpty
+            && !searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty
+            && searchVM.searchError == nil
+    }
+
+    /// The Query Inspector strip: what the query became, between the control rows and the
+    /// sort bar (Q-2).
+    ///
+    /// Hidden entirely until there is something to say. The expression row itself never
+    /// collapses once present — decision Q-2-2 — only the detail rows do, and that state
+    /// is remembered per window.
+    @ViewBuilder
+    private var queryInspectorStrip: some View {
+        if let inspection = inspectorController.inspection,
+           inspection.expression != nil || inspection.isFilterOnly {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 8) {
+                    QueryInspectorStrip(
+                        inspection: inspection,
+                        isExpanded: inspectorExpanded,
+                        isCountingScoped: inspectorController.isCountingScoped,
+                        onRequestScopedCounts: {
+                            Task {
+                                await inspectorController.loadScopedCounts(
+                                    parameters: searchVM.submittedSearchParameters,
+                                    service: appState.searchService)
+                            }
+                        })
+                    Button {
+                        inspectorExpanded.toggle()
+                    } label: {
+                        Image(systemName: inspectorExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help(inspectorExpanded
+                          ? String(localized: "search.inspector.collapse", defaultValue: "Hide term detail")
+                          : String(localized: "search.inspector.expand", defaultValue: "Show term detail"))
+                    .accessibilityLabel(inspectorExpanded
+                          ? String(localized: "search.inspector.collapse", defaultValue: "Hide term detail")
+                          : String(localized: "search.inspector.expand", defaultValue: "Show term detail"))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+            }
+            .background(.quaternary.opacity(0.35))
+            Divider()
+        }
+    }
 
     private var sortBar: some View {
         HStack {

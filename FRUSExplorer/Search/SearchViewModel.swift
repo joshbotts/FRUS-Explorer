@@ -278,6 +278,10 @@ final class SearchViewModel {
     var searchError: String? = nil
     var hasSearched: Bool = false
 
+    /// Increments once per executed search — a stable `.task(id:)` key for views that
+    /// must recompute when a search *runs*, not when its text changes.
+    var executedSearchVersion: Int = 0
+
     // MARK: - Sorting (#305)
 
     /// Result ordering. `relevance` = FTS5 BM25 (as returned); the date orders use `dateISO`.
@@ -498,6 +502,11 @@ final class SearchViewModel {
         // Freeze the query text for `recordSearchHistory` before awaiting anything (see
         // `submittedQuery`).
         submittedQuery = keywords.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Bumped once per executed search so views that must react to a *completed*
+        // search — the Query Inspector's zero-result decomposition — have a `.task(id:)`
+        // key. `keywords` alone is the live field and changes while typing; `hasSearched`
+        // latches true and never changes again.
+        executedSearchVersion &+= 1
         isSearching = true
         searchError = nil
         hasSearched = true

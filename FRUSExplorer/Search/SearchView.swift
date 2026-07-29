@@ -106,6 +106,13 @@ struct SearchView: View {
     /// `vm.availableUserTags` so a tag created elsewhere (e.g. the research-note
     /// editor) appears as a search filter chip without an app restart (#188-D).
     @Query(sort: \UserTag.name) private var liveUserTags: [UserTag]
+    /// The Query Inspector's state (Q-2).
+    @State private var inspectorController = QueryInspectorController()
+
+    /// Whether the inspector card's detail rows are showing. `@SceneStorage` so the choice
+    /// survives per scene, matching the macOS strip.
+    @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
+
     @State private var showTimeline = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
@@ -202,7 +209,22 @@ struct SearchView: View {
                     #endif
                 }
                 #if os(iOS)
-                .safeAreaInset(edge: .top, spacing: 0) { searchActionsBar }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    VStack(spacing: 0) {
+                        searchActionsBar
+                        queryInspectorCard
+                    }
+                }
+                // Keyed on the live field so the expression updates as the researcher
+                // types — the design's "a researcher learns NEAR by watching the
+                // expression change". The controller debounces; a keystroke costs nothing
+                // until typing settles. The search itself still runs only on submit.
+                .task(id: vm.keywords) {
+                    await inspectorController.refresh(
+                        parameters: vm.searchParameters,
+                        service: appState.searchService,
+                        indexedVolumeCount: appState.indexedVolumeIds.count)
+                }
                 #endif
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
                 // declared inside SearchFilterView.
@@ -528,6 +550,51 @@ struct SearchView: View {
     /// Persistent search-action row pinned below the `.searchable` field on iOS. An active search
     /// field suppresses the nav-bar trailing items, which used to make filters / timeline / Save
     /// disappear over the results; this content row keeps them reachable in every state.
+    /// The Query Inspector as a disclosure card under the search field (Q-2).
+    ///
+    /// Collapsed it is one mono line — the expression the search will actually run.
+    /// Expanded it adds each term's stem and counts. Per decision Q-2-2 the expression
+    /// line itself is never hidden: the audience publishes method appendices, and hiding
+    /// the raw expression optimises for the wrong user.
+    @ViewBuilder
+    private var queryInspectorCard: some View {
+        if let inspection = inspectorController.inspection,
+           inspection.expression != nil || inspection.isFilterOnly {
+            VStack(spacing: 0) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { inspectorExpanded.toggle() }
+                } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        QueryInspectorStrip(
+                            inspection: inspection,
+                            isExpanded: inspectorExpanded,
+                            isCountingScoped: inspectorController.isCountingScoped,
+                            onRequestScopedCounts: {
+                                Task {
+                                    await inspectorController.loadScopedCounts(
+                                        parameters: vm.searchParameters,
+                                        service: appState.searchService)
+                                }
+                            })
+                        Image(systemName: inspectorExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(inspectorExpanded
+                    ? String(localized: "search.inspector.collapse", defaultValue: "Hide term detail")
+                    : String(localized: "search.inspector.expand", defaultValue: "Show term detail"))
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+            }
+            .background(.bar)
+            .overlay(alignment: .bottom) { Divider() }
+        }
+    }
+
     private var searchActionsBar: some View {
         HStack(spacing: 20) {
             filterButton
@@ -659,12 +726,19 @@ struct SearchView: View {
                 description: Text(err)
             )
         } else if vm.hasSearched && vm.results.isEmpty {
-            ContentUnavailableView(
-                String(localized: "search.empty.title", defaultValue: "No Results"),
-                systemImage: "magnifyingglass",
-                description: Text(String(localized: "search.empty.detail",
-                                         defaultValue: "Try different keywords or adjust your filters."))
-            )
+            // Q-2: "Try different keywords" is indistinguishable from a typo, a stemming
+            // surprise, and a genuine historical absence. Name the conjunct that is empty.
+            QueryZeroResultView(
+                inspection: inspectorController.inspection
+                    ?? QueryInspection(expression: nil, operands: [],
+                                       indexedVolumeCount: appState.indexedVolumeIds.count,
+                                       isFilterOnly: false),
+                emptyConjuncts: inspectorController.emptyConjuncts)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .task(id: vm.executedSearchVersion) {
+                    await inspectorController.decomposeZeroResult(
+                        parameters: vm.searchParameters, service: appState.searchService)
+                }
         } else if !vm.results.isEmpty {
             resultCountHeader
             checklistHiddenBanner

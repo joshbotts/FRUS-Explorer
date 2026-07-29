@@ -152,16 +152,14 @@ struct InspectedOperand: Sendable, Equatable {
 ///   1.0 — Q-2a: initial implementation
 struct QueryInspector: Sendable {
 
-    /// The store the vocabulary lookups run against.
-    let fts5Store: FTS5Store
-
-    /// The service the scoped counts run through, so they use the identical query path
-    /// the search itself uses.
+    /// The service every lookup runs through — counts, stems and vocabulary alike.
+    ///
+    /// One dependency rather than two, so the stems the inspector displays and the counts
+    /// it reports provably come from the same store the search itself queries.
     let searchService: SearchService
 
     /// Creates an inspector.
-    init(fts5Store: FTS5Store, searchService: SearchService) {
-        self.fts5Store = fts5Store
+    init(searchService: SearchService) {
         self.searchService = searchService
     }
 
@@ -182,7 +180,7 @@ struct QueryInspector: Sendable {
             let stem = await stem(for: operand)
             var frequency: Int?
             if let stem {
-                frequency = try? await fts5Store.vocabularyEntry(stem: stem)?.documentFrequency
+                frequency = try? await searchService.corpusDocumentFrequency(forStem: stem)
             }
             inspected.append(InspectedOperand(
                 operand: operand, stem: stem,
@@ -205,7 +203,7 @@ struct QueryInspector: Sendable {
     /// with one stem would be a lie of convenience.
     private func stem(for operand: ParsedOperand) async -> String? {
         guard operand.kind == .word else { return nil }
-        return try? await fts5Store.indexStem(of: operand.text)
+        return try? await searchService.indexStem(of: operand.text)
     }
 
     /// Renders the query's MATCH expression(s), or `nil` when it has none.

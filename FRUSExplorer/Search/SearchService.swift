@@ -193,6 +193,20 @@ public actor SearchService {
     /// - Returns: A tuple of optional MATCH expressions; an element is `nil` when
     ///   its scope is disabled or the input renders to no positive content.
     /// - Throws: `FTS5Error.emptyQuery` when both expressions are `nil`.
+    /// The index term SQLite's tokenizer produces for `word`, or `nil` when the word is
+    /// not exactly one token.
+    ///
+    /// A pass-through to the store, so the Query Inspector needs one dependency rather
+    /// than two — and so the stem it displays is the one the search's own store computed.
+    public func indexStem(of word: String) async throws -> String? {
+        try await fts5Store.indexStem(of: word)
+    }
+
+    /// Corpus-wide document frequency for an index term, unscoped by any filter.
+    public func corpusDocumentFrequency(forStem stem: String) async throws -> Int? {
+        try await fts5Store.vocabularyEntry(stem: stem)?.documentFrequency
+    }
+
     /// The rendered MATCH expression(s) for `parameters`, for the Query Inspector.
     ///
     /// A thin public face on `makeMatchExpressions` so the inspector displays exactly the
