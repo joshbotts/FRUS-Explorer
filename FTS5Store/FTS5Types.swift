@@ -166,6 +166,43 @@ public struct FTS5Schema: Sendable {
         """
     }
 
+    /// The name of this schema's `fts5vocab` companion table.
+    ///
+    /// See ``createVocabTableSQL(ifNotExists:)`` for what it is and why it is free.
+    public var vocabTableName: String { "\(tableName)_vocab" }
+
+    /// Returns the `CREATE VIRTUAL TABLE` statement for this schema's `fts5vocab`
+    /// companion — a read-only view over the inverted index that FTS5 already built.
+    ///
+    /// ## What it gives us, and what it costs
+    /// `'row'` mode yields one row per distinct index term: `(term, doc, cnt)` —
+    /// corpus-wide **document frequency** and **total occurrences**. It stores nothing
+    /// of its own and requires no scan; it reads the same b-tree the MATCH operator
+    /// reads. Verified against a real external-content table: `content='document_cache'`
+    /// is not an obstacle, because `fts5vocab` reads the index rather than the content.
+    ///
+    /// `UNINDEXED` columns contribute no terms, so identifier columns like
+    /// `document_id` never pollute the vocabulary. Also verified.
+    ///
+    /// ## The distinction this lands for free
+    /// `doc` and `cnt` are different numbers, and the difference is the finding: 200
+    /// occurrences across 150 documents is a pattern; 200 across 3 is one memo with a
+    /// tic. The app's existing analytics count documents — correctly — but have never
+    /// been able to say so, because there was nothing to contrast against.
+    ///
+    /// ## Terms are stems
+    /// Every term here is what `porter unicode61` produced, not a surface form:
+    /// `containment`, `contains` and `containing` are all `contain`. That is precisely
+    /// why this table is the right source for the stem line — see
+    /// ``FTS5Store/indexStem(of:)``.
+    public func createVocabTableSQL(ifNotExists: Bool) -> String {
+        let existsClause = ifNotExists ? "IF NOT EXISTS " : ""
+        return """
+        CREATE VIRTUAL TABLE \(existsClause)\(vocabTableName) \
+        USING fts5vocab('\(tableName)', 'row')
+        """
+    }
+
     /// Returns the `CREATE TRIGGER` statements that keep an external-content FTS5
     /// table synchronised with its content table.
     ///
