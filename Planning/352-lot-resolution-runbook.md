@@ -4,6 +4,12 @@
 of the gap) and re-resolve the 16 wrong `fileUnit` lots, then regenerate the downstream bundles so
 the corrected NAIDs propagate everywhere. From the #335 audit §5.3 / §7 step 2.
 
+> **[2026-07-29] The 573 / 5,776 above are the figures this run-book was *written against*, and
+> they are kept for that reason. The gap after the keyed runs is **581 lots / 6,230 records** —
+> it grew, because dropping wrong `fileUnit` resolutions moves lots *into* the missed set. Use
+> the [Priority reference](#priority-reference--top-10-missed-lots-558-of-the-gap-3475--6230)
+> table near the end of this file for any live figure.
+
 **Owner-keyed.** `CATALOG_API_KEY` stays owner-held; every keyed step below is run by the owner in
 their terminal. The offline steps need no key.
 
@@ -39,7 +45,8 @@ ENRICH_LOTS=1 swift run CentralFilesIndexGenerator
 - **The coverage goal did not pan out: 2 of 573 "missed" lots resolved.** They are not in NARA's
   control-number index (which is why they were missing originally); the audit §5.3 estimate assumed
   otherwise. They keep resolving through the app's live lookup, as before. Bulk-resolving them needs
-  manual NAID curation (the top-10 = 54% of the gap), not a keyed control-number pass.
+  manual NAID curation (the top-10 = 54% of the gap **— 55.8% as re-measured 2026-07-29**), not a
+  keyed control-number pass.
 
 **Still deferred (needs the key):** `volume-sources-index.json`'s 9 fileUnit lot entries stay in the
 data (its self-contained #351 render guard suppresses them, so no wrong links show); a full keyed
@@ -167,11 +174,38 @@ CATALOG_API_KEY=<key> ENRICH_LOTS=1 swift run CentralFilesIndexGenerator   # re-
 PRUNE_FLAGGED_LOTS=1 swift run CentralFilesIndexGenerator                   # offline; drops any residual fileUnit/null-RG
 ```
 
-### Step 4 (offline) — regenerate the downstream bundles
+### Step 4 — regenerate the downstream bundles
+
+**The first command is KEYED, not optional.** [2026-07-29]
+
 ```bash
-swift run VolumeSourcesIndexGenerator                     # add CATALOG_API_KEY for its optional RG/lot-miss pass
-swift run -c release CollectionAuthorityGenerator         # NAIDs resolve offline against the refreshed central-files
+CATALOG_API_KEY=<key> swift run VolumeSourcesIndexGenerator
 ```
+
+The record-group resolution pass lives *inside* the `CATALOG_API_KEY` branch. Run it without
+the key and the generator does not preserve the existing record groups — it writes an **empty
+map**, silently taking `recordGroups` from 31 to 0. Those 31 RG headers exist in no other
+bundled artifact (central-files carries an RG *number* per lot, but no RG *header records*),
+so `VolumeSourcesIndex.resolution()`'s record-group arm then returns nil for every RG-only
+node, in both the Source Explorer and the Collections export path. This happened on
+2026-07-29 and was caught only by diffing the artifact against `HEAD`.
+
+The keyed run costs **no API calls** when `.cache/volume-sources/rgs` is warm (31 cached
+responses, one per record group) — the key enables the pass, it does not spend budget.
+
+**Go/no-go:** the summary must say `record groups: 31`, not 0. The first line of output
+(`Distinct keys: … 31 record groups`) is the *harvest* and says nothing about what was
+written — do not read it as confirmation.
+
+```bash
+swift run -c release CollectionAuthorityGenerator         # offline; NAIDs resolve against central-files
+```
+
+**This half is a no-op unless central-files itself was regenerated in the same pass.** On
+2026-07-29 it produced a file byte-identical to the committed one apart from its `generated`
+stamp, because central-files was already current from the 2026-07-17 run. When that happens,
+**revert it** rather than committing: `generated` is provenance for the data, and bumping it
+when nothing changed asserts a refresh that did not occur.
 Once these land, the app's #351 render guards become no-ops automatically (the corrected NAIDs are
 no longer `fileUnit`, so `CentralFilesIndex.untrustworthyNAIDs` empties).
 
@@ -179,28 +213,60 @@ no longer `fileUnit`, so `CentralFilesIndex.untrustworthyNAIDs` empties).
 ```bash
 swift run -c release SourceExplorerExportGenerator        # re-run the #335 export
 ```
-Then re-run the conversion check and compare against the reference list
-(`Planning/source-explorer-export/missed-lots-ranked.tsv`, 573 lots, ranked):
+Then re-run the conversion check:
 ```bash
 jq -r '.records[] | select(.strategy=="lotFile" and .offlineOutcome=="liveRouteOnly") | .derived.lotFileNorm' \
-  Planning/source-explorer-export/source-explorer-export.json | sort -u | wc -l   # expect << 573
+  Planning/source-explorer-export/source-explorer-export.json | sort -u | wc -l
+```
+
+**[2026-07-29] Expect ~581, and read a number ABOVE 573 as correct.** The original
+"expect ≪ 573" was written before the keyed lot pass and is wrong: that pass dropped 16
+`fileUnit` entries whose records the 2026-07-17 baseline still counted as *resolved*. The
+gap therefore grows — not because coverage worsened, but because the export stopped crediting
+resolutions that were never real. Measured on 2026-07-29: **581 lots / 6,230 records**, with
+`liveRouteOnly` +456 and `resolvedLotBundle` −455 in the summary (60D627 alone is 455).
+
+Regenerate the ranking file at the same time, or N-3 curates from a stale list:
+```bash
+jq -r '.records[] | select(.strategy=="lotFile" and .offlineOutcome=="liveRouteOnly")
+       | [.derived.lotFileNorm, (.derived.recordGroup // .parsed.recordGroup // "")] | @tsv' \
+  Planning/source-explorer-export/source-explorer-export.json \
+ | awk -F'\t' '{c[$1]++; if($2!="") rg[$1]=$2} END{for(k in c) printf "%s\t%d\tRG-%s\n", k, c[k], (rg[k]==""?"59":rg[k])}' \
+ | sort -t$'\t' -k2,2nr -k1,1 > Planning/source-explorer-export/missed-lots-ranked.tsv
 ```
 
 ---
 
-## Priority reference — top-10 missed lots (54% of the gap)
+## Priority reference — top-10 missed lots (**55.8%** of the gap, 3,475 / 6,230)
+
+**[2026-07-29] Regenerated.** The table below is current. The previous version was built
+against the 2026-07-17 04:34 export — before that day's keyed lot regen — and **omitted
+60D627 (455 records), which now ranks #3**. Ten lots are new to the ranking; six of them are
+the `fileUnit` entries the regen dropped. Curating "the top ten" from the old file would have
+skipped the third-largest item in the gap.
 
 Full ranked list: `Planning/source-explorer-export/missed-lots-ranked.tsv` (lot ⇥ count ⇥ RG).
 
-| # | Lot | Records | RG | # | Lot | Records | RG |
-|---|-----|--------:|----|---|-----|--------:|----|
-| 1 | 54D270 (Marshall Mission Files) | 1063 | 59 | 6 | 93D188 | 151 | 59 |
-| 2 | M88 (CFM Files) | 697 | 59 | 7 | 64D559 | 131 | 59 |
-| 3 | 59D95 | 283 | 59 | 8 | 60D137 | 131 | 59 |
-| 4 | 64D560 | 248 | 59 | 9 | 63D123 | 119 | 59 |
-| 5 | 62D181 | 197 | 59 | 10 | 96D262 | 98 | 59 |
+| # | Lot | Records | RG |
+|---|-----|--------:|----|
+| 1 | 54D270 (Marshall Mission Files) | 1063 | 59 |
+| 2 | M88 (CFM Files) | 697 | 59 |
+| 3 | 60D627 — Conference Files ¹ | 455 | 59 |
+| 4 | 59D95 | 283 | 59 |
+| 5 | 64D560 | 248 | 59 |
+| 6 | 62D181 | 197 | 59 |
+| 7 | 93D188 | 151 | 59 |
+| 8 | 60D137 | 131 | 59 |
+| 9 | 64D559 | 131 | 59 |
+| 10 | 63D123 | 119 | 59 |
 
-All 573 missed lots already carry an identity cluster in `collection-authority.json` (only the NAID
+¹ *Why 60D627 is the case for re-baselining.* Its citation is `Conference Files, Lot 60 D
+627`. The pre-regen index resolved it to NAID **609235170**, a `fileUnit` inside the series
+*Files Pertaining to Operation Mongoose* — a confident, wrong answer that kept it out of the
+"missed" list entirely. The keyed regen dropped it, which is what promoted it to #3. Curating
+this one replaces a mis-resolution, not just a blank.
+
+All 581 missed lots already carry an identity cluster in `collection-authority.json` (only the NAID
 is missing), and every lot maps to a single record group — 466 RG 59 and **107 RG 84** (the
 F-designator post records; the top-50's RG-84 members are F96, F73, F79, 79F80, 59F59). So the keyed
 pass is pure NAID resolution.

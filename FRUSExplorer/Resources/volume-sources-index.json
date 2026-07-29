@@ -1,5 +1,5 @@
 {
-  "generated" : "2026-07-16",
+  "generated" : "2026-07-29",
   "lots" : {
     "53D413" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2127212",
@@ -35,15 +35,15 @@
       "title" : "Files of Ambassador Philip C. Jessup Relating to the 6th and 7th Sessions of the United Nations General Assembly"
     },
     "54D341" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2240960",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2240958",
       "hmsMlrEntryNumbers" : [
-        "A1 1445"
+        "A1 1443"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2240960",
+      "naId" : "2240958",
       "recordGroup" : "59",
-      "title" : "Subject Files Relating to Ceylonese Affairs"
+      "title" : "Subject Files Relating to South Asian Regional Affairs"
     },
     "54D423" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2127217",
@@ -415,19 +415,6 @@
       "recordGroup" : "59",
       "title" : "Subject Files"
     },
-    "58D528" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2595565",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "2595565",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 1494A"
-      ],
-      "seriesNaId" : "2504761",
-      "seriesTitle" : "General Records",
-      "title" : "RG 59, Miscellaneous Lot Files, 1944-1959 [Lots 53D223, 54D294, 54D304, 57D289, 58D528, 59D27, 60D68, 61D78, 62D205, 62D421, and 64D358]"
-    },
     "58D529" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2092768",
       "hmsMlrEntryNumbers" : [
@@ -618,19 +605,6 @@
       "recordGroup" : "59",
       "title" : "Subject Files"
     },
-    "59D27" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2595565",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "2595565",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 1494A"
-      ],
-      "seriesNaId" : "2504761",
-      "seriesTitle" : "General Records",
-      "title" : "RG 59, Miscellaneous Lot Files, 1944-1959 [Lots 53D223, 54D294, 54D304, 57D289, 58D528, 59D27, 60D68, 61D78, 62D205, 62D421, and 64D358]"
-    },
     "59D293" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2212186",
       "hmsMlrEntryNumbers" : [
@@ -709,15 +683,15 @@
       "title" : "Subject Files Relating to China Trade Controls"
     },
     "59D448" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2194823",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2255070",
       "hmsMlrEntryNumbers" : [
-        "A1 1395"
+        "A1 1396"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2194823",
+      "naId" : "2255070",
       "recordGroup" : "59",
-      "title" : "East Asian Country Files"
+      "title" : "Western European Country Files"
     },
     "59D449" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2169571",
@@ -931,15 +905,15 @@
       "title" : "Subject Files"
     },
     "60D330" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2092771",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2092772",
       "hmsMlrEntryNumbers" : [
-        "A1 1225"
+        "A1 1226"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2092771",
+      "naId" : "2092772",
       "recordGroup" : "59",
-      "title" : "Briefing Books and Reference Material Relating to Korea"
+      "title" : "Briefing Books and Reference Material Relating to International Conferences"
     },
     "60D37" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2212176",
@@ -1030,15 +1004,15 @@
       "title" : "Chronological Files Relating to Conferences, Meetings and Visits"
     },
     "60D530" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602119",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602131",
       "hmsMlrEntryNumbers" : [
-        "A1 396H"
+        "A1 396I"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "602119",
+      "naId" : "602131",
       "recordGroup" : "59",
-      "title" : "Daily Summaries"
+      "title" : "Daily Staff Summaries"
     },
     "60D533" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124188",
@@ -1094,19 +1068,6 @@
       "naId" : "2406730",
       "recordGroup" : "59",
       "title" : "Subject Files"
-    },
-    "60D627" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/609235170",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "609235170",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "UD-UP 293-B"
-      ],
-      "seriesNaId" : "648748",
-      "seriesTitle" : "Files Pertaining to Operation Mongoose",
-      "title" : "Lot File 660501, Cuba - 1963"
     },
     "60D647" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2602541",
@@ -2497,15 +2458,15 @@
       "title" : "Subject Files"
     },
     "65D142" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602119",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602131",
       "hmsMlrEntryNumbers" : [
-        "A1 396H"
+        "A1 396I"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "602119",
+      "naId" : "602131",
       "recordGroup" : "59",
-      "title" : "Daily Summaries"
+      "title" : "Daily Staff Summaries"
     },
     "65D169" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1966935",
@@ -2665,19 +2626,6 @@
       "recordGroup" : "59",
       "title" : "Records of the Director"
     },
-    "65D285" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2523057",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "2523057",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 3177"
-      ],
-      "seriesNaId" : "2321377",
-      "seriesTitle" : "Country and Subject Files",
-      "title" : "(65D285) PER 9 - Personnel Training & Development FAST"
-    },
     "65D30" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022921",
       "hmsMlrEntryNumbers" : [
@@ -2823,15 +2771,15 @@
       "title" : "Country Files"
     },
     "65D5" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068429",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068452",
       "hmsMlrEntryNumbers" : [
-        "A1 3130"
+        "A1 3135"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2068429",
+      "naId" : "2068452",
       "recordGroup" : "59",
-      "title" : "Records Relating to Israel and Lebanon"
+      "title" : "Records Relating to Greece"
     },
     "65D55" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1966778",
@@ -3854,15 +3802,15 @@
       "title" : "Records Relating to Polish Affairs"
     },
     "68D349" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309374",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/619592",
       "hmsMlrEntryNumbers" : [
-        "UD-WX 638"
+        "A1 5181"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "26309374",
+      "naId" : "619592",
       "recordGroup" : "59",
-      "title" : "Records Relating to Meetings and Negotiations with the United Kingdom, Canada, and Spain"
+      "title" : "Subject Files of the Special Assistant for Atomic Energy and Aerospace"
     },
     "68D350" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2125487",
@@ -4560,15 +4508,15 @@
       "title" : "Records Relating to the Persian Gulf and Arabian Peninsula"
     },
     "69D528" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2642156",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4488918",
       "hmsMlrEntryNumbers" : [
-        "A1 5734"
+        "A1 5735B"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2642156",
+      "naId" : "4488918",
       "recordGroup" : "59",
-      "title" : "Records Relating to Nicaragua"
+      "title" : "Records Relating to British Honduras"
     },
     "69D537" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/956155",
@@ -5494,15 +5442,15 @@
       "title" : "Top Secret Files on Final Report MU I 62"
     },
     "71D440" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309422",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2125425",
       "hmsMlrEntryNumbers" : [
-        "A1 1605"
+        "A1 3039E"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "26309422",
+      "naId" : "2125425",
       "recordGroup" : "59",
-      "title" : "Records Relating to United Nations Affairs"
+      "title" : "Position Papers and Background Books"
     },
     "71D460" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309414",
@@ -5593,15 +5541,16 @@
       "title" : "Records of Various Offices and Divisions"
     },
     "71D87" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2637638",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631403",
       "hmsMlrEntryNumbers" : [
+        "A1 5305",
         "A1 5414"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2637638",
+      "naId" : "631403",
       "recordGroup" : "59",
-      "title" : "Subject Files"
+      "title" : "Subject Files of the Vietnam Working Group"
     },
     "71D88" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2637638",
@@ -5680,20 +5629,6 @@
       "recordGroup" : "59",
       "title" : "Subject Files"
     },
-    "72D170" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2564454",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "2564454",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 5037",
-        "UD-15D 16"
-      ],
-      "seriesNaId" : "604773",
-      "seriesTitle" : "Briefing Books",
-      "title" : "LOT 72D220 [Lot 72D170]"
-    },
     "72D175" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2143328",
       "hmsMlrEntryNumbers" : [
@@ -5706,15 +5641,16 @@
       "title" : "Subject Files"
     },
     "72D192" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631707",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631695",
       "hmsMlrEntryNumbers" : [
-        "A1 5380"
+        "A1 5376",
+        "A1 5376A"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "631707",
+      "naId" : "631695",
       "recordGroup" : "59",
-      "title" : "Subject Files"
+      "title" : "Speeches and Statements"
     },
     "72D199" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309057",
@@ -6542,19 +6478,6 @@
       "recordGroup" : "59",
       "title" : "Subject and Country Files"
     },
-    "74D471" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2321296",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "2321296",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 5408"
-      ],
-      "seriesNaId" : "2131132",
-      "seriesTitle" : "Subject Files",
-      "title" : "Untitled [Lot File 74D471]"
-    },
     "74D499" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3370996",
       "hmsMlrEntryNumbers" : [
@@ -6622,15 +6545,16 @@
       "title" : "Records of Ambassador Richard F. Pedersen"
     },
     "75D303" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2637638",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631403",
       "hmsMlrEntryNumbers" : [
+        "A1 5305",
         "A1 5414"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "2637638",
+      "naId" : "631403",
       "recordGroup" : "59",
-      "title" : "Subject Files"
+      "title" : "Subject Files of the Vietnam Working Group"
     },
     "75D342" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2143328",
@@ -6897,16 +6821,16 @@
       "title" : "Records Relating to Spain"
     },
     "76D284" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022982",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/604773",
       "hmsMlrEntryNumbers" : [
-        "UD 100003",
-        "UD-WX 1507"
+        "A1 5037",
+        "UD-15D 16"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "27022982",
+      "naId" : "604773",
       "recordGroup" : "59",
-      "title" : "Briefing Books and Background Papers"
+      "title" : "Briefing Books"
     },
     "76D289" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2602428",
@@ -7735,15 +7659,23 @@
       "title" : "Gerard C. Smith Subject Files"
     },
     "81D208" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27499754",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/109272536",
       "hmsMlrEntryNumbers" : [
-        "UD-06D 30"
+        "P 885",
+        "UD-06D 25",
+        "UD-06D 27",
+        "UD-06D 28",
+        "UD-06D 29",
+        "UD-10D 1",
+        "UD-10D 3",
+        "UD-10D 4",
+        "UD-10D 6"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "27499754",
+      "naId" : "109272536",
       "recordGroup" : "59",
-      "title" : "Human Rights Country Files"
+      "title" : "Country Files"
     },
     "81D225" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27023000",
@@ -7757,15 +7689,15 @@
       "title" : "Chronological Correspondence Files of Benjamin H. Read"
     },
     "81D286" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3475539",
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3493168",
       "hmsMlrEntryNumbers" : [
-        "A1 5339"
+        "A1 5339A"
       ],
       "levelOfDescription" : "series",
       "matchType" : "lot",
-      "naId" : "3475539",
+      "naId" : "3493168",
       "recordGroup" : "59",
-      "title" : "Chronological Files"
+      "title" : "Country and Subject Files"
     },
     "81D287" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309194",
@@ -8424,19 +8356,6 @@
       "recordGroup" : "59",
       "title" : "Records of the Deputy Assistant Secretary Relating to China"
     },
-    "90D192" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/609414708",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "609414708",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 1577"
-      ],
-      "seriesNaId" : "2255746",
-      "seriesTitle" : "Records of the Polish Ministry of Foreign Affairs",
-      "title" : "Folder 149 THRU Folder 155"
-    },
     "90D320" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4243806",
       "hmsMlrEntryNumbers" : [
@@ -8469,20 +8388,6 @@
       "naId" : "2168581",
       "recordGroup" : "59",
       "title" : "Paris Peace Conference Telegrams and Special Caption Messages"
-    },
-    "91D257" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26152057",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "26152057",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 5667",
-        "ZZ 1004"
-      ],
-      "seriesNaId" : "593953",
-      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
-      "title" : "CJ 1 of 1"
     },
     "91D305" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1157670",
@@ -8538,20 +8443,6 @@
       "naId" : "2131131",
       "recordGroup" : "59",
       "title" : "Records of Henry Kissinger"
-    },
-    "92D252" : {
-      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26159679",
-      "levelOfDescription" : "fileUnit",
-      "matchType" : "lot",
-      "naId" : "26159679",
-      "recordGroup" : "59",
-      "seriesHmsMlrEntryNumbers" : [
-        "A1 5667",
-        "ZZ 1004"
-      ],
-      "seriesNaId" : "593953",
-      "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
-      "title" : "ER 1 of 2"
     },
     "92D412" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/28794135",
@@ -10247,15 +10138,16 @@
       "lotFile" : "72 D 192",
       "occurrences" : 44,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631707",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631695",
         "hmsMlrEntryNumbers" : [
-          "A1 5380"
+          "A1 5376",
+          "A1 5376A"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "631707",
+        "naId" : "631695",
         "recordGroup" : "59",
-        "title" : "Subject Files"
+        "title" : "Speeches and Statements"
       },
       "text" : "Rusk Files: Lot 72 D 192",
       "volumeIds" : [
@@ -10707,19 +10599,6 @@
       "key" : "lot:60D627",
       "lotFile" : "60 D 627",
       "occurrences" : 33,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
       "text" : "Conference Files, Lot 60 D 627",
       "volumeIds" : [
         "frus1952-54v01p1",
@@ -12439,15 +12318,15 @@
       "lotFile" : "71 D 440",
       "occurrences" : 13,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309422",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2125425",
         "hmsMlrEntryNumbers" : [
-          "A1 1605"
+          "A1 3039E"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "26309422",
+        "naId" : "2125425",
         "recordGroup" : "59",
-        "title" : "Records Relating to United Nations Affairs"
+        "title" : "Position Papers and Background Books"
       },
       "text" : "IO Files, Lot 71 D 440",
       "volumeIds" : [
@@ -13505,15 +13384,15 @@
       "lotFile" : "81D286",
       "occurrences" : 9,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3475539",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/3493168",
         "hmsMlrEntryNumbers" : [
-          "A1 5339"
+          "A1 5339A"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "3475539",
+        "naId" : "3493168",
         "recordGroup" : "59",
-        "title" : "Chronological Files"
+        "title" : "Country and Subject Files"
       },
       "text" : "Records of the Office of the Counselor, 1955–1977, Records of Helmut Sonnenfeldt, 1974, Lot 81D286",
       "volumeIds" : [
@@ -13669,15 +13548,15 @@
       "lotFile" : "60 D 530",
       "occurrences" : 8,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602119",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602131",
         "hmsMlrEntryNumbers" : [
-          "A1 396H"
+          "A1 396I"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "602119",
+        "naId" : "602131",
         "recordGroup" : "59",
-        "title" : "Daily Summaries"
+        "title" : "Daily Staff Summaries"
       },
       "text" : "Daily Summaries: Lot 60 D 530",
       "volumeIds" : [
@@ -15049,19 +14928,6 @@
       "key" : "lot:59D27",
       "lotFile" : "59 D 27",
       "occurrences" : 5,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2595565",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "2595565",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 1494A"
-        ],
-        "seriesNaId" : "2504761",
-        "seriesTitle" : "General Records",
-        "title" : "RG 59, Miscellaneous Lot Files, 1944-1959 [Lots 53D223, 54D294, 54D304, 57D289, 58D528, 59D27, 60D68, 61D78, 62D205, 62D421, and 64D358]"
-      },
       "text" : "INR Files, Lot 59 D 27",
       "volumeIds" : [
         "frus1952-54v01p1",
@@ -16330,15 +16196,15 @@
       "lotFile" : "68 D 349",
       "occurrences" : 4,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26309374",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/619592",
         "hmsMlrEntryNumbers" : [
-          "UD-WX 638"
+          "A1 5181"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "26309374",
+        "naId" : "619592",
         "recordGroup" : "59",
-        "title" : "Records Relating to Meetings and Negotiations with the United Kingdom, Canada, and Spain"
+        "title" : "Subject Files of the Special Assistant for Atomic Energy and Aerospace"
       },
       "text" : "G\/PM Files, Lot 68 D 349",
       "volumeIds" : [
@@ -16716,15 +16582,16 @@
       "lotFile" : "75 D 303",
       "occurrences" : 4,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2637638",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631403",
         "hmsMlrEntryNumbers" : [
+          "A1 5305",
           "A1 5414"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2637638",
+        "naId" : "631403",
         "recordGroup" : "59",
-        "title" : "Subject Files"
+        "title" : "Subject Files of the Vietnam Working Group"
       },
       "text" : "EA\/VN Files: Lot 75 D 303",
       "volumeIds" : [
@@ -17872,15 +17739,15 @@
       "lotFile" : "65 D 5",
       "occurrences" : 3,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068429",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2068452",
         "hmsMlrEntryNumbers" : [
-          "A1 3130"
+          "A1 3135"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2068429",
+        "naId" : "2068452",
         "recordGroup" : "59",
-        "title" : "Records Relating to Israel and Lebanon"
+        "title" : "Records Relating to Greece"
       },
       "text" : "NEA\/NE Files: Lot 65 D 5",
       "volumeIds" : [
@@ -18600,19 +18467,6 @@
       "key" : "lot:74D471",
       "lotFile" : "74 D 471",
       "occurrences" : 3,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2321296",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "2321296",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 5408"
-        ],
-        "seriesNaId" : "2131132",
-        "seriesTitle" : "Subject Files",
-        "title" : "Untitled [Lot File 74D471]"
-      },
       "text" : "EA Files, Lot 74 D 471",
       "volumeIds" : [
         "frus1969-76v05",
@@ -19114,20 +18968,6 @@
       "key" : "lot:91D257",
       "lotFile" : "91D257",
       "occurrences" : 3,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26152057",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "26152057",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 5667",
-          "ZZ 1004"
-        ],
-        "seriesNaId" : "593953",
-        "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
-        "title" : "CJ 1 of 1"
-      },
       "text" : "Lot 91D257: Executive Secretariat, S\/S, Top Secret\/Secret Sensitive Memorandum",
       "volumeIds" : [
         "frus1981-88v04",
@@ -20024,19 +19864,6 @@
       "key" : "lot:58D528",
       "lotFile" : "58 D 528",
       "occurrences" : 2,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2595565",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "2595565",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 1494A"
-        ],
-        "seriesNaId" : "2504761",
-        "seriesTitle" : "General Records",
-        "title" : "RG 59, Miscellaneous Lot Files, 1944-1959 [Lots 53D223, 54D294, 54D304, 57D289, 58D528, 59D27, 60D68, 61D78, 62D205, 62D421, and 64D358]"
-      },
       "text" : "INR Files, Lot 58 D 528",
       "volumeIds" : [
         "frus1952-54v13p1",
@@ -20214,15 +20041,15 @@
       "lotFile" : "59 D 448",
       "occurrences" : 2,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2194823",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2255070",
         "hmsMlrEntryNumbers" : [
-          "A1 1395"
+          "A1 1396"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2194823",
+        "naId" : "2255070",
         "recordGroup" : "59",
-        "title" : "East Asian Country Files"
+        "title" : "Western European Country Files"
       },
       "text" : "MAP Files, Lot 59 D 448",
       "volumeIds" : [
@@ -22072,19 +21899,6 @@
       "key" : "lot:65D285",
       "lotFile" : "65 D 285",
       "occurrences" : 2,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2523057",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "2523057",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 3177"
-        ],
-        "seriesNaId" : "2321377",
-        "seriesTitle" : "Country and Subject Files",
-        "title" : "(65D285) PER 9 - Personnel Training & Development FAST"
-      },
       "text" : "ARA\/IAS Files: Lot 65 D 285",
       "volumeIds" : [
         "frus1958-60v05",
@@ -24206,20 +24020,6 @@
       "key" : "lot:92D252",
       "lotFile" : "92D252",
       "occurrences" : 2,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/26159679",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "26159679",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 5667",
-          "ZZ 1004"
-        ],
-        "seriesNaId" : "593953",
-        "seriesTitle" : "Select Documents Released Under the Nazi War Crimes and Japanese Imperial Government Disclosure Acts Relating to Nazi War Crimes",
-        "title" : "ER 1 of 2"
-      },
       "text" : "Lot 92D252; 1 January 1984– 21 January 1988 Executive Secretariat Sensitive (ES) and Super Sensitive Documents",
       "volumeIds" : [
         "frus1981-88v03",
@@ -26018,15 +25818,15 @@
       "lotFile" : "54 D 341",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2240960",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2240958",
         "hmsMlrEntryNumbers" : [
-          "A1 1445"
+          "A1 1443"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2240960",
+        "naId" : "2240958",
         "recordGroup" : "59",
-        "title" : "Subject Files Relating to Ceylonese Affairs"
+        "title" : "Subject Files Relating to South Asian Regional Affairs"
       },
       "text" : "SOA Files, Lot 54 D 341",
       "volumeIds" : [
@@ -26746,15 +26546,15 @@
       "lotFile" : "60 D 330",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2092771",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2092772",
         "hmsMlrEntryNumbers" : [
-          "A1 1225"
+          "A1 1226"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2092771",
+        "naId" : "2092772",
         "recordGroup" : "59",
-        "title" : "Briefing Books and Reference Material Relating to Korea"
+        "title" : "Briefing Books and Reference Material Relating to International Conferences"
       },
       "text" : "Northeast Asian Affairs Files, Lot 60 D 330",
       "volumeIds" : [
@@ -27777,15 +27577,15 @@
       "lotFile" : "65 D 142",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602119",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/602131",
         "hmsMlrEntryNumbers" : [
-          "A1 396H"
+          "A1 396I"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "602119",
+        "naId" : "602131",
         "recordGroup" : "59",
-        "title" : "Daily Summaries"
+        "title" : "Daily Staff Summaries"
       },
       "text" : "Top Secret and Secret Summaries: Lot 65 D 142",
       "volumeIds" : [
@@ -30160,15 +29960,15 @@
       "lotFile" : "69 D 528",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2642156",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/4488918",
         "hmsMlrEntryNumbers" : [
-          "A1 5734"
+          "A1 5735B"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2642156",
+        "naId" : "4488918",
         "recordGroup" : "59",
-        "title" : "Records Relating to Nicaragua"
+        "title" : "Records Relating to British Honduras"
       },
       "text" : "ARA\/CEN\/ BH Files: Lot 69 D 528",
       "volumeIds" : [
@@ -31254,15 +31054,16 @@
       "lotFile" : "71 D 87",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2637638",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/631403",
         "hmsMlrEntryNumbers" : [
+          "A1 5305",
           "A1 5414"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "2637638",
+        "naId" : "631403",
         "recordGroup" : "59",
-        "title" : "Subject Files"
+        "title" : "Subject Files of the Vietnam Working Group"
       },
       "text" : "EA\/VN Files: Lot 71 D 87",
       "volumeIds" : [
@@ -31368,20 +31169,6 @@
       "key" : "lot:72D170",
       "lotFile" : "72 D 170",
       "occurrences" : 1,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2564454",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "2564454",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 5037",
-          "UD-15D 16"
-        ],
-        "seriesNaId" : "604773",
-        "seriesTitle" : "Briefing Books",
-        "title" : "LOT 72D220 [Lot 72D170]"
-      },
       "text" : "S\/S-Files, Lot 72 D 170",
       "volumeIds" : [
         "frus1969-76v39"
@@ -32602,16 +32389,16 @@
       "lotFile" : "76D284",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27022982",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/604773",
         "hmsMlrEntryNumbers" : [
-          "UD 100003",
-          "UD-WX 1507"
+          "A1 5037",
+          "UD-15D 16"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "27022982",
+        "naId" : "604773",
         "recordGroup" : "59",
-        "title" : "Briefing Books and Background Papers"
+        "title" : "Briefing Books"
       },
       "text" : "Secretary’s Calendar of Events: Lot 76D284",
       "volumeIds" : [
@@ -33724,15 +33511,23 @@
       "lotFile" : "81D208",
       "occurrences" : 1,
       "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/27499754",
+        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/109272536",
         "hmsMlrEntryNumbers" : [
-          "UD-06D 30"
+          "P 885",
+          "UD-06D 25",
+          "UD-06D 27",
+          "UD-06D 28",
+          "UD-06D 29",
+          "UD-10D 1",
+          "UD-10D 3",
+          "UD-10D 4",
+          "UD-10D 6"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "27499754",
+        "naId" : "109272536",
         "recordGroup" : "59",
-        "title" : "Human Rights Country Files"
+        "title" : "Country Files"
       },
       "text" : "Lot 81D208, Human Rights Country Files, 1977",
       "volumeIds" : [
@@ -34791,19 +34586,6 @@
       "key" : "lot:90D192",
       "lotFile" : "90 D 192",
       "occurrences" : 1,
-      "resolved" : {
-        "catalogURL" : "https:\/\/catalog.archives.gov\/id\/609414708",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609414708",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "A1 1577"
-        ],
-        "seriesNaId" : "2255746",
-        "seriesTitle" : "Records of the Polish Ministry of Foreign Affairs",
-        "title" : "Folder 149 THRU Folder 155"
-      },
       "text" : "Lot 90 D 192, Top Secret Documents, 1980–1988",
       "volumeIds" : [
         "frus1977-80v22"
