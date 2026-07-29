@@ -193,6 +193,17 @@ public actor SearchService {
     /// - Returns: A tuple of optional MATCH expressions; an element is `nil` when
     ///   its scope is disabled or the input renders to no positive content.
     /// - Throws: `FTS5Error.emptyQuery` when both expressions are `nil`.
+    /// The rendered MATCH expression(s) for `parameters`, for the Query Inspector.
+    ///
+    /// A thin public face on `makeMatchExpressions` so the inspector displays exactly the
+    /// strings the search executed — not a second rendering that could drift from it.
+    /// Rethrows `FTS5Error.emptyQuery` for a query with no searchable content at all.
+    public func matchExpressions(
+        for parameters: SearchParameters
+    ) throws -> (corpus: String?, userContent: String?) {
+        try makeMatchExpressions(from: parameters)
+    }
+
     func makeMatchExpressions(
         from parameters: SearchParameters
     ) throws -> (corpus: String?, userContent: String?) {

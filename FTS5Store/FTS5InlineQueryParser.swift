@@ -140,12 +140,24 @@ public enum FTS5InlineQueryParser {
     /// the answer: without the expression there is nothing to filter, and without the
     /// filter the `=` did nothing.
     public static func parseDetailed(_ raw: String, columnPrefix: String = "") -> ParsedQuery {
-        var exact: [String] = []
-        let expression = renderTokens(tokenize(raw), columnPrefix: columnPrefix, exactTerms: &exact)
+        var harvest = Harvest()
+        let expression = renderTokens(tokenize(raw), columnPrefix: columnPrefix, into: &harvest)
         // Order-preserving de-duplication: the same word marked exact twice is one filter.
         var seen = Set<String>()
-        let unique = exact.filter { seen.insert($0).inserted }
-        return ParsedQuery(expression: expression, exactTerms: expression == nil ? [] : unique)
+        let unique = harvest.exactTerms.filter { seen.insert($0).inserted }
+        return ParsedQuery(expression: expression,
+                           exactTerms: expression == nil ? [] : unique,
+                           operands: expression == nil ? [] : harvest.operands)
+    }
+
+    /// Everything `renderTokens` gathers on its way down, besides the expression itself.
+    ///
+    /// One value rather than several `inout` parameters because the recursion threads it
+    /// through every group; each new thing the parser reports would otherwise widen four
+    /// call sites.
+    private struct Harvest {
+        var exactTerms: [String] = []
+        var operands: [ParsedOperand] = []
     }
 
     // MARK: - Recursive Group-Aware Rendering
@@ -172,7 +184,7 @@ public enum FTS5InlineQueryParser {
     /// `(   )`, or `(-korea)` — only excluded terms, no positive content) is
     /// likewise dropped in its entirety rather than emitted as an empty `()`.
     private static func renderTokens(
-        _ tokens: [String], columnPrefix: String, exactTerms: inout [String]
+        _ tokens: [String], columnPrefix: String, into harvest: inout Harvest
     ) -> String? {
         var resolved: [ResolvedToken] = []
         var index = 0
@@ -189,6 +201,9 @@ public enum FTS5InlineQueryParser {
                                              aliasDistance: near.aliasDistance,
                                              columnPrefix: columnPrefix) {
                     resolved.append(.operand(rendered: rendered, isPositive: true))
+                    harvest.operands.append(ParsedOperand(
+                        text: (["NEAR("] + group.inner + [")"]).joined(separator: " "),
+                        rendered: rendered, kind: .proximity, isNegated: false, isExact: false))
                     index = group.closeIndex + 1
                     continue
                 }
@@ -205,7 +220,7 @@ public enum FTS5InlineQueryParser {
 
             if rawToken == "(", let group = matchingGroup(in: tokens, openAt: index) {
                 if let rendered = renderTokens(group.inner, columnPrefix: columnPrefix,
-                                               exactTerms: &exactTerms) {
+                                               into: &harvest) {
                     resolved.append(.operand(rendered: "(\(rendered))", isPositive: true))
                 }
                 index = group.closeIndex + 1
@@ -219,6 +234,10 @@ public enum FTS5InlineQueryParser {
                 case .operand(let operand):
                     if let rendered = render(operand, columnPrefix: columnPrefix) {
                         resolved.append(.operand(rendered: rendered, isPositive: !operand.negated))
+                        harvest.operands.append(ParsedOperand(
+                            text: operand.surfaceText, rendered: rendered,
+                            kind: operand.kind.parsedKind, isNegated: operand.negated,
+                            isExact: operand.isExact))
                         // Only *positive* exact terms become filters. `-="word"` would
                         // otherwise need an inverted post-filter, and getting that subtly
                         // wrong silently over-excludes; the sigil is ignored on a negated
@@ -226,7 +245,7 @@ public enum FTS5InlineQueryParser {
                         if operand.isExact, !operand.negated,
                            case .word(let raw) = operand.kind,
                            let term = exactTerm(from: raw) {
-                            exactTerms.append(term)
+                            harvest.exactTerms.append(term)
                         }
                     }
                 }
@@ -540,6 +559,15 @@ public enum FTS5InlineQueryParser {
         case word(String)
         case phrase(String)
         case wildcard(prefix: String)
+
+        /// The public shape of this operand, for the inspector.
+        var parsedKind: ParsedOperand.Kind {
+            switch self {
+            case .word: return .word
+            case .phrase: return .phrase
+            case .wildcard: return .prefix
+            }
+        }
     }
 
     private struct Operand {
@@ -548,6 +576,16 @@ public enum FTS5InlineQueryParser {
         /// rather than everything sharing its stem.
         var isExact: Bool = false
         var kind: OperandKind
+
+        /// The operand's own text, without the negation or exactness marks — what the
+        /// inspector labels the pill with, and what a per-operand count re-searches.
+        var surfaceText: String {
+            switch kind {
+            case .word(let w): return w
+            case .phrase(let p): return p
+            case .wildcard(let prefix): return prefix + "*"
+            }
+        }
     }
 
     private enum ClassifiedToken {
@@ -797,9 +835,72 @@ public struct ParsedQuery: Sendable, Equatable {
     /// Empty whenever `expression` is `nil` — there is nothing to post-filter.
     public let exactTerms: [String]
 
+    /// The query's searchable units, in the order typed — what the Query Inspector
+    /// renders as pills and counts individually (Q-2).
+    ///
+    /// Operators are not operands and do not appear. Nor do boolean groups: a group is
+    /// reported as the operands inside it, because "(a OR b)" has no single hit count.
+    /// Empty whenever `expression` is `nil`.
+    public let operands: [ParsedOperand]
+
     /// Creates a parsed query.
-    public init(expression: String?, exactTerms: [String]) {
+    public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = []) {
         self.expression = expression
         self.exactTerms = exactTerms
+        self.operands = operands
+    }
+}
+
+// MARK: - ParsedOperand
+
+/// One searchable unit of a query, as the inspector needs to describe it.
+///
+/// "Operand" here means what a researcher would point at and call a term: a word, a
+/// quoted phrase, a prefix, or a whole `NEAR(...)`. A boolean *group* is deliberately not
+/// one — it is reported as the operands inside it, because "(a OR b)" has no single hit
+/// count and naming it as one operand would invite exactly the wrong reading.
+///
+/// Version history:
+///   1.0 — Q-2a: initial implementation
+public struct ParsedOperand: Sendable, Equatable {
+
+    /// What kind of searchable unit this is.
+    public enum Kind: Sendable, Equatable {
+        /// A bare word, stemmed by the tokenizer.
+        case word
+        /// A quoted phrase — an exact word sequence, each word stemmed.
+        case phrase
+        /// A trailing-`*` prefix search.
+        case prefix
+        /// A whole `NEAR(...)` expression.
+        case proximity
+    }
+
+    /// The operand's text as the researcher would recognise it, without the `-` or `=`
+    /// marks. A prefix keeps its `*`, because that is part of what was asked for.
+    public let text: String
+
+    /// The FTS5 fragment this operand rendered to — what actually went to SQLite.
+    public let rendered: String
+
+    /// What kind of unit it is.
+    public let kind: Kind
+
+    /// Whether it was excluded with `-` or `NOT`.
+    ///
+    /// A negated operand has no meaningful "hit count" of its own in the result set, so
+    /// the inspector shows it differently rather than counting it.
+    public let isNegated: Bool
+
+    /// Whether it carried the `=` exact-word mark.
+    public let isExact: Bool
+
+    /// Creates an operand.
+    public init(text: String, rendered: String, kind: Kind, isNegated: Bool, isExact: Bool) {
+        self.text = text
+        self.rendered = rendered
+        self.kind = kind
+        self.isNegated = isNegated
+        self.isExact = isExact
     }
 }
