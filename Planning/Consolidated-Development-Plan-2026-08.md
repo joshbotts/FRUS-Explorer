@@ -156,17 +156,132 @@ sequences them and pins the cross-lane edges.
 **Project integration:** `Planning/QCA-Projects-Integration-Assessment.md` (2026-07-25)
 verifies where this lane meets the #377 project features and folds the results in as
 **riders** on already-scheduled sessions — M-1 ships project-aware (corpus `projectIds`
-attachment, promote defaults, the History/Focus/corpora three-scope family), M-2 is
-scope-corrected to *enrich* the existing `searchSubmit` session capture (sessions are
-not yet project-tagged — that attribution is part of M-2, not an extra), R-1 gains the
+attachment, promote defaults, the History/Focus/corpora three-scope family), **[2026-07-29:
+M-2's scope correction was itself wrong — see below]** R-1 gains the
 Project Home corpus-profile card, Q-2's inspector labels project scopes and dual-counts
 empty conjuncts, M-3 gains the Home verify-quotations entry point. One appetite-driven
 addition rides the 17+ tail: **Q-V project-vocabulary leads** (keyness of the engaged
 set → distinctive-vocabulary lead source, presented beside — never blended into — the
-#308 axis leads). The assessment tables four owner decisions (A–D). **[2026-07-28]** A was settled by the
-design hand-back; **B was overtaken by Wave R-2a**, which retired `SessionEvent` and left
-`SearchHistoryEntry.projectId` as the attribution home — *owner to confirm B is closed
-rather than merely re-homed*. C and D remain open. None blocks Q-M1.
+#308 axis leads). The assessment tables four owner decisions (A–D).
+
+### Decisions A–D and the new E — status 2026-07-29
+
+**A — settled** by the design hand-back (promote-from-History ships in M-1's first cut).
+
+**B — CLOSED (owner call, 2026-07-29).** Not "re-homed": R-2a removed *both* of B's
+branches. Branch (a), "enrich the `SessionEvent` payload", has no referent — nothing in
+the app constructs a `SessionEvent`, and `ResearchTrailMigration.swift:387` calls
+`ResearchSessionAdmin.deleteAll` unconditionally at the end of every successful pass, so
+anything written there is deleted on the next boot. Branch (b), "a new model referencing
+sessions", has nothing to reference — sessions are computed at read time and borrow their
+identity from the first activity's row id (`Models/ResearchTrailSessions.swift:87`). Wave R
+answered B in writing (`Wave-R-Research-Trail-2026-08.md:241-244`: "enrich
+`SearchHistoryEntry`"), and `SearchHistoryEntry.projectId` ships stamped from
+`appState.activeProjectId` by both producers (`Search/SearchView.swift:316`,
+`App/SearchSheet.swift:223`).
+
+**What B leaves behind is Decision E**, below. Closing B without opening E would silently
+delete three of I-2's four asks: I-2 wanted a rendered FTS5 expression, a scope descriptor,
+an indexed-volume denominator **and** project attribution. Only the fourth shipped.
+
+**C** (Q-V) and **D** (I-7 saved analytics queries) remain open — but **D narrowed** when B
+closed. Its first option was "migrate into the query-log model"; under E's answer that
+target is a new `QueryLogEntry`, so D becomes "does the query log carry non-search entries
+at all", which is a `kindRaw` discriminator — one identifier now, a whole deploy later.
+
+---
+
+### Decision E — the query-log store shape *(owner-answered 2026-07-29)*
+
+**E is four decisions, not one, and the gating one is not about storage.**
+
+**E-0 — the write rule. ANSWERED: yes, the de-dup key gains a scope signature.**
+Both producers guard on `query != lastRecordedHistoryQuery` against a private in-memory var
+(`Search/SearchViewModel.swift:585`, `App/MacSearchViewModel.swift:771`). That is a
+*consecutive* de-dup, not a uniqueness rule — A→B→A already records A twice — but the one
+case it suppresses is the immediately-consecutive scope-only re-run, which is **exactly the
+shape of an absence assertion** (same words, project scope then corpus-wide). No column
+makes the second claim recordable; the write rule had to change first. Consequence to
+budget: **row density rises in two shipped surfaces**, History ▸ Searches and Project Home
+▸ Recent Searches.
+
+**E-1 enrichment fields · E-2 the mutable star · E-3 row identity.** Separable; E-2 and E-3
+couple only if the star goes off-row.
+
+**E core — ANSWERED: option (v), supersede with a purpose-built `QueryLogEntry`.**
+The owner chose (v) over the recommended (i) (widen `SearchHistoryEntry` with typed
+columns). The reasoning that carries it: **(v) is the only option that solves all four
+sub-problems.** (i) and (iii) both inherit `SearchHistoryEntry.id`, which is documented
+*not unique in practice* (`Models/HistoryPaneSnapshot.swift:110-121`) — so the re-run link
+and any star keyed to it attach to every duplicate. A fresh model has fresh ids the
+migration never touches.
+
+| | cost / consequence |
+|---|---|
+| **Schema gate** | ~16 identifiers now (213 → ~229), **plus a second, removal deploy later** when `SearchHistoryEntry` is retired or demoted. Two Production promotions, not one. |
+| **Migration interlock** | Does **not** trip — `CD_QueryLogEntry` does not match `ResearchTrailMigration.writtenRecordTypes`' prefix filter (`:155-158`, `:171-173`). |
+| **The harder gate instead** | CloudKit creates a record type only when a record is first saved (`Models/CloudKitSchemaInventory.swift:293-297`). Until Production is promoted the log **silently fails to sync** — the #488 failure mode. Exercise it once on a Development build before promoting; this is the step no test can verify. |
+| **E-2 star** | Solved cleanly — purpose-built, no immutability contract to violate. |
+| **E-3 identity** | Solved — fresh unique ids for `rerunOfId` and any future annotation. |
+| **Existing rows** | The log starts **empty**. No migration can back-fill expression, scope, denominator or star, so pre-M-2 searches remain visible in `SearchHistoryEntry`/Sessions only. See open question Q9. |
+| **"Never two lists"** | Satisfied *after* the re-point. The constraint (README:119) governs display; one purpose-built record backing one lens honours it. **The re-point is the work**: `ResearchTrailSessions`, `ProjectHomeSummary` and `ResearchDataExporter` all read `SearchHistoryEntry` today. |
+
+**The store shape should round-trip `SearchParameters`, not copy `SavedSearch`'s columns.**
+`SavedSearch` is the right *precedent* — 14 flat scalars, 16 deployed identifiers, a
+documented CloudKit-safe encoding, and the only model in the app that durably encodes a
+query for replay (`Models/SavedSearch.swift:16-33`). But its round-trip **drops 8 of
+`SearchParameters`' 20 fields, including every scope field** — no `volumeIds`, no
+`documentIds`, no `userTagIds`, no `excludeDocumentIds` (`:162-175`). That is deliberate for
+saved searches: `applyParameters` resets `projectScope = .off` because "Project History
+scope is a live, manual choice — never inherited from a restored snapshot"
+(`Search/SearchViewModel.swift:793-798`). **That policy is exactly inverted for a query
+log**, whose entire purpose is to record the scope a claim was made in. An absence
+assertion reading "0 in OSP Corpus 1950–72 (267 docs)" is a `documentIds` scope; stored
+`SavedSearch`-style it would become a corpus-wide search with a date range, and the
+appendix would be wrong. Take the encoding idiom and the `SearchParameters` currency; do
+not take the field list.
+
+**E-2 resolved by construction:** the record of an *execution* is immutable; the
+researcher's *annotation* of it is not. Absence claims are a **fixed pair** — the scope run
+in, plus corpus-wide — not an open-ended child table, because the design's second claim is
+structurally corpus-wide (README:123), the denominator against which the first means
+anything.
+
+**Sequencing.** Nothing must ship before M-2 for correctness, but: **M-1 must precede M-2
+and its delete semantics must be settled first** — a log row citing "OSP Corpus (267 docs)"
+needs to know whether it stores a frozen label+count or a live reference (probably both).
+**R-2b would make E-3 free** but is time-gated on R-2a being in the field, so it cannot
+precede M-2 — do not wait for it.
+
+**Three live defects folded into M-2's scope (owner call, 2026-07-29)** rather than filed
+separately, since M-2 touches all three surfaces:
+1. **`ResearchDataExporter` fetches the whole search-history table unbounded and unscoped
+   by project** (`Export/ResearchDataExporter.swift:426-427`) while stamping the export
+   with the *active* project's name and research question (`:31-34`). Today's method
+   appendix contains every project's queries.
+2. **`resultCount` has two silent cap values.** iOS caps at 1,000
+   (`Search/SearchViewModel.swift:402,590`); macOS logs **7,500** whenever the concurrent
+   `COUNT(*)` throws or is cancelled (`App/MacSearchViewModel.swift:709-711`, cap `:204`) —
+   the realistic path at 6–12 s per common term. `resultCountIsExact` is the fix.
+3. **`SavedSearch` silently drops volume scope on recall** — deliberate and documented for
+   `projectScope`, undocumented for manual volume picks (`Models/SavedSearch.swift:162-175`).
+
+**Still open at M-2 session start** (recorded, not answered): does pinning execute a second
+corpus-wide count at pin time (a 6–12 s blocking action with no designed pending state, vs
+asserting a number never measured)? Does an explicit pin bypass "Log Research Sessions"
+being off — both producers hard-return when it is (`SearchViewModel.swift:578`)? Does
+re-run write a new linked row (prose, README:137) or render an ephemeral diff on the old
+one (what the macOS mock actually draws)? Are pre-M-2 rows rendered "not recorded" or
+excluded? What does the appendix cite when a working corpus is renamed, re-resolved or
+deleted?
+
+**M-2 is not one session.** Surface 5's two named homes are two different view stacks —
+`HistoryView`/`HistoryPaneSnapshot` (project-scoped, paged, per-row delete) and
+`SessionLogView`/`ResearchTrailSessions` (unscoped, derived, **Settings-only**,
+`Settings/ResearchSessionsView.swift:107,123`). A segmented Sessions · Queries control with
+a project filter requires unifying two snapshot types *and* relocating a Settings-only
+surface, on both platforms. Price this before scheduling.
+
 
 **Cross-lane edges (the only ones):**
 
@@ -192,6 +307,13 @@ rather than merely re-homed*. C and D remain open. None blocks Q-M1.
    has also entered the Q lane's own screens — `CloudSurfaceArbiter.searchScope` backs the
    search empty/pending state (`Search/SearchView.swift:650`, `App/SearchSheet.swift:688`) —
    so Q-2/R-1/R-3 must coexist with it. A real cross-lane edge now, not a hypothetical.
+   **[2026-07-29, verified] The feared collision is not real.** The backdrop is bound to
+   the **pending** state only (`Analytics/WordCloud/PendingCloudBackdrop.swift:19-21`;
+   iOS `Search/SearchView.swift:643-654` inside `if vm.isSearching`, zero arm at `:661`;
+   macOS `App/SearchSheet.swift:176-198`), so Q-2's zero-result decomposition — a
+   *completed* search — never contends with it. Two real items remain: the two call
+   sites are not equivalent, and `PendingCloudRule.shouldShow` already suppresses the
+   cloud during indexing, which Q-2 should not re-litigate.
 4. **Corpus prerequisite — [2026-07-28] MET.** The Mac index is effectively the whole
    corpus (552 volumes, ~314k documents, a 6.3 GB store); this is no longer owner wall-clock
    to schedule. Two consequences replace it: (a) a future `currentDateIndexVersion` bump now
@@ -199,7 +321,13 @@ rather than merely re-homed*. C and D remain open. None blocks Q-M1.
    its own right; (b) base query latency at that scale is **measured and material** — a
    common term is 6–12 s in SQLite before any snippet work (#548). Q-2's inspector and R-1's
    facets both sit on that, and the 7,500-row macOS fetch is an architectural pagination
-   issue. **Treat result-set pagination as an explicit Q-M2 prerequisite rather than
+   issue. **[2026-07-29] The exporter is the other half of this.** `HistoryPaneSnapshot` already
+  pages and pushes the project predicate into the fetch (`:75-83`), but
+  `Export/ResearchDataExporter.swift:426-427` fetches the whole search-history table
+  **unbounded and unscoped by project** under the active project's header (`:31-34`) —
+  so the shipped "method appendix" contains every project's queries. Folded into M-2.
+
+  **Treat result-set pagination as an explicit Q-M2 prerequisite rather than
    discovering it in R-1.**
 
 **[2026-07-28] A hazard the plan did not name — Q-2's stem line.** The inspector is
@@ -515,7 +643,7 @@ it.
 | #405 | Parked pending product decision (see N-parked). |
 | #306 in-chart scrubber | **Not mooted** by the analytics redesign — still a valid enhancement; unscheduled. |
 | #268 shared AXChartDescriptor | **Not mooted** — accessibility work, unscheduled here; pairs naturally with any future analytics session. |
-| #266 saved-search freshness | Adjacent to Q-M4 (M-2's log knows last-run hit counts) — fold into M-2's decision points rather than scheduling separately. |
+| #266 saved-search freshness | Adjacent to Q-M4 (M-2's log knows last-run hit counts **once `resultCount` records whether the count was exact — see Decision E's defect 2**) — fold into M-2's decision points rather than scheduling separately. |
 | #308 / #261 / #260 / #259 / #234 | FRUS-subjects & person-authority programs — untouched by this plan. |
 | #262 / #263 / #265 / #279 / #312 / #358 / #553 | Backlog, untouched. |
 | #270 GeneratorKit migration | Still backlog, but O-1's new `WordCloudKit`/`CloudVectorsGenerator` starts on `GeneratorKit` — a worked example for the older five rather than a sixth exception. |
