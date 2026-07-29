@@ -163,11 +163,30 @@ the existing project surfaces (`SessionLogView`, `SavedSearchesView`) — not a 
 top-level screen. The provenance-preamble idiom from the D3 export work is the visual
 kin for the exported appendix.
 
-**Engineering context that shapes the design:** the app *already* auto-captures every
-search (`searchSubmit` session events carry query + result count) — this surface is an
-**enrichment of that existing log**, not a new logger, so the design should treat the
-session log and the query log as one narrative with two lenses, not two lists. Project
-attribution is being added as part of this work (sessions are not yet project-tagged).
+**Engineering context that shapes the design:** ~~the app *already* auto-captures every
+search (`searchSubmit` session events carry query + result count)~~ **[2026-07-29: FALSE
+since Wave R-2a, which retired `SessionEvent` entirely — nothing in the app constructs
+one.]** The app does auto-capture every search, but into **`SearchHistoryEntry`**
+(`Models/SearchHistoryEntry.swift`), written by two producers
+(`Search/SearchViewModel.swift:575`, `App/MacSearchViewModel.swift:761`) and gated on
+`AppState.isResearchLoggingEnabled`. Those rows carry only `queryText`, `resultCount`,
+`projectId`, `executedAt` — **not** the rendered expression, scope descriptor or
+indexed-volume denominator this surface renders.
+
+This surface is still an **enrichment**, not a new logger, and the session log and query
+log remain one narrative with two lenses. But per **Decision E** (owner-answered
+2026-07-29, see `Consolidated-Development-Plan-2026-08.md`) the enrichment lands in a
+purpose-built **`QueryLogEntry`** that round-trips full `SearchParameters` *including
+scope*, superseding `SearchHistoryEntry` as the log substrate — one record, one lens
+family, fresh unique ids.
+
+~~Project attribution is being added as part of this work (sessions are not yet
+project-tagged).~~ **[2026-07-29: search-side attribution SHIPPED in Wave R-4]** —
+`SearchHistoryEntry.projectId` is stamped from `appState.activeProjectId` by both
+producers. What remains untagged is the **Sessions** lens: `DerivedResearchSession`
+(`Models/ResearchTrailSessions.swift:87`) has no `projectId`, and a session is a pure
+time window that can span projects, so tagging it is a modelling decision rather than a
+lookup.
 The exported appendix header carries the project's name + research question, exactly as
 collection exports already do. An absence assertion records its full scope **including
 the project scope** — "0 in project history" and "0 corpus-wide" are different claims,

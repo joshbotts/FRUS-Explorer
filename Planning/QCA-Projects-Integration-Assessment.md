@@ -30,10 +30,18 @@ not free), **defers**, and **rejects**.
 - **Leads** — per-seed related-document rankings (the #308 six-axis engine) summed
   across the project's seed (`ProjectLeadsAggregator.swift:28–60`), weighted per
   project, with dismiss/backfill semantics.
-- **Session log** — `ResearchSession`/`SessionEvent` already auto-captures
-  `searchSubmit(query:resultCount:)` (`ResearchSession.swift:25,47–48`) — but sessions
-  are **not project-tagged** (no `projectId` anywhere in `ResearchSession.swift`), and
-  the payload lacks the rendered expression, scope, and denominator.
+- **Session log** — ~~`ResearchSession`/`SessionEvent` already auto-captures
+  `searchSubmit(query:resultCount:)`~~ **[2026-07-29: retired by Wave R-2a. Nothing in
+  the app constructs a `SessionEvent`; the types remain enrolled only so the migration
+  can read legacy rows, and `ResearchTrailMigration.swift:387` deletes them at the end
+  of every successful pass.]** The live capture is **`SearchHistoryEntry`**, written by
+  `SearchViewModel.recordSearchHistory` (`:575`) and
+  `MacSearchViewModel.recordSearchHistory` (`:761`), both gated on
+  `AppState.isResearchLoggingEnabled`. **Search rows ARE project-tagged** as of R-4
+  (`projectId` from `appState.activeProjectId`). Two gaps remain, and they are what
+  M-2 exists for: the row still lacks the rendered expression, scope descriptor and
+  indexed-volume denominator; and the *derived* session (`ResearchTrailSessions.swift:87`)
+  has no `projectId` of its own — a session is a time window and can span projects.
 - **Project-in-exports** — #454/#455 put `name` + `researchQuestion` into export
   headers; **Project Home** is the surfacing hub.
 
@@ -83,8 +91,16 @@ cleanly.
 
 ### I-2 · Query log is the session log, enriched (rider on M-2, scope correction) — **adopt**
 
+**[2026-07-29] This section's premise is stale.** `searchSubmit` no longer exists —
+Wave R-2a retired `SessionEvent` entirely. The live capture is `SearchHistoryEntry`,
+written by two producers, and its `projectId` (item 1's "piece that verifiably does not
+exist today") **shipped in R-4**. The remaining three asks below are still unbuilt, and
+per Decision E they land in a new `QueryLogEntry` rather than by widening
+`SearchHistoryEntry`. The warning against two parallel capture paths still binds: E's
+answer is *supersession*, one record, not a second writer alongside the first.
+
 M-2 as written risks the #372 mistake — two parallel capture paths for the same event.
-`searchSubmit` already fires on every search with `(query, resultCount)`. The
+~~`searchSubmit` already fires on every search with `(query, resultCount)`.~~ The
 integration-correct M-2 is:
 
 1. **Enrich the existing capture**: rendered FTS5 expression, scope descriptor
@@ -229,9 +245,10 @@ cards want S-3's list components too).
 
 **Owner decision points surfaced by this assessment (none block Q-M1):**
 
-| # | Decision | When it's needed |
-|---|---|---|
-| A | I-1 promote-from-History snapshot: in M-1's first cut, or follow-up? | M-1 session start |
-| B | I-2 attribution home: enrich `SessionEvent` payload vs new model referencing sessions | M-2 session start |
-| C | I-3 vocabulary leads: greenlight as Q-V beside D-1? (only item with real new cost) | after S-1(Q) ships |
-| D | I-7 analytics saved queries: migrate into the log vs stay device-local scratch | M-2 session |
+| # | Decision | When it's needed | Status |
+|---|---|---|---|
+| A | I-1 promote-from-History snapshot: in M-1's first cut, or follow-up? | M-1 session start | **Settled** — first cut (design hand-back) |
+| B | I-2 attribution home: enrich `SessionEvent` payload vs new model referencing sessions | M-2 session start | **[2026-07-29] CLOSED** — R-2a removed *both* referents; attribution shipped on `SearchHistoryEntry.projectId` in R-4. Successor is **Decision E** (store shape) in `Consolidated-Development-Plan-2026-08.md` |
+| C | I-3 vocabulary leads: greenlight as Q-V beside D-1? (only item with real new cost) | after S-1(Q) ships | Open |
+| D | I-7 analytics saved queries: migrate into the log vs stay device-local scratch | M-2 session | Open, **narrowed** by E — the migration target is now `QueryLogEntry`, so D reduces to "does the log carry non-search entries" (a `kindRaw` discriminator) |
+| **E** | **Query-log store shape** — successor to B | M-2 session start | **[2026-07-29] ANSWERED** — supersede with a purpose-built `QueryLogEntry` round-tripping full `SearchParameters`; de-dup key gains a scope signature; absence claims a fixed pair. Full rationale + costs in the consolidated plan |

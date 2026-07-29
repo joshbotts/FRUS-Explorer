@@ -321,7 +321,11 @@ a feature. Could ship before the rest.
 >   R-5's delete, arriving early because R-2a forced it.** Still R-5's: the Data & Recovery
 >   **Contents** inventory and `ResearchDataExportView`.
 > - **R-7's gate fired**, as designed: seven new identifiers, listed in
->   `CloudKitSchemaInventory.identifiersAwaitingDeploy`. **The Production deploy has not happened.**
+>   `CloudKitSchemaInventory.identifiersAwaitingDeploy`. ~~**The Production deploy has not
+>   happened.**~~ **[2026-07-29: it has.** `CloudKitSchemaInventory.deployedThroughBuild = "36"`,
+>   `deployedOn = "2026-07-26"`, and `identifiersAwaitingDeploy` is empty (`:299-337`). The
+>   interlock is therefore clear, and `ResearchTrailMigration` has been running at boot on
+>   every device that has launched since.**]**
 >
 > **One correction to this document's Trap-1 reasoning.** `SessionEvent.documentOpen ⊆
 > `ReadingHistoryEntry` holds for *successful* opens only. `recordReadingHistory` runs after the
