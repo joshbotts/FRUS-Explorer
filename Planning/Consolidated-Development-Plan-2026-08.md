@@ -239,9 +239,11 @@ each; the engineering sessions are normal PRs.
   resolved 2 of 573 — that route is closed; see N-3).
 
 **N-1 — #353 SourceNoteParser session** *(Effort L; the biggest coverage lever)*
-~1,850 recoveries across seven verified rule families + the three strategy-steal fixes
+~1,850 recoveries across **six** verified rule families + the three strategy-steal fixes
 (§3.2 library-keyword-anywhere, §3.3 mSupp abstract prefixes, §3.5 secondary-clause lot
-steal) + the 36,063-record decimalClass derived-field fix. Every change guarded by the
+steal) + the 36,063-record decimalClass derived-field fix **[2026-07-28: the plan said
+"seven" families. It is six — the seventh audit row *is* the decimalClass fix, which this
+same sentence already counts separately, so it was being paid for twice]**. Every change guarded by the
 `SourceNoteEval` harness against `eval-baseline.txt`; after landing, re-run
 `SourceExplorerExportGenerator` and adopt the new baseline. **Sequenced before N-2** so
 the routing work tests against post-parser classifications once, not twice.
@@ -250,7 +252,9 @@ the routing work tests against post-parser classifications once, not twice.
 Five independent items; split into two PRs if needed:
 (a) namedFileSeries: catalog keyword live route + personal-papers repository table +
 static seriesName→RG map (~939 records offline through already-bundled RG NAIDs) +
-txt:→lot: cluster bridge (162 unambiguous);
+txt:→lot: cluster bridge (162 unambiguous) **[2026-07-28: the ~939 is right, but it does
+NOT include the audit's fifth arrow, SWNCC→RG 353 — RG 353 is bundled nowhere, so that
+arrow carries an unpriced one-record bundling cost of its own]**;
 (b) CFPF tiers: per-document AAD/catalog deep links for the 1,361 D-reel ids ≤1979,
 static guidance elsewhere;
 (c) RG-256: one bundled record resolves all 1,547 Paris Peace citations offline;
@@ -259,11 +263,27 @@ guidance naming the actual repository — **stops issuing a NARA query guarantee
 miss** (a small design-copy dependency: the guidance card's wording/shape is in the
 design brief as an optional item);
 (e) numerical-format gate in `CentralFilesIndex.caseNumber(fromFileNumber:)` (334
-records; covers both platform call sites).
+records; covers both platform call sites) **[2026-07-28: "both platform call sites" is not
+the whole surface — there is a SECOND copy of `caseNumber(fromFileNumber:)` in the
+generator package, `CentralFilesIndexGeneratorCore/CentralFilesIndexModels.swift:353`
+(the app's is `FRUSExplorer/SourceExplorer/CentralFilesIndex.swift:384`).
+Gate only the app copy and the app silently disagrees with the export harness that
+produced the 334-record figure, which stops being reproducible. Gate both]**.
 
 **N-3 — #375 curated lot NAIDs (owner + Claude)** *(Effort S)*
-The control-number route is closed (2 of 573). Owner hand-curates NAIDs for the top ~10
-lots (54D270/Marshall Mission = 1,063 records, M-88/CFM = 697, … — 54% of the gap) from
+The control-number route is closed (2 of 573).
+
+**Re-baseline the export first — done 2026-07-29, and the figures below are now measured
+rather than projected.** The 573-lot figure predated N-0's keyed regen. After it: the gap
+is **581 lots / 6,230 records**, and **60D627 (455 records) — one of the nine dropped
+`fileUnit` entries — now ranks #3**, so curating "the top ten" from the pre-regen file
+would have skipped it entirely. `missed-lots-ranked.tsv` has been regenerated (581 rows)
+and the run-book's priority table rebuilt from it. The top-10 share is **55.8%**
+(3,475 / 6,230) — it *rises* from 54% rather than falling, because 60D627 enters the
+ranking rather than displacing anything.
+
+Owner hand-curates NAIDs for the top ~10
+lots (54D270/Marshall Mission = 1,063 records, M-88/CFM = 697, 60D627 = 455, …) from
 `Planning/source-explorer-export/missed-lots-ranked.tsv`; Claude adds the curated
 `lot → NAID` override the generator reads (same pattern as the presidential-library
 curation) and re-baselines. Cheap, high-yield, no API dependency.

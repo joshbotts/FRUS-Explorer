@@ -28238,7 +28238,7 @@
     },
     "documentYear" : 1954,
     "id" : "frus1952-54v16/d424",
-    "offlineOutcome" : "resolvedLotBundle",
+    "offlineOutcome" : "liveRouteOnly",
     "parsed" : {
       "fields" : {
         "lotNumber" : "60 D 627",
@@ -28249,39 +28249,11 @@
     "rawNote" : "Conference files, lot 60 D 627, CF 265",
     "resolution" : {
       "collectionAuthority" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
         "id" : "lot:60D627",
-        "naId" : "609235170",
         "name" : "Conference Files, Lot 60 D 627"
       },
       "liveLookupRoute" : "catalogLotVariantsQuery",
-      "lotBundle" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
-      "volumeSources" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
-      "volumeSourcesKey" : "lot:60D627"
+      "lotBundleMiss" : "notInBundle"
     },
     "strategy" : "lotFile"
   },
@@ -28293,7 +28265,7 @@
     },
     "documentYear" : 1954,
     "id" : "frus1952-54v16/d625",
-    "offlineOutcome" : "resolvedLotBundle",
+    "offlineOutcome" : "liveRouteOnly",
     "parsed" : {
       "fields" : {
         "lotNumber" : "60 D 627",
@@ -28304,39 +28276,11 @@
     "rawNote" : "Conference files, lot 60 D 627, CF 242: Telegram",
     "resolution" : {
       "collectionAuthority" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
         "id" : "lot:60D627",
-        "naId" : "609235170",
         "name" : "Conference Files, Lot 60 D 627"
       },
       "liveLookupRoute" : "catalogLotVariantsQuery",
-      "lotBundle" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
-      "volumeSources" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
-      "volumeSourcesKey" : "lot:60D627"
+      "lotBundleMiss" : "notInBundle"
     },
     "strategy" : "lotFile"
   },
@@ -28742,7 +28686,7 @@
     },
     "documentYear" : 1955,
     "id" : "frus1955-57v05/d361",
-    "offlineOutcome" : "resolvedLotBundle",
+    "offlineOutcome" : "liveRouteOnly",
     "parsed" : {
       "fields" : {
         "lotNumber" : "60 D 627",
@@ -28753,39 +28697,11 @@
     "rawNote" : "Source: Department of State, Conference Files: Lot 60 D 627, CF 583. Personal and Confidential. Drafted by Tyler .",
     "resolution" : {
       "collectionAuthority" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
         "id" : "lot:60D627",
-        "naId" : "609235170",
         "name" : "Conference Files, Lot 60 D 627"
       },
       "liveLookupRoute" : "catalogLotVariantsQuery",
-      "lotBundle" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
-      "volumeSources" : {
-        "catalogURL" : "https://catalog.archives.gov/id/609235170",
-        "levelOfDescription" : "fileUnit",
-        "matchType" : "lot",
-        "naId" : "609235170",
-        "recordGroup" : "59",
-        "seriesHmsMlrEntryNumbers" : [
-          "UD-UP 293-B"
-        ],
-        "seriesNaId" : "648748",
-        "seriesTitle" : "Files Pertaining to Operation Mongoose",
-        "title" : "Lot File 660501, Cuba - 1963"
-      },
-      "volumeSourcesKey" : "lot:60D627"
+      "lotBundleMiss" : "notInBundle"
     },
     "strategy" : "lotFile"
   },
@@ -31906,33 +31822,35 @@
     "rawNote" : "Discussion of response to Macmillan on non-diffusion issue with the Soviets. No classification marking. 1 p. Department of State, Rusk Files: Lot 72 D 192, Telephone Conversations.",
     "resolution" : {
       "collectionAuthority" : {
-        "catalogURL" : "https://catalog.archives.gov/id/631707",
+        "catalogURL" : "https://catalog.archives.gov/id/631695",
         "id" : "lot:72D192",
-        "naId" : "631707",
+        "naId" : "631695",
         "name" : "Rusk Files: Lot 72 D 192"
       },
       "liveLookupRoute" : "catalogLotVariantsQuery",
       "lotBundle" : {
-        "catalogURL" : "https://catalog.archives.gov/id/631707",
+        "catalogURL" : "https://catalog.archives.gov/id/631695",
         "hmsMlrEntryNumbers" : [
-          "A1 5380"
+          "A1 5376",
+          "A1 5376A"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "631707",
+        "naId" : "631695",
         "recordGroup" : "59",
-        "title" : "Subject Files"
+        "title" : "Speeches and Statements"
       },
       "volumeSources" : {
-        "catalogURL" : "https://catalog.archives.gov/id/631707",
+        "catalogURL" : "https://catalog.archives.gov/id/631695",
         "hmsMlrEntryNumbers" : [
-          "A1 5380"
+          "A1 5376",
+          "A1 5376A"
         ],
         "levelOfDescription" : "series",
         "matchType" : "lot",
-        "naId" : "631707",
+        "naId" : "631695",
         "recordGroup" : "59",
-        "title" : "Subject Files"
+        "title" : "Speeches and Statements"
       },
       "volumeSourcesKey" : "lot:72D192"
     },
