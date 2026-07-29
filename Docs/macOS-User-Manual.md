@@ -305,8 +305,23 @@ Each result shows a highlighted snippet of the matching text. You can control ho
 | Boolean OR | `kissinger OR rodgers` | Either term |
 | Boolean NOT | `vietnam NOT laos` | Excludes term |
 | Prefix wildcard | `negoti*` | Matches negotiate, negotiated, negotiating, etc. |
+| Grouping | `(aqaba OR tiran) AND navig*` | Parentheses nest to any depth |
+| Proximity | `NEAR("military guarantee" Europe, 30)` | Both operands within 30 words of each other |
 
 English stemming is applied automatically, so searching for *negotiate* also matches *negotiated* and *negotiating*.
+
+**Proximity search (`NEAR`).** Two words appearing in the same document tells you very little
+— a hundred-page volume can mention almost anything twice. `NEAR` asks the sharper question:
+did these ideas appear *together*? `NEAR("military guarantee" Europe, 30)` matches only
+documents where that exact phrase falls within thirty words of *Europe*.
+
+- Operands may be words, exact phrases, or prefixes: `NEAR(militar* europ*, 20)`.
+- The distance is optional and defaults to 10: `NEAR(aid guarantee)`.
+- Booleans cannot go inside a `NEAR` — write `NEAR(a b, 20) OR NEAR(c d, 20)`, not
+  `NEAR(a OR b, 20)`. If you do write the latter, the app searches your words as an
+  ordinary grouped query rather than failing.
+- The keyword may be typed in any case, and `NEAR/20(a b)` is accepted as an alternative
+  spelling of the distance.
 
 > **Note:** Suffix wildcards (e.g., `*tion`) are not supported. Use prefix wildcards only.
 

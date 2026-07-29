@@ -334,9 +334,15 @@ struct FTS5InlineQueryParserTests {
     /// parser's rendered expression as a `MATCH`, and returns the match count. Throws if
     /// SQLite rejects the expression (a syntax error) — turning "invalid FTS5" into a test
     /// failure rather than a silently-empty result.
-    private func runMatch(_ rawQuery: String) throws -> Int {
+    private func runMatch(_ rawQuery: String, corpus: [String] = FTS5InlineQueryParserTests.corpus) throws -> Int {
         let expr = try #require(FTS5InlineQueryParser.parse(rawQuery),
                                 "parser returned nil for: \(rawQuery)")
+        return try execute(expr, corpus: corpus)
+    }
+
+    /// Runs an already-rendered expression, so a test can assert that a *specific* string
+    /// is valid FTS5 without going through the parser.
+    private func execute(_ expr: String, corpus: [String]) throws -> Int {
         var db: OpaquePointer?
         #expect(sqlite3_open(":memory:", &db) == SQLITE_OK)
         defer { sqlite3_close(db) }
@@ -344,7 +350,7 @@ struct FTS5InlineQueryParserTests {
         #expect(sqlite3_exec(db,
             "CREATE VIRTUAL TABLE d USING fts5(body, tokenize='porter unicode61');",
             nil, nil, nil) == SQLITE_OK)
-        for body in Self.corpus {
+        for body in corpus {
             var ins: OpaquePointer?
             #expect(sqlite3_prepare_v2(db, "INSERT INTO d(body) VALUES (?);", -1, &ins, nil) == SQLITE_OK)
             sqlite3_bind_text(ins, 1, body, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
@@ -396,5 +402,261 @@ struct FTS5InlineQueryParserTests {
         #expect(try runMatch("aqaba NOT passage") == 1)           // d0 only (d1 has passage)
         #expect(try runMatch("navig*") == 1)                      // d0 (navigation)
         #expect(try runMatch("((aqaba OR tiran) AND navig*) OR (suez AND canal)") == 1)
+    }
+
+    // MARK: - NEAR (Q-1)
+
+    // Distance semantics are the whole point of this operator, so the corpus below places
+    // the same two words at *known* token distances. Every test that claims a distance
+    // matters proves it by bracketing: one distance that matches and one that does not.
+    // A NEAR test that only ever asserts "> 0" would pass against a parser that dropped
+    // the distance entirely.
+
+    /// n0 places "military" and "europe" 2 tokens apart; n1 places them 8 apart; n2
+    /// contains "military guarantee" as a phrase 3 tokens before "europe"; n3 contains
+    /// both words but very far apart.
+    private static let nearCorpus: [String] = [
+        // n0 — distance 2 ("military" → "aid" "to" → "europe" is 3 apart; keep it tight)
+        "military aid europe",
+        // n1 — the same two words, eight tokens apart
+        "military assistance was debated at length before any commitment to europe",
+        // n2 — the phrase form the alliance report uses
+        "the military guarantee finally extended to europe in 1948",
+        // n3 — both words, but far beyond any distance these tests use
+        "military planning occupied the joint chiefs through a long sequence of "
+        + "internal reviews memoranda position papers and staff studies before the "
+        + "question of a formal commitment to europe was ever placed on the agenda",
+    ]
+
+    @Test("Canonical NEAR renders uppercase with quoted operands and an explicit distance")
+    func nearRendersCanonically() {
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe, 30)")
+                == "NEAR(\"military\" \"europe\", 30)")
+    }
+
+    @Test("A phrase operand survives intact inside NEAR")
+    func nearWithPhraseOperand() {
+        #expect(FTS5InlineQueryParser.parse("NEAR(\"military guarantee\" europe, 30)")
+                == "NEAR(\"military guarantee\" \"europe\", 30)")
+    }
+
+    @Test("A prefix operand renders in the parser's own quoted-prefix form")
+    func nearWithPrefixOperand() {
+        #expect(FTS5InlineQueryParser.parse("NEAR(militar* europ*, 5)")
+                == "NEAR(\"militar\"* \"europ\"*, 5)")
+    }
+
+    @Test("Lowercase near is accepted on input and emitted uppercase — FTS5 rejects near(")
+    func nearIsCaseInsensitiveOnInputOnly() {
+        // The engine is not case-insensitive here: `near(a b, 5)` is a hard FTS5 syntax
+        // error. Accepting the user's lowercase and emitting uppercase is the whole job.
+        #expect(FTS5InlineQueryParser.parse("near(military europe, 5)")
+                == "NEAR(\"military\" \"europe\", 5)")
+        #expect(FTS5InlineQueryParser.parse("Near(military europe, 5)")
+                == "NEAR(\"military\" \"europe\", 5)")
+    }
+
+    @Test("An omitted distance renders explicitly as FTS5's default of 10")
+    func nearDefaultDistanceIsExplicit() {
+        // Rendered rather than left implicit so the Query Inspector — and a method
+        // appendix copied out of it — shows the distance that actually applied.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe)")
+                == "NEAR(\"military\" \"europe\", 10)")
+    }
+
+    @Test("The NEAR/N alias is translated to the canonical comma form")
+    func nearSlashAliasIsTranslated() {
+        // `NEAR/5(a b)` is FTS3/4 syntax and is NOT valid FTS5 in any spelling, so this
+        // is a real translation. The execution test below is what proves it.
+        #expect(FTS5InlineQueryParser.parse("NEAR/5(military europe)")
+                == "NEAR(\"military\" \"europe\", 5)")
+        #expect(FTS5InlineQueryParser.parse("near/5(military europe)")
+                == "NEAR(\"military\" \"europe\", 5)")
+    }
+
+    @Test("NEAR composes with AND, OR, NOT and nests inside groups")
+    func nearComposes() {
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe, 5) AND aid")
+                == "NEAR(\"military\" \"europe\", 5) AND \"aid\"")
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe, 5) OR aid")
+                == "NEAR(\"military\" \"europe\", 5) OR \"aid\"")
+        #expect(FTS5InlineQueryParser.parse("aid NOT NEAR(military europe, 5)")
+                == "\"aid\" NOT NEAR(\"military\" \"europe\", 5)")
+        #expect(FTS5InlineQueryParser.parse("(NEAR(military europe, 5) OR aid) AND treaty")
+                == "(NEAR(\"military\" \"europe\", 5) OR \"aid\") AND \"treaty\"")
+    }
+
+    @Test("Two juxtaposed NEARs are joined by an explicit AND, not bare juxtaposition")
+    func adjacentNearsGetExplicitAnd() {
+        // The Session-159 bug class: bare juxtaposition between non-phrase operands is an
+        // FTS5 syntax error. A NEAR is one of those operands.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe, 5) NEAR(aid treaty, 5)")
+                == "NEAR(\"military\" \"europe\", 5) AND NEAR(\"aid\" \"treaty\", 5)")
+    }
+
+    @Test("The column prefix wraps the whole NEAR, never its inner operands")
+    func nearColumnScoping() {
+        // `NEAR({body_text}: a b, 5)` is an FTS5 syntax error; the prefix must lead.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe, 5)",
+                                            columnPrefix: "{summary_text}:")
+                == "{summary_text}:NEAR(\"military\" \"europe\", 5)")
+    }
+
+    @Test("A phrase inside NEAR is column-scoped, unlike a bare phrase")
+    func nearPhraseIsColumnScopedUnlikeABarePhrase() {
+        // A documented, deliberate asymmetry: a bare phrase spans all columns because
+        // FTS5Query says so, but FTS5 gives no way to exempt one operand from a NEAR's
+        // prefix. Pinned so the difference is a decision rather than a surprise.
+        #expect(FTS5InlineQueryParser.parse("\"military guarantee\"",
+                                            columnPrefix: "{summary_text}:")
+                == "\"military guarantee\"")
+        #expect(FTS5InlineQueryParser.parse("NEAR(\"military guarantee\" europe, 5)",
+                                            columnPrefix: "{summary_text}:")
+                == "{summary_text}:NEAR(\"military guarantee\" \"europe\", 5)")
+    }
+
+    // MARK: - NEAR degradation
+
+    @Test("Booleans inside NEAR degrade to an ordinary group — never invalid FTS5")
+    func nearRejectsBooleans() {
+        // FTS5 rejects `NEAR(a OR b, 5)` outright. The contract is to keep searching the
+        // user's words rather than to fail: the NEAR keyword is dropped and the
+        // parenthesised contents render as a boolean group.
+        //
+        // Note the `"europe,"` operand. The degraded path is the *ordinary* token path,
+        // and `sanitizeBareToken` has never stripped commas, so the comma rides along
+        // into the quoted term. That is harmless rather than sloppy: inside FTS5 double
+        // quotes `unicode61` treats a comma as a token separator, so `"europe,"` matches
+        // exactly what `"europe"` matches. `degradedNearsStillExecute` proves it runs.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military OR europe, 5)")
+                == "(\"military\" OR \"europe,\" AND \"5\")")
+        #expect(FTS5InlineQueryParser.parse("NEAR(military NOT europe, 5)")
+                == "(\"military\" NOT \"europe,\" AND \"5\")")
+    }
+
+    @Test("Negation and nested groups inside NEAR degrade the same way")
+    func nearRejectsNegationAndNesting() {
+        #expect(FTS5InlineQueryParser.parse("NEAR(military -europe, 5)")
+                == "(\"military\" NOT \"europe,\" AND \"5\")")
+        // A nested group keeps its own parentheses, so the comma lands on the token
+        // *after* the inner close paren and never reaches an operand here.
+        #expect(FTS5InlineQueryParser.parse("NEAR((military europe), 5)")
+                == "((\"military\" AND \"europe\") AND \"5\")")
+    }
+
+    @Test("A degraded NEAR's comma-bearing operand matches the same documents as the bare word")
+    func degradedCommaOperandMatchesTheSameDocuments() throws {
+        // The claim the comment above rests on, measured rather than asserted: if FTS5
+        // ever stopped treating the comma as a separator, the degradation contract would
+        // quietly start returning the wrong documents instead of failing loudly.
+        let withComma = try execute("\"europe,\"", corpus: Self.nearCorpus)
+        let without = try execute("\"europe\"", corpus: Self.nearCorpus)
+        #expect(withComma == without)
+        #expect(without == 4, "every document in nearCorpus mentions europe")
+    }
+
+    @Test("Every distance FTS5 refuses degrades rather than reaching SQLite")
+    func nearRejectsMalformedDistances() {
+        // Each of these is a verified FTS5 syntax error: negative, decimal, signed,
+        // non-numeric, and empty.
+        for bad in ["-1", "3.5", "+5", "x", ""] {
+            let rendered = FTS5InlineQueryParser.parse("NEAR(military europe, \(bad))")
+            #expect(rendered?.contains("NEAR(") != true,
+                    "distance '\(bad)' must not render a NEAR — got \(rendered ?? "nil")")
+        }
+    }
+
+    @Test("A NEAR keyword with no argument list is just the word 'near'")
+    func bareNearIsAWord() {
+        #expect(FTS5InlineQueryParser.parse("near") == "\"near\"")
+        #expect(FTS5InlineQueryParser.parse("near europe") == "\"near\" AND \"europe\"")
+    }
+
+    @Test("An empty NEAR carries no search content")
+    func emptyNearIsDropped() {
+        #expect(FTS5InlineQueryParser.parse("NEAR()") == nil)
+        #expect(FTS5InlineQueryParser.parse("NEAR(   )") == nil)
+    }
+
+    @Test("A comma inside a phrase is not mistaken for the distance separator")
+    func commaInsidePhraseIsNotTheDistance() {
+        // The naive "split on the last comma" reading finds the one inside the quotes,
+        // reads `war" europe` as the distance, and rejects a perfectly good query.
+        #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe)")
+                == "NEAR(\"cold, war\" \"europe\", 10)")
+        #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe, 5)")
+                == "NEAR(\"cold, war\" \"europe\", 5)")
+    }
+
+    @Test("A conflicting distance in both alias and comma position is refused")
+    func nearAliasWithCommaIsRefused() {
+        let rendered = FTS5InlineQueryParser.parse("NEAR/5(military europe, 30)")
+        #expect(rendered?.contains("NEAR(") != true,
+                "two distances must not silently pick one — got \(rendered ?? "nil")")
+    }
+
+    // MARK: - NEAR execution against real FTS5
+
+    @Test("NEAR executes and the distance actually narrows the match")
+    func nearDistanceNarrows() throws {
+        let c = Self.nearCorpus
+        // n0 has the words 2 apart, n1 eight apart, n2 has "military guarantee"…"europe",
+        // n3 has them far apart. A tight distance must exclude what a loose one includes —
+        // this bracketing is what proves the distance is not being dropped.
+        let tight = try runMatch("NEAR(military europe, 2)", corpus: c)
+        let loose = try runMatch("NEAR(military europe, 40)", corpus: c)
+        #expect(tight < loose, "distance 2 must match strictly fewer docs than 40")
+        #expect(tight >= 1, "the 2-apart document must still match at distance 2")
+        #expect(loose == 4, "at distance 40 every document in this corpus qualifies")
+    }
+
+    @Test("The alliance report's published query shape executes as valid FTS5")
+    func reportQueryShapeExecutes() throws {
+        // The exact shape from the source report — a phrase operand, a bare operand, and
+        // the comma distance form. Before Q-1 this rendered as
+        // `"near" AND ("military guarantee" AND "europe," AND "30")`, which is a
+        // completely different query that happened to be valid.
+        let count = try runMatch("NEAR(\"military guarantee\" europe, 30)", corpus: Self.nearCorpus)
+        #expect(count == 1, "only n2 carries the phrase near europe")
+    }
+
+    @Test("Every NEAR spelling and composition the parser emits is accepted by SQLite")
+    func nearVariantsAreValidFTS5() throws {
+        let c = Self.nearCorpus
+        // Each of these throws if SQLite rejects the rendered expression.
+        _ = try runMatch("NEAR(military europe)", corpus: c)
+        _ = try runMatch("NEAR/5(military europe)", corpus: c)
+        _ = try runMatch("NEAR(militar* europ*, 5)", corpus: c)
+        _ = try runMatch("NEAR(military, 5)", corpus: c)                 // degenerate, valid
+        _ = try runMatch("NEAR(military europe aid, 5)", corpus: c)      // three operands
+        _ = try runMatch("NEAR(military europe, 5) AND aid", corpus: c)
+        _ = try runMatch("aid NOT NEAR(military europe, 5)", corpus: c)
+        _ = try runMatch("(NEAR(military europe, 5) OR aid) AND treaty", corpus: c)
+        _ = try runMatch("NEAR(military europe, 5) NEAR(aid treaty, 5)", corpus: c)
+        _ = try runMatch("NEAR(\"cold, war\" europe)", corpus: c)
+    }
+
+    @Test("A column-scoped NEAR is valid FTS5 against a real multi-column table")
+    func columnScopedNearIsValid() throws {
+        // The single-column corpus table cannot exercise a column prefix, so this builds
+        // its own two-column table and runs the rendered expression directly.
+        let expr = try #require(FTS5InlineQueryParser.parse("NEAR(military europe, 30)",
+                                                            columnPrefix: "{body}:"))
+        #expect(expr == "{body}:NEAR(\"military\" \"europe\", 30)")
+        #expect(try execute(expr, corpus: Self.nearCorpus) == 4)
+    }
+
+    @Test("Every degraded NEAR is still valid FTS5, not merely non-NEAR")
+    func degradedNearsStillExecute() throws {
+        let c = Self.nearCorpus
+        // The degradation contract is worthless if the fallback is itself a syntax error.
+        _ = try runMatch("NEAR(military OR europe, 5)", corpus: c)
+        _ = try runMatch("NEAR(military NOT europe, 5)", corpus: c)
+        _ = try runMatch("NEAR(military -europe, 5)", corpus: c)
+        _ = try runMatch("NEAR((military europe), 5)", corpus: c)
+        _ = try runMatch("NEAR(military europe, -1)", corpus: c)
+        _ = try runMatch("NEAR(military europe, 3.5)", corpus: c)
+        _ = try runMatch("NEAR(military europe, x)", corpus: c)
+        _ = try runMatch("NEAR/5(military europe, 30)", corpus: c)
     }
 }
