@@ -128,6 +128,7 @@ final class FTS5Connection {
         if version >= Self.currentSchemaGeneration {
             do {
                 try exec(schema.createTableSQL(ifNotExists: true))
+                try exec(schema.createVocabTableSQL(ifNotExists: true))
             } catch {
                 throw FTS5Error.schemaCreationFailed(message: "\(error)")
             }
@@ -137,9 +138,25 @@ final class FTS5Connection {
         let existed = tableExists(schema.tableName)
         do {
             if existed {
+                // The vocab table goes first. SQLite does not cascade: dropping
+                // `frus_documents` while `frus_documents_vocab` survives leaves a table
+                // that fails every query with "no such fts5 table" (verified — the error
+                // surfaces at SELECT, not at DROP, because `fts5vocab` resolves its
+                // source by name at query time).
+                //
+                // Being precise about what this ordering does and does not buy: because
+                // the source table is recreated under the same name three lines below,
+                // that dangling state would heal itself here anyway, and `createSchema`
+                // is the only place in the app that drops this table at all. So this is
+                // defensive ordering that keeps the two objects' lifetimes coupled — not
+                // a fix for a failure the current code paths can reach. Written down so
+                // nobody later "simplifies" it believing it was load-bearing, and so
+                // nobody believes it is tested more deeply than it is.
+                try exec("DROP TABLE IF EXISTS \(schema.vocabTableName)")
                 try exec("DROP TABLE IF EXISTS \(schema.tableName)")
             }
             try exec(schema.createTableSQL(ifNotExists: true))
+            try exec(schema.createVocabTableSQL(ifNotExists: true))
         } catch {
             throw FTS5Error.schemaCreationFailed(message: "\(error)")
         }
@@ -151,6 +168,62 @@ final class FTS5Connection {
         }
         #endif
         return existed
+    }
+
+    // MARK: - Stem Probe
+
+    /// Whether the scratch tokenizing tables have been created on this connection.
+    private var stemProbeReady = false
+
+    /// Creates the scratch tables that let us ask SQLite what a word tokenizes to.
+    ///
+    /// Two `temp`-schema virtual tables: a one-column FTS5 table declared with the
+    /// *caller's* tokenizer, and an `fts5vocab` view over it. Writing a word into the
+    /// first and reading the second returns the exact term FTS5 wrote to its index.
+    ///
+    /// They live in `temp` so they never touch the on-disk database, vanish with the
+    /// connection, and cannot collide with a real table name. They are created once and
+    /// reused: emptying and refilling the probe is a two-statement round trip, whereas
+    /// creating and dropping a virtual table per lookup would not be.
+    func ensureStemProbe(tokenizer: String) throws {
+        guard !stemProbeReady else { return }
+        try exec("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS temp.fts5_stem_probe \
+            USING fts5(t, tokenize = '\(tokenizer)')
+            """)
+        try exec("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS temp.fts5_stem_probe_vocab \
+            USING fts5vocab('fts5_stem_probe', 'row')
+            """)
+        stemProbeReady = true
+    }
+
+    /// Returns the index terms SQLite's tokenizer produces for `text`.
+    ///
+    /// The probe is emptied first and after, so a lookup can never be contaminated by
+    /// the previous one — a leftover row would silently add its terms to this answer.
+    /// `ensureStemProbe` must have been called.
+    func stems(of text: String) throws -> [String] {
+        try exec("DELETE FROM temp.fts5_stem_probe")
+        defer { try? exec("DELETE FROM temp.fts5_stem_probe") }
+
+        let insert = try prepare("INSERT INTO temp.fts5_stem_probe(t) VALUES (?)")
+        sqlite3_bind_text(insert, 1, text, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        let rc = sqlite3_step(insert)
+        sqlite3_finalize(insert)
+        guard rc == SQLITE_DONE else {
+            throw FTS5Error.sqliteError(code: rc, message: String(cString: sqlite3_errmsg(db)))
+        }
+
+        let select = try prepare("SELECT term FROM temp.fts5_stem_probe_vocab ORDER BY term")
+        defer { sqlite3_finalize(select) }
+        var terms: [String] = []
+        while sqlite3_step(select) == SQLITE_ROW {
+            if let raw = sqlite3_column_text(select, 0) {
+                terms.append(String(cString: raw))
+            }
+        }
+        return terms
     }
 
     // MARK: - Schema Helpers

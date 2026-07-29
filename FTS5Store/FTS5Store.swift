@@ -82,8 +82,10 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///          schemas — index maintenance happens via content-table triggers.
 public actor FTS5Store {
 
-    private let connection: FTS5Connection
-    private let schema: FTS5Schema
+    // Module-internal rather than private so `FTS5Vocabulary.swift`'s extension can
+    // reach them. Still invisible outside the FTS5Store module.
+    let connection: FTS5Connection
+    let schema: FTS5Schema
     private let logger = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "FTS5Store")
 
     /// `true` if the FTS5 virtual table was dropped and recreated on this launch
