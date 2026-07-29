@@ -1126,6 +1126,7 @@ public actor IndexingPipeline {
             throw IndexingError.databaseOpenFailed(message: msg)
         }
         try Self.setupDatabase(h)
+        Self.registerExactWordFunction(h)
         auxDb = h
 
         // Pre-prepare the document_cache UPSERT once after schema setup so every
@@ -2144,6 +2145,48 @@ public actor IndexingPipeline {
         }
     }
 
+    /// Registers `frus_exact_word(text, word)` on `handle`, returning 1 when `text`
+    /// contains `word` as a whole token on `unicode61`'s boundaries (Q-3b).
+    ///
+    /// ## Why a SQL function rather than a Swift filter
+    /// The exact-word post-filter has to run inside `searchDocumentsCount`'s `COUNT(*)`,
+    /// not just over fetched rows. Filtering in Swift would leave the count reporting the
+    /// stemmed superset — a number strictly larger than the result list, shown to a
+    /// researcher who is about to publish it. It also keeps `LIMIT`/`OFFSET` pagination
+    /// exact, which the whole search path depends on.
+    ///
+    /// ## Cost
+    /// The function only ever runs on rows FTS5 has already matched, so its input is the
+    /// stemmed candidate set rather than the corpus. It is declared `SQLITE_DETERMINISTIC`
+    /// so SQLite may cache and reorder it, and it short-circuits on empty text.
+    ///
+    /// A failure to register is not fatal here — it surfaces as a clear "no such
+    /// function" error on the first exact query rather than a silently wrong answer,
+    /// which is the right failure direction.
+    nonisolated private static func registerExactWordFunction(_ handle: OpaquePointer) {
+        let flags = SQLITE_UTF8 | SQLITE_DETERMINISTIC
+        sqlite3_create_function_v2(
+            handle, "frus_exact_word", 2, flags, nil,
+            { context, argc, argv in
+                guard argc == 2, let argv else {
+                    sqlite3_result_int(context, 0)
+                    return
+                }
+                guard let textPtr = sqlite3_value_text(argv[0]),
+                      let wordPtr = sqlite3_value_text(argv[1]) else {
+                    // A NULL column (dateline, source_note and the user-text columns are
+                    // all nullable) simply does not contain the word.
+                    sqlite3_result_int(context, 0)
+                    return
+                }
+                let text = String(cString: textPtr)
+                let word = String(cString: wordPtr)
+                sqlite3_result_int(context, ExactWordMatcher.contains(word: word, in: text) ? 1 : 0)
+            },
+            nil, nil, nil
+        )
+    }
+
     /// Renders `filters` to a `WHERE` clause and its bind values.
     ///
     /// Tag conditions wrap the space-separated tag-ID columns in spaces and use
@@ -2251,6 +2294,27 @@ public actor IndexingPipeline {
             conditions.append("dc.is_editorial_note = 1")
         case .all:
             break
+        }
+
+        // Exact-word post-filter (Q-3b). Each `=` term must appear as a whole token in at
+        // least one column the query actually searched, so the columns are ORed and the
+        // terms ANDed.
+        //
+        // This lives in the WHERE clause rather than in Swift for one reason that matters
+        // more than tidiness: `searchDocumentsCount` runs the same clause. Filtering rows
+        // in Swift would leave the count reporting the stemmed superset — a number
+        // strictly larger than the results, presented to a researcher writing a method
+        // appendix. The plan calls that a silent lie and it is right.
+        //
+        // Terms with no in-scope column to check are skipped rather than rendered as an
+        // empty `OR ()`, which is a syntax error; `exactColumns` is empty only on the
+        // filter-only path, where there is no MATCH and therefore nothing to refine.
+        if !filters.exactTerms.isEmpty, !filters.exactColumns.isEmpty {
+            for term in filters.exactTerms {
+                let checks = filters.exactColumns.map { "frus_exact_word(dc.\($0), ?) = 1" }
+                conditions.append("(" + checks.joined(separator: " OR ") + ")")
+                binds.append(contentsOf: Array(repeating: term, count: filters.exactColumns.count))
+            }
         }
 
         let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
@@ -6586,6 +6650,22 @@ public struct SearchSQLFilters: Sendable {
     /// Editorial-note / primary-document type filter.
     public var documentTypeFilter: DocumentTypeFilter
 
+    /// Words the researcher marked exact with `=`, which must appear **literally** —
+    /// not merely as a stem-mate — in at least one searched column (Q-3b).
+    ///
+    /// The stemmed MATCH has already narrowed the candidate set to a superset of these,
+    /// so this is a post-filter, applied in SQL rather than in Swift precisely so that
+    /// `searchDocumentsCount` sees it too. A count that ignored it would be a silent lie
+    /// about a number the researcher is about to publish.
+    public var exactTerms: [String]
+
+    /// The `document_cache` columns the query actually searched, which are the columns
+    /// an exact term may satisfy.
+    ///
+    /// Scope-dependent: a search with summaries off must not be rescued by a literal
+    /// match inside a summary the query never looked at.
+    public var exactColumns: [String]
+
     public init(
         volumeIds: [String]? = nil,
         documentIds: [String]? = nil,
@@ -6596,7 +6676,9 @@ public struct SearchSQLFilters: Sendable {
         personRollupId: Int? = nil,
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
-        documentTypeFilter: DocumentTypeFilter = .all
+        documentTypeFilter: DocumentTypeFilter = .all,
+        exactTerms: [String] = [],
+        exactColumns: [String] = []
     ) {
         self.volumeIds = volumeIds
         self.documentIds = documentIds
@@ -6608,6 +6690,8 @@ public struct SearchSQLFilters: Sendable {
         self.subjectTagIds = subjectTagIds
         self.userTagIds = userTagIds
         self.documentTypeFilter = documentTypeFilter
+        self.exactTerms = exactTerms
+        self.exactColumns = exactColumns
     }
 }
 
