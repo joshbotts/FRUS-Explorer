@@ -266,8 +266,37 @@ public actor SearchService {
             personRollupId: parameters.personRollupId,
             subjectTagIds: parameters.subjectTagIds,
             userTagIds: parameters.userTagIds,
-            documentTypeFilter: parameters.documentTypeFilter
+            documentTypeFilter: parameters.documentTypeFilter,
+            exactTerms: Self.exactTerms(from: parameters),
+            exactColumns: Self.exactColumns(for: parameters)
         )
+    }
+
+    /// The words this query marked exact with `=`.
+    ///
+    /// Parsed from the same raw text and by the same parser that builds the MATCH
+    /// expression, so the two can never disagree about which terms were marked.
+    static func exactTerms(from parameters: SearchParameters) -> [String] {
+        guard let keywords = parameters.keywords else { return [] }
+        return FTS5InlineQueryParser.parseDetailed(keywords).exactTerms
+    }
+
+    /// The `document_cache` columns an exact term may be satisfied by — the columns this
+    /// query actually searched.
+    ///
+    /// Scope-dependent on purpose. With summaries off, a literal match inside a summary
+    /// must not rescue a document: the query never looked there, so counting it would
+    /// make the exact filter *broader* than the search it refines. The corpus columns
+    /// come as a set of four because `renderExpression` never scopes the corpus
+    /// expression to a subset of them.
+    static func exactColumns(for parameters: SearchParameters) -> [String] {
+        var columns: [String] = []
+        if parameters.includeDocumentText {
+            columns += ["header", "dateline", "source_note", "body_text"]
+        }
+        if parameters.includeSummaries { columns.append("summary_text") }
+        if parameters.includeNotes { columns.append("note_text") }
+        return columns
     }
 
     /// Splits a space-separated tag-ID string into an array. Empty/nil → `[]`.

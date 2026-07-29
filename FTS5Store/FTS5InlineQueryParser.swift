@@ -126,7 +126,26 @@ public enum FTS5InlineQueryParser {
     ///   of `FTS5Query`'s parts, or `nil` if `raw` contains no positive search content
     ///   (empty string, only excluded/negated terms, or terms that sanitise to nothing).
     public static func parse(_ raw: String, columnPrefix: String = "") -> String? {
-        renderTokens(tokenize(raw), columnPrefix: columnPrefix)
+        parseDetailed(raw, columnPrefix: columnPrefix).expression
+    }
+
+    /// Parses `raw` and reports both the MATCH expression and the terms the researcher
+    /// marked exact with `=`.
+    ///
+    /// The two travel together because they are two halves of one query. FTS5 cannot
+    /// express "this literal word" over a stemmed index, so an exact term is rendered
+    /// into the expression as an ordinary stemmed operand — which narrows the candidate
+    /// set to a strict superset — and is *also* reported here so the SQL layer can apply
+    /// a word-boundary filter to what comes back. Dropping either half silently changes
+    /// the answer: without the expression there is nothing to filter, and without the
+    /// filter the `=` did nothing.
+    public static func parseDetailed(_ raw: String, columnPrefix: String = "") -> ParsedQuery {
+        var exact: [String] = []
+        let expression = renderTokens(tokenize(raw), columnPrefix: columnPrefix, exactTerms: &exact)
+        // Order-preserving de-duplication: the same word marked exact twice is one filter.
+        var seen = Set<String>()
+        let unique = exact.filter { seen.insert($0).inserted }
+        return ParsedQuery(expression: expression, exactTerms: expression == nil ? [] : unique)
     }
 
     // MARK: - Recursive Group-Aware Rendering
@@ -152,7 +171,9 @@ public enum FTS5InlineQueryParser {
     /// punctuation-only token. A group whose contents render to `nil` (e.g. `()`,
     /// `(   )`, or `(-korea)` — only excluded terms, no positive content) is
     /// likewise dropped in its entirety rather than emitted as an empty `()`.
-    private static func renderTokens(_ tokens: [String], columnPrefix: String) -> String? {
+    private static func renderTokens(
+        _ tokens: [String], columnPrefix: String, exactTerms: inout [String]
+    ) -> String? {
         var resolved: [ResolvedToken] = []
         var index = 0
         while index < tokens.count {
@@ -183,7 +204,8 @@ public enum FTS5InlineQueryParser {
             }
 
             if rawToken == "(", let group = matchingGroup(in: tokens, openAt: index) {
-                if let rendered = renderTokens(group.inner, columnPrefix: columnPrefix) {
+                if let rendered = renderTokens(group.inner, columnPrefix: columnPrefix,
+                                               exactTerms: &exactTerms) {
                     resolved.append(.operand(rendered: "(\(rendered))", isPositive: true))
                 }
                 index = group.closeIndex + 1
@@ -197,6 +219,15 @@ public enum FTS5InlineQueryParser {
                 case .operand(let operand):
                     if let rendered = render(operand, columnPrefix: columnPrefix) {
                         resolved.append(.operand(rendered: rendered, isPositive: !operand.negated))
+                        // Only *positive* exact terms become filters. `-="word"` would
+                        // otherwise need an inverted post-filter, and getting that subtly
+                        // wrong silently over-excludes; the sigil is ignored on a negated
+                        // operand, which leaves ordinary negation — today's behaviour.
+                        if operand.isExact, !operand.negated,
+                           case .word(let raw) = operand.kind,
+                           let term = exactTerm(from: raw) {
+                            exactTerms.append(term)
+                        }
                     }
                 }
             }
@@ -513,6 +544,9 @@ public enum FTS5InlineQueryParser {
 
     private struct Operand {
         var negated: Bool
+        /// Whether the researcher prefixed the term with `=`, asking for the literal word
+        /// rather than everything sharing its stem.
+        var isExact: Bool = false
         var kind: OperandKind
     }
 
@@ -545,6 +579,22 @@ public enum FTS5InlineQueryParser {
             negated = true
             text = String(text.dropFirst())
         }
+        // The exact-word sigil, consumed after negation so `-="word"` parses (and then
+        // has its sigil ignored — see the operand site). Accepted both bare and quoted:
+        // `=containment` and `="containment"`.
+        var isExact = false
+        if text.hasPrefix("="), text.count > 1 {
+            isExact = true
+            text = String(text.dropFirst())
+            // `="word"` — unwrap the quotes so it classifies as a word, not a phrase.
+            // A phrase is already positional; `=` adds nothing FTS5 has not done.
+            if text.hasPrefix("\""), text.hasSuffix("\""), text.count > 1 {
+                text = String(text.dropFirst().dropLast())
+            } else if text.hasPrefix("\"") {
+                text = String(text.dropFirst())
+            }
+            guard !text.isEmpty else { return nil }
+        }
         guard !text.isEmpty else { return nil }
 
         if text.hasPrefix("\"") {
@@ -552,16 +602,33 @@ public enum FTS5InlineQueryParser {
             if inner.hasSuffix("\"") { inner = String(inner.dropLast()) }
             let trimmed = inner.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return nil }
+            // A phrase is already an exact word sequence as far as FTS5 is concerned,
+            // modulo stemming of each word; `=` on it is not supported and is dropped.
             return .operand(Operand(negated: negated, kind: .phrase(trimmed)))
         }
 
         if text.hasSuffix("*"), text.count > 1 {
             let prefix = String(text.dropLast())
             guard !prefix.isEmpty else { return nil }
+            // `=negoti*` is a contradiction — a prefix search asks for many words. The
+            // sigil is dropped and the wildcard wins.
             return .operand(Operand(negated: negated, kind: .wildcard(prefix: prefix)))
         }
 
-        return .operand(Operand(negated: negated, kind: .word(text)))
+        return .operand(Operand(negated: negated, isExact: isExact, kind: .word(text)))
+    }
+
+    /// The literal word an exact operand filters on, or `nil` when the sigil cannot
+    /// apply.
+    ///
+    /// Returns `nil` for anything that is not exactly one index token — `="co-operate"`,
+    /// `="U.S.S.R."`. Those have no single-word answer, and filtering on one fragment of
+    /// what the researcher typed would be worse than ignoring the sigil. The query still
+    /// runs stemmed, which is what it would have done without the `=`.
+    private static func exactTerm(from raw: String) -> String? {
+        let sanitized = sanitizeBareToken(raw)
+        guard !sanitized.isEmpty, ExactWordMatcher.isSingleToken(sanitized) else { return nil }
+        return sanitized
     }
 
     // MARK: - Operator Resolution
@@ -710,5 +777,29 @@ public enum FTS5InlineQueryParser {
             .map { String($0).lowercased() }
         let joined = words.joined(separator: " ")
         return joined.isEmpty ? nil : joined
+    }
+}
+
+// MARK: - ParsedQuery
+
+/// A parsed search box: the FTS5 expression, plus the terms that need a literal-word
+/// post-filter applied to whatever that expression returns.
+///
+/// Version history:
+///   1.0 — Q-3b: initial implementation
+public struct ParsedQuery: Sendable, Equatable {
+
+    /// The MATCH expression, or `nil` when the input carries no positive search content.
+    public let expression: String?
+
+    /// Words the researcher marked with `=`, in the order typed, de-duplicated.
+    ///
+    /// Empty whenever `expression` is `nil` — there is nothing to post-filter.
+    public let exactTerms: [String]
+
+    /// Creates a parsed query.
+    public init(expression: String?, exactTerms: [String]) {
+        self.expression = expression
+        self.exactTerms = exactTerms
     }
 }

@@ -660,3 +660,112 @@ struct FTS5InlineQueryParserTests {
         _ = try runMatch("NEAR/5(military europe, 30)", corpus: c)
     }
 }
+
+// MARK: - Exact-word sigil (Q-3b)
+
+/// The `=` sigil: parsing, and what it reports to the SQL layer.
+///
+/// The sigil is per-term rather than a global mode because real queries mix — you want
+/// `containment` exact but `polic*` stemmed in the same expression, and a global toggle
+/// forces an all-or-nothing choice the research does not have.
+///
+/// Version history:
+///   1.0 — Q-3b: initial implementation
+@Suite("Exact-word sigil")
+struct FTS5ExactSigilTests {
+
+    @Test("An exact term still renders as an ordinary stemmed operand")
+    func exactStillRendersStemmed() {
+        // FTS5 cannot express "this literal word" over a stemmed index. The expression
+        // narrows to the superset; the reported term narrows the rest of the way in SQL.
+        // If this rendered anything else, the post-filter would have nothing to filter.
+        let parsed = FTS5InlineQueryParser.parseDetailed("=\"containment\"")
+        #expect(parsed.expression == "\"containment\"")
+        #expect(parsed.exactTerms == ["containment"])
+    }
+
+    @Test("The bare and quoted spellings agree")
+    func bareAndQuotedAgree() {
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment")
+                == FTS5InlineQueryParser.parseDetailed("=\"containment\""))
+    }
+
+    @Test("Exact and stemmed terms mix in one query")
+    func exactMixesWithStemmed() {
+        let parsed = FTS5InlineQueryParser.parseDetailed("=containment polic* europe")
+        #expect(parsed.expression == "\"containment\" AND \"polic\"* AND \"europe\"")
+        #expect(parsed.exactTerms == ["containment"], "only the marked term is exact")
+    }
+
+    @Test("Several exact terms are all reported, in order, de-duplicated")
+    func severalExactTerms() {
+        let parsed = FTS5InlineQueryParser.parseDetailed("=containment OR =rollback")
+        #expect(parsed.exactTerms == ["containment", "rollback"])
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment =containment").exactTerms
+                == ["containment"])
+    }
+
+    @Test("An exact term inside a group is still reported")
+    func exactInsideAGroup() {
+        let parsed = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) AND europe")
+        #expect(parsed.exactTerms == ["containment"])
+        #expect(parsed.expression?.contains("\"containment\"") == true)
+    }
+
+    @Test("A query with no sigil reports no exact terms")
+    func noSigilNoTerms() {
+        #expect(FTS5InlineQueryParser.parseDetailed("containment policy").exactTerms.isEmpty)
+    }
+
+    @Test("No expression means no exact terms — there is nothing to post-filter")
+    func nilExpressionCarriesNoTerms() {
+        // Otherwise the SQL layer would receive a filter with no MATCH to refine, and
+        // would narrow the *unfiltered* corpus instead.
+        let parsed = FTS5InlineQueryParser.parseDetailed("-=containment")
+        #expect(parsed.expression == nil)
+        #expect(parsed.exactTerms.isEmpty)
+    }
+
+    // MARK: - Where the sigil does not apply
+
+    @Test("The sigil is ignored on a negated term rather than inverting the filter")
+    func negatedExactIsIgnored() {
+        // `-="word"` would need an inverted post-filter; getting that subtly wrong
+        // silently over-excludes. Dropping the sigil leaves ordinary negation.
+        let parsed = FTS5InlineQueryParser.parseDetailed("europe -=containment")
+        #expect(parsed.expression == "\"europe\" NOT \"containment\"")
+        #expect(parsed.exactTerms.isEmpty)
+    }
+
+    @Test("The sigil is ignored on a prefix wildcard, which asks for many words")
+    func exactPrefixIsAContradiction() {
+        let parsed = FTS5InlineQueryParser.parseDetailed("=negoti*")
+        #expect(parsed.expression == "\"negoti\"*")
+        #expect(parsed.exactTerms.isEmpty)
+    }
+
+    @Test("A multi-token term drops the sigil rather than filtering on a fragment")
+    func multiTokenTermDropsTheSigil() {
+        for raw in ["=\"co-operate\"", "=\"U.S.S.R.\"", "=co-operate"] {
+            let parsed = FTS5InlineQueryParser.parseDetailed(raw)
+            #expect(parsed.exactTerms.isEmpty, "\(raw) should not produce an exact filter")
+            #expect(parsed.expression != nil, "\(raw) must still run as an ordinary search")
+        }
+    }
+
+    @Test("A bare = is punctuation, not an operand")
+    func bareSigilIsDropped() {
+        #expect(FTS5InlineQueryParser.parseDetailed("= containment").exactTerms.isEmpty)
+        #expect(FTS5InlineQueryParser.parse("= containment") == "\"containment\"")
+    }
+
+    @Test("parse and parseDetailed never disagree about the expression")
+    func parseAgreesWithParseDetailed() {
+        for raw in ["=containment", "containment", "=containment polic*", "-=containment",
+                    "(=a OR b) AND c", "NEAR(=a b, 5)", "", "=\"\""] {
+            #expect(FTS5InlineQueryParser.parse(raw)
+                    == FTS5InlineQueryParser.parseDetailed(raw).expression,
+                    "disagreement on: \(raw)")
+        }
+    }
+}

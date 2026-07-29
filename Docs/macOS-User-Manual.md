@@ -307,6 +307,7 @@ Each result shows a highlighted snippet of the matching text. You can control ho
 | Prefix wildcard | `negoti*` | Matches negotiate, negotiated, negotiating, etc. |
 | Grouping | `(aqaba OR tiran) AND navig*` | Parentheses nest to any depth |
 | Proximity | `NEAR("military guarantee" Europe, 30)` | Both operands within 30 words of each other |
+| Exact word | `=containment` | The literal word only — not *contain*, *containing*, *container* |
 
 English stemming is applied automatically, so searching for *negotiate* also matches *negotiated* and *negotiating*.
 
@@ -322,6 +323,29 @@ documents where that exact phrase falls within thirty words of *Europe*.
   ordinary grouped query rather than failing.
 - The keyword may be typed in any case, and `NEAR/20(a b)` is accepted as an alternative
   spelling of the distance.
+
+**Exact-word search (`=`).** Search is stemmed, which is usually what you want: *negotiate*
+also finds *negotiated*. But it means a search for **containment** is really a search for
+*contain*, and quietly returns documents about containing a threat, shipping containers, and
+anything else sharing that root. On a corpus this size that can turn a handful of genuine
+hits into a five-figure count.
+
+Prefix a term with `=` to search for the literal word instead:
+
+| You type | You get |
+|---|---|
+| `containment` | containment, contain, contains, containing, container, contained |
+| `=containment` | containment |
+
+- It is **per term**, so real queries can mix: `=containment polic*` searches the literal word
+  *containment* alongside the stemmed prefix *polic\**.
+- The result **count** narrows too, not just the list — so a figure you cite is the figure you
+  actually matched.
+- It applies to whatever your scope covers. With summaries switched off, a literal match
+  inside a summary will not rescue a document, because the search never looked there.
+- `=` is ignored where it cannot mean anything: on an excluded term (`-=word`), on a prefix
+  (`=negoti*`), and on anything that is not a single word (`="co-operate"`). The query still
+  runs, stemmed.
 
 > **Note:** Suffix wildcards (e.g., `*tion`) are not supported. Use prefix wildcards only.
 
