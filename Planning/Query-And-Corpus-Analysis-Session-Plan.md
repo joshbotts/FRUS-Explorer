@@ -306,14 +306,36 @@ appears in 31 of them" is the move from a list to a finding.
 **Needs xcodegen:** yes.
 
 **Effort note.** L because of the SQL aggregation work and dual-platform placement, not
-algorithmic difficulty. Consider splitting into R-1a (year + volume + type, from tables the
-search query already joins) and R-1b (person + provenance, which need the rollup and the
-sources table) if one PR gets unwieldy.
+algorithmic difficulty. ~~Consider splitting into R-1a (year + volume + type…) and R-1b
+(person + provenance…).~~
+
+**[2026-07-29] Split differently, and here is why.** The suggested facet-group split would
+build the panel UI twice while barely reducing risk — all five aggregates are the same
+shape (`GROUP BY` over a materialised match set), and the Q-M2 measurements showed the
+per-facet cost spread is small once the covering index exists. The bulk of the effort is
+the dual-platform placement, exactly as the effort note says. So:
+
+- **R-1a — facet aggregation** (headless): the TEMP match set, all five aggregates, the
+  bounds, coverage caveats. Acceptance is `EXPLAIN QUERY PLAN` per the Q-M2 rule.
+- **R-1b — macOS inspector column.**
+- **R-1c — iOS sheet.**
+
+This is the shape that worked for Q-2 (model then surfaces) and Q-3 (data layer then
+feature): the correctness lands in a PR where it can be measured and mutation-tested, and
+the UI is then built once against a proven aggregate.
 
 **Decision point (R-1-1).** Facet computation timing: eagerly with every search (adds
 latency to every query) vs. lazily when the panel opens (a second pass over the same
-match). Lean lazy, with the year facet eager — it is cheap and it feeds the timeline view
-that already exists.
+match). ~~Lean lazy, with the year facet eager — it is cheap and it feeds the timeline view
+that already exists.~~
+
+**[2026-07-29] Answered: lazy for ALL sections, including years — the eager-years rationale
+rests on a false premise.** The existing timeline is *not* fed by a facet: it is built
+client-side from `vm.displayedResults` (`SearchView.swift:758-762`), so an eager year
+aggregate would be a second, redundant source rather than a shared one. And years is not
+free — measured at **0.44 s** over 195,613 matches on the real store, which is real latency
+to add to every search for a panel most searches never open. Lazy per section, computed on
+first open, cached per match set.
 
 **Decision point (R-1-2).** Whether facet counts respect the checklist-mode hidden set
 (`vm.displayedResults` vs `vm.results`, `SearchViewModel.swift:262`). Lean: facets describe
@@ -360,7 +382,61 @@ crossover reproduces the report's table (43: 42/29/26/8; 51: 10/28/32/18).
 
 ---
 
-## R-3 — KWIC concordance *(Effort M)*
+## R-3a — Two-phase fetch *(Effort M, infrastructure)*
+
+**[2026-07-29] Added here deliberately, not as a standalone slot.** The Q-M2 prerequisite
+work measured this as the largest remaining latency win in the app, and it has a genuine
+dependency edge with R-3 — which is why it belongs immediately before it rather than
+anywhere else in the plan.
+
+**Goal.** Stop paying for `document_cache` before the sort. `searchDocuments` joins the fat
+content table *then* applies `ORDER BY m.score` (`IndexingPipeline.swift:2035,2039`), so
+every matched row is materialised before the sorter runs — 195,613 rows at ~5 KB of
+`body_text` each for a common term. Rank narrow first, hydrate only the rows that survive.
+
+**Measured on the real 6.3 GB store**, `"government"`, byte-identical output (42,569,775
+bytes of body text either way):
+
+| | today | two-phase |
+|---|---|---|
+| 7,500-row fetch | 10.46–10.62 s | **0.606 s** |
+| first page (20 rows) | 8.61–8.74 s | **0.006 s** |
+| page at `OFFSET 7480` | — | 0.018 s |
+
+**Why it sits before R-3 rather than after.** R-3 needs per-occurrence data from
+`document_cache.body_text`, and `SearchResult` carries no body field today — body text is
+fetched on every row and then discarded (`SearchService.swift:115-129`). Two-phase fetch
+changes precisely *when and for which rows* body text is hydrated. Building R-3's
+occurrence scanner against the current shape and then re-shaping the fetch underneath it
+would mean writing the scanner twice.
+
+**Deliverables.**
+- `searchDocuments` split: rank the match into `(docrowid, score)` — filters applied, still
+  exact — then join `document_cache` only for the requested window.
+- Output parity is the acceptance criterion: same rows, same order, same body text, asserted
+  against the current implementation rather than eyeballed.
+- Care needed where a filter condition references `dc`: those must stay in the ranking phase
+  or the window is drawn from the wrong set. Enumerate every `dc.`-referencing condition in
+  `filterConditions` and prove each one lands in phase one.
+- This also makes SQL `LIMIT`/`OFFSET` worth using for real, which today no caller does —
+  but adopting it is **not** in scope here (it needs the date sort and checklist exclusion
+  moved into SQL; see the Q-M2 note in the consolidated plan).
+
+**Data & migration:** none. Query shape only.
+**Prereq:** none. **Needs xcodegen:** no.
+
+**Decision point (R-3a-1).** Whether to adopt SQL paging in the same session or leave the
+in-memory slice alone. Lean: leave it. The latency win is in the fetch shape, not the
+paging, and moving the sort into SQL is a separate behavioural change with its own risks.
+
+**Verify.** Parity test over a spread of query shapes (common term, rare term, phrase,
+NEAR, exact, filtered, person-filtered, front-matter-excluded) asserting identical
+`IndexedSearchRow` sequences before and after. Then the same eight shapes timed on the
+owner's real index.
+
+---
+
+## R-3b — KWIC concordance *(Effort M)*
 
 **Goal.** Read 400 hits in ten minutes instead of two hours. One scrollable column of every
 occurrence, aligned on the search term, sortable by preceding or following word.

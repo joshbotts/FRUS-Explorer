@@ -193,6 +193,16 @@ public actor SearchService {
     /// - Returns: A tuple of optional MATCH expressions; an element is `nil` when
     ///   its scope is disabled or the input renders to no positive content.
     /// - Throws: `FTS5Error.emptyQuery` when both expressions are `nil`.
+    /// The SQL filters `parameters` renders to — so a facet computation runs against the
+    /// identical filter set the search itself applies.
+    ///
+    /// Exposed for R-1's facet aggregation and its tests: facets describe the set the
+    /// researcher is looking at, which is only true if both sides derive their filters from
+    /// one place.
+    func filtersForTesting(_ parameters: SearchParameters) -> SearchSQLFilters {
+        makeFilters(from: parameters)
+    }
+
     /// The index term SQLite's tokenizer produces for `word`, or `nil` when the word is
     /// not exactly one token.
     ///
