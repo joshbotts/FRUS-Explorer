@@ -327,8 +327,48 @@ surface, on both platforms. Price this before scheduling.
   **unbounded and unscoped by project** under the active project's header (`:31-34`) —
   so the shipped "method appendix" contains every project's queries. Folded into M-2.
 
-  **Treat result-set pagination as an explicit Q-M2 prerequisite rather than
-   discovering it in R-1.**
+  ~~**Treat result-set pagination as an explicit Q-M2 prerequisite rather than
+   discovering it in R-1.**~~
+
+  **[2026-07-29] SETTLED — and the prerequisite as written was the wrong one.** Measured
+  read-only against the real 6.3 GB store (316,839 documents / 552 volumes):
+
+  - **Pagination is not the problem.** SQL `LIMIT`/`OFFSET` already exists in
+    `searchDocuments`, is exact, and **no caller uses it** — both platforms fetch the cap and
+    slice in memory. Paging the fetch removes only ~18% of the cost, and building it would
+    mean porting the date sort and checklist exclusion into SQL for no R-1 benefit.
+  - **The 6–12 s figure is real but was misattributed.** The cost was the *count* joining
+    `document_cache` (1.8 GB) and `document_dates` when the `WHERE` clause is empty — the
+    **default** case. `"government"` (195,519 matches): **2.55 s → 0.011 s** cold for the
+    same answer with the joins dropped. Shipped.
+  - **All five R-1 facet sections are SQL aggregates** over the match set. None needs result
+    rows, so the fetch cap is irrelevant to them. The whole panel is ~2.6 s at the worst
+    realistic query once the count is cheap and one covering index exists
+    (`idx_document_cache_facet`, 8.5 MB — shipped; `document_cache` previously had only its
+    PK autoindex, so the document-type aggregate scanned the whole table, and *every* facet
+    scanned it with front matter excluded).
+  - **The real live defect was the count's failure path**, not its size. `totalMatchCount`
+    fell back to `results.count`, which silently made a truncated set equal its own cap
+    **and switched off both truncation warnings** — and that number reached the research
+    trail. Now optional; the surfaces say "total unavailable" and the warning is driven by
+    whether the fetch hit its cap. Shipped.
+
+  **R-1's implementation rule** (not a build item): materialise the match set once per search
+  into a TEMP table with an `INTEGER PRIMARY KEY` and drive every facet from it. Acceptance
+  criterion is `EXPLAIN QUERY PLAN` showing a covering index — `SCAN dc` in a plan is the
+  bug. A stopwatch on a small fixture cannot tell the two apart.
+
+  **Deliberately NOT built:** pagination, a projection/shadow table, cap changes, keyset
+  cursors, and the two-phase fetch — that last is the largest remaining latency win (mset
+  then hydrate takes the 7,500-row fetch from ~10.5 s to ~0.6 s, byte-identical output) but
+  it reshapes `searchDocuments` and R-1 does not need it. Its own session.
+
+  **Bounds R-1 must still surface:** the *result list* stays capped (1,000 iOS / 7,500 macOS)
+  even though the count and facets are not — copy is "Describing all 195,519 matches — the
+  list shows the first 7,500", never "all 7,500". Per-section display bounds must be
+  computed, never templated: real in-match cardinalities are **552** volumes and **14,615**
+  person rollups against the mock's "top 4 of 47" / "top 4 of 214", and its "Top 3 hold 60%"
+  is **1.7%** for a common term.
 
 **[2026-07-28] A hazard the plan did not name — Q-2's stem line.** The inspector is
 specified to show the stem a term resolves to, but the app has *two* stemmers: the Swift
