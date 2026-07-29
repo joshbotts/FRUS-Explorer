@@ -2170,6 +2170,357 @@ public actor IndexingPipeline {
         }
     }
 
+    // MARK: - Facet Aggregation (R-1a)
+
+    /// Breaks the current match down by year, volume, person, document type and archival
+    /// provenance — entirely in SQL, over the whole match (R-1).
+    ///
+    /// ## The one rule that makes this affordable
+    /// The match set is materialised **once** into a TEMP table with an
+    /// `INTEGER PRIMARY KEY`, and every aggregate is driven `FROM` that table outward, with
+    /// `CROSS JOIN` pinning the order.
+    ///
+    /// Measured against the real 6.3 GB store, and stated precisely because the temptation
+    /// to overclaim here is strong:
+    ///
+    /// - Driving from the match set is what matters. `SCAN ms / SEARCH dc USING INTEGER
+    ///   PRIMARY KEY` over a 350-match query costs **0.001 s**. Written the other way —
+    ///   `FROM document_cache dc WHERE dc.rowid IN (…)` — the planner picks `SCAN dc`, reads
+    ///   the whole 1.8 GB table, and the same 350 matches cost **11.07 s**.
+    /// - `CROSS JOIN` is **not** what rescues that. Given `FROM temp.facet_mset ms JOIN
+    ///   document_cache dc`, SQLite already picks the right order on the real store at 350
+    ///   matches — verified. What `CROSS JOIN` buys is that the choice stops depending on
+    ///   table statistics: on a twelve-document test fixture the planner picks the *reverse*
+    ///   order (`SCAN dc / SEARCH ms`), correctly, because at that size scanning dc's
+    ///   covering index is cheaper. A facet panel's cost should not vary with how the
+    ///   planner currently feels about row counts, so the order is pinned.
+    ///
+    /// `EXPLAIN QUERY PLAN` is the acceptance criterion rather than a stopwatch: on a small
+    /// fixture both shapes are instant, and only the plan says which was chosen. Note that
+    /// the plan names *aliases* — `SCAN dc`, not `SCAN document_cache` — which is what made
+    /// an earlier version of the test vacuous.
+    ///
+    /// ## Whole match, not the page
+    /// Decision R-1-2. The result list is capped (1,000 iOS / 7,500 macOS); these counts are
+    /// not. Callers must say so rather than let the two numbers be read as one.
+    ///
+    /// - Parameters:
+    ///   - request: which sections to compute, and the per-section row limit. Sections are
+    ///     computed lazily per decision R-1-1, so a caller asks for what it is about to show.
+    /// - Returns: the breakdown, with every truncation and coverage gap stated.
+    func resultSetFacets(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        request: FacetRequest
+    ) throws -> ResultSetFacets {
+        let matchCount = try materializeMatchSet(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+        defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
+        guard matchCount > 0 else { return .empty() }
+
+        var bounds: [FacetSection: FacetBound] = [:]
+        let limit = max(1, request.limitPerSection)
+
+        func section(
+            _ kind: FacetSection, sql: String, distinctSQL: String,
+            label: (String) -> String = { $0 }
+        ) throws -> [FacetBucket] {
+            guard request.sections.contains(kind) else { return [] }
+            let buckets = try facetBuckets(sql: sql, limit: limit, label: label)
+            let distinct = try scalar(distinctSQL)
+            bounds[kind] = FacetBound(shown: buckets.count, total: distinct)
+            return buckets
+        }
+
+        // Years. `substr(date_iso, 1, 4)` rather than a date function so the index on
+        // `date_iso` stays usable and undated rows stay excludable.
+        let years = try section(
+            .years,
+            sql: """
+                SELECT substr(dd.date_iso, 1, 4) AS k, COUNT(*) AS c
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                WHERE dd.date_iso IS NOT NULL AND dd.date_iso <> ''
+                GROUP BY k ORDER BY k DESC
+                """,
+            distinctSQL: """
+                SELECT COUNT(DISTINCT substr(dd.date_iso, 1, 4))
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                WHERE dd.date_iso IS NOT NULL AND dd.date_iso <> ''
+                """)
+
+        // Undated documents appear in no year bucket, so a histogram whose bars sum to less
+        // than the match would otherwise be unexplained.
+        let undated = request.sections.contains(.years)
+            ? try scalar("""
+                SELECT COUNT(*)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                WHERE dd.date_iso IS NULL OR dd.date_iso = ''
+                """)
+            : 0
+
+        let volumes = try section(
+            .volumes,
+            sql: """
+                SELECT dc.volume_id AS k, COUNT(*) AS c
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                GROUP BY k ORDER BY c DESC, k ASC
+                """,
+            distinctSQL: """
+                SELECT COUNT(DISTINCT dc.volume_id)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                """)
+
+        // People resolve through the cross-corpus rollup so one person is not split across
+        // name variants. `COUNT(DISTINCT …)` because a document may mention several refs
+        // that roll up to the same person.
+        let people = try section(
+            .people,
+            sql: """
+                SELECT CAST(prm.rollup_id AS TEXT) AS k,
+                       COUNT(DISTINCT dc.rowid) AS c,
+                       COALESCE(pr.canonical_name, '') AS lbl
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN person_mentions pm
+                    ON pm.volume_id = dc.volume_id AND pm.document_id = dc.document_id
+                CROSS JOIN person_rollup_member prm
+                    ON prm.volume_id = pm.volume_id AND prm.ref = pm.person_ref
+                LEFT JOIN person_rollup pr ON pr.rollup_id = prm.rollup_id
+                GROUP BY k ORDER BY c DESC, lbl ASC
+                """,
+            distinctSQL: """
+                SELECT COUNT(DISTINCT prm.rollup_id)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN person_mentions pm
+                    ON pm.volume_id = dc.volume_id AND pm.document_id = dc.document_id
+                CROSS JOIN person_rollup_member prm
+                    ON prm.volume_id = pm.volume_id AND prm.ref = pm.person_ref
+                """)
+
+        let documentTypes = try section(
+            .documentType,
+            sql: """
+                SELECT CAST(dc.is_editorial_note AS TEXT) AS k, COUNT(*) AS c
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                GROUP BY k ORDER BY c DESC
+                """,
+            distinctSQL: """
+                SELECT COUNT(DISTINCT dc.is_editorial_note)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                """)
+
+        let provenance = try section(
+            .provenance,
+            sql: """
+                SELECT ds.citation_era AS k, COUNT(DISTINCT dc.rowid) AS c
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_sources ds
+                    ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
+                GROUP BY k ORDER BY c DESC, k ASC
+                """,
+            distinctSQL: """
+                SELECT COUNT(DISTINCT ds.citation_era)
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                CROSS JOIN document_sources ds
+                    ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
+                """)
+
+        // Two coverage denominators, not one — see `ProvenanceCoverage`.
+        var coverage = ProvenanceCoverage(parsed: 0, withRecordGroup: 0, matchCount: matchCount)
+        if request.sections.contains(.provenance) {
+            coverage = ProvenanceCoverage(
+                parsed: try scalar("""
+                    SELECT COUNT(DISTINCT dc.rowid)
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    CROSS JOIN document_sources ds
+                        ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
+                    """),
+                withRecordGroup: try scalar("""
+                    SELECT COUNT(DISTINCT dc.rowid)
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    CROSS JOIN document_sources ds
+                        ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
+                    WHERE ds.record_group IS NOT NULL AND ds.record_group <> ''
+                    """),
+                matchCount: matchCount)
+        }
+
+        return ResultSetFacets(
+            matchCount: matchCount, years: years, undatedCount: undated,
+            volumes: volumes, people: people, documentTypes: documentTypes,
+            provenance: provenance, provenanceCoverage: coverage, bounds: bounds)
+    }
+
+    /// Materialises the current match into `temp.facet_mset(docrowid INTEGER PRIMARY KEY)`
+    /// and returns its size.
+    ///
+    /// `INTEGER PRIMARY KEY` makes `docrowid` the table's rowid, so every aggregate's join
+    /// back to `document_cache` is a rowid seek. `temp_store=MEMORY` is already set
+    /// (`setupDatabase`), so this never touches disk.
+    private func materializeMatchSet(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+    ) throws -> Int {
+        try auxExec("DROP TABLE IF EXISTS temp.facet_mset")
+        try auxExec("CREATE TEMP TABLE facet_mset (docrowid INTEGER PRIMARY KEY)")
+
+        let (whereClause, filterBinds) = Self.filterConditions(filters)
+        let sql: String
+        let binds: [String]
+        if corpusMatch == nil, userContentMatch == nil {
+            // Filter-only search (a person filter with no terms). Mirrors
+            // `searchDocuments`' filter-only path; an unfiltered filter-only query would be
+            // the whole corpus, which is not a result set.
+            guard !whereClause.isEmpty else { return 0 }
+            sql = """
+                INSERT INTO temp.facet_mset(docrowid)
+                SELECT dc.rowid
+                FROM document_cache dc
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(whereClause)
+                """
+            binds = filterBinds
+        } else {
+            let (matchCTE, matchBinds) = try Self.matchCTE(
+                corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            // The filters live here, in phase one, exactly as in `searchDocuments` — a facet
+            // must describe the set the researcher is actually looking at.
+            sql = """
+                \(matchCTE)
+                INSERT INTO temp.facet_mset(docrowid)
+                SELECT dc.rowid
+                FROM merged m
+                JOIN document_cache dc ON dc.rowid = m.docrowid
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(whereClause)
+                """
+            binds = matchBinds + filterBinds
+        }
+
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, bind) in binds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard try auxStep(stmt) || true else { return 0 }
+        return try scalar("SELECT COUNT(*) FROM temp.facet_mset")
+    }
+
+    /// Runs a facet aggregate, returning at most `limit` buckets.
+    ///
+    /// The statement must select `(key, count)` and may select a third label column.
+    private func facetBuckets(
+        sql: String, limit: Int, label: (String) -> String
+    ) throws -> [FacetBucket] {
+        let stmt = try auxPrepare("\(sql) LIMIT \(limit)")
+        defer { sqlite3_finalize(stmt) }
+        var buckets: [FacetBucket] = []
+        while try auxStep(stmt) {
+            guard let key = auxColumnString(stmt, 0) else { continue }
+            let count = Int(sqlite3_column_int64(stmt, 1))
+            let explicit = sqlite3_column_count(stmt) > 2 ? auxColumnString(stmt, 2) : nil
+            let text = (explicit?.isEmpty == false) ? explicit! : label(key)
+            buckets.append(FacetBucket(key: key, label: text, count: count))
+        }
+        return buckets
+    }
+
+    /// A single-value `SELECT`, for counts and cardinalities.
+    private func scalar(_ sql: String) throws -> Int {
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        guard try auxStep(stmt) else { return 0 }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    /// `EXPLAIN QUERY PLAN` for every facet aggregate, so a test can assert the drive order
+    /// rather than time it.
+    ///
+    /// Exposed because the acceptance criterion for this work is the plan: a fixture small
+    /// enough to run in a test suite cannot distinguish a rowid seek from a 1.8 GB scan.
+    func facetQueryPlansForTesting(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+    ) throws -> [FacetSection: String] {
+        _ = try materializeMatchSet(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+        defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
+
+        var plans: [FacetSection: String] = [:]
+        for kind in FacetSection.allCases {
+            // Re-derive each section's SQL by asking for it alone and capturing the plan of
+            // its bucket statement. Kept deliberately close to `resultSetFacets`' own text.
+            let sql: String
+            switch kind {
+            case .years:
+                sql = """
+                    SELECT substr(dd.date_iso, 1, 4) AS k, COUNT(*) AS c
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    CROSS JOIN document_dates dd
+                        ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                    WHERE dd.date_iso IS NOT NULL AND dd.date_iso <> ''
+                    GROUP BY k ORDER BY k DESC
+                    """
+            case .volumes:
+                sql = """
+                    SELECT dc.volume_id AS k, COUNT(*) AS c
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    GROUP BY k ORDER BY c DESC, k ASC
+                    """
+            case .people:
+                sql = """
+                    SELECT CAST(prm.rollup_id AS TEXT) AS k, COUNT(DISTINCT dc.rowid) AS c
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    CROSS JOIN person_mentions pm
+                        ON pm.volume_id = dc.volume_id AND pm.document_id = dc.document_id
+                    CROSS JOIN person_rollup_member prm
+                        ON prm.volume_id = pm.volume_id AND prm.ref = pm.person_ref
+                    GROUP BY k ORDER BY c DESC
+                    """
+            case .documentType:
+                sql = """
+                    SELECT CAST(dc.is_editorial_note AS TEXT) AS k, COUNT(*) AS c
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    GROUP BY k ORDER BY c DESC
+                    """
+            case .provenance:
+                sql = """
+                    SELECT ds.citation_era AS k, COUNT(DISTINCT dc.rowid) AS c
+                    FROM temp.facet_mset ms
+                    CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                    CROSS JOIN document_sources ds
+                        ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
+                    GROUP BY k ORDER BY c DESC, k ASC
+                    """
+            }
+            plans[kind] = try queryPlanForTesting(sql)
+        }
+        return plans
+    }
+
     // MARK: - Test Hooks (Q-M2)
 
     /// The pre-optimisation count shape, kept solely so a test can assert the optimised one
