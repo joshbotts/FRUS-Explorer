@@ -324,6 +324,35 @@ Three details, each because the alternative fails quietly:
 So the API route is now safe to use for the initial harvest: ~40 calls for the series layer plus ~22 for
 the nodes, against streaming 22 GB.
 
+### Step R3 — the API-only harvest
+
+`API_REFRESH=1` harvests the **bulk export** and then layers the API over it — it does not skip the
+22 GB. For an API-primary harvest use `API_ONLY=1`, which never lists a shard:
+
+```bash
+CATALOG_API_KEY=<key> API_ONLY=1 GENERATED_DATE=$(date -u +%F) \
+  swift run -c release RecordGroupCatalogGenerator
+```
+
+All 22 groups, ~62 calls (~40 series pages at `limit=1000` plus one record-group node each), a few MB,
+a couple of minutes. Differences from the refresh path, all deliberate:
+
+- The api store is the build's **base**, not an overlay, so **no changelog is written**. There is no
+  snapshot to diff against, and treating an absent base as one would classify every record as `added`
+  and produce tens of thousands of lines of noise.
+- The completeness check still applies, from the record-group node — a group that comes up short of its
+  stated `seriesCount` fails the run exactly as a bulk harvest would.
+- A group that returns **no** records is reported and its existing index shard is left untouched, rather
+  than being replaced by an empty one.
+
+| Route | Cost | Self-check | Carries |
+|---|---|---|---|
+| `API_ONLY=1` | ~62 calls, a few MB | ✓ from the node | everything the index projects |
+| bulk (default) | 22 GB streamed | ✓ from the shards | also `referenceUnits[].mailCode`, and the deeper levels without extra paging |
+
+Finish either route with one offline `PROJECT_ONLY=1` pass over all 22 groups to rebuild the run-wide
+manifest and censuses.
+
 ### Step R2 — the refresh
 
 ```bash
@@ -395,7 +424,8 @@ Only the named groups' shards are re-read; the others keep their existing index 
 | `SAMPLE_EVERY` | `25` | Sampling interval for the committed record sample. |
 | `ALLOW_SHORT` | off | Do not fail on a group short of NARA's `seriesCount`. |
 | `API_SURVEY` | off | Spend a handful of API calls answering the open query-shape questions. Needs `CATALOG_API_KEY`. |
-| `API_REFRESH` | off | Re-page the live API and overlay it on the snapshot, emitting a changelog. Needs `CATALOG_API_KEY`. |
+| `API_REFRESH` | off | Re-page the live API and overlay it on the **bulk snapshot**, emitting a changelog. Harvests the bulk export too. Needs `CATALOG_API_KEY`. |
+| `API_ONLY` | off | Harvest from the API **instead of** the bulk export — no shard listing, no 22 GB, no changelog. Needs `CATALOG_API_KEY`. |
 | `CATALOG_API_KEY` | — | Only used by the two API modes. The bulk harvest never reads it. |
 | `API_PAGE_SIZE` | `1000` | `limit` per API request. 1000 is survey-proven honoured (RG 59 returned exactly 1000). |
 | `MAX_API_REQUESTS_PER_GROUP` | `200` | Hard per-group request ceiling. |

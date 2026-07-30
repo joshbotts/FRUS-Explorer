@@ -117,17 +117,28 @@ public struct RecordGroupCatalogRunner {
         public var apiRefresh: Bool
         /// Spend a handful of API calls answering the open questions about the live query shape.
         public var apiSurvey: Bool
+        /// Harvest from the API **instead of** the bulk export — no 22 GB stream at all.
+        ///
+        /// Distinct from ``apiRefresh``, which harvests the bulk export and then layers the API over
+        /// it. That distinction was missing until now, which made the "API-primary initial harvest"
+        /// route unreachable: `API_REFRESH=1` alone still streamed every shard first.
+        public var apiOnly: Bool
 
         public init(probe: Bool = false, projectOnly: Bool = false,
                     creatorAuthority: Bool = false, refresh: Bool = false,
-                    apiRefresh: Bool = false, apiSurvey: Bool = false) {
+                    apiRefresh: Bool = false, apiSurvey: Bool = false,
+                    apiOnly: Bool = false) {
             self.probe = probe
             self.projectOnly = projectOnly
             self.creatorAuthority = creatorAuthority
             self.refresh = refresh
             self.apiRefresh = apiRefresh
             self.apiSurvey = apiSurvey
+            self.apiOnly = apiOnly
         }
+
+        /// Whether this mode talks to the API at all.
+        var usesAPI: Bool { apiRefresh || apiSurvey || apiOnly }
 
         init(env: [String: String]) {
             self.init(probe: isTruthy(env["PROBE"]),
@@ -135,7 +146,8 @@ public struct RecordGroupCatalogRunner {
                       creatorAuthority: isTruthy(env["CREATOR_AUTHORITY"]),
                       refresh: isTruthy(env["REFRESH"]),
                       apiRefresh: isTruthy(env["API_REFRESH"]),
-                      apiSurvey: isTruthy(env["API_SURVEY"]))
+                      apiSurvey: isTruthy(env["API_SURVEY"]),
+                      apiOnly: isTruthy(env["API_ONLY"]))
         }
     }
 
@@ -200,15 +212,19 @@ public struct RecordGroupCatalogRunner {
         // the 22 GB bulk harvest.
         let apiStore = RawRecordStore(directory: cacheDirectory.appendingPathComponent("raw-api"))
         let apiClient: CatalogAPIClient? = {
-            guard mode.apiRefresh || mode.apiSurvey else { return nil }
+            guard mode.usesAPI else { return nil }
             guard let apiKey, !apiKey.isEmpty else { return nil }
             return CatalogAPIClient(apiKey: apiKey, pageSize: apiPageSize,
                                     transport: apiTransport ?? URLSessionAPITransport(), log: log)
         }()
-        if (mode.apiRefresh || mode.apiSurvey), apiClient == nil {
+        if mode.usesAPI, apiClient == nil {
             throw CatalogAPIError.missingAPIKey
         }
         let builder = CatalogIndexBuilder(rawStore: rawStore)
+        // API-only builds read the api store as their BASE, not as an overlay — there is no snapshot to
+        // diff against, so every record would otherwise be classified as an addition and the changelog
+        // would be 20,000 lines of noise.
+        let apiBuilder = CatalogIndexBuilder(rawStore: apiStore)
         let writer = RecordGroupCatalogWriter(outputDirectory: outputDirectory,
                                               sampleEvery: sampleEvery)
         try writer.prepare()
@@ -263,7 +279,32 @@ public struct RecordGroupCatalogRunner {
 
         for group in plan.groups {
             let outcome: RecordGroupHarvestOutcome
-            if mode.projectOnly {
+            // Which store this group's index is built from. API-only builds from the api store.
+            var builderForGroup = builder
+
+            if mode.apiOnly, let apiClient {
+                // No listing, no shards, no 22 GB. The API is the source of record for this group.
+                try apiStore.reset(recordGroup: group.number)
+                let fetch = try await Self.fetchGroupFromAPI(
+                    client: apiClient, store: apiStore, group: group,
+                    maxRequests: maxAPIRequestsPerGroup, log: log)
+                apiRequestsSpent += fetch.requestsSpent
+                if firstAPIObservation == nil { firstAPIObservation = fetch.observation }
+                reviewNotes.append(contentsOf: fetch.notes)
+
+                guard fetch.recordCount > 0 else {
+                    reviewNotes.append("RG \(group.number): the API returned no records — nothing was "
+                                       + "written for this group, and any existing index shard for it is "
+                                       + "left untouched")
+                    summaries.append(RecordGroupSummary(
+                        recordGroup: group.number, depth: group.depth, state: .partial))
+                    continue
+                }
+                outcome = RecordGroupHarvestOutcome(
+                    recordGroup: group.number, depth: group.depth,
+                    recordsStored: fetch.recordCount, state: .complete)
+                builderForGroup = apiBuilder
+            } else if mode.projectOnly {
                 guard rawStore.exists(recordGroup: group.number) else {
                     reviewNotes.append("RG \(group.number): PROJECT_ONLY found no raw store at "
                                        + "\(rawStore.url(recordGroup: group.number).path) — "
@@ -333,7 +374,7 @@ public struct RecordGroupCatalogRunner {
                 reviewNotes.append("RG \(group.number): re-classified against the API refresh already "
                                    + "on disk (no API calls spent)")
             }
-            if mode.apiRefresh, let apiClient {
+            if mode.apiRefresh, !mode.apiOnly, let apiClient {
                 do {
                     try apiStore.reset(recordGroup: group.number)
                     let writerHandle = try apiStore.openWriter(recordGroup: group.number)
@@ -400,7 +441,7 @@ public struct RecordGroupCatalogRunner {
                 }
             }
 
-            let built = try builder.build(outcome: outcome, overlay: overlayForGroup)
+            let built = try builderForGroup.build(outcome: outcome, overlay: overlayForGroup)
             changeLog.merge(built.changeLog)
             summaries.append(built.summary)
             fieldCensus.merge(built.fieldCensus)
@@ -700,6 +741,67 @@ public struct RecordGroupCatalogRunner {
             "required field '\($0)' matched no key spelling in the probed shards"
         }
         return RunResult(manifest: manifest, failures: failures)
+    }
+
+    // MARK: API fetch
+
+    /// Fetches one record group from the API into `store`: its record-group node, then one query per
+    /// admitted level.
+    ///
+    /// Shared by `API_ONLY` (where this is the harvest) and `API_REFRESH` (where it is the overlay), so
+    /// the two cannot drift apart in what they fetch or how they bound it.
+    static func fetchGroupFromAPI(
+        client: CatalogAPIClient,
+        store: RawRecordStore,
+        group: RecordGroupPlan,
+        maxRequests: Int,
+        log: @escaping @Sendable (String) -> Void
+    ) async throws -> (recordCount: Int, requestsSpent: Int,
+                       observation: APIEnvelopeObservation?, notes: [String]) {
+
+        let writerHandle = try store.openWriter(recordGroup: group.number)
+        defer { try? writerHandle.close() }
+
+        var notes: [String] = []
+        var recordCount = 0
+        var spent = 0
+        var observation: APIEnvelopeObservation?
+
+        // The group's own node first. `levelOfDescription=series` necessarily excludes the only record
+        // that states `seriesCount`, so without this call the harvest has nothing to check itself
+        // against — the one safety property the bulk path gets for free.
+        if let node = try await client.fetchRecordGroupNode(recordGroup: group.number) {
+            try writerHandle.append(node)
+            if node["seriesCount"]?.intValue == nil {
+                notes.append("RG \(group.number): the API's record-group node carries no seriesCount, "
+                             + "so this harvest has no completeness check — use the bulk export for "
+                             + "this group if that matters")
+            }
+        } else {
+            notes.append("RG \(group.number): the API returned no record-group node, so this harvest "
+                         + "has no completeness check")
+        }
+        spent += 1
+
+        // One query per admitted level rather than one unfiltered query. Unfiltered, a
+        // `seriesAndFileUnits` group would page every level the catalog holds — items included, which
+        // for RG 59 is hundreds of thousands of records — and exhaust the ceiling long before reaching
+        // the file units. Per-level paging also keeps API coverage identical to the bulk snapshot's,
+        // which is what makes `missingFromRefresh` meaningful rather than an artefact.
+        for level in group.depth.admittedLevels.sorted() {
+            guard spent < maxRequests else { break }
+            let result = try await client.harvestGroup(
+                recordGroup: group.number, level: level,
+                maxRequests: maxRequests - spent) { record in
+                    try writerHandle.append(record)
+                }
+            recordCount += result.recordCount
+            spent += result.requestsSpent
+            if observation == nil { observation = result.observation }
+            log("[RecordGroupCatalogGenerator] RG \(group.number) [\(level)]: API returned "
+                + "\(result.recordCount) records in \(result.requestsSpent) request(s)")
+        }
+        return (recordCount, spent, observation, notes)
     }
 
     // MARK: API survey

@@ -727,22 +727,35 @@ struct RunnerEndToEndTests {
         #expect(report.contains("ONLY outside"))
     }
 
-    @Test("An API-ONLY harvest still gets its completeness check from the group node")
-    func apiOnlyHarvestHasCompletenessCheck() async throws {
-        // No bulk store at all — the route that becomes attractive now the API is field-complete and
-        // limit=1000 is honoured (~40 calls for the whole series layer instead of 22 GB). Without the
-        // group-node call this harvest would have nothing to check itself against.
+    /// An API_ONLY run: no bulk transport activity at all.
+    private func apiOnlyRun(
+        _ sandbox: Sandbox, apiResponses: [(String, Int)],
+        bulk: ScriptedTransport? = nil
+    ) async throws -> (RecordGroupCatalogRunner.RunResult, ScriptedTransport) {
+        let bulkTransport = bulk ?? ScriptedTransport(bodies: [:])
+        let result = try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: bulkTransport, generated: "2026-07-30",
+            mode: .init(apiOnly: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: apiResponses))
+        return (result, bulkTransport)
+    }
+
+    @Test("API_ONLY harvests without touching the bulk export at all")
+    func apiOnlySkipsBulkEntirely() async throws {
+        // The route that becomes attractive now the API is field-complete and limit=1000 is honoured:
+        // ~40 calls for the whole series layer instead of streaming 22 GB. API_REFRESH alone did NOT
+        // do this — it harvested the bulk export first and layered the API over it.
         let sandbox = try Sandbox()
         defer { sandbox.destroy() }
 
-        let result = try await RecordGroupCatalogRunner.run(
-            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
-            transport: Self.transport(), generated: "2026-07-30",
-            mode: .init(projectOnly: false, apiRefresh: true), apiKey: "test-key",
-            apiTransport: ScriptedAPITransport(responses: [
-                (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
-                (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
-            ]))
+        let (result, bulkTransport) = try await apiOnlyRun(sandbox, apiResponses: [
+            (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
+            (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+        ])
+
+        // Not one bulk request — no listing, no shards. An empty bodies map would 404 on any call.
+        #expect(bulkTransport.requests.isEmpty)
 
         let group = try #require(result.manifest.recordGroups.first)
         // NARA's own count came from the API node, and the check passes.
@@ -751,7 +764,29 @@ struct RunnerEndToEndTests {
         #expect(group.seriesCountDelta == 0)
         #expect(!group.isMateriallyShort)
         #expect(group.title == "Records of the U.S. Trade and Development Agency")
+        #expect(group.bytesRead == 0)
         #expect(result.isTrustworthy)
+
+        // A full index shard was written from the API alone.
+        let shard = try JSONDecoder().decode(
+            RecordGroupIndexShard.self,
+            from: try #require(try sandbox.outputFiles()["series/rg_486.json"]))
+        #expect(shard.records.map(\.naId) == ["1", "2", "3"])
+        #expect(shard.records.allSatisfy { !$0.creators.isEmpty })
+    }
+
+    @Test("API_ONLY writes no changelog — there is no snapshot to diff against")
+    func apiOnlyEmitsNoChangelog() async throws {
+        // Built as an OVERLAY on an absent base, every record would classify as `added` and the
+        // changelog would be tens of thousands of lines of noise. API-only builds from the api store
+        // as its base instead.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let (_, _) = try await apiOnlyRun(sandbox, apiResponses: [
+            (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
+            (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+        ])
+        #expect(try sandbox.outputFiles()["census/refresh-changelog.csv"] == nil)
     }
 
     @Test("An API-only harvest that comes up short FAILS, thanks to the group node")
@@ -759,18 +794,31 @@ struct RunnerEndToEndTests {
         let sandbox = try Sandbox()
         defer { sandbox.destroy() }
 
-        // The node says 11; the refresh yields 3. This is the failure the check exists to catch, and
-        // it is only catchable because the node was fetched.
-        let result = try await RecordGroupCatalogRunner.run(
-            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
-            transport: Self.transport(), generated: "2026-07-30",
-            mode: .init(apiRefresh: true), apiKey: "test-key",
-            apiTransport: ScriptedAPITransport(responses: [
-                (ScriptedAPITransport.groupNodePage(seriesCount: 11), 200),
-                (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
-            ]))
+        // The node says 11; the harvest yields 3. This is the failure the check exists to catch, and it
+        // is only catchable because the node was fetched.
+        let (result, _) = try await apiOnlyRun(sandbox, apiResponses: [
+            (ScriptedAPITransport.groupNodePage(seriesCount: 11), 200),
+            (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+        ])
         #expect(!result.isTrustworthy)
         #expect(result.failures.contains { $0.contains("but NARA states 11") })
+    }
+
+    @Test("An API-only group that returns nothing is reported and leaves its shard alone")
+    func apiOnlyEmptyGroupIsReported() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        // Harvest from bulk first so a shard exists, then an API-only run that comes back empty.
+        try await run(sandbox, transport: Self.transport())
+        let before = try #require(try sandbox.outputFiles()["series/rg_486.json"])
+
+        let (result, _) = try await apiOnlyRun(sandbox, apiResponses: [
+            (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
+            (ScriptedAPITransport.emptyPage, 200),
+        ])
+        #expect(result.manifest.reviewNotes.contains { $0.contains("returned no records") })
+        // The existing index must survive an empty API run rather than being replaced by nothing.
+        #expect(try sandbox.outputFiles()["series/rg_486.json"] == before)
     }
 
     @Test("A group node missing seriesCount is reported, not silently treated as checked")
