@@ -174,3 +174,60 @@ extension FTS5Store {
     /// rather than retain the caller's pointer.
     static let transientDestructor = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 }
+
+// MARK: - FTS5Store + Per-document occurrences
+
+extension FTS5Store {
+
+    /// Occurrence counts for one index term, per document, corpus-wide and unfiltered.
+    ///
+    /// The only route to a **dated or scoped** occurrence count. The persistent `…_vocab` table is
+    /// `row` mode — one row per term for the whole index, no document, no position — so it can say
+    /// "this stem occurs 92 times" and can never say "…in 1949". This reads `instance` mode, which is
+    /// one row per posting, and folds it to one row per document in SQLite.
+    ///
+    /// ## Deliberately returns rowids, and deliberately does not join
+    /// Callers want `(volumeId, documentId)`, which lives in `document_cache`. Joining to get it here
+    /// would be the obvious shape and is the wrong one. Measured on the real 6.3 GB index:
+    ///
+    /// | stem | postings | documents | this method | with the join |
+    /// |---|---|---|---|---|
+    /// | `contain` | 57,596 | 39,496 | 0.017 s | 2.00 s |
+    /// | `govern` | 985,733 | 195,519 | 0.140 s | 8.99 s |
+    /// | `state` | 1,688,186 | 299,557 | 0.233 s | 12.91 s |
+    ///
+    /// The cost tracks **document count, not postings** — `nuclear` (59,689 postings, 10,496 docs)
+    /// joins in 0.39 s where `contain` (57,596 postings, 39,496 docs) takes 2.18 s. `document_cache`
+    /// rows average 5.7 KB of `body_text`, so each rowid lookup is a page fault, and there is one per
+    /// matched document however the query is arranged (pre-aggregating first only moved `state` from
+    /// 14.29 s to 12.91 s). The caller resolves rowids against a cached map instead — see
+    /// `IndexingPipeline.allDocumentRowidKeys()`, which the covering index answers in 0.114 s for the
+    /// whole corpus.
+    ///
+    /// ## Cost
+    /// ~7–8M postings/s: 0.001 s for a rare term, 0.233 s for `state`, 2.03 s for `the` (16.7M
+    /// postings) — the ceiling a researcher can reach by accident. `WHERE term = ?` seeks rather than
+    /// scanning, so cost is proportional to the term's posting list and not to the corpus's 234M.
+    ///
+    /// - Parameter stem: an index term, as produced by ``indexStem(of:)``. A surface form the
+    ///   tokenizer would have changed simply misses.
+    /// - Returns: `(documentRowid, occurrences)` per document containing the term, ascending by
+    ///   rowid. Empty when the index has never seen the term.
+    public func termOccurrencesByDocument(stem: String) throws -> [(documentRowid: Int64, occurrences: Int)] {
+        guard !stem.isEmpty else { return [] }
+        try connection.ensureInstanceVocab(tableName: schema.tableName)
+        let sql = """
+            SELECT doc, COUNT(*) FROM temp.\(FTS5Connection.instanceVocabTableName)
+            WHERE term = ? GROUP BY doc ORDER BY doc
+            """
+        let stmt = try connection.prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, stem, -1, FTS5Store.transientDestructor)
+        var result: [(documentRowid: Int64, occurrences: Int)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            result.append((documentRowid: sqlite3_column_int64(stmt, 0),
+                           occurrences: Int(sqlite3_column_int64(stmt, 1))))
+        }
+        return result
+    }
+}

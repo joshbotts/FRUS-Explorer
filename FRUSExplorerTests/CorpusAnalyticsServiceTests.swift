@@ -10,10 +10,14 @@ import Testing
 import Foundation
 @testable import FRUSExplorer
 
+// The three fixture helpers below are `internal`, not `private`: `OccurrenceCountTests` builds the
+// same real-index fixtures to assert the occurrence numerator against this file's document numerator,
+// and the two must be measuring the same corpus for that comparison to mean anything.
+
 // MARK: - Test Helpers
 
 /// Writes a minimal FRUS volume XML fixture (a single compilation div of documents).
-private func writeAnalyticsVolume(
+func writeAnalyticsVolume(
     to url: URL,
     volumeId: String,
     documents: [(id: String, xml: String)]
@@ -39,7 +43,7 @@ private func writeAnalyticsVolume(
 }
 
 /// Creates a temporary directory, calls `body`, and cleans up after.
-private func withAnalyticsTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
+func withAnalyticsTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
     let dir = FileManager.default.temporaryDirectory
         .appendingPathComponent("FRUSAnalyticsTests-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -48,7 +52,7 @@ private func withAnalyticsTempDir<T>(_ body: (URL) async throws -> T) async thro
 }
 
 /// Builds a pipeline + store pair backed by a temp database, with a `volumes/` dir.
-private func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: IndexingPipeline, store: FTS5Store) {
+func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: IndexingPipeline, store: FTS5Store) {
     let dbURL = dir.appendingPathComponent("test.sqlite")
     let volDir = dir.appendingPathComponent("volumes")
     try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
