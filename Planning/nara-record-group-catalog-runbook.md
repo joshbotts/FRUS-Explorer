@@ -391,6 +391,103 @@ Three guards worth knowing about, each of which exists because the failure would
 `MAX_API_REQUESTS_PER_GROUP` (default 200) is a hard per-group ceiling, so a paging bug cannot drain
 the monthly quota. A non-advancing cursor throws rather than looping.
 
+### Later — file units, and what the first attempt taught
+
+The first RG 59 file-unit attempt failed with a bare `HTTP 500`, and diagnosing it turned up five
+defects. All are fixed; the numbers below are why.
+
+**Page size has to be level-aware.** Measured on RG 59 from the bulk export: a **series** record
+averages 3,100 bytes, so `limit=1000` is a comfortable ~3 MB response. A **fileUnit** record has a
+median of 1,889 bytes but a **mean of 20,878 and a maximum of 4.24 MB** — that skew makes `limit=1000`
+a ~20 MB response on average and potentially hundreds of MB for an unlucky page. `API_PAGE_SIZE` now
+defaults per level: **1000 series / 250 file units / 100 items**, overridable.
+
+**And it has to adapt.** No fixed number is safe against that distribution, so a failing page now
+**halves the limit and retries the same cursor** (1000 → 500 → … → 25 floor). A genuinely unservable
+page therefore costs 7 calls before it gives up — worth knowing as a quota cost.
+
+**Levels are harvested coarsest-first.** `admittedLevels.sorted()` put `"fileUnit"` before `"series"`
+alphabetically, so the file-unit level ran first and its 500 aborted the group having harvested **zero
+series** — a level that had worked reliably at `limit=1000` minutes earlier.
+
+**A non-2xx no longer reads as end-of-results.** `decode` hands 4xx back as an empty page so the survey
+can inspect a 400, and `harvestGroup` treated zero hits as the end of the stream. A revoked key or an
+exhausted quota mid-harvest would have truncated silently.
+
+**A failed harvest no longer destroys the previous good one.** This was the expensive one. The harvest
+used to `reset()` the store and *then* fetch into it, so the 500 wiped 4,449 already-harvested RG 59
+series before dying. Fetches now stage to a `.partial` file and are swapped in only on success; a
+failure leaves the previous store byte-identical. Relatedly, a build that comes in **materially short
+no longer overwrites an existing shard** — that is how RG 59's index went to zero records, and
+`ALLOW_SHORT=1` is the opt-in if a shortfall is genuinely expected.
+
+Failures are also **isolated per group** now. One bad page used to throw out of the entire run; in a
+22-group harvest that is most of the work lost.
+
+#### Revised call budget
+
+`fileUnitCount` on the harvested series gives NARA's own expected total: **731,618 file units** across
+the 22 groups.
+
+| fileUnit `limit` | total calls | worst group (RG 59) |
+|---|---|---|
+| 250 (default) | ~3,485 | 952 |
+| 500 | ~2,023 | 479 |
+
+Both fit a 10,000/month quota, but neither is the ~797 an earlier estimate suggested — that assumed
+`limit=1000` works at file-unit level, which the 500 disproved. `MAX_API_REQUESTS_PER_GROUP` must be
+raised well above its 200 default for RG 59 either way.
+
+Note that 731,618 is a **floor**: only 1,466 of RG 59's 4,449 series state a `fileUnitCount` at all, so
+a positive `fileUnitCountDelta` is plausible and is reported rather than failed. A *negative* delta is
+the one to act on.
+
+### The file-unit harvest, completed (2026-07-30)
+
+All 22 groups at `seriesAndFileUnits`: **20,188 series + 731,692 file units = 751,880 records**, zero
+invariant violations, 4.5 GB of index shards. Control-number types rose from 23 to **28** — file units
+surface five the series layer never showed — and distinct creators from 7,318 to **7,438**.
+
+Three things it exposed.
+
+**`PROJECT_ONLY` re-projected at the wrong depth, and 21 groups lost their file units.** The depth came
+from the plan, which defaults to `series`, so a bare consolidation over a file-unit store silently
+discarded 495,212 file units and reported success. A successful API harvest now records its depth in
+`checkpoints-api/`, and `PROJECT_ONLY` reads it. A store harvested before that fix has no checkpoint,
+so the run warns and asks for `DEPTH` explicitly rather than guessing:
+
+```bash
+PROJECT_ONLY=1 DEPTH=seriesAndFileUnits swift run -c release RecordGroupCatalogGenerator
+```
+
+**`series-sample.json` reached 250 MB.** A fixed 1-in-25 interval does not bound a committed artifact:
+at series depth it selected ~800 records (~1 MB), at file-unit depth 30,075 much larger ones. Now capped
+at 500 records, sub-sampled evenly so it stays a cross-section rather than a prefix — 5.4 MB.
+
+**Peak memory was 18.5 GB.** An earlier estimate in this runbook said ~1 GB for RG 59; that was wrong by
+roughly 18×, and the build only survived because the machine had the RAM. The causes are structural:
+`CatalogIndexBuilder` accumulates a group's entire projection in an array, and `writeShard` then encodes
+that whole array to a single `Data` before writing — for RG 59 that is 236,480 records twice over. It
+completed in 8 minutes here, but it would swap or be killed on a 16 GB machine, and `DEPTH=all` would
+not finish at all. **Streaming the shard write is the fix and has not been done.**
+
+#### One real gap: 37 file units, all in one series
+
+RG 59 reports `fileUnitCountDelta = −37`. It is not spread thin — **1,467 of its 1,468 counted series
+match NARA exactly**, and the entire shortfall sits in series **654171, "Numerical Files"** (the
+1906–1910 Numerical File). Three query shapes give three counts for it:
+
+| Source | Query | Count |
+|---|---|---|
+| NARA's `fileUnitCount` | cached field | 1,282 |
+| this harvest | `recordGroupNumber=59` + `levelOfDescription=fileUnit` | 1,245 |
+| `central-files-index.json` (June) | `ancestorNaId=654171` + `availableOnline=true` | 1,261 |
+
+The *narrower* digitized-only query found 20 more than the record-group filter did, so the filter appears
+to under-return for this series — not restricted records, and not a page boundary (37 is no multiple of
+the page size, and the final page was full-ish at 230). Unresolved, 0.016% of the corpus, and confined to
+a series that already has independent coverage in this repo.
+
 ### Later — file units for chosen record groups
 
 ```bash

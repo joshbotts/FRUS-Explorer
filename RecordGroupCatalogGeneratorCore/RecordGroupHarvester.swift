@@ -144,6 +144,53 @@ public struct RawRecordStore: Sendable {
         directory.appendingPathComponent("rg_\(recordGroup).ndjson")
     }
 
+    /// Path for a group's **staging** store — written during a fetch, swapped in only on success.
+    func stagingURL(recordGroup: Int) -> URL {
+        directory.appendingPathComponent("rg_\(recordGroup).ndjson.partial")
+    }
+
+    /// Opens an appending writer against the staging path, discarding any earlier partial.
+    ///
+    /// ## Why staging exists
+    /// The API harvest used to `reset()` the live store and then fetch into it. A fetch that failed
+    /// part-way therefore **destroyed the previous good data** — which is exactly what happened when RG
+    /// 59's first file-unit page returned HTTP 500: the reset had already wiped 4,449 successfully
+    /// harvested series, and the run died having written only the record-group node. That directly
+    /// contradicts the property the raw store is supposed to have, namely being the thing you can
+    /// always fall back on.
+    ///
+    /// Now a fetch writes to `.partial` and the caller calls ``commitStaging(recordGroup:)`` only once
+    /// the fetch has succeeded. A failure leaves the previous store untouched.
+    public func openStagingWriter(recordGroup: Int) throws -> Writer {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = stagingURL(recordGroup: recordGroup)
+        if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+        }
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        let handle = try FileHandle(forWritingTo: url)
+        return Writer(handle: handle)
+    }
+
+    /// Atomically replaces the live store with the staged one.
+    public func commitStaging(recordGroup: Int) throws {
+        let staging = stagingURL(recordGroup: recordGroup)
+        guard FileManager.default.fileExists(atPath: staging.path) else { return }
+        let live = url(recordGroup: recordGroup)
+        if FileManager.default.fileExists(atPath: live.path) {
+            try FileManager.default.removeItem(at: live)
+        }
+        try FileManager.default.moveItem(at: staging, to: live)
+    }
+
+    /// Throws away a staged fetch, leaving the live store as it was.
+    public func discardStaging(recordGroup: Int) throws {
+        let staging = stagingURL(recordGroup: recordGroup)
+        if FileManager.default.fileExists(atPath: staging.path) {
+            try FileManager.default.removeItem(at: staging)
+        }
+    }
+
     /// Removes a group's store, for a `REFRESH` re-harvest.
     public func reset(recordGroup: Int) throws {
         let url = url(recordGroup: recordGroup)

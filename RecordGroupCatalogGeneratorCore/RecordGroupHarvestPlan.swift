@@ -45,6 +45,18 @@ public enum HarvestDepth: String, Sendable, Equatable, CaseIterable, Codable {
         }
     }
 
+    /// The admitted levels in **hierarchy order**, coarsest first: series → fileUnit → item.
+    ///
+    /// Order matters, and sorting them alphabetically was a real bug: `"fileUnit" < "series"`, so a
+    /// `seriesAndFileUnits` harvest attempted the file-unit level FIRST. When RG 59's first file-unit
+    /// page failed (HTTP 500 — a ~20 MB mean response at `limit=1000`, with individual file-unit
+    /// records running to 4.24 MB), the group aborted before the cheap, known-good series level had
+    /// been fetched at all. Coarsest-first means a failure at a deeper level can never cost a
+    /// shallower one.
+    public var orderedLevels: [String] {
+        ["series", "fileUnit", "item", "collection"].filter { admittedLevels.contains($0) }
+    }
+
     /// Whether `level` is kept at this depth.
     public func admits(_ level: String?) -> Bool {
         guard let level else { return false }

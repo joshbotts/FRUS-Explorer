@@ -1,24 +1,29 @@
 type,occurrences,recordGroupCount,recordGroups,distinctNoteCount,exampleNotes
-HMS/MLR Entry Number,20713,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490,11,This is the Classified portion of the series. ⁝ This is the HMS finding aid number. ⁝ This is the HMS/MLR Entry Number for the Reference Set.
-Declassification Project Number,15463,19,43 59 76 84 169 182 208 229 239 268 286 306 353 383 420 466 469 486 490,18,Applies only to 1964 records. ⁝ Applies only to 1967 records. ⁝ IRC Project Number
-Former HMS/MLR Entry Number,6737,17,43 59 76 84 169 182 208 239 256 286 306 353 383 420 466 469 490,22,Entry UD-15D 37 was part of RG 59. ⁝ Formerly box 161 and part of 162. ⁝ Formerly box 35.
-Agency-Assigned Identifier,6269,9,43 59 84 286 306 353 420 466 469,94,Department of State Lot File Number ⁝ Department of State Lot File number ⁝ Department of State Lot Number
-HMS Record Entry ID,5807,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490,5,This is the Classified portion of the series. ⁝ This is the classified portion of the series. ⁝ This is the declassified portion of the series.
-State Department Lot File Number,5189,10,43 59 76 84 169 286 306 353 383 469,2,This is a Department of State lot file number. ⁝ This is a State Department Lot File number.
-Former HMS Record Entry ID,754,11,43 59 76 84 169 208 286 306 420 469 490,0,
-NAIL Control Number,373,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490,0,
+HMS/MLR Entry Number,26901,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490,11,This is the Classified portion of the series. ⁝ This is the HMS finding aid number. ⁝ This is the HMS/MLR Entry Number for the Reference Set.
+Declassification Project Number,20074,19,43 59 76 84 169 182 208 229 239 268 286 306 353 383 420 466 469 486 490,19,Applies only to 1964 records. ⁝ Applies only to 1967 records. ⁝ Declassified in full.
+Former HMS/MLR Entry Number,16387,17,43 59 76 84 169 182 208 239 256 286 306 353 383 420 466 469 490,22,Entry UD-15D 37 was part of RG 59. ⁝ Formerly box 161 and part of 162. ⁝ Formerly box 35.
+Search Identifier,8826,5,43 59 84 239 306,0,
+Agency-Assigned Identifier,8703,9,43 59 84 286 306 353 420 466 469,95,Department of State Lot File Number ⁝ Department of State Lot File number ⁝ Department of State Lot Number
+HMS Record Entry ID,6967,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490,9,This HMS Record Entry ID is for Container 10. ⁝ This is the Classified portion of the series. ⁝ This is the HMS Record Entry ID for Container 10A.
+State Department Lot File Number,5197,10,43 59 76 84 169 286 306 353 383 469,2,This is a Department of State lot file number. ⁝ This is a State Department Lot File number.
+XMIS Number,3107,4,59 286 306 383,544,103096 ⁝ 103133 ⁝ 103146
+Former ARC Identifier,1769,5,43 59 84 306 469,0,
+Ref ID,1581,4,59 286 306 490,349,Documentation (Methodology) ⁝ These are the withdrawal cards for October 1976 the P-Reel Index. ⁝ These are the withdrawal cards for the April 1976 P-Reel Index.
+HMS Asset ID,991,7,43 59 76 84 208 286 306,1,This is the HMS Record Entry ID for File 42
+Former HMS Record Entry ID,757,11,43 59 76 84 169 208 286 306 420 469 490,0,
+NAIL Control Number,374,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490,0,
 Agency Disposition Number,280,3,59 84 286,7,This agency-assigned identifier is a Department of State LOT number. ⁝ This is a Department of State LOT file number. ⁝ This is a Department of State Lot file number.
+Reparative Description Identifier,270,10,59 63 76 84 208 229 286 306 466 469,1,"This archival description was created using current reparative description standards on November 20, 2023. The term ""Neg…"
 Inventory Entry Number,184,5,59 76 256 286 420,11,"Entry 112 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International B… ⁝ Entry 113 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International B… ⁝ Entry 114 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International B…"
-Former ARC Identifier,177,5,43 59 84 306 469,0,
-Former National Archives Identifier,142,10,43 59 76 84 169 286 306 420 469 490,12,"A portion of this series was formerly identified as the series ""Subject Files of Foreign Service Posts, 1/1/1962 - 12/31… ⁝ The 1980 portion of this series, formerly part of UD-11W 12, was formerly described under National Archives Identifier 6… ⁝ The portion of the series formerly identified as UD-WW 235 was formerly described under National Archives Identifier 125…"
-Search Identifier,127,5,43 59 84 239 306,0,
+Former National Archives Identifier,177,10,43 59 76 84 169 286 306 420 469 490,12,"A portion of this series was formerly identified as the series ""Subject Files of Foreign Service Posts, 1/1/1962 - 12/31… ⁝ The 1980 portion of this series, formerly part of UD-11W 12, was formerly described under National Archives Identifier 6… ⁝ The portion of the series formerly identified as UD-WW 235 was formerly described under National Archives Identifier 125…"
+Download Display Identifier,65,3,59 286 306,0,
 Other Identifier,47,6,59 84 286 306 383 490,12,This is a Department of State LOT file number. ⁝ This is an IRC number. ⁝ This is the Digital Identifier for the U.S. Agency for International Development records located at the Kennedy Library.
-Reparative Description Identifier,29,9,59 76 84 208 229 286 306 466 469,0,
 Former Local Identifier,28,5,43 59 76 84 306,2,This is the collection's former Local Identifier. ⁝ This is the former entry number.
-FOIA Tracking Number,13,4,59 84 286 469,0,
-HMS Asset ID,8,4,43 59 84 306,0,
-Download Display Identifier,3,1,306,0,
+FOIA Tracking Number,14,4,59 84 286 469,0,
 PRESNET Number,3,1,59,0,
+ReDiscovery Number,2,2,84 208,0,
 Kennedy Assassination Document ID,1,1,59,0,
+Legislative Transfer Number,1,1,306,1,This is the third part of the documentation file.
 Off-Site Storage Transaction Number,1,1,268,0,
+Preliminary Checklist Identifier,1,1,306,1,This file contains the converted ASCII data.
 Select List Identifier,1,1,59,1,"This is the appendix in Special List 37, ""Inspection Reports on Foreign Service Posts, 1906-1939."""

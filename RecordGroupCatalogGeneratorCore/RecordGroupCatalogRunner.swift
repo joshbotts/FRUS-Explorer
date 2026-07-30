@@ -88,7 +88,7 @@ public struct RecordGroupCatalogRunner {
             sampleEvery: env["SAMPLE_EVERY"].flatMap { Int($0) } ?? 25,
             allowShort: isTruthy(env["ALLOW_SHORT"]),
             apiKey: env["CATALOG_API_KEY"],
-            apiPageSize: env["API_PAGE_SIZE"].flatMap { Int($0) } ?? 1000,
+            apiPageSize: env["API_PAGE_SIZE"].flatMap { Int($0) },
             maxAPIRequestsPerGroup: env["MAX_API_REQUESTS_PER_GROUP"].flatMap { Int($0) } ?? 200,
             apiTransport: URLSessionAPITransport(),
             log: { generatorLog($0) })
@@ -197,10 +197,11 @@ public struct RecordGroupCatalogRunner {
         sampleEvery: Int = 25,
         allowShort: Bool = false,
         apiKey: String? = nil,
-        // 1000, not 100: the 2026-07-30 survey probe against RG 59 requested 1000 and received exactly
-        // 1000 of its 4,449 series, so the documented maximum is honoured in practice. That is a 10x
-        // reduction in calls against the monthly quota — the whole 22-group series layer becomes ~40.
-        apiPageSize: Int = 1000,
+        // `nil` means "use the level-aware default" — 1000 for series, 250 for file units, 100 for
+        // items. A single global number cannot be right for both: the survey proved limit=1000 is
+        // honoured for series (RG 59 returned exactly 1000 of 4,449), and the RG 59 file-unit 500 proved
+        // it is too large one level down. An explicit API_PAGE_SIZE overrides every level.
+        apiPageSize: Int? = nil,
         maxAPIRequestsPerGroup: Int = 200,
         apiTransport: (any CatalogAPITransport)? = nil,
         log: @escaping @Sendable (String) -> Void = { _ in }
@@ -210,16 +211,26 @@ public struct RecordGroupCatalogRunner {
         let rawStore = RawRecordStore(directory: cacheDirectory.appendingPathComponent("raw"))
         let checkpoints = CheckpointStore(
             directory: cacheDirectory.appendingPathComponent("checkpoints"))
+        // A separate checkpoint namespace for API harvests, recording the DEPTH the store was
+        // harvested at. Without it, PROJECT_ONLY fell back to the plan's depth — which defaults to
+        // `series` — and silently re-projected a file-unit store at series depth, dropping 495,212
+        // file units from 21 groups' shards while reporting success. Separate from the bulk
+        // checkpoints because a group can legitimately have both.
+        let apiCheckpoints = CheckpointStore(
+            directory: cacheDirectory.appendingPathComponent("checkpoints-api"))
         let harvester = RecordGroupHarvester(client: client, rawStore: rawStore,
                                             checkpoints: checkpoints, log: log)
         // The refresh lives in its own store rather than overwriting the snapshot's. Keeping both is
         // what makes a diff possible at all — and means a bad refresh can be deleted without costing
         // the 22 GB bulk harvest.
         let apiStore = RawRecordStore(directory: cacheDirectory.appendingPathComponent("raw-api"))
+        let explicitAPIPageSize = apiPageSize
         let apiClient: CatalogAPIClient? = {
             guard mode.usesAPI else { return nil }
             guard let apiKey, !apiKey.isEmpty else { return nil }
-            return CatalogAPIClient(apiKey: apiKey, pageSize: apiPageSize,
+            return CatalogAPIClient(apiKey: apiKey,
+                                    pageSize: apiPageSize
+                                        ?? CatalogAPIClient.defaultPageSize(forLevel: "series"),
                                     transport: apiTransport ?? URLSessionAPITransport(), log: log)
         }()
         if mode.usesAPI, apiClient == nil {
@@ -297,22 +308,53 @@ public struct RecordGroupCatalogRunner {
             if mode.apiOnly, let apiClient {
                 sourcesUsed.insert(Self.apiSourceKind)
                 // No listing, no shards, no 22 GB. The API is the source of record for this group.
-                try apiStore.reset(recordGroup: group.number)
-                let fetch = try await Self.fetchGroupFromAPI(
-                    client: apiClient, store: apiStore, group: group,
-                    maxRequests: maxAPIRequestsPerGroup, log: log)
+                //
+                // Note the absence of a reset here. The store is NOT cleared before fetching: the fetch
+                // stages to a `.partial` file and is swapped in only once it has succeeded. Resetting
+                // first is what turned RG 59's HTTP 500 into the loss of 4,449 already-harvested series.
+
+                // Per-group isolation, matching the refresh path. Without it one group's failure threw
+                // out of the whole run: the RG 59 file-unit 500 would have taken every group after it
+                // down too, and in a 22-group run that is most of the harvest lost to one bad page.
+                let fetch: (recordCount: Int, requestsSpent: Int,
+                            observation: APIEnvelopeObservation?, notes: [String])
+                do {
+                    fetch = try await Self.fetchGroupFromAPI(
+                        client: apiClient, store: apiStore, group: group,
+                        maxRequests: maxAPIRequestsPerGroup,
+                        pageSizeOverride: explicitAPIPageSize, log: log)
+                } catch {
+                    try? apiStore.discardStaging(recordGroup: group.number)
+                    log("[RecordGroupCatalogGenerator] ✗ RG \(group.number): API harvest failed — "
+                        + "\(error)")
+                    reviewNotes.append("RG \(group.number): API harvest FAILED (\(error)) — this "
+                                       + "group was skipped. Its PREVIOUS raw store and index shard are "
+                                       + "intact; the partial fetch was discarded. Other groups were "
+                                       + "unaffected.")
+                    refusals.append("RG \(group.number): API harvest failed — \(error)")
+                    summaries.append(RecordGroupSummary(
+                        recordGroup: group.number, depth: group.depth, state: .partial))
+                    continue
+                }
                 apiRequestsSpent += fetch.requestsSpent
                 if firstAPIObservation == nil { firstAPIObservation = fetch.observation }
                 reviewNotes.append(contentsOf: fetch.notes)
 
                 guard fetch.recordCount > 0 else {
-                    reviewNotes.append("RG \(group.number): the API returned no records — nothing was "
-                                       + "written for this group, and any existing index shard for it is "
-                                       + "left untouched")
+                    try? apiStore.discardStaging(recordGroup: group.number)
+                    reviewNotes.append("RG \(group.number): the API returned no records — the staged "
+                                       + "fetch was discarded, and this group's previous raw store and "
+                                       + "index shard are left untouched")
                     summaries.append(RecordGroupSummary(
                         recordGroup: group.number, depth: group.depth, state: .partial))
                     continue
                 }
+                // Success: swap the staged fetch in, and record the depth it was harvested at.
+                try apiStore.commitStaging(recordGroup: group.number)
+                try apiCheckpoints.save(HarvestCheckpoint(
+                    recordGroup: group.number, depth: group.depth,
+                    lastCompletedShardIndex: 1, shardCount: 1,
+                    recordsWritten: fetch.recordCount))
                 outcome = RecordGroupHarvestOutcome(
                     recordGroup: group.number, depth: group.depth,
                     recordsStored: fetch.recordCount, state: .complete)
@@ -370,8 +412,20 @@ public struct RecordGroupCatalogRunner {
                     // fetched sits in that same store — so a short store still fails the run.
                     builderForGroup = apiBuilder
                     sourcesUsed.insert(Self.apiSourceKind)
+                    // Depth comes from the API checkpoint, NOT from the plan. The plan's depth defaults
+                    // to `series`, so a bare `PROJECT_ONLY=1` over a file-unit store re-projected it at
+                    // series depth and quietly discarded every file unit — 495,212 of them across 21
+                    // groups, with the run reporting success.
+                    let apiCheckpoint = apiCheckpoints.load(recordGroup: group.number)
+                    let storedDepth = apiCheckpoint?.depth ?? group.depth
+                    if apiCheckpoint == nil {
+                        reviewNotes.append("RG \(group.number): no API checkpoint, so its harvested "
+                                           + "depth is unknown — re-projecting at '\(group.depth.rawValue)'. "
+                                           + "If the store holds deeper levels they will be dropped; "
+                                           + "pass DEPTH explicitly or re-harvest.")
+                    }
                     outcome = RecordGroupHarvestOutcome(
-                        recordGroup: group.number, depth: group.depth, state: .complete)
+                        recordGroup: group.number, depth: storedDepth, state: .complete)
                 }
             } else {
                 sourcesUsed.insert(Self.bulkSourceKind)
@@ -405,7 +459,6 @@ public struct RecordGroupCatalogRunner {
             if mode.apiRefresh, !mode.apiOnly, let apiClient {
                 sourcesUsed.insert(Self.apiSourceKind)
                 do {
-                    try apiStore.reset(recordGroup: group.number)
                     let writerHandle = try apiStore.openWriter(recordGroup: group.number)
                     defer { try? writerHandle.close() }
                     // One query per admitted level, rather than one unfiltered query. An unfiltered
@@ -456,17 +509,22 @@ public struct RecordGroupCatalogRunner {
                         // Never merge an empty refresh: with the overlay logic, zero refresh records
                         // over a populated snapshot would classify EVERY record as
                         // `missingFromRefresh` and read as a catastrophic withdrawal.
+                        try? apiStore.discardStaging(recordGroup: group.number)
                         reviewNotes.append("RG \(group.number): API refresh returned 0 records — the "
                                            + "refresh was DISCARDED for this group rather than merged "
                                            + "(merging it would have reported every snapshot record "
                                            + "as withdrawn). Check the API survey output.")
                     } else {
+                        try apiStore.commitStaging(recordGroup: group.number)
                         overlayForGroup = apiStore
                     }
                 } catch {
-                    // A refresh failure must not destroy a good snapshot-derived index.
+                    // A refresh failure must not destroy a good snapshot-derived index — nor the
+                    // previous refresh, which the staged fetch leaves alone.
+                    try? apiStore.discardStaging(recordGroup: group.number)
                     reviewNotes.append("RG \(group.number): API refresh FAILED (\(error)) — this "
-                                       + "group's index is from the bulk snapshot alone")
+                                       + "group's index is from the bulk snapshot alone; the previous "
+                                       + "refresh, if any, is intact")
                 }
             }
 
@@ -483,9 +541,26 @@ public struct RecordGroupCatalogRunner {
                 generated: generated, recordGroup: group.number,
                 title: built.summary.title, depth: built.summary.depth,
                 records: built.records)
-            let bytes = try writer.writeShard(shard)
-            log("[RecordGroupCatalogGenerator] RG \(group.number): wrote "
-                + "\(shard.records.count) records (\(RecordGroupHarvester.formatBytes(bytes)))")
+
+            // Never overwrite an existing shard with a demonstrably worse one. A group that came in
+            // materially short of NARA's own count is not a better description of the record group than
+            // whatever is already on disk, and writing it anyway is how a re-projection over a damaged
+            // raw store replaced RG 59's 4,449 series with an empty shard — the same
+            // clobber-the-good-copy mistake the staging fix addresses one layer down.
+            if built.summary.isMateriallyShort, !allowShort,
+               writer.shardExists(recordGroup: group.number) {
+                reviewNotes.append("RG \(group.number): built only \(built.summary.harvestedSeriesCount) "
+                                   + "series against NARA's \(built.summary.expectedSeriesCount ?? 0), so "
+                                   + "the EXISTING index shard was left in place rather than overwritten "
+                                   + "with a worse one. Fix the raw store (or set ALLOW_SHORT=1 if the "
+                                   + "shortfall is expected) and re-run.")
+                log("[RecordGroupCatalogGenerator] ✗ RG \(group.number): materially short — kept the "
+                    + "existing shard, wrote nothing")
+            } else {
+                let bytes = try writer.writeShard(shard)
+                log("[RecordGroupCatalogGenerator] RG \(group.number): wrote "
+                    + "\(shard.records.count) records (\(RecordGroupHarvester.formatBytes(bytes)))")
+            }
 
             for record in shard.records {
                 if totalRecordsProjected % sampleEvery == 0 { sampleRecords.append(record) }
@@ -798,11 +873,13 @@ public struct RecordGroupCatalogRunner {
         store: RawRecordStore,
         group: RecordGroupPlan,
         maxRequests: Int,
+        pageSizeOverride: Int?,
         log: @escaping @Sendable (String) -> Void
     ) async throws -> (recordCount: Int, requestsSpent: Int,
                        observation: APIEnvelopeObservation?, notes: [String]) {
 
-        let writerHandle = try store.openWriter(recordGroup: group.number)
+        // Staged, not written in place: a failure must not destroy the previous good harvest.
+        let writerHandle = try store.openStagingWriter(recordGroup: group.number)
         defer { try? writerHandle.close() }
 
         var notes: [String] = []
@@ -831,11 +908,14 @@ public struct RecordGroupCatalogRunner {
         // for RG 59 is hundreds of thousands of records — and exhaust the ceiling long before reaching
         // the file units. Per-level paging also keeps API coverage identical to the bulk snapshot's,
         // which is what makes `missingFromRefresh` meaningful rather than an artefact.
-        for level in group.depth.admittedLevels.sorted() {
+        // Coarsest level first — see HarvestDepth.orderedLevels for why alphabetical order was a bug.
+        for level in group.depth.orderedLevels {
             guard spent < maxRequests else { break }
             let result = try await client.harvestGroup(
                 recordGroup: group.number, level: level,
-                maxRequests: maxRequests - spent) { record in
+                maxRequests: maxRequests - spent,
+                startingPageSize: pageSizeOverride
+                    ?? CatalogAPIClient.defaultPageSize(forLevel: level)) { record in
                     try writerHandle.append(record)
                 }
             recordCount += result.recordCount

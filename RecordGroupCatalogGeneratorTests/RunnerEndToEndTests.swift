@@ -858,6 +858,187 @@ struct RunnerEndToEndTests {
         #expect(note.contains("added=0"))
     }
 
+    @Test("A FAILED API harvest leaves the previous good store and shard intact")
+    func failedApiHarvestPreservesPreviousData() async throws {
+        // The RG 59 lesson, and the most expensive bug in this tool's history. The harvest used to
+        // reset() the store and then fetch into it, so an HTTP 500 part-way through destroyed 4,449
+        // already-harvested series — the exact opposite of the raw store's promise.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        // A good API-only harvest first.
+        let (good, _) = try await apiOnlyRun(sandbox, apiResponses: [
+            (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
+            (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+        ])
+        #expect(good.manifest.recordGroups.first?.harvestedSeriesCount == 3)
+        let shardBefore = try #require(try sandbox.outputFiles()["series/rg_486.json"])
+        let store = RawRecordStore(directory: sandbox.cache.appendingPathComponent("raw-api"))
+        let storeBefore = try Data(contentsOf: store.url(recordGroup: 486))
+
+        // Now a harvest that dies after the node — the RG 59 shape exactly.
+        let (failed, _) = try await apiOnlyRun(sandbox, apiResponses: [
+            (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
+            ("{\"message\":\"boom\"}", 500),
+        ])
+        #expect(!failed.isTrustworthy)
+        #expect(failed.manifest.reviewNotes.contains { $0.contains("API harvest FAILED") })
+        #expect(failed.manifest.reviewNotes.contains { $0.contains("intact") })
+
+        // The previous store and shard survive, byte for byte.
+        #expect(try Data(contentsOf: store.url(recordGroup: 486)) == storeBefore)
+        #expect(try sandbox.outputFiles()["series/rg_486.json"] == shardBefore)
+        // And no staging file is left lying around.
+        #expect(!FileManager.default.fileExists(atPath: store.stagingURL(recordGroup: 486).path))
+    }
+
+    @Test("One group's API failure does not abort the others")
+    func apiFailureIsIsolatedPerGroup() async throws {
+        // Before per-group isolation, a single 500 threw out of the whole run — in a 22-group harvest
+        // that is most of the work lost to one bad page.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let plan = RecordGroupHarvestPlan(groups: [
+            RecordGroupPlan(number: 486, depth: .series),
+            RecordGroupPlan(number: 420, depth: .series),
+        ])
+        let result = try await RecordGroupCatalogRunner.run(
+            plan: plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: ScriptedTransport(bodies: [:]), generated: "2026-07-30",
+            mode: .init(apiOnly: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: [
+                // RG 486's node succeeds, then every series page fails. Seven failures, because the
+                // adaptive halving walks 1000 → 500 → 250 → 125 → 62 → 31 → 25 before giving up at the
+                // floor — worth knowing as a quota cost: a genuinely unservable page burns 7 calls.
+                [(ScriptedAPITransport.groupNodePage(seriesCount: 3), 200)],
+                Array(repeating: ("{\"message\":\"boom\"}", 500), count: 7),
+                // …and RG 420 then harvests normally, which is the point.
+                [(ScriptedAPITransport.groupNodePage(recordGroup: 420, seriesCount: 2,
+                                                     naId: 9999), 200),
+                 (ScriptedAPITransport.page(naIds: [7, 8], recordGroup: 420, total: 2), 200)],
+            ].flatMap { $0 }))
+        // The second group still harvested.
+        let rg420 = try #require(result.manifest.recordGroups.first { $0.recordGroup == 420 })
+        #expect(rg420.harvestedSeriesCount == 2)
+        // And the failure is recorded rather than swallowed.
+        #expect(result.failures.contains { $0.contains("RG 486") })
+    }
+
+    @Test("A materially short build does not overwrite a good existing shard")
+    func doesNotClobberAGoodShard() async throws {
+        // How RG 59's index went to zero records: a re-projection over a damaged raw store built an
+        // empty shard and wrote it over the good one. The run failed loudly — after the damage.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        try await run(sandbox, transport: Self.transport())
+        let good = try #require(try sandbox.outputFiles()["series/rg_486.json"])
+
+        // Gut the raw store, leaving only the group node — exactly the RG 59 state.
+        let store = RawRecordStore(directory: sandbox.cache.appendingPathComponent("raw"))
+        let node = """
+        {"naId":22345815,"title":"Records of the U.S. Trade and Development Agency",\
+        "levelOfDescription":"recordGroup","recordGroupNumber":486,"seriesCount":3}
+        """
+        try Data((node + "\n").utf8).write(to: store.url(recordGroup: 486))
+
+        let result = try await run(sandbox, transport: Self.transport(),
+                                  mode: .init(projectOnly: true))
+        #expect(!result.isTrustworthy)
+        #expect(result.failures.contains { $0.contains("but NARA states 3") })
+        // The good shard survived.
+        #expect(try sandbox.outputFiles()["series/rg_486.json"] == good)
+        #expect(result.manifest.reviewNotes.contains { $0.contains("left in place") })
+    }
+
+    @Test("ALLOW_SHORT permits the overwrite, for a deliberately partial build")
+    func allowShortPermitsOverwrite() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        try await run(sandbox, transport: Self.transport())
+        let good = try #require(try sandbox.outputFiles()["series/rg_486.json"])
+
+        // Short but NOT empty: one series against NARA's three. A zero-record build fails regardless of
+        // ALLOW_SHORT — the emptiness check is deliberately stricter, since nothing downstream can tell
+        // an empty index from a corpus that genuinely has no series.
+        let store = RawRecordStore(directory: sandbox.cache.appendingPathComponent("raw"))
+        let node = """
+        {"naId":22345815,"title":"RG","levelOfDescription":"recordGroup",\
+        "recordGroupNumber":486,"seriesCount":3}
+        """
+        try Data((ndjsonShard([node, Self.series(naId: 1, title: "Series One")
+            .replacingOccurrences(of: "{\"record\":", with: "")
+            .replacingOccurrences(of: "}}", with: "}")])).utf8)
+            .write(to: store.url(recordGroup: 486))
+
+        let result = try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: Self.transport(), generated: "2026-07-30",
+            mode: .init(projectOnly: true), allowShort: true)
+        #expect(result.isTrustworthy)
+        // Opted in, so the shard IS replaced.
+        #expect(try sandbox.outputFiles()["series/rg_486.json"] != good)
+    }
+
+    @Test("PROJECT_ONLY re-projects an API store at the depth it was HARVESTED at")
+    func projectOnlyHonoursHarvestedDepth() async throws {
+        // The bug that cost 21 groups their file units: PROJECT_ONLY took depth from the plan, which
+        // defaults to `series`, so a bare consolidation over a seriesAndFileUnits store silently
+        // discarded every file unit and still reported success.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        let deepPlan = RecordGroupHarvestPlan(
+            groups: [RecordGroupPlan(number: 486, depth: .seriesAndFileUnits)])
+        let harvested = try await RecordGroupCatalogRunner.run(
+            plan: deepPlan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: ScriptedTransport(bodies: [:]), generated: "2026-07-30",
+            mode: .init(apiOnly: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: [
+                (ScriptedAPITransport.groupNodePage(seriesCount: 2), 200),
+                (ScriptedAPITransport.page(naIds: [1, 2], total: 2), 200),          // series
+                (ScriptedAPITransport.fileUnitPage(naIds: [100, 101], total: 2), 200),
+            ]))
+        #expect(harvested.manifest.recordGroups.first?.harvestedFileUnitCount == 2)
+
+        // Now consolidate with NO DEPTH set — the plan therefore says `series`.
+        let consolidated = try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: ScriptedTransport(bodies: [:]), generated: "2026-07-30",
+            mode: .init(projectOnly: true))
+        // The file units survive, because the depth came from the API checkpoint.
+        let group = try #require(consolidated.manifest.recordGroups.first)
+        #expect(group.depth == .seriesAndFileUnits)
+        #expect(group.harvestedFileUnitCount == 2)
+        #expect(group.harvestedSeriesCount == 2)
+    }
+
+    @Test("The committed sample is capped, and stays a cross-section rather than a prefix")
+    func sampleIsCapped() throws {
+        // A fixed interval does not bound a committed file: 1-in-25 of 751,880 file-unit records
+        // produced a 250 MB series-sample.json, which is not a thing to put in git.
+        let many = (1...5000).map {
+            HarvestedRecord(naId: String($0), title: "T\($0)", levelOfDescription: "series",
+                            recordGroupNumber: 486, catalogURL: "u")
+        }
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let writer = RecordGroupCatalogWriter(outputDirectory: sandbox.output, sampleEvery: 1)
+        try writer.prepare()
+        try writer.writeSample(many, totalRecords: 5000, generated: "2026-07-30")
+
+        struct Sample: Codable { let totalRecords: Int; let sampledRecords: Int
+                                 let records: [HarvestedRecord] }
+        let decoded = try JSONDecoder().decode(
+            Sample.self, from: try Data(contentsOf: writer.sampleURL))
+        #expect(decoded.records.count == RecordGroupCatalogWriter.sampleCap)
+        #expect(decoded.sampledRecords == RecordGroupCatalogWriter.sampleCap)
+        #expect(decoded.totalRecords == 5000)
+        // Evenly spread, not the first 500: the last kept record is near the end of the input.
+        let lastNaId = Int(decoded.records.last?.naId ?? "0") ?? 0
+        #expect(lastNaId > 4000, "sample should span the corpus, got last naId \(lastNaId)")
+    }
+
     @Test("API_SURVEY writes into its own subtree and cannot clobber a harvest's report")
     func surveyDoesNotClobber() async throws {
         let sandbox = try Sandbox()

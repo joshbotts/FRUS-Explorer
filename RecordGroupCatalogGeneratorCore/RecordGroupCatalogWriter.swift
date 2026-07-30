@@ -41,6 +41,15 @@ public struct RecordGroupCatalogWriter: Sendable {
     /// Sampling interval for the committed record sample.
     public let sampleEvery: Int
 
+    /// Hard ceiling on records in the committed sample.
+    ///
+    /// A fixed *interval* does not bound a committed artifact. At series-only depth, 1-in-25 of 20,188
+    /// records was ~800 records and about 1 MB. At file-unit depth the same interval selected 30,075 of
+    /// 751,880 much larger records and produced a **250 MB** file — which would have gone into git,
+    /// since the sample is committed by design. The interval still decides *which* records are
+    /// candidates; this decides how many survive.
+    public static let sampleCap = 500
+
     /// Human-facing JSON: pretty-printed so a reviewer can read a diff.
     static let prettyEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -78,6 +87,12 @@ public struct RecordGroupCatalogWriter: Sendable {
 
     // MARK: Index shards
 
+    /// Whether a shard already exists for this group.
+    public func shardExists(recordGroup: Int) -> Bool {
+        FileManager.default.fileExists(
+            atPath: seriesDirectory.appendingPathComponent("rg_\(recordGroup).json").path)
+    }
+
     /// Writes one record group's index shard.
     @discardableResult
     public func writeShard(_ shard: RecordGroupIndexShard) throws -> Int {
@@ -100,14 +115,27 @@ public struct RecordGroupCatalogWriter: Sendable {
     ///   - totalRecords: how many records the sample was drawn from.
     public func writeSample(_ sampled: [HarvestedRecord], totalRecords: Int,
                             generated: String) throws {
+        // Sub-sample evenly rather than truncating, so the file stays a cross-section of the whole
+        // corpus instead of the first 500 records of the lowest-numbered record group.
+        let capped: [HarvestedRecord]
+        if sampled.count > Self.sampleCap {
+            let stride = Double(sampled.count) / Double(Self.sampleCap)
+            capped = (0..<Self.sampleCap).map { sampled[Int(Double($0) * stride)] }
+        } else {
+            capped = sampled
+        }
+
         struct Sample: Codable {
             let generated: String
             let sampleEvery: Int
             let totalRecords: Int
+            /// Records actually written, after ``RecordGroupCatalogWriter/sampleCap``.
+            let sampledRecords: Int
             let records: [HarvestedRecord]
         }
         let sample = Sample(generated: generated, sampleEvery: sampleEvery,
-                            totalRecords: totalRecords, records: sampled)
+                            totalRecords: totalRecords, sampledRecords: capped.count,
+                            records: capped)
         try Self.prettyEncoder.encode(sample).write(to: sampleURL, options: .atomic)
     }
 

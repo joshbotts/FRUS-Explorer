@@ -1,226 +1,256 @@
 keyPath,occurrences,recordsWithPath,presencePct,jsonTypes,distinctValues,examples
-accessRestriction,20187,20187,100.0,object,0,
-accessRestriction.note,3544,3544,17.6,string,311,"Many documents have been declassified, but others are still unavailable for research.  Withdrawal sheets giving informat… ⁝ This series has undergone a comprehensive declassification review and most documents have been declassified. A few indiv… ⁝ Some of these records must be screened for personal privacy information under 5 U.S.C. 552 (b) (6) prior to public relea…"
-accessRestriction.specificAccessRestrictions,4959,4959,24.6,array,0,
-accessRestriction.specificAccessRestrictions[],6270,4959,24.6,object,0,
-accessRestriction.specificAccessRestrictions[].restriction,6270,4959,24.6,string,17,FOIA (b)(1) National Security ⁝ FOIA (b)(6) Personal Information ⁝ FOIA (b)(3) Statute
-accessRestriction.specificAccessRestrictions[].securityClassification,4660,4274,21.2,string,7,Top Secret ⁝ Secret ⁝ Restricted Data/Formerly Restricted Data
-accessRestriction.status,20187,20187,100.0,string,5,Unrestricted ⁝ Restricted - Partly ⁝ Restricted - Possibly
-accessionNumbers,6234,6234,30.9,array,0,
-accessionNumbers[],8159,6234,30.9,string,>500,AC 67-002 ⁝ NN3-043-97-007 ⁝ LTI-0059-2014-0025
-ancestors,20188,20188,100.0,array,0,
-ancestors[],20188,20188,100.0,object,0,
-ancestors[].distance,20188,20188,100.0,int,1,1
-ancestors[].inclusiveEndDate,20188,20188,100.0,object,0,
-ancestors[].inclusiveEndDate.dateQualifier,3963,3963,19.6,string,1,ca.
-ancestors[].inclusiveEndDate.logicalDate,20188,20188,100.0,string,25,1979-12-31 ⁝ 2002-12-31 ⁝ 2002-01-01
-ancestors[].inclusiveEndDate.year,20188,20188,100.0,int,19,1979 ⁝ 2002 ⁝ 1921
-ancestors[].inclusiveStartDate,20188,20188,100.0,object,0,
-ancestors[].inclusiveStartDate.logicalDate,20188,20188,100.0,string,19,1825-01-01 ⁝ 1763-01-01 ⁝ 1917-01-01
-ancestors[].inclusiveStartDate.year,20188,20188,100.0,int,19,1825 ⁝ 1763 ⁝ 1917
-ancestors[].levelOfDescription,20188,20188,100.0,string,1,recordGroup
-ancestors[].naId,20188,20188,100.0,int,22,372 ⁝ 388 ⁝ 392
-ancestors[].recordGroupNumber,20188,20188,100.0,int,22,43 ⁝ 59 ⁝ 63
-ancestors[].title,20188,20188,100.0,string,22,"Records of International Conferences, Commissions, and Expositions ⁝ General Records of the Department of State ⁝ Records of the Committee on Public Information"
-arrangement,17897,17897,88.7,string,>500,Arranged by NARA-assigned numbers. ⁝ Unarranged. ⁝ Arranged by subject.
-audiovisual,19320,19320,95.7,string,2,false ⁝ true
+accessRestriction,751879,751879,100.0,object,0,
+accessRestriction.note,57054,57054,7.6,string,348,"Many documents have been declassified, but others are still unavailable for research.  Withdrawal sheets giving informat… ⁝ This file has undergone a comprehensive declassification review and most documents have been declassified. A few individ… ⁝ This series has undergone a comprehensive declassification review and most documents have been declassified. A few indiv…"
+accessRestriction.specificAccessRestrictions,73256,73256,9.7,array,0,
+accessRestriction.specificAccessRestrictions[],92981,73256,9.7,object,0,
+accessRestriction.specificAccessRestrictions[].restriction,92981,73256,9.7,string,17,FOIA (b)(1) National Security ⁝ FOIA (b)(6) Personal Information ⁝ FOIA (b)(3) Statute
+accessRestriction.specificAccessRestrictions[].securityClassification,57322,55626,7.4,string,7,Secret ⁝ Top Secret ⁝ Restricted Data/Formerly Restricted Data
+accessRestriction.status,751879,751879,100.0,string,5,Unrestricted ⁝ Restricted - Partly ⁝ Restricted - Possibly
+accessionNumbers,8695,8695,1.2,array,0,
+accessionNumbers[],11016,8695,1.2,string,>500,AC 67-002 ⁝ NN3-043-97-007 ⁝ LTI-0059-2014-0025
+ancestors,751880,751880,100.0,array,0,
+ancestors[],1483572,751880,100.0,object,0,
+ancestors[].creators,729901,729901,97.1,array,0,
+ancestors[].creators[],1091837,729901,97.1,object,0,
+ancestors[].creators[].abolishDate,989405,641051,85.3,object,0,
+ancestors[].creators[].abolishDate.day,480331,353459,47.0,int,31,15 ⁝ 5 ⁝ 30
+ancestors[].creators[].abolishDate.logicalDate,989405,641051,85.3,string,>500,1963-12-31 ⁝ 1948-03-31 ⁝ 1963-01-15
+ancestors[].creators[].abolishDate.month,528856,366857,48.8,int,12,3 ⁝ 1 ⁝ 10
+ancestors[].creators[].abolishDate.year,989405,641051,85.3,int,133,1963 ⁝ 1948 ⁝ 1893
+ancestors[].creators[].authorityType,1091837,729901,97.1,string,1,organization
+ancestors[].creators[].creatorType,1091837,729901,97.1,string,2,Most Recent ⁝ Predecessor
+ancestors[].creators[].establishDate,1090416,728926,96.9,object,0,
+ancestors[].creators[].establishDate.day,518518,406285,54.0,int,31,21 ⁝ 5 ⁝ 27
+ancestors[].creators[].establishDate.logicalDate,1090416,728926,96.9,string,>500,1959-01-01 ⁝ 1947-11-21 ⁝ 1948-10-05
+ancestors[].creators[].establishDate.month,642570,497633,66.2,int,12,11 ⁝ 10 ⁝ 6
+ancestors[].creators[].establishDate.year,1090416,728926,96.9,int,208,1959 ⁝ 1947 ⁝ 1948
+ancestors[].creators[].heading,1091837,729901,97.1,string,>500,"U.S. Science Exhibit, Century 21 Exposition. 1959-1963 ⁝ Havana Round of the General Agreement on Tariffs and Trade. U.S. Delegation. (11/21/1947 - 03/1948) ⁝ Interim Commission for the International Trade Organization"
+ancestors[].creators[].naId,1091837,729901,97.1,int,>500,10458775 ⁝ 10475174 ⁝ 10445701
+ancestors[].distance,1483572,751880,100.0,int,2,2 ⁝ 1
+ancestors[].inclusiveEndDate,1483572,751880,100.0,object,0,
+ancestors[].inclusiveEndDate.dateQualifier,155657,149391,19.9,string,2,ca. ⁝ ?
+ancestors[].inclusiveEndDate.day,26109,26109,3.5,int,31,9 ⁝ 15 ⁝ 14
+ancestors[].inclusiveEndDate.logicalDate,1483572,751880,100.0,string,>500,1979-12-31 ⁝ 1962-12-31 ⁝ 1949-12-31
+ancestors[].inclusiveEndDate.month,33329,33329,4.4,int,12,8 ⁝ 4 ⁝ 3
+ancestors[].inclusiveEndDate.year,1483572,751880,100.0,int,165,1979 ⁝ 1962 ⁝ 1949
+ancestors[].inclusiveStartDate,1483572,751880,100.0,object,0,
+ancestors[].inclusiveStartDate.dateQualifier,30241,30241,4.0,string,1,ca.
+ancestors[].inclusiveStartDate.day,25845,25845,3.4,int,31,17 ⁝ 22 ⁝ 25
+ancestors[].inclusiveStartDate.logicalDate,1483572,751880,100.0,string,>500,1825-01-01 ⁝ 1961-01-01 ⁝ 1947-11-17
+ancestors[].inclusiveStartDate.month,34757,34757,4.6,int,12,11 ⁝ 6 ⁝ 1
+ancestors[].inclusiveStartDate.year,1483572,751880,100.0,int,218,1825 ⁝ 1961 ⁝ 1947
+ancestors[].levelOfDescription,1483572,751880,100.0,string,2,recordGroup ⁝ series
+ancestors[].naId,1483572,751880,100.0,int,>500,372 ⁝ 572800 ⁝ 1422034
+ancestors[].recordGroupNumber,751880,751880,100.0,int,22,43 ⁝ 59 ⁝ 63
+ancestors[].title,1483572,751880,100.0,string,>500,"Records of International Conferences, Commissions, and Expositions ⁝ Architectural Drawings ⁝ Records Relating to the Interim Commission of the International Trade Organization (ITO)"
+arrangement,17918,17918,2.4,string,>500,Arranged by NARA-assigned numbers. ⁝ Unarranged. ⁝ Arranged by subject.
+audiovisual,205354,205354,27.3,string,2,false ⁝ true
 beginCongress,1,1,0.0,int,1,87
-contributors,462,462,2.3,array,0,
-contributors[],894,462,2.3,object,0,
-contributors[].abolishDate,185,114,0.6,object,0,
-contributors[].abolishDate.day,102,88,0.4,int,26,31 ⁝ 6 ⁝ 25
-contributors[].abolishDate.logicalDate,185,114,0.6,string,107,1992-12-31 ⁝ 1945-12-31 ⁝ 1962-10-06
-contributors[].abolishDate.month,126,99,0.5,int,12,12 ⁝ 10 ⁝ 3
-contributors[].abolishDate.year,185,114,0.6,int,57,1992 ⁝ 1945 ⁝ 1962
-contributors[].authorityType,894,462,2.3,string,2,organization ⁝ person
-contributors[].birthDate,414,249,1.2,object,0,
+contributors,536,536,0.1,array,0,
+contributors[],1172,536,0.1,object,0,
+contributors[].abolishDate,187,116,0.0,object,0,
+contributors[].abolishDate.day,103,89,0.0,int,26,31 ⁝ 6 ⁝ 25
+contributors[].abolishDate.logicalDate,187,116,0.0,string,109,1881-12-31 ⁝ 1992-12-31 ⁝ 1945-12-31
+contributors[].abolishDate.month,127,100,0.0,int,12,12 ⁝ 10 ⁝ 3
+contributors[].abolishDate.year,187,116,0.0,int,58,1881 ⁝ 1992 ⁝ 1945
+contributors[].authorityType,1172,536,0.1,string,2,organization ⁝ person
+contributors[].birthDate,683,319,0.0,object,0,
 contributors[].birthDate.day,9,9,0.0,int,3,27 ⁝ 12 ⁝ 5
-contributors[].birthDate.logicalDate,414,249,1.2,string,108,1907-01-01 ⁝ 1912-01-01 ⁝ 1923-01-01
+contributors[].birthDate.logicalDate,683,319,0.0,string,161,1907-01-01 ⁝ 1912-01-01 ⁝ 1923-01-01
 contributors[].birthDate.month,9,9,0.0,int,4,10 ⁝ 5 ⁝ 4
-contributors[].birthDate.year,414,249,1.2,int,104,1907 ⁝ 1912 ⁝ 1923
-contributors[].contributorType,894,462,2.3,string,34,Publisher ⁝ Author of screenplay ⁝ Participant
-contributors[].deathDate,325,212,1.1,object,0,
+contributors[].birthDate.year,683,319,0.0,int,156,1907 ⁝ 1912 ⁝ 1923
+contributors[].contributorType,1172,536,0.1,string,34,Participant ⁝ Publisher ⁝ Author of screenplay
+contributors[].deathDate,591,280,0.0,object,0,
 contributors[].deathDate.day,9,9,0.0,int,4,18 ⁝ 29 ⁝ 13
-contributors[].deathDate.logicalDate,325,212,1.1,string,105,1973-12-31 ⁝ 1985-12-31 ⁝ 1977-12-31
+contributors[].deathDate.logicalDate,591,280,0.0,string,165,1973-12-31 ⁝ 1985-12-31 ⁝ 1977-12-31
 contributors[].deathDate.month,9,9,0.0,int,4,3 ⁝ 11 ⁝ 6
-contributors[].deathDate.year,325,212,1.1,int,98,1973 ⁝ 1985 ⁝ 1977
-contributors[].establishDate,246,143,0.7,object,0,
-contributors[].establishDate.day,127,96,0.5,int,29,26 ⁝ 25 ⁝ 6
-contributors[].establishDate.logicalDate,246,143,0.7,string,129,1932-01-01 ⁝ 1942-01-01 ⁝ 1942-01-26
-contributors[].establishDate.month,164,117,0.6,int,12,1 ⁝ 9 ⁝ 3
-contributors[].establishDate.year,246,143,0.7,int,70,1932 ⁝ 1942 ⁝ 1962
-contributors[].heading,894,462,2.3,string,>500,"International Telecommunications Union. International Radio Consultative Committee. (1932 - 1992) ⁝ Auden, W. H. (Wystan Hugh), 1907-1973 ⁝ Lê, Ðuc Tho, 1912-"
-contributors[].naId,894,462,2.3,int,>500,10491598 ⁝ 10580978 ⁝ 10570003
-coverageEndDate,3775,3775,18.7,object,0,
-coverageEndDate.dateQualifier,105,105,0.5,string,2,ca. ⁝ ?
-coverageEndDate.day,782,782,3.9,int,31,9 ⁝ 29 ⁝ 5
-coverageEndDate.logicalDate,3775,3775,18.7,string,487,1975-12-31 ⁝ 1971-12-31 ⁝ 1948-02-09
-coverageEndDate.month,907,907,4.5,int,12,2 ⁝ 9 ⁝ 12
-coverageEndDate.year,3775,3775,18.7,int,202,1975 ⁝ 1971 ⁝ 1948
-coverageStartDate,3775,3775,18.7,object,0,
-coverageStartDate.dateQualifier,124,124,0.6,string,2,ca. ⁝ ?
-coverageStartDate.day,765,765,3.8,int,31,1 ⁝ 7 ⁝ 3
-coverageStartDate.logicalDate,3775,3775,18.7,string,>500,1959-01-01 ⁝ 1964-01-01 ⁝ 1968-01-01
-coverageStartDate.month,907,907,4.5,int,12,1 ⁝ 12 ⁝ 11
-coverageStartDate.year,3775,3775,18.7,int,243,1959 ⁝ 1964 ⁝ 1968
-creators,20180,20180,100.0,array,0,
-creators[],24356,20180,100.0,object,0,
-creators[].abolishDate,20900,17094,84.7,object,0,
-creators[].abolishDate.day,11217,9417,46.6,int,31,12 ⁝ 6 ⁝ 24
-creators[].abolishDate.logicalDate,20900,17094,84.7,string,>500,1969-12-12 ⁝ 1986-12-31 ⁝ 1922-02-06
-creators[].abolishDate.month,12550,10309,51.1,int,12,12 ⁝ 2 ⁝ 8
-creators[].abolishDate.year,20900,17094,84.7,int,181,1969 ⁝ 1986 ⁝ 1922
-creators[].authorityType,24356,20180,100.0,string,1,organization
-creators[].creatorType,24356,20180,100.0,string,2,Most Recent ⁝ Predecessor
-creators[].establishDate,24208,20047,99.3,object,0,
-creators[].establishDate.day,12740,11079,54.9,int,31,3 ⁝ 25 ⁝ 12
-creators[].establishDate.logicalDate,24208,20047,99.3,string,>500,1966-12-03 ⁝ 1789-09-01 ⁝ 1954-08-25
-creators[].establishDate.month,15158,13087,64.8,int,12,12 ⁝ 9 ⁝ 8
-creators[].establishDate.year,24208,20047,99.3,int,214,1966 ⁝ 1789 ⁝ 1954
-creators[].heading,24352,20178,100.0,string,>500,United States-Mexico Commission for Border Development and Friendship. U.S. Section. (12/3/1966 - 12/12/1969) ⁝ Department of State. (09/1789 - ) ⁝ Department of State. Bureau of International Organization Affairs. Office of International Conferences. (08/25/1954 - 19…
-creators[].naId,24356,20180,100.0,int,>500,44179702 ⁝ 10453324 ⁝ 10472200
-custodialHistoryNote,19,19,0.1,string,17,"These records are unprocessed. Prior to requesting these records, please contact the National Archives office listed in … ⁝ When Robert Lansing resigned as Secretary of State on February 23, 1920, he took with him a large volume of material, mu… ⁝ The albums were received by the Department of State from the High Commission for Germany (commonly referred to as ""HICOG…"
-dataControlGroup,20188,20188,100.0,object,0,
-dataControlGroup.groupCd,20188,20188,100.0,string,21,LPLBJ ⁝ RRAM–M ⁝ RRAR
-dataControlGroup.groupId,20188,20188,100.0,string,21,"ou=NLLBJ,ou=groups ⁝ RRAM–M ⁝ RRAR"
-dataControlGroup.groupName,20162,20162,99.9,string,13,Lyndon Baines Johnson Library ⁝ National Archives at College Park – Motion Pictures ⁝ National Archives at College Park – Textual Reference
-dateNote,3756,3756,18.6,string,>500,"Although this series was created in 1974, it includes records dating from back to 1959. ⁝ Although this series was created in 1968, it contains records that date back to 1964. ⁝ Although this series was created in 1973, some of the documents date back to 1968."
-dispositionAuthorityNumbers,3887,3887,19.3,array,0,
-dispositionAuthorityNumbers[],4282,3887,19.3,string,>500,NC-059-75-1-1 ⁝ NC-59-75-1/1 ⁝ NC/59/75/1/1
-editStatus,12,12,0.1,string,2,Edited ⁝ Unedited
+contributors[].deathDate.year,591,280,0.0,int,158,1973 ⁝ 1985 ⁝ 1977
+contributors[].establishDate,248,145,0.0,object,0,
+contributors[].establishDate.day,127,96,0.0,int,29,26 ⁝ 25 ⁝ 6
+contributors[].establishDate.logicalDate,248,145,0.0,string,131,1878-01-01 ⁝ 1932-01-01 ⁝ 1942-01-01
+contributors[].establishDate.month,164,117,0.0,int,12,1 ⁝ 9 ⁝ 3
+contributors[].establishDate.year,248,145,0.0,int,72,1878 ⁝ 1932 ⁝ 1942
+contributors[].heading,1172,536,0.1,string,>500,"Commission Representing the United States at the Paris Universal Exposition of 1878. 1878-1881 ⁝ International Telecommunications Union. International Radio Consultative Committee. (1932 - 1992) ⁝ Auden, W. H. (Wystan Hugh), 1907-1973"
+contributors[].naId,1172,536,0.1,int,>500,10475820 ⁝ 10491598 ⁝ 10580978
+coverageEndDate,281285,281285,37.4,object,0,
+coverageEndDate.dateQualifier,374,374,0.0,string,2,ca. ⁝ ?
+coverageEndDate.day,24669,24669,3.3,int,31,7 ⁝ 15 ⁝ 8
+coverageEndDate.logicalDate,281284,281284,37.4,string,>500,1934-01-01 ⁝ 1931-07-07 ⁝ 1932-01-01
+coverageEndDate.month,31179,31179,4.1,int,13,7 ⁝ 4 ⁝ 3
+coverageEndDate.year,281285,281285,37.4,int,240,1934 ⁝ 1931 ⁝ 1932
+coverageStartDate,281286,281286,37.4,object,0,
+coverageStartDate.dateQualifier,410,410,0.1,string,2,ca. ⁝ ?
+coverageStartDate.day,24647,24647,3.3,int,31,7 ⁝ 14 ⁝ 25
+coverageStartDate.logicalDate,281286,281286,37.4,string,>500,1933-01-01 ⁝ 1931-07-07 ⁝ 1931-01-01
+coverageStartDate.month,31153,31153,4.1,int,12,7 ⁝ 4 ⁝ 3
+coverageStartDate.year,281286,281286,37.4,int,275,1933 ⁝ 1931 ⁝ 1926
+creators,20180,20180,2.7,array,0,
+creators[],24356,20180,2.7,object,0,
+creators[].abolishDate,20900,17094,2.3,object,0,
+creators[].abolishDate.day,11217,9417,1.3,int,31,12 ⁝ 6 ⁝ 24
+creators[].abolishDate.logicalDate,20900,17094,2.3,string,>500,1969-12-12 ⁝ 1986-12-31 ⁝ 1922-02-06
+creators[].abolishDate.month,12550,10309,1.4,int,12,12 ⁝ 2 ⁝ 8
+creators[].abolishDate.year,20900,17094,2.3,int,181,1969 ⁝ 1986 ⁝ 1922
+creators[].authorityType,24356,20180,2.7,string,1,organization
+creators[].creatorType,24356,20180,2.7,string,2,Most Recent ⁝ Predecessor
+creators[].establishDate,24208,20047,2.7,object,0,
+creators[].establishDate.day,12740,11079,1.5,int,31,3 ⁝ 25 ⁝ 12
+creators[].establishDate.logicalDate,24208,20047,2.7,string,>500,1966-12-03 ⁝ 1789-09-01 ⁝ 1954-08-25
+creators[].establishDate.month,15158,13087,1.7,int,12,12 ⁝ 9 ⁝ 8
+creators[].establishDate.year,24208,20047,2.7,int,214,1966 ⁝ 1789 ⁝ 1954
+creators[].heading,24352,20178,2.7,string,>500,United States-Mexico Commission for Border Development and Friendship. U.S. Section. (12/3/1966 - 12/12/1969) ⁝ Department of State. (09/1789 - ) ⁝ Department of State. Bureau of International Organization Affairs. Office of International Conferences. (08/25/1954 - 19…
+creators[].naId,24356,20180,2.7,int,>500,44179702 ⁝ 10453324 ⁝ 10472200
+custodialHistoryNote,21,21,0.0,string,19,"These records are unprocessed. Prior to requesting these records, please contact the National Archives office listed in … ⁝ When Robert Lansing resigned as Secretary of State on February 23, 1920, he took with him a large volume of material, mu… ⁝ The albums were received by the Department of State from the High Commission for Germany (commonly referred to as ""HICOG…"
+dataControlGroup,751880,751880,100.0,object,0,
+dataControlGroup.groupCd,751880,751880,100.0,string,33,RWSE ⁝ RRAR ⁝ RRSS
+dataControlGroup.groupId,751880,751880,100.0,string,36,"ou=NRIAS,ou=groups ⁝ RRAR ⁝ RRSS"
+dataControlGroup.groupName,224384,224384,29.8,string,18,National Archives at College Park – Textual Reference ⁝ National Archives at College Park – Still Pictures ⁝ National Archives at College Park - Textual Reference
+dateNote,3773,3773,0.5,string,>500,"Though the series dates from 1878, the correspondence included in this file unit were collected prior to and after 1878. ⁝ Although this series was created in 1974, it includes records dating from back to 1959. ⁝ Although this series was created in 1968, it contains records that date back to 1964."
+digitalObjects,17985,17985,2.4,array,0,
+digitalObjects[],10115572,17985,2.4,object,0,
+digitalObjects[].objectDescription,8131414,14301,1.9,string,>500,This digital image was derived from the microfilm publication of this series. ⁝ Image provided by Ancestry. ⁝ Image provided by Fold3.
+digitalObjects[].objectDesignator,763337,2577,0.3,string,>500,Ancestry File #32734_649063_0250-00002 ⁝ Ancestry File #32734_649063_0250-00003 ⁝ Ancestry File #32734_649063_0250-00004
+digitalObjects[].objectFileSize,10115561,17985,2.4,int,>500,2304539 ⁝ 2002097 ⁝ 3534647
+digitalObjects[].objectFilename,10115571,17985,2.4,string,>500,572800-001-001-0001.jpg ⁝ 572800-001-001-0002.jpg ⁝ 572800-001-001-0003.jpg
+digitalObjects[].objectId,10115572,17985,2.4,string,>500,343793659 ⁝ 343793660 ⁝ 343793661
+digitalObjects[].objectType,10115571,17985,2.4,string,6,Image (JPG) ⁝ Portable Document File (PDF) ⁝ Image (TIFF)
+digitalObjects[].objectUrl,10115572,17985,2.4,null|string,>500,https://catalog.archives.gov/medialz/seattle/rg-043/572800/572800-001-001/572800-001-001-0001.jpg ⁝ https://catalog.archives.gov/medialz/seattle/rg-043/572800/572800-001-001/572800-001-001-0002.jpg ⁝ https://catalog.archives.gov/medialz/seattle/rg-043/572800/572800-001-001/572800-001-001-0003.jpg
+dispositionAuthorityNumbers,3887,3887,0.5,array,0,
+dispositionAuthorityNumbers[],4282,3887,0.5,string,>500,NC-059-75-1-1 ⁝ NC-59-75-1/1 ⁝ NC/59/75/1/1
+editStatus,12,12,0.0,string,2,Edited ⁝ Unedited
 endCongress,1,1,0.0,int,1,94
-fileUnitCount,4898,4898,24.3,int,>500,6 ⁝ 3 ⁝ 2
-findingAids,3243,3243,16.1,array,0,
-findingAids[],3477,3243,16.1,object,0,
-findingAids[].fileFormat,60,60,0.3,string,2,Portable Document File (PDF) ⁝ Microsoft Excel Spreadsheet
-findingAids[].findingAidType,3477,3243,16.1,string,14,Item List ⁝ Folder List ⁝ Index
-findingAids[].note,3416,3186,15.8,string,>500,An item list for this series is available in paper in the research room. ⁝ A folder list for this series is available in paper in the research room. ⁝ There is an index of the official documents at the beginning of the series.
-findingAids[].source,2125,2042,10.1,string,86,National Archives and Records Administration ⁝ Council of Foreign Ministers ⁝ Department of State
-formerAncestors,272,272,1.3,array,0,
-formerAncestors[],275,272,1.3,object,0,
+fileUnitCount,4900,4900,0.7,int,>500,6 ⁝ 3 ⁝ 2
+findingAids,3247,3247,0.4,array,0,
+findingAids[],3481,3247,0.4,object,0,
+findingAids[].fileFormat,60,60,0.0,string,2,Portable Document File (PDF) ⁝ Microsoft Excel Spreadsheet
+findingAids[].findingAidType,3481,3247,0.4,string,14,Item List ⁝ Folder List ⁝ Index
+findingAids[].note,3420,3190,0.4,string,>500,An item list for this series is available in paper in the research room. ⁝ A folder list for this series is available in paper in the research room. ⁝ There is an index of the official documents at the beginning of the series.
+findingAids[].source,2125,2042,0.3,string,86,National Archives and Records Administration ⁝ Council of Foreign Ministers ⁝ Department of State
+formerAncestors,272,272,0.0,array,0,
+formerAncestors[],275,272,0.0,object,0,
 formerAncestors[].collectionIdentifier,4,3,0.0,string,1,JFKCO
-formerAncestors[].levelOfDescription,275,272,1.3,string,2,recordGroup ⁝ collection
-formerAncestors[].naId,275,272,1.3,int,30,388 ⁝ 413 ⁝ 740
-formerAncestors[].recordGroupNumber,271,269,1.3,int,29,59 ⁝ 84 ⁝ 466
-formerAncestors[].title,275,272,1.3,string,30,General Records of the Department of State ⁝ Records of the Foreign Service Posts of the Department of State ⁝ Records of the U.S. High Commissioner for Germany
-formerlyContainedBy,272,272,1.3,array,0,
-formerlyContainedBy[],274,272,1.3,int,30,388 ⁝ 413 ⁝ 740
-functionAndUse,677,677,3.4,string,>500,"This series serves as an index to the series ""Letters Received by the Commissioner General, 1878-1879"" (ARC Identifier 1… ⁝ This series serves as an index to the series ""Numbered Documents, 3/10/1947 - 4/24/1947"" (ARC Identifier 1415033). ⁝ These records were used to pass along comments from various commissioners, proposals for upcoming meetings, and the view…"
-generalNotes,3013,3013,14.9,array,0,
-generalNotes[],3034,3013,14.9,string,376,"These records are unprocessed. Prior to requesting these records, please contact the National Archives office listed in … ⁝ This series is related to the textual series ""Declassified General Records of the Paris Peace Talks, 1968-1972"" (ARC Ide… ⁝ Although there are eight decorative boxes, there are only seven commemorative medals."
-generalRecordsTypes,20188,20188,100.0,array,0,
-generalRecordsTypes[],21603,20188,100.0,string,9,Textual Records ⁝ Photographs and other Graphic Materials ⁝ Sound Recordings
-inclusiveEndDate,20188,20188,100.0,object,0,
-inclusiveEndDate.dateQualifier,731,731,3.6,string,2,? ⁝ ca.
-inclusiveEndDate.day,2784,2784,13.8,int,31,1 ⁝ 28 ⁝ 24
-inclusiveEndDate.logicalDate,20188,20188,100.0,string,>500,1968-12-31 ⁝ 1959-12-01 ⁝ 1969-12-31
-inclusiveEndDate.month,3756,3756,18.6,int,12,12 ⁝ 10 ⁝ 5
-inclusiveEndDate.year,20188,20188,100.0,int,226,1968 ⁝ 1959 ⁝ 1969
-inclusiveStartDate,20188,20188,100.0,object,0,
-inclusiveStartDate.dateQualifier,813,813,4.0,string,2,ca. ⁝ ?
-inclusiveStartDate.day,2864,2864,14.2,int,31,15 ⁝ 12 ⁝ 13
-inclusiveStartDate.logicalDate,20188,20188,100.0,string,>500,1968-01-01 ⁝ 1959-10-15 ⁝ 1947-01-01
-inclusiveStartDate.month,3838,3838,19.0,int,12,10 ⁝ 9 ⁝ 7
-inclusiveStartDate.year,20188,20188,100.0,int,231,1968 ⁝ 1959 ⁝ 1947
-internalTransferNumbers,17,17,0.1,array,0,
-internalTransferNumbers[],19,17,0.1,string,14,N1-059-88-17-5 ⁝ RL1-66519613 ⁝ RL1-76093911
-itemCount,301,301,1.5,int,112,2 ⁝ 1 ⁝ 8
-languages,1597,1597,7.9,array,0,
-languages[],2495,1597,7.9,string,86,French ⁝ Spanish ⁝ Chinese
-levelOfDescription,20188,20188,100.0,string,1,series
-localIdentifier,725,725,3.6,string,>500,43-ANTa ⁝ 43-US ⁝ 43-PPT
-microformPublications,200,200,1.0,array,0,
-microformPublications[],334,200,1.0,object,0,
-microformPublications[].identifier,334,200,1.0,string,198,M1243 ⁝ M662 ⁝ M586
-microformPublications[].note,9,9,0.0,string,8,"Part of the series has been microfilmed, except for classified records. Some of the classified records have been declass… ⁝ The series is partially microfilmed. ⁝ This series is partially reproduced in microform."
-microformPublications[].title,334,200,1.0,string,198,"M1243 - Records of the American Delegation, U.S.-USSR Joint Commission on Korea, and Records Relating to the United Nati… ⁝ M662 - Records of the Department of State Relating to the First Panama Congress, 1825-1827. ⁝ M586 - List of U.S. Diplomatic Officers, 1789-1939."
-naId,20188,20188,100.0,int,>500,45273228 ⁝ 28890403 ⁝ 22344693
-numberingNote,385,385,1.9,string,372,"These items are numbered from 1 to 27. ⁝ Record Group, Series, and Item Number assigned by NARA. EXAMPLE- 43-S-1. ⁝ Record Group, Series, and Item Number. EXAMPLE- 43-PX-1."
-onlineResources,1676,1676,8.3,array,0,
-onlineResources[],1865,1676,8.3,object,0,
-onlineResources[].description,1865,1676,8.3,string,14,Department of State Decimal Filing Manuals ⁝ War Department Decimal File System ⁝ History of the Bureau of Diplomatic Security of the United States Department of State
-onlineResources[].note,1863,1675,8.3,string,18,The Department of State Decimal Filing Manuals can be used to determine the file codes for specific files within this se… ⁝ The War Department Decimal File System can be used to determine the file codes for specific files within this series. ⁝ This resource has been made available online by the U.S. Department of State.
-onlineResources[].url,1865,1676,8.3,string,120,https://www.archives.gov/research/military/filing-manuals?_ga=2.119128137.1761378738.1735827410-1783718670.1724955126#st… ⁝ http://www.archives.gov/research/filing-manuals.html#wardept ⁝ http://www.state.gov/m/ds/rls/rpt/c47602.htm
-otherTitles,6080,6080,30.1,array,0,
-otherTitles[],8338,6080,30.1,string,>500,Files of the U.S. Mission to the Organization of American States (OAS) ⁝ Office of International Conferences Records Relating to Multiple Conferences and Meetings ⁝ Assistant Legal Adviser for Inter-American Affairs Files on the Organization of American States (OAS)
-physicalOccurrences,20188,20188,100.0,array,0,
-physicalOccurrences[],20559,20188,100.0,object,0,
-physicalOccurrences[].containerList,3611,3611,17.9,string,>500,"Box 1: Miscellaneous Analysis and Biographic Material THRU Briefing Book (2 of 3) Box 2: Briefing Book (3 of 3) THRU Chr… ⁝ Box 1: TODEL CHRON May, 1968 THRU TODEL CHRON July, 1968 Box 2: TODEL CHRON July, 1968 THRU TODEL CHRON October, 1968 Bo… ⁝ Container 1: 1962 THRU 1962 Container 2: 1962 THRU 1963 Container 3: 1963 THRU 1966 Container 4: 1967 THRU 1968"
-physicalOccurrences[].copyStatus,20559,20188,100.0,string,7,Preservation-Reproduction-Reference ⁝ Preservation ⁝ Reference
-physicalOccurrences[].extent,20559,20188,100.0,string,>500,"1 linear foot, 3 linear inches ⁝ 7 audio tape/reels ⁝ 5 compact discs"
-physicalOccurrences[].holdingsMeasurements,20559,20188,100.0,array,0,
-physicalOccurrences[].holdingsMeasurements[],25601,20188,100.0,object,0,
-physicalOccurrences[].holdingsMeasurements[].count,25601,20188,100.0,double|int,>500,3 ⁝ 6 ⁝ 1
-physicalOccurrences[].holdingsMeasurements[].type,25601,20188,100.0,string,227,Legal Size Box ⁝ 7 inch single open reel tape ⁝ 5 inch single open reel tape
-physicalOccurrences[].mediaOccurrences,20559,20188,100.0,array,0,
-physicalOccurrences[].mediaOccurrences[],23418,20188,100.0,object,0,
-physicalOccurrences[].mediaOccurrences[].color,287,152,0.8,string,4,Color ⁝ Color and Black-and-White ⁝ Black-and-White
-physicalOccurrences[].mediaOccurrences[].containerId,4710,4402,21.8,string,>500,"Boxes 293, 993, 994, 1003, 1008, 1015, 1016-1026, 1030, 1031, and 1036 ⁝ Box 1 ⁝ Boxes 1-2"
-physicalOccurrences[].mediaOccurrences[].depth,1,1,0.0,double,1,0.125
-physicalOccurrences[].mediaOccurrences[].dimension,265,167,0.8,string,21,Film: 35 mm ⁝ 1/2 inch ⁝ 1/4 inch
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes,6816,5793,28.7,array,0,
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],6894,5793,28.7,string,10,Bound Volumes ⁝ Loose Sheets ⁝ Photographic Materials
-physicalOccurrences[].mediaOccurrences[].height,10,10,0.0,double|int,9,31 ⁝ 2 ⁝ 8
-physicalOccurrences[].mediaOccurrences[].mediaOccurrenceNote,214,132,0.7,string,161,Flattened 'red' Dictabelts are located in box 7 of this series. There is no accompanying transcription. ⁝ There are three bronze medals and two silver medals. ⁝ This series is split between boxes 252 and 253.
-physicalOccurrences[].mediaOccurrences[].physicalRestrictionNote,203,138,0.7,string,88,These records are specially protected artifacts and are not available to researchers. ⁝ These records are specially protected and are not available to researchers. ⁝ These records are badly deteriorated and must be handled with care.
-physicalOccurrences[].mediaOccurrences[].pieceCount,275,149,0.7,int,141,8 ⁝ 1 ⁝ 5
-physicalOccurrences[].mediaOccurrences[].process,236,145,0.7,string,28,Sound Recordings: Microgroove ⁝ Photographic: Albumen ⁝ Photographic: Gelatin Silver
-physicalOccurrences[].mediaOccurrences[].reproductionCount,20,18,0.1,int,18,11301 ⁝ 17 ⁝ 8
-physicalOccurrences[].mediaOccurrences[].specificMediaType,23418,20188,100.0,string,33,Bound Volume ⁝ Paper ⁝ Photographic Print
-physicalOccurrences[].mediaOccurrences[].technicalAccessRequirementsNote,24,19,0.1,string,15,"A light table is needed to view these images. ⁝ These 8.5"" disks are plastic; an obsolete format. ⁝ These slides must be viewed using a light table."
-physicalOccurrences[].mediaOccurrences[].width,10,10,0.0,double|int,9,20 ⁝ 2 ⁝ 3
-physicalOccurrences[].physicalOccurrenceNote,1312,1301,6.4,string,>500,"The series includes box 43A. ⁝ This series shares a box with the series ""Administrative Correspondence of the United States Section, 1926-1933"" (Nation… ⁝ This series shares a box with the series ""Records Relating to the Commission's Programs, 1915-1933"" (National Archives I…"
-physicalOccurrences[].referenceUnits,20559,20188,100.0,array,0,
-physicalOccurrences[].referenceUnits[],20559,20188,100.0,object,0,
-physicalOccurrences[].referenceUnits[].address1,20559,20188,100.0,string,11,2313 Red River Street ⁝ National Archives at College Park ⁝ 6125 Sand Point Way NE
-physicalOccurrences[].referenceUnits[].address2,20442,20087,99.5,string,2,8601 Adelphi Road ⁝ 7th and Pennsylvania Avenue NW
-physicalOccurrences[].referenceUnits[].city,20559,20188,100.0,string,11,Austin ⁝ College Park ⁝ Seattle
-physicalOccurrences[].referenceUnits[].email,20559,20188,100.0,string,15,johnson.library@nara.gov ⁝ mopix@nara.gov ⁝ Archives2reference@nara.gov
-physicalOccurrences[].referenceUnits[].fax,20559,20188,100.0,string,14,512-721-0170 ⁝ 301-837-3622 ⁝ 301-837-1752
-physicalOccurrences[].referenceUnits[].name,20559,20188,100.0,string,15,Lyndon Baines Johnson Library ⁝ National Archives at College Park - Motion Pictures ⁝ National Archives at College Park - Textual Reference
-physicalOccurrences[].referenceUnits[].phone,20559,20188,100.0,string,15,512-721-0212 ⁝ 301-837-3540 ⁝ 301-837-3510
-physicalOccurrences[].referenceUnits[].postalCode,20559,20188,100.0,string,11,78705-5702 ⁝ 20740-6001 ⁝ 98115-7999
-physicalOccurrences[].referenceUnits[].state,20559,20188,100.0,string,10,TX ⁝ MD ⁝ WA
-recordType,20188,20188,100.0,string,1,description
-recordsCenterTransferNumbers,4567,4567,22.6,array,0,
-recordsCenterTransferNumbers[],7363,4567,22.6,string,>500,059-71M6682B ⁝ 059-71S6682 ⁝ 059-71A6682
+formerAncestors[].levelOfDescription,275,272,0.0,string,2,recordGroup ⁝ collection
+formerAncestors[].naId,275,272,0.0,int,30,388 ⁝ 413 ⁝ 740
+formerAncestors[].recordGroupNumber,271,269,0.0,int,29,59 ⁝ 84 ⁝ 466
+formerAncestors[].title,275,272,0.0,string,30,General Records of the Department of State ⁝ Records of the Foreign Service Posts of the Department of State ⁝ Records of the U.S. High Commissioner for Germany
+formerlyContainedBy,272,272,0.0,array,0,
+formerlyContainedBy[],274,272,0.0,int,30,388 ⁝ 413 ⁝ 740
+functionAndUse,677,677,0.1,string,>500,"This series serves as an index to the series ""Letters Received by the Commissioner General, 1878-1879"" (ARC Identifier 1… ⁝ This series serves as an index to the series ""Numbered Documents, 3/10/1947 - 4/24/1947"" (ARC Identifier 1415033). ⁝ These records were used to pass along comments from various commissioners, proposals for upcoming meetings, and the view…"
+generalNotes,3381,3381,0.4,array,0,
+generalNotes[],3402,3381,0.4,string,426,"These records are unprocessed. Prior to requesting these records, please contact the National Archives office listed in … ⁝ This series is related to the textual series ""Declassified General Records of the Paris Peace Talks, 1968-1972"" (ARC Ide… ⁝ Although there are eight decorative boxes, there are only seven commemorative medals."
+generalRecordsTypes,751878,751878,100.0,array,0,
+generalRecordsTypes[],761291,751878,100.0,string,9,Maps and Charts ⁝ Textual Records ⁝ Photographs and other Graphic Materials
+inclusiveEndDate,20188,20188,2.7,object,0,
+inclusiveEndDate.dateQualifier,731,731,0.1,string,2,? ⁝ ca.
+inclusiveEndDate.day,2784,2784,0.4,int,31,1 ⁝ 28 ⁝ 24
+inclusiveEndDate.logicalDate,20188,20188,2.7,string,>500,1968-12-31 ⁝ 1959-12-01 ⁝ 1969-12-31
+inclusiveEndDate.month,3756,3756,0.5,int,12,12 ⁝ 10 ⁝ 5
+inclusiveEndDate.year,20188,20188,2.7,int,226,1968 ⁝ 1959 ⁝ 1969
+inclusiveStartDate,20188,20188,2.7,object,0,
+inclusiveStartDate.dateQualifier,813,813,0.1,string,2,ca. ⁝ ?
+inclusiveStartDate.day,2864,2864,0.4,int,31,15 ⁝ 12 ⁝ 13
+inclusiveStartDate.logicalDate,20188,20188,2.7,string,>500,1968-01-01 ⁝ 1959-10-15 ⁝ 1947-01-01
+inclusiveStartDate.month,3838,3838,0.5,int,12,10 ⁝ 9 ⁝ 7
+inclusiveStartDate.year,20188,20188,2.7,int,231,1968 ⁝ 1959 ⁝ 1947
+internalTransferNumbers,17,17,0.0,array,0,
+internalTransferNumbers[],19,17,0.0,string,14,N1-059-88-17-5 ⁝ RL1-66519613 ⁝ RL1-76093911
+itemCount,4840,4840,0.6,int,213,9 ⁝ 20 ⁝ 69
+languages,1766,1766,0.2,array,0,
+languages[],2675,1766,0.2,string,90,French ⁝ Spanish ⁝ Chinese
+levelOfDescription,751880,751880,100.0,string,2,fileUnit ⁝ series
+localIdentifier,14561,14561,1.9,string,>500,43-EX-4I ⁝ 43-EX-4H ⁝ 43-EX-4G
+microformPublications,9165,9165,1.2,array,0,
+microformPublications[],9299,9165,1.2,object,0,
+microformPublications[].identifier,9299,9165,1.2,string,>500,M1243 ⁝ M662 ⁝ M586
+microformPublications[].note,8339,8339,1.1,string,>500,"Part of the series has been microfilmed, except for classified records. Some of the classified records have been declass… ⁝ The series is partially microfilmed. ⁝ This series is partially reproduced in microform."
+microformPublications[].title,9299,9165,1.2,string,>500,"M1243 - Records of the American Delegation, U.S.-USSR Joint Commission on Korea, and Records Relating to the United Nati… ⁝ M662 - Records of the Department of State Relating to the First Panama Congress, 1825-1827. ⁝ M586 - List of U.S. Diplomatic Officers, 1789-1939."
+naId,751880,751880,100.0,int,>500,343793657 ⁝ 213226627 ⁝ 213226626
+numberingNote,385,385,0.1,string,372,"These items are numbered from 1 to 27. ⁝ Record Group, Series, and Item Number assigned by NARA. EXAMPLE- 43-S-1. ⁝ Record Group, Series, and Item Number. EXAMPLE- 43-PX-1."
+onlineResources,9228,9228,1.2,array,0,
+onlineResources[],9417,9228,1.2,object,0,
+onlineResources[].description,9417,9228,1.2,string,17,Department of State Decimal Filing Manuals ⁝ War Department Decimal File System ⁝ History of the Bureau of Diplomatic Security of the United States Department of State
+onlineResources[].note,9415,9227,1.2,string,24,The Department of State Decimal Filing Manuals can be used to determine the file codes for specific files within this se… ⁝ The War Department Decimal File System can be used to determine the file codes for specific files within this series. ⁝ This resource has been made available online by the U.S. Department of State.
+onlineResources[].url,9417,9228,1.2,string,>500,https://www.archives.gov/research/military/filing-manuals?_ga=2.119128137.1761378738.1735827410-1783718670.1724955126#st… ⁝ http://www.archives.gov/research/filing-manuals.html#wardept ⁝ http://www.state.gov/m/ds/rls/rpt/c47602.htm
+otherTitles,6147,6147,0.8,array,0,
+otherTitles[],8406,6147,0.8,string,>500,Files of the U.S. Mission to the Organization of American States (OAS) ⁝ Office of International Conferences Records Relating to Multiple Conferences and Meetings ⁝ Assistant Legal Adviser for Inter-American Affairs Files on the Organization of American States (OAS)
+physicalOccurrences,751880,751880,100.0,array,0,
+physicalOccurrences[],754012,751880,100.0,object,0,
+physicalOccurrences[].containerList,3611,3611,0.5,string,>500,"Box 1: Miscellaneous Analysis and Biographic Material THRU Briefing Book (2 of 3) Box 2: Briefing Book (3 of 3) THRU Chr… ⁝ Box 1: TODEL CHRON May, 1968 THRU TODEL CHRON July, 1968 Box 2: TODEL CHRON July, 1968 THRU TODEL CHRON October, 1968 Bo… ⁝ Container 1: 1962 THRU 1962 Container 2: 1962 THRU 1963 Container 3: 1963 THRU 1966 Container 4: 1967 THRU 1968"
+physicalOccurrences[].copyStatus,754012,751880,100.0,string,7,Preservation-Reproduction-Reference ⁝ Preservation ⁝ Reference
+physicalOccurrences[].extent,21600,21224,2.8,string,>500,1 artifact ⁝ 3 linear inches ⁝ 47 artifacts
+physicalOccurrences[].holdingsMeasurements,20559,20188,2.7,array,0,
+physicalOccurrences[].holdingsMeasurements[],25601,20188,2.7,object,0,
+physicalOccurrences[].holdingsMeasurements[].count,25601,20188,2.7,double|int,>500,3 ⁝ 6 ⁝ 1
+physicalOccurrences[].holdingsMeasurements[].type,25601,20188,2.7,string,227,Legal Size Box ⁝ 7 inch single open reel tape ⁝ 5 inch single open reel tape
+physicalOccurrences[].mediaOccurrences,754012,751880,100.0,array,0,
+physicalOccurrences[].mediaOccurrences[],771278,751880,100.0,object,0,
+physicalOccurrences[].mediaOccurrences[].color,289,154,0.0,string,4,Color ⁝ Color and Black-and-White ⁝ Black-and-White
+physicalOccurrences[].mediaOccurrences[].containerId,732239,724756,96.4,string,>500,1 ⁝ 153 ⁝ 152
+physicalOccurrences[].mediaOccurrences[].depth,21962,21961,2.9,double|int,2,0 ⁝ 0.125
+physicalOccurrences[].mediaOccurrences[].dimension,266,168,0.0,string,21,Film: 35 mm ⁝ 1/2 inch ⁝ 1/4 inch
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes,176284,159500,21.2,array,0,
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],176368,159500,21.2,string,10,Loose Sheets ⁝ Photographic Materials ⁝ Artifacts
+physicalOccurrences[].mediaOccurrences[].height,21971,21970,2.9,double|int,10,31 ⁝ 2 ⁝ 8
+physicalOccurrences[].mediaOccurrences[].mediaOccurrenceNote,214,132,0.0,string,161,Flattened 'red' Dictabelts are located in box 7 of this series. There is no accompanying transcription. ⁝ There are three bronze medals and two silver medals. ⁝ This series is split between boxes 252 and 253.
+physicalOccurrences[].mediaOccurrences[].physicalRestrictionNote,12292,4932,0.7,string,102,These records are specially protected and are not available to researchers. ⁝ These materials are specially protected items and are not available to researchers. ⁝ These records are specially protected artifacts and are not available to researchers.
+physicalOccurrences[].mediaOccurrences[].pieceCount,277,151,0.0,int,142,8 ⁝ 1 ⁝ 5
+physicalOccurrences[].mediaOccurrences[].process,583,492,0.1,string,28,Sound Recordings: Microgroove ⁝ Photographic: Albumen ⁝ Photographic: Gelatin Silver
+physicalOccurrences[].mediaOccurrences[].reproductionCount,21,19,0.0,int,19,11301 ⁝ 17 ⁝ 8
+physicalOccurrences[].mediaOccurrences[].specificMediaType,771276,751878,100.0,string,33,Paper ⁝ Photographic Print ⁝ Negative
+physicalOccurrences[].mediaOccurrences[].technicalAccessRequirementsNote,88,81,0.0,string,17,"A light table is needed to view these images. ⁝ These 8.5"" disks are plastic; an obsolete format. ⁝ These slides must be viewed using a light table."
+physicalOccurrences[].mediaOccurrences[].width,21971,21970,2.9,double|int,10,20 ⁝ 2 ⁝ 3
+physicalOccurrences[].physicalOccurrenceNote,1372,1361,0.2,string,>500,"The series includes box 43A. ⁝ This series shares a box with the series ""Administrative Correspondence of the United States Section, 1926-1933"" (Nation… ⁝ This series shares a box with the series ""Records Relating to the Commission's Programs, 1915-1933"" (National Archives I…"
+physicalOccurrences[].referenceUnits,754012,751880,100.0,array,0,
+physicalOccurrences[].referenceUnits[],754012,751880,100.0,object,0,
+physicalOccurrences[].referenceUnits[].address1,754012,751880,100.0,string,11,6125 Sand Point Way NE ⁝ National Archives at College Park ⁝ 2313 Red River Street
+physicalOccurrences[].referenceUnits[].address2,753639,751523,100.0,string,2,8601 Adelphi Road ⁝ 7th and Pennsylvania Avenue NW
+physicalOccurrences[].referenceUnits[].city,754012,751880,100.0,string,11,Seattle ⁝ College Park ⁝ Austin
+physicalOccurrences[].referenceUnits[].email,754012,751880,100.0,string,15,seattle.archives@nara.gov ⁝ Archives2reference@nara.gov ⁝ stillpix@nara.gov
+physicalOccurrences[].referenceUnits[].fax,754012,751880,100.0,string,14,206-336-5112 ⁝ 301-837-1752 ⁝ 301-837-3621
+physicalOccurrences[].referenceUnits[].name,754012,751880,100.0,string,15,National Archives at Seattle ⁝ National Archives at College Park - Textual Reference ⁝ National Archives at College Park - Still Pictures
+physicalOccurrences[].referenceUnits[].phone,754012,751880,100.0,string,15,206-336-5115 ⁝ 301-837-3510 ⁝ 301-837-0561
+physicalOccurrences[].referenceUnits[].postalCode,754012,751880,100.0,string,11,98115-7999 ⁝ 20740-6001 ⁝ 78705-5702
+physicalOccurrences[].referenceUnits[].state,754012,751880,100.0,string,10,WA ⁝ MD ⁝ TX
+recordType,751880,751880,100.0,string,1,description
+recordsCenterTransferNumbers,4567,4567,0.6,array,0,
+recordsCenterTransferNumbers[],7363,4567,0.6,string,>500,059-71M6682B ⁝ 059-71S6682 ⁝ 059-71A6682
 scaleNote,6,6,0.0,string,5,"ACCDESC ⁝ The maps in this series have a scale of 1:24,000. ⁝ The maps in this series have a scale of 1:25,000."
-scopeAndContentNote,17761,17761,88.0,string,>500,"This series contains the records of the Sports Working Group, U.S. Section of the United States-Mexico Commission for Bo… ⁝ This series audio recordings contains selections from the Washington Conference on Antarctica, which met in the District… ⁝ This series consists of meeting agendas, meeting minutes, reports, memorandums, copies of speeches, and other documents …"
-soundType,15,15,0.1,string,3,Sound ⁝ Silent and Sound ⁝ Silent
-subjects,6604,6604,32.7,array,0,
-subjects[],29660,6604,32.7,object,0,
-subjects[].abolishDate,535,327,1.6,object,0,
-subjects[].abolishDate.day,369,243,1.2,int,30,16 ⁝ 30 ⁝ 9
-subjects[].abolishDate.logicalDate,535,327,1.6,string,195,1961-06-16 ⁝ 1977-06-30 ⁝ 1948-02-09
-subjects[].abolishDate.month,407,261,1.3,int,12,6 ⁝ 2 ⁝ 5
-subjects[].abolishDate.year,535,327,1.6,int,73,1961 ⁝ 1977 ⁝ 1948
-subjects[].authorityType,29660,6604,32.7,string,5,geographicPlaceName ⁝ specificRecordsType ⁝ topicalSubject
-subjects[].birthDate,1073,347,1.7,object,0,
-subjects[].birthDate.day,41,37,0.2,int,9,9 ⁝ 18 ⁝ 27
-subjects[].birthDate.logicalDate,1073,347,1.7,string,131,1867-01-01 ⁝ 1932-01-01 ⁝ 1931-01-01
-subjects[].birthDate.month,41,37,0.2,int,7,7 ⁝ 8 ⁝ 5
-subjects[].birthDate.year,1073,347,1.7,int,120,1867 ⁝ 1932 ⁝ 1931
-subjects[].deathDate,803,300,1.5,object,0,
-subjects[].deathDate.day,42,38,0.2,int,10,24 ⁝ 19 ⁝ 29
-subjects[].deathDate.logicalDate,803,300,1.5,string,130,1917-12-31 ⁝ 2022-12-31 ⁝ 1963-12-31
-subjects[].deathDate.month,42,38,0.2,int,7,6 ⁝ 11 ⁝ 12
-subjects[].deathDate.year,803,300,1.5,int,119,1917 ⁝ 2022 ⁝ 1963
-subjects[].establishDate,827,449,2.2,object,0,
-subjects[].establishDate.day,561,350,1.7,int,30,30 ⁝ 19 ⁝ 29
-subjects[].establishDate.logicalDate,827,449,2.2,string,257,1957-07-30 ⁝ 1955-02-19 ⁝ 1948-01-29
-subjects[].establishDate.month,608,362,1.8,int,12,7 ⁝ 2 ⁝ 1
-subjects[].establishDate.year,827,449,2.2,int,89,1957 ⁝ 1955 ⁝ 1948
-subjects[].heading,29660,6604,32.7,string,>500,Mexico ⁝ Letters (Correspondence) ⁝ Memorandums
-subjects[].naId,29660,6604,32.7,int,>500,10044640 ⁝ 10629351 ⁝ 10629352
-title,20188,20188,100.0,string,>500,"Sports Working Group Records ⁝ Sound Recordings from an International Conference on Antarctica ⁝ Records of Multiple Departmental Offices Pertaining to International Conferences, Meetings, Commissions, and Organizatio…"
-transferNote,13,13,0.1,string,13,"The Accession Dossier does not contain information as to Transfer Number or Disposition Authority Number. ⁝ Audio media (1 gramophone record and 27 audio tapes) were taken from boxes 742, 751, 811, 844, 869, 994, 997, and 1036 a… ⁝ Architectural drawings associated with entry UD-23W 139 were transferred to the National Archives at College Park Cartog…"
-useRestriction,20188,20188,100.0,object,0,
-useRestriction.note,5429,5429,26.9,string,299,Some or all of the records may be subject to copyright restrictions.  Researchers should contact the copyright holder fo… ⁝ Some or all of this material may be restricted by copyright or other intellectual property right restrictions. ⁝ Some of the records in this series may be subject to copyright restrictions. Researchers should contact the publisher fo…
-useRestriction.specificUseRestrictions,4732,4732,23.4,array,0,
-useRestriction.specificUseRestrictions[],4736,4732,23.4,string,5,Copyright ⁝ Other ⁝ Public Law 101-246
-useRestriction.status,20188,20188,100.0,string,5,Restricted - Possibly ⁝ Unrestricted ⁝ Restricted - Partly
-variantControlNumbers,19881,19881,98.5,array,0,
-variantControlNumbers[],62349,19881,98.5,object,0,
-variantControlNumbers[].note,5885,2671,13.2,string,177,This is a State Department Lot File number. ⁝ This is a Department of State LOT file number. ⁝ This is a Department of State lot file number.
-variantControlNumbers[].number,62349,19881,98.5,string,>500,70D167 ⁝ 70D268 ⁝ NND 58697
-variantControlNumbers[].type,62349,19881,98.5,string,23,State Department Lot File Number ⁝ Declassification Project Number ⁝ HMS Record Entry ID
+scopeAndContentNote,20738,20738,2.8,string,>500,Album includes: Bureau of Plant Industry (pages 1 - 31); Bureau of Home Economics (pages 33 - 41); Office of Cooperative… ⁝ Album includes: Exhibits of Agricultural Economics (pages 1 - 16); Chemistry (pages 17 - 34); Bureau of Dairy Industry (… ⁝ See oversize box 5 for 43-EX-2Q-30 and 31.
+soundType,15,15,0.0,string,3,Sound ⁝ Silent and Sound ⁝ Silent
+subjects,8874,8874,1.2,array,0,
+subjects[],32572,8874,1.2,object,0,
+subjects[].abolishDate,600,387,0.1,object,0,
+subjects[].abolishDate.day,371,244,0.0,int,30,16 ⁝ 30 ⁝ 9
+subjects[].abolishDate.logicalDate,600,387,0.1,string,202,1961-06-16 ⁝ 1977-06-30 ⁝ 1948-02-09
+subjects[].abolishDate.month,411,262,0.0,int,12,6 ⁝ 2 ⁝ 5
+subjects[].abolishDate.year,600,387,0.1,int,76,1961 ⁝ 1977 ⁝ 1948
+subjects[].authorityType,32572,8874,1.2,string,5,organization ⁝ specificRecordsType ⁝ geographicPlaceName
+subjects[].birthDate,1701,876,0.1,object,0,
+subjects[].birthDate.day,41,37,0.0,int,9,9 ⁝ 18 ⁝ 27
+subjects[].birthDate.logicalDate,1701,876,0.1,string,167,1867-01-01 ⁝ 1932-01-01 ⁝ 1931-01-01
+subjects[].birthDate.month,41,37,0.0,int,7,7 ⁝ 8 ⁝ 5
+subjects[].birthDate.year,1701,876,0.1,int,156,1867 ⁝ 1932 ⁝ 1931
+subjects[].deathDate,1409,811,0.1,object,0,
+subjects[].deathDate.day,42,38,0.0,int,10,24 ⁝ 19 ⁝ 29
+subjects[].deathDate.logicalDate,1409,811,0.1,string,172,1917-12-31 ⁝ 2022-12-31 ⁝ 1963-12-31
+subjects[].deathDate.month,42,38,0.0,int,7,6 ⁝ 11 ⁝ 12
+subjects[].deathDate.year,1409,811,0.1,int,155,1917 ⁝ 2022 ⁝ 1963
+subjects[].establishDate,892,509,0.1,object,0,
+subjects[].establishDate.day,562,351,0.0,int,30,30 ⁝ 19 ⁝ 29
+subjects[].establishDate.logicalDate,892,509,0.1,string,260,1957-07-30 ⁝ 1955-02-19 ⁝ 1948-01-29
+subjects[].establishDate.month,611,364,0.0,int,12,7 ⁝ 2 ⁝ 1
+subjects[].establishDate.year,892,509,0.1,int,91,1957 ⁝ 1955 ⁝ 1948
+subjects[].heading,32572,8874,1.2,string,>500,Paris Universal Exposition of 1878. ⁝ Correspondence ⁝ Medallions (Medals)
+subjects[].naId,31182,7484,1.0,int,>500,10441491 ⁝ 10636066 ⁝ 10632203
+title,751880,751880,100.0,string,>500,Architectural Drawings: Buildings 1-5 ⁝ ICITO Miscellaneous Documents ⁝ Proposed Report
+transferNote,13,13,0.0,string,13,"The Accession Dossier does not contain information as to Transfer Number or Disposition Authority Number. ⁝ Audio media (1 gramophone record and 27 audio tapes) were taken from boxes 742, 751, 811, 844, 869, 994, 997, and 1036 a… ⁝ Architectural drawings associated with entry UD-23W 139 were transferred to the National Archives at College Park Cartog…"
+useRestriction,751880,751880,100.0,object,0,
+useRestriction.note,259516,259516,34.5,string,322,"Some or all of the records may be subject to copyright restrictions.  Researchers should contact the publisher for furth… ⁝ Some of the records may be subject to copyright restrictions. Researchers should contact the publisher for further infor… ⁝ Most government records are in the public domain, however, this series includes commercial materials, such as newspaper …"
+useRestriction.specificUseRestrictions,50114,50114,6.7,array,0,
+useRestriction.specificUseRestrictions[],50118,50114,6.7,string,5,Copyright ⁝ Other ⁝ Public Law 101-246
+useRestriction.status,751880,751880,100.0,string,5,Unrestricted ⁝ Restricted - Possibly ⁝ Restricted - Partly
+variantControlNumbers,53174,53174,7.1,array,0,
+variantControlNumbers[],102709,53174,7.1,object,0,
+variantControlNumbers[].note,8897,3497,0.5,string,>500,This is a State Department Lot File number. ⁝ This is a Department of State LOT file number. ⁝ This is a Department of State lot file number.
+variantControlNumbers[].number,102683,53173,7.1,string,>500,Alaska Digitization Project ⁝ A1 32A ⁝ HC1-48704708
+variantControlNumbers[].type,102709,53174,7.1,string,28,Search Identifier ⁝ HMS/MLR Entry Number ⁝ HMS Record Entry ID
