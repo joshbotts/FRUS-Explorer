@@ -1011,6 +1011,26 @@ struct AnalyticsView: View {
         // Re-seed when a new hand-off arrives while a window is already open. macOS `frus.analytics`
         // is a long-lived singleton (`.macAnalytics`); iOS seeds via `initialParameters` (BrowserView),
         // so on iOS this consumes nothing (the hand-off targets the producing window, not `.macAnalytics`).
+        // Switching to Occurrences after a documents-mode search has to fetch the series that
+        // search deliberately skipped — and it re-runs `reloadData()` to do it, rather than a
+        // second fetch path of its own.
+        //
+        // That is the whole design, and it was learned the hard way: a dedicated lazy loader had to
+        // own a second in-flight flag and a second producer against `fetchToken`, and an adversarial
+        // review found four user-reachable failures in it, including a one-click deterministic wedge
+        // (restore a saved Occurrences query -> the trigger steals the token from the reload that
+        // just started -> every document series discarded and the spinner never clears). One
+        // producer, one token, one flag is worth re-running six cached document queries for.
+        //
+        // No axis trigger is needed: `reloadData()`'s gate reads the PREFERENCE, not
+        // `measureApplies`, so a search made on any axis with Occurrences selected already fetched
+        // the series.
+        .onChange(of: storedValueUnit) { _, _ in
+            guard storedValueUnit == .occurrences, committedTerms.count == 1,
+                  let term = committedTerms.first,
+                  occurrenceYearDataByTerm[term] == nil else { return }
+            reloadData()
+        }
         .onChange(of: appState.pendingAnalytics) { _, _ in
             guard let params = appState.consumeHandoff(\.pendingAnalytics, for: .macAnalytics) else { return }
             applyAnalyticsParameters(params)
@@ -3032,6 +3052,9 @@ struct AnalyticsView: View {
         // `nil`/empty means the whole corpus, the default presentation.
         let scope: Set<String>? = scopeVolumeIds.map(Set.init)
         let singleTerm = terms.count == 1
+        // Read once, here: `storedValueUnit` can change mid-fetch, and a task that decided to skip
+        // the occurrence query must not later be treated as though it had run it.
+        let unit = storedValueUnit
         Task {
             do {
                 // Term-independent corpus document totals (the % of documents denominator, CA-4),
@@ -3061,7 +3084,14 @@ struct AnalyticsView: View {
                 let availability = singleTerm
                     ? await service.occurrenceAvailability(for: terms[0])
                     : OccurrenceAvailability.unavailable(reason: .compositeQuery)
-                if singleTerm, availability.isAvailable {
+                // Fetched only when the researcher is actually looking at occurrences. It was
+                // unconditional, which made toggling the Measure picker instant — at the price of
+                // every single-word search paying for a measure most sessions never use. Measured on
+                // the owner's iPhone with all 552 volumes indexed, that was a noticeable delay for
+                // `state` and `the`. `availability` above stays unconditional: it is one tokenizer
+                // probe, and the picker's enabled state and the notice both depend on it whether or
+                // not the series is wanted.
+                if singleTerm, unit == .occurrences, availability.isAvailable {
                     occurrenceYears[terms[0]] = try await service.termOccurrencesByYear(
                         term: terms[0], volumeIds: scope)
                 }
