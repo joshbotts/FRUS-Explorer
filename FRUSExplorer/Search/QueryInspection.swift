@@ -118,6 +118,27 @@ struct InspectedOperand: Sendable, Equatable {
     /// One `fts5vocab` lookup, no search. `nil` when the operand has no single stem.
     let corpusDocumentFrequency: Int?
 
+    /// How many times this operand's stem occurs in total, corpus-wide and unfiltered.
+    ///
+    /// The other half of the `fts5vocab` row that ``corpusDocumentFrequency`` reads — it was being
+    /// fetched and discarded. Always `>= corpusDocumentFrequency` when both are present: a document
+    /// containing the stem contains it at least once.
+    ///
+    /// `nil` on the same terms as ``corpusDocumentFrequency``.
+    let corpusOccurrences: Int?
+
+    /// Average corpus-wide occurrences per document containing the stem, or `nil` when either half
+    /// is missing.
+    ///
+    /// The dispersion signal in one number. Near 1.0 the term is mentioned once wherever it appears;
+    /// well above it, discussion concentrates. Both inputs are corpus-wide, so this says nothing
+    /// about the researcher's current scope — and the surface that shows it must say so.
+    var corpusOccurrencesPerDocument: Double? {
+        guard let corpusOccurrences, let corpusDocumentFrequency, corpusDocumentFrequency > 0
+        else { return nil }
+        return Double(corpusOccurrences) / Double(corpusDocumentFrequency)
+    }
+
     /// Whether the tokenizer broadened this word — the stem differs from what was typed.
     ///
     /// This is the stemming trap in one boolean. It is deliberately *not* the same as
@@ -183,13 +204,17 @@ struct QueryInspector: Sendable {
         var inspected: [InspectedOperand] = []
         for operand in operands {
             let stem = await stem(for: operand)
-            var frequency: Int?
+            // One `fts5vocab` row carries both halves; reading only `doc` fetched `cnt` and
+            // discarded it. Same query, same cost.
+            var profile: (documentFrequency: Int, occurrences: Int)?
             if let stem {
-                frequency = try? await searchService.corpusDocumentFrequency(forStem: stem)
+                profile = try? await searchService.corpusTermProfile(forStem: stem)
             }
             inspected.append(InspectedOperand(
                 operand: operand, stem: stem,
-                scopedCount: nil, corpusDocumentFrequency: frequency))
+                scopedCount: nil,
+                corpusDocumentFrequency: profile?.documentFrequency,
+                corpusOccurrences: profile?.occurrences))
         }
 
         return QueryInspection(
@@ -238,7 +263,9 @@ struct QueryInspector: Sendable {
                 parameters: Self.parameters(parameters, narrowedTo: item.operand))
             out.append(InspectedOperand(
                 operand: item.operand, stem: item.stem,
-                scopedCount: count, corpusDocumentFrequency: item.corpusDocumentFrequency))
+                scopedCount: count,
+                corpusDocumentFrequency: item.corpusDocumentFrequency,
+                corpusOccurrences: item.corpusOccurrences))
         }
         return out
     }

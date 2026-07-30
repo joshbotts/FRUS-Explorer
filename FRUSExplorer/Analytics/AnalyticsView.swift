@@ -1123,6 +1123,14 @@ struct AnalyticsView: View {
                 defaultValue: "Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents"
             ))
 
+            // Dispersion belongs here, beside the query's own document count, and NOT under a
+            // chart's totals footnote. It is computed from the volume breakdown, which is
+            // date-independent and un-range-filtered, so sitting it beneath a By-Month or By-Day
+            // total would invite the reader to take it as a decomposition of that total — and those
+            // axes drop year-only and undated documents, so the two do not share a denominator. Here
+            // it reads as a property of the term, which is what it is.
+            dispersionFootnote
+
             Spacer(minLength: 0)
         }
         .padding(.horizontal)
@@ -2129,6 +2137,63 @@ struct AnalyticsView: View {
             }
         }
         .padding(.vertical)
+    }
+
+    // MARK: - Dispersion (R-2 PR-C)
+
+    /// How widely the current term's matches are spread across volumes, and whether they concentrate.
+    ///
+    /// ## Why this is worth a line
+    /// "182 documents" describes two completely different findings: a term spread across 150 volumes
+    /// is a corpus-wide vocabulary, and one concentrated in three is a specific episode. The charts
+    /// show *when* matches occur and never *how narrowly*.
+    ///
+    /// ## Why it is computed from the VOLUME data and not the plotted axis
+    /// Three constraints, each of which would produce a wrong number if ignored:
+    ///
+    /// 1. **N comes from `volumeData`, the same array whose sum is being decomposed** — never
+    ///    `matchedDocumentCount`, which is per-axis and year-range filtered while `volumeData` is
+    ///    not. Mixing them makes the parts disagree with the whole exactly when a custom range is
+    ///    set, which is precisely when a researcher is looking closely.
+    /// 2. **It is date-independent.** `termFrequencyByVolume` never touches dates, so this is immune
+    ///    to the volume-start-year fallback that makes undated documents land in a manufactured year
+    ///    bucket. A "spans N years" figure from `yearData` would inherit that fabrication, which is
+    ///    why there isn't one.
+    /// 3. **The denominator is volumes indexed on this device**, not the manifest's 552. A share of
+    ///    the published series would be a claim about data the device does not have.
+    ///
+    /// Returns `nil` while comparing (the sentence would need a subject) or with no volume data.
+    ///
+    /// The arithmetic lives in ``CorpusDispersion`` rather than here so it can be tested at its
+    /// boundaries — a share gate buried in a view body is a rule nothing can check.
+    private var volumeDispersion: CorpusDispersion? {
+        guard !isComparing, !committedTerm.isEmpty else { return nil }
+        return CorpusDispersion.make(volumeCounts: volumeData.map(\.count),
+                                     indexedVolumeCount: appState.indexedVolumeIds.count)
+    }
+
+    /// The dispersion footnote: how many volumes hold the match, and — only when it is genuinely a
+    /// concentration — how much of it the top three hold.
+    ///
+    /// The 25% gate follows `FacetPanelView`'s precedent ("Computed, never templated"): across 552
+    /// volumes a common term's top three hold ~1.7%, and announcing that as a concentration would
+    /// train the reader to ignore the line. Above the gate it is the finding.
+    @ViewBuilder
+    private var dispersionFootnote: some View {
+        if let d = volumeDispersion {
+            HStack(spacing: 4) {
+                Text(String(localized: "analytics.dispersion.volumes",
+                            defaultValue: "Spread across \(d.volumes) of \(d.indexedVolumeCount) indexed volumes"))
+                if d.showsConcentration {
+                    Text(verbatim: "·")
+                    Text(String(localized: "analytics.dispersion.concentration",
+                                defaultValue: "top 3 hold \(d.topThreePercent)%"))
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: - Footnote Helpers

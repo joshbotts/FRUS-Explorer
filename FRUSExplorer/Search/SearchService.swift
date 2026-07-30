@@ -217,6 +217,26 @@ public actor SearchService {
         try await fts5Store.vocabularyEntry(stem: stem)?.documentFrequency
     }
 
+    /// Corpus-wide document frequency **and occurrence count** for an index term, unscoped.
+    ///
+    /// Same single `fts5vocab` row as ``corpusDocumentFrequency(forStem:)``, which read `doc` and
+    /// discarded `cnt` — the occurrence half was already being fetched and thrown away on every
+    /// inspection.
+    ///
+    /// The pair is worth more than either number alone: `documentFrequency` counts documents
+    /// containing the stem, `occurrences` counts how many times it appears, and their ratio is the
+    /// "one memo with a tic" detector. On this corpus the two can point in opposite directions —
+    /// "Article 43" appears in 34 documents in 1948 and 11 in 1949, while its occurrences *rise*
+    /// 77 → 92, because one 1949 document carries 54 of them. A frequency count alone reads that
+    /// as a topic disappearing.
+    ///
+    /// Both figures are **corpus-wide and unfiltered** — the whole local index, ignoring scope,
+    /// date range and every other filter. Any surface showing them has to say so, or a researcher
+    /// will read them as describing their current result set.
+    public func corpusTermProfile(forStem stem: String) async throws -> (documentFrequency: Int, occurrences: Int)? {
+        try await fts5Store.vocabularyEntry(stem: stem)
+    }
+
     /// The rendered MATCH expression(s) for `parameters`, for the Query Inspector.
     ///
     /// A thin public face on `makeMatchExpressions` so the inspector displays exactly the
