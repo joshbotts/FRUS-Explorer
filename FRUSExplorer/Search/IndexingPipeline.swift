@@ -5638,6 +5638,49 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Body text for the given documents, **keyed** by `"volumeId/documentId"`.
+    ///
+    /// The sibling ``documentBodyTexts(forKeys:)`` returns a bare `[String]`, which is right for the
+    /// word cloud — it tokenises the lot and never asks which document a word came from. A
+    /// concordance does ask: every line names its source document, so the body has to arrive
+    /// attached to its key. The join does not preserve the order of the `VALUES` list and silently
+    /// omits documents that are not in the cache, so zipping the array against the input keys would
+    /// mis-attribute quotations to the wrong documents — the worst possible failure for a tool whose
+    /// output is quoted evidence.
+    ///
+    /// Chunked like its sibling to stay under SQLite's variable limit.
+    func documentBodyTextsByKey(forKeys keys: [WordCloudDocumentKey]) throws -> [String: String] {
+        guard !keys.isEmpty else { return [:] }
+        var result: [String: String] = [:]
+        let chunkSize = 400
+        var index = 0
+        while index < keys.count {
+            let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
+            index += chunkSize
+            let values = Array(repeating: "(?,?)", count: chunk.count).joined(separator: ",")
+            let sql = """
+                WITH wanted(v, d) AS (VALUES \(values))
+                SELECT dc.volume_id, dc.document_id, dc.body_text
+                FROM document_cache dc
+                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var bind: Int32 = 1
+            for key in chunk {
+                sqlite3_bind_text(stmt, bind, key.volumeId, -1, SQLITE_TRANSIENT_IP); bind += 1
+                sqlite3_bind_text(stmt, bind, key.documentId, -1, SQLITE_TRANSIENT_IP); bind += 1
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let volumeId = auxColumnString(stmt, 0),
+                      let documentId = auxColumnString(stmt, 1),
+                      let text = auxColumnString(stmt, 2), !text.isEmpty else { continue }
+                result["\(volumeId)/\(documentId)"] = text
+            }
+        }
+        return result
+    }
+
     /// Returns a short context snippet per document, keyed by `"volumeId/documentId"` — the
     /// leading text a find-related row shows so a researcher can judge relevance (#362).
     ///

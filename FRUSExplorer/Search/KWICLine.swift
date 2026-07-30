@@ -251,3 +251,23 @@ enum KWICSort: String, CaseIterable, Sendable {
         }
     }
 }
+
+// MARK: - ConcordanceResult
+
+/// A page's worth of concordance lines, with what the build could not show.
+///
+/// The two counts are not decoration. A concordance is read as evidence, so the reader has to be
+/// able to tell "this is everything" from "this is everything that fitted" — and from "some of these
+/// documents matched in a way this view cannot align".
+///
+/// Version history:
+///   1.0 — R-3b: initial implementation
+struct ConcordanceResult: Equatable, Sendable {
+    /// Lines, in the order the results were supplied. Callers apply a ``KWICSort``.
+    let lines: [KWICLine]
+    /// Occurrences dropped by ``KWICBuilder/maxLinesPerDocument``.
+    let omittedCount: Int
+    /// Documents in the page that produced no line at all — either absent from the cache, or
+    /// matched by SQLite's stemmer in a way the Swift stemmer does not reproduce.
+    let documentsWithoutLines: Int
+}

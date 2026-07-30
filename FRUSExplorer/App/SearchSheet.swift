@@ -123,6 +123,10 @@ struct MacSearchWindowView: View {
 
     @State private var showAdvancedFilters = false
     @State private var showTimeline = false
+    /// Concordance mode (R-3b). Mutually exclusive with the timeline — both replace the results list.
+    @State private var showConcordance = false
+    @State private var concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+    @State private var concordanceSort: KWICSort = .leftContext
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
@@ -213,6 +217,17 @@ struct MacSearchWindowView: View {
                             parameters: searchVM.submittedSearchParameters,
                             service: appState.searchService)
                     }
+            } else if showConcordance {
+                ConcordanceView(result: concordance, sort: $concordanceSort) { line in
+                    // Same destination a results-list row reaches, so a concordance line and a row
+                    // behave identically.
+                    if let result = searchVM.pagedResults.first(where: {
+                        $0.volumeId == line.volumeId && $0.documentId == line.documentId
+                    }) {
+                        selectedResultId = result.id
+                        navigateToResult(result)
+                    }
+                }
             } else if showTimeline {
                 timelineView
             } else if searchVM.isSearching, searchVM.results.isEmpty {
@@ -308,6 +323,12 @@ struct MacSearchWindowView: View {
                 parameters: searchVM.liveSearchParameters,
                 service: appState.searchService,
                 indexedVolumeCount: appState.indexedVolumeIds.count)
+        }
+        // R-3b: rebuild the concordance for the page on screen. `sort` is not a trigger — ordering is
+        // applied at render time, and making it a fetch would stall a control that must feel instant.
+        .task(id: ConcordanceRebuildKey(mode: showConcordance, page: searchVM.currentPage,
+                                        version: searchVM.executedSearchVersion)) {
+            await rebuildConcordance()
         }
         .task {
             // Consume search parameters set *before* this window was opened.
@@ -927,12 +948,29 @@ struct MacSearchWindowView: View {
             // the toggle in SearchView.swift so the feature reaches macOS too.
             Button {
                 showTimeline.toggle()
+                if showTimeline { showConcordance = false }
             } label: {
                 Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
                     .font(.system(size: 12))
             }
             .buttonStyle(.plain)
             .disabled(searchVM.results.isEmpty)
+
+            Button {
+                showConcordance.toggle()
+                if showConcordance { showTimeline = false }
+            } label: {
+                Image(systemName: showConcordance ? "text.alignleft" : "text.alignleft")
+                    .font(.system(size: 12))
+                    .foregroundStyle(showConcordance ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.results.isEmpty)
+            .help(showConcordance
+                  ? String(localized: "search.kwic.hide.help",
+                           defaultValue: "Hide the concordance and show the results list")
+                  : String(localized: "search.kwic.show.help",
+                           defaultValue: "Show every occurrence of your term on its own line, aligned"))
             .help(showTimeline
                   ? String(localized: "search.timeline.hide.help",
                            defaultValue: "Hide the chronological timeline and show the results list")
@@ -1456,6 +1494,23 @@ struct MacSearchWindowView: View {
     /// setting (System Settings ▸ Desktop & Dock) — document windows share one
     /// `WindowGroup`, so they tab together. Per-document identity means reopening the
     /// same document focuses its existing window/tab.
+    /// Builds the concordance for the page on screen (R-3b).
+    ///
+    /// The macOS twin of `SearchView.rebuildConcordance()`. Deliberately concordances
+    /// `pagedResults` rather than `results`: this window retains up to 7,500 results, and fetching
+    /// body text for all of them would be ~37 MB for a view showing twenty lines.
+    private func rebuildConcordance() async {
+        guard showConcordance, let service = appState.searchService else { return }
+        let page = searchVM.pagedResults
+        guard !page.isEmpty else {
+            concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+            return
+        }
+        concordance = (try? await service.concordance(
+            for: page, parameters: searchVM.submittedSearchParameters))
+            ?? ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+    }
+
     private func openResultInNewWindow(_ result: SearchResult) {
         // Mint from the full result payload (widened DocumentWindowID) so the new window renders
         // the same document chrome as a routed open — matching navigateToResult's entry fields.

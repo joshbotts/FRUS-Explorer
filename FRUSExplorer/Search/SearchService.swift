@@ -450,6 +450,64 @@ public actor SearchService {
     /// Returns the set of positive search terms (keywords + phrase words + prefix)
     /// that should be highlighted in the result snippet. Excluded terms are not
     /// included.
+    // MARK: - Concordance (R-3b)
+
+    /// Builds a keyword-in-context concordance for the given results.
+    ///
+    /// ## Why this takes results rather than parameters
+    /// It concordances **exactly the rows on screen**. Passing parameters and re-running the search
+    /// would let the concordance and the list disagree about what they are showing, and passing the
+    /// whole retained set would fetch body text for up to 7,500 documents — 37 MB on macOS, for a
+    /// view showing twenty lines. The caller hands over its displayed page.
+    ///
+    /// ## Why body text is fetched here and not carried on `SearchResult`
+    /// `SearchResult` deliberately has no `bodyText`. The view models retain 1,000 results on iOS and
+    /// 7,500 on macOS, so a body per result would be a permanent memory cost paid by every search,
+    /// for a mode most searches never open — the same mistake the occurrence measure made and had to
+    /// undo. One keyed fetch for the visible page instead.
+    ///
+    /// - Parameters:
+    ///   - results: the displayed page, in display order.
+    ///   - parameters: the executed query, for its positive terms.
+    ///   - radius: context characters either side of each match.
+    /// - Returns: lines in the order the results were given, plus the number of occurrences the
+    ///   per-document bound dropped. Documents with no aligned occurrence contribute no lines —
+    ///   which is a real possibility, because matching here uses the Swift `PorterStemmer` while the
+    ///   index used SQLite's; see ``KWICBuilder/build(body:stems:radius:volumeId:documentId:header:dateISO:)``.
+    func concordance(
+        for results: [SearchResult],
+        parameters: SearchParameters,
+        radius: Int = 60
+    ) async throws -> ConcordanceResult {
+        let stems = positiveTerms(from: parameters).map { PorterStemmer.stem($0.lowercased()) }
+        guard !results.isEmpty, !stems.isEmpty else {
+            return ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+        }
+        let keys = results.map {
+            WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
+        }
+        let bodies = try await pipeline.documentBodyTextsByKey(forKeys: keys)
+
+        var lines: [KWICLine] = []
+        var omitted = 0
+        var documentsWithoutLines = 0
+        for result in results {
+            guard let body = bodies["\(result.volumeId)/\(result.documentId)"] else {
+                documentsWithoutLines += 1
+                continue
+            }
+            let scan = KWICBuilder.build(
+                body: body, stems: stems, radius: radius,
+                volumeId: result.volumeId, documentId: result.documentId,
+                header: result.header, dateISO: result.dateISO)
+            if scan.lines.isEmpty { documentsWithoutLines += 1 }
+            lines.append(contentsOf: scan.lines)
+            omitted += scan.omittedCount
+        }
+        return ConcordanceResult(lines: lines, omittedCount: omitted,
+                                 documentsWithoutLines: documentsWithoutLines)
+    }
+
     private func positiveTerms(from parameters: SearchParameters) -> [String] {
         var terms: [String] = []
         if let kw = parameters.keywords {
