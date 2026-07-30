@@ -222,8 +222,9 @@ struct CatalogAPIPagingTests {
         #expect(!url.contains("description.recordGroupNumber"))
         #expect(url.contains("levelOfDescription=series"))
         #expect(url.contains("limit=100"))
-        // No `q` by default — NARA's own scripts omit it.
-        #expect(!url.contains("q="))
+        // No `q` by default — NARA's own scripts omit it, and the 2026-07-30 survey confirmed a
+        // q-less request returns HTTP 200.
+        #expect(!url.contains("&q=") && !url.contains("?q="))
     }
 
     @Test("A non-advancing cursor throws instead of paging forever")
@@ -267,15 +268,54 @@ struct CatalogAPIPagingTests {
         #expect(transport.requests[1].contains("q=%2A") || transport.requests[1].contains("q=*"))
     }
 
-    @Test("searchAfter is sent on the second page only")
-    func sendsCursorOnSubsequentPages() async throws {
+    @Test("searchAfter is sent on EVERY request, seeded on the first")
+    func seedsCursorOnFirstRequest() async throws {
+        // Measured on 2026-07-30: omitting the seed makes request 1 relevance-sorted
+        // (`sort: [14.285818, 32161988]`, arity 2) while request 2 is naId-sorted (arity 1), so the
+        // naId taken from page 1 is not a valid cursor — the survey pulled 11 hits then 3 more from a
+        // result set of 11. Seeding with `*` matches the repo's proven client and forces one ordering.
         let (api, transport) = client([
             (ScriptedAPITransport.page(naIds: [1]), 200),
             (ScriptedAPITransport.emptyPage, 200),
         ])
         _ = try await api.harvestGroup(recordGroup: 486, level: "series", maxRequests: 5) { _ in }
-        #expect(!transport.requests[0].contains("searchAfter"))
+        #expect(transport.requests[0].contains("searchAfter=*")
+                || transport.requests[0].contains("searchAfter=%2A"))
         #expect(transport.requests[1].contains("searchAfter=1"))
+    }
+
+    @Test("Records duplicated across pages are dropped, not counted twice")
+    func deduplicatesAcrossPages() async throws {
+        // The failure mode the survey exposed: overlapping pages. A duplicate would push the count
+        // PAST NARA's own total, and the completeness check only tests for a shortfall — so it would
+        // sail through.
+        let (api, _) = client([
+            (ScriptedAPITransport.page(naIds: [1, 2, 3]), 200),
+            (ScriptedAPITransport.page(naIds: [2, 3, 4]), 200),
+            (ScriptedAPITransport.emptyPage, 200),
+        ])
+        var collected: [String] = []
+        let result = try await api.harvestGroup(recordGroup: 486, level: "series",
+                                                maxRequests: 5) {
+            collected.append($0["naId"]?.stringValue ?? "")
+        }
+        #expect(collected == ["1", "2", "3", "4"])
+        #expect(result.recordCount == 4)
+    }
+
+    @Test("Paging stops once totalHits is reached, even if pages keep coming")
+    func stopsAtTotalHits() async throws {
+        // Directly the survey's symptom: page 1 returned all 11 of 11, and page 2 still returned 3
+        // more. Knowing the total is what makes that terminable.
+        let (api, transport) = client([
+            (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+            (ScriptedAPITransport.page(naIds: [4, 5], total: 3), 200),
+        ])
+        let result = try await api.harvestGroup(recordGroup: 486, level: "series",
+                                                maxRequests: 5) { _ in }
+        #expect(result.recordCount == 3)
+        // Only one request was needed; the second page was never fetched.
+        #expect(transport.requests.count == 1)
     }
 }
 

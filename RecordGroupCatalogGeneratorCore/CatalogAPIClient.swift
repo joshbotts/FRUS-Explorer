@@ -237,6 +237,9 @@ public struct CatalogAPIClient: Sendable {
     /// Candidate dotted paths for the record object inside one hit.
     static let recordPathCandidates = ["_source.record", "_source", "record"]
 
+    /// Seed for the first request's `searchAfter`. See the comment in ``fetchPage``.
+    public static let firstCursorSeed = "*"
+
     private let endpoint: String
     private let apiKey: String
     private let pageSize: Int
@@ -286,7 +289,16 @@ public struct CatalogAPIClient: Sendable {
             URLQueryItem(name: "limit", value: String(pageSize)),
         ]
         if let level { items.append(URLQueryItem(name: "levelOfDescription", value: level)) }
-        if let cursor { items.append(URLQueryItem(name: "searchAfter", value: cursor)) }
+        // `searchAfter` is sent on EVERY request, seeded with `*` on the first — matching the repo's
+        // existing, proven client (NARACatalogHarvestClient enumerated 1,241 rolls this way).
+        //
+        // This is not cosmetic. Omitting it on the first request makes that request RELEVANCE-sorted
+        // while every subsequent one is naId-sorted, and the 2026-07-30 survey caught exactly that:
+        // page 1 came back with `sort: [14.285818, 32161988]` (arity 2 — a score plus an naId) and
+        // page 2 with `sort: [22345695]` (arity 1). Feeding the last hit of a relevance-ordered page
+        // back as an naId cursor skips and duplicates arbitrarily — the survey pulled 11 hits then 3
+        // more from a result set of 11. Seeding forces one consistent sort for the whole sequence.
+        items.append(URLQueryItem(name: "searchAfter", value: cursor ?? Self.firstCursorSeed))
         if includeQ { items.append(URLQueryItem(name: "q", value: "*")) }
 
         guard var components = URLComponents(string: endpoint) else {
@@ -429,12 +441,16 @@ public struct CatalogAPIClient: Sendable {
         var issuedCursors = Set<String>()
         var recordCount = 0
         var requests = 0
+        var duplicates = 0
+        var seenNaIds = Set<String>()
+        var totalHits: Int?
         var firstObservation: APIEnvelopeObservation?
 
         while requests < maxRequests {
             let page = try await fetchPage(recordGroup: recordGroup, level: level, cursor: cursor)
             requests += 1
             if firstObservation == nil { firstObservation = page.observation }
+            if totalHits == nil { totalHits = page.observation.totalHits }
 
             // Terminate on RAW hits, not on projected records. The repo's existing client breaks on
             // the post-projection count, so one page whose hits all fail to yield a record reads as
@@ -442,9 +458,22 @@ public struct CatalogAPIClient: Sendable {
             if page.observation.returnedHitCount == 0 { break }
 
             for record in page.records {
+                // De-duplicate across pages. The seeded cursor should make overlap impossible, but
+                // the survey proved the sort can shift underneath us, and a silently duplicated
+                // record inflates the count PAST NARA's own total — which the completeness check,
+                // testing only for a shortfall, would wave through.
+                guard let naId = record["naId"]?.nonEmptyString else { continue }
+                guard seenNaIds.insert(naId).inserted else {
+                    duplicates += 1
+                    continue
+                }
                 try sink(record)
                 recordCount += 1
             }
+
+            // Stop once we hold everything the API says exists. Without this, an overlapping page
+            // sequence keeps paging long after the result set is exhausted.
+            if let totalHits, recordCount >= totalHits { break }
 
             guard let next = page.nextCursor else { break }
             // A non-advancing cursor would page forever, burning quota with nothing to show.
@@ -452,6 +481,15 @@ public struct CatalogAPIClient: Sendable {
                 throw CatalogAPIError.cursorDidNotAdvance(next)
             }
             cursor = next
+        }
+
+        if duplicates > 0 {
+            log("[RecordGroupCatalogGenerator] RG \(recordGroup): \(duplicates) duplicate record(s) "
+                + "across pages were dropped — the API's page ordering is not stable for this query")
+        }
+        if let totalHits, recordCount < totalHits {
+            log("[RecordGroupCatalogGenerator] ⚠ RG \(recordGroup): collected \(recordCount) of "
+                + "\(totalHits) records the API reports — this refresh is INCOMPLETE")
         }
 
         if requests >= maxRequests {
@@ -477,5 +515,19 @@ public struct CatalogAPIClient: Sendable {
             out.append(second.observation)
         }
         return out
+    }
+
+    /// One request at a large `limit` against a record group big enough to fill it — the only way to
+    /// settle whether `limit` is honoured or clamped.
+    ///
+    /// A small group cannot answer the question: RG 486 has 11 series, so `limit=100` and `limit=1000`
+    /// both return 11 and the "fewer than requested" note is uninformative. RG 59 has ~4,435 series, so
+    /// a single request either returns 1,000 (honoured) or fewer (clamped).
+    public func surveyPageSizeLimit(recordGroup: Int, level: String?) async throws
+        -> APIEnvelopeObservation {
+        let probe = CatalogAPIClient(endpoint: endpoint, apiKey: apiKey, pageSize: 1000,
+                                    transport: transport, log: log)
+        return try await probe.fetchPage(recordGroup: recordGroup, level: level, cursor: nil)
+            .observation
     }
 }

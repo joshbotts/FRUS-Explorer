@@ -189,6 +189,40 @@ prints a `=== PASTE THIS BACK ===` block answering the four open questions:
 
 Send that block back and the query shape gets corrected before any real spend.
 
+#### What the 2026-07-30 survey established
+
+Run against RG 486, and it settled all four questions:
+
+| Question | Answer |
+|---|---|
+| Envelope | `body.hits.hits` → `_source.record`. Top-level keys: `body`, `headers`, `statusCode`. |
+| `q` required? | **No.** A q-less request returned HTTP 200. |
+| RG + level filter | **Works.** `totalHits: 11` for RG 486 series — matching the bulk export's 11 exactly. |
+| `limit` clamped? | Unanswerable from RG 486 (only 11 records). The survey now adds one probe against RG 59. |
+
+It also exposed a **paging bug**, which is the real value of having run it. Page 1 returned all 11 hits
+and page 2 returned **3 more** — 14 records from a result set of 11. The sort arity is the tell:
+
+```
+page 1  sort [14.285818, 32161988]   arity 2   ← relevance-scored
+page 2  sort [22345695]              arity 1   ← naId-ordered
+```
+
+The first request was **relevance-sorted** while every later one was **naId-sorted**, so the naId taken
+from page 1's last hit was not a valid cursor. Fixed three ways:
+
+1. `searchAfter` is now sent on **every** request, seeded `*` on the first — matching the repo's proven
+   `NARACatalogHarvestClient`, which enumerated 1,241 rolls this way. That forces one consistent
+   ordering for the whole sequence.
+2. Records are **de-duplicated by NAID across pages**, and duplicates are counted and logged. This
+   matters beyond tidiness: a duplicate pushes the count *past* NARA's own total, and the completeness
+   check only tests for a shortfall, so it would otherwise pass unnoticed.
+3. Paging **stops at `totalHits`**. Knowing the total is what makes an overlapping page sequence
+   terminable.
+
+The survey now also reports whether the seed actually produced a consistent page-1 ordering, so a
+re-run confirms the fix rather than assuming it.
+
 ### Step R2 — the refresh
 
 ```bash

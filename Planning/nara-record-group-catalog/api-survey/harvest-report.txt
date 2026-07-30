@@ -1,0 +1,30 @@
+NARA Catalog API survey
+Generated: 2026-07-30
+Record group: 486
+──────────────────────────────────────────────────────────────────────────────
+PAGE 1
+  httpStatus            200, body.statusCode 200
+  hitsPath              body.hits.hits
+  recordPath            _source.record
+  topLevelKeys          body, headers, statusCode
+  requested/returned    limit=100 → 11 hits  (fewer than requested — clamped, or that is all there is)
+  totalHits             11
+  droppedHits           0
+  sort array (last hit) [14.285818, 32161988]  arity=2
+      ⚠ arity ≥ 2 — element 0 is probably a relevance score, NOT the cursor. This client takes the LAST element.
+  q omitted             true
+
+PAGE 2
+  httpStatus            200, body.statusCode 200
+  hitsPath              body.hits.hits
+  recordPath            _source.record
+  topLevelKeys          body, headers, statusCode
+  requested/returned    limit=100 → 3 hits  (fewer than requested — clamped, or that is all there is)
+  totalHits             11
+  droppedHits           0
+  sort array (last hit) [22345695]  arity=1
+  q omitted             true
+
+──────────────────────────────────────────────────────────────────────────────
+=== PASTE THIS BACK ===
+Send the whole block above. It settles: the envelope path, which sort element is the cursor, whether `limit` is honoured, and whether `q` is required.

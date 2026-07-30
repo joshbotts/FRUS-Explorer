@@ -704,9 +704,47 @@ public struct RecordGroupCatalogRunner {
                                 + ".hitsPathCandidates needs the real path")
             }
             if observations.count < 2 {
-                lines.append("NOTE: only one page was returned, so cursor paging is UNPROVEN. Either "
-                             + "the group fits in one page (expected for RG 486) or the cursor did "
-                             + "not advance — check the sort array above.")
+                lines.append("NOTE: only one page was returned. For a group that fits in one page "
+                             + "(RG 486 has 11 series) that is the correct outcome.")
+            }
+            // Sort-consistency check. The first request now seeds `searchAfter=*` precisely so that
+            // page 1 is ordered the same way as page 2; if page 1 still comes back arity 2, the seed
+            // did not take effect and cursor paging is still unsafe for multi-page groups.
+            if let firstArity = observations.first?.sortArity {
+                if firstArity >= 2 {
+                    lines.append("⚠ PAGE 1 SORT IS STILL ARITY \(firstArity) despite the seeded "
+                                 + "cursor — the first page is relevance-ordered while later pages are "
+                                 + "naId-ordered, so multi-page groups may skip or duplicate records. "
+                                 + "The de-duplication and totalHits stop keep the RESULT correct, but "
+                                 + "report this back.")
+                } else {
+                    lines.append("✓ page 1 sort arity \(firstArity) — the seeded cursor produced a "
+                                 + "consistent ordering, so cursor paging is sound.")
+                }
+            }
+            if let arities = observations.map(\.sortArity).first,
+               observations.count >= 2, arities != observations[1].sortArity {
+                lines.append("⚠ sort arity CHANGED between pages "
+                             + "(\(observations.map(\.sortArity).map(String.init).joined(separator: " → ")))"
+                             + " — the ordering is not stable across requests.")
+            }
+
+            // The page-size question needs a group large enough to fill a big page: RG 486's 11 series
+            // return 11 whether the limit is 100 or 1000, so a small group cannot answer it. One extra
+            // call against RG 59 (~4,435 series) settles it.
+            lines.append("")
+            lines.append("PAGE-SIZE PROBE (RG 59, limit=1000)")
+            do {
+                let probe = try await client.surveyPageSizeLimit(recordGroup: 59, level: "series")
+                lines.append(contentsOf: probe.reportLines)
+                if probe.returnedHitCount >= 1000 {
+                    lines.append("  ✓ limit=1000 is honoured — use API_PAGE_SIZE=1000")
+                } else if let total = probe.totalHits, total > probe.returnedHitCount {
+                    lines.append("  ⚠ CLAMPED to \(probe.returnedHitCount) of \(total) available — "
+                                 + "set API_PAGE_SIZE to that value")
+                }
+            } catch {
+                lines.append("  probe failed: \(error)")
             }
         } catch {
             lines.append("SURVEY FAILED: \(error)")
