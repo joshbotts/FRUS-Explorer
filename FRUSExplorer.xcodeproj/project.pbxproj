@@ -31,6 +31,7 @@
 		05A01041FB63560FD4979C46 /* WordCloudOverrides.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55053214F8330B5F2F51CC0 /* WordCloudOverrides.swift */; };
 		05B1D9FC523C3EE2C8BD8A4E /* cloud-vectors-volumes.json in Resources */ = {isa = PBXBuildFile; fileRef = 0F92143C972B36EADB20AEA5 /* cloud-vectors-volumes.json */; };
 		05D4B3A6E375CB71B376F41D /* IndexingBatchLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0303A1F29D661C52C19F96 /* IndexingBatchLifecycleTests.swift */; };
+		05E9291EB0EE48B65C621EBA /* KeynessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CFB0FD0357ED14BB6C8C69A /* KeynessTests.swift */; };
 		0617E2027E5E183CE537E903 /* CustomScopesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2F9B965F27786F60BE298A /* CustomScopesView.swift */; };
 		0632CD0D0FBEF87470942131 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E25F23B7A7E1469594E312 /* KeychainStore.swift */; };
 		06EAC57BB27383F03E11AB88 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175DA5DB0C781AF94092EFC /* SearchView.swift */; };
@@ -104,6 +105,7 @@
 		1A2C69532BF632D4A44541B9 /* BackgroundSummarizationRequestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12F717710FFFD7E465CA472 /* BackgroundSummarizationRequestTests.swift */; };
 		1ABE3B47C6F5729270EF8CA6 /* administration-profiles-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 40818A0F0838CF00201FDB37 /* administration-profiles-index.json */; };
 		1AECA561D2E2B5254652CB13 /* WordCloudStopwords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F246B94919B9F8E66BA470F /* WordCloudStopwords.swift */; };
+		1B5AC32D7C6F5388B2D3996C /* Keyness.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEF8EA1255978E96A233C26 /* Keyness.swift */; };
 		1BE4573C7D1AC617E7C8AED4 /* ResearchLoggingGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B13A61F88E1BAA29D3EDEBB6 /* ResearchLoggingGateTests.swift */; };
 		1CA1089E1F76206A5CBC2357 /* WordCloudTokenizer+App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9182865A71E18D647B17BDEF /* WordCloudTokenizer+App.swift */; };
 		1CBA0A1C037EF0BE882C4F7B /* DocumentKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8897B63AE9CA431E64C8B530 /* DocumentKey.swift */; };
@@ -409,6 +411,7 @@
 		7D8FDADEA39A98390DBC5DDB /* IndexingMainThreadCostTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676B8F292A955D9CF8D01076 /* IndexingMainThreadCostTests.swift */; };
 		7E0109CCA4010776ADC31F25 /* SeriesProductionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83C045D23CCE9990D712AF39 /* SeriesProductionData.swift */; };
 		7E34C331953831EB0ACD5F62 /* SourceProvenanceDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B3C989DE269DD1B5D99106 /* SourceProvenanceDashboard.swift */; };
+		7E571CF62848726B51298DC1 /* Keyness.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEF8EA1255978E96A233C26 /* Keyness.swift */; };
 		7EAC2FA5F38FB6CB1FEC5F4E /* BrokenRefsIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B87099C30E843D605DCAD0 /* BrokenRefsIndex.swift */; };
 		7EBBA5871175377DD60A3806 /* PendingStoreReset.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00307BB1EBC64677D8B8975 /* PendingStoreReset.swift */; };
 		7EC05AE8E616A0EB9A67F992 /* CollectionRichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5506FD06C70D3B524AE8CF60 /* CollectionRichTextEditor.swift */; };
@@ -1182,6 +1185,7 @@
 		8C62C528984EEA78DAF451E0 /* WordCloudLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLoader.swift; sourceTree = "<group>"; };
 		8CB3CD7C0774D261220D22FB /* DownloadsSettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsSettingsViewTests.swift; sourceTree = "<group>"; };
 		8CD0F18E6B410DD30B5D9908 /* OrphanedTagRepair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanedTagRepair.swift; sourceTree = "<group>"; };
+		8CFB0FD0357ED14BB6C8C69A /* KeynessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeynessTests.swift; sourceTree = "<group>"; };
 		8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Errors.swift; sourceTree = "<group>"; };
 		8DB62E70AEA3D9A8CFBD2C8E /* CollectionItemHTMLRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionItemHTMLRenderer.swift; sourceTree = "<group>"; };
 		8E0975B17059A4C9ECDBAD1A /* HistoryPaneSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryPaneSnapshot.swift; sourceTree = "<group>"; };
@@ -1413,6 +1417,7 @@
 		F8DA3DEE45576188EE42F070 /* CitationLookupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationLookupView.swift; sourceTree = "<group>"; };
 		FAC28DDC19E5D2D71E5E031D /* IndexingPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingPipelineTests.swift; sourceTree = "<group>"; };
 		FBE0716B4B3C7052EC58ACEB /* OnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTests.swift; sourceTree = "<group>"; };
+		FBEF8EA1255978E96A233C26 /* Keyness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyness.swift; sourceTree = "<group>"; };
 		FC0040B3BD8BC38F863A88F9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		FD2F9B965F27786F60BE298A /* CustomScopesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomScopesView.swift; sourceTree = "<group>"; };
 		FD719C2891726CA1E781C46F /* DocumentTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTimelineView.swift; sourceTree = "<group>"; };
@@ -1799,6 +1804,7 @@
 				34E1CEB90BE3E3FC8CDCE738 /* IndexingSummaryCardTests.swift */,
 				6000E386B1EB64D795D8F282 /* IntegrationTests.swift */,
 				9948E709929FAB592E9B615E /* KeychainStoreTests.swift */,
+				8CFB0FD0357ED14BB6C8C69A /* KeynessTests.swift */,
 				0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */,
 				7F55CBFB1680DD882C3B9C21 /* MacSettingsViewTests.swift */,
 				8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */,
@@ -2203,6 +2209,7 @@
 				4FFA3E6D609E3788A3D0D09A /* CorpusDispersion.swift */,
 				261D1581649E3CE8247D528F /* CrossReferenceAnalyticsView.swift */,
 				60B4784CBA38B92BB264B822 /* CrossReferenceStats.swift */,
+				FBEF8EA1255978E96A233C26 /* Keyness.swift */,
 				8FAED4459D455B2C2CF18B85 /* OccurrenceAvailability.swift */,
 				173DA12A8E0CAC2644E2263F /* PageRank.swift */,
 				47EE9909AA39DA3A99793427 /* PersonAnalyticsView.swift */,
@@ -2651,6 +2658,7 @@
 				D6AB6B5AF5D52A42A0F13363 /* IndexingSummaryCard.swift in Sources */,
 				9BCEFF6B517D40F56D3F58ED /* KWICLine.swift in Sources */,
 				0632CD0D0FBEF87470942131 /* KeychainStore.swift in Sources */,
+				1B5AC32D7C6F5388B2D3996C /* Keyness.swift in Sources */,
 				A520280B884239A8EFFE8AEC /* LaunchSplashView.swift in Sources */,
 				BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */,
 				0D1D80EB867254FBAAA187F6 /* MacCorpusBrowserWindow.swift in Sources */,
@@ -2991,6 +2999,7 @@
 				EA77F5267057C90A63A29C6E /* IndexingSummaryCard.swift in Sources */,
 				1DA4B8B79E9FA377338FB7B1 /* KWICLine.swift in Sources */,
 				CB6AD2656E288EE5C8DA8A18 /* KeychainStore.swift in Sources */,
+				7E571CF62848726B51298DC1 /* Keyness.swift in Sources */,
 				5F400B93F91B949CFEE78EE3 /* LaunchSplashView.swift in Sources */,
 				19A2E99993AE1FB57687B79B /* MacCollectionManagerView.swift in Sources */,
 				4E3992CD09A928945B2AC08C /* MacCorpusBrowserWindow.swift in Sources */,
@@ -3249,6 +3258,7 @@
 				68BA1099B5A3E26A1EE512E6 /* IntegrationTests.swift in Sources */,
 				A06B6C722AD32F76F15CF97D /* KWICLineTests.swift in Sources */,
 				E69E1D10C09ABA8D2058E992 /* KeychainStoreTests.swift in Sources */,
+				05E9291EB0EE48B65C621EBA /* KeynessTests.swift in Sources */,
 				14533B37DD02A330F098DE0A /* MacSettingsViewTests.swift in Sources */,
 				FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */,
 				64E69EF4C03F523D77453A8F /* ManifestStoreTests.swift in Sources */,
