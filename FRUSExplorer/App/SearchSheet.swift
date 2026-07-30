@@ -110,6 +110,13 @@ struct MacSearchWindowView: View {
     /// The Query Inspector's state for this window (Q-2).
     @State private var inspectorController = QueryInspectorController()
 
+    /// The facet panel's state for this window (R-1).
+    @State private var facetController = FacetPanelController()
+
+    /// Whether the facet inspector column is showing. `@SceneStorage` so each window keeps
+    /// its own choice.
+    @SceneStorage("search.facets.shown") private var showFacetPanel = false
+
     /// Whether the inspector's detail rows are showing. `@SceneStorage` so the choice is
     /// remembered per window, as the design asks, rather than globally.
     @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
@@ -253,9 +260,44 @@ struct MacSearchWindowView: View {
         .frame(minWidth: 640, idealWidth: 820, maxWidth: .infinity,
                minHeight: 500, idealHeight: 680, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: searchVM.showTips)
+        // The facet panel (R-1). `.inspector` is the macOS idiom the design asks for; the
+        // *toggle* lives in the sort bar rather than the titlebar because
+        // `MacSearchWindowView` has no `.toolbar` at all — verified, zero occurrences — so
+        // the design's "toggled from a titlebar inspector button" has no host. Adding one
+        // would change this window's chrome, which is a separate decision from shipping the
+        // panel; the sort bar already carries the timeline and checklist toggles, so the
+        // control sits with its siblings.
+        .inspector(isPresented: $showFacetPanel) {
+            FacetPanelView(
+                controller: facetController,
+                matchCount: searchVM.totalMatchCount,
+                displayedCount: searchVM.displayedResults.count,
+                isChecklistHiding: searchVM.checklistMode
+                    && searchVM.displayedResults.count < searchVM.results.count,
+                onNarrow: { narrowing in
+                    // Captured here because the narrow re-runs the search, and by the time
+                    // the panel recomputes, its match count describes the narrowed set.
+                    facetController.recordNarrowing(from: searchVM.totalMatchCount)
+                    narrowing.apply(to: &searchVM.parameters)
+                    searchVM.parametersVersion += 1
+                },
+                onDiscloseSection: { section in
+                    Task {
+                        await facetController.load(
+                            section,
+                            parameters: searchVM.submittedSearchParameters,
+                            service: appState.searchService,
+                            pipeline: appState.indexingPipeline)
+                    }
+                })
+                .inspectorColumnWidth(min: 240, ideal: 300, max: 420)
+        }
         .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
             searchVM.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
+            // A new result set invalidates every computed section. Keyed on the same trigger
+            // the search itself uses, so a facet can never describe a previous match.
+            facetController.invalidate(signature: searchVM.searchTrigger)
         }
         // Keyed on the *live* text plus the filter version, not `searchTrigger`, so the
         // inspector explains the query as it is being typed — the design's "a researcher
@@ -615,6 +657,18 @@ struct MacSearchWindowView: View {
             Divider().frame(height: 16)
 
             FilterChip(
+                label: "Person",
+                value: searchVM.personFilterLabel,
+                isActive: searchVM.personFilterLabel != nil
+            ) { searchVM.clearPersonFilter() }
+            .help(String(
+                localized: "search.filter.person.help",
+                defaultValue: "Person filter — set from the People facet or the filter sheet. Tap × to clear."
+            ))
+
+            Divider().frame(height: 16)
+
+            FilterChip(
                 label: "Tagged",
                 value: searchVM.tagFilterLabel,
                 isActive: !searchVM.parameters.userTagIds.isEmpty
@@ -814,6 +868,30 @@ struct MacSearchWindowView: View {
             // row context menu), turning a long result set into a shrinking to-do list. Disabled
             // until there are results; stays enabled in the all-reviewed state (gated on raw
             // `results`) so the user can always turn it back off.
+            // Facet panel toggle (R-1). Placed here rather than the titlebar because this
+            // window has no toolbar to hang it from — see the `.inspector` comment.
+            Button {
+                showFacetPanel.toggle()
+            } label: {
+                Label(String(localized: "search.facets.short", defaultValue: "Breakdown"),
+                      systemImage: "chart.bar.doc.horizontal")
+                    .font(.system(size: 12))
+                    .foregroundStyle(showFacetPanel ? Color.accentColor : Color.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.results.isEmpty)
+            .help(showFacetPanel
+                  ? String(localized: "search.facets.off.help",
+                           defaultValue: "Hide the result-set breakdown")
+                  : String(localized: "search.facets.on.help",
+                           defaultValue: "Break this result set down by year, volume, person, type and provenance"))
+            .accessibilityLabel(String(localized: "search.facets.a11y",
+                                       defaultValue: "Result-set breakdown"))
+
+            Divider().frame(height: 16)
+
             Button {
                 searchVM.setChecklistMode(!searchVM.checklistMode)
             } label: {
@@ -936,6 +1014,17 @@ struct MacSearchWindowView: View {
             } else {
                 Text("\(start)–\(end) of \(loaded.formatted()) loaded · total unavailable")
                     .font(.system(size: 11, weight: .medium))
+            }
+
+            // "narrowed from N" (R-1). Shown only while the facet panel is open, because that
+            // is when the pre-narrowing figure is on screen to be narrowed *from* — outside
+            // that context it is a number with no referent.
+            if showFacetPanel, let pre = facetController.narrowedFrom,
+               let total, pre > total {
+                Text(String(localized: "search.narrowedFrom",
+                            defaultValue: "· narrowed from \(pre.formatted())"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
 
             if truncated {
