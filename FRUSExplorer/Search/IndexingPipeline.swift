@@ -3284,6 +3284,35 @@ public actor IndexingPipeline {
     ///
     /// - Returns: One `(volumeId, documentId, dateISO)` triple per indexed document,
     ///   with `dateISO == nil` for undated documents.
+    /// Returns every indexed document's `rowid` alongside its `(volumeId, documentId)` key.
+    ///
+    /// The map that lets an occurrence count be dated without joining `document_cache`.
+    /// `FTS5Store.termOccurrencesByDocument(stem:)` returns rowids because joining them to their
+    /// keys in SQL costs 40–90× more than the vocabulary scan itself — one page fault per matched
+    /// document, on a table whose rows average 5.7 KB. Resolving them against this map instead moves
+    /// the work to one sequential pass.
+    ///
+    /// **That pass is nearly free, and by accident.** `idx_document_cache_facet` — created for R-1's
+    /// result-set facets, on `(is_front_matter, is_editorial_note, volume_id, document_id)` — is a
+    /// *covering* index for this query, because every SQLite index entry carries the rowid. So all
+    /// 316,839 rows come back in **0.114 s** without the fat table being touched. Confirm with
+    /// `EXPLAIN QUERY PLAN`, which should say `SCAN document_cache USING COVERING INDEX
+    /// idx_document_cache_facet`; if that index is ever dropped this becomes a 6.3 GB table scan.
+    ///
+    /// Cache it and invalidate on index change, like `allDocumentKeysWithDates()`.
+    public func allDocumentRowidKeys() throws -> [(rowid: Int64, volumeId: String, documentId: String)] {
+        let sql = "SELECT rowid, volume_id, document_id FROM document_cache"
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var result: [(rowid: Int64, volumeId: String, documentId: String)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let v = auxColumnString(stmt, 1), let d = auxColumnString(stmt, 2) {
+                result.append((rowid: sqlite3_column_int64(stmt, 0), volumeId: v, documentId: d))
+            }
+        }
+        return result
+    }
+
     public func allDocumentKeysWithDates() throws -> [(volumeId: String, documentId: String, dateISO: String?)] {
         let sql = """
             SELECT dc.volume_id, dc.document_id, dd.date_iso

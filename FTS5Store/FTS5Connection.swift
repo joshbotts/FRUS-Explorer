@@ -175,6 +175,9 @@ final class FTS5Connection {
     /// Whether the scratch tokenizing tables have been created on this connection.
     private var stemProbeReady = false
 
+    /// Whether the temp instance-mode `fts5vocab` companion exists on this connection.
+    private var instanceVocabReady = false
+
     /// Creates the scratch tables that let us ask SQLite what a word tokenizes to.
     ///
     /// Two `temp`-schema virtual tables: a one-column FTS5 table declared with the
@@ -197,6 +200,38 @@ final class FTS5Connection {
             """)
         stemProbeReady = true
     }
+
+    /// Creates the per-connection `fts5vocab` companion in **`instance`** mode, once.
+    ///
+    /// Instance mode yields one row per posting — `(term, doc, col, offset)` — where `doc` is the
+    /// content rowid. `row` mode, which the persistent `…_vocab` table uses, is a set: one row per
+    /// term for the whole index, with no document and no position. So `row` mode can say "this stem
+    /// occurs 92 times in the corpus" and can never say "…in documents dated 1949". Instance mode is
+    /// the only route to a scoped or dated occurrence count.
+    ///
+    /// ## Why `temp.`, and why this needs no migration
+    /// `fts5vocab` stores nothing — it is a view over the FTS5 index. So a companion in the **temp**
+    /// database is exactly as capable as one in `main`, costs 6 ms to create (measured on the real
+    /// 6.3 GB index), and cannot outlive its connection. That last property is the point: a
+    /// persistent companion would need a schema-generation bump, a DDL site, a matching DROP ordered
+    /// against the source table's lifetime, and it would go stale the moment the FTS5 table was
+    /// dropped and rebuilt — the failure pattern of #275. None of that exists here.
+    ///
+    /// Requires the source table's schema to store positions (no `detail=none`/`columnsize=0`),
+    /// which `FTS5Schema.frusDocuments` does.
+    ///
+    /// - Parameter tableName: the FTS5 table to read, in `main`.
+    func ensureInstanceVocab(tableName: String) throws {
+        guard !instanceVocabReady else { return }
+        try exec("""
+            CREATE VIRTUAL TABLE IF NOT EXISTS temp.\(Self.instanceVocabTableName) \
+            USING fts5vocab('main', '\(tableName)', 'instance')
+            """)
+        instanceVocabReady = true
+    }
+
+    /// Name of the temp instance-mode companion created by ``ensureInstanceVocab(tableName:)``.
+    static let instanceVocabTableName = "fts5_instance_vocab"
 
     /// Returns the index terms SQLite's tokenizer produces for `text`.
     ///

@@ -280,6 +280,9 @@ actor CorpusAnalyticsService {
     /// (`scopedCacheKey(term:volumeIds:)` with an empty term is the whole-corpus key).
     /// Reused by `documentTotalsByDecade`, which buckets from the per-year totals.
     private var documentTotalsByYearCache: [String: [Int: Int]] = [:]
+    /// Cache for the `rowid → (volumeId, documentId)` map behind the occurrence numerator (PR-D).
+    /// One entry for the whole index; cleared with everything else by `invalidateCache()`.
+    private var rowidKeyCache: [Int64: (volumeId: String, documentId: String)]? = nil
     private let cacheLimit = 50
 
     // MARK: - Initialiser
@@ -306,6 +309,7 @@ actor CorpusAnalyticsService {
         documentTotalsByYearCache.removeAll()
         documentDateCache = nil
         allDocumentKeysWithDatesCache = nil
+        rowidKeyCache = nil
     }
 
     // MARK: - Private Helpers
@@ -789,6 +793,91 @@ actor CorpusAnalyticsService {
     ///
     /// For `frus1969-76v01` this returns `1969`. Returns `nil` if the
     /// volume ID does not begin with "frus" followed by four digits.
+    // MARK: - Occurrences (R-2 PR-D)
+
+    /// Whether `term` can be counted by occurrence, resolved through SQLite's own tokenizer.
+    ///
+    /// Cheap: a parse plus one tokenizer probe, no index scan.
+    func occurrenceAvailability(for term: String) async -> OccurrenceAvailability {
+        var resolved: [String: String?] = [:]
+        // `classify` is synchronous, so the stem is pre-resolved for the one word it can ask about.
+        let parsed = FTS5InlineQueryParser.parseDetailed(term)
+        for operand in parsed.operands where operand.kind == .word {
+            resolved[operand.text] = try? await fts5Store.indexStem(of: operand.text)
+        }
+        return OccurrenceAvailability.classify(term: term) { resolved[$0] ?? nil }
+    }
+
+    /// Total occurrences of `term`'s stem per year, over the same document population as
+    /// ``termFrequencyByYear(term:volumeIds:)``.
+    ///
+    /// ## The population trap this is written around
+    /// The document numerator dates a matched document by `date_iso`'s first four characters and, for
+    /// an undated one, by its volume's start year (`startYear(fromVolumeId:)`). If this method bucketed
+    /// with a SQL `GROUP BY` on `date_iso`, every undated document's occurrences would silently vanish
+    /// while its *document* stayed in the other series — producing an "occurrences per document fell"
+    /// trend out of nothing, and the exact mirror image of the bug CA-4's review fixed on the
+    /// normalisation denominator. So the bucketing happens **here, in Swift, against the same rule**.
+    ///
+    /// ## Why it does not join in SQL
+    /// `FTS5Store.termOccurrencesByDocument(stem:)` returns rowids, and this resolves them against a
+    /// cached rowid → key map. Joining in SQL costs 40–90× more on the real index: one page fault per
+    /// matched document, on a table whose rows average 5.7 KB. Measured — `state` is 0.233 s this way
+    /// and 12.91 s joined.
+    ///
+    /// - Parameters:
+    ///   - term: the analytics term. Must be occurrence-countable; see ``occurrenceAvailability(for:)``.
+    ///   - volumeIds: optional scope. Applied to the same key space as the document numerator.
+    /// - Returns: one entry per year with occurrences, ascending. Empty when the term is not
+    ///   occurrence-countable or the index has never seen its stem — callers must distinguish those
+    ///   two with `occurrenceAvailability(for:)` rather than reading emptiness as zero.
+    func termOccurrencesByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
+        guard let stem = await occurrenceAvailability(for: term).stem else { return [] }
+        let cacheKey = scopedCacheKey(term: "occ:\(stem)", volumeIds: volumeIds)
+        if let cached = yearFrequencyCache[cacheKey] { return cached }
+
+        let perDocument = try await fts5Store.termOccurrencesByDocument(stem: stem)
+        guard !perDocument.isEmpty else { return [] }
+
+        let keysByRowid = try await resolvedRowidKeys()
+        let dates = try await resolvedDocumentDates()
+
+        var counts: [Int: Int] = [:]
+        for entry in perDocument {
+            guard let key = keysByRowid[entry.documentRowid] else { continue }
+            if let volumeIds, !volumeIds.contains(key.volumeId) { continue }
+            // Byte-for-byte the numerator's year rule (see `termFrequencyByYear`).
+            let year: Int?
+            if let iso = dates["\(key.volumeId)/\(key.documentId)"] {
+                year = Int(iso.prefix(4))
+            } else {
+                year = Self.startYear(fromVolumeId: key.volumeId)
+            }
+            guard let y = year else { continue }
+            counts[y, default: 0] += entry.occurrences
+        }
+
+        let result = counts
+            .map { YearFrequency(year: $0.key, count: $0.value) }
+            .sorted { $0.year < $1.year }
+        insertIntoCache(&yearFrequencyCache, key: cacheKey, value: result)
+        return result
+    }
+
+    /// Cached `rowid → (volumeId, documentId)` map for the whole index.
+    ///
+    /// One sequential pass served by a covering index — 0.114 s for 316,839 rows. Cleared by
+    /// ``invalidateCache()`` with the rest.
+    private func resolvedRowidKeys() async throws -> [Int64: (volumeId: String, documentId: String)] {
+        if let cached = rowidKeyCache { return cached }
+        var map: [Int64: (volumeId: String, documentId: String)] = [:]
+        for row in try await pipeline.allDocumentRowidKeys() {
+            map[row.rowid] = (volumeId: row.volumeId, documentId: row.documentId)
+        }
+        rowidKeyCache = map
+        return map
+    }
+
     nonisolated static func startYear(fromVolumeId volumeId: String) -> Int? {
         guard volumeId.hasPrefix("frus") else { return nil }
         let afterFrus = volumeId.dropFirst(4)
