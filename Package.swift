@@ -29,6 +29,16 @@ import PackageDescription
 ///   1906–1910 Numerical File (microfilm M862). Requires `CATALOG_API_KEY`; caches raw
 ///   pages to disk. Run when refreshing the bundled index.
 ///
+/// - **RecordGroupCatalogGenerator**: builds the offline NARA Catalog index for 22 foreign-affairs
+///   record groups (43, 59, 63, 76, 84, 169, 182, 208, 229, 239, 256, 268, 278, 286, 306, 353, 383,
+///   420, 466, 469, 486, 490) — a spin-off of `CentralFilesIndexGenerator` that keeps **all**
+///   available description data rather than the few fields a citation lookup needs, with creator
+///   authority information and the complete unfiltered `variantControlNumbers` as its two priority
+///   payloads. Harvests NARA's **public S3 bulk export**, so it needs no `CATALOG_API_KEY` and is
+///   subject to no quota; series-level by default, with per-record-group opt-in to file units. Also
+///   emits a field/value/control-number/creator census. See
+///   `Planning/nara-record-group-catalog-runbook.md`.
+///
 /// - **CollectionAuthorityGenerator**: builds the bundled `collection-authority.json`
 ///   (Source Explorer Phase 4) — a corpus-wide two-level authority of the archival
 ///   collections cited across all FRUS volumes (front matter + document source notes),
@@ -563,6 +573,46 @@ let package = Package(
             name: "SourceExplorerExportGeneratorTests",
             dependencies: [.target(name: "SourceExplorerExportGeneratorCore")],
             path: "SourceExplorerExportGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - RecordGroupCatalogGenerator
+
+        /// Builds the offline NARA Catalog index for the 22 foreign-affairs record groups
+        /// (43, 59, 63, 76, 84, 169, 182, 208, 229, 239, 256, 268, 278, 286, 306, 353, 383,
+        /// 420, 466, 469, 486, 490) — a spin-off of `CentralFilesIndexGenerator` that keeps
+        /// **all** available description data rather than the handful of fields a citation
+        /// lookup needs, with creator authority information and the complete unfiltered
+        /// `variantControlNumbers` as its two priority payloads.
+        ///
+        /// Harvests NARA's **public, unauthenticated S3 bulk export** rather than the v2
+        /// search API: no `CATALOG_API_KEY`, no 10,000/month quota, every level of description
+        /// in one pass (so adding file units for a chosen group later is a filter change, not a
+        /// second harvest), and each group's own `recordGroup` record carries NARA's
+        /// `seriesCount` so a short harvest is self-detecting.
+        .target(
+            name: "RecordGroupCatalogGeneratorCore",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "RecordGroupCatalogGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls RecordGroupCatalogRunner.run() and exits.
+        .executableTarget(
+            name: "RecordGroupCatalogGenerator",
+            dependencies: [.target(name: "RecordGroupCatalogGeneratorCore")],
+            path: "RecordGroupCatalogGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Unit tests for RecordGroupCatalogGeneratorCore — JSON tree coercions, NDJSON line
+        /// splitting, S3 listing parse, plan/depth resolution, projection invariants, alias
+        /// ledger states, the field/value/control-number censuses, checkpoint resume, and
+        /// end-to-end determinism over a stubbed transport (no network).
+        .testTarget(
+            name: "RecordGroupCatalogGeneratorTests",
+            dependencies: [.target(name: "RecordGroupCatalogGeneratorCore")],
+            path: "RecordGroupCatalogGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

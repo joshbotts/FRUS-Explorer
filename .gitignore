@@ -48,6 +48,11 @@ notarization-*.json
 # SourceExplorerExportGenerator; only the summary + sample are committed.
 Planning/source-explorer-export/source-explorer-export.json
 
+# The record-group catalog index shards are ~165MB across the 22 record groups (RG 59 alone is a
+# large share) — regenerate with RecordGroupCatalogGenerator. The manifest, the four censuses, the
+# creator authority index and series-sample.json ARE committed; only the full per-group index is not.
+Planning/nara-record-group-catalog/series/
+
 # Claude Design hand-off bundles. Plan docs cite these as source of truth by repo-relative
 # path, so unpack them at the repo root — but they are reference material (prototype HTML,
 # 2x screenshots, runtime JS), not sources, and none has ever been committed. Each plan
