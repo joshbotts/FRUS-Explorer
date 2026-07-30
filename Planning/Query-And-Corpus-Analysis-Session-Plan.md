@@ -439,6 +439,66 @@ argument for the labelling and dispersion work, and a ready-made test fixture.
   honest for every query shape: exact-word is impossible from a stemmed index, 3+-operand NEAR
   is not expressible, and booleans have no single honest total. Suppression must be an explicit
   state with a reason, never a zero or a blank cell.
+
+  ### PR-D measurement pass — 2026-07-30, on the real 6.3 GB index
+
+  Measured read-only (`mode=ro`) before designing, because the cost estimates in this plan were
+  extrapolated from a 20k-document replica. **Feasible, and the shape is settled — but not the
+  shape that was assumed.**
+
+  **Corpus:** 274,927 distinct stems, **234,155,358 postings**, 316,839 documents.
+
+  **1. No persistent DDL is needed.** A `TEMP` instance-mode companion attaches to the read-only
+  main database in **6 ms**:
+  `CREATE VIRTUAL TABLE temp.v USING fts5vocab('main','frus_documents','instance')`.
+  That removes the whole schema-lifecycle problem this plan budgeted for: no migration, no
+  generation bump, no DDL at `FTS5Connection.swift:131/:159`, no matching DROP at `:155`, and no
+  stale-companion-after-reindex risk (#275's pattern). The companion cannot outlive the connection
+  that made it. `fts5vocab` stores nothing either way — it reads the index.
+
+  **2. The instance scan is fast; the JOIN was going to be the whole cost.** Aggregating
+  `(doc, COUNT(*))` from the companion runs at **~7–8M postings/s**:
+
+  | stem | postings | documents | vocab only | + SQL join to `document_cache` |
+  |---|---|---|---|---|
+  | `embargo` | 10,783 | — | 0.001 s | — |
+  | `khrushchev` | 14,930 | — | 0.002 s | — |
+  | `contain` | 57,596 | 39,496 | **0.017 s** | 2.00 s |
+  | `nuclear` | 59,689 | 10,496 | — | 0.39 s |
+  | `govern` | 985,733 | 195,519 | **0.140 s** | 8.99 s |
+  | `state` | 1,688,186 | 299,557 | **0.233 s** | 12.91 s |
+  | `the` (ceiling) | 16,767,406 | 314,609 | **2.03 s** | — |
+
+  Cost tracks **document count, not postings**: `nuclear` (59,689 postings / 10,496 docs) takes
+  0.39 s where `contain` (57,596 postings / 39,496 docs) takes 2.18 s. Nearly identical posting
+  lists, 3.8× the documents, 5.6× the time. The cause is ~300k random rowid lookups into a table
+  whose rows average 5.7 KB of `body_text`. Pre-aggregating per document before joining barely
+  helps (14.29 s → 12.91 s for `state`) because the lookup count is what matters.
+
+  **So do not join in SQL.** Read `(doc_rowid, occurrences)` from the companion and bucket in
+  Swift. That is 40–90× faster on common terms and it is the difference between a usable feature
+  and an unusable one.
+
+  **3. The rowid → year map is nearly free, from an index added for something else.**
+  `SELECT rowid, volume_id, document_id FROM document_cache` is served by a **covering index** —
+  `idx_document_cache_facet`, added for R-1's facets — because every SQLite index entry carries
+  the rowid. All 316,839 rows in **0.114 s**; joined through to `date_iso`, **0.243 s**. Build it
+  once, cache it beside `allDocumentKeysWithDates()`.
+
+  **4. Parity is exact.** For every term checked, instance-mode postings equal row-mode `cnt` and
+  distinct instance docs equal row-mode `doc` (`allianc` 16,253/8,160 · `contain` 57,596/39,496 ·
+  `guarante` 31,587/18,288 · `nuclear` 59,689/10,496). The two vocab modes agree, so the
+  occurrence numerator can be checked against the cheap row-mode scalar in a test.
+
+  **Budget, then:** ~0.24 s once for the map, plus 0.001–0.23 s per realistic research term. The
+  pathological ceiling a researcher could type by accident is `the` at 2.0 s, which is long enough
+  to want a progress state.
+
+  **Still unmeasured, and stated as such:** iPhone. The design's dominant cost is now a sequential
+  posting-list scan plus one covering-index pass, not 300k random reads into a 6.3 GB file, so the
+  risk profile is far better than the rejected shape — but the 8 MB page cache and 128 MB mmap at
+  `FTS5Connection.swift:77-82` are not a Mac's, and `the`-class terms deserve a device check before
+  the progress state is designed away. Memory also wants a bound: `the` returns 314,609 rows.
 - **PR-E** — surface the corpus-wide `occurrences` / `occurrencesPerDocument` that
   `SearchService.corpusDocumentFrequency` already fetches and discards. One property access
   plus a label, explicitly marked corpus-wide and unfiltered.
