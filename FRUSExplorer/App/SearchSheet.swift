@@ -724,7 +724,11 @@ struct MacSearchWindowView: View {
             // there is no dismiss-time batch.
             .popover(isPresented: $showAdvancedFilters, arrowEdge: .bottom) {
                 if let filterVM = searchVM.filterVM {
-                    SearchFilterView(vm: filterVM)
+                    // `filterVM` is the sheet's own view model and `syncToFilterVM` copies
+                    // `phrase` but not `keywords`, so counting against its own parameters
+                    // would describe a different result set than the one behind the sheet.
+                    SearchFilterView(vm: filterVM,
+                                     tagCountParameters: searchVM.submittedSearchParameters)
                         .frame(width: 480, height: 560)
                         .onChange(of: filterVM.advancedFilterSignature) { _, _ in
                             searchVM.applyAdvancedFilters()

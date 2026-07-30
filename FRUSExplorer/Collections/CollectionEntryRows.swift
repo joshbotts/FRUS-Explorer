@@ -950,9 +950,13 @@ struct InlineNoteCreateSheet: View {
                     if let pipeline = appState.indexingPipeline {
                         let vid = volumeId
                         let did = documentId
+                        // Text only. Passing `userTagIds: nil` here used to set the
+                        // document's `user_tag_ids` to NULL — and that column is per
+                        // document, not per note, so creating an untagged note erased tags
+                        // another note on the same document had contributed. They came back
+                        // at the next launch's push, which is why it was invisible.
                         Task { try? await pipeline.updateNoteText(
-                            volumeId: vid, documentId: did,
-                            bodyText: trimmed, userTagIds: nil
+                            volumeId: vid, documentId: did, bodyText: trimmed
                         ) }
                     }
                     onCreated(note)

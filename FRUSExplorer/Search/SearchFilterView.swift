@@ -57,6 +57,12 @@ import SwiftData
 struct SearchFilterView: View {
 
     @Bindable var vm: SearchViewModel
+
+    /// The query to count user tags against, or `nil` to show no counts.
+    ///
+    /// Supplied by the host because on macOS `vm` is the filter sheet's own view model and
+    /// does not carry the search's keywords — see `SearchViewModel.loadUserTagCounts`.
+    var tagCountParameters: SearchParameters? = nil
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
@@ -532,14 +538,53 @@ struct SearchFilterView: View {
                         }
                     )
                 ) {
-                    Text(tag.name)
+                    HStack {
+                        Text(tag.name)
+                        Spacer()
+                        tagCountLabel(for: tag)
+                    }
                 }
-                .accessibilityLabel(tag.name)
+                .accessibilityLabel(tagAccessibilityLabel(for: tag))
             }
         } header: {
             Text(String(localized: "search.section.usertags",
                         defaultValue: "My Tags"))
+        } footer: {
+            if vm.hasUserTagCounts {
+                Text(String(localized: "search.usertags.countFooter",
+                            defaultValue: "Counts are documents in your current results carrying that tag."))
+            }
         }
+        // On demand, when the sheet opens — never eagerly. One SQL pass over the match set,
+        // measured at parity with a facet section and flat in tag count.
+        .task(id: vm.availableUserTags.count) {
+            guard let tagCountParameters else { return }
+            await vm.loadUserTagCounts(
+                matching: tagCountParameters, tags: vm.availableUserTags,
+                service: appState.searchService, pipeline: appState.indexingPipeline)
+        }
+    }
+
+    /// The trailing count for one tag, or a placeholder while counting.
+    @ViewBuilder
+    private func tagCountLabel(for tag: UserTag) -> some View {
+        if vm.isCountingUserTags {
+            ProgressView().controlSize(.small)
+        } else if vm.hasUserTagCounts {
+            // Zero is an answer worth showing — "this tag is not in these results" is exactly
+            // what a researcher wants to know before toggling it on.
+            Text((vm.userTagCounts[tag.id.uuidString] ?? 0).formatted())
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// The whole fact, for VoiceOver, rather than a name and an unexplained number.
+    private func tagAccessibilityLabel(for tag: UserTag) -> String {
+        guard vm.hasUserTagCounts else { return tag.name }
+        let count = vm.userTagCounts[tag.id.uuidString] ?? 0
+        return String(localized: "search.usertags.a11y",
+                      defaultValue: "\(tag.name): \(count) documents in your current results")
     }
 
     // MARK: - Custom Scopes (#258 Phase 1)
