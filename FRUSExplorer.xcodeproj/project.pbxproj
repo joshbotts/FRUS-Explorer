@@ -230,6 +230,7 @@
 		45FEBB7068690AC9F2D2CD31 /* FTS5Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80CF02342D779587705CA46F /* FTS5Store.swift */; };
 		470A4D77BF9307954B799E63 /* CollectionBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC39A86BEFED37BD150EA49F /* CollectionBrowserView.swift */; };
 		471940CFDDA2CA79596D0804 /* TEIRenderingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E7A25731DCFB6324657030 /* TEIRenderingConfig.swift */; };
+		472CBF3DDCAA08BF7E52E635 /* AnalyticsValueUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE603CAD086D7CE37A4440A /* AnalyticsValueUnit.swift */; };
 		473607E99AF1A2EA973CAE62 /* UserTagAdmin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8F2A8CBFD003B2CEF53A92 /* UserTagAdmin.swift */; };
 		47CD55B7FCDC83BA11445A9F /* FrontMatterPersonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D4101100CE5F1F5C3C9024 /* FrontMatterPersonsView.swift */; };
 		48491876D648872B3A051420 /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */; };
@@ -349,6 +350,7 @@
 		6C0FBFA112C547684031DA43 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D18FFCBBDD8710C84CA7540 /* SearchModels.swift */; };
 		6C8B94549C5860B71CF72671 /* SyncedPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC6F25D5BDA0721F9DABE98 /* SyncedPreferences.swift */; };
 		6D10BF2112751646B80BEB5C /* SummarizationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224B06E3E4838DE3256733B8 /* SummarizationPrompt.swift */; };
+		6D3DDE84AF3B30D15DD7D918 /* AnalyticsValueUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE603CAD086D7CE37A4440A /* AnalyticsValueUnit.swift */; };
 		6D66913D5501380FEB639975 /* SeriesGeographyDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C137D8C090CFE9C39769E /* SeriesGeographyDashboard.swift */; };
 		6D840E4C5C42C0B103DEA3A4 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7054B9A8AF2304B2C17F34BF /* SourceNoteParser.swift */; };
 		6DCA88BD2139766CC8F4C72E /* ManifestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29459906A446E922051D111D /* ManifestModels.swift */; };
@@ -430,6 +432,7 @@
 		8550CC389C96BEE7286FFC46 /* IndexingCloudStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2A375E1B8AF4727A9F9305 /* IndexingCloudStrip.swift */; };
 		85FBF1AE38BC51785F1D6C51 /* ProjectEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 900970FD30FB61D26AE96F91 /* ProjectEditorView.swift */; };
 		8600BD2EC3F9E901DF2E8FF4 /* FRUSWebViewConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD986D77D815D9FA7DFFA769 /* FRUSWebViewConfiguration.swift */; };
+		8615EA6B1CBADCA715445E5E /* AnalyticsValueUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46B5580B9C2E24CFD661D4E /* AnalyticsValueUnitTests.swift */; };
 		862089694FCB1479D6DD7BDB /* PageRangeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B54FC01FB64921E1AF6D746 /* PageRangeStore.swift */; };
 		8668FAE1CCD67FBEC0FD4092 /* SyncDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1436FC9CF6AEE12CBB78EB /* SyncDiagnosticsView.swift */; };
 		866ED58C24E14CD94EB0635C /* ReadingHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC00D2D14BDB0E3991932B3 /* ReadingHistoryEntry.swift */; };
@@ -1311,6 +1314,7 @@
 		D2EBC1ADEAB3F33E10EF7EC4 /* ResearchGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchGuideView.swift; sourceTree = "<group>"; };
 		D40555A8F50EB80F861F74C4 /* WordCloudDriftRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudDriftRenderTests.swift; sourceTree = "<group>"; };
 		D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibTeXCollectionExporter.swift; sourceTree = "<group>"; };
+		D46B5580B9C2E24CFD661D4E /* AnalyticsValueUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsValueUnitTests.swift; sourceTree = "<group>"; };
 		D4822CCAB395C9147304BB90 /* AppActivityTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
 		D498F562E475FF5CF7981134 /* CollectionKeying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionKeying.swift; sourceTree = "<group>"; };
 		D4CFAE4BD52F4B87A79FC7ED /* PersonCorrectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonCorrectionsView.swift; sourceTree = "<group>"; };
@@ -1367,6 +1371,7 @@
 		EB77D8370C7DDB536231B9E0 /* FRUSExplorerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSExplorerApp.swift; sourceTree = "<group>"; };
 		EC3F00DD9904ADDC884EDA5B /* BackgroundSummarizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSummarizationTests.swift; sourceTree = "<group>"; };
 		ED7F3E8CAF5794488BA714FB /* SourceExplorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceExplorerTests.swift; sourceTree = "<group>"; };
+		EDE603CAD086D7CE37A4440A /* AnalyticsValueUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsValueUnit.swift; sourceTree = "<group>"; };
 		EDF02AC476524621AFB13005 /* GlobalContextViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalContextViewModel.swift; sourceTree = "<group>"; };
 		EED1F2548C67D29AA03E32C8 /* SwiftDataModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataModelTests.swift; sourceTree = "<group>"; };
 		EF2FEA0287FE0753D0A87291 /* SettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTests.swift; sourceTree = "<group>"; };
@@ -1720,6 +1725,7 @@
 				735F8F29E4561F559519B1C7 /* AccessibilityTests.swift */,
 				D74FFCD5D4966C0050FA0FA7 /* AdministrationProfilesDataTests.swift */,
 				30149F85D7B8B92F9AB6C347 /* AnalyticsExportTests.swift */,
+				D46B5580B9C2E24CFD661D4E /* AnalyticsValueUnitTests.swift */,
 				3BD1B9BB52B39A607932B080 /* AppStateTests.swift */,
 				F12F717710FFFD7E465CA472 /* BackgroundSummarizationRequestTests.swift */,
 				EC3F00DD9904ADDC884EDA5B /* BackgroundSummarizationTests.swift */,
@@ -2171,6 +2177,7 @@
 				97F1689C4A210F0722DA88FA /* WordCloud */,
 				0C0EDF3F3E992E69AB62A686 /* AdministrationPresetMenu.swift */,
 				F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */,
+				EDE603CAD086D7CE37A4440A /* AnalyticsValueUnit.swift */,
 				640382B0D20BAA1974542856 /* AnalyticsView.swift */,
 				0BFBF974B967EE2E018062D3 /* CorpusAnalyticsService.swift */,
 				4FFA3E6D609E3788A3D0D09A /* CorpusDispersion.swift */,
@@ -2479,6 +2486,7 @@
 				37A50312D842442B2FA0E6A5 /* AnalyticsExportDelivery.swift in Sources */,
 				E5FAFAFD35125C07270E56DD /* AnalyticsFigureExport.swift in Sources */,
 				D4C45C8289166F8B496C2972 /* AnalyticsProvenance.swift in Sources */,
+				472CBF3DDCAA08BF7E52E635 /* AnalyticsValueUnit.swift in Sources */,
 				7A4DA8F373E105A7D7B1AD67 /* AnalyticsView.swift in Sources */,
 				8F3D9F3C141FC7964A2CFA28 /* AppActivityTypes.swift in Sources */,
 				AD3122B18EF6125A4578AA56 /* AppState.swift in Sources */,
@@ -2815,6 +2823,7 @@
 				721F8658D14EC927C5FBD650 /* AnalyticsExportDelivery.swift in Sources */,
 				B867CFCF66DA9E326B3126B8 /* AnalyticsFigureExport.swift in Sources */,
 				E03623115A2DF3722B6DB806 /* AnalyticsProvenance.swift in Sources */,
+				6D3DDE84AF3B30D15DD7D918 /* AnalyticsValueUnit.swift in Sources */,
 				10FAB1ECDC714881F88C8095 /* AnalyticsView.swift in Sources */,
 				65B60DD5E9810F0D554339A1 /* AppActivityTypes.swift in Sources */,
 				3A7C14B592BB01EF1A3FDB1C /* AppState.swift in Sources */,
@@ -3154,6 +3163,7 @@
 				9F7AD558CF84A311F59749D2 /* AccessibilityTests.swift in Sources */,
 				D7F72DF7EB744E6E82B2D45A /* AdministrationProfilesDataTests.swift in Sources */,
 				88962E83A10C7BA8614B3C41 /* AnalyticsExportTests.swift in Sources */,
+				8615EA6B1CBADCA715445E5E /* AnalyticsValueUnitTests.swift in Sources */,
 				53194C160535CA23B08EFF8E /* AppStateTests.swift in Sources */,
 				1A2C69532BF632D4A44541B9 /* BackgroundSummarizationRequestTests.swift in Sources */,
 				16D101B7CC29AA69AED733EE /* BackgroundSummarizationTests.swift in Sources */,

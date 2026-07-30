@@ -695,7 +695,10 @@ struct AnalyticsView: View {
             periodColumn: exportPeriodColumn,
             seriesByTerm: series,
             totals: totals,
-            isNormalized: isNormalized
+            isNormalized: isNormalized,
+            // Passed explicitly rather than left to the default, so the exported table's unit is
+            // the one this view plotted — the two cannot drift apart silently.
+            unit: valueUnit
         )
     }
 
@@ -1599,10 +1602,17 @@ struct AnalyticsView: View {
 
     /// Y-axis title for the date charts — "Documents" in raw mode, "% of documents"
     /// when the normalization toggle is active for the axis.
+    /// What this view's numbers count. The single seam a second unit changes.
+    ///
+    /// A stored preference is deliberately NOT introduced here: with one case there is nothing to
+    /// choose, and a picker over a one-element set is worse than none. PR-D adds the case, the
+    /// preference and the control together — at which point every label below already tracks it.
+    private var valueUnit: AnalyticsValueUnit { .documents }
+
     private var valueAxisLabel: String {
         isNormalized
-            ? String(localized: "analytics.axis.percentOfDocuments", defaultValue: "% of documents")
-            : String(localized: "analytics.axis.documents", defaultValue: "Documents")
+            ? AnalyticsValueUnit.axisLabel(unit: valueUnit, isNormalized: true)
+            : AnalyticsValueUnit.axisLabel(unit: valueUnit, isNormalized: false)
     }
 
     /// Y-axis marks for the date charts: percent-formatted value labels in normalized
@@ -1637,10 +1647,7 @@ struct AnalyticsView: View {
                                defaultValue: "%@ percent of documents"),
                 plotted.formatted(.number.precision(.fractionLength(0...1))))
         }
-        return String(
-            format: String(localized: "analytics.chart.source.count.a11y %lld",
-                           defaultValue: "%lld documents"),
-            Int64(count))
+        return valueUnit.accessibilityPhrase(count: count)
     }
 
     /// Caption disclosing the active normalization mode beneath the By-Year / By-Decade
@@ -1829,7 +1836,7 @@ struct AnalyticsView: View {
             ForEach(seriesByTerm, id: \.term) { series in
                 ForEach(series.points, id: \.date) { pt in
                     LineMark(x: .value(xLabel, pt.date),
-                             y: .value(String(localized: "analytics.axis.documents", defaultValue: "Documents"), pt.count))
+                             y: .value(valueAxisLabel, pt.count))
                         .foregroundStyle(by: .value(
                             String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
                         .interpolationMethod(.catmullRom)
@@ -1842,7 +1849,7 @@ struct AnalyticsView: View {
         .chartLegend(.visible)
         .chartXScale(domain: xDomain)
         .chartXAxisLabel(xLabel, alignment: .center)
-        .chartYAxisLabel(String(localized: "analytics.axis.documents", defaultValue: "Documents"))
+        .chartYAxisLabel(valueAxisLabel)
         .frame(height: 280)
         .padding(.horizontal)
     }
@@ -2013,7 +2020,7 @@ struct AnalyticsView: View {
                                 unit: .month
                             ),
                             y: .value(
-                                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                                valueAxisLabel,
                                 point.count
                             )
                         )
@@ -2027,7 +2034,7 @@ struct AnalyticsView: View {
                                     point.date
                                 ),
                                 y: .value(
-                                    String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                                    valueAxisLabel,
                                     point.count
                                 )
                             )
@@ -2042,7 +2049,7 @@ struct AnalyticsView: View {
                     alignment: .center
                 )
                 .chartYAxisLabel(
-                    String(localized: "analytics.axis.documents", defaultValue: "Documents")
+                    valueAxisLabel
                 )
                 .frame(height: 280)
                 .padding(.horizontal)
@@ -2096,7 +2103,7 @@ struct AnalyticsView: View {
                                 point.date
                             ),
                             y: .value(
-                                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                                valueAxisLabel,
                                 point.count
                             )
                         )
@@ -2111,7 +2118,7 @@ struct AnalyticsView: View {
                                     point.date
                                 ),
                                 y: .value(
-                                    String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                                    valueAxisLabel,
                                     point.count
                                 )
                             )
@@ -2126,7 +2133,7 @@ struct AnalyticsView: View {
                     alignment: .center
                 )
                 .chartYAxisLabel(
-                    String(localized: "analytics.axis.documents", defaultValue: "Documents")
+                    valueAxisLabel
                 )
                 .frame(height: 280)
                 .padding(.horizontal)
@@ -2271,7 +2278,7 @@ struct AnalyticsView: View {
                 ForEach(subseriesData) { point in
                     BarMark(
                         x: .value(
-                            String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                            valueAxisLabel,
                             point.count
                         ),
                         y: .value(
@@ -2288,7 +2295,7 @@ struct AnalyticsView: View {
                 }
             }
             .chartXAxisLabel(
-                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                valueAxisLabel,
                 alignment: .center
             )
             .chartOverlay { proxy in categoryTapOverlay(proxy) { subseries in
@@ -2324,7 +2331,7 @@ struct AnalyticsView: View {
                 ForEach(volumeData) { point in
                     BarMark(
                         x: .value(
-                            String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                            valueAxisLabel,
                             point.count
                         ),
                         y: .value(
@@ -2341,7 +2348,7 @@ struct AnalyticsView: View {
                 }
             }
             .chartXAxisLabel(
-                String(localized: "analytics.axis.documents", defaultValue: "Documents"),
+                valueAxisLabel,
                 alignment: .center
             )
             .chartOverlay { proxy in categoryTapOverlay(proxy) { title in
@@ -2401,13 +2408,7 @@ struct AnalyticsView: View {
     }
 
     private func totalFootnote(count: Int) -> some View {
-        Text(
-            String(
-                format: String(localized: "analytics.total %lld",
-                               defaultValue: "%lld documents matched"),
-                Int64(count)
-            )
-        )
+        Text(valueUnit.matchedPhrase(count: count))
         .font(.caption)
         .foregroundStyle(.secondary)
     }
