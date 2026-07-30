@@ -97,6 +97,14 @@ public struct HarvestedRecord: Codable, Sendable, Equatable {
     public var custodialHistoryNote: String?
     public var generalNotes: [String]
     public var otherTitles: [String]
+    /// `numberingNote` — how to actually cite or request an item from this series.
+    ///
+    /// Not a note about numbering so much as **ordering instructions**. RG 229, for example:
+    /// "Requests for items in the series must include the record group number, series designator, box
+    /// number, and item number. (Example=229-IIA-1-1)." Present on 385 records across 15 of the 22
+    /// groups, and squarely on-topic for a researcher assembling a citation — which is why it was worth
+    /// promoting out of `unprojectedKeys`.
+    public var numberingNote: String?
     public var findingAids: [CatalogFindingAid]
 
     // MARK: Holdings, restrictions, classification
@@ -168,7 +176,7 @@ public struct HarvestedRecord: Codable, Sendable, Equatable {
         coverageStartDate: CatalogDate? = nil, coverageEndDate: CatalogDate? = nil,
         dateNote: String? = nil, scopeAndContentNote: String? = nil, arrangement: String? = nil,
         functionAndUse: String? = nil, custodialHistoryNote: String? = nil,
-        generalNotes: [String] = [], otherTitles: [String] = [],
+        generalNotes: [String] = [], otherTitles: [String] = [], numberingNote: String? = nil,
         findingAids: [CatalogFindingAid] = [],
         physicalOccurrences: [CatalogPhysicalOccurrence] = [],
         accessRestriction: CatalogRestriction? = nil, useRestriction: CatalogRestriction? = nil,
@@ -209,6 +217,7 @@ public struct HarvestedRecord: Codable, Sendable, Equatable {
         self.custodialHistoryNote = custodialHistoryNote
         self.generalNotes = generalNotes
         self.otherTitles = otherTitles
+        self.numberingNote = numberingNote
         self.findingAids = findingAids
         self.physicalOccurrences = physicalOccurrences
         self.accessRestriction = accessRestriction

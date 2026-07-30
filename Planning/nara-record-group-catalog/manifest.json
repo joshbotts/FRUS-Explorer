@@ -73,15 +73,6 @@
       "required" : false
     },
     {
-      "absent" : 20188,
-      "field" : "specificRecordsTypes",
-      "matchedAliases" : {
-
-      },
-      "presentButEmpty" : 0,
-      "required" : false
-    },
-    {
       "absent" : 307,
       "field" : "variantControlNumbers",
       "matchedAliases" : {
@@ -124,8 +115,7 @@
       "state" : "complete",
       "title" : "Records of International Conferences, Commissions, and Expositions",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 1727,
-        "numberingNote" : 9
+        "dataControlGroup" : 1727
       }
     },
     {
@@ -162,7 +152,6 @@
         "dataControlGroup" : 4449,
         "editStatus" : 3,
         "internalTransferNumbers" : 3,
-        "numberingNote" : 61,
         "scaleNote" : 1,
         "transferNote" : 2
       }
@@ -198,8 +187,7 @@
       "state" : "complete",
       "title" : "Records of the Committee on Public Information",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 84,
-        "numberingNote" : 1
+        "dataControlGroup" : 84
       }
     },
     {
@@ -234,7 +222,6 @@
       "title" : "Records of Boundary and Claims Commissions and Arbitrations",
       "unprojectedKeyCounts" : {
         "dataControlGroup" : 1614,
-        "numberingNote" : 29,
         "scaleNote" : 3
       }
     },
@@ -271,7 +258,6 @@
       "unprojectedKeyCounts" : {
         "dataControlGroup" : 3963,
         "editStatus" : 3,
-        "numberingNote" : 9,
         "scaleNote" : 1
       }
     },
@@ -307,7 +293,6 @@
       "title" : "Records of the Foreign Economic Administration",
       "unprojectedKeyCounts" : {
         "dataControlGroup" : 496,
-        "numberingNote" : 6,
         "scaleNote" : 1
       }
     },
@@ -341,8 +326,7 @@
       "state" : "complete",
       "title" : "Records of the War Trade Board",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 232,
-        "numberingNote" : 1
+        "dataControlGroup" : 232
       }
     },
     {
@@ -376,8 +360,7 @@
       "state" : "complete",
       "title" : "Records of the Office of War Information",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 606,
-        "numberingNote" : 79
+        "dataControlGroup" : 606
       }
     },
     {
@@ -412,8 +395,7 @@
       "title" : "Records of the Office of Inter-American Affairs",
       "unprojectedKeyCounts" : {
         "dataControlGroup" : 168,
-        "editStatus" : 1,
-        "numberingNote" : 7
+        "editStatus" : 1
       }
     },
     {
@@ -447,8 +429,7 @@
       "state" : "complete",
       "title" : "Records of the American Commission for the Protection and Salvage of Artistic and Historic Monuments in War Areas",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 95,
-        "numberingNote" : 3
+        "dataControlGroup" : 95
       }
     },
     {
@@ -516,8 +497,7 @@
       "state" : "complete",
       "title" : "Records of the Philippine War Damage Commission",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 31,
-        "numberingNote" : 4
+        "dataControlGroup" : 31
       }
     },
     {
@@ -589,7 +569,6 @@
         "dataControlGroup" : 1979,
         "endCongress" : 1,
         "internalTransferNumbers" : 1,
-        "numberingNote" : 15,
         "transferNote" : 1
       }
     },
@@ -627,7 +606,6 @@
         "dataControlGroup" : 997,
         "editStatus" : 4,
         "internalTransferNumbers" : 13,
-        "numberingNote" : 109,
         "transferNote" : 10
       }
     },
@@ -799,8 +777,7 @@
       "title" : "Records of U.S. Foreign Assistance Agencies",
       "unprojectedKeyCounts" : {
         "dataControlGroup" : 2250,
-        "editStatus" : 1,
-        "numberingNote" : 13
+        "editStatus" : 1
       }
     },
     {
@@ -868,15 +845,12 @@
       "state" : "complete",
       "title" : "Records of the Peace Corps",
       "unprojectedKeyCounts" : {
-        "dataControlGroup" : 286,
-        "numberingNote" : 39
+        "dataControlGroup" : 286
       }
     }
   ],
   "reviewNotes" : [
     "RG 486: re-classified against the API refresh already on disk (no API calls spent)",
-    "CREATOR_AUTHORITY under PROJECT_ONLY: this run DID touch the network for the authority pass (NARA's public S3 authority records, no API key). The description re-projection itself remained offline.",
-    "4 referenced creator NAIDs had no authority record anywhere in the export",
     "API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0"
   ],
   "schemaVersion" : 1,

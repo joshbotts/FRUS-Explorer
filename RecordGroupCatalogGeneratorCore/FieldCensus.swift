@@ -272,6 +272,8 @@ public struct ValueCensus: Sendable, Equatable {
         "digitalObjects[].objectType",
         "soundType",
         "subjects[].authorityType",
+        // Where `specificRecordsTypes` actually lives — see the derivation note in RecordProjector.
+        "subjects[].heading",
         "accessRestriction.status",
         "accessRestriction.specificAccessRestrictions[].restriction",
         // Nested one level deeper than the block, alongside `restriction` — not a block member.

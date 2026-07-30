@@ -480,6 +480,39 @@ run that performs the pass now says plainly that it touched the network.
 > took a multi-hundred-MB stream to assemble. Gitignore it and keep a sample instead if repo weight
 > matters more than having it to hand.
 
+### Two follow-ups from the harvest, applied
+
+**`numberingNote` promoted into the index** (385 records, 15 groups). Despite the name it is not a note
+about numbering, it is the **ordering instruction** — RG 229: *"Requests for items in the series must
+include the record group number, series designator, box number, and item number.
+(Example=229-IIA-1-1)."* Directly useful to anyone assembling a citation or a pull request.
+
+**`specificRecordsTypes` is now DERIVED, and the dead lookup removed.** The alias for it matched nothing
+in all 20,188 records — because there is no such key. NARA folds every authority kind into the single
+`subjects` array discriminated by `authorityType`, and the values were sitting there all along: 9,312
+`specificRecordsType` entries across 16 groups. The field is filled from where the data lives rather
+than left permanently empty beside it, and now covers **2,155 records / 303 distinct types**:
+
+| Type | Records |
+|---|---|
+| Reports | 1,301 |
+| Correspondence | 1,299 |
+| Memorandums | 1,185 |
+| Telegrams | 709 |
+| Notes | 583 |
+| Speeches, addresses, etc. | 310 |
+
+That is a document-genre index across the whole foreign-affairs cluster, which is worth more than the
+empty array it replaced.
+
+`specificRecordsTypes` was also dropped from `consumedKeys`, so if NARA ever does start emitting a real
+key by that name the unprojected-key tripwire will report it rather than masking it behind a stale
+entry.
+
+Still unprojected, and deliberately: `dataControlGroup` (internal reference-unit code — the incidental-drift
+culprit), `internalTransferNumbers` (17), `transferNote` (13), `editStatus` (12), `scaleNote` (6),
+`beginCongress`/`endCongress` (1 each).
+
 ### Genuinely agency-specific control-number types
 
 Types confined to three or fewer record groups — the answer to the original question:

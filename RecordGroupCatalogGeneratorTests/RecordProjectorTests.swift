@@ -145,6 +145,57 @@ struct RecordProjectorTests {
         #expect(record.unprojectedKeys == ["dataControlGroup"])
     }
 
+    @Test("numberingNote is projected — it is the ordering instruction, not a note about numbering")
+    func projectsNumberingNote() throws {
+        let (outcome, _) = try project("""
+        {"record":{"naId":1,"title":"Photographs","levelOfDescription":"series",
+          "numberingNote":"Requests must include the record group number, series designator, box number, and item number. (Example=229-IIA-1-1).",
+          "ancestors":[{"distance":1,"levelOfDescription":"recordGroup","naId":9,
+            "recordGroupNumber":486,"title":"RG"}]}}
+        """)
+        guard case .projected(let record) = outcome else { Issue.record("no projection"); return }
+        #expect(record.numberingNote?.hasPrefix("Requests must include") == true)
+        // And it no longer shows up as an unmapped key.
+        #expect(!record.unprojectedKeys.contains("numberingNote"))
+    }
+
+    @Test("specificRecordsTypes is DERIVED from subjects, not read from a key that does not exist")
+    func derivesSpecificRecordsTypes() throws {
+        // Measured across the 22-group harvest: an alias lookup for `specificRecordsTypes` matched
+        // nothing in 20,188 records, because NARA folds every authority kind into `subjects` keyed by
+        // authorityType — where there are 9,312 specificRecordsType entries across 16 groups.
+        let (outcome, ledger) = try project("""
+        {"record":{"naId":1,"title":"T","levelOfDescription":"series",
+          "subjects":[
+            {"naId":10,"heading":"Photographic prints","authorityType":"specificRecordsType"},
+            {"naId":11,"heading":"Aerial views","authorityType":"specificRecordsType"},
+            {"naId":12,"heading":"Peru","authorityType":"geographicPlaceName"},
+            {"naId":13,"heading":"Propaganda","authorityType":"topicalSubject"}],
+          "ancestors":[{"distance":1,"levelOfDescription":"recordGroup","naId":9,
+            "recordGroupNumber":486,"title":"RG"}]}}
+        """)
+        guard case .projected(let record) = outcome else { Issue.record("no projection"); return }
+        #expect(record.specificRecordsTypes == ["Aerial views", "Photographic prints"])
+        // Every subject is still kept in full, discriminated by authorityType.
+        #expect(record.subjects.count == 4)
+        // The dead lookup is gone, so it is no longer examined at all.
+        #expect(ledger.observations["specificRecordsTypes"] == nil)
+    }
+
+    @Test("A real specificRecordsTypes key would now trip the unprojected-key tripwire")
+    func aRealSpecificRecordsTypesKeyIsReported() throws {
+        // Dropped from consumedKeys deliberately: if NARA ever starts emitting the key for real, that
+        // should be visible rather than masked by a stale entry.
+        let (outcome, _) = try project("""
+        {"record":{"naId":1,"title":"T","levelOfDescription":"series",
+          "specificRecordsTypes":[{"heading":"Something new"}],
+          "ancestors":[{"distance":1,"levelOfDescription":"recordGroup","naId":9,
+            "recordGroupNumber":486,"title":"RG"}]}}
+        """)
+        guard case .projected(let record) = outcome else { Issue.record("no projection"); return }
+        #expect(record.unprojectedKeys.contains("specificRecordsTypes"))
+    }
+
     @Test("A year-only date is distinguishable from a precise one")
     func detectsYearOnlyDates() throws {
         // NARA renders a year-only date with a January-1st logicalDate, so logicalDate alone cannot

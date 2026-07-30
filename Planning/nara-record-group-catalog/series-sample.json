@@ -208,7 +208,7 @@
 
       ],
       "specificRecordsTypes" : [
-
+        "Motion pictures"
       ],
       "subjects" : [
         {
@@ -10606,7 +10606,9 @@
       ],
       "scopeAndContentNote" : "This series consists of notes, reports, and lists. Included are records relating to the United Nations Conference on the Application of Science and Technology for the Benefit of the Less Developed Areas held in Geneva, Switzerland. Also included are records relating to the U.S Delegation reports on the United Nations Conference on the Application of Science and Technology for the Benefit of the Less Developed Areas.",
       "specificRecordsTypes" : [
-
+        "Lists (Document genres)",
+        "Notes",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -11103,7 +11105,9 @@
       ],
       "scopeAndContentNote" : "This series consists of notes, reports, and agendas of the U.S. Delegation to the Consultative Subcommittee on the Economic Aspects of Rice held by the Food and Agriculture Organization.",
       "specificRecordsTypes" : [
-
+        "Agendas",
+        "Notes",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -11721,6 +11725,7 @@
 
       ],
       "naId" : "518060",
+      "numberingNote" : "Record Group, Series, Still Picture Branch Assigned Item Number. All items are numbered. EXAMPLE: 59-H-1.",
       "onlineResources" : [
 
       ],
@@ -11781,8 +11786,7 @@
       ],
       "title" : "Portraits of Americans Held Hostage in Iran",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [
@@ -11883,6 +11887,7 @@
 
       ],
       "naId" : "518091",
+      "numberingNote" : "Record Group, series, item number. EXAMPLE- 59-WP-1. Use posters in 53-WP.",
       "onlineResources" : [
 
       ],
@@ -11917,7 +11922,7 @@
       ],
       "scopeAndContentNote" : "Oversize color posters displayed during the Second and Third Liberty Loan drives of World War I.  All posters in this series are duplicates of those found in Record Group 53-WP. Use Posters in 53-WP.  Possibly from Bureau of Rolls and Library.",
       "specificRecordsTypes" : [
-
+        "Posters"
       ],
       "subjects" : [
         {
@@ -11928,8 +11933,7 @@
       ],
       "title" : "Liberty Loan Posters",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [
@@ -12687,7 +12691,10 @@
       ],
       "scopeAndContentNote" : "This series consists of reports, agendas, telegrams, and memorandums used by the Ambassador at Large during negotiations to end the Vietnamese Conflict.",
       "specificRecordsTypes" : [
-
+        "Agendas",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -12859,7 +12866,7 @@
       ],
       "scopeAndContentNote" : "This series consists of reports providing public guidance on international relations. The series did not have regular issue dates.  It was printed as necessary.",
       "specificRecordsTypes" : [
-
+        "Reports"
       ],
       "subjects" : [
         {
@@ -13017,7 +13024,7 @@
       ],
       "scopeAndContentNote" : "This series consists of briefing materials prepared to aid John B. Hollister as he represented the United States at the Ministerial Meeting of the Consultative Committee for Economic Development in South and Southeast Asia held in Singapore. Also included is information on his tours of Indonesia, Vietnam, Thailand, Burma, Laos, and Cambodia.",
       "specificRecordsTypes" : [
-
+        "Briefs"
       ],
       "subjects" : [
         {
@@ -13205,7 +13212,9 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, and reports describing Department of State foreign post efforts in the Emphasis on Youth program. The program encouraged post personnel to identify and reach out to talented young people in the country wherein they resided and to encourage their potential as future political leaders.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -13366,7 +13375,8 @@
       ],
       "scopeAndContentNote" : "This series consists of weekly reports sent to the White House by the Department of State relating to the principal officers of the agency and their contacts with various news outlets and members of the press corps. The reports contain listings of individual officers followed by a brief summary of their press contacts for a given week, including names and affiliations of correspondents and the topics discussed. Other records included are related memorandums, notes and draft copies or revisions of the reports.",
       "specificRecordsTypes" : [
-
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -13549,7 +13559,9 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, and reports relating economic, political, social, and other aspects of the United States international relations with the Republic of China.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -13721,7 +13733,8 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence and reports containing information on the legislative agenda of the ruling Congress Party and the foreign and domestic policies of Prime Ministers Jawaharlal Nehru, Gulzarilal L. Nanda, Lal Bahadur Shastri, and Indira Gandhi. There is also information on national and local elections and the operations of municipal and state governments in India.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -14091,7 +14104,10 @@
       ],
       "scopeAndContentNote" : "These records include administrative memorandums, political and economic reports, general studies, and commentaries relating to the development of policy and programs during the early Vietnamese conflict period.",
       "specificRecordsTypes" : [
-
+        "Commentaries",
+        "Memorandums",
+        "Reports",
+        "Studies (Visual works)"
       ],
       "subjects" : [
         {
@@ -18343,7 +18359,7 @@
       ],
       "scopeAndContentNote" : "This series consists of processed and carbon copies of lectures given by high officials of the Department of State before the Foreign Service School.  The series also includes a set of lectures given before the Naval War College, 1922-1925.",
       "specificRecordsTypes" : [
-
+        "Lectures"
       ],
       "subjects" : [
         {
@@ -18489,7 +18505,8 @@
       ],
       "scopeAndContentNote" : "This series contains certificates, affidavits, and other papers documenting the citizenship of seamen.",
       "specificRecordsTypes" : [
-
+        "Affidavits",
+        "Certificates"
       ],
       "subjects" : [
         {
@@ -18841,7 +18858,7 @@
       ],
       "scopeAndContentNote" : "This series consists of reports of Foreign Service inspectors with some related memorandums and letters of instructions.  The records mainly concern personnel.  One set of reports specifically relates to inspections of U.S. consulates in Latin America.",
       "specificRecordsTypes" : [
-
+        "Reports"
       ],
       "subjects" : [
         {
@@ -18990,7 +19007,7 @@
       ],
       "scopeAndContentNote" : "This series consists of copies of Presidential Commissions for Secretaries of Agriculture, State, and War; Postmasters General; consular assistants and interpreters; judges and marshals of consular courts and clerks of the U.S. Court of China; secretaries to the President; Interstate Commerce and Federal Trade Commissioners; members of the U.S. Tariff Board, the U.S. Shipping Board; the Fine Arts Commission; the Rent Commission of the District of Columbia; the Director of the World War Foreign Debt Commission; the Governor of Guam; and others.",
       "specificRecordsTypes" : [
-
+        "Commissions"
       ],
       "subjects" : [
         {
@@ -21736,7 +21753,9 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams, newspaper clippings, airgrams, reports, notes, and memorandums of conversations relating to the internal and external relations of Thailand, Laos, and the Philippines.  Topics include U.S. base closings and residual forces in Thailand, Chinese Communist road building in Laos, Muslim uprisings in the Philippines, U.S. military and economic aid, and human rights violations.",
       "specificRecordsTypes" : [
-
+        "Notes",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -22125,7 +22144,9 @@
       ],
       "scopeAndContentNote" : "These records are from the Department of State's Shipping Policy Staff and mainly pertain to committees and other working bodies of international conferences and organizations involved with maritime vessels and global transportation.  Consisting for the most part of reports, correspondence, and memorandums, this series contains information on the structure, function, and organization of international organizations such as the Combined Shipping Adjustment Board, Intergovernmental Maritime Consultative Organization, Provisional Maritime Consultative Council, United Maritime Consultative Council, and the United Maritime Authority and its United Maritime Executive Board.  There is also information on the International Conference on Safety of Life at Sea, convened in London on April 23, 1948.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -24013,7 +24034,8 @@
       ],
       "scopeAndContentNote" : "This series consists of signed petitions by Japanese citizens supporting the Japanese Peace Treaty, Japanese Constitution, and clemency from the Philippine Government over the status of prisoners of war. The signatures are in Japanese and include a stamped fingerprint of the signatory. One bundle is a petition for the return of the Northern Ryukyu Islands to Japan. The records were collected and maintained by John Foster Dulles, while he was serving as both the Consultant to the Secretary of State and the Special Representative of the President regarding the Japanese Pease Treaty. The records were transferred to the Office of Northeast Asian Affairs in 1953.",
       "specificRecordsTypes" : [
-
+        "Petitions",
+        "Signatures (Names)"
       ],
       "subjects" : [
         {
@@ -25764,7 +25786,9 @@
       ],
       "scopeAndContentNote" : "These records pertain to the sponsorship, management, and participation of senior State Department officials in interagency committees, councils, and boards.  Policies, regulations, and guidelines governing interagency committees are discussed, along with the charter history, structure, and membership requirements for each select committee, such as the Trade Policy Committee, Export Administration Review Board, or Cabinet Committee on International Narcotics Control.  This series contains reports, correspondence and memorandums.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -26638,7 +26662,11 @@
       ],
       "scopeAndContentNote" : "The records of this series pertain to the structure, function and operations of the Air Coordinating Committee (ACC), an interagency committee established by Executive Order 9781 on September 19, 1946 to develop integrated aviation policies to be carried out by Federal agencies.  This series consists of reports, telegrams, correspondence, and memorandums.  It contains a substantial amount of minutes from subcommittee meetings.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Minutes",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -27019,7 +27047,8 @@
       ],
       "scopeAndContentNote" : "This series contains Presidential appointments and announcements. One appointment, in Spanish, is signed by President Ramon Castilla announcing himself as the new President of Peru and his desire for friendly relationships with Hispanic-American nations. The second Presidential appointment, signed by President Theodore Roosevelt, is for Alvey A. Adee to confer with France to negotiate and sign a convention to extend the ratification period of the Commercial Convention. The third Presidential appointment, signed by President Warren G. Harding, is for Charles Evans Hughes, to confer with Sweden to negotiate and sign a convention treaty. The convention was to strengthen relations between the countries by the enforcement of laws designed to prohibit or regulate importation into respective territories and to establish appropriate conditions for ships to enter ports.",
       "specificRecordsTypes" : [
-
+        "Announcements",
+        "Appointments"
       ],
       "subjects" : [
         {
@@ -27346,7 +27375,12 @@
       ],
       "scopeAndContentNote" : "This series contains reports, telegrams, correspondence, memorandums, clippings, and policy papers pertaining to relations between the United States and the British islands of Seychelles, Diego Garcia, and Mauritius.  Topics covered include Mauritius' independence from Great Britain in 1968, as well as Seychelles and Diego Garcia's ongoing status as British possessions during this period.  There is information on social, political, and economic conditions on the islands, including diplomatic relations with neighboring states, cultural and educational exchange programs with the West, economic assistance from international lending institutions, mutual defense and internal security programs, improvements to the infrastructure, and industrial development.  Soviet and Chinese communist influences in these regions are also discussed.",
       "specificRecordsTypes" : [
-
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Memorandums",
+        "Policy papers",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -27585,7 +27619,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, reports, organizational charts, and statements maintained by the Office of the Deputy Under Secretary for Administration. Subjects covered include the Foreign Operations Administration (FOA), the International Cooperation Administration (ICA), the abolishment of the FOA, the FOA duties transferring to the Department of State, communication issues, improving agency efficiency, the Technical Assistance Program, the Mutual Security Programs, ICA missions in Europe, overseas economic programs, legislation, government reorganization, refugee activities, and congressional committees.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Organizational charts",
+        "Reports",
+        "Statements"
       ],
       "subjects" : [
         {
@@ -27817,7 +27855,10 @@
       ],
       "scopeAndContentNote" : "This series consists of airgrams, memorandums, telegrams, memorandums of conversation, correspondence, maps, and other papers relating to the participation of the United States, Egypt, Israel, Jordan, and the Soviet Union in a Middle East peace effort.  Topics include arms sales, Israeli withdrawal from the Suez Canal area, and the establishment of a Palestinian State.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Maps",
+        "Memorandums",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -29287,7 +29328,10 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, bulletins, memoranda, periodicals, publications, notes, and reports relating to a number of informal working groups set up by Joseph E. Slater, Deputy Assistant Secretary of State for Educational and Cultural Affairs.  Participants in the informal working groups include members of collegiate academia throughout the U.S., U.S. government and non-government workers and consultants, as well as members of various international organizations. Individual working group titles include the Application of Technology to Education and Cultural Affairs, Publishing and Printed Materials Abroad, The Arts and Humanities, Educational and Cultural Advancement in Africa, Educational and Cultural Advancement in Asia, Educational and Cultural Advancement in Latin America, Educational and Cultural Advancement in Atlantic Communities, Educational and Cultural Advancement in Eastern Europe, Educational and Cultural Advancement in the Sino-Soviet Bloc, among others.  Members of the working groups collaborated to develop concepts and feasible means of fostering education and cultural exchange in underdeveloped nations. Included are records relating to the educational and cultural improvement of underdeveloped countries such as Egypt, Algeria, South Africa, Japan, India, China, Ecuador, Argentina and Colombia.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -29655,7 +29699,11 @@
       ],
       "scopeAndContentNote" : "This series concerns legal matters involving the airline industry as it relates to the activities of the Department of State.  The records consists of reports, telegrams, memorandums, correspondence, and briefs that focus on such matters as the rules and regulations promulgated by such organizations as the International Air Transport Association and the Civil Aeronautics Board; bilateral and multilateral agreements pertaining to international aviation; rates, fares and business practices of passenger and freight lines; lawsuits, claims and legal rulings involving business contracts, international agreements and airline operations; and safety and security measures involving the design and construction of aircraft, installation of standard navigation equipment, and the services of guards and air marshals to prevent sabotage and skyjacking.",
       "specificRecordsTypes" : [
-
+        "Briefs (Legal documents)",
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -30670,7 +30718,24 @@
       ],
       "scopeAndContentNote" : "This series contains correspondence, telegrams, airgrams, memorandums, circulars, pamphlets, logs, newsletters, clippings, press releases, reports, speeches, statements, hearings, scripts, dispatches, programs, manuals, and lists. The records were collected by Charles Alphonso Smith, the Deputy Special Assistant for Mutual Security Information, and maintained by the Mutual Security Information Staff. The main correspondents include the International Cooperation Administration (ICA), the U.S. Information Agency (USIA), organizations, committees, the United Nations (UN), publishers, and other offices in the Department of State. \n\nSubjects covered include increasing public understanding of foreign aid fund programs, the mutual security program, the development loan fund, conferences, conventions, transportation, economics, literature, comments on news articles, health, and agriculture. Other topics include ICA and USIA programs; relations between ICA and USIA; the \"Around the World Tour\" that included Paul Simon, a Representative in the Illinois House of Representatives, other members of the Illinois State Legislature, and newspaper reporters; trips to promote mutual security programs by Charles Alphonso Smith and Leonard J. Saccio the Deputy Director of ICA; and publications and audiovisual materials spread abroad.\n\nSome organizations mentioned in the articles include the American Korean Foundation, the Committee for International Economic Growth, the International Development Advisory Board (IDAB), the National Academy of Sciences, and the Operations Coordinating Board (OCB).",
       "specificRecordsTypes" : [
-
+        "Circulars",
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Dispatches",
+        "Hearings",
+        "Lists (Document genres)",
+        "Logs (Records)",
+        "Manuals",
+        "Memorandums",
+        "Newsletters",
+        "Pamphlets",
+        "Press releases",
+        "Programs",
+        "Reports",
+        "Scripts (Documents)",
+        "Speeches, addresses, etc.",
+        "Statements",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -30955,7 +31020,10 @@
       ],
       "scopeAndContentNote" : "This series consists of reports, correspondence, memorandums and telegrams and concern international maritime law. There is information on basic principles and judicial concepts involving the Law of the Sea, including the conservation and management of the oceans and its resources, routine shipping and transportation through territorial waters and canals, navigation and signaling on the high seas and inland waterways, passage restrictions on foreign warships and merchant vessels, resolving border disputes and rights of passage through closed seas, safety protocols designed to prevent accidents and ship collisions, provisions of naval honors and ceremonies, national and international regulations governing commercial fishing and deep sea mining, fly over restrictions and air space above territorial waters, ports and harbor facilities open to foreign vessels, combating piracy, trading of enslaved persons and drug smuggling, exploration and international law in the Antarctica, pollution and the dumping of waste in the high seas, international organizations involved in oceanographic research, and lastly, the arrest, detention and impoundment of crews and cargoes. There are also numerous summaries of proceedings from international Law of the Sea conferences, many of which were held in Geneva.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -31563,7 +31631,17 @@
       ],
       "scopeAndContentNote" : "This series consists of airgrams, clippings, correspondence, dispatches, memoranda, newsletters, notes, pamphlets, press releases, reports, statements, and telegrams related to allegations that the U.S. and the United Nations used bacteriological weapons in Korea. \n\nThe series includes press reports related to bacteriological warfare charges and texts of U.S. servicemen's confessions of participation in bacteriological warfare. Some records pertain to the use of the bacteriological warfare controversy in Cold War propaganda. \n\nThe records were maintained by the Office of the Assistant Secretary for Public Affairs. The series includes some records in French.",
       "specificRecordsTypes" : [
-
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Dispatches",
+        "Memorandums",
+        "Newsletters",
+        "Notes",
+        "Pamphlets",
+        "Press releases",
+        "Reports",
+        "Statements",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -34117,7 +34195,13 @@
       ],
       "scopeAndContentNote" : "This series consists of the personal and professional papers of Foreign Service Officer Martin Joseph Hillenbrand. Included are official correspondence, telegrams, reports, memorandums, background documents for speeches, briefing materials concerning German and Soviet relations, newspaper clippings, and other records relating to his time serving in various foreign service roles, including Vice Consul in Zurich, Switzerland, Consul in Bremen, Germany, First Secretary-Consul to the U.S. Embassy, France, Director of the Office of German Affairs, Deputy Chief of Mission to the U.S. Embassy, Germany, Ambassador Extraordinary and Plenipotentiary to Hungary, Assistant Secretary of State for European and Eurasian Affairs, and Ambassador Extraordinary and Plenipotentiary to the Federal Republic of Germany. This series also contains personal writings, including correspondence and documents relating to his doctoral dissertation.\n\nSome records are in German.\n\nThese records were maintained by the U.S. Embassy, Federal Republic of Germany from 1972 to 1976; by the Bureau of European Affairs from 1969 to 1972; by the U.S. Embassy, Hungary from 1967 to 1969; by the U.S. Embassy, Federal Republic of Germany from 1962–1967; and by the Office of German Affairs from 1956–1962.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Dissertations",
+        "Memorandums",
+        "News reports",
+        "Personal correspondence",
+        "Speeches, addresses, etc.",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -39967,7 +40051,9 @@
       ],
       "scopeAndContentNote" : "The files consist of correspondence, memorandums, reports, documents, and other material relating to the work and activities of the United Nations Relief and Rehabilitation Administration (UNRRA) Council.  Specific topics include agricultural and industrial rehabilitation in Europe and the Far East, displaced persons, welfare, health and quarantine matters, and the ability of countries to support relief and rehabilitation efforts.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -40160,7 +40246,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, reports, agendas, minutes, and conference-related documentation concerning United States participation in international organizations, meetings, and conferences. Specific organizations include the United Nations, with an emphasis on the United Nations Educational, Scientific and Cultural Organization (UNESCO),  American Overseas Research Centers (AORC), the Organization of American States (OAS), the International Bureau of Education (IBE), the United Nations University (UNU), the International Oceanographic Commission (IOC), and the 30th United Nations Development Program (UNDP) General Council.",
       "specificRecordsTypes" : [
-
+        "Agendas",
+        "Correspondence",
+        "Memorandums",
+        "Minutes",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -40565,7 +40655,10 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, telegrams, and reports relating to chemical weapons and Operation Staunch, begun by the Department of State in 1983 to stop the flow of U.S. arms to Iran.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -40940,7 +41033,10 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams, memorandums, reports, and correspondence reflecting U.S. international energy policy concerning energy producing countries (especially those exporting oil and natural gas), U.S. Government energy policies and initiatives, promotion of U.S. energy interests overseas, and related issues.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -41147,7 +41243,10 @@
       ],
       "scopeAndContentNote" : "This series consists of program files concerning Austrian president Kurt Waldheim. Files include reports, newspaper clippings, telegrams, and memorandums.",
       "specificRecordsTypes" : [
-
+        "Clippings (Books, newspapers, etc.)",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -41344,7 +41443,9 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, and reports regarding global health issues.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -41534,7 +41635,10 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams, memorandums, correspondence, and reports on bilateral textile agreements between the United States and foreign countries.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -41907,7 +42011,8 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, telegrams, and associated documentation pertaining to decision making and the coordination of activities related to marine science and technology issues, such as marine pollution, sea exploration, and special waters of the South Pacific and Caribbean.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -43022,6 +43127,7 @@
 
       ],
       "naId" : "519362",
+      "numberingNote" : "Record Group, series, Item Number. The item numbers are film photo numbers assigned by the surveyors which incorporate suffixes (A, B, C, D, L) to identify the party responsible for the images and those of Leland.",
       "onlineResources" : [
 
       ],
@@ -43066,8 +43172,7 @@
       ],
       "title" : "Photographs Taken by the Commission of Engineers, Costa Rica - Panama Boundary Arbitration",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [
@@ -49574,7 +49679,8 @@
       ],
       "scopeAndContentNote" : "This series consists of computations, field notes, and pencil sketch maps for wagon roads, rivers, water holes, and other natural topographic features between El Paso, Texas and Fort Yuma, California. The records were compiled by chief engineer N. H. Hutton, assistant engineers G. C. Wharton, William D. Cress, Charles F. Hall, P. G. Hume, and possibly others. A single 1851 notebook also contains triangulation measurements along the southern boundary of New Mexico Territory.",
       "specificRecordsTypes" : [
-
+        "Field notes",
+        "Sketch maps"
       ],
       "subjects" : [
         {
@@ -49908,7 +50014,8 @@
       ],
       "scopeAndContentNote" : "This series consists of handwritten records of court orders and proceedings of the Court of Commissioners for claims concerning the actions of the C.S.S. Alabama during the American Civil War.",
       "specificRecordsTypes" : [
-
+        "Orders (Court)",
+        "Proceedings (Law)"
       ],
       "subjects" : [
         {
@@ -50083,7 +50190,7 @@
       ],
       "scopeAndContentNote" : "This series consists of index cards bearing the name of claimant, claim number or docket number, amount and nature of claim, and location. The resolution of claims is not noted. The name range includes only Aberle-Myers, William R. The location of the remainder of the series is unknown.",
       "specificRecordsTypes" : [
-
+        "Card indexes"
       ],
       "subjects" : [
         {
@@ -51745,7 +51852,8 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, telegrams, sworn statements, and affidavits used as evidence in various legal cases, including one concerning a claim for land in Prince William County, Virginia, which became part of Quantico Marine Corps Base. There is much correspondence concerning the office of North German Lloyd in Baltimore, Maryland, some of it in the German language, and various newspaper clippings concerning German policy in 1917.",
       "specificRecordsTypes" : [
-
+        "Affidavits",
+        "Clippings (Books, newspapers, etc.)"
       ],
       "subjects" : [
         {
@@ -52484,6 +52592,7 @@
 
       ],
       "naId" : "522855",
+      "numberingNote" : "Record Group, series, item number. EXAMPLE- 83-IJ-34.",
       "onlineResources" : [
 
       ],
@@ -52524,8 +52633,7 @@
       ],
       "title" : "Japanese Efforts of Political Indoctrination of Indonesia",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [
@@ -52677,7 +52785,8 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence and telegrams received and sent by the United States' diplomatic post in Belgium. The post began as a legation and eventually became an embassy. There are listings of passports issued at the legation, as well as passport applications. The topics covered by these records include all aspects of relations with Belgium, and interactions of American citizens with the Belgian government and people.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -52852,7 +52961,8 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence and telegrams received and sent by the United States' diplomatic post in Guatemala. The topics covered by these records include all aspects of relations with Guatemala, and interactions of American citizens with the Guatemalan government and people.  There are also passport applications received at the post.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -53030,7 +53140,8 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence and telegrams received and sent by the United States' diplomatic post in Thailand. The topics covered by these records include all aspects of relations with Thailand, and interactions of American citizens with the government and people of Thailand. There is also correspondence with consulates.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -53706,7 +53817,7 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence and telegrams received and sent by the United States' consular post in Amherstburg, Ontario, Canada. The topics covered by these records include the protection of interests of American citizens, foreign trade, shipping, and immigration.",
       "specificRecordsTypes" : [
-
+        "Correspondence"
       ],
       "subjects" : [
         {
@@ -70449,7 +70560,9 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams, airgrams, memorandums, and correspondence relating to the work of the U.S. Embassy in Canberra, Australia.  Topics include foreign trade, general policy, and political affairs.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -71421,7 +71534,9 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memoranda, reports, publications, telegrams, itineraries, and notes to and from the U.S. Embassy in Santo Domingo, Dominican Republic.\n\nThe records in this series relate to a variety of topics including local Dominican Republic political situations, with U.S. comments and responses to those situations, U.S. cultural and educational exchanges, and coordination of the visits of U.S. dignitaries. Other topics covered in the records include agriculture, finance, space and astronautics, and social conditions.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Itineraries",
+        "Publications"
       ],
       "subjects" : [
         {
@@ -72843,7 +72958,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memoranda, reports, publications, telegrams, itineraries, and notes relating to topics such as official U.S. positions regarding the North Atlantic Treaty Organization (NATO); production and sale of armaments; deployment of NATO forces; financial and budgetary information for the U.S. Mission; and public relations issues arising from the ministerial meetings.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Itineraries",
+        "Notes",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -73221,7 +73340,10 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memoranda, briefing papers, and reports relating to the activities of the United States Embassy, Kathmandu, Nepal.  Topics covered range from Mount Everest expeditions, to visits by the King and Queen to the United States.  Records also include certified copies of agreements and treaties between the Governments of Nepal and the United States.",
       "specificRecordsTypes" : [
-
+        "Agreements",
+        "Correspondence",
+        "Reports",
+        "Treaties"
       ],
       "subjects" : [
         {
@@ -73420,7 +73542,10 @@
       ],
       "scopeAndContentNote" : "This series contains reports, telegrams, correspondence, clippings, and memorandums created and accumulated by the United States Embassy in Kinshasa (formerly Leopoldville).  Included are records relating to social, political, and economic conditions in the Democratic Republic of the Congo (DRC) and to U.S. relations with the country.  Included as well are records relating to the programs and policies of President Joseph Desire Mobutu (also known as Mobutu Sese Seko), including the creation of the Corps of Volunteers of the Republic, the Popular Movement of the Revolution (MPR), and the National Union of Zairian Workers. Included as well are records relating to educational and cultural exchange programs, foreign aid and military assistance, significant building and construction projects, constitutional reforms and political elections, the DRC's relations with the West and neighboring African states, arrests and prosecution of political opponents, trade and financial agreements, major industries and commodities, backgrounds of leading DRC citizens, visits by foreign dignitaries, social services in provinces and municipalities, major legislation before parliament, and demonstrations, riots and social unrest.  Also included are records relating to personnel and administrative matters at the American embassy and consulates, conferences and meetings with government officials, improvements and maintenance of the grounds and facility, official ceremonies and social affairs, and activities of United States citizens visiting or residing in the region.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -73716,7 +73841,10 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams, correspondence, reports, and memorandums from the United States Embassy in Port Louis and pertains to social, political, and economic conditions in the Republic of Mauritius.  There is information on diplomatic relations with the United States and other Western nations, naval operations in the Indian Ocean (notably at the U.S. base in Diego Garcia), political campaigns for parliamentary elections, the independence celebrations of 1968, major construction projects and improvements to the Mauritian infrastructure, trade and commercial agreements with the West and non-aligned nations, educational and cultural exchange programs with foreign countries, biographical data on influential Mauritians, activities of the United States Peace Corps, advances in science and technology, developments in the field of agriculture (notably sugar), visits by celebrities and foreign diplomats, revenue related to the tourists industry, structure of the banking and financial system, production of petroleum and other fuels, international conferences and meetings, communist activity in the region, and armed conflict in the Middle East. There is also information on personnel, budget, and administration at the U.S. Embassy.     \n\nSome of the records are in French.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -76068,7 +76196,12 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, speeches, and telegrams related to the work of Ambassadors James Rentschler, Frank Wardlaw, Bruce Laingen, John Getz, Charles Pritzlaff, and Hugh Smythe. Diplomatic records concerning trade, political, and social matters predominate.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc.",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -76276,7 +76409,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, and speeches concerning political diplomatic matters between the United States and Uruguay. In particular, the records address international organizations and conferences, labor, visits and travel of prominent individuals and leaders, internal governmental affairs, external political relations, personnel matters, and narcotics.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -76498,7 +76635,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, and speeches maintained by or for the direct use of Ambassador to Australia Philip Alston. In particular, the records address matters related to economics, finance, trade, and scientific matters.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -77064,7 +77205,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, and speeches concerning political diplomatic relations between the United States and Zaire. In particular, the records address internal governmental affairs, human rights, national security, external political relations, and cultural affairs.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -77268,7 +77413,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, and speeches documenting political diplomatic relations between the United States and Indonesia. In particular, the records address military matters and the status of East Timor.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -77475,7 +77624,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, speeches, newspaper clippings, and other publications documenting economic diplomatic relations between the United States and Morocco. The bulk of the records concern matters relating to financial and monetary affairs as well as energy and power, covering topics such as foreign trade and investment and petroleum and natural gas. Some records are in Spanish.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -77700,7 +77853,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, and speeches documenting political diplomatic relations between the United States and Morocco.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -77900,7 +78057,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, speeches, statements, telegrams, and other material maintained by the Ambassadors to Korea Richard Sneider and William Gleysteen for direct use in office. The bulk of the records concern matters relating to organization and administration, aviation, economic conditions, financial and monetary affairs, foreign trade and investments, labor sector affairs, military programs and operations, internal governmental affairs, external political relations, social conditions, and refugees.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -78119,7 +78280,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, and speeches documenting political diplomatic matters between the United States and Hong Kong. The bulk of the records concern matters related to economic affairs and conditions, financial and monetary affairs, as well as foreign trade and investments.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc."
       ],
       "subjects" : [
         {
@@ -78331,7 +78496,12 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, speeches, telegrams, and printed e-mail messages documenting assorted economic diplomatic matters, in particular those involving economic integration, cooperation, and conditions, as well as matters specific to petroleum and natural gas, and internal governmental affairs.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Memorandums",
+        "Notes",
+        "Reports",
+        "Speeches, addresses, etc.",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -79250,7 +79420,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, notes, reports, speeches, and printed E-mail messages documenting economic diplomacy between the United States and Argentina. In particular, the records address economic conditions, integration, and cooperation, finance, trade, civil aviation, commercial fishing and fish processing, foreign investment, labor, petroleum and natural gas, travel and official visits, and intelligence.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Email",
+        "Memorandums",
+        "Notes",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -84293,6 +84467,7 @@
 
       ],
       "naId" : "535735",
+      "numberingNote" : "Record Group, Series, Box Number, Folder Letter, Item Number assigned by NARA. EXAMPLE- 208-LU-60A-1.",
       "onlineResources" : [
 
       ],
@@ -84359,8 +84534,7 @@
       ],
       "title" : "Photographs Depicting \"Life in the United States\"",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "note" : "Some items may be copyrighted.",
@@ -84471,6 +84645,7 @@
 
       ],
       "naId" : "535890",
+      "numberingNote" : "Record Group, Series, Folder, Item Number. EXAMPLE- 208-PP-41-2.",
       "onlineResources" : [
 
       ],
@@ -84511,8 +84686,7 @@
       ],
       "title" : "Photographs Used in Publications",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "note" : "Some items by private photographers may by copyrighted.",
@@ -84652,7 +84826,7 @@
       ],
       "scopeAndContentNote" : "Established in December, 1942 within the Overseas Operations Branch of the Office of War Information, the News and Features Bureau played a leading role in the America's World War II propaganda effort abroad, designed to promote an understanding of U.S. life, culture, and war aims.  The Bureau's Picture Division was less a picture-creating agency than a picture-gathering as well as disseminating agency, assembling already-existing photographs from a range of sources -- government as well as commercial -- and furnishing the images to other Bureau offices and to the more than 30 OWI Outposts and 35 State Department missions worldwide.  (For a fuller account of the Picture Division, see the 208-AA series description.) Biographical photo resources were particularly useful in the development of the \"Profiles\" picture-sets and other OWI presentations highlighting American and Allied accomplishments. Accordingly, Picture Division collections included personality files- a very large Notable Personalities file (208-PU), the full fruit of the Division's picture-stockpiling efforts that began in late 1943; a smaller Wartime Personalities file (208-WP); and other still smaller files (i.e., 208-AFP), all arranged alphabetically by the surname of the individual pictured.  (For a fuller account of 208-PU and WP, see the respective series descriptions). Accompanying 208-PU and WP is a joint alphabetical card index, 208-X, probably assembled by the Picture Division Library staff, with later additions by the State Department's Office of International Information and Cultural Affairs, to which the Picture Division holdings were transferred at the end of 1945. The index incorporates approximately 10,950 3\"x5\" cards, covering some 10,500 separate individuals represented in one or both of the 208-PU and 208-WP series.  Each card, typewritten or handwritten, contains the name of the pictured individual, or, in cases of members of royal families, the national royal group(i.e., Great Britain Royalty). Where the given individual or royal group is represented by images filed in a folder bearing that individual's or group's name, the index card so indicates.  In cases where an especially prominent individual is represented by multiple folders, the index includes a separate card corresponding to each folder title (i.e., Eisenhower, Dwight D. -Africa; Eisenhower, Dwight D. -Germany, Receiving Russian Award; Eisenhower, Dwight D. -In Sicily).  There are scattered cards that contain cross-reference information, pointing either to an alternative listing for the same individual, or to the name of an individual included as a secondary subject in a photograph filed under the heading of the primary personality. In addition to the above, many of the index cards have a check in pencil or pen.  The check indicates that a photograph of the person mentioned on the card can be found in a \"group\" folder in 208-WP or PU (A to AK, AL to AN,).  The \"group\" folders usually contain a single photograph of several different individuals and precede those folders in the two print series which bear the names of individuals beginning with the same letter of the alphabet.  For example, there is a card with a check in this index for Mrs. R. L. Ameno.  The print corresponding to the card is in a \"group\" folder in box 1 of 208-WP marked AM - AN, with numerous other images of persons whose names also fall within this alphabetical range. These group folders precede the folders individually created for persons whose names begin with the letter \"A\". The cards do not indicate whether the images for a particular individual are located specifically in 208-PU, in 208-WP, or in both series.  For further location guidance, the user must turn to 208-PU box lists (indicating alphabetical sectors covered by each container) and the 208-WP box and folder lists.  These lists are housed in the Record Group Finding Aid filesin the Research Room. As a basic roster of individuals represented in the series, the card index appears to be quite comprehensive.  Comparison of names represented in sample 208-PU boxes with the names included in the index showed an average correspondence rate of 96%; similar tests carried out with sample 208-WP boxes showed an average correspondence rate of 92%.  In short, if an individual does not appear in the card index, the overwhelming likelihood is that the individual will not be represented in either of these photo series. (For connections among the Picture Division biographical print series, the 208-AA and MO subject print series, and the 208-N copy negative series, consult the description for the 208-Z card index).",
       "specificRecordsTypes" : [
-
+        "Indexes (Reference sources)"
       ],
       "subjects" : [
         {
@@ -87732,6 +87906,7 @@
 
       ],
       "naId" : "3960459",
+      "numberingNote" : "Requests for items in this series must include record group number, series designator, folder letter and NARA-assigned number. (Example=208-NB-A-15).",
       "onlineResources" : [
 
       ],
@@ -87766,7 +87941,7 @@
       ],
       "scopeAndContentNote" : "This series consists of photographs of celebrities and foreign radio personalities broadcasting for the Voice of America broadcasting service during World War II. Pictured in this series are French newscaster Marcel Fischer, actor Walter Huston, soprano Helen Jepson, poet Carl Sandburg and physicist Carel W. van der Merwe. Mr. Huston is also pictured with Joe Bolton, an Office of War Information announcer. The majority of pictures in this series document a visit by Portuguese broadcaster, Jorge Alves, to historic sites in Pennsylvania. Mr. Alves is also pictured with vocalist Jo Stafford.",
       "specificRecordsTypes" : [
-
+        "Photographs"
       ],
       "subjects" : [
         {
@@ -87777,8 +87952,7 @@
       ],
       "title" : "Photographs of Voice of America Broadcast Personalities",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "note" : "Some or all of the material in this series may be subject to copyright or other intellectual property restrictions.",
@@ -87880,6 +88054,7 @@
 
       ],
       "naId" : "540082",
+      "numberingNote" : "Record Group, series, group number, item number from cross-index card. EXAMPLE- 229-PG-3-10.",
       "onlineResources" : [
 
       ],
@@ -87918,7 +88093,7 @@
       ],
       "scopeAndContentNote" : "The Graphics and Publications Division utilized the skills of artists and film makers to illustrate the interrelated history and common heritage of the American republics and the common danger faced by each republic in the hemisphere in the fight against Nazi aggression. These pencil and ink drawings, color cartoons, posters, and prints depict the common heritage theme; the threat to liberty posed by Nazi Germany; German occupation nd atrocities in Poland and Czechoslovakia; and the necessity of co-operation between all nations of the Americas.",
       "specificRecordsTypes" : [
-
+        "Posters"
       ],
       "subjects" : [
         {
@@ -87929,8 +88104,7 @@
       ],
       "title" : "Propaganda Materials",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [
@@ -90216,6 +90390,7 @@
 
       ],
       "naId" : "644940",
+      "numberingNote" : "Requests for images must include the record group number, series designator, NARA-assigned folder number, and NARA or agency-assigned item number.  The item number is handwritten on each mount. (Example=286-S-1-5).",
       "onlineResources" : [
 
       ],
@@ -90249,7 +90424,7 @@
       ],
       "scopeAndContentNote" : "This series consists of photographs taken by employees of the U.S. Agency for International Development (USAID) and its predecessors while traveling through foreign countries and Hawaii.  Photographs of interest in this series include images of the Palm Sunday processional from Bethphage to the Church of the Holy Sepulcher in Jerusalem, Israel in April 1955 (286-S-1-26 through 286-S-1-41); circa 1955 views of Alexandria, Egypt (286-S-1-63 through 286-S-1-74); exterior views of the Imperial Palace in Tokyo, Japan in March 1958 (286-S-2-7 and 286-S-2-8); the Taj Mahal in Agra, India around 1957 (286-S-2-5); and scenes of Retiro Park in Madrid, Spain in March 1959 (286-S-3-49 through 286-S-3-52, 286-S-3-71, and 286-S-3-72).",
       "specificRecordsTypes" : [
-
+        "Photographs"
       ],
       "subjects" : [
         {
@@ -90260,8 +90435,7 @@
       ],
       "title" : "Photographs of Foreign Countries and Hawaii",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [
@@ -90493,7 +90667,16 @@
       ],
       "scopeAndContentNote" : "This series contains reports, correspondence, memorandums, faxes, copies of electronic mail, proposals, work plans, minutes, agreements, audits, implementation reviews, evaluations, and other forms maintained by the Bureau for Europe and the New Independent States (EIS), Office of European Affairs. The documents cover U.S. Agency for International Development (USAID) grants to promote development, training, and research in European countries. \n\nSome of the main correspondents include USAID Missions, USAID Office of the Regional Inspector General, USAID Office of European Country Affairs (ECA) in the Bureau for Europe and New Independent States, USAID Office of Democracy and Governance in the EIS, USAID Office of Regional Housing and Urban Development, the USAID Center for Democracy and Governance in the Bureau for Global Programs, foreign government agencies, and other U.S. government agencies.\n\nSome programs supported by the grants include the Democracy Training and Networking Project (DTN), the Local Governance Partnership Program, the Corporate Program Support Grant, the Environmental Sector Reform Grant, the Participant Training Project, the USAID Partners for International Education and Training program, and the Democracy Commission Small Grant Program in Central and Eastern Europe. Subjects covered by the grants include environmental protections, privatization of businesses, social welfare, laws, agriculture, labor, political processes, social reform, technical assistance, private sector development, management, market economies, capitalism, energy efficiency, energy consumption, development of nongovernmental organizations, housing, training, local government, democracy, human resources, policies, health, women in development, and small businesses development.\n\nSome of the institutions that participated in the grants include the Harvard Institute for International Development (HIID), the Barents Group, the Center for Economic Development, the National Democracy Institute for International Affairs (NDI), the World Council of Credit Unions, the Citizens Democracy Corps, the Volunteers in Overseas Cooperative Assistance (VOCA), the Chemonics (Chemonics International), the Energy Restructuring Group, the Institute for Sustainable Communities, the World Environment Center, the International Executive Service Corps (IESC), the Regional Environmental Center for Central and Eastern Europe, the Development Alternatives Incorporated, the Polish Federation of Independent Entrepreneurs, the Land O'Lakes International Development Division, the American Bar Association's Central and East European Law Institute (CEELI), the European Copper Institute, the Polskie Centrum Promocji, the Acurex Environmental Corps, the Environmental Policy and Institutional Strengthening Indefinite Quantity Contract (EPIQ), the International Foundation for Election Systems, the International Republic Institute (IRI), the U.S. Information Agency (USIA), and universities.\n\nSome of the countries covered include Poland, Czechoslovakia, Czech Republic, Slovakia, Latvia, Bulgaria, Albania, and Estonia. Some of the records contain Polish, Czech, and German.",
       "specificRecordsTypes" : [
-
+        "Agreements",
+        "Audits",
+        "Correspondence",
+        "Email",
+        "Faxes",
+        "Forms (Documents)",
+        "Memorandums",
+        "Minutes",
+        "Proposals",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -94325,7 +94508,13 @@
       ],
       "scopeAndContentNote" : "This series consists of agreements, correspondence, Project Implementation Order/Technical Services (PIO/T) forms, proposals, publications, reports, telegrams, and other records from the Office of Research and its predecessor relating to projects.  Subjects include agriculture, agricultural research, federal aid to research, medical research, medical sciences, nutrition, research, research grants, science, and technology.\n\nIncluded are records relating to the Agricultural Research Service; the American Association for the Advancement of Science (AAAS); American University; the Appalachian Environmental Laboratory; Arnold Arboretum; the Asian Institute of Technology (AIT); Case Western Reserve University; the Centers for Disease Control; the Central American Research Institute for Industry (ICAITI); Centro Agronómico Tropical de Investigación y Enseñanza; Centro Peruano de Investigaciones Biológicas y Promoción Social; the Ceylon Institute of Scientific and Industrial Research; Cornell University; the Cornell University Division of Nutritional Sciences; Duke University; Dynatech Corporation; Dynatech R/D Company; Dynatech Scientific, Inc.; the Economic Development Foundation; Empresa Brasileira de Pesquisa Agropecuária (EMBRAPA); Florida International University; Harvard University; the Illinois Institute of Technology (IIT); the Indonesia Badan Penelitian dan Pengembangan Pertanian (Agency for Agricultural Research and Development); Institución de Enseñanza e Investigación en Ciencias Agrícolas; Institut agronomique et vétérinaire Hassan II; the Institute of Fundamental Studies, Sri Lanka; the Institute of Medical Research (Papa New Guinea); Instituto de Investigaciones Eléctricas; Instituto de Investigación Nutricional (IIN); Instituto Venezolano de Investigaciones Científicas (IVIC); the International Potato Center; the International Rice Research Institute; the Island Resources Foundation; Israel Misrad ha-haklaut (Ministry of Agriculture); Jamiat al-Yarmuk (Yarmouk University); Johns Hopkins University (JHU); the JHU School of Hygiene and Public Health; the Kenya Agricultural Research Institute (KARI); the Kenya Trypanosomiasis Research Institute (KETRI); Louisiana State University (LSU); the LSU Wetland Biogeochemistry Institute; Mahawitthayalai Chiang Mai (Chiang Mai University); Mahawitthayalai Kasetsat (Kasetsart University); Mahawitthayalai Khon Kæn (Khon Kaen University); Mahawitthayalai Mahidon (Mahidol University); Mahawitthayalai Songkhlanakharin (Prince of Songkla University); Makerere University; Mekhon Vaitsman le-mada (Weizmann Institute of Science); Merkaz Volkani (Volcani Center); Michigan State University; the National Science Foundation; Nepala Rajakiya Vijñana tatha Pravidhi Prajña-Pratishthana (Royal Nepal Academy of Science & Technology); North Carolina State University; the Nuclear Institute for Agriculture and Biology (Pakistan); Ohio State University; Old Dominion University; Oregon State University; the Pakistan Atomic Energy Commission; the Pakistan Council of Scientific and Industrial Research; the Pan American Health Organization; Pennsylvania State University; the Purdue Research Foundation; Purdue University; Ruhuna Visvavidyalaya (University of Ruhuna); Rutgers University; the Society for Engineering in Agriculture; the Sri Lanka Natural Resources, Energy & Science Authority; the State University of New York at Stony Brook; Tahal, mehandesim yoatsim (Tahal Consulting Engineers); Tribhuvana Visvavidyalaya (Tribhuvan University); the Uniformed Services University of the Health Sciences; Universidad Católica de Chile; Universidad de Chile; Universidad de Concepción; Universidad de Costa Rica (University of Costa Rica); Universidad de Panamá; Universidad del Valle de Guatemala; the Universidad Nacional Autónoma de México Instituto de Investigaciones Biomédicas; Universidad Peruana Cayetano Heredia; Universidade de Evora; Universidade de Lisboa; Universitah ha-Ivrit bi-Yerushalayim (Hebrew University); Universitas Gadjah Mada (Gadjah Mada University); Universitat Bar-Ilan (Bar-Ilan University); Universitat Ben-Guryon ba-Negev (Ben-Gurion University of the Negev); Universitat Tel-Aviv (Tel Aviv University); the University of California, Davis; the University of California, Riverside; the University of Delaware; the University of Florida; the University of Georgia; the University of Hawaii; the University of Hawaii at Manoa; the University of Houston; the University of Malawi; the University of Maryland; the University of Miami; the University of Minnesota; the University of Missouri; the University of Nebraska; the University of Notre Dame; the University of the Philippines at Los Baños Institute of Plant Breeding; the University of the Philippines System; the University of Peradeniya; the University of Puerto Rico; the University of Southwestern Louisiana; the University of the South Pacific; the University of Washington; the University of Wisconsin; the University of Yaoundé; the U.S.-Israel Cooperative Development Research (CDR) Program; Virginia Polytechnic Institute and State University; Washington State University; and Yale University.",
       "specificRecordsTypes" : [
-
+        "Agreements",
+        "Correspondence",
+        "Forms (Documents)",
+        "Proposals",
+        "Publications",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -95156,7 +95345,12 @@
       ],
       "scopeAndContentNote" : "This series consists of abstracts, correspondence, lists, memorandums, publications, telegrams, and other records from the Science Conference Staff (SCS). The records relate primarily to the United Nations (UN) Conference on the Application of Science and Technology for the Benefit of the Less Developed Areas held in Geneva, Switzerland in February 1963 and preparations for the U.S. delegation to the conference. Subjects include agricultural research, agriculture, agriculture and state, communication, economic development, international agencies, international conferences, research, science, science and state, technology, and technology and state.\n\nIncluded are records relating to Arthur D. Little, Inc.; Bechtel Corporation; the Bureau of Mines; the Bureau of Reclamation; the California Institute of Technology; Columbia University; Cornell University; the Cosmos Club; the Development and Resources Corporation; First National City Bank; General Electric Company; the Jewish Agency for Israel; Manhattan College; the Massachusetts Institute of Technology (MIT); the National Academy of Sciences (NAS); the NAS National Research Council; the National Bureau of Standards; National Economic Research Associates; the New England Board of Higher Education; Oak Ridge National Laboratory; the Office of the Chief of Engineers; Paul Weir Company; Princeton University; Resources for the Future; the Rockefeller Institute; the Standard Oil Company of California; the Stanford Research Institute (SRI); Syracuse University; the Twentieth Century Fund; the Westinghouse Electric Corporation; the Union Carbide Nuclear Company; the University of Arizona; the University of California, Berkeley; the University of Chicago; the University of Kentucky; the University of Pennsylvania; the University of Texas; the University of Wisconsin; and the U.S. Mission to the UN.\n\nAlso included are records relating to Edward A. Ackerman; Harold Freed Alderfer; William H. Allen; Allen Varley Astin; Henry G. Aubrey; Leona Baumgartner; Howard W. Beers; Richard Bradfield; William Bredo; Detlev W. Bronk; Norman H. Brooks; Jerome S. Bruner; Murray D. Bryce; Glenn W. Burton; Vincent Checchi; Hollis Burnley Chenery; Chon Sang-kun; Chon Sang-ch'on; Ewan Clague; Marion Clawson; Gerhard Colm; William J. Darby; Bowen C. Dees; Kurt W. Deuschle; René J. Dubos; John W. Dyckman; Northcutt Ely; George Edward Ericksen; Claude H. Ewing; Joseph L. Fisher; Lyle C. Fitch; Thomas J. Fratar; Harald D. Frederiksen; John Kenneth Galbraith; John F. Gallagher; Joseph L. Gillson; Earnest F. Gloyna; Leo Grebler; Nathaniel B. Guyol; Robert Mower Hagan; William Arthur Hagan; Frederick Harris Harbison; Kent T. Healy; William R. Hemphill; E. L. Hendricks; Berthold Frank Hoselitz; Sherman E. Johnson; John M. Kelley; Charles E. Kellogg; Harry C. Kelly; E. F. Knipling; Walter Basil Langbein; Alexander D. Langmuir; J. Pérez Larios; Harold Dwight Lasswell; Alexander H. Leighton; Luna Bergere Leopold; Jay L. Lush; Carl C. Malone; John J. Matzko; Walsh McDermott; V. E. McKelvey; Martin Meyerson; Max F. Millikan; Albert H. Moseman; Thomas G. Murdock; Lotfollah Nahai; Alfred Clarence Neal; William C. Overstreet; Gustav Fritz Papanek; Marion L. Parker; Kenneth H. Parsons; Harvey S. Perloff; Esther Peterson; Rafael Pico; Lucian W. Pye; J. A. Rigney; Stefan Hyman Robock; M. B. Russell; A. Lloyd Ryall; Albert B. Sabin; Theodore M. Schad; Wilbur Lang Schramm; Nevin S. Scrimshaw; Thomas Kilgore Sherwood; Datus Clifford Smith; E. C. Stakman; Eugene Staley; Curt Teichert; Harry T. Toulmin; Melvin Marvin Tumin; Richard A. Tybout; Thomas Vietorisz; Lionel Albert Walford; Thomas Huckle Weller; Gilbert F. White; G. Mennen Williams; Lowdon Wingo; Seymour L. Wolfbein; Abel Wolman; Theodore E. Woodward; and Jerrold Reinach Zacharias.",
       "specificRecordsTypes" : [
-
+        "Abstracts",
+        "Correspondence",
+        "Lists (Document genres)",
+        "Memorandums",
+        "Publications",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -96714,7 +96908,14 @@
       ],
       "scopeAndContentNote" : "This series consists of contracts, correspondence, memorandums, Project Implementation Order/Technical Services (PIO/T) forms, publications, reports, telegrams, vouchers, and other records from the Population Policy Development Division relating to the Resources for Awareness of Population Impacts on Development II (RAPID II) project.\n\nIncluded are records relating to the Carolina Population Center, the Demographic Information Services Center (DISC), the Futures Group, the Population Council, the Population Reference Bureau, the United Nations Economic Commission for Latin America and the Caribbean (UNECLAC), the University of Michigan, and the University of North Carolina.\n\nAlso included are records relating to Bangladesh, Barbados, Bolivia, Botswana, Brazil, Burundi, Cameroon, Canada, Chad, Congo (Zaire), Costa Rica, Côte d'Ivoire (Ivory Coast), the Dominican Republic, Ecuador, Egypt, El Salvador, Gambia, Ghana, Guatemala, Guyana, Haiti, Honduras, India, Indonesia, Jordan, Kenya, Liberia, Lesotho, Madagascar, Mali, Malawi, Mauritania, Mexico, Morocco, Nepal, Niger, Nigeria, Pakistan, Panama, Paraguay, Peru, the Philippines, Rwanda, Senegal, Sierra Leone, Somalia, Sri Lanka, Sudan, Swaziland, Switzerland, Thailand, Togo, Tunisia, Turkey, Uganda, Yemen, Zambia, and Zimbabwe.",
       "specificRecordsTypes" : [
-
+        "Contracts",
+        "Correspondence",
+        "Forms (Documents)",
+        "Memorandums",
+        "Publications",
+        "Reports",
+        "Telegrams",
+        "Vouchers"
       ],
       "subjects" : [
         {
@@ -97243,7 +97444,15 @@
       ],
       "scopeAndContentNote" : "This series consists of contracts, correspondence, Project Implementation Order/Technical Services (PIO/T) forms, proposals, publications, reports, subcontracts, telegrams, vouchers, and other records from the Office of Population relating to the Measurement of Demographic Change project.\n\nIncluded are records relating to Johns Hopkins University, Organisation Commune Africaine et Mauricienne (OCAM), the Population Council, and the Vital Statistics Improvement (VISTIM) project.\n\nAlso included are records relating to Bangladesh, Brazil, Ecuador, Haiti, Honduras, Indonesia, Jamaica, Mauritius, Mexico, Morocco, Paraguay, Peru, the Philippines, Somalia, Thailand, and Uruguay.\n\nA portion of the records is in French.",
       "specificRecordsTypes" : [
-
+        "Contracts",
+        "Correspondence",
+        "Forms (Documents)",
+        "Proposals",
+        "Publications",
+        "Reports",
+        "Subcontracts",
+        "Telegrams",
+        "Vouchers"
       ],
       "subjects" : [
         {
@@ -105478,7 +105687,7 @@
 
       ],
       "specificRecordsTypes" : [
-
+        "Motion pictures"
       ],
       "subjects" : [
         {
@@ -105682,7 +105891,7 @@
 
       ],
       "specificRecordsTypes" : [
-
+        "Motion pictures"
       ],
       "subjects" : [
         {
@@ -106031,6 +106240,7 @@
 
       ],
       "naId" : "541829",
+      "numberingNote" : "Record Group, Series, Folder, Item Number, thereunder, Frame Number if necessary. EXAMPLES- 306-HT-9-1 or 306-HT-17-16-8.",
       "onlineResources" : [
 
       ],
@@ -106079,8 +106289,7 @@
       ],
       "title" : "Photographs of Vice-President Hubert Humphrey's Trips",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "note" : "Some photographs are credited to Marty Norstrom Photos, United Press International and Wide World Photos, and are presumed copyrighted. Check each item carefully.",
@@ -106258,6 +106467,7 @@
 
       ],
       "naId" : "541937",
+      "numberingNote" : "Requests for images in sub-series PS must include the record group number, sub-series designator, box number, subjects or personalities section designation (S or P), and USIA-assigned item number.  Each item number includes the final two digits of the year in which the image entered the Master File, followed by the number assigned to the image. (Example=306-PS-21-P-49-11681).\n\nRequests for images in sub-series PSB must include the record group, sub-series, subjects or personalities section designation (S or P), and USIA-assigned item number. (Example=306-PSB-S-51-6760). \n\nRequests for images in sub-series 306-PSA, PSC, PSD, PSE, PSF and/or PSG must include the record group, sub-series designation, and USIA-assigned item number. (Example=306-PSA-73-2274). \n\nIn citing any color item for a reproduction order, it is essential to include a small \"c\" annotation after the item number, in order that reproduction order pullers will know not to go to the black-and-white negative series.  The small \"c\" generally appears on the print mount, slide mount, or slide/transparency envelope, as well as on the corresponding index card.  For ordering purposes, the small \"c\" should be preceded by a dash, rather than a slash mark. (EXAMPLE=306-PSE-81-1606-c).  In some cases in sub-series PSE, there are multiple color entries bearing the same basic item number; these should be differentiated with the USIA-assigned capital letters, followed by the small \"c\" color designator. (Example: 306-PSE-83-2827-c . . . 306-PSE-83-2827A-c . . . 306-PSE-83-2827B-c).",
       "onlineResources" : [
 
       ],
@@ -106318,7 +106528,7 @@
       ],
       "scopeAndContentNote" : "This series consists of photographs that reflect the diversity of photographic sources tapped by the United States Information Agency (USIA) in its efforts to define and propagate American values.  In addition to the material from USIA staff camera people and USIA sources abroad, images come from such picture services as Associated Press and Black Star; magazines and newspapers ranging from \"Life\" to the \"Des Moines Register\"; the military services as well as civilian government agencies; private organizations ranging from the Red Cross to Standard Oil; and such well-known photo studios as Harris and Ewing of Washington, D.C.\n\nPeriodically, this file was culled to remove images no longer needed for USIA picture-reference and supply operations.  Culled images were sent to the National Archives in substantial blocs.  Letters assigned to each subseries signify the order in which each block was received, but because of the nature of the USIA culling, the contents of each group is not necessarily distinguished in strictly chronological terms.  Thus, subseries 306-PS, while containing a preponderance of material from the 1948-1955 period, also has images from as late as 1961; subseries 306-PSA and 306-PSB, while containing a preponderance of material from 1954-1964, also have images from as early as 1948 and as late (in the case of 306-PSA) as 1973; and subseries 306-PSC and 306-PSD, while containing a preponderance of material from 1962-1972, 306-PSC also have images from as early as 1948, and as late as 1976.  Subseries 306-PSD spans 1948 through 1986.  Subseries 306-PSE is a strictly chronological segment, with virtually all images from the 1973-1983 period.\n\nWhile subseries 306-PS, 306-PSA, and 306-PSB are exclusively black-and-white, 306-PSC and 306-PSD incorporate a very few, widely-scattered color photographs among the dominant black-and-white entries. The color presence grows more prominent in subseries 306-PSE: of the approximately 37,000 total images in that segment, some 18,400 (49 percent) are color. \n\nOf the combined total of approximately 367,603 images included in this series, some 30,000 focus on notable personalities from the worlds of politics and government, business, religion, education, science and technology, arts and entertainment, and sports.  Standard head-and-shoulders portraits are abundant, along with a variety of ceremonial, meeting, and action shots.  There is extensive coverage of the activities of 10 U.S. Presidents (Harry Truman, Dwight Eisenhower, John Kennedy, Lyndon Johnson, Richard Nixon, Gerald Ford, Jimmy Carter, Ronald Reagan, George Herbert Walker Bush, and William \"Bill\" Clinton) and Vice-Presidents (Alben Barkley, Nixon, Johnson, Hubert Humphrey, Spiro Agnew, Nelson Rockefeller, Walter Mondale, George Bush, and Albert \"Al\" Gore, Jr.).   Also heavily documented are Cabinet secretaries, ambassadors, Congressional leaders, Supreme Court Justices, prominent Governors, and other government officials.\n\nForeign leaders who helped shape East-West relations in the post-World War II era are amply covered, as well -- among them, Winston Churchill, Charles DeGaulle, Joseph Stalin, Nikita Khrushchev, Mao Tse-Tung, Joseph Tito, Fidel Castro, Indira Gandhi, Ferdinand Marcos, and Margaret Thatcher.\n\nIn line with the general USIA emphasis on the American \"minority progress\" theme, many of the mainstream civil rights figures from the 1950s-60s-70s are also included -- from Martin Luther King, Jr. to Shirley Chisholm.  And in line with an overwhelming USIA emphasis on freedom and diversity in American popular culture, this series is well-stocked with portraits of novelists, poets, painters, sculptors, dancers, musicians, actors, and athletes . . . ranging from Jackson Pollock to Linda Ronstandt, and from Robert Frost to Liza Minnelli to Muhammad Ali.\n\nWhile not principally a news photo file, this series does incorporate coverage of many of the dramatic developments of the post-World War II decades.  There is extensive material, much of it from the armed services, on the Korean and Vietnam conflicts.  Among other high-profile international events, the Berlin Airlift, Hungarian Uprising, Suez Crisis, Cuban Missile Crisis, U.S. intervention in the Dominican Republic, Camp David Peace Accords, and Panama Canal Treaty also receive coverage.\n\nOn the domestic side, this series touches on some of the pivotal developments of the civil rights era, from the Montgomery bus boycott to the signing of the Voting Rights Act to the Poor People's Campaign.  Historic Presidential campaigns, decisive political and economic undertakings (such as the War on Poverty), and momentous technological landmarks (including the progress of the space program, from the Mercury and Gemini flights through the Apollo lunar landing and Mariner probes), draw considerable attention.\n\nQuantitatively more significant than the \"news\" coverage is the background feature material on varied aspects of American civilization.  There is particularly strong emphasis on the fruits of American education at all levels, from nursery schools to vocational schools to universities.  Scientific research activities also receive extensive play, with images from the national atomic energy labs at Oak Ridge, Los Alamos, and Hanford as well as coverage of diverse research and technological application pursuits at General Electric and other corporate facilities.  Numerous views of industrial, mining, forestry, and agricultural work convey the sense of a bustling American economy and a land with limitless natural resources.  Engineering accomplishments -- public buildings, bridges, highway and railroad systems, ports, housing projects -- are also frequent subjects, with captions often driving home the inter-ethnic cooperation angle.  Scenic landscape views from National Parks, along with picturesque glimpses from cities and towns across the country, produce a collective vision of American beauty.\n\nIn some cases, the coverage of American life in this series comes in the form of extended picture-stories, whether generated by USIA staff photographers (e.g., Carolyn Ramsey's story on the small-town side of the 1948 Presidential campaign in Baltic, South Dakota), or, in later years, by freelance camera people (e.g., Thaddeus Miksinski's 1982 study of neighborhoods in Baltimore, Maryland).",
       "specificRecordsTypes" : [
-
+        "Photographs"
       ],
       "subjects" : [
         {
@@ -106529,8 +106739,7 @@
       ],
       "title" : "Master File Photographs of U.S. and Foreign Personalities, World Events, and American Economic, Social, and Cultural Life",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "note" : "Some of the records may be subject to copyright restrictions.",
@@ -106720,7 +106929,7 @@
       ],
       "scopeAndContentNote" : "This series consists of posters produced by the Joint U.S. Public Affairs Office (JUSPAO) for use in psychological warfare activities supporting the Government of South Vietnam (GVN) during the Vietnam War. A few of the posters were produced by JUSPAO's predecessor, the Joint Field Services Center. The poster themes and designs reflect the fierce competition between the two Vietnams, North and South, to \"win the hearts and minds\" of the South Vietnamese public.\n\nTarget audiences include some of Vietnam's ethnic minorities. Accordingly, translations in Khmer, or Cambodian (e.g., 306-VP-5-2361), at least two dialects (Bahnar and Rhade) of the highland Montagnard peoples (e.g. 306-VP-5-984, 306-VP-7-1249), Korean (306-VP-7-1107), and Cham (306-VP-8-2065), accompany the Vietnamese text of some posters. One poster (306-VP-7-1972) contains what may be traditional, pictographic Vietnamese script. A handful of posters are in English (e.g., 306-VP-11-17) and French (306-VP-10-4), and were likely intended for distribution to United States Information Service (USIS) posts outside of Vietnam.\n\nMost of the posters present an arrangement of three to seven black and white photographs on colored blocks of space with accompanying captions and background text in Vietnamese. A few use color photographs (e.g., 306-VP-5-2, 306-VP-7-14). Thirty posters feature color artworks (example 306-VP-8-10, 306-VP-8-1637, 306-VP-10-190). The majority of the photographs used in the posters were likely taken by JUSPAO's staff photographers (most of whom were Vietnamese), although some came from American military sources. None of the photographs or artworks is credited to individuals.\n\nPosters are grouped under ten main themes reflecting JUSPAO propaganda priorities. The theme with the largest poster concentration is \"Support Social and Economic Accomplishments,\" comprising one third of the total item count. This category highlights the activities of socio-economic development cadres sent under the auspices of government's Revolutionary Development program to work alongside rural Vietnamese in building houses, medical centers, roads, wells, bridges, schools, markets, and in making other infrastructure improvements. Many of the rural communities featured were the New Life Hamlets, planned new communities comprised of refugees and other rural people relocated by the GVN from Viet-Cong-controlled areas to pacified districts. \n\nAnother well-represented theme is \"Encourage the Goals of the Chieu Hoi Program,\" referring to the South Vietnamese government program designed to encourage and facilitate the defection of Viet Cong and North Vietnamese soldiers back to the Southern cause (Chieu Hoi meant \"to summon back,\" or more popularly, \"Open Arms\"). Returnees are shown at the moment of their surrender, sometimes along with weapons they brought in (with statistics concerning defection numbers and weapons yields often accompanying the images). Meant to show the successful re-integration back into South Vietnamese society of returnees, as well as to refute Viet Cong propaganda alleging their ill-treatment, many posters show returnees reaping promised program benefits during their stays at provincial Chieu Hoi centers (cash awards; good, regular food and medical care; reunion with their families; education and vocational training; participation in sports and other leisure activities). Direct appeals to Viet Cong to return to their families, and appeals to family members of Viet Cong to induce their loved ones to defect, appear in the posters, as well as detailed instructions about how and where to surrender. Many former Viet Cong are shown in their new lives, practicing a trade or serving as members of local Popular Forces or armed propaganda teams. \n\nThe \"Explain American Presence in Vietnam\" grouping illustrates the activities of U.S. military personnel in Vietnam, with the purpose of assuring the rural people of the South of the friendly intentions of the United States. Posters show Americans building and repairing bridges, schools, and houses in the countryside, performing medical examinations and procedures for rural people, and distributing food and other relief items to refugees and poor villagers; in addition, a few posters illustrate American military power. Several posters in this category feature South Korean forces engaged in similar activities. A small number also feature the activities in Vietnam of other allied forces from Thailand, New Zealand, the Philippines and Australia. \n\nAnother large category, \"Exploit All Military Victories,\" publicizes military victories won by Popular Forces, Regional Forces and Army of the Republic of Vietnam (ARVN) forces against the Viet Cong. Shown are Vietnamese troops in battle, captured and killed enemy soldiers, captured weapons and facilities, military decoration ceremonies, victory parades, and exhibits of captured enemy equipment. The names of several South Vietnamese military operations are cited in these posters (e.g., Operation Hung Vuong 9, Operation Xay Dung 6, and Operation Cooperation 26). Several top-ranking ARVN officers also appear in posters within this category.\n\nThe \"Exploit Viet Cong Vulnerabilities\" highlights the depredations and atrocities committed by the Viet Cong in the South. Pictures show dead and wounded atrocity victims, funerals of victims, captured Viet Cong perpetrators, buildings damaged and destroyed in Viet Cong attacks, the hardships imposed on the people by Viet Cong actions, and anti-Viet Cong protest rallies. A few posters also relate the story of the Viet Cong defector, Nguyen Van Be, shown holding North Vietnamese newspapers that erroneously announce his sacrifice of his life for the sake of the Northern cause (306-VP-5-1774, 306-VP-5-1847). \n\nThe smaller-volume categories feature hortatory messages on public health issues, Vietnamese armed forces recruitment, and a broad miscellany of subjects that include the U.S. Apollo 11 lunar mission (306-VP-10-5), Vietnamese public security (306-VP-10-224), and the inauguration ceremony for South Vietnamese President Nguyen Van Thieu (306-VP-10-7). Offering a somewhat different narrative approach to the social and economic progress subject, the final category contains seven poster sets (some incomplete) numbering seven to eleven posters each, showing the military and socio-economic development activities of forces from various allied nations, self-help and Revolutionary Development activities in the villages, Viet Cong atrocities, and captured Communist weapons, documents, and enemy soldiers. All of the posters with English captions appear in this category. \n\nMany of the posters in the smaller-volume categories appear to have been gathered by JUSPAO from other, often unidentified sources. At least one poster (306-VP-8-11) is identified as coming from the \"Public Health Education Service, Public Health Division,\" presumably an agency of the GVN. There are other posters in the public health category that bear the same type of original numbering and have the same design, but are wholly unidentified as to source. \n\nSeveral province chiefs, district chiefs, and hamlet chiefs appear in JUSPAO posters, as well as high-ranking GVN members such as Chief of State Nguyen Van Thieu (306-VP-7-14, 306-VP-1-853), Prime Minister Nguyen Cao Ky (306-VP-7-1168, 306-VP-2-1372), Chieu Hoi Minister Nguyen Ngoc and Major General Nguyen Van Minh, Security Chief for Saigon (306-VP-3-2736), and Major General Nguyen Duc Thang, Minister of Revolutionary Development (306-VP-7-1082, 306-VP-7-1398). A historical figure, the 13th-century Vietnamese general Tran Hung Dao, famous for repulsing two successive Mongol invasions, appears along with a poetic rendition of his rousing speech to incite the leaders of Vietnam to expel the Mongol invaders (306-VP-10-190). Shown in posters are a number of high-ranking American government officials, such as President Lyndon B. Johnson (306-VP-1-2746), Vice President Hubert H. Humphrey (306-VP-7-1008), U.S. Secretary of Health, Education, and Welfare John Gardner (306-VP-7-1105), U.S. Ambassador to the United Nations Arthur Goldberg (306-VP-1-1478), and Governors Clifford Hansen of Wyoming and George Romney of Michigan (306-VP-7-980). \n\nOther posters of note include a representation of a traditional Vietnamese horoscope calendar with politicized horoscope readings (306-VP-1-915), scenes showing the growth in popularity of the motorbike in Vietnamese life (306-VP-7-2139), and a scene of an American soldier giving help to a distressed refugee family (306-VP-1-1412). There are multiple posters that display numerous mug shots of Viet Cong defectors with information such as name, rank, place of origin, and date of defection (306-VP-3-1120, 306-VP-3-2106).",
       "specificRecordsTypes" : [
-
+        "Posters"
       ],
       "subjects" : [
         {
@@ -107337,7 +107546,7 @@
       ],
       "scopeAndContentNote" : "This series consists of published transcripts of Voice of America Forum lecture series. The forums were regularly broadcast on Voice of America covering the arts, sciences, and professions in America.  Each forum reflected the current thought on the topic.  Specific subjects include agriculture, American literature, American theater, education, health and medicine, science and technology, history, urban life, space, nutrition, and business.",
       "specificRecordsTypes" : [
-
+        "Transcripts"
       ],
       "subjects" : [
         {
@@ -107486,7 +107695,7 @@
       ],
       "scopeAndContentNote" : "This series consists of reports containing information on Voice of America activities in various countries such as listening, transistor radio contests, program evaluations, audience estimates and reactions to films and books, the impact of American television, a study of United States Information Service libraries, wireless file studies, book programs, and the Task Force on Private Cooperation.",
       "specificRecordsTypes" : [
-
+        "Estimates"
       ],
       "subjects" : [
         {
@@ -107835,7 +108044,8 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams and memorandums relating to surveys conducted in foreign countries by the U.S. Information Agency's (USIA) Office of Research.  Specific topics include foreign public opinion of the United States and Communist countries; public relations; the Cold War; the Arab-Israeli conflict; and international relations.  The records were maintained by the Office of Research and its predecessor.",
       "specificRecordsTypes" : [
-
+        "Memorandums",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -108073,7 +108283,23 @@
       ],
       "scopeAndContentNote" : "This series consists of administrative regulations, announcements, catalogs, circulars, correspondence, directives, drafts, guidelines, handbooks, issuances, manuals, memorandums, operating manuals, organizational charts, press releases, procedures, notes, regulations, and reports relating to the creation and updating of the U.S. Information Agency's (USIA) Manual of Operations and Administration (MOA), which covers the administration, organization, policies, and programs of USIA.  The records were maintained by the Management Analysis / Regulations Staff, and its predecessor, the Management Division.\n\nSome of the topics covered include USIA's functions, recordkeeping, benefits, employment in foreign countries, budgets, finances, security, procurement, programming, planning, library services, private cooperation, post management, press services, and staff services. Also described are the domestic and foreign operations for personnel, broadcasting, information centers, Binational Centers (BNC), cultural programs, motion pictures, television, field radios, and communications. The records also include information for creating and updating USIA handbooks that cover topics such as overseas communications; records management; records classifications; time and attendance; overseas finance operations; field radio operations; information centers physical standards; presentations; book translation programs; play productions; and inspections of oversea posts. \n\nIncluded are filing manuals used by USIA (file: \"CR 19 Part III 500 (I) 1957-1969\") and the U.S. Information Service (file \"CR 19 Part III 600 1955-1968\") in addition to the U.S. International Information Administration (IIA)'s organization manual (file: “Handbook IV-Glossary”).\n\nThe U.S. Information Agency's (USIA) Manual of Operations and Administration (MOA) is arranged into seventeen parts, some of which are unassigned or changed to other topics during some years. Part one covers organization and functions of USIA. Part two covers general administration. Part three covers communications, records management, and filing manuals. Part four covers administrative services. Part five covers domestic and foreign personnel services. Part six covers USIA's budget. Part seven covers finances, such as accounting, leave, and attendance. Part eight covers security. Part nine covers procurement regulations for domestic and overseas operations. Part ten covers programming and planning. Part eleven covers broadcasting operations, such as Voice of America (VOA) and radio operations. Part twelve covers information center operations, such as library operations, Binational Centers (BNC), book translation programs, overseas lecture activities, and music programs. Part thirteen covers motion picture and television operations. Part fourteen covers post management including the overseas press and publications practices. Part fifteen covers private cooperation. Part sixteen covers press services, such as post mailing lists, overseas establishments, inspector's handbooks, administration support agreements, and the administration for African posts. Part seventeen covers staff operations and services.",
       "specificRecordsTypes" : [
-
+        "Administrative regulations",
+        "Announcements",
+        "Catalogs",
+        "Circulars",
+        "Correspondence",
+        "Drafts (Documents)",
+        "Guidelines",
+        "Issuances",
+        "Manuals",
+        "Memorandums",
+        "Notes",
+        "Operating manuals",
+        "Organizational charts",
+        "Press releases",
+        "Procedures",
+        "Regulations",
+        "Reports"
       ],
       "subjects" : [
         {
@@ -108535,7 +108761,15 @@
       ],
       "scopeAndContentNote" : "This series consists of transcripts, memorandums, reports, publications, notes, correspondence, press releases, agendas, and minutes relating to U.S. Information Agency involvement with the planning and implementation of U.S. activities relating to the International Cooperation Year (ICY). Many of the documents concern meetings of the Committee on Cultural and Intellectual Exchange and the planning of the White House Conference on International Cooperation in 1965. Burnett Anderson, Deputy Director in the Office of Policy and Plans; James R. Echols, Cultural Affairs Advisor; and Blake Robinson, Student and Youth Advisor, served as U.S. Information Agency representatives on the Cabinet Committee on Culture and Intellectual Exchange, and much of the correspondence in the series is between them and Harlan Cleveland, head of the Cabinet Committee and Assistant Secretary of State for International Organization Affairs. The records were maintained by the Office of the Cultural Advisor.",
       "specificRecordsTypes" : [
-
+        "Agendas",
+        "Correspondence",
+        "Memorandums",
+        "Minutes",
+        "Notes",
+        "Press releases",
+        "Publications",
+        "Reports",
+        "Transcripts"
       ],
       "subjects" : [
         {
@@ -108776,6 +109010,7 @@
 
       ],
       "naId" : "1728964",
+      "numberingNote" : "Requests for images must include the record group number, series designator, folder number, and NARA-assigned item number.  (Example=306-PR-1-3).",
       "onlineResources" : [
 
       ],
@@ -108824,7 +109059,7 @@
       ],
       "scopeAndContentNote" : "This series consists of photographs of Presidents of the United States, First Ladies, Vice Presidents, and Presidential hopefuls. Also featured in this series are images of foreign dignitaries and their visits to the United States as well as Presidential trips abroad and engagements with prominent, international leaders. The first President included in this series is Thomas Jefferson, and it concludes with images of the electoral candidates for the 2000 presidential election. \n\nImages of President Franklin Delano Roosevelt in his youth, as Assistant Secretary of the U.S. Navy (1913 to 1920), and during his Presidential terms are among the records.  Also included are family photographs showing the President and Mrs. Franklin Roosevelt and their children taken in Washington, DC during 1916 and 1919. \n\nPresident John F. Kennedy is pictured speaking with groups and dignitaries as well as with family members.  These images also show him with his parents, grandparents, and especially his brothers Robert F. Kennedy and Ted Kennedy.  During the Cuban Missile Crisis on October 29, 1963, Secretary of Defense Robert McNamara is shown at the White House with President Kennedy. \n\nIncluded among the oversize items in this series, are engravings of President Rutherford B. Hayes, President Harry Truman, President Dwight D. Eisenhower, and President Kennedy.  President Jimmy Carter is pictured signing the Strategic Arms Limitation Talk II Treaty in Vienna in 1979.   Also, President Bill Clinton is shown with Nelson Mandela, South African civil rights leader and politician.",
       "specificRecordsTypes" : [
-
+        "Photographs"
       ],
       "subjects" : [
         {
@@ -108835,8 +109070,7 @@
       ],
       "title" : "Presidential Photographs",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "note" : "Some or all of the records may be subject to copyright restrictions.",
@@ -108989,7 +109223,24 @@
       ],
       "scopeAndContentNote" : "These files were maintained by the Office of the U.S. Commissioner General to the Universal and International Exhibition of 1967 (Montreal, Quebec). This series consists of letters, memorandums, notes, maps, magazines, magazine articles, pamphlets, newspaper clippings, aerial photographs, photographs, resumes, architectural drawings, blueprints, tourist maps, travel vouchers, plane tickets, correspondence, and budget listings related to the 1967 Universal and International Exhibition in Montreal, Quebec, Canada. The records are mainly from William L. Clark, Deputy U.S. Commissioner General, and John J. Slocum, Assistant U.S. Commissioner General. Other correspondents include the Canadian Corporation for the 1967 World Exhibition; Buckminster Fuller, the architect; and General Dynamics, the designing company. This series covers subjects such as the design of the U.S. Pavilion, the U.S. Pavilion building design competition, the Exhibition budget, and the construction of the electronic, air, and heating systems in the U.S. Pavilion. Also addressed are past World Exhibitions in Brussels, New York, Moscow, Seattle and London; special events at the Exhibition; hiring of guides and employees; the design and architecture of the Soviet Pavilion; the approval of Chicago for the location of the 1976 exhibit; and the final selection of special events at the Exhibition. A few of the records in this series are in French.",
       "specificRecordsTypes" : [
-
+        "Aerial photographs",
+        "Architectural drawings",
+        "Articles",
+        "Blueprints",
+        "Budgets",
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Letters (Correspondence)",
+        "Maps",
+        "Memorandums",
+        "Notes",
+        "Pamphlets",
+        "Periodicals",
+        "Photographs",
+        "Resumes",
+        "Tickets",
+        "Tourist maps",
+        "Vouchers"
       ],
       "subjects" : [
         {
@@ -109308,7 +109559,21 @@
       ],
       "scopeAndContentNote" : "This series consists of airgrams, book orders, brochures, charts, correspondence, dispatches, memoranda, newsletters, newspaper clippings, pamphlets, photographs, posters, purchase orders, requisitions, reports, shipping notices, technical drawings, telegrams, and other records related to the operations of the Information Center Service (ICS) programs in Africa. These operations include the administration of libraries, American cultural centers, and English language instruction courses. The series includes book and periodical procurement files as well as equipment and supply files. The records include country background information and documentation of ICS program effectiveness. Some records contain information about the political situations in the various countries and the influence of these situations upon ICS activities. \n\nThe records were maintained by the Africa Libraries and Centers Branch and its predecessor.\n\nThe series includes records in French.",
       "specificRecordsTypes" : [
-
+        "Brochures",
+        "Charts (graphic documents)",
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Dispatches",
+        "Engineering drawings",
+        "Memorandums",
+        "Newsletters",
+        "Pamphlets",
+        "Photographs",
+        "Posters",
+        "Purchase orders",
+        "Reports",
+        "Requisitions",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -110022,7 +110287,17 @@
       ],
       "scopeAndContentNote" : "This series consists of airgrams, bulletins, circulars, correspondence, course materials, dispatches, memoranda, newsletters, newspaper clippings, notes, pamphlets, photographs, posters, press releases, reports, telegrams, and other records related to the program activities of the English Teaching Program in numerous countries in Africa, Asia, Europe, the Middle East, Oceania, and the Americas. The records contain information about print and broadcast media as well as the educational systems in the various countries. Some records pertain to the economic, political, and social conditions in the countries. The series also includes routine administrative records such as book orders, shipping notices, and receipts. \n\nThe series contains records in French, German, Italian, Laotian, Polish, Portuguese, Romanian, Spanish, Swedish, and Vietnamese. \n\nThe records were maintained by the English Teaching Division and its predecessors.",
       "specificRecordsTypes" : [
-
+        "Circulars",
+        "Correspondence",
+        "Dispatches",
+        "Memorandums",
+        "Newsletters",
+        "Pamphlets",
+        "Photographs",
+        "Posters",
+        "Press releases",
+        "Reports",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -111347,7 +111622,7 @@
       ],
       "scopeAndContentNote" : "This series contains reports authored by the Department of State to Congress on the international educational exchange programs. The records were maintained by the Research Library Division, and its predecessor, the Library Division. Subjects covered include background information on international educational exchange programs; the Department of State's organizational structure and functions related to international educational exchange programs; the use of private agencies; and the finances, manpower, evaluations, and descriptions of overseas exchange programs. Also included in the documents is the use of radio, press, publications, motion pictures, exhibits, aid to American Sponsored Schools Abroad, exchanges of persons, Voice of America (VOA), and libraries to promote mutual understanding abroad. Other topics include the exchanges of professors, specialists, leaders, students, teachers, scientific specialists, and technical personnel; the Truth Campaign; the problems, objectives and solutions to exchange of people programs; and programs created to further international and cultural relations.",
       "specificRecordsTypes" : [
-
+        "Reports"
       ],
       "subjects" : [
         {
@@ -111694,7 +111969,20 @@
       ],
       "scopeAndContentNote" : "This series consists of reports, briefing books, notes, agendas, lists, correspondence, memorandums, drafts, research studies, transcripts, clippings, telegrams, photographs, chronologies, and brochures created for the Director of the US Information Agency (USIA), Charles Z. Wick.  The records were maintained by the Secretariat Staff.  Some of the records are in French, Russian, and Spanish.\n\nSubjects covered include committees, commissions, meetings, public opinion, the International Visitor Program, Voice of America (VOA), Radio Marti, Radio Free Europe (RFE), the Private Sector Initiate, the Korean-American Cultural Exchange Committee, cultural relations, Poland, the German-American Tricentennial, international expositions, international relations, budgets, and reporting.  The records also cover radio broadcasting in Cuba and Europe.",
       "specificRecordsTypes" : [
-
+        "Agendas",
+        "Brochures",
+        "Chronologies",
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Drafts (Documents)",
+        "Lists (Document genres)",
+        "Memorandums",
+        "Notes",
+        "Photographs",
+        "Reports",
+        "Research (Document genres)",
+        "Telegrams",
+        "Transcripts"
       ],
       "subjects" : [
         {
@@ -111997,7 +112285,21 @@
       ],
       "scopeAndContentNote" : "This series consists of telegrams, correspondence, despatches, clippings, lists, transcripts, press releases, intelligence reports, memorandums, pamphlets, memorandums of conversations, reports, intelligence briefs, country plans, summaries, and surveys relating to Pakistan.  The records were maintained by the Office of the Assistant Director for Near East, South Asia, and Africa; and its predecessor, the Office of Near Eastern, South Asian, and African Programs. \n\nSubjects covered include foreign public opinions, economics, the communist press, elections, visits of state, military affairs, religious influences, communism, budgets, propaganda, the Punjab Flood of 1954, agriculture, transportation, and mining.  Other topics include the All Parties Kashmir Conference, the Joint Committee on Atomic Energy, the Muslim League, and the Pakistan Constituent Assembly.  The records also show Pakistan's international relations with Afghanistan, Communist countries, Portugal, India, the United Kingdom, and the United States; reactions of the press to international news, local events, and speeches; and biographic information on the Pakistan Cabinet members and exchange students.  The series also includes evaluations and objects of U.S. Information Service's (USIS) programs with press, publications, libraries, book presentations, book translations, motion pictures, radio broadcasts, the U.S. Information Center (USIC), and educational exchanges.\n\nAlso included is the book \"Press in Muslim World\" by Abdus Salam Khurshid (file \" Pakistan IPS - 1955 [Folder 2/2]\").",
       "specificRecordsTypes" : [
-
+        "Books",
+        "Briefs",
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Dispatches",
+        "Lists (Document genres)",
+        "Memorandums",
+        "Pamphlets",
+        "Plans (Reports)",
+        "Press releases",
+        "Reports",
+        "Summaries",
+        "Surveys",
+        "Telegrams",
+        "Transcripts"
       ],
       "subjects" : [
         {
@@ -112397,7 +112699,24 @@
       ],
       "scopeAndContentNote" : "This series consists of memorandums, correspondence, despatches, bulletins, clippings, press releases, invitations, speeches, photographs, proposals, pamphlets, telegrams, reports, organization charts, lists, maps, newsletters, and schedules relating to conferences, carnivals, trade fairs, festivals, and other celebrations in India.  The majority of the records cover the World's Agricultural Fair as well as the East-West Cultural Conference, the Lincoln Sesquicentennial, and the Operations Coordinating Board Trade Fair Committee.  Subjects covered include the planning and the participation in the exhibitions; the reaction and publicity in the press; participation by 4-H'ers in World's Agricultural Fair; and international relations.  A few of the documents are in Tamil and Hindi.",
       "specificRecordsTypes" : [
-
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Dispatches",
+        "Invitations",
+        "Lists (Document genres)",
+        "Maps",
+        "Memorandums",
+        "News bulletins",
+        "Newsletters",
+        "Organizational charts",
+        "Pamphlets",
+        "Photographs",
+        "Press releases",
+        "Proposals",
+        "Reports",
+        "Schedules (Time plans)",
+        "Speeches, addresses, etc.",
+        "Telegrams"
       ],
       "subjects" : [
         {
@@ -113889,7 +114208,7 @@
       ],
       "scopeAndContentNote" : "This series consists of legal contracts and supporting documentation such as license agreements, production agreements, screenwriting contracts, editing contracts, and amendments created in support of the operations of the U.S. Information Agency (USIA) Motion Picture Service (IMS or IMV).  Contracts were made primarily between the USIA and film studios such as the Atlas Film Corporation and Twentieth Century-Fox Film Corporation (Fox) and news media companies such as Hearst Metrotone News Inc. and Time Inc, but also other types of companies and organizations such as the Ford Motor Company and the Detroit Police Department as well as individuals such as writers, editors, producers, directors, other filmmaking personnel, and stakeholders.  The subjects covered by this series include news, educational films, and propaganda films.",
       "specificRecordsTypes" : [
-
+        "Contracts"
       ],
       "subjects" : [
         {
@@ -115293,7 +115612,11 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence written by Charles Z. Wick while in office as Director of the United States Information Agency (USIA). Correspondence includes copies of letters to a wide variety of people including the President of the United States, the public, members of the chief of staff to the president, staff of the USIA, members of the House of Representatives, Ambassadors to foreign countries, representatives of foreign and domestic publishers and members of the media, and other influential figures. Topics include Soviet propaganda trends, Central American attitudes on U.S. Contra Aid, foreign media reaction to the President’s State of the Union Speech, policy and foreign perceptions reports, cultural exchanges, book publications, speeches given and heard by Wick, foreign and domestic trips taken by Wick, World Net Dialogue Program, the Voice of America, youth exchange programs, USIA International Council invitations, International Information talks. Also included are routine subjects such as thank-you letters, invitations, sympathy letters, best wishes, congratulations, recommendations, and other similar topics.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Invitations",
+        "Letters (Correspondence)",
+        "Personal correspondence",
+        "Schedules (Time plans)"
       ],
       "subjects" : [
         {
@@ -121844,7 +122167,10 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, interrogation reports, questionnaires, and memorandums relating to interrogations of defectors from the Eastern European countries of Bulgaria, Czechoslovakia, Hungary, Poland, Romania, and the U.S.S.R.  Questions asked in the interrogation vary based on the subject's background and seek information on political, economic, and social events in Eastern Europe.  The interrogation reports often question how the subject received information, particularly about the West.  Files sometimes contain a detailed questionnaire on the subject's radio listening habits.  Some of the specific subjects covered by the interrogations include education, attitudes toward Soviet films, attitudes toward political events, employment conditions, standard of living, agriculture, propaganda, and Soviet controls.",
       "specificRecordsTypes" : [
-
+        "Correspondence",
+        "Interrogations",
+        "Memorandums",
+        "Questionnaires"
       ],
       "subjects" : [
         {
@@ -122067,7 +122393,12 @@
       ],
       "scopeAndContentNote" : "This series consists of correspondence, memorandums, lists, bulletins, schedules, and newspaper clippings relating to a film program that allowed authorized German agencies to show educational movies free of charge. The records concern such subjects as program objectives, film surveys, new acquisitions, film equipment, projection services, and borrowing procedures. Some material is in German without translation.",
       "specificRecordsTypes" : [
-
+        "Clippings (Books, newspapers, etc.)",
+        "Correspondence",
+        "Lists (Document genres)",
+        "Memorandums",
+        "Newsletters",
+        "Schedules (Time plans)"
       ],
       "subjects" : [
         {
@@ -122242,7 +122573,7 @@
       ],
       "scopeAndContentNote" : "This series consists of papers and minutes created or collected by the Chemical Branch. The papers address specific applications related to manufacturing, processing, or storage of materials. Minutes of the Industrial Division provide brief information on applicants and licenses in French, without translation.  The minutes cover the years 1954 through 1955 and the related papers cover the years 1950 through 1955.",
       "specificRecordsTypes" : [
-
+        "Minutes"
       ],
       "subjects" : [
         {
@@ -137307,6 +137638,7 @@
 
       ],
       "naId" : "558697",
+      "numberingNote" : "Requests for the item in this series must include the record group number, series designator, and NARA-assigned item number. (Example=490-PP-1).",
       "onlineResources" : [
 
       ],
@@ -137341,7 +137673,7 @@
       ],
       "scopeAndContentNote" : "This series consists of a poster encouraging people to just not talk about a better world, but to do something about one by joining the Peace Corps.",
       "specificRecordsTypes" : [
-
+        "Posters"
       ],
       "subjects" : [
         {
@@ -137352,8 +137684,7 @@
       ],
       "title" : "Recruitment Poster",
       "unprojectedKeys" : [
-        "dataControlGroup",
-        "numberingNote"
+        "dataControlGroup"
       ],
       "useRestriction" : {
         "securityClassifications" : [

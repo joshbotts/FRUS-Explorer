@@ -137,7 +137,6 @@ public struct RecordProjector: Sendable {
         "variantControlNumbers": ["variantControlNumbers"],
         "physicalOccurrences": ["physicalOccurrences", "pyhsicalOccurrences"],
         "generalRecordsTypes": ["generalRecordsTypes", "generalRecordTypes"],
-        "specificRecordsTypes": ["specificRecordsTypes", "specificRecordTypes"],
         "scopeAndContentNote": ["scopeAndContentNote"],
         "custodialHistoryNote": ["custodialHistoryNote"],
         "microformPublications": ["microformPublications", "microformPublicationNote"],
@@ -155,9 +154,9 @@ public struct RecordProjector: Sendable {
             "custodialHistoryNote", "generalNotes", "otherTitles", "findingAids",
             "physicalOccurrences", "accessRestriction", "useRestriction",
             "contributors", "localIdentifier", "productionDates", "soundType",
-            "onlineResources", "fileUnitCount", "itemCount",
+            "onlineResources", "fileUnitCount", "itemCount", "numberingNote",
             "formerAncestors", "formerlyContainedBy",
-            "generalRecordsTypes", "specificRecordsTypes", "languages", "subjects",
+            "generalRecordsTypes", "languages", "subjects",
             "accessionNumbers", "dispositionAuthorityNumbers", "recordsCenterTransferNumbers",
             "microformPublications", "digitalObjects", "audiovisual",
         ]
@@ -299,6 +298,7 @@ public struct RecordProjector: Sendable {
                 .nonEmptyString,
             generalNotes: Self.stringList(record["generalNotes"], preferredKeys: ["note", "text"]),
             otherTitles: Self.stringList(record["otherTitles"], preferredKeys: ["title", "otherTitle"]),
+            numberingNote: record["numberingNote"]?.nonEmptyString,
             findingAids: (Self.resolve("findingAids", in: record, ledger: &ledger)?.asArray ?? [])
                 .compactMap(CatalogFindingAid.init)
                 .sorted { $0.sortKey < $1.sortKey },
@@ -308,9 +308,21 @@ public struct RecordProjector: Sendable {
             generalRecordsTypes: Self.stringList(
                 Self.resolve("generalRecordsTypes", in: record, ledger: &ledger),
                 preferredKeys: ["recordType", "type", "generalRecordsType"]),
-            specificRecordsTypes: Self.stringList(
-                Self.resolve("specificRecordsTypes", in: record, ledger: &ledger),
-                preferredKeys: ["heading", "recordType", "type"]),
+            // DERIVED, not read from a `specificRecordsTypes` key — there is no such key.
+            //
+            // The alias lookup for it matched nothing across all 20,188 records, and the reason is that
+            // NARA folds every authority kind into the single `subjects` array discriminated by
+            // `authorityType`. The values are right there: 9,312 `specificRecordsType` subjects across
+            // 16 of the 22 groups. So the dead lookup is gone, and the field is filled from where the
+            // data actually lives rather than left permanently empty beside it.
+            //
+            // `specificRecordsTypes` is also no longer listed in `consumedKeys`, so if NARA ever does
+            // start emitting a real key by that name, the unprojected-key tripwire will say so instead
+            // of masking it.
+            specificRecordsTypes: subjects
+                .filter { $0.authorityType == "specificRecordsType" }
+                .compactMap(\.heading)
+                .sorted(),
             languages: Self.stringList(record["languages"], preferredKeys: ["language", "name"]),
             subjects: subjects,
             accessionNumbers: Self.stringList(
