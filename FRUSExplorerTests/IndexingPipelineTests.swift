@@ -48,7 +48,7 @@ private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
 }
 
 /// Builds a minimal pipeline + store pair backed by a temp database.
-private func makeTestPipeline(
+func makeTestPipeline(
     dir: URL,
     volumesDir: URL? = nil
 ) async throws -> (pipeline: IndexingPipeline, store: FTS5Store) {
@@ -2636,7 +2636,7 @@ struct DocumentASTCacheTests {
 /// fixtures above (`type="editorialNote"`, `type="preface"`) describe an encoding
 /// that never occurs in the wild; this builder exists so vocabulary regressions
 /// can no longer pass the test suite.
-private func writeRealEncodingVolume(to url: URL, volumeId: String) throws {
+func writeRealEncodingVolume(to url: URL, volumeId: String) throws {
     let xml = """
     <?xml version="1.0" encoding="UTF-8"?>
     <TEI xmlns="http://www.tei-c.org/ns/1.0">
