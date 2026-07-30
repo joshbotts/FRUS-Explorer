@@ -2020,7 +2020,8 @@ public actor IndexingPipeline {
         userContentMatch: String?,
         filters: SearchSQLFilters,
         limit: Int,
-        offset: Int
+        offset: Int,
+        singlePhaseForParity: Bool = false
     ) throws -> [IndexedSearchRow] {
         let (whereClause, filterBinds) = Self.filterConditions(filters)
         let sql: String
@@ -2043,7 +2044,9 @@ public actor IndexingPipeline {
                 LIMIT \(limit) OFFSET \(offset)
                 """
             binds = filterBinds
-        } else {
+        } else if singlePhaseForParity {
+            // The pre-R-3a shape, retained ONLY so `searchDocumentsSinglePhaseForTesting` can assert
+            // the two-phase rewrite against it in-process. Never taken in the app.
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             sql = """
                 \(matchCTE)
@@ -2057,6 +2060,72 @@ public actor IndexingPipeline {
                 \(whereClause)
                 ORDER BY m.score
                 LIMIT \(limit) OFFSET \(offset)
+                """
+            binds = matchBinds + filterBinds
+        } else {
+            // TWO-PHASE FETCH (R-3a). Rank narrow, then hydrate only the window that survives.
+            //
+            // The single-phase shape above joins `document_cache` and then sorts, so every matched
+            // row is materialised before the sorter runs — 195,613 rows for a common term, at ~5 KB
+            // of `body_text` each. `body_text` lives on overflow pages, and SQLite follows those
+            // chains only for columns a statement actually selects; phase one selects none of them,
+            // so the ranking pass reads b-tree pages instead of megabytes of prose.
+            //
+            // Measured on the real 6.3 GB store, `"government"`, byte-identical output either way
+            // (42,569,775 bytes of body text): a 7,500-row fetch 10.46 s -> 0.606 s, and the first
+            // page 8.61 s -> 0.006 s.
+            //
+            // Phase one keeps the SAME joins and the SAME `whereClause`. That is not redundancy —
+            // filters reference `dc.` (volume scope, front-matter, editorial-note, user tags,
+            // `frus_exact_word`, and the person-mention EXISTS subqueries) and `dd.date_iso`, so
+            // they must narrow the set BEFORE the window is drawn. Applying them after `LIMIT`
+            // would page through the wrong set and silently return too few rows.
+            //
+            // `ordinal` is insurance, and honestly labelled as such. Phase two re-reads the window
+            // and must reproduce phase one's order; ordering it by `score` alone would leave rows
+            // with EQUAL bm25 scores free to come back in a different order than the ranking pass
+            // chose. SQLite does not GUARANTEE a stable order for equal sort keys.
+            //
+            // In practice it currently gives one: a mutation replacing `ORDER BY r.ordinal` with
+            // `ORDER BY r.score` passes the parity suite even against a fixture of 40 byte-identical
+            // documents that provably share a single bm25 score. So no test in this repo can
+            // falsify the ordinal, and it is kept because it makes phase two's order phase one's
+            // order BY CONSTRUCTION rather than by an observed coincidence of the current planner.
+            // The cost is a window function over an already-LIMITed set.
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            // The joins in phase one are CONDITIONAL, and that is the whole optimisation.
+            //
+            // They exist only to let the filters see `dc.`/`dd.` columns. With no filters they are
+            // pure cost: one rowid lookup into a 6.3 GB table per matched row, 195,519 of them for a
+            // common term. Measured — an unfiltered first page for `govern` is **10.74 s** with the
+            // joins and **0.376 s** without. I wrote them in unconditionally first, and only caught
+            // it by measuring the finished statement instead of trusting the number I had taken
+            // earlier from a shape that did not have them.
+            let rankingJoins = whereClause.isEmpty ? "" : """
+                    JOIN document_cache dc ON dc.rowid = m.docrowid
+                    LEFT JOIN document_dates dd
+                        ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                """
+            sql = """
+                \(matchCTE),
+                ranked AS (
+                    SELECT m.docrowid AS docrowid,
+                           m.score AS score,
+                           ROW_NUMBER() OVER (ORDER BY m.score) AS ordinal
+                    FROM merged m
+                    \(rankingJoins)
+                    \(whereClause)
+                    ORDER BY m.score
+                    LIMIT \(limit) OFFSET \(offset)
+                )
+                SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
+                       dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, r.score
+                FROM ranked r
+                JOIN document_cache dc ON dc.rowid = r.docrowid
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                ORDER BY r.ordinal
                 """
             binds = matchBinds + filterBinds
         }
@@ -2620,6 +2689,25 @@ public actor IndexingPipeline {
     }
 
     // MARK: - Test Hooks (Q-M2)
+
+    /// Runs `searchDocuments` in its pre-R-3a single-phase shape, so a test can assert the
+    /// two-phase rewrite returns byte-identical rows in identical order.
+    ///
+    /// Not used by the app. Output parity is R-3a's acceptance criterion, and "the rows are the
+    /// same" is a claim about SQLite's join and ordering behaviour that deserves an equivalence
+    /// test rather than a reviewer's eye — particularly for ties, where the two shapes could
+    /// legitimately disagree if the rewrite did not carry an explicit ordinal.
+    func searchDocumentsSinglePhaseForTesting(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        limit: Int,
+        offset: Int
+    ) throws -> [IndexedSearchRow] {
+        try searchDocuments(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                            filters: filters, limit: limit, offset: offset,
+                            singlePhaseForParity: true)
+    }
 
     /// The pre-optimisation count shape, kept solely so a test can assert the optimised one
     /// returns the same number.
