@@ -184,6 +184,13 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          level, records whether it looked, and recovers the server's `CD_…` schema
 ///          identifiers. The CloudKit code table is no longer applied to non-`CKErrorDomain`
 ///          errors, where it named codes it had no business naming.
+///   4.8 — The About window injects `appState` + `modelContainer`. It was the only one of 28 scenes
+///          injecting neither, which trapped the app on **FRUS Explorer ▸ About FRUS Explorer** (and,
+///          since a singleton `Window` is restorable, on the launch after quitting with it open).
+///          `frus.crossReferenceGraph` and `frus.sourceExplorer` gained the container they were also
+///          missing — latent, not live. `SceneEnvironmentAuditTests` now fails the suite if any scene
+///          omits either, because nothing else can: the scenes are `#if os(macOS)` and both test
+///          bundles are iOS.
 ///   4.6 — Wave R / R-9: `bootDownloadManager()` calls `UITestVolumeSeeder.seedIfRequested`
 ///          (DEBUG-only, inert unless `FRUS_UI_TEST_SEED_VOLUME` is set) before building the
 ///          `IndexingPipeline`, so a UI test can reach the compilation level — coverage the
@@ -695,6 +702,11 @@ struct FRUSExplorerApp: App {
         Window("Cross-Reference Graph", id: "frus.crossReferenceGraph") {
             CrossReferenceGraphWindowView()
                 .environment(appState)
+                // Parity with every other scene. Nothing under `CrossReference/` reads `@Query` or
+                // `\.modelContext` today, so this is latent rather than a live defect — but the
+                // About window is what a latent one looks like after two months, so it is closed
+                // here rather than left for the first `@Query` added to this subtree.
+                .modelContainer(modelContainer)
         }
         // Sized for a graph canvas + side legend/info panel (UI audit gap 16).
         // Same class of bug Session 94 fixed for Source Explorer: the old
@@ -706,6 +718,9 @@ struct FRUSExplorerApp: App {
         Window("Source Explorer", id: "frus.sourceExplorer") {
             SourceExplorerWindowView()
                 .environment(appState)
+                // Latent, same as the Cross-Reference Graph window above: no `@Query` under
+                // `SourceExplorer/` today.
+                .modelContainer(modelContainer)
         }
         .defaultSize(width: 700, height: 440)
 
@@ -931,9 +946,26 @@ struct FRUSExplorerApp: App {
         }
 
         // MARK: - About Window
+        //
+        // The injections below are what keep this window from trapping on open. `AboutView`
+        // declares `@Environment(AppState.self)` (AboutView.swift:73) — non-optional, so SwiftUI
+        // resolves it EAGERLY in `EnvironmentBox.update` during the dynamic-property update phase,
+        // before `body` is ever evaluated. The macOS body does not read `appState` at all (the one
+        // read is in the iOS arm), and it trapped anyway. So the rule this scene broke is
+        // "declared without injection", not "read without injection" — grepping for reads would
+        // clear this window wrongly.
+        //
+        // It was the only one of 28 scenes injecting nothing, bare since 2026-05-17. Harmless until
+        // S-5a moved the Research Guide row in on 2026-07-25 and added that declaration, which
+        // turned a dormant omission into a hard trap: `openWindow(id: "about")` builds the window
+        // synchronously inside the menu action, so the trap fires on the click. Worse, a singleton
+        // `Window` scene is restorable — left open at quit, it trapped during the next LAUNCH.
+        // `SceneEnvironmentAuditTests` now fails the suite if any scene omits either injection.
         Window(String(localized: "about.title", defaultValue: "About FRUS Explorer"),
                id: "about") {
             AboutView()
+                .environment(appState)
+                .modelContainer(modelContainer)
         }
         .windowResizability(.contentSize)
 
