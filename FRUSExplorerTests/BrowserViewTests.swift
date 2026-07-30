@@ -353,17 +353,14 @@ struct BrowserViewTests {
     }
 
     // MARK: - MacAboutMenuTests
-
-    #if os(macOS)
-    @Test("MacAboutMenuTest: AppState.showAbout starts false and can be set to true")
-    func aboutCommandGroupPresentsAboutView() {
-        let appState = AppState()
-        #expect(!appState.showAbout,
-                "showAbout must start false so the About sheet is not shown on launch")
-        // Simulates what CommandGroup(replacing: .appInfo) does when the menu item is tapped
-        appState.showAbout = true
-        #expect(appState.showAbout,
-                "showAbout must be settable to true to trigger the About sheet")
-    }
-    #endif
+    //
+    // `aboutCommandGroupPresentsAboutView` was deleted here, and it is worth recording why, because
+    // its presence is the reason nobody noticed the About window had no environment. It asserted on
+    // `appState.showAbout` — a property removed in Session 61 when About became a `Window` scene
+    // (see the note at AppState.swift:71). It kept compiling only because it sat inside
+    // `#if os(macOS)` while this bundle is `platform: iOS` (project.yml:362), so the block was never
+    // compiled by anything. A test naming the exact menu item that crashed, asserting on a property
+    // that no longer exists, in code no compiler had read for months.
+    //
+    // `SceneEnvironmentAuditTests` replaces it with something that can actually fail.
 }
