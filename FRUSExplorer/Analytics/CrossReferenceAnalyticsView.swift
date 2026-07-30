@@ -434,6 +434,10 @@ struct CrossReferenceAnalyticsView: View {
             scopeLabel: scopeLabel,
             indexedVolumeCount: appState.indexedVolumeIds.count,
             yearRange: yearRangeStart...yearRangeEnd,
+            // Cross-reference dating is an inner join with `date_iso IS NOT NULL` — dated documents
+            // only, no volume-start-year fallback. Same defaulted-to-true bug as the Person export:
+            // these CSVs have been describing a fallback that never ran.
+            appliesDocumentDating: false,
             valueMode: nil,
             extraCaveats: [excluded, sameVolume] + extra
         )

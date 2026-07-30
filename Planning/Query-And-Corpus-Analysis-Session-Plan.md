@@ -350,6 +350,105 @@ sharply by 1959).
 
 ## R-2 — Normalised and comparative distributions *(Effort M)*
 
+> **[2026-07-30] AUDITED AND RE-SCOPED. Two of the four deliverables were already shipped
+> before this section was written, and the section's premises were checked against the code
+> only now.** What follows is the corrected record. The original text is preserved below it
+> under "Superseded", because the corrections are only legible against what they replace.
+
+### What was already shipped
+
+| Original deliverable | Status | Where |
+|---|---|---|
+| Normalisation toggle | **Shipped 2026-07-04 as CA-4** — twenty days *before* this plan asked for it | `AnalyticsNormalizationMode` (`AnalyticsView.swift:36-52`), persisted `@AppStorage` (`:282`), separate compare default (`:288`, routed by `normalizationBinding` `:438-445`), axis gate (`:401-403`), maths `normalizedValue` (`:1541-1545`), axis label, percent axis marks, caption, toolbar picker + compact fold, scoped denominator fetch, export wiring. Documented in both user manuals. |
+| Multi-query overlay | **Shipped as D1 Phase 2 (PR #471)**, and the cap is **5**, not 4 | `committedTerms` (`AnalyticsView.swift:220`), per-term dictionaries (`:223-232`), `maxCompareTerms` (`:414`) |
+| "Say the counts are documents" | **Shipped** at 13 chart sites, `totalFootnote`, the info popover, and the CSV header. The one unlabelled surface was the on-screen table — fixed in PR-A below. | |
+| Dispersion | Not shipped. `occurrencesPerDocument` — the exact statistic, with this rationale in its own doc comment — exists in `FTS5Vocabulary.swift:69-75` with **zero app callers**. | |
+
+**Decision R-2-1 is moot.** The overlay reused the axis frame, and the axis picker has since
+moved out of the toolbar into `groupByChip`.
+
+**The stale citations:** `documentTotalsByYear` is `CorpusAnalyticsService.swift:700-726` and
+`documentTotalsByDecade` `:738-746`; the cited `708-746` points into the middle of the first
+function's loop body.
+
+**"Prereq: Q-3 for occurrence counts" is wrong.** Q-3a shipped `fts5vocab(…,'row')` only —
+one row per stem, **corpus-wide, unscoped, undated**. It cannot answer "occurrences in 1949"
+at all, and plotting its `cnt` per period would manufacture a series out of a single scalar.
+Per-period occurrences need new plumbing; the honest route is a second `fts5vocab` companion
+in `'instance'` mode (no migration — `fts5vocab` stores nothing, it reads the index).
+
+### The normalisation denominator: settled, do not "fix" it
+
+`termFrequencyByYear` (numerator) and `documentTotalsByYear` (denominator) apply
+**byte-identical** year rules, including the volume-start-year fallback for undated documents,
+over key spaces that coincide by construction (`frus_documents` is an external-content table
+over `document_cache`). Front matter and editorial notes are in both sides. Pinned by
+`CorpusAnalyticsServiceTests.swift:403-459` and `:462-521`.
+
+The warning at `PersonMentionStore.swift:656-664` does **not** apply here and points the other
+way: the Person numerator is dated-only, so borrowing the fallback-bearing denominator would
+make Person shares too *small*. The two subsystems need different denominators. Reading that
+warning as "the fallback is wrong, remove it" would re-create the >100% shares CA-4 fixed.
+
+### Measured on the real index, 2026-07-30
+
+Corpus size is **316,839 documents** (`SELECT COUNT(*) FROM document_cache`), settling three
+numbers that were circulating: "~83,000" (stale doc comments, wrong by 3.8×), 195,519 (a
+*match* count for one term), 264,464 (a source-note floor). The 500,000-row cap in
+`matchedDocumentKeys` therefore has a 1.58× margin, not ~6×.
+
+**The acceptance check below does not reproduce as written.** Corpus-wide document counts:
+
+| | 1945 | 1946 | 1947 | 1948 | 1949 |
+|---|---|---|---|---|---|
+| Article 43 | 9 | 53 | 43 | 34 | 11 |
+| Article 51 | 4 | 14 | 36 | 45 | 27 |
+
+The *shape* reproduces — 43 declining, 51 rising, crossing in 1947–48 — but every value runs
+1.3–1.5× the expected numbers, and excluding front matter and editorial notes barely moves it
+(53→51, 11→10). The report was almost certainly volume-scoped and that scope was never
+recorded. The plan also lists four values for a five-year span. **Restate the check with an
+explicit scope and year window, or it will read as a regression forever.**
+
+**And the argument itself depends on which number you plot.** Article 43 occurrences *rise*
+1948→1949 (77→92) while its documents *fall* (34→11) — because one document,
+`frus1949v01/d102`, carries 54 of the 92. "Article 43 collapsing" is a document-count claim;
+the occurrence data says the topic concentrated rather than faded. That is the strongest
+argument for the labelling and dispersion work, and a ready-made test fixture.
+
+### What actually remains
+
+- **PR-A (done, this session)** — truth repairs on shipped code: exact-word queries refused
+  rather than silently widened to the stem; `isNormalized` coupled to `viewMode` so table mode
+  and its export stop claiming a normalisation they do not apply; the figure and on-screen
+  source legends labelled (they printed raw document counts under normalised charts, unlabelled,
+  on exported figures); `appliesDocumentDating: false` on the Person and Cross-Reference
+  exports, which had been emitting a dating caveat describing a fallback neither applies; the
+  corpus-size comments corrected.
+- **PR-B** — one `measureLabel` helper routing all 13 hardcoded "Documents" sites, plus
+  `valueAxisMarks`/`sourceValueA11y`/CSV headers; split `measureApplies` from
+  `normalizationApplies`. Pure refactor, blocking prerequisite for any new measure. Note the
+  **width** split: every toolbar control needs adding to both the regular-width branch and
+  `compactChartOptionsMenu`, or it is invisible on iPhone with no compile error.
+- **PR-C** — dispersion from `volumeDataByTerm`/`subseriesDataByTerm`: date-independent, zero
+  marginal query cost, immune to the volume-start-year fallback. Take N from the same array
+  whose sum is being decomposed, never `matchedDocumentCount`.
+- **PR-D** — per-period occurrences via a `'instance'`-mode `fts5vocab` companion. Bucket in
+  Swift with the same fallback as the numerator, or undated documents' occurrences vanish while
+  their documents remain — the mirror image of the CA-4 bug. Occurrence counts are **not**
+  honest for every query shape: exact-word is impossible from a stemmed index, 3+-operand NEAR
+  is not expressible, and booleans have no single honest total. Suppression must be an explicit
+  state with a reason, never a zero or a blank cell.
+- **PR-E** — surface the corpus-wide `occurrences` / `occurrencesPerDocument` that
+  `SearchService.corpusDocumentFrequency` already fetches and discards. One property access
+  plus a label, explicitly marked corpus-wide and unfiltered.
+
+**Filed separately, not R-2:** the analytics cache is invalidated per *completed volume* while
+the numerator MATCHes live, so a share can exceed 100% mid-index. That is an indexing-lifecycle
+defect. **Do not clamp shares to 100%** — clamping is the one change that would hide it.
+
+### Superseded (original text, 2026-07-24)
+
 **Goal.** Two corrections that make distribution charts trustworthy, plus the comparison
 view that turns two series into an argument.
 

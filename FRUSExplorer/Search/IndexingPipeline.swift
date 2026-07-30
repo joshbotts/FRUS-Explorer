@@ -3247,7 +3247,7 @@ public actor IndexingPipeline {
     /// (e.g. `"1969-02-15"`). Rows with a `NULL` `date_iso` are excluded.
     ///
     /// The result is intended for analytics workloads that need per-document
-    /// dates for the entire indexed corpus. At ~83,000 rows maximum the
+    /// dates for the entire indexed corpus. At 316,839 rows (measured 2026-07-30) the
     /// dictionary fits comfortably in memory (< 15 MB). Callers should cache
     /// the result and invalidate it when the index changes.
     public func allDocumentDates() throws -> [String: String] {
@@ -3279,7 +3279,7 @@ public actor IndexingPipeline {
     /// numerator.
     ///
     /// The result is intended for the same analytics workloads as
-    /// `allDocumentDates()` (~83,000 rows maximum), and callers should cache it and
+    /// `allDocumentDates()` (316,839 rows, measured 2026-07-30), and callers should cache it and
     /// invalidate on index change.
     ///
     /// - Returns: One `(volumeId, documentId, dateISO)` triple per indexed document,
@@ -4313,7 +4313,7 @@ public actor IndexingPipeline {
     }
 
     /// Gregorian calendar instance shared across all `lastDayOfMonth` calls.
-    /// Using a static constant avoids allocating ~83,000 Calendar instances during
+    /// Using a static constant avoids allocating one Calendar per document (316,839) during
     /// a full-corpus re-index (#8).
     nonisolated private static let gregorianCalendar = Calendar(identifier: .gregorian)
 
