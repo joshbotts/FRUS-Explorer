@@ -109,6 +109,7 @@
 		1D3E27573F2F4A3F5767702E /* CloudSurfaceArbiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85B67A1F51C34859B280F1C /* CloudSurfaceArbiter.swift */; };
 		1D553EE3ACBFD55EA4B790EA /* PendingStoreReset.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00307BB1EBC64677D8B8975 /* PendingStoreReset.swift */; };
 		1D6FE4751C31E4AE5627D203 /* WordCloudModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD4B79D4110F10E75A4E67 /* WordCloudModels.swift */; };
+		1DA4B8B79E9FA377338FB7B1 /* KWICLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649CCFCFF3F93C639587B8B5 /* KWICLine.swift */; };
 		1E725EEC83D2F0B83B81523F /* ProjectContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3072096E5D180CCA514717CA /* ProjectContextView.swift */; };
 		1E9C0A2CDFE9A3CA083C51D2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
 		1F1FEF449315E6A3CE38757B /* CloudSurfaceBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34B0CA2F61C314585BC498A6 /* CloudSurfaceBackground.swift */; };
@@ -508,6 +509,7 @@
 		99F6B95207D8D11E4BF46C3B /* NotesSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D9FAD2E8ED2492263767BC /* NotesSettingsView.swift */; };
 		9AD3177CA22279E2D870013A /* SummarizationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575AE87338FE62F1C04F2C21 /* SummarizationModels.swift */; };
 		9ADB0846B78007AA85B92C80 /* CollectionAddDocumentsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9311E82A56418BE80A357A01 /* CollectionAddDocumentsSheet.swift */; };
+		9BCEFF6B517D40F56D3F58ED /* KWICLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649CCFCFF3F93C639587B8B5 /* KWICLine.swift */; };
 		9C0709A4AD933DB79F84CADD /* ResearchGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2EBC1ADEAB3F33E10EF7EC4 /* ResearchGuideView.swift */; };
 		9C5B94C1ECC2D81CB46D54ED /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0040B3BD8BC38F863A88F9 /* OnboardingView.swift */; };
 		9C786C0B7B5B8A0D13BC64E1 /* WordCloudTokenizer+App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9182865A71E18D647B17BDEF /* WordCloudTokenizer+App.swift */; };
@@ -526,6 +528,7 @@
 		A0213B71CB185DDA13D92A91 /* ConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D8E36B500E8886EA309C53 /* ConnectionsView.swift */; };
 		A0380F04B1E1115B760BBA50 /* ProjectHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32C37FA3C3CBEFC46979B0 /* ProjectHomeView.swift */; };
 		A0657C60BC4A42D5C7D7486A /* RealTEICoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BD609D0467D3679F7C327A /* RealTEICoverageTests.swift */; };
+		A06B6C722AD32F76F15CF97D /* KWICLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */; };
 		A0A03094C376596EF89943D4 /* UserTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B574AF4FE49E9A08617B014 /* UserTag.swift */; };
 		A14EBA2B619CFED32EA1D770 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2914FB296F951A74A8E2CE5 /* PromptEditorView.swift */; };
 		A1BE3C1D2975DADA7A568388 /* cloud-vectors-core.json in Resources */ = {isa = PBXBuildFile; fileRef = DCA3FAB89C7BB20D082B2E3E /* cloud-vectors-core.json */; };
@@ -933,6 +936,7 @@
 		0E4F3D3F106FDF9A1331D90F /* SeriesGeographyData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesGeographyData.swift; sourceTree = "<group>"; };
 		0E5B76CB7F496D16CC557F41 /* CloudKitSchemaInventoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSchemaInventoryTests.swift; sourceTree = "<group>"; };
 		0EEE2C0A79F4FBE75F3ED6D4 /* IndexingContextCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexingContextCardTests.swift; sourceTree = "<group>"; };
+		0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KWICLineTests.swift; sourceTree = "<group>"; };
 		0F92143C972B36EADB20AEA5 /* cloud-vectors-volumes.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "cloud-vectors-volumes.json"; sourceTree = "<group>"; };
 		0FA30F56D426612E1A60D22F /* WordCloudTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudTests.swift; sourceTree = "<group>"; };
 		0FFC3D2EF12D1AB4841E13DE /* VolumeSourcesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSourcesView.swift; sourceTree = "<group>"; };
@@ -1092,6 +1096,7 @@
 		638B3207D57EA78B92165BC0 /* ResearchItemCountsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchItemCountsTests.swift; sourceTree = "<group>"; };
 		63BEBE77ECB0D5CB1DC46A17 /* IndexHealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexHealthView.swift; sourceTree = "<group>"; };
 		640382B0D20BAA1974542856 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		649CCFCFF3F93C639587B8B5 /* KWICLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KWICLine.swift; sourceTree = "<group>"; };
 		64A77D5BA13AE64BC008855D /* CodingStandardsAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodingStandardsAuditTests.swift; sourceTree = "<group>"; };
 		6568CE099F61DF20CEB537BE /* WordCloudLexiconSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLexiconSet.swift; sourceTree = "<group>"; };
 		65AFB8371F24254AC6D7E541 /* SummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationService.swift; sourceTree = "<group>"; };
@@ -1446,6 +1451,7 @@
 				E3AD3271C2B3EB9F603BF99A /* FacetPanelView.swift */,
 				4796534819AD8F60335063F5 /* IndexingPipeline.swift */,
 				5ED9D81D04E002137249C19F /* IndexingStateTracker.swift */,
+				649CCFCFF3F93C639587B8B5 /* KWICLine.swift */,
 				62B5A5A124402AD0E8D4273E /* PersonClusterer.swift */,
 				14174F8D94A941FF7716FDF3 /* QueryInspection.swift */,
 				5BC74E6037A541C694313F3F /* QueryInspectorView.swift */,
@@ -1789,6 +1795,7 @@
 				34E1CEB90BE3E3FC8CDCE738 /* IndexingSummaryCardTests.swift */,
 				6000E386B1EB64D795D8F282 /* IntegrationTests.swift */,
 				9948E709929FAB592E9B615E /* KeychainStoreTests.swift */,
+				0F1FB6C464C40EA0B37E653E /* KWICLineTests.swift */,
 				7F55CBFB1680DD882C3B9C21 /* MacSettingsViewTests.swift */,
 				8358686378BDAF3B7801F5D4 /* MainTabViewTests.swift */,
 				260C0AE4446F8B084B284A5D /* ManifestStoreTests.swift */,
@@ -2637,6 +2644,7 @@
 				29FFE7328CB3DD126DDA1E27 /* IndexingQueueBannerView.swift in Sources */,
 				035369EBD0E679DD153CE5E6 /* IndexingStateTracker.swift in Sources */,
 				D6AB6B5AF5D52A42A0F13363 /* IndexingSummaryCard.swift in Sources */,
+				9BCEFF6B517D40F56D3F58ED /* KWICLine.swift in Sources */,
 				0632CD0D0FBEF87470942131 /* KeychainStore.swift in Sources */,
 				A520280B884239A8EFFE8AEC /* LaunchSplashView.swift in Sources */,
 				BFA05408FD6A0448130AD9EF /* MacCollectionManagerView.swift in Sources */,
@@ -2975,6 +2983,7 @@
 				935F12940D1805D09CC50C60 /* IndexingQueueBannerView.swift in Sources */,
 				E2551CE6F76FCCFEAADEE122 /* IndexingStateTracker.swift in Sources */,
 				EA77F5267057C90A63A29C6E /* IndexingSummaryCard.swift in Sources */,
+				1DA4B8B79E9FA377338FB7B1 /* KWICLine.swift in Sources */,
 				CB6AD2656E288EE5C8DA8A18 /* KeychainStore.swift in Sources */,
 				5F400B93F91B949CFEE78EE3 /* LaunchSplashView.swift in Sources */,
 				19A2E99993AE1FB57687B79B /* MacCollectionManagerView.swift in Sources */,
@@ -3232,6 +3241,7 @@
 				E419C286C9CF514997BEBDB5 /* IndexingStateTrackerTests.swift in Sources */,
 				FCBCB0B08D72BF1C9753AE89 /* IndexingSummaryCardTests.swift in Sources */,
 				68BA1099B5A3E26A1EE512E6 /* IntegrationTests.swift in Sources */,
+				A06B6C722AD32F76F15CF97D /* KWICLineTests.swift in Sources */,
 				E69E1D10C09ABA8D2058E992 /* KeychainStoreTests.swift in Sources */,
 				14533B37DD02A330F098DE0A /* MacSettingsViewTests.swift in Sources */,
 				FA52B05E729D79A66D057C02 /* MainTabViewTests.swift in Sources */,
