@@ -432,6 +432,31 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    /// A short label for the active person filter, or `nil` when there is none.
+    ///
+    /// Exists so a People facet click reads back in the filter row the way a Volume or Date
+    /// click already does — the design's requirement that facets and the filter sheet cannot
+    /// disagree only holds if every narrowable dimension is visible in one place.
+    var personFilterLabel: String? {
+        if let rollupId = parameters.personRollupId {
+            return String(localized: "search.filter.person.rollup",
+                          defaultValue: "person #\(rollupId)")
+        }
+        if let ref = parameters.personRef {
+            return ref.hasPrefix("#") ? String(ref.dropFirst()) : ref
+        }
+        return nil
+    }
+
+    /// Clears the person filter in both of its forms.
+    func clearPersonFilter() {
+        guard parameters.personRef != nil || parameters.personRollupId != nil else { return }
+        parameters.personRef = nil
+        parameters.personRollupId = nil
+        filterVM?.personRollupId = nil
+        parametersVersion += 1
+    }
+
     func clearDateFilter() {
         parameters.dateRange = nil
         filterVM?.dateRangeEnabled = false

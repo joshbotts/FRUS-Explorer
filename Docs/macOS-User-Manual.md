@@ -347,6 +347,25 @@ Prefix a term with `=` to search for the literal word instead:
   (`=negoti*`), and on anything that is not a single word (`="co-operate"`). The query still
   runs, stemmed.
 
+**The result-set breakdown.** Click **Breakdown** in the sort bar to open a panel that
+describes your whole result set rather than one row at a time — by year, volume, person,
+document type and archival provenance.
+
+- Sections compute when you open them, not when you search, so the panel never adds latency
+  to a query you were not going to inspect.
+- Clicking a year, volume, person or document-type row **narrows the search** through the
+  same filters the Filters sheet uses — so the two can never disagree, and the narrowing
+  appears as a clearable chip in the filter row above the results.
+- The counts describe the **whole match**, not the page. The result list is capped (7,500 on
+  macOS) while these counts are not, and the panel says so.
+- Where a section is showing only its largest rows, it tells you how many there are in total.
+  A common-term search can span 552 volumes and thousands of people; the panel will not
+  pretend otherwise.
+- **Archival provenance is descriptive only.** It tells you how the match is sourced, but
+  there is no provenance filter to narrow to, so those rows are not clickable.
+- With Checklist Mode on, the panel reminds you that it still describes every match, not just
+  the rows still showing.
+
 **The Query Inspector.** Under the search controls is a strip showing the **FTS5 expression
 your query actually became** — the string that went to the database, not a paraphrase of it.
 Expand it with the chevron to see, for each term:
