@@ -506,10 +506,21 @@ public struct RecordGroupCatalogRunner {
             let naIds = creatorCensus.referencedNaIds
             if naIds.isEmpty {
                 reviewNotes.append("CREATOR_AUTHORITY requested but no creator NAIDs were harvested")
-            } else if mode.projectOnly {
-                reviewNotes.append("CREATOR_AUTHORITY skipped: PROJECT_ONLY is offline and the "
-                                   + "authority pass needs the network")
             } else {
+                // Deliberately NOT blocked under PROJECT_ONLY. The block used to be, on the grounds
+                // that PROJECT_ONLY is offline — which made the authority data unreachable in practice:
+                // the full creator census only exists once the stored descriptions have been
+                // re-projected, and re-harvesting them to get it would cost API calls for no reason.
+                //
+                // The pass reads the **public S3 bucket**, so it needs no key, and CREATOR_AUTHORITY is
+                // explicitly opt-in. It does touch the network, though, so a PROJECT_ONLY run that
+                // performs it says so rather than quietly breaking the offline promise.
+                if mode.projectOnly {
+                    reviewNotes.append("CREATOR_AUTHORITY under PROJECT_ONLY: this run DID touch the "
+                                       + "network for the authority pass (NARA's public S3 authority "
+                                       + "records, no API key). The description re-projection itself "
+                                       + "remained offline.")
+                }
                 log("[RecordGroupCatalogGenerator] resolving \(naIds.count) creator authority "
                     + "records")
                 let result = try await CreatorAuthorityHarvester(client: client, log: log)

@@ -12,7 +12,7 @@ PRIORITY PAYLOADS
   variantControlNumbers    19881 records (98.5%), 23 distinct types
   contributors             462 records (2.3%)
   localIdentifier          725 records (3.6%) — agency-assigned, and NOT part of variantControlNumbers
-  creator authority        not run (set CREATOR_AUTHORITY=1)
+  creator authority        6167 resolved, 4 unresolved
 ──────────────────────────────────────────────────────────────────────────────
 FIELD ALIAS REPORT (which key spelling matched)
   contributors              contributors=462  presentButEmpty=0 absent=19726
@@ -100,6 +100,8 @@ API REFRESH vs BULK SNAPSHOT
 ──────────────────────────────────────────────────────────────────────────────
 NOTES
   • RG 486: re-classified against the API refresh already on disk (no API calls spent)
+  • CREATOR_AUTHORITY under PROJECT_ONLY: this run DID touch the network for the authority pass (NARA's public S3 authority records, no API key). The description re-projection itself remained offline.
+  • 4 referenced creator NAIDs had no authority record anywhere in the export
   • API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0
 ──────────────────────────────────────────────────────────────────────────────
 Field census: 225 distinct key paths over 20188 records — see census/field-census.csv

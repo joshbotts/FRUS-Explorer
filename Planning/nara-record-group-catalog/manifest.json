@@ -875,6 +875,8 @@
   ],
   "reviewNotes" : [
     "RG 486: re-classified against the API refresh already on disk (no API calls spent)",
+    "CREATOR_AUTHORITY under PROJECT_ONLY: this run DID touch the network for the authority pass (NARA's public S3 authority records, no API key). The description re-projection itself remained offline.",
+    "4 referenced creator NAIDs had no authority record anywhere in the export",
     "API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0"
   ],
   "schemaVersion" : 1,

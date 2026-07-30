@@ -441,6 +441,45 @@ asserted.
 
 Second finding worth having: lot numbers appear in **10 record groups**, not just State's own two.
 
+### The creator authority pass, run
+
+`PROJECT_ONLY=1 CREATOR_AUTHORITY=1` over the 22-group harvest: **7,314 of 7,318** creator NAIDs
+resolved, into **6,167 authority records** (one record commonly answers several creator references —
+the successive names of one office). Four NAIDs have no authority record anywhere in the export:
+`10461861`, `10535547`, `652475212`, `659944288`.
+
+**The nested-name join is what made this work, and the numbers are not close:**
+
+| Joined via | Records |
+|---|---|
+| `organizationNames` (nested name variants) | **5,841** |
+| `self` (the naive `naId == naId` join) | 326 |
+
+So the obvious join would have resolved **326 of 7,314 — under 5%** — and reported the other 95% as
+"no authority record in the export". That is the bug the RG 486 run surfaced when it reported
+`0 resolved, 3 unresolved`, and this is its full cost had it gone unnoticed.
+
+What the pass adds, stated honestly — the enrichment is partial:
+
+| | |
+|---|---|
+| `administrativeHistoryNote` | **1,842 of 6,167 (29%)**, ~2.2 MB of prose |
+| `organizationNames` succession chains | 5,841 |
+| `jurisdictions` / `programAreas` | 1,819 / 1,775 |
+| `biographicalNote` (persons) | 92 |
+| organizations / persons | 5,841 / 326 |
+
+Cost: a few hundred MB of S3 streaming, **no API key** — the authority records are in the same public
+bucket. `CREATOR_AUTHORITY=1` is therefore allowed under `PROJECT_ONLY`, which the code used to refuse:
+the full creator census only exists once the stored descriptions have been re-projected, so blocking it
+there made the authority data unreachable without re-spending API calls for nothing. A `PROJECT_ONLY`
+run that performs the pass now says plainly that it touched the network.
+
+> **Artifact size:** `creators/creator-authority.json` is **15.4 MB**, not the "a few MB" this runbook
+> originally estimated. It is committed, because the administrative-history prose is the point and it
+> took a multi-hundred-MB stream to assemble. Gitignore it and keep a sample instead if repo weight
+> matters more than having it to hand.
+
 ### Genuinely agency-specific control-number types
 
 Types confined to three or fewer record groups — the answer to the original question:
