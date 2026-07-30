@@ -33,6 +33,11 @@ import SwiftData
 ///   1.2 — Wave R-6: the Sync Log row counts errors the app could not describe separately from
 ///          errors it could, so a `partialFailure` with no sub-errors no longer reads the same
 ///          as a fully diagnosed one.
+///   1.3 — **Fix iCloud Sync now clears a store.** It matched files by the extension `sqlite`
+///          while both stores are named `*.store`, so it had never once deleted anything — it
+///          only returned the app to onboarding, which made the no-op look like a repair. The
+///          work moved to ``PendingStoreReset``, performed at the next launch (the only moment
+///          nothing holds the files open) against an explicit file list.
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -42,6 +47,9 @@ struct DataRecoveryView: View {
     @State private var showSyncResetConfirmation = false
     @State private var showLocalResetConfirmation = false
     @State private var isResetting = false
+    /// Shown after a sync reset is requested, because the work happens at the next launch and the
+    /// user has to be told that nothing has visibly changed yet.
+    @State private var showRelaunchNotice = false
     /// macOS presents the two sub-screens as sheets; iOS pushes.
     @State private var sheet: SubScreen? = nil
 
@@ -124,7 +132,18 @@ struct DataRecoveryView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "settings.dataRecovery.fixSync.message",
-                        defaultValue: "The local copy of your synced data is cleared and pulled down again. Nothing in iCloud is deleted, so nothing is lost — the app returns to onboarding while it restores."))
+                        defaultValue: "The local copy of your synced data is cleared and pulled down again. Nothing in iCloud is deleted, so nothing is lost — the app returns to onboarding while it restores. The clearing happens the next time the app starts, so you will need to quit and reopen it."))
+        }
+        // The reset is performed at the next launch, before any store is opened — the only moment
+        // no connection is holding the files. Without this the button would appear to do nothing.
+        .alert(String(localized: "settings.dataRecovery.fixSync.relaunch.title",
+                      defaultValue: "Quit and Reopen to Finish"),
+               isPresented: $showRelaunchNotice) {
+            Button(String(localized: "settings.dataRecovery.fixSync.relaunch.ok",
+                          defaultValue: "OK"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "settings.dataRecovery.fixSync.relaunch.message",
+                        defaultValue: "Your local copy will be cleared and re-downloaded from iCloud the next time FRUS Explorer starts. Nothing has been deleted yet, and nothing in iCloud is affected."))
         }
         .confirmationDialog(
             String(localized: "settings.dataRecovery.resetDevice.title",
@@ -200,8 +219,11 @@ struct DataRecoveryView: View {
                     label: String(localized: "settings.dataRecovery.fixSync",
                                   defaultValue: "Fix iCloud Sync"),
                     systemImage: "arrow.triangle.2.circlepath.icloud",
+                    // Was "nothing is deleted", which was true only by accident: the action deleted
+                    // nothing at all. It clears this device's copy at the next launch, and the row
+                    // now says which of those two facts it means.
                     detail: String(localized: "settings.dataRecovery.fixSync.detail",
-                                   defaultValue: "Re-download from iCloud — nothing is deleted")
+                                   defaultValue: "Re-download from iCloud at next launch")
                 )
                 .contentShape(Rectangle())
             }
@@ -301,34 +323,33 @@ struct DataRecoveryView: View {
 
     // MARK: - Recovery actions
 
-    /// Clears the local SwiftData store so the container re-downloads from CloudKit. Nothing in
-    /// iCloud is deleted.
+    /// Requests that the local SwiftData stores be cleared at the next launch, so the container
+    /// re-downloads from CloudKit. Nothing in iCloud is deleted.
+    ///
+    /// ## Why this only sets a flag
+    /// Two reasons, and the first is a bug this replaces. The previous implementation deleted, from
+    /// two Application Support directories, every file whose extension was `sqlite` — but this
+    /// app's stores are `default.store` and `FRUSExplorerLocal.store`. Neither loop could ever
+    /// match, on any platform, so the button had never cleared a store in its life. It set
+    /// `hasCompletedOnboarding = false`, the app returned to onboarding and reported the data it
+    /// already had, and the whole thing read as a successful repair.
+    ///
+    /// The second reason is why the fix is not simply a corrected file list: at this point the
+    /// container is open on those files. Deleting them here unlinks them from under a live SQLite
+    /// connection, so the rest of the session writes to an unnamed inode and CloudKit's mirroring
+    /// state is torn mid-flight. ``PendingStoreReset`` therefore records the request and
+    /// ``ModelContainer/makeFRUSContainer()`` performs it at the next launch, before any store is
+    /// opened — with an explicit file list, never a pattern, because `frus.db` (the multi-gigabyte
+    /// FTS5 index) and `volumes/` live in the same directory.
     private func performSyncReset() {
         isResetting = true
-        let fm = FileManager.default
-        let appSupportURLs = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        for base in appSupportURLs {
-            // Standard SwiftData store location (bundle-id based).
-            if let bundleId = Bundle.main.bundleIdentifier {
-                let dir = base.appendingPathComponent(bundleId, isDirectory: true)
-                if let files = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
-                    for file in files where file.pathExtension == "sqlite" {
-                        try? fm.removeItem(at: file)
-                    }
-                }
-            }
-            // The named app-support directory this app also uses. The `frus` prefix guard keeps
-            // the FTS5 search index — which is not synced and would have to be rebuilt from XML.
-            let namedDir = base.appendingPathComponent("FRUSExplorer", isDirectory: true)
-            if let files = try? fm.contentsOfDirectory(at: namedDir, includingPropertiesForKeys: nil) {
-                for file in files where file.pathExtension == "sqlite"
-                                         && !file.lastPathComponent.hasPrefix("frus") {
-                    try? fm.removeItem(at: file)
-                }
-            }
-        }
+        PendingStoreReset.request()
+        // Onboarding is where the restore-in-progress state is explained, and the stores really are
+        // about to be empty. Set here rather than at launch so the flag is durable if the user
+        // quits from Settings.
         appState.hasCompletedOnboarding = false
         isResetting = false
+        showRelaunchNotice = true
     }
 
     /// Deletes downloaded volumes and the search index, leaving the local SwiftData store and
