@@ -200,6 +200,14 @@ final class MacSearchViewModel {
 
     var currentPage: Int = 0
 
+    /// Bumped once per COMPLETED search, so a view can key work on "the results were replaced".
+    ///
+    /// The macOS twin of `SearchViewModel.executedSearchVersion`, added for the concordance (R-3b).
+    /// Keying on `results.count` instead — which is what I reached for first — would miss a new
+    /// search returning the same number of rows, leaving a concordance built from the previous
+    /// query on screen. That is the worst kind of stale for a view whose output gets quoted.
+    private(set) var executedSearchVersion: Int = 0
+
     var totalPages: Int {
         max(1, Int(ceil(Double(displayedResults.count) / Double(pageSize))))
     }
@@ -794,6 +802,7 @@ final class MacSearchViewModel {
         do {
             let fetched = try await resultsTask
             results = fetched
+            executedSearchVersion &+= 1
             // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
             // equal to what happened to be fetched — see `totalMatchCount`.
             if let total = try? await countTask {

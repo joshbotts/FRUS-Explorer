@@ -120,6 +120,11 @@ struct SearchView: View {
     @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
 
     @State private var showTimeline = false
+    /// Concordance mode (R-3b) — mutually exclusive with the timeline, since both replace the list.
+    @State private var showConcordance = false
+    @State private var concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+    @State private var concordanceSort: KWICSort = .leftContext
+    @State private var isLoadingConcordance = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var showCitationLookup = false
@@ -272,7 +277,15 @@ struct SearchView: View {
                 //
                 // Keyed on `executedSearchVersion`, which bumps once per *executed* search —
                 // `keywords` changes while typing and would discard the panel mid-read.
-                .onChange(of: vm.executedSearchVersion) { _, _ in
+                // The concordance is built for the page on screen, so it is rebuilt when the mode opens,
+        // when the page turns, and when a new search replaces the results. `executedSearchVersion`
+        // rather than `results` — it is bumped once per COMPLETED search, so this cannot fire against
+        // a half-replaced set.
+        .task(id: ConcordanceRebuildKey(mode: showConcordance, page: vm.currentPage,
+                                        version: vm.executedSearchVersion)) {
+            await rebuildConcordance()
+        }
+        .onChange(of: vm.executedSearchVersion) { _, _ in
                     facetController.invalidate(signature: "ios-\(vm.executedSearchVersion)")
                 }
                 .task(id: vm.keywords) {
@@ -515,6 +528,13 @@ struct SearchView: View {
             } label: {
                 Label(String(localized: "search.mode.timeline", defaultValue: "Timeline"),
                       systemImage: showTimeline ? "checkmark" : "chart.bar")
+            }
+            Button {
+                showConcordance.toggle()
+                if showConcordance { showTimeline = false }
+            } label: {
+                Label(String(localized: "search.mode.concordance", defaultValue: "Concordance"),
+                      systemImage: showConcordance ? "checkmark" : "text.alignleft")
             }
             Button {
                 showFacetSheet = true
@@ -872,6 +892,17 @@ struct SearchView: View {
                     description: Text(String(localized: "search.checklist.allReviewed.detail",
                                              defaultValue: "You've reviewed every result. Turn off Checklist Mode to see them again."))
                 )
+            } else if showConcordance {
+                ConcordanceView(result: concordance, sort: $concordanceSort) { line in
+                    // Open the line's document through the same path a list row uses, so a
+                    // concordance line and a result row land in exactly the same place.
+                    if let result = vm.pagedResults.first(where: {
+                        $0.volumeId == line.volumeId && $0.documentId == line.documentId
+                    }) {
+                        openResult(vm.makeEntry(from: result))
+                    }
+                }
+                .overlay { if isLoadingConcordance { ProgressView() } }
             } else if showTimeline {
                 // Plot the checklist-filtered set so the timeline hides reviewed documents the
                 // same way the list does (#189-D).
@@ -1143,6 +1174,26 @@ struct SearchView: View {
     /// document opens where the search is and the results list is one back-swipe away. "Open in New
     /// Window" (the row context menu, Stage Manager) is the explicit alternative that opens a separate
     /// document window so the results list stays visible alongside.
+    /// Builds the concordance for the page on screen.
+    ///
+    /// Driven by mode, page and result changes rather than computed in `body`: the build is a DB
+    /// fetch plus a scan, and a view body must not do either. Concordancing `pagedResults` (not the
+    /// whole retained set) is what keeps it to one page's worth of body text — see
+    /// `SearchService.concordance(for:parameters:radius:)`.
+    private func rebuildConcordance() async {
+        guard showConcordance, let service = appState.searchService else { return }
+        let page = vm.pagedResults
+        guard !page.isEmpty else {
+            concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+            return
+        }
+        isLoadingConcordance = true
+        defer { isLoadingConcordance = false }
+        concordance = (try? await service.concordance(
+            for: page, parameters: vm.searchParameters))
+            ?? ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+    }
+
     private func openResult(_ entry: DocumentBrowserEntry) {
         vm.navigationPath.append(entry)
     }
