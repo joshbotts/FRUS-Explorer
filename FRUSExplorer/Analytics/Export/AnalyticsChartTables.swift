@@ -63,12 +63,16 @@ enum AnalyticsChartTables {
         periodColumn: String,
         seriesByTerm: [(term: String, points: [CorpusSeriesPoint])],
         totals: [Int: Int],
-        isNormalized: Bool
+        isNormalized: Bool,
+        unit: AnalyticsValueUnit = .documents
     ) -> ChartInspectorData {
         let columns = [
             String(localized: "analytics.export.column.term", defaultValue: "Term"),
             periodColumn,
-            String(localized: "analytics.export.column.matching", defaultValue: "Matching documents"),
+            // Derived, not written out: the audit's primary silent-lie site was occurrence counts
+            // shipping under a column headed "Matching documents". Taking the header from the same
+            // unit the chart used makes that impossible rather than merely discouraged.
+            unit.exportColumnHeader,
             String(localized: "analytics.export.column.corpusTotal", defaultValue: "Indexed documents in period"),
             String(localized: "analytics.export.column.share", defaultValue: "Share of indexed documents (%)"),
             String(localized: "analytics.export.column.plotted", defaultValue: "Plotted value"),
