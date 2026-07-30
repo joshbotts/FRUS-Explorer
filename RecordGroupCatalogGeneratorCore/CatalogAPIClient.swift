@@ -519,6 +519,31 @@ public struct CatalogAPIClient: Sendable {
         return (recordCount, requests, firstObservation)
     }
 
+    // MARK: Record-group node
+
+    /// Fetches a record group's own `recordGroup`-level node — one call.
+    ///
+    /// ## Why this is worth a call per group
+    /// The node is where NARA states `seriesCount`, and that number is the harvest's completeness
+    /// check: harvested-vs-stated is what makes a truncated harvest detectable rather than merely
+    /// plausible. The bulk export gets it for free, because the node sits in the same shards as the
+    /// series. An API harvest does **not**: the `levelOfDescription=series` filter necessarily excludes
+    /// a `recordGroup`-level record, so without this call an API-only harvest has no self-check at all
+    /// — the single best safety property the bulk path has.
+    ///
+    /// One extra call per group (~22 across the set) buys it back.
+    ///
+    /// - Returns: the node, or `nil` if the API returned none.
+    public func fetchRecordGroupNode(recordGroup: Int) async throws -> CatalogJSONValue? {
+        let page = try await fetchPage(recordGroup: recordGroup, level: "recordGroup", cursor: nil)
+        // Accept only a record that really is this group's node, so a fuzzy hit cannot supply a
+        // seriesCount belonging to something else.
+        return page.records.first {
+            $0["levelOfDescription"]?.nonEmptyString == "recordGroup"
+                && $0["recordGroupNumber"]?.intValue == recordGroup
+        }
+    }
+
     // MARK: Survey
 
     /// Spends a handful of calls answering the four open questions about the live query shape.

@@ -300,6 +300,30 @@ layers without further paging.
 `PROJECT_ONLY=1` now also re-classifies against a refresh already in `raw-api/`, so correcting *how*
 changes are judged never costs another API call — the same principle the rest of the design rests on.
 
+### An API-only harvest keeps its completeness check
+
+Going API-primary had one gap worth closing before recommending it: `levelOfDescription=series`
+necessarily excludes the `recordGroup`-level record, and that record is the only place NARA states
+`seriesCount`. An API-only harvest would therefore have had **no self-check** — the single best safety
+property the bulk path has.
+
+Every refresh now fetches the group node first: **one extra call per group**, ~22 across the set. It
+supplies the authoritative title, NAID and `seriesCount`, so `harvested vs stated` works identically on
+either route, and a short API harvest fails the run exactly as a short bulk harvest does.
+
+Three details, each because the alternative fails quietly:
+
+- A node whose `recordGroupNumber` does not match the group being harvested is **rejected**, so a fuzzy
+  hit cannot supply another group's `seriesCount`.
+- If the node carries no `seriesCount` (or the API returns no node at all), that is stated as a review
+  note — the run does not proceed as though it had been checked.
+- The node is **never** reported as an added record. It is metadata, and the base pass returns early on
+  it without marking it seen, so without an explicit guard it would appear as newly `added` on every
+  single refresh.
+
+So the API route is now safe to use for the initial harvest: ~40 calls for the series layer plus ~22 for
+the nodes, against streaming 22 GB.
+
 ### Step R2 — the refresh
 
 ```bash

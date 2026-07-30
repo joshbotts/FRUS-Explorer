@@ -74,6 +74,21 @@ extension ScriptedAPITransport {
     static let emptyPage = """
     {"statusCode":200,"body":{"hits":{"hits":[]}}}
     """
+
+    /// A page containing only the record group's own node — what the refresh asks for first, to
+    /// recover NARA's `seriesCount` for the completeness check.
+    static func groupNodePage(recordGroup: Int = 486, seriesCount: Int? = 3,
+                              naId: Int = 22345815) -> String {
+        let countBlock = seriesCount.map { ",\"seriesCount\":\($0)" } ?? ""
+        return """
+        {"statusCode":200,"body":{"hits":{"hits":[
+          {"_source":{"record":{"naId":\(naId),
+            "title":"Records of the U.S. Trade and Development Agency",
+            "levelOfDescription":"recordGroup","recordGroupNumber":\(recordGroup)\(countBlock)}},
+           "sort":["\(naId)"]}
+        ]}}}
+        """
+    }
 }
 
 // MARK: - CatalogAPIClientDecodeTests
@@ -304,6 +319,25 @@ struct CatalogAPIPagingTests {
         #expect(transport.requests[0].contains("searchAfter=*")
                 || transport.requests[0].contains("searchAfter=%2A"))
         #expect(transport.requests[1].contains("searchAfter=1"))
+    }
+
+    @Test("The record-group node is fetched, and reports its seriesCount")
+    func fetchesRecordGroupNode() async throws {
+        // The API-only harvest's completeness check depends on this one call: levelOfDescription=series
+        // necessarily excludes the recordGroup-level record that states seriesCount.
+        let (api, transport) = client([(ScriptedAPITransport.groupNodePage(seriesCount: 11), 200)])
+        let node = try await api.fetchRecordGroupNode(recordGroup: 486)
+        #expect(node?["seriesCount"]?.intValue == 11)
+        #expect(node?["levelOfDescription"]?.stringValue == "recordGroup")
+        #expect(transport.requests[0].contains("levelOfDescription=recordGroup"))
+    }
+
+    @Test("A node for the wrong record group is rejected rather than trusted")
+    func rejectsWrongGroupNode() async throws {
+        // A fuzzy hit must not supply a seriesCount belonging to a different group.
+        let (api, _) = client([(ScriptedAPITransport.groupNodePage(recordGroup: 59,
+                                                                  seriesCount: 4449), 200)])
+        #expect(try await api.fetchRecordGroupNode(recordGroup: 486) == nil)
     }
 
     @Test("Records duplicated across pages are dropped, not counted twice")

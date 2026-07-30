@@ -534,11 +534,22 @@ struct RunnerEndToEndTests {
         _ sandbox: Sandbox, apiResponses: [(String, Int)]
     ) async throws -> RecordGroupCatalogRunner.RunResult {
         try await run(sandbox, transport: Self.transport())
-        return try await RecordGroupCatalogRunner.run(
+        return try await refreshOnly(sandbox, apiResponses: apiResponses)
+    }
+
+    /// A refresh against whatever is already in the sandbox.
+    ///
+    /// The group-node response is prepended because every refresh now asks for it first — one call to
+    /// recover NARA's `seriesCount`, which `levelOfDescription=series` would otherwise exclude.
+    private func refreshOnly(
+        _ sandbox: Sandbox, apiResponses: [(String, Int)]
+    ) async throws -> RecordGroupCatalogRunner.RunResult {
+        try await RecordGroupCatalogRunner.run(
             plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
             transport: Self.transport(), generated: "2026-07-30",
             mode: .init(apiRefresh: true), apiKey: "test-key",
-            apiTransport: ScriptedAPITransport(responses: apiResponses))
+            apiTransport: ScriptedAPITransport(
+                responses: [(ScriptedAPITransport.groupNodePage(), 200)] + apiResponses))
     }
 
     @Test("A refresh that changes a record classifies it modified and the API version wins")
@@ -714,6 +725,89 @@ struct RunnerEndToEndTests {
         let report = String(decoding: try #require(
             try sandbox.outputFiles()["harvest-report.txt"]), as: UTF8.self)
         #expect(report.contains("ONLY outside"))
+    }
+
+    @Test("An API-ONLY harvest still gets its completeness check from the group node")
+    func apiOnlyHarvestHasCompletenessCheck() async throws {
+        // No bulk store at all — the route that becomes attractive now the API is field-complete and
+        // limit=1000 is honoured (~40 calls for the whole series layer instead of 22 GB). Without the
+        // group-node call this harvest would have nothing to check itself against.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        let result = try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: Self.transport(), generated: "2026-07-30",
+            mode: .init(projectOnly: false, apiRefresh: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: [
+                (ScriptedAPITransport.groupNodePage(seriesCount: 3), 200),
+                (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+            ]))
+
+        let group = try #require(result.manifest.recordGroups.first)
+        // NARA's own count came from the API node, and the check passes.
+        #expect(group.expectedSeriesCount == 3)
+        #expect(group.harvestedSeriesCount == 3)
+        #expect(group.seriesCountDelta == 0)
+        #expect(!group.isMateriallyShort)
+        #expect(group.title == "Records of the U.S. Trade and Development Agency")
+        #expect(result.isTrustworthy)
+    }
+
+    @Test("An API-only harvest that comes up short FAILS, thanks to the group node")
+    func apiOnlyShortHarvestFails() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        // The node says 11; the refresh yields 3. This is the failure the check exists to catch, and
+        // it is only catchable because the node was fetched.
+        let result = try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: Self.transport(), generated: "2026-07-30",
+            mode: .init(apiRefresh: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: [
+                (ScriptedAPITransport.groupNodePage(seriesCount: 11), 200),
+                (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+            ]))
+        #expect(!result.isTrustworthy)
+        #expect(result.failures.contains { $0.contains("but NARA states 11") })
+    }
+
+    @Test("A group node missing seriesCount is reported, not silently treated as checked")
+    func reportsNodeWithoutSeriesCount() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let result = try await refreshOnlyWithNode(
+            sandbox, node: ScriptedAPITransport.groupNodePage(seriesCount: nil),
+            apiResponses: [(ScriptedAPITransport.page(naIds: [1], total: 1), 200)])
+        #expect(result.manifest.reviewNotes.contains { $0.contains("no seriesCount") })
+    }
+
+    /// A refresh with an explicit group-node response, for the node-shape cases.
+    private func refreshOnlyWithNode(
+        _ sandbox: Sandbox, node: String, apiResponses: [(String, Int)]
+    ) async throws -> RecordGroupCatalogRunner.RunResult {
+        try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: Self.transport(), generated: "2026-07-30",
+            mode: .init(apiRefresh: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: [(node, 200)] + apiResponses))
+    }
+
+    @Test("The group node is never reported as an added record")
+    func groupNodeIsNotAChange() async throws {
+        // It is metadata, not content. The base pass returns early on it without marking it seen, so
+        // without an explicit guard it would show up as newly ADDED on every single refresh.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let result = try await harvestThenRefresh(sandbox, apiResponses: [
+            (ScriptedAPITransport.page(naIds: [1, 2, 3], total: 3), 200),
+        ])
+        let csv = String(decoding: try #require(
+            try sandbox.outputFiles()["census/refresh-changelog.csv"]), as: UTF8.self)
+        #expect(!csv.contains("22345815"))
+        let note = try #require(result.manifest.reviewNotes.first { $0.contains("API refresh spent") })
+        #expect(note.contains("added=0"))
     }
 
     @Test("API_SURVEY writes into its own subtree and cannot clobber a harvest's report")

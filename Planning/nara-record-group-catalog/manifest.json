@@ -130,7 +130,8 @@
   ],
   "reviewNotes" : [
     "RG 486: re-classified against the API refresh already on disk (no API calls spent)",
-    "SUBSET RUN (1 record group(s)): manifest.json, the census CSVs, series-sample.json and this report describe ONLY these groups. Per-group index shards for other groups are untouched. When every group has been harvested, run PROJECT_ONLY=1 with no RECORD_GROUPS to rebuild the run-wide artifacts over all of them (offline, no re-download).",
+    "RG 420: PROJECT_ONLY found no raw store at /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/nara-catalog-harvester-92f022/.cache/nara-rg-catalog/raw/rg_420.ndjson — nothing to re-project; harvest it first",
+    "SUBSET RUN (2 record group(s)): manifest.json, the census CSVs, series-sample.json and this report describe ONLY these groups. Per-group index shards for other groups are untouched. When every group has been harvested, run PROJECT_ONLY=1 with no RECORD_GROUPS to rebuild the run-wide artifacts over all of them (offline, no re-download).",
     "API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0"
   ],
   "schemaVersion" : 1,

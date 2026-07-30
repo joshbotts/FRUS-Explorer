@@ -538,7 +538,11 @@ public struct CatalogIndexBuilder: Sendable {
         // Overlay pass: these records win, and any NAID the base never had is an addition.
         for naId in overlayRecords.keys.sorted() {
             guard let raw = overlayRecords[naId] else { continue }
-            if !overlayNaIdsSeenInBase.contains(naId) {
+            // The group's own node carries the metadata (title, seriesCount), not content. The base
+            // pass returns early on it without marking it seen, so without this guard it would be
+            // reported as a newly ADDED record on every refresh.
+            let isGroupNode = raw["levelOfDescription"]?.nonEmptyString == "recordGroup"
+            if !isGroupNode, !overlayNaIdsSeenInBase.contains(naId) {
                 changeLog.note(recordGroup: recordGroup, naId: naId, change: .added,
                                title: raw["title"]?.nonEmptyString)
             }

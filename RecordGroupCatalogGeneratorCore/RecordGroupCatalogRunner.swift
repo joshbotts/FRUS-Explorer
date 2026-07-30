@@ -347,6 +347,24 @@ public struct RecordGroupCatalogRunner {
                     // artefact of the two layers covering different levels.
                     var refreshedCount = 0
                     var spentForGroup = 0
+
+                    // The group's own node first, so the completeness check survives an API-only
+                    // harvest. Without it, `levelOfDescription=series` excludes the only record that
+                    // states seriesCount and the harvest has nothing to check itself against.
+                    if let node = try await apiClient.fetchRecordGroupNode(
+                        recordGroup: group.number) {
+                        try writerHandle.append(node)
+                        if node["seriesCount"]?.intValue == nil {
+                            reviewNotes.append("RG \(group.number): the API's record-group node carries "
+                                               + "no seriesCount, so this refresh has no completeness "
+                                               + "check — harvest the group from the bulk export if "
+                                               + "that matters")
+                        }
+                    } else {
+                        reviewNotes.append("RG \(group.number): the API returned no record-group node, "
+                                           + "so this refresh has no completeness check")
+                    }
+                    spentForGroup += 1
                     for level in group.depth.admittedLevels.sorted() {
                         let result = try await apiClient.harvestGroup(
                             recordGroup: group.number, level: level,
