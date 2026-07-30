@@ -75,12 +75,30 @@ public struct CloudVectorsAggregator: Sendable {
         }
     }
 
-    /// Both artifacts.
+    /// Nominal terms retained per lens in the keyness baseline.
+    ///
+    /// Far larger than ``topTermsPerList`` because the two answer different questions: a cloud draws
+    /// fifty words, while a baseline must be able to price whatever terms a researcher's documents
+    /// contain.
+    ///
+    /// It is a **size budget, not a claim of coverage**, and the shipped artifact is the honest
+    /// account of what it buys: `allTerms` retains 20,000 of 254,027 distinct terms — 7.9% of the
+    /// vocabulary, but **98.1% of the token mass** — with the cut landing at a corpus count of 110;
+    /// `topics` cuts at 65; `actions` has only 28,062 distinct terms so its cut lands in the
+    /// once-only band and takes the whole lens. Everything below those counts is *unpriced*, which
+    /// is not the same as absent from the corpus — see ``KeynessBaselineFile/Lens/cutoffCount``.
+    /// The trade-off is bundle size against how far down the distribution the reference reaches;
+    /// there is no low-frequency floor in the tuning to lean on (`minimumCount` is 1).
+    public static let baselineTermsPerLens = 20_000
+
+    /// The artifacts.
     public struct Output: Sendable {
         /// Corpus + every subseries — loaded eagerly by the app.
         public let core: CloudVectorsFile
         /// Every volume — loaded lazily.
         public let volumes: CloudVectorsFile
+        /// The corpus keyness baseline (S-1) — the reference side of a keyness comparison.
+        public let keynessBaseline: KeynessBaselineFile
     }
 
     /// The lenses carried, in cycle order.
@@ -102,8 +120,12 @@ public struct CloudVectorsAggregator: Sendable {
     ///     cannot affect the artifact.
     ///   - generated: Date stamp for the provenance block.
     ///   - tuning: The tuning the counts were produced under, recorded in provenance.
+    ///   - configuration: The full tokenisation stamp the keyness baseline pins itself to. Defaults
+    ///     to `tuning` with the diplomatic layer on and no payload digests, which is the right shape
+    ///     for a unit test but **not** for a shipped artifact — the runner passes real digests.
     public func pack(volumes: [VolumeCounts], generated: String,
-                     tuning: WordCloudTuning) -> Output {
+                     tuning: WordCloudTuning,
+                     configuration: KeynessBaselineFile.Configuration? = nil) -> Output {
         // ── Roll up. Sum raw counts; never sum truncated lists. ──
         var bySubseries: [String: [WordCloudLens: [String: Int]]] = [:]
         var corpus: [WordCloudLens: [String: Int]] = [:]
@@ -132,7 +154,56 @@ public struct CloudVectorsAggregator: Sendable {
 
         return Output(
             core: file(scopes: coreScopes, generated: generated, provenance: provenance),
-            volumes: file(scopes: volumeScopes, generated: generated, provenance: provenance)
+            volumes: file(scopes: volumeScopes, generated: generated, provenance: provenance),
+            keynessBaseline: baseline(
+                corpus: corpus, generated: generated, provenance: provenance,
+                configuration: configuration ?? .init(tuning: tuning, includeDiplomatic: true,
+                                                      lexiconsDigest: "", stopwordsDigest: ""))
+        )
+    }
+
+    /// Builds the keyness baseline from the **untruncated** corpus roll-up.
+    ///
+    /// Deliberately fed `corpus` before the top-50 truncation the cloud files apply — the whole
+    /// point of this artifact is the terms a fifty-word cloud leaves out.
+    ///
+    /// ## The cut is a frequency, not a rank
+    /// A plain `prefix(20_000)` cuts inside a tie, and the tiebreak is alphabetical. In the shipped
+    /// corpus that is not academic: `actions` cuts at a count of 1, where 12,364 verbs are tied, so
+    /// a rank cut would have priced the 4,302 spelled up to `fenoaltea` and left the 8,062 after it
+    /// with no reference at all. Two verbs with identical corpus evidence would then get different
+    /// keyness scores because of their first letter. So the prefix is **extended through the whole
+    /// tied band**: membership depends only on how often a term occurs. The cost is small (the cap
+    /// is a budget, and the band beyond it is short) and the resulting `cutoffCount` is a fact a
+    /// caller can state.
+    private func baseline(corpus: [WordCloudLens: [String: Int]], generated: String,
+                          provenance: CloudVectorsFile.Provenance,
+                          configuration: KeynessBaselineFile.Configuration) -> KeynessBaselineFile {
+        var lenses: [String: KeynessBaselineFile.Lens] = [:]
+        for (lens, terms) in corpus {
+            // The true total, summed over EVERY term, before anything is dropped. Computing it from
+            // the retained terms instead would inflate every relative frequency, and inflate it by a
+            // different factor than the scope side — the precise error keyness exists to avoid.
+            let totalTokens = terms.values.reduce(0, +)
+            // Count first, then term: the term tiebreak keeps the ordering deterministic, and the
+            // band extension below keeps it from deciding membership.
+            let ranked = terms.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            var cut = min(Self.baselineTermsPerLens, ranked.count)
+            if cut > 0, cut < ranked.count {
+                let boundary = ranked[cut - 1].value
+                while cut < ranked.count, ranked[cut].value == boundary { cut += 1 }
+            }
+            let retained = ranked.prefix(cut)
+            lenses[lens.rawValue] = KeynessBaselineFile.Lens(
+                totalTokens: totalTokens,
+                distinctTerms: terms.count,
+                terms: Dictionary(uniqueKeysWithValues: retained.map { ($0.key, $0.value) }),
+                cutoffCount: retained.last?.value ?? 0
+            )
+        }
+        return KeynessBaselineFile(
+            version: 1, generated: generated, provenance: provenance,
+            termsPerLens: Self.baselineTermsPerLens, configuration: configuration, lenses: lenses
         )
     }
 
