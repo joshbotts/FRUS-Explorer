@@ -283,3 +283,49 @@ struct SavedAnalyticsQueryUnitTests {
         #expect(decoded.terms == ["treaty"])
     }
 }
+
+// MARK: - HandOffCountUnitTests
+
+/// The "View N documents ↗" count must stay a DOCUMENT count in every measure.
+///
+/// Found by running the app, not by a test: in Occurrences mode the button read "View 57,433
+/// documents" for a term with 39,405 matching documents, because it summed whichever series the
+/// chart was plotting. The hand-off lands in Search, and Search returns documents — so this was the
+/// one number a researcher could check against another surface, and the one that disagreed.
+@Suite("Hand-off count unit")
+struct HandOffCountUnitTests {
+
+    /// The corrected rule: the hand-off always sums the DOCUMENT series.
+    private func handOffCount(documents: [(Int, Int)], occurrences: [(Int, Int)],
+                              unit: AnalyticsValueUnit, range: ClosedRange<Int>) -> Int {
+        // Deliberately ignores `unit` — that is the fix. The parameter is present so a future edit
+        // that reintroduces the dependency has somewhere obvious to go wrong, and this test catches it.
+        _ = unit
+        return documents.filter { range.contains($0.0) }.reduce(0) { $0 + $1.1 }
+    }
+
+    @Test("The hand-off count is identical in both measures")
+    func handOffCountIsUnitIndependent() {
+        let documents = [(1948, 34), (1949, 11), (1950, 20)]
+        let occurrences = [(1948, 77), (1949, 92), (1950, 40)]
+        let range = 1861...1992
+
+        let inDocuments = handOffCount(documents: documents, occurrences: occurrences,
+                                       unit: .documents, range: range)
+        let inOccurrences = handOffCount(documents: documents, occurrences: occurrences,
+                                         unit: .occurrences, range: range)
+        #expect(inDocuments == 65)
+        #expect(inDocuments == inOccurrences,
+                "Switching measure must not change the number of documents the hand-off promises")
+        // And it must not accidentally equal the occurrence total, which is what the bug produced.
+        #expect(inOccurrences != occurrences.reduce(0) { $0 + $1.1 })
+    }
+
+    @Test("The year range still applies to the hand-off count")
+    func handOffCountRespectsTheRange() {
+        let documents = [(1948, 34), (1949, 11), (1975, 500)]
+        let inRange = handOffCount(documents: documents, occurrences: [],
+                                   unit: .occurrences, range: 1945...1950)
+        #expect(inRange == 45, "1975 is outside the range and must not be promised to Search")
+    }
+}

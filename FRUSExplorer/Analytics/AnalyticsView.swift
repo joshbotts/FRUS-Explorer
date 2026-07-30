@@ -1154,9 +1154,24 @@ struct AnalyticsView: View {
     /// of the plotted series, mirroring each chart section's own footnote math. Surfaced in the
     /// "View N documents" hand-off link so the affordance carries the count (design Win 3).
     private var matchedDocumentCount: Int {
+        // DOCUMENTS, whatever the chart is plotting. This drives "View N documents ↗", which hands
+        // off to Search — and Search returns documents. Reading it off the active axis series was a
+        // real defect found by running the app: in Occurrences mode the button read "View 57,433
+        // documents" for a term with 39,405 matching documents, so the one number the researcher
+        // could check against another surface was the one that disagreed with it. Exactly the class
+        // of mislabel PR-A removed, reintroduced one PR later by a shared accessor.
+        //
+        // The date axes therefore bypass `filteredYearData`/`filteredDecadeData`, which follow the
+        // measure. The other four axes never carry occurrences and are already document counts.
         switch chartAxis {
-        case .byYear:      return filteredYearData.reduce(0) { $0 + $1.count }
-        case .byDecade:    return filteredDecadeData.reduce(0) { $0 + $1.count }
+        case .byYear:
+            return (yearDataByTerm[committedTerm] ?? [])
+                .filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
+                .reduce(0) { $0 + $1.count }
+        case .byDecade:
+            return (decadeDataByTerm[committedTerm] ?? [])
+                .filter { $0.decadeStart + 9 >= yearRangeStart && $0.decadeStart <= yearRangeEnd }
+                .reduce(0) { $0 + $1.count }
         case .byMonth:     return filteredMonthData.reduce(0) { $0 + $1.count }
         case .byDay:       return filteredDayData.reduce(0) { $0 + $1.count }
         case .bySubseries: return subseriesData.reduce(0) { $0 + $1.count }
