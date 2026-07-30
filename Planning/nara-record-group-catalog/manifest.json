@@ -1,0 +1,160 @@
+{
+  "fieldAliasReport" : [
+    {
+      "absent" : 11,
+      "field" : "contributors",
+      "matchedAliases" : {
+
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 0,
+      "field" : "creators",
+      "matchedAliases" : {
+        "creators" : 11
+      },
+      "presentButEmpty" : 0,
+      "required" : true
+    },
+    {
+      "absent" : 11,
+      "field" : "custodialHistoryNote",
+      "matchedAliases" : {
+
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 6,
+      "field" : "findingAids",
+      "matchedAliases" : {
+        "findingAids" : 5
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 0,
+      "field" : "generalRecordsTypes",
+      "matchedAliases" : {
+        "generalRecordsTypes" : 11
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 11,
+      "field" : "microformPublications",
+      "matchedAliases" : {
+
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 0,
+      "field" : "physicalOccurrences",
+      "matchedAliases" : {
+        "physicalOccurrences" : 11
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 6,
+      "field" : "scopeAndContentNote",
+      "matchedAliases" : {
+        "scopeAndContentNote" : 5
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 11,
+      "field" : "specificRecordsTypes",
+      "matchedAliases" : {
+
+      },
+      "presentButEmpty" : 0,
+      "required" : false
+    },
+    {
+      "absent" : 0,
+      "field" : "variantControlNumbers",
+      "matchedAliases" : {
+        "variantControlNumbers" : 11
+      },
+      "presentButEmpty" : 0,
+      "required" : true
+    }
+  ],
+  "generated" : "2026-07-30",
+  "recordGroups" : [
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/22345815",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 3,
+      "distinctCreators" : 3,
+      "expectedSeriesCount" : 11,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 11,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "22345815",
+      "rawRecordsStored" : 12,
+      "recordGroup" : 486,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 11,
+      "recordsWithCreators" : 11,
+      "recordsWithLocalIdentifier" : 0,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 12,
+      "shardsRead" : 0,
+      "snapshotLastModified" : "2026-04-09T13:40:17.000Z",
+      "state" : "resumedComplete",
+      "title" : "Records of the U.S. Trade and Development Agency",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 11
+      }
+    }
+  ],
+  "reviewNotes" : [
+    "RG 486: re-classified against the API refresh already on disk (no API calls spent)",
+    "SUBSET RUN (1 record group(s)): manifest.json, the census CSVs, series-sample.json and this report describe ONLY these groups. Per-group index shards for other groups are untouched. When every group has been harvested, run PROJECT_ONLY=1 with no RECORD_GROUPS to rebuild the run-wide artifacts over all of them (offline, no re-download).",
+    "API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0"
+  ],
+  "schemaVersion" : 1,
+  "source" : {
+    "baseURL" : "https://nara-national-archives-catalog.s3.us-east-2.amazonaws.com",
+    "kind" : "s3-bulk-export",
+    "note" : "NARA's public S3 bulk export (no credentials, no API key, no quota). Chosen over the v2 search API because it needs no CATALOG_API_KEY, is not subject to the 10,000-query monthly quota, carries every level of description in one pass (so adding file units for a chosen record group later is a filter change rather than a second harvest), and includes each group's own recordGroup record whose seriesCount field is NARA's own expected series total — which makes a truncated harvest self-detecting.",
+    "snapshotLastModified" : [
+      "2026-04-09T13:40:17.000Z"
+    ]
+  },
+  "totals" : {
+    "bytesRead" : 0,
+    "distinctControlNumberTypes" : 3,
+    "distinctCreators" : 3,
+    "expectedSeriesCount" : 11,
+    "harvestedFileUnitCount" : 0,
+    "harvestedItemCount" : 0,
+    "harvestedSeriesCount" : 11,
+    "invariantViolations" : 0,
+    "malformedLines" : 0,
+    "recordGroupCount" : 1,
+    "recordsWithControlNumbers" : 11,
+    "recordsWithCreators" : 11,
+    "shardsRead" : 0
+  }
+}

@@ -19,6 +19,23 @@ public enum RecordChange: String, Sendable, Equatable, Codable, CaseIterable {
     case modified
     /// In both, byte-for-byte identical after normalisation.
     case unchanged
+    /// In both, and the only differences are outside the fields this index projects.
+    ///
+    /// ## Why this state has to exist
+    /// Comparing raw trees alone made the changelog useless. Measured on RG 486, 2026-07-30: **all 11**
+    /// records came back `modified`, and the entire difference was two fields the projection
+    /// deliberately ignores —
+    /// - `dataControlGroup.groupCd`/`groupId`, an internal reference-unit code that had shifted
+    ///   `RRAT` → `RRAR` since the April snapshot while `groupName` stayed identical, and
+    /// - `physicalOccurrences[].referenceUnits[].mailCode`, which the bulk export carries (`"RR2"`)
+    ///   and the search API omits.
+    ///
+    /// Neither touches anything a researcher would notice. Left as `modified`, every record in the
+    /// corpus would be flagged on every refresh forever, and a real change would be indistinguishable
+    /// from the noise it was buried in. So the classification now asks the useful question — did
+    /// anything *in the index* change? — and reports incidental drift separately rather than
+    /// discarding it.
+    case unchangedOutsideIndex
     /// In the snapshot but **not** in the refresh.
     ///
     /// The interesting case, and the reason re-paging beats a hypothetical "changed since" filter: a
@@ -64,7 +81,9 @@ public struct RecordChangeLog: Sendable, Equatable {
     public mutating func note(recordGroup: Int, naId: String, change: RecordChange,
                               title: String? = nil) {
         counts[recordGroup, default: [:]][change, default: 0] += 1
-        guard change != .unchanged else { return }
+        // Neither no-change state is enumerated per record — together they are the overwhelming
+        // majority, and the CSV exists for the records that actually moved.
+        guard change != .unchanged, change != .unchangedOutsideIndex else { return }
         entries.append(Entry(recordGroup: recordGroup, naId: naId, change: change, title: title))
     }
 
@@ -83,9 +102,14 @@ public struct RecordChangeLog: Sendable, Equatable {
         counts.values.reduce(0) { $0 + ($1[change] ?? 0) }
     }
 
-    /// Whether anything at all differed.
+    /// Whether anything the index cares about differed.
+    ///
+    /// `unchangedOutsideIndex` does not count: it exists precisely to keep incidental drift out of this
+    /// answer.
     public var hasChanges: Bool {
-        RecordChange.allCases.contains { $0 != .unchanged && total($0) > 0 }
+        RecordChange.allCases.contains {
+            $0 != .unchanged && $0 != .unchangedOutsideIndex && total($0) > 0
+        }
     }
 
     /// CSV rows, sorted by record group, then change kind, then NAID — stable across runs.

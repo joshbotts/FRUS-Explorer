@@ -1,0 +1,128 @@
+keyPath,occurrences,recordsWithPath,presencePct,jsonTypes,distinctValues,examples
+accessRestriction,11,11,100.0,object,0,
+accessRestriction.note,3,3,27.3,string,1,Some or all records must be reviewed prior to being served to researchers.
+accessRestriction.specificAccessRestrictions,6,6,54.5,array,0,
+accessRestriction.specificAccessRestrictions[],6,6,54.5,object,0,
+accessRestriction.specificAccessRestrictions[].restriction,6,6,54.5,string,2,FOIA (b)(1) National Security ⁝ FOIA (b)(6) Personal Information
+accessRestriction.specificAccessRestrictions[].securityClassification,2,2,18.2,string,2,Top Secret ⁝ Confidential
+accessRestriction.status,11,11,100.0,string,4,Unrestricted ⁝ Restricted - Fully ⁝ Restricted - Partly
+accessionNumbers,11,11,100.0,array,0,
+accessionNumbers[],17,11,100.0,string,12,NN3-486-10-001 ⁝ NN3-486-05-001 ⁝ NN3-486-10-002
+ancestors,11,11,100.0,array,0,
+ancestors[],11,11,100.0,object,0,
+ancestors[].distance,11,11,100.0,int,1,1
+ancestors[].inclusiveEndDate,11,11,100.0,object,0,
+ancestors[].inclusiveEndDate.logicalDate,11,11,100.0,string,1,1998-12-31
+ancestors[].inclusiveEndDate.year,11,11,100.0,int,1,1998
+ancestors[].inclusiveStartDate,11,11,100.0,object,0,
+ancestors[].inclusiveStartDate.logicalDate,11,11,100.0,string,1,1980-01-01
+ancestors[].inclusiveStartDate.year,11,11,100.0,int,1,1980
+ancestors[].levelOfDescription,11,11,100.0,string,1,recordGroup
+ancestors[].naId,11,11,100.0,int,1,22345815
+ancestors[].recordGroupNumber,11,11,100.0,int,1,486
+ancestors[].title,11,11,100.0,string,1,Records of the U.S. Trade and Development Agency
+arrangement,8,8,72.7,string,5,"Arranged by country and thereunder by subject. ⁝ Arranged alphabetically by region, and thereunder alphabetically by country name. ⁝ Arranged by region, and thereunder alphabetically by country."
+audiovisual,7,7,63.6,string,1,false
+coverageEndDate,4,4,36.4,object,0,
+coverageEndDate.day,3,3,27.3,int,2,30 ⁝ 20
+coverageEndDate.logicalDate,4,4,36.4,string,4,2001-04-30 ⁝ 1997-12-31 ⁝ 1994-04-20
+coverageEndDate.month,3,3,27.3,int,2,4 ⁝ 9
+coverageEndDate.year,4,4,36.4,int,3,2001 ⁝ 1997 ⁝ 1994
+coverageStartDate,4,4,36.4,object,0,
+coverageStartDate.day,3,3,27.3,int,3,1 ⁝ 6 ⁝ 4
+coverageStartDate.logicalDate,4,4,36.4,string,4,1983-06-01 ⁝ 1987-01-01 ⁝ 1988-08-06
+coverageStartDate.month,3,3,27.3,int,3,6 ⁝ 8 ⁝ 10
+coverageStartDate.year,4,4,36.4,int,3,1983 ⁝ 1987 ⁝ 1988
+creators,11,11,100.0,array,0,
+creators[],17,11,100.0,object,0,
+creators[].abolishDate,11,11,100.0,object,0,
+creators[].abolishDate.day,11,11,100.0,int,1,27
+creators[].abolishDate.logicalDate,11,11,100.0,string,1,1992-10-27
+creators[].abolishDate.month,11,11,100.0,int,1,10
+creators[].abolishDate.year,11,11,100.0,int,1,1992
+creators[].authorityType,17,11,100.0,string,1,organization
+creators[].creatorType,17,11,100.0,string,2,Most Recent ⁝ Predecessor
+creators[].establishDate,17,11,100.0,object,0,
+creators[].establishDate.day,17,11,100.0,int,2,1 ⁝ 28
+creators[].establishDate.logicalDate,17,11,100.0,string,2,1980-07-01 ⁝ 1992-10-28
+creators[].establishDate.month,17,11,100.0,int,2,7 ⁝ 10
+creators[].establishDate.year,17,11,100.0,int,2,1980 ⁝ 1992
+creators[].heading,17,11,100.0,string,3,U.S. International Development Cooperation Agency. Trade and Development Program. (07/01/1980 - 10/27/1992) ⁝ U.S. Trade and Development Agency. (10/28/1992 - ) ⁝ U.S. Trade and Development Agency. Office of the Director. (10/28/1992 - )
+creators[].naId,17,11,100.0,int,3,10514123 ⁝ 10514124 ⁝ 475680186
+dataControlGroup,11,11,100.0,object,0,
+dataControlGroup.groupCd,11,11,100.0,string,1,RRAR
+dataControlGroup.groupId,11,11,100.0,string,1,RRAR
+dataControlGroup.groupName,11,11,100.0,string,1,National Archives at College Park – Textual Reference
+dispositionAuthorityNumbers,11,11,100.0,array,0,
+dispositionAuthorityNumbers[],12,11,100.0,string,8,N1/486/95/1/46 ⁝ N1/486/95/1/45B ⁝ N1-486-95-1-45B
+findingAids,5,5,45.5,array,0,
+findingAids[],5,5,45.5,object,0,
+findingAids[].fileFormat,2,2,18.2,string,1,Portable Document File (PDF)
+findingAids[].findingAidType,5,5,45.5,string,2,Folder List ⁝ Container List
+findingAids[].note,5,5,45.5,string,3,A file list is located at the beginning of the series as well as with the reference unit. ⁝ An agency-provided folder list is located with the reference unit. ⁝ An agency provided container list is located with the reference unit.
+findingAids[].source,2,2,18.2,string,2,United States Trade and Development Agency ⁝ United States Trade Development Agency
+functionAndUse,4,4,36.4,string,4,United States Trade Development Agency used these records to document final deliverables of grant funded projects. ⁝ These records were collected and maintained to document the Director’s work to fulfill the U.S. Trade and Development Ag… ⁝ These records were collected and maintained to document speeches given at ceremonies or events by representatives of the…
+generalNotes,6,6,54.5,array,0,
+generalNotes[],6,6,54.5,string,2,"These records are unprocessed. Prior to requesting these records, please contact the National Archives office listed in … ⁝ These records are unprocessed.  Prior to requesting these records, please contact the National Archives office listed in…"
+generalRecordsTypes,11,11,100.0,array,0,
+generalRecordsTypes[],12,11,100.0,string,2,Textual Records ⁝ Photographs and other Graphic Materials
+inclusiveEndDate,11,11,100.0,object,0,
+inclusiveEndDate.day,5,5,45.5,int,2,30 ⁝ 20
+inclusiveEndDate.logicalDate,11,11,100.0,string,10,1989-12-31 ⁝ 1998-12-31 ⁝ 1988-12-31
+inclusiveEndDate.month,5,5,45.5,int,2,9 ⁝ 4
+inclusiveEndDate.year,11,11,100.0,int,9,1989 ⁝ 1998 ⁝ 1988
+inclusiveStartDate,11,11,100.0,object,0,
+inclusiveStartDate.day,5,5,45.5,int,3,1 ⁝ 6 ⁝ 4
+inclusiveStartDate.logicalDate,11,11,100.0,string,9,1980-01-01 ⁝ 1983-01-01 ⁝ 1984-01-01
+inclusiveStartDate.month,5,5,45.5,int,3,10 ⁝ 6 ⁝ 8
+inclusiveStartDate.year,11,11,100.0,int,6,1980 ⁝ 1983 ⁝ 1984
+languages,4,4,36.4,array,0,
+languages[],4,4,36.4,string,1,English
+levelOfDescription,11,11,100.0,string,1,series
+naId,11,11,100.0,int,11,22345695 ⁝ 22345781 ⁝ 24737537
+otherTitles,7,7,63.6,array,0,
+otherTitles[],8,7,63.6,string,6,Project Files ⁝ Project Files (Section 661) ⁝ Information Resource Center Project Records
+physicalOccurrences,11,11,100.0,array,0,
+physicalOccurrences[],11,11,100.0,object,0,
+physicalOccurrences[].containerList,1,1,9.1,string,1,Container 1: [UD-24W 5] DOT 1989 THRU Deputy Director's Chron 1992 Container 1: [UD-24W 6] Regional: Hungary 1989 THRU B…
+physicalOccurrences[].copyStatus,11,11,100.0,string,1,Preservation-Reproduction-Reference
+physicalOccurrences[].extent,11,11,100.0,string,11,"90 linear feet, 4 linear inches ⁝ 3 linear feet ⁝ 3 linear feet, 1 linear inch"
+physicalOccurrences[].holdingsMeasurements,11,11,100.0,array,0,
+physicalOccurrences[].holdingsMeasurements[],11,11,100.0,object,0,
+physicalOccurrences[].holdingsMeasurements[].count,11,11,100.0,int,9,89 ⁝ 3 ⁝ 12
+physicalOccurrences[].holdingsMeasurements[].type,11,11,100.0,string,3,"FRC Carton, Standard ⁝ Letter Archives Box, Narrow 4 inch ⁝ Letter Archives Box, Standard"
+physicalOccurrences[].mediaOccurrences,11,11,100.0,array,0,
+physicalOccurrences[].mediaOccurrences[],13,11,100.0,object,0,
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes,13,11,100.0,array,0,
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],13,11,100.0,string,3,Loose Sheets ⁝ Magnetic Media ⁝ Photographic Materials
+physicalOccurrences[].mediaOccurrences[].specificMediaType,13,11,100.0,string,3,Paper ⁝ Magnetic Disk: Floppy Disk ⁝ Photographic Print
+physicalOccurrences[].referenceUnits,11,11,100.0,array,0,
+physicalOccurrences[].referenceUnits[],11,11,100.0,object,0,
+physicalOccurrences[].referenceUnits[].address1,11,11,100.0,string,1,National Archives at College Park
+physicalOccurrences[].referenceUnits[].address2,11,11,100.0,string,1,8601 Adelphi Road
+physicalOccurrences[].referenceUnits[].city,11,11,100.0,string,1,College Park
+physicalOccurrences[].referenceUnits[].email,11,11,100.0,string,1,Archives2reference@nara.gov
+physicalOccurrences[].referenceUnits[].fax,11,11,100.0,string,1,301-837-1752
+physicalOccurrences[].referenceUnits[].name,11,11,100.0,string,1,National Archives at College Park - Textual Reference
+physicalOccurrences[].referenceUnits[].phone,11,11,100.0,string,1,301-837-3510
+physicalOccurrences[].referenceUnits[].postalCode,11,11,100.0,string,1,20740-6001
+physicalOccurrences[].referenceUnits[].state,11,11,100.0,string,1,MD
+recordType,11,11,100.0,string,1,description
+recordsCenterTransferNumbers,11,11,100.0,array,0,
+recordsCenterTransferNumbers[],23,11,100.0,string,18,W486-05-0001 ⁝ 486-01-0003 ⁝ W486-04-0003
+scopeAndContentNote,5,5,45.5,string,4,This series consists of final deliverables of projects funded by grants or contracts with United States Trade Developmen… ⁝ This series consists of correspondence received and sent by Directors of the U.S. Trade and Development Agency (TDA) whi… ⁝ This series consists of speeches given and talking points used by the Director and other high-level officials of the Tra…
+subjects,1,1,9.1,array,0,
+subjects[],3,1,9.1,object,0,
+subjects[].authorityType,3,1,9.1,string,1,topicalSubject
+subjects[].heading,3,1,9.1,string,3,Exports ⁝ Economic development ⁝ Job creation
+subjects[].naId,3,1,9.1,int,3,10638081 ⁝ 10639698 ⁝ 10638707
+title,11,11,100.0,string,9,Information Resource Center Project Files ⁝ Project Files ⁝ Information Resource Center Project Records
+useRestriction,11,11,100.0,object,0,
+useRestriction.note,1,1,9.1,string,1,Some or all of the records may be subject to copyright restrictions. Researchers should contact the publisher for furthe…
+useRestriction.specificUseRestrictions,1,1,9.1,array,0,
+useRestriction.specificUseRestrictions[],1,1,9.1,string,1,Copyright
+useRestriction.status,11,11,100.0,string,2,Unrestricted ⁝ Restricted - Possibly
+variantControlNumbers,11,11,100.0,array,0,
+variantControlNumbers[],48,11,100.0,object,0,
+variantControlNumbers[].number,48,11,100.0,string,38,UD-11W 3 ⁝ UD-11W 1 ⁝ UD-10W 1
+variantControlNumbers[].type,48,11,100.0,string,3,HMS/MLR Entry Number ⁝ HMS Record Entry ID ⁝ Declassification Project Number

@@ -263,8 +263,42 @@ it against a group already harvested from bulk:
 CATALOG_API_KEY=<key> API_REFRESH=1 RECORD_GROUPS=486 swift run -c release RecordGroupCatalogGenerator
 ```
 
-All 11 `unchanged` means the API returns byte-identical records and either source is equally good.
-Any other result, read `census/refresh-changelog.csv`.
+#### It was run, and the answer is: the API is field-complete
+
+RG 486, 2026-07-30 — and the first result looked alarming: **`modified=11, unchanged=0`**. Every record
+differed. Per the guidance above that reads as field-thinning, so the two raw stores were diffed
+field-by-field (both were already on disk, so this cost nothing):
+
+- Keys only in bulk: **none**. Keys only in the API: **none**. The API is **not** thinning fields.
+- Values differing, on all 11 records, in exactly two places:
+  - `dataControlGroup.groupCd`/`groupId` — `RRAT` in the April snapshot, `RRAR` from the live API,
+    with `groupName` identical. An internal reference-unit code that genuinely changed.
+  - `physicalOccurrences[].referenceUnits[].mailCode` — present in bulk (`"RR2"`), omitted by the API.
+
+**Neither is a field this index projects.** So the raw-tree comparison was flagging the entire corpus
+over data nobody reads, and would have done so on every refresh forever — burying any real change in
+noise. Fixed by classifying on what matters: `RecordChange.unchangedOutsideIndex` now separates
+incidental drift from real change, and `hasChanges` ignores it. Re-classified offline against the same
+stores, RG 486 now reports:
+
+```
+API REFRESH vs BULK SNAPSHOT
+  no indexed field changed — the snapshot matches the live catalog for these groups
+  11 record(s) differed outside the indexed fields only — incidental
+  catalog housekeeping (dataControlGroup's internal code, referenceUnits[].mailCode).
+```
+
+Note the asymmetry that remains genuinely useful: a **new** unprojected key still counts as
+`modified`, because `unprojectedKeys` is itself an indexed field. Drift in a key we already know about
+is noise; a key NARA has just started emitting is news.
+
+**Practical consequence:** either source gives a field-complete series index, so the API route is
+available for the initial harvest too — ~40 calls and a few MB instead of streaming 22 GB. The bulk
+path remains the only keyless route, and the only one that carries `mailCode` and the file-unit/item
+layers without further paging.
+
+`PROJECT_ONLY=1` now also re-classifies against a refresh already in `raw-api/`, so correcting *how*
+changes are judged never costs another API call — the same principle the rest of the design rests on.
 
 ### Step R2 — the refresh
 

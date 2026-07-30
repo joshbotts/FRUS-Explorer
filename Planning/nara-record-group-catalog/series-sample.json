@@ -1,0 +1,192 @@
+{
+  "generated" : "2026-07-30",
+  "records" : [
+    {
+      "accessRestriction" : {
+        "securityClassifications" : [
+
+        ],
+        "specificRestrictions" : [
+
+        ],
+        "status" : "Unrestricted"
+      },
+      "accessionNumbers" : [
+        "NN3-486-05-001",
+        "NN3-486-10-001"
+      ],
+      "ancestors" : [
+        {
+          "distance" : 1,
+          "levelOfDescription" : "recordGroup",
+          "naId" : "22345815",
+          "recordGroupNumber" : 486,
+          "title" : "Records of the U.S. Trade and Development Agency"
+        }
+      ],
+      "audiovisual" : false,
+      "catalogURL" : "https://catalog.archives.gov/id/22345695",
+      "contributors" : [
+
+      ],
+      "creators" : [
+        {
+          "abolishDate" : {
+            "day" : 27,
+            "logicalDate" : "1992-10-27",
+            "month" : 10,
+            "year" : 1992
+          },
+          "authorityType" : "organization",
+          "creatorType" : "Most Recent",
+          "establishDate" : {
+            "day" : 1,
+            "logicalDate" : "1980-07-01",
+            "month" : 7,
+            "year" : 1980
+          },
+          "heading" : "U.S. International Development Cooperation Agency. Trade and Development Program. (07/01/1980 - 10/27/1992)",
+          "naId" : "10514123"
+        }
+      ],
+      "digitalObjectCount" : 0,
+      "digitalObjects" : [
+
+      ],
+      "dispositionAuthorityNumbers" : [
+        "N1/486/95/1/45B",
+        "N1/486/95/1/46"
+      ],
+      "findingAids" : [
+
+      ],
+      "formerAncestors" : [
+
+      ],
+      "formerlyContainedByNaIds" : [
+
+      ],
+      "generalNotes" : [
+        "These records are unprocessed. Prior to requesting these records, please contact the National Archives office listed in this description for further information."
+      ],
+      "generalRecordsTypes" : [
+        "Textual Records"
+      ],
+      "inclusiveEndDate" : {
+        "logicalDate" : "1989-12-31",
+        "year" : 1989
+      },
+      "inclusiveStartDate" : {
+        "logicalDate" : "1980-01-01",
+        "year" : 1980
+      },
+      "languages" : [
+
+      ],
+      "levelOfDescription" : "series",
+      "microformPublications" : [
+
+      ],
+      "naId" : "22345695",
+      "onlineResources" : [
+
+      ],
+      "otherTitles" : [
+
+      ],
+      "physicalOccurrences" : [
+        {
+          "copyStatus" : "Preservation-Reproduction-Reference",
+          "extent" : "90 linear feet, 4 linear inches",
+          "holdingsMeasurements" : [
+            {
+              "count" : 89,
+              "type" : "FRC Carton, Standard"
+            }
+          ],
+          "mediaTypes" : [
+            "Loose Sheets",
+            "Paper"
+          ],
+          "referenceUnitNames" : [
+            "National Archives at College Park - Textual Reference"
+          ]
+        }
+      ],
+      "productionDates" : [
+
+      ],
+      "recordGroupNumber" : 486,
+      "recordsCenterTransferNumbers" : [
+        "486-01-0003",
+        "W486-00-0001",
+        "W486-04-0003",
+        "W486-05-0001",
+        "W486-99-0001"
+      ],
+      "specificRecordsTypes" : [
+
+      ],
+      "subjects" : [
+
+      ],
+      "title" : "Information Resource Center Project Files",
+      "unprojectedKeys" : [
+        "dataControlGroup"
+      ],
+      "useRestriction" : {
+        "securityClassifications" : [
+
+        ],
+        "specificRestrictions" : [
+
+        ],
+        "status" : "Unrestricted"
+      },
+      "variantControlNumbers" : [
+        {
+          "number" : "425965",
+          "type" : "HMS Record Entry ID"
+        },
+        {
+          "number" : "HS1-83697564",
+          "type" : "HMS Record Entry ID"
+        },
+        {
+          "number" : "HS1-91949715",
+          "type" : "HMS Record Entry ID"
+        },
+        {
+          "number" : "HS1-91950056",
+          "type" : "HMS Record Entry ID"
+        },
+        {
+          "number" : "HS1-91950135",
+          "type" : "HMS Record Entry ID"
+        },
+        {
+          "number" : "UD-05W 1",
+          "type" : "HMS/MLR Entry Number"
+        },
+        {
+          "number" : "UD-10W 1",
+          "type" : "HMS/MLR Entry Number"
+        },
+        {
+          "number" : "UD-11W 1",
+          "type" : "HMS/MLR Entry Number"
+        },
+        {
+          "number" : "UD-11W 2",
+          "type" : "HMS/MLR Entry Number"
+        },
+        {
+          "number" : "UD-11W 3",
+          "type" : "HMS/MLR Entry Number"
+        }
+      ]
+    }
+  ],
+  "sampleEvery" : 25,
+  "totalRecords" : 11
+}

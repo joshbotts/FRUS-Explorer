@@ -61,9 +61,16 @@ struct RunnerEndToEndTests {
     // MARK: Fixtures
 
     /// A series record with the given identity, carrying one creator and one control number.
+    ///
+    /// Includes `dataControlGroup` because every real record does, and its presence matters to the
+    /// drift tests: the projection does not map it, so it lands in `unprojectedKeys`. A fixture missing
+    /// it entirely would make an incidental value change look like a *new key*, which legitimately
+    /// counts as a modification — so the fixture has to carry the key on both sides, exactly as the
+    /// live data does.
     private static func series(naId: Int, title: String, recordGroup: Int = 486) -> String {
         """
         {"record":{"naId":\(naId),"title":"\(title)","levelOfDescription":"series",
+          "dataControlGroup":{"groupCd":"RRAT","groupId":"RRAT"},
           "creators":[{"naId":10514123,"heading":"Trade and Development Program",
             "authorityType":"organization","creatorType":"Most Recent"}],
           "variantControlNumbers":[{"number":"P \(naId)","type":"HMS/MLR Entry Number"}],
@@ -640,6 +647,7 @@ struct RunnerEndToEndTests {
         \((1...3).map { naId in """
           {"_source":{"record":{"naId":\(naId),"title":"Series \(["","One","Two","Three"][naId])",
             "levelOfDescription":"series",
+            "dataControlGroup":{"groupCd":"RRAT","groupId":"RRAT"},
             "creators":[{"naId":10514123,"heading":"Trade and Development Program",
               "authorityType":"organization","creatorType":"Most Recent"}],
             "variantControlNumbers":[{"number":"P \(naId)","type":"HMS/MLR Entry Number"}],
@@ -653,6 +661,8 @@ struct RunnerEndToEndTests {
             (identical, 200), (ScriptedAPITransport.emptyPage, 200),
         ])
         #expect(result.manifest.reviewNotes.contains { $0.contains("unchanged=3") })
+        #expect(!(try #require(result.manifest.reviewNotes.first { $0.contains("API refresh spent") })
+            .contains("modified=3")))
         let csv = String(decoding: try #require(
             try sandbox.outputFiles()["census/refresh-changelog.csv"]), as: UTF8.self)
         // Header only — nothing changed.
@@ -669,6 +679,41 @@ struct RunnerEndToEndTests {
                 transport: Self.transport(), generated: "2026-07-30",
                 mode: .init(apiRefresh: true), apiKey: nil)
         }
+    }
+
+    @Test("A record differing only outside the indexed fields is not reported as modified")
+    func classifiesIncidentalDriftEndToEnd() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        // Series 1, identical to the snapshot except for a `dataControlGroup` the projection ignores —
+        // the exact shape of the real RG 486 drift (RRAT -> RRAR).
+        let drifted = """
+        {"statusCode":200,"body":{"hits":{"hits":[
+          {"_source":{"record":{"naId":1,"title":"Series One","levelOfDescription":"series",
+            "dataControlGroup":{"groupCd":"RRAR","groupId":"RRAR"},
+            "creators":[{"naId":10514123,"heading":"Trade and Development Program",
+              "authorityType":"organization","creatorType":"Most Recent"}],
+            "variantControlNumbers":[{"number":"P 1","type":"HMS/MLR Entry Number"}],
+            "ancestors":[{"distance":1,"levelOfDescription":"recordGroup","naId":22345815,
+              "recordGroupNumber":486,
+              "title":"Records of the U.S. Trade and Development Agency"}]}},"sort":["1"]}
+        ]}}}
+        """
+        let result = try await harvestThenRefresh(sandbox, apiResponses: [
+            (drifted, 200), (ScriptedAPITransport.emptyPage, 200),
+        ])
+
+        let note = try #require(result.manifest.reviewNotes.first { $0.contains("API refresh spent") })
+        #expect(note.contains("modified=0"))
+        // And it is not listed as a change in the CSV.
+        let csv = String(decoding: try #require(
+            try sandbox.outputFiles()["census/refresh-changelog.csv"]), as: UTF8.self)
+        #expect(!csv.contains(",1,modified"))
+        // The report says plainly why.
+        let report = String(decoding: try #require(
+            try sandbox.outputFiles()["harvest-report.txt"]), as: UTF8.self)
+        #expect(report.contains("ONLY outside"))
     }
 
     @Test("API_SURVEY writes into its own subtree and cannot clobber a harvest's report")

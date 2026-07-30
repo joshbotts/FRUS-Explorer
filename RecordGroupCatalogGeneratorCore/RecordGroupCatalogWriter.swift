@@ -385,19 +385,32 @@ public struct HarvestReportBuilder: Sendable {
                 line("  added=\(changeLog.total(.added))  modified=\(changeLog.total(.modified))  "
                      + "unchanged=\(changeLog.total(.unchanged))  "
                      + "missingFromRefresh=\(changeLog.total(.missingFromRefresh))")
+                if changeLog.total(.unchangedOutsideIndex) > 0 {
+                    line("  \(changeLog.total(.unchangedOutsideIndex)) record(s) differed ONLY outside")
+                    line("  the indexed fields — measured culprits are dataControlGroup's internal")
+                    line("  reference-unit code and referenceUnits[].mailCode, neither of which the")
+                    line("  index projects. Not counted as changes.")
+                }
                 line("  'missingFromRefresh' means present in the snapshot and absent from the")
                 line("  refresh. That can be a withdrawal OR a narrower/truncated refresh query —")
                 line("  this tool cannot tell which, so it does not claim to. See")
                 line("  census/refresh-changelog.csv for the per-record list.")
                 for row in changeLog.reportLines() { line(row) }
             } else {
-                line("  no differences — the snapshot matches the live catalog for these groups")
+                line("  no indexed field changed — the snapshot matches the live catalog for these")
+                line("  groups")
+                if changeLog.total(.unchangedOutsideIndex) > 0 {
+                    line("  \(changeLog.total(.unchangedOutsideIndex)) record(s) differed outside the "
+                         + "indexed fields only — incidental")
+                    line("  catalog housekeeping (dataControlGroup's internal code, "
+                         + "referenceUnits[].mailCode).")
+                }
             }
             rule()
         }
 
         if let apiObservation {
-            line("API QUERY SHAPE AS OBSERVED (unverified until you have run the survey)")
+            line("API QUERY SHAPE AS OBSERVED ON THIS RUN")
             for row in apiObservation.reportLines { line(row) }
             rule()
         }

@@ -323,6 +323,16 @@ public struct RecordGroupCatalogRunner {
             // Refresh this group from the live API before building it, so the build sees both layers
             // and can classify the differences in one pass.
             var overlayForGroup: RawRecordStore? = nil
+
+            // PROJECT_ONLY re-uses a refresh already on disk. This is the same principle the whole
+            // design rests on — re-projection must be free — applied to the diff: correcting how
+            // changes are CLASSIFIED must not cost another round of API calls, since the fetched
+            // records are already sitting in raw-api/.
+            if mode.projectOnly, apiStore.exists(recordGroup: group.number) {
+                overlayForGroup = apiStore
+                reviewNotes.append("RG \(group.number): re-classified against the API refresh already "
+                                   + "on disk (no API calls spent)")
+            }
             if mode.apiRefresh, let apiClient {
                 do {
                     try apiStore.reset(recordGroup: group.number)
@@ -460,10 +470,14 @@ public struct RecordGroupCatalogRunner {
                                + "(offline, no re-download).")
         }
 
+        // True when a diff actually happened — either a live refresh, or PROJECT_ONLY re-classifying
+        // against a refresh already on disk.
+        let didDiff = mode.apiRefresh || !changeLog.counts.isEmpty
+
         // Appended BEFORE the manifest is constructed. The manifest captures `reviewNotes` by value,
         // so a note added after it is built reaches the log and nothing else — the same mistake the
         // refused-group path made.
-        if mode.apiRefresh {
+        if didDiff {
             reviewNotes.append("API refresh spent \(apiRequestsSpent) request(s); "
                                + "added=\(changeLog.total(.added)) "
                                + "modified=\(changeLog.total(.modified)) "
@@ -493,12 +507,12 @@ public struct RecordGroupCatalogRunner {
                                  creatorCensus: creatorCensus)
         try writer.writeSample(sampleRecords, totalRecords: totalRecordsProjected,
                                generated: generated)
-        if mode.apiRefresh { try writer.writeChangeLog(changeLog) }
+        if didDiff { try writer.writeChangeLog(changeLog) }
         let report = HarvestReportBuilder().render(
             manifest: manifest, controlNumberCensus: controlNumberCensus,
             creatorCensus: creatorCensus, fieldCensus: fieldCensus,
             creatorAuthority: authority,
-            changeLog: mode.apiRefresh ? changeLog : nil,
+            changeLog: didDiff ? changeLog : nil,
             apiObservation: firstAPIObservation)
         try writer.writeReport(report)
 

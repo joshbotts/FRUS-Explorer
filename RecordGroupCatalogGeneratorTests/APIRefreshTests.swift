@@ -362,6 +362,26 @@ struct RecordChangeLogTests {
         #expect(log.hasChanges)
     }
 
+    @Test("Incidental drift outside the indexed fields is not a change")
+    func incidentalDriftIsNotAChange() {
+        // Measured on RG 486: all 11 records differed, entirely in dataControlGroup's internal code
+        // (RRAT -> RRAR) and referenceUnits[].mailCode. Counting those as changes would flag the whole
+        // corpus on every refresh forever and bury any real change in the noise.
+        var log = RecordChangeLog()
+        for naId in 1...11 {
+            log.note(recordGroup: 486, naId: String(naId), change: .unchangedOutsideIndex)
+        }
+        #expect(log.total(.unchangedOutsideIndex) == 11)
+        #expect(!log.hasChanges)
+        // Not enumerated per record either — the CSV is for records that actually moved.
+        #expect(log.csvRows().isEmpty)
+
+        // One real change alongside the drift still registers.
+        log.note(recordGroup: 486, naId: "12", change: .modified)
+        #expect(log.hasChanges)
+        #expect(log.csvRows().count == 1)
+    }
+
     @Test("A run with only unchanged records reports no changes")
     func detectsNoChanges() {
         var log = RecordChangeLog()

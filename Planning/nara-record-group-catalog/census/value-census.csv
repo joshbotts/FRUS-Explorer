@@ -1,0 +1,38 @@
+keyPath,value,occurrences,recordGroupCount,recordGroups
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(6) Personal Information,4,1,486
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(1) National Security,2,1,486
+accessRestriction.specificAccessRestrictions[].securityClassification,Confidential,1,1,486
+accessRestriction.specificAccessRestrictions[].securityClassification,Top Secret,1,1,486
+accessRestriction.status,Unrestricted,5,1,486
+accessRestriction.status,Restricted - Possibly,3,1,486
+accessRestriction.status,Restricted - Fully,2,1,486
+accessRestriction.status,Restricted - Partly,1,1,486
+audiovisual,false,7,1,486
+creators[].authorityType,organization,17,1,486
+creators[].creatorType,Most Recent,11,1,486
+creators[].creatorType,Predecessor,6,1,486
+findingAids[].findingAidType,Folder List,3,1,486
+findingAids[].findingAidType,Container List,2,1,486
+generalRecordsTypes[],Textual Records,11,1,486
+generalRecordsTypes[],Photographs and other Graphic Materials,1,1,486
+languages[],English,4,1,486
+levelOfDescription,series,11,1,486
+physicalOccurrences[].copyStatus,Preservation-Reproduction-Reference,11,1,486
+physicalOccurrences[].holdingsMeasurements[].type,"FRC Carton, Standard",9,1,486
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Narrow 4 inch",1,1,486
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Standard",1,1,486
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Loose Sheets,11,1,486
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Magnetic Media,1,1,486
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Photographic Materials,1,1,486
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Paper,11,1,486
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Floppy Disk,1,1,486
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Photographic Print,1,1,486
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Textual Reference,11,1,486
+recordType,description,11,1,486
+subjects[].authorityType,topicalSubject,3,1,486
+useRestriction.specificUseRestrictions[],Copyright,1,1,486
+useRestriction.status,Unrestricted,10,1,486
+useRestriction.status,Restricted - Possibly,1,1,486
+variantControlNumbers[].type,HMS Record Entry ID,23,1,486
+variantControlNumbers[].type,HMS/MLR Entry Number,23,1,486
+variantControlNumbers[].type,Declassification Project Number,2,1,486

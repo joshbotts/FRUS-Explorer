@@ -419,13 +419,33 @@ public struct CatalogIndexBuilder: Sendable {
                 return
             }
 
-            // Overlay supersedes base. Compare the RAW trees, not the projections: a change in a
-            // field this tool does not project is still a change to the record, and reporting only
-            // projected differences would hide it.
+            // Overlay supersedes base. The classification asks whether anything IN THE INDEX changed,
+            // with raw-only differences reported separately — see RecordChange.unchangedOutsideIndex
+            // for the measurement that forced this. Comparing raw trees alone flagged all 11 of RG
+            // 486's records as modified over two fields the projection ignores.
             if !isOverlay, let naId = raw["naId"]?.nonEmptyString, let fresher = overlayRecords[naId] {
                 overlayNaIdsSeenInBase.insert(naId)
-                changeLog.note(recordGroup: recordGroup, naId: naId,
-                               change: fresher == raw ? .unchanged : .modified,
+                let change: RecordChange
+                if fresher == raw {
+                    change = .unchanged
+                } else {
+                    // Project both sides through a throwaway ledger — this comparison must not
+                    // pollute the run's alias observations, which describe the harvest rather than
+                    // the diff.
+                    var scratch = FieldAliasLedger()
+                    let before = projector.project(raw, recordGroup: recordGroup,
+                                                   depth: outcome.depth, ledger: &scratch)
+                    let after = projector.project(fresher, recordGroup: recordGroup,
+                                                  depth: outcome.depth, ledger: &scratch)
+                    if case .projected(let b) = before, case .projected(let a) = after {
+                        change = b == a ? .unchangedOutsideIndex : .modified
+                    } else {
+                        // One side no longer projects at all (an invariant now fails, say). That is a
+                        // real change by any reading.
+                        change = .modified
+                    }
+                }
+                changeLog.note(recordGroup: recordGroup, naId: naId, change: change,
                                title: raw["title"]?.nonEmptyString)
                 return
             }

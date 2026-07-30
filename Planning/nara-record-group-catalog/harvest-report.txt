@@ -1,0 +1,54 @@
+NARA Catalog — Record Group Catalog Harvest
+Generated: 2026-07-30
+Source: s3-bulk-export — https://nara-national-archives-catalog.s3.us-east-2.amazonaws.com
+Export snapshot: 2026-04-09T13:40:17.000Z
+──────────────────────────────────────────────────────────────────────────────
+RECORD GROUPS      1
+SERIES HARVESTED   11 (NARA states 11)
+BYTES READ         0 B over 0 shards
+──────────────────────────────────────────────────────────────────────────────
+PRIORITY PAYLOADS
+  creators                 11 records (100.0%), 3 distinct creators
+  variantControlNumbers    11 records (100.0%), 3 distinct types
+  contributors             0 records (0.0%)
+  localIdentifier          0 records (0.0%) — agency-assigned, and NOT part of variantControlNumbers
+  creator authority        not run (set CREATOR_AUTHORITY=1)
+──────────────────────────────────────────────────────────────────────────────
+FIELD ALIAS REPORT (which key spelling matched)
+  contributors              (none)  presentButEmpty=0 absent=11
+  creators                  creators=11  presentButEmpty=0 absent=0
+  custodialHistoryNote      (none)  presentButEmpty=0 absent=11
+  findingAids               findingAids=5  presentButEmpty=0 absent=6
+  generalRecordsTypes       generalRecordsTypes=11  presentButEmpty=0 absent=0
+  microformPublications     (none)  presentButEmpty=0 absent=11
+  physicalOccurrences       physicalOccurrences=11  presentButEmpty=0 absent=0
+  scopeAndContentNote       scopeAndContentNote=5  presentButEmpty=0 absent=6
+  specificRecordsTypes      (none)  presentButEmpty=0 absent=11
+  variantControlNumbers     variantControlNumbers=11  presentButEmpty=0 absent=0
+──────────────────────────────────────────────────────────────────────────────
+PER-RECORD-GROUP
+   RG  series  NARA  delta  creators  ctrlNums  state       title
+  486      11    11      0        11        11  resumedComp Records of the U.S. Trade and Developmen
+──────────────────────────────────────────────────────────────────────────────
+CONTROL-NUMBER TYPES (most frequent first; recordGroups shows spread)
+       23    1 RG  HMS Record Entry ID
+       23    1 RG  HMS/MLR Entry Number
+        2    1 RG  Declassification Project Number
+──────────────────────────────────────────────────────────────────────────────
+UNPROJECTED RAW KEYS (present in the data, absent from the typed index)
+  Not necessarily a problem — but a new key here means NARA's schema has moved.
+  dataControlGroup — 11 records
+──────────────────────────────────────────────────────────────────────────────
+API REFRESH vs BULK SNAPSHOT
+  no indexed field changed — the snapshot matches the live catalog for these
+  groups
+  (11 record(s) differed outside the
+  indexed fields only — incidental catalog housekeeping)
+──────────────────────────────────────────────────────────────────────────────
+NOTES
+  • RG 486: re-classified against the API refresh already on disk (no API calls spent)
+  • SUBSET RUN (1 record group(s)): manifest.json, the census CSVs, series-sample.json and this report describe ONLY these groups. Per-group index shards for other groups are untouched. When every group has been harvested, run PROJECT_ONLY=1 with no RECORD_GROUPS to rebuild the run-wide artifacts over all of them (offline, no re-download).
+  • API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0
+──────────────────────────────────────────────────────────────────────────────
+Field census: 127 distinct key paths over 11 records — see census/field-census.csv
+Creator census: 3 distinct creators — see census/creator-census.csv
