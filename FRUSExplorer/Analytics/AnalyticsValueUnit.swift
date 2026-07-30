@@ -44,16 +44,31 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-2 PR-B: initial implementation, ahead of the occurrence unit (PR-D)
-enum AnalyticsValueUnit: String, CaseIterable, Sendable {
+// `Codable` is synthesized from the `String` raw value, which is what makes it safe here: the
+// recursion trap recorded for this codebase is a *Codable struct* given a `rawValue` that re-encodes
+// `self` for `@AppStorage`. A raw-value enum has a real `rawValue` and needs no such shim, so it
+// works with `@AppStorage` and `JSONEncoder` alike.
+enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
 
     /// Matching documents — one per document that matches, however many times it matches.
     case documents
+
+    /// Total occurrences of the query's word stem — every mention, not every document.
+    ///
+    /// Available only for a single-word query, and only on By Year / By Decade; see
+    /// ``OccurrenceAvailability`` for the shapes it cannot serve honestly and why.
+    case occurrences
 
     /// The axis title and table-column noun, capitalised.
     var axisLabel: String {
         switch self {
         case .documents:
             return String(localized: "analytics.axis.documents", defaultValue: "Documents")
+        case .occurrences:
+            // "(stems)" is not decoration. The count is of the STEM's instances, so a query for
+            // "containment" counts "contains" and "container" too — the same breadth the document
+            // count has always had, but far more visible once you are counting mentions.
+            return String(localized: "analytics.axis.occurrences", defaultValue: "Occurrences (stems)")
         }
     }
 
@@ -66,6 +81,13 @@ enum AnalyticsValueUnit: String, CaseIterable, Sendable {
         case .documents:
             return String(localized: "analytics.export.column.matching",
                           defaultValue: "Matching documents")
+        case .occurrences:
+            // Deliberately distinct from the word cloud's "Occurrences" column, which counts
+            // NLTagger lemmas over body_text only. Two exportable tables using one word for two
+            // tokenisations would leave a researcher comparing them with no way to learn why they
+            // disagree.
+            return String(localized: "analytics.export.column.occurrences",
+                          defaultValue: "Occurrences (index stems)")
         }
     }
 
@@ -75,6 +97,10 @@ enum AnalyticsValueUnit: String, CaseIterable, Sendable {
         case .documents:
             return String(format: String(localized: "analytics.total %lld",
                                          defaultValue: "%lld documents matched"),
+                          Int64(count))
+        case .occurrences:
+            return String(format: String(localized: "analytics.total.occurrences %lld",
+                                         defaultValue: "%lld occurrences"),
                           Int64(count))
         }
     }
@@ -86,8 +112,25 @@ enum AnalyticsValueUnit: String, CaseIterable, Sendable {
             return String(format: String(localized: "analytics.chart.source.count.a11y %lld",
                                          defaultValue: "%lld documents"),
                           Int64(count))
+        case .occurrences:
+            return String(format: String(localized: "analytics.chart.source.occurrences.a11y %lld",
+                                         defaultValue: "%lld occurrences"),
+                          Int64(count))
         }
     }
+
+    /// Short label for the Measure picker.
+    var pickerLabel: String {
+        switch self {
+        case .documents:
+            return String(localized: "analytics.measure.documents", defaultValue: "Documents")
+        case .occurrences:
+            return String(localized: "analytics.measure.occurrences", defaultValue: "Occurrences")
+        }
+    }
+
+    /// `UserDefaults`/`@AppStorage` key for the persisted per-user choice.
+    static let storageKey = "frus.analytics.valueUnit"
 
     /// The value-axis title for a chart, given whether it is plotting normalised shares.
     ///

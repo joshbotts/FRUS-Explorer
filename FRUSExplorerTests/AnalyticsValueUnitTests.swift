@@ -143,3 +143,143 @@ struct AnalyticsValueUnitTests {
         }
     }
 }
+
+// MARK: - AnalyticsOccurrenceMeasureTests
+
+/// The D2 surface rules: what the unit resolves to, how a decade is summed, and the one combination
+/// that must be unreachable.
+///
+/// These are pure restatements of logic that lives in `AnalyticsView`'s private members, asserted
+/// here against the same arithmetic. That is a deliberate compromise: the view's own copies cannot be
+/// reached from a test, and the alternative — trusting three interacting gates because the app
+/// compiles — is how the mislabels this workstream removed got in.
+@Suite("Analytics occurrence measure")
+struct AnalyticsOccurrenceMeasureTests {
+
+    /// The effective-unit rule from `AnalyticsView.valueUnit`.
+    private func effectiveUnit(preference: AnalyticsValueUnit,
+                               measureApplies: Bool,
+                               availability: OccurrenceAvailability) -> AnalyticsValueUnit {
+        guard preference == .occurrences, measureApplies, availability.isAvailable else { return .documents }
+        return .occurrences
+    }
+
+    @Test("Occurrences apply only where the axis and the query can both serve them")
+    func effectiveUnitFallsBackToDocuments() {
+        let ok = OccurrenceAvailability.available(stem: "treaty")
+        let no = OccurrenceAvailability.unavailable(reason: .exactWord)
+
+        #expect(effectiveUnit(preference: .occurrences, measureApplies: true, availability: ok) == .occurrences)
+        // Wrong axis: By Month has no occurrence series, so the preference must not apply.
+        #expect(effectiveUnit(preference: .occurrences, measureApplies: false, availability: ok) == .documents)
+        // Wrong query shape: the preference is honoured only where an honest count exists.
+        #expect(effectiveUnit(preference: .occurrences, measureApplies: true, availability: no) == .documents)
+        // And documents never become occurrences by accident.
+        #expect(effectiveUnit(preference: .documents, measureApplies: true, availability: ok) == .documents)
+    }
+
+    /// The decade rule from `AnalyticsView.decadeSeries(for:)`.
+    private func decades(from years: [(Int, Int)]) -> [DecadeFrequency] {
+        var byDecade: [Int: Int] = [:]
+        for (year, count) in years { byDecade[(year / 10) * 10, default: 0] += count }
+        return byDecade.map { DecadeFrequency(decadeStart: $0.key, count: $0.value) }
+            .sorted { $0.decadeStart < $1.decadeStart }
+    }
+
+    @Test("A decade's occurrences are the sum of its years, and nothing is lost at a boundary")
+    func decadeBucketingSumsYears() {
+        // 1949 and 1950 are the boundary that a `/ 10 * 10` error puts in the same bucket.
+        let result = decades(from: [(1948, 3), (1949, 92), (1950, 7), (1951, 1)])
+        #expect(result.map(\.decadeStart) == [1940, 1950])
+        #expect(result.first { $0.decadeStart == 1940 }?.count == 95, "1948 + 1949")
+        #expect(result.first { $0.decadeStart == 1950 }?.count == 8, "1950 + 1951")
+        // The total must survive bucketing — a decade series that loses occurrences would understate
+        // exactly where the year series is most crowded.
+        #expect(result.reduce(0) { $0 + $1.count } == 103)
+    }
+
+    @Test("An empty year series yields an empty decade series, not a zero bucket")
+    func emptyYearsYieldEmptyDecades() {
+        #expect(decades(from: []).isEmpty)
+    }
+
+    /// The `isNormalized` rule from `AnalyticsView`, including the PR-D unit term.
+    private func isNormalized(unit: AnalyticsValueUnit,
+                              normalizationApplies: Bool,
+                              isChart: Bool,
+                              mode: AnalyticsNormalizationMode) -> Bool {
+        normalizationApplies && isChart && unit == .documents && mode == .percentOfDocuments
+    }
+
+    @Test("Occurrences and '% of documents' is an unreachable combination")
+    func occurrencesAreNeverNormalised() {
+        // Occurrences ÷ indexed documents is a RATE, unbounded above 100%, and every consumer of
+        // `normalizedValue` calls its result a share. So the combination is made impossible rather
+        // than clamped — clamping would turn a wrong label into an invisible one.
+        #expect(!isNormalized(unit: .occurrences, normalizationApplies: true,
+                              isChart: true, mode: .percentOfDocuments),
+                "An occurrence chart must never plot a percentage of documents")
+        // The documents case still normalises, so the guard is specific rather than a blanket off.
+        #expect(isNormalized(unit: .documents, normalizationApplies: true,
+                             isChart: true, mode: .percentOfDocuments))
+    }
+
+    @Test("The occurrences unit labels every surface, distinctly from documents")
+    func occurrenceLabelsAreDistinct() {
+        let occ = AnalyticsValueUnit.occurrences
+        let doc = AnalyticsValueUnit.documents
+        #expect(occ.axisLabel != doc.axisLabel)
+        #expect(occ.exportColumnHeader != doc.exportColumnHeader)
+        #expect(occ.matchedPhrase(count: 92) != doc.matchedPhrase(count: 92))
+        #expect(occ.accessibilityPhrase(count: 92) != doc.accessibilityPhrase(count: 92))
+        #expect(occ.pickerLabel != doc.pickerLabel)
+        // The stem caveat has to be in the axis label itself: it is the only place a reader of an
+        // exported figure can learn that "containment" counted "container" too.
+        #expect(occ.axisLabel.lowercased().contains("stem"))
+        // And the export header must not collide with the word cloud's own "Occurrences" column,
+        // which counts NLTagger lemmas over body_text only.
+        #expect(occ.exportColumnHeader != "Occurrences")
+    }
+}
+
+// MARK: - SavedAnalyticsQueryUnitTests
+
+/// The counting unit travels with a saved query, because it changes what the query asks.
+@Suite("Saved analytics query unit")
+struct SavedAnalyticsQueryUnitTests {
+
+    private func query(unit: AnalyticsValueUnit?) -> SavedAnalyticsQuery {
+        SavedAnalyticsQuery(id: UUID(), terms: ["treaty"], axis: .byYear,
+                            yearStart: 1945, yearEnd: 1949,
+                            scopeVolumeIds: nil, scopeLabel: nil,
+                            savedAt: Date(timeIntervalSince1970: 0), valueUnit: unit)
+    }
+
+    @Test("Two queries differing only in unit are not the same query")
+    func unitParticipatesInEquality() {
+        #expect(!query(unit: .documents).matchesQuery(query(unit: .occurrences)),
+                "Restoring under the other unit would re-export a numerically different figure under an identical title")
+        #expect(query(unit: .occurrences).matchesQuery(query(unit: .occurrences)))
+    }
+
+    @Test("A query saved before the unit existed reads as documents, not as a mismatch")
+    func legacyQueriesDefaultToDocuments() {
+        #expect(query(unit: nil).matchesQuery(query(unit: .documents)),
+                "A pre-PR-D saved query must still match its own restored state, or its star reads unsaved forever")
+        #expect(!query(unit: nil).matchesQuery(query(unit: .occurrences)))
+    }
+
+    @Test("The unit survives a JSON round trip, including the legacy nil")
+    func roundTripsThroughJSON() throws {
+        for unit in [AnalyticsValueUnit.documents, .occurrences] {
+            let data = try JSONEncoder().encode(query(unit: unit))
+            let decoded = try JSONDecoder().decode(SavedAnalyticsQuery.self, from: data)
+            #expect(decoded.valueUnit == unit)
+        }
+        // The stored list predates this field; decoding must not fail on its absence.
+        let legacy = #"{"id":"00000000-0000-0000-0000-000000000000","terms":["treaty"],"axis":"byYear","yearStart":1945,"yearEnd":1949,"savedAt":0}"#
+        let decoded = try JSONDecoder().decode(SavedAnalyticsQuery.self, from: Data(legacy.utf8))
+        #expect(decoded.valueUnit == nil, "Absent means absent; the default is applied at the read sites")
+        #expect(decoded.terms == ["treaty"])
+    }
+}

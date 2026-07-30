@@ -991,6 +991,30 @@ On a **Subseries** or **By Volume** chart, clicking a bar drills straight into a
 
 `[SCREENSHOT: A By-Year Corpus Analytics chart with the "% of documents" normalization toggle engaged, reading the term as a share of the corpus per year]`
 
+**Documents or occurrences.** On **By Year** and **By Decade** a **Measure** picker chooses what the
+bars count. **Documents** (the default, and what every other axis shows) counts each matching
+document once, however many times your term appears in it. **Occurrences** counts every mention. The
+two can point in opposite directions, and the difference is a finding rather than a technicality:
+searching `"Article 43"`, the number of documents falls from 34 in 1948 to 11 in 1949 while
+occurrences *rise* from 77 to 92 — because a single 1949 document discusses it 54 times. Read as
+documents that year looks like a topic disappearing; read as occurrences it looks like a topic
+concentrating.
+
+Occurrences are counted by **word stem**, so a search for `containment` counts `contains` and
+`container` too — the same breadth the document count has always had, just more visible when you are
+counting mentions. The axis label says so.
+
+The measure is offered only where an honest count exists, and the picker is **disabled with a
+stated reason** otherwise rather than silently showing documents. It is unavailable for exact-word
+(`=word`) searches, because the index stores stems and cannot separate one exact spelling's mentions
+from another's; for phrases, wildcards and proximity searches, which match several index terms at
+once; and for queries with more than one term, where adding up each term's occurrences would present
+two different quantities as one. Comparing terms shows documents for the same reason. **Occurrences**
+and **% of documents** cannot both be active: a share's denominator is documents, and occurrences
+divided by documents is a rate that can exceed 100%, so it is not a share of anything.
+
+`[SCREENSHOT: The By-Year Measure picker set to Occurrences, and the disabled picker with its stated reason beneath an exact-word query]`
+
 An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it.
 
 ### 13.2 Chart vs. Table
