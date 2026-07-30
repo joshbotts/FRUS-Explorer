@@ -405,8 +405,32 @@ struct AnalyticsView: View {
     /// `true` when normalized (`% of documents`) plotting is active for the current axis — the
     /// effective preference is on AND the axis supports it. While comparing, the effective mode is
     /// `compareNormalizationMode` (default %) rather than the persisted single-term preference.
+    /// `true` when normalized (`% of documents`) plotting is active — the preference is on, the axis
+    /// supports it, **and** a chart is what is on screen.
+    ///
+    /// The `viewMode` term is load-bearing and was missing. Table mode renders raw counts
+    /// unconditionally (`tableRow` prints the integer), while the toolbar picker was merely
+    /// `.disabled` — so a greyed-out "% of documents" sat above a column of raw counts, and
+    /// `exportProvenance` stamped the exported CSV "% of documents" while `exportTable` wrote those
+    /// same raw counts. Coupling it here fixes the screen, the provenance and the export together,
+    /// because all three read this one property.
     private var isNormalized: Bool {
-        normalizationApplies && effectiveNormalizationMode == .percentOfDocuments
+        normalizationApplies && viewMode == .chart
+            && effectiveNormalizationMode == .percentOfDocuments
+    }
+
+    /// `=word` operands the analytics service refuses to chart, for the term(s) currently committed.
+    ///
+    /// Non-empty means the frequency functions returned nothing **by design** — see
+    /// `CorpusAnalyticsService.makeQuery(from:)`. Checked before the No-Results branch so the state
+    /// explains itself; a bare "No Results" would tell the researcher their word never appears when
+    /// in fact it appears and Analytics simply cannot count it exactly.
+    private var unsupportedExactTerms: [String] {
+        let terms = isComparing ? committedTerms : (committedTerm.isEmpty ? [] : [committedTerm])
+        var seen: Set<String> = []
+        return terms
+            .flatMap { CorpusAnalyticsService.unsupportedExactTerms(in: $0) }
+            .filter { seen.insert($0).inserted }
     }
 
     // MARK: - Compare terms (D1)
@@ -607,7 +631,13 @@ struct AnalyticsView: View {
             indexedVolumeCount: appState.indexedVolumeIds.count,
             // The categorical breakdowns ignore the range entirely — say so rather than implying it applied.
             yearRange: chartAxis.isCategorical ? nil : yearRangeStart...yearRangeEnd,
-            valueMode: normalizationApplies ? effectiveNormalizationMode.pickerLabel : nil
+            // `isNormalized`, not `normalizationApplies && mode`: exporting from TABLE mode writes
+            // raw counts, and this line is the methods block that claims what they are. The two must
+            // read the same property or the CSV documents a normalisation it does not contain.
+            valueMode: normalizationApplies
+                ? (isNormalized ? effectiveNormalizationMode.pickerLabel
+                                : AnalyticsNormalizationMode.raw.pickerLabel)
+                : nil
         )
     }
 
@@ -1354,6 +1384,18 @@ struct AnalyticsView: View {
                            defaultValue: "Type a keyword and tap Search to chart its frequency across the FRUS corpus.")
                 )
             )
+        } else if !unsupportedExactTerms.isEmpty {
+            // Ahead of the No-Results branch on purpose: this state has matches, and a bare
+            // "No Results" would read as "this word never appears" — the opposite of the truth.
+            ContentUnavailableView(
+                String(localized: "analytics.exactUnsupported.title",
+                       defaultValue: "Exact-Word Charting Isn’t Available"),
+                systemImage: "equal.circle",
+                description: Text(
+                    String(localized: "analytics.exactUnsupported.detail",
+                           defaultValue: "\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem, so it cannot tell \"containment\" from \"container\". Remove the = to chart the stem, or use Search, which does filter to the exact word.")
+                )
+            )
         } else if isAllResultDataEmpty {
             ContentUnavailableView(
                 String(localized: "analytics.empty.title", defaultValue: "No Results"),
@@ -1512,7 +1554,10 @@ struct AnalyticsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    Text(verbatim: "\(s.total)")
+                    // Same unit-less raw total as the exported figure's legend — labelled here too,
+                    // so the screen and the figure agree.
+                    Text(String(localized: "analytics.figure.legend.docs",
+                                defaultValue: "\(s.total) docs"))
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.tertiary)
                     Spacer(minLength: 0)
@@ -1714,7 +1759,14 @@ struct AnalyticsView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(Color.black.opacity(0.7))
                         .lineLimit(1)
-                    Text(verbatim: "\(s.total)")
+                    // Always the raw document total, even when the plotted bars are percentages —
+                    // so under a normalised chart this number is in different units from everything
+                    // above it. It shipped unlabelled on exported figures, where a reader has only
+                    // the image: they read the legend as the plotted quantity and mis-scale every
+                    // claim about which volume drives the trend. Naming the unit is enough; the
+                    // number itself is the right one to show (a share per source would not sum).
+                    Text(String(localized: "analytics.figure.legend.docs",
+                                defaultValue: "\(s.total) docs"))
                         .font(.system(size: 10).monospacedDigit())
                         .foregroundStyle(Color.black.opacity(0.45))
                     Spacer(minLength: 0)
@@ -2345,16 +2397,34 @@ struct AnalyticsView: View {
         countOf: @escaping (Row) -> Int,
         onTap: ((Row) -> Void)? = nil
     ) -> some View {
-        List(rows) { row in
-            if let onTap {
-                Button {
-                    onTap(row)
-                } label: {
-                    tableRow(label: label(row), count: countOf(row), tappable: true)
+        List {
+            // The one surface that never said what its numbers are. Every chart carries a
+            // "Documents" y-axis label, and the exported CSV heads the column "Matching documents",
+            // but the on-screen table printed a bare integer per row with no header — so the reader
+            // could not tell document counts from occurrence counts, which for this corpus differ by
+            // up to 9× (one 1949 document carries 54 of the 92 "Article 43" occurrences).
+            Section {
+                ForEach(rows) { row in
+                    if let onTap {
+                        Button {
+                            onTap(row)
+                        } label: {
+                            tableRow(label: label(row), count: countOf(row), tappable: true)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        tableRow(label: label(row), count: countOf(row), tappable: false)
+                    }
                 }
-                .buttonStyle(.plain)
-            } else {
-                tableRow(label: label(row), count: countOf(row), tappable: false)
+            } header: {
+                HStack {
+                    Text(chartAxis.pickerLabel)
+                    Spacer()
+                    Text(String(localized: "analytics.table.header.documents",
+                                defaultValue: "Documents"))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         #if os(iOS)

@@ -351,8 +351,37 @@ actor CorpusAnalyticsService {
     /// Returns `nil` when `term` carries no positive search content (empty, or only
     /// excluded terms), mirroring `SearchService`.
     nonisolated private static func makeQuery(from term: String) -> FTS5Query? {
-        guard let expression = FTS5InlineQueryParser.parse(term) else { return nil }
+        let parsed = FTS5InlineQueryParser.parseDetailed(term)
+        guard let expression = parsed.expression else { return nil }
+        // Refuse exact-word queries rather than answer a different question.
+        //
+        // `=word` is a POST-filter: the MATCH expression is the stem, and Search narrows the
+        // matched rows afterwards with the `frus_exact_word` SQL function
+        // (`IndexingPipeline.swift`). This service goes straight to `FTS5Store.matchedDocumentKeys`,
+        // a bare MATCH with nowhere to apply that filter — so charting the expression would count
+        // every document containing the STEM. `=containment` would plot "containment", "contains"
+        // and "container" together, while the chart's own "View N documents" hand-off sends the
+        // researcher to Search, which filters, and shows fewer. Two numbers for one query, both
+        // presented as authoritative, differing by an amount nobody could predict.
+        //
+        // Q-3b shipped exact-word mode specifically so a count could not lie; silently widening the
+        // query here would undo that in the surface where a wrong count becomes a chart, and a
+        // chart becomes an argument. `nil` propagates to an explicit, explained empty state in
+        // `AnalyticsView` — see `unsupportedExactTerms`.
+        guard parsed.exactTerms.isEmpty else { return nil }
         return FTS5Query(keywordExpression: expression)
+    }
+
+    /// The `=word` operands in `term`, which this service cannot honour.
+    ///
+    /// Non-empty means every frequency function will return no data for `term`, by the deliberate
+    /// refusal in ``makeQuery(from:)``. Callers use this to explain the empty result instead of
+    /// showing a bare "No Results", which would read as "this word never appears" — the opposite of
+    /// what an exact-word query with matches actually means.
+    ///
+    /// `nonisolated` and cheap: a parse, no I/O. Safe to call from a view body.
+    nonisolated static func unsupportedExactTerms(in term: String) -> [String] {
+        FTS5InlineQueryParser.parseDetailed(term).exactTerms
     }
 
     /// Helper for the four date-bucketed methods. Returns the matched

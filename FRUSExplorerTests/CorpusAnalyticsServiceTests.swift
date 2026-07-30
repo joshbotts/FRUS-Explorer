@@ -522,4 +522,54 @@ struct CorpusAnalyticsServiceTests {
             #expect(Double(m1910s) / Double(t1910s) * 100.0 <= 100.0, "By-Decade share also stays ≤ 100%")
         }
     }
+
+    // MARK: - Exact-word queries are refused, not silently widened (R-2 PR-A)
+
+    /// An `=word` query must return NO analytics data rather than data for the word's stem.
+    ///
+    /// `=word` is a post-filter: the MATCH expression is the stem, and only Search applies
+    /// `frus_exact_word` afterwards. This service goes straight to `matchedDocumentKeys`, a bare
+    /// MATCH, so charting the expression counted every document containing the STEM — while the
+    /// chart's own "View N documents" button sent the researcher to Search, which filters, and showed
+    /// fewer. Two authoritative-looking numbers for one query.
+    ///
+    /// The fixture is the case that makes the difference visible: `containment` and `container` share
+    /// the Porter stem `contain`, so a stem-based count is 2 where an exact count is 1.
+    @Test("an =exact query yields no analytics series, and the plain stem still charts both documents")
+    func exactWordQueriesAreRefusedRatherThanWidened() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>The containment doctrine held.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1971-06-01\">June 1, 1971</date></dateline><p>A shipping container arrived.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            // Control: both documents share the stem, so the unmarked query charts 2. Without this
+            // the test below would pass just as well against a fixture the index never matched.
+            let stemmed = try await service.termFrequencyByYear(term: "containment")
+            #expect(stemmed.first { $0.year == 1971 }?.count == 2,
+                    "Precondition: the plain query is stem-based and matches BOTH documents — this is exactly the over-count that must not be charted under an =exact query")
+
+            // Every date-bucketed and categorical entry point must refuse, not just the one.
+            #expect(try await service.termFrequencyByYear(term: "=containment").isEmpty)
+            #expect(try await service.termFrequencyByDecade(term: "=containment").isEmpty)
+            #expect(try await service.termFrequencyBySubseries(term: "=containment").isEmpty)
+            #expect(try await service.termFrequencyByVolume(term: "=containment").isEmpty)
+
+            // And the refusal must be reportable, or the UI shows a bare "No Results" — which reads
+            // as "this word never appears", the opposite of the truth.
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "=containment") == ["containment"])
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "containment").isEmpty)
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment OR =alliance")
+                        == ["containment", "alliance"],
+                    "Every exact operand is named, in typed order, so the explanation can list them")
+        }
+    }
 }

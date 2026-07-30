@@ -446,6 +446,12 @@ struct PersonAnalyticsView: View {
             scopeLabel: scopeLabel,
             indexedVolumeCount: appState.indexedVolumeIds.count,
             yearRange: yearRangeStart...yearRangeEnd,
+            // Person mentions are counted over DATED documents only — no volume-start-year fallback.
+            // `appliesDocumentDating` defaults to `true`, so every Person export has been carrying
+            // `AnalyticsProvenance.datingCaveat`, which describes that fallback as applying here. The
+            // very next caveat below then says it does not. A methods block that contradicts itself
+            // one line later is worse than one that says nothing.
+            appliesDocumentDating: false,
             valueMode: valueMode,
             extraCaveats: [
                 String(localized: "personAnalytics.export.caveat.dated",
