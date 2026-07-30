@@ -10,21 +10,34 @@ PAGE 1
   requested/returned    limit=100 → 11 hits  (fewer than requested — clamped, or that is all there is)
   totalHits             11
   droppedHits           0
-  sort array (last hit) [14.285818, 32161988]  arity=2
-      ⚠ arity ≥ 2 — element 0 is probably a relevance score, NOT the cursor. This client takes the LAST element.
+  sort array (last hit) [22345695]  arity=1
   q omitted             true
 
 PAGE 2
   httpStatus            200, body.statusCode 200
   hitsPath              body.hits.hits
-  recordPath            _source.record
+  recordPath            *** NOT FOUND ***
   topLevelKeys          body, headers, statusCode
-  requested/returned    limit=100 → 3 hits  (fewer than requested — clamped, or that is all there is)
+  requested/returned    limit=100 → 0 hits  (fewer than requested — clamped, or that is all there is)
   totalHits             11
   droppedHits           0
-  sort array (last hit) [22345695]  arity=1
+  sort array (last hit) []  arity=0
   q omitted             true
 
+✓ page 1 sort arity 1 — the seeded cursor produced a consistent ordering, so cursor paging is sound.
+⚠ sort arity CHANGED between pages (1 → 0) — the ordering is not stable across requests.
+
+PAGE-SIZE PROBE (RG 59, limit=1000)
+  httpStatus            200, body.statusCode 200
+  hitsPath              body.hits.hits
+  recordPath            _source.record
+  topLevelKeys          body, headers, statusCode
+  requested/returned    limit=1000 → 1000 hits
+  totalHits             4449
+  droppedHits           0
+  sort array (last hit) [27022487]  arity=1
+  q omitted             true
+  ✓ limit=1000 is honoured — use API_PAGE_SIZE=1000
 ──────────────────────────────────────────────────────────────────────────────
 === PASTE THIS BACK ===
 Send the whole block above. It settles: the envelope path, which sort element is the cursor, whether `limit` is honoured, and whether `q` is required.

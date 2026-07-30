@@ -172,11 +172,31 @@ public struct APIEnvelopeObservation: Sendable, Equatable {
         out.append("  httpStatus            \(httpStatus)"
                    + (bodyStatusCode.map { ", body.statusCode \($0)" } ?? ""))
         out.append("  hitsPath              \(hitsPath ?? "*** NOT FOUND ***")")
-        out.append("  recordPath            \(recordPath ?? "*** NOT FOUND ***")")
+        // An empty page has no hits to locate a record inside, so a missing recordPath there is the
+        // correct end-of-results outcome — not a failure to find the field. Reporting it as
+        // "*** NOT FOUND ***" made a perfectly healthy terminator page look broken.
+        if returnedHitCount == 0 {
+            out.append("  recordPath            (n/a — empty page, end of results)")
+        } else {
+            out.append("  recordPath            \(recordPath ?? "*** NOT FOUND ***")")
+        }
         out.append("  topLevelKeys          \(topLevelKeys.joined(separator: ", "))")
+        // With `totalHits` known, "fewer than requested" is answerable rather than ambiguous: if the
+        // page returned everything that exists, the limit was not clamped.
+        let shortfallNote: String
+        if requestedLimit > 0, returnedHitCount < requestedLimit {
+            if let totalHits, returnedHitCount >= totalHits {
+                shortfallNote = "  (that is all there is — totalHits \(totalHits); NOT clamped)"
+            } else if returnedHitCount == 0 {
+                shortfallNote = "  (empty page — end of results)"
+            } else {
+                shortfallNote = "  (fewer than requested AND fewer than available — clamped)"
+            }
+        } else {
+            shortfallNote = requestedLimit > 0 ? "  (limit honoured in full)" : ""
+        }
         out.append("  requested/returned    limit=\(requestedLimit) → \(returnedHitCount) hits"
-                   + (requestedLimit > 0 && returnedHitCount < requestedLimit
-                      ? "  (fewer than requested — clamped, or that is all there is)" : ""))
+                   + shortfallNote)
         out.append("  totalHits             \(totalHits.map(String.init) ?? "(not reported)")")
         out.append("  droppedHits           \(droppedHitCount)")
         out.append("  sort array (last hit) [\(lastSortArray.joined(separator: ", "))]  arity=\(sortArity)")
@@ -248,7 +268,7 @@ public struct CatalogAPIClient: Sendable {
 
     public init(endpoint: String = CatalogAPIClient.defaultEndpoint,
                 apiKey: String,
-                pageSize: Int = 100,
+                pageSize: Int = 1000,
                 transport: any CatalogAPITransport,
                 log: @escaping @Sendable (String) -> Void = { _ in }) {
         self.endpoint = endpoint

@@ -83,7 +83,7 @@ public struct RecordGroupCatalogRunner {
             sampleEvery: env["SAMPLE_EVERY"].flatMap { Int($0) } ?? 25,
             allowShort: isTruthy(env["ALLOW_SHORT"]),
             apiKey: env["CATALOG_API_KEY"],
-            apiPageSize: env["API_PAGE_SIZE"].flatMap { Int($0) } ?? 100,
+            apiPageSize: env["API_PAGE_SIZE"].flatMap { Int($0) } ?? 1000,
             maxAPIRequestsPerGroup: env["MAX_API_REQUESTS_PER_GROUP"].flatMap { Int($0) } ?? 200,
             apiTransport: URLSessionAPITransport(),
             log: { generatorLog($0) })
@@ -180,7 +180,10 @@ public struct RecordGroupCatalogRunner {
         sampleEvery: Int = 25,
         allowShort: Bool = false,
         apiKey: String? = nil,
-        apiPageSize: Int = 100,
+        // 1000, not 100: the 2026-07-30 survey probe against RG 59 requested 1000 and received exactly
+        // 1000 of its 4,449 series, so the documented maximum is honoured in practice. That is a 10x
+        // reduction in calls against the monthly quota — the whole 22-group series layer becomes ~40.
+        apiPageSize: Int = 1000,
         maxAPIRequestsPerGroup: Int = 200,
         apiTransport: (any CatalogAPITransport)? = nil,
         log: @escaping @Sendable (String) -> Void = { _ in }
@@ -722,11 +725,18 @@ public struct RecordGroupCatalogRunner {
                                  + "consistent ordering, so cursor paging is sound.")
                 }
             }
-            if let arities = observations.map(\.sortArity).first,
-               observations.count >= 2, arities != observations[1].sortArity {
-                lines.append("⚠ sort arity CHANGED between pages "
-                             + "(\(observations.map(\.sortArity).map(String.init).joined(separator: " → ")))"
+            // Compare arity only across pages that actually returned hits. An empty terminator page
+            // has no sort array at all (arity 0), and flagging that as unstable ordering reported a
+            // healthy end-of-results as a defect — which is exactly what the 2026-07-30 re-run showed
+            // ("1 → 0") immediately after the seeded cursor had in fact fixed the ordering.
+            let nonEmpty = observations.filter { $0.returnedHitCount > 0 }
+            let arities = Set(nonEmpty.map(\.sortArity))
+            if arities.count > 1 {
+                lines.append("⚠ sort arity DIFFERS across non-empty pages "
+                             + "(\(nonEmpty.map(\.sortArity).map(String.init).joined(separator: " → ")))"
                              + " — the ordering is not stable across requests.")
+            } else if nonEmpty.count >= 2 {
+                lines.append("✓ sort arity is consistent across all non-empty pages.")
             }
 
             // The page-size question needs a group large enough to fill a big page: RG 486's 11 series

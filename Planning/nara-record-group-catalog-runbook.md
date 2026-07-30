@@ -223,6 +223,49 @@ from page 1's last hit was not a valid cursor. Fixed three ways:
 The survey now also reports whether the seed actually produced a consistent page-1 ordering, so a
 re-run confirms the fix rather than assuming it.
 
+#### The re-run confirmed it, and settled the last question
+
+```
+page 1  sort [22345695]  arity=1   ✓ the seed produced a consistent ordering
+page 2  0 hits                     ← correct end-of-results
+RG 59   limit=1000 → 1000 hits, totalHits 4449   ✓ limit=1000 is honoured
+```
+
+So **`API_PAGE_SIZE` now defaults to 1000**, which is a 10× reduction in calls against the quota.
+
+Two of the re-run's warnings were bugs in the *report*, not the data, and are fixed: an empty
+terminator page has no hits to locate a record inside (so `recordPath` was reported as
+`*** NOT FOUND ***`), and it has no sort array at all (so arity `1 → 0` was flagged as unstable
+ordering). Both now read as end-of-results. Arity is compared only across non-empty pages, and
+`totalHits` is used to tell genuine clamping from "that is all there is".
+
+#### Measured API costs, now that `limit=1000` is proven
+
+| Layer | Records | Calls at `limit=1000` |
+|---|---|---|
+| RG 59 series | 4,449 (live) | 5 |
+| All 22 groups, series | ~20,100 | **~40** |
+| RG 59 file units | ~230,000 (est.) | ~230 |
+
+Against a 10,000/month quota, the entire series layer costs ~40 calls. The live RG 59 series count
+of 4,449 is a useful cross-check against the 4,435 derived from NARA's Record Group Explorer — the
+catalog has grown slightly since that snapshot, which is precisely the drift the refresh exists to
+surface.
+
+#### One thing still unverified: whether search responses are field-complete
+
+The bulk export is known field-complete; whether the *search* API returns every field is not
+established. The refresh answers it for free, because it diffs raw trees: if nearly every record
+comes back `modified`, that is field-thinning rather than real change. A 2-call experiment settles
+it against a group already harvested from bulk:
+
+```bash
+CATALOG_API_KEY=<key> API_REFRESH=1 RECORD_GROUPS=486 swift run -c release RecordGroupCatalogGenerator
+```
+
+All 11 `unchanged` means the API returns byte-identical records and either source is equally good.
+Any other result, read `census/refresh-changelog.csv`.
+
 ### Step R2 — the refresh
 
 ```bash
@@ -296,7 +339,7 @@ Only the named groups' shards are re-read; the others keep their existing index 
 | `API_SURVEY` | off | Spend a handful of API calls answering the open query-shape questions. Needs `CATALOG_API_KEY`. |
 | `API_REFRESH` | off | Re-page the live API and overlay it on the snapshot, emitting a changelog. Needs `CATALOG_API_KEY`. |
 | `CATALOG_API_KEY` | — | Only used by the two API modes. The bulk harvest never reads it. |
-| `API_PAGE_SIZE` | `100` | `limit` per API request. |
+| `API_PAGE_SIZE` | `1000` | `limit` per API request. 1000 is survey-proven honoured (RG 59 returned exactly 1000). |
 | `MAX_API_REQUESTS_PER_GROUP` | `200` | Hard per-group request ceiling. |
 | `BASE_URL` | NARA's bucket | Origin override (tests). |
 | `GENERATED_DATE` | today (UTC) | Reproducible `generated` stamp. |

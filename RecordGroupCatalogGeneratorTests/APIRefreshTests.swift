@@ -174,12 +174,34 @@ struct CatalogAPIClientDecodeTests {
         #expect(page.observation.droppedHitCount == 1)
     }
 
-    @Test("A returned count below the requested limit is flagged as possible clamping")
-    func flagsPossibleClamping() throws {
-        let page = try decode(ScriptedAPITransport.page(naIds: [1]), limit: 1000)
-        #expect(page.observation.requestedLimit == 1000)
-        #expect(page.observation.returnedHitCount == 1)
-        #expect(page.observation.reportLines.contains { $0.contains("clamped") })
+    @Test("Clamping is distinguished from 'that is all there is' using totalHits")
+    func distinguishesClampingFromExhaustion() throws {
+        // The 2026-07-30 survey's first run could not answer the clamping question for RG 486 — 11
+        // records return 11 whether the limit is 100 or 1000 — and the report's hedge said as much.
+        // With totalHits known, the two cases are separable.
+        let exhausted = try decode(
+            ScriptedAPITransport.page(naIds: [1], total: 1), limit: 1000)
+        #expect(exhausted.observation.reportLines.contains { $0.contains("NOT clamped") })
+
+        let clamped = try decode(
+            ScriptedAPITransport.page(naIds: [1], total: 500), limit: 1000)
+        #expect(clamped.observation.reportLines.contains {
+            $0.contains("fewer than available — clamped")
+        })
+
+        let full = try decode(
+            ScriptedAPITransport.page(naIds: Array(1...5), total: 50), limit: 5)
+        #expect(full.observation.reportLines.contains { $0.contains("limit honoured in full") })
+    }
+
+    @Test("An empty terminator page is reported as end-of-results, not as a missing field")
+    func reportsEmptyPageHonestly() throws {
+        // The survey's page 2 was a legitimate end-of-results page, and the report called its absent
+        // recordPath "*** NOT FOUND ***" — making a healthy terminator look like a decode failure.
+        let empty = try decode(ScriptedAPITransport.emptyPage, limit: 1000)
+        #expect(empty.observation.returnedHitCount == 0)
+        #expect(empty.observation.reportLines.contains { $0.contains("end of results") })
+        #expect(!empty.observation.reportLines.contains { $0.contains("NOT FOUND") })
     }
 }
 
