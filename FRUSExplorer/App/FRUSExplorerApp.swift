@@ -1103,6 +1103,10 @@ struct FRUSExplorerApp: App {
                 } message: {
                     Text(collectionOpenError ?? "")
                 }
+                // Debug-only: the store on disk and this build declare different record types, so
+                // the app is running local-only on a different store than the one holding the
+                // data. A pass-through on release builds. See `storeSchemaMismatchAlert(_:)`.
+                .storeSchemaMismatchAlert(appState)
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
@@ -1301,10 +1305,34 @@ struct FRUSExplorerApp: App {
         // serverRejectedRequest: …" — the signature of an undeployed CloudKit
         // schema change; see the "schema migrations" note on `frusModelTypes`).
         appState.cloudKitSyncEnabled = _containerSetup.cloudKitEnabled
+        // The store-vs-build record-type comparison, when the container fell back. Published
+        // before the error message below, which appends its summary.
+        appState.storeSchemaMismatch = _containerSetup.storeDiagnostic
         if !_containerSetup.cloudKitEnabled {
+            if let storeDiagnostic = _containerSetup.storeDiagnostic, storeDiagnostic.isMismatch {
+                // A second log entry rather than folding these names into the CloudKit entry's
+                // `schemaIdentifiers`: that field holds CloudKit's `CD_`-prefixed mirrored
+                // identifiers, and these are local Core Data entity names. The distinct phase keeps
+                // the two readable apart in an exported log, where the whole value is being able
+                // to tell which layer disagreed.
+                let names = storeDiagnostic.missingFromStore + storeDiagnostic.absentFromModel
+                Task {
+                    await SyncDiagnosticsLog.shared.record(
+                        phase: "storeSchema", startDate: nil, endDate: Date.now, succeeded: false,
+                        schemaIdentifiers: names)
+                }
+            }
             if let initError = _containerSetup.initError {
                 let diag = Self.cloudKitDiagnostic(initError)
-                appState.cloudKitInitError = diag.message
+                // Append the store comparison to the message the status bar and Settings already
+                // show. A tester's screenshot of "Local Only" then carries the diagnosis instead
+                // of only the CloudKit error code, which on this failure named nothing useful
+                // (`SwiftDataError.internalError`).
+                if let storeDiagnostic = _containerSetup.storeDiagnostic {
+                    appState.cloudKitInitError = "\(diag.message)\n\n\(storeDiagnostic.summary)"
+                } else {
+                    appState.cloudKitInitError = diag.message
+                }
                 Task {
                     await SyncDiagnosticsLog.shared.record(
                         phase: "init", startDate: nil, endDate: Date.now, succeeded: false,

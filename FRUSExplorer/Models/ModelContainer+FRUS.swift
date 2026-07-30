@@ -124,10 +124,12 @@ extension ModelContainer {
     /// fires a SIGTRAP ~30 s after launch, crashing the host before tests can run.
     ///
     /// ## Return value
-    /// Returns a named tuple `(container:, cloudKitEnabled:)` so the caller can
-    /// surface the CloudKit status in `AppState` and the status bar without
-    /// re-querying the container. `cloudKitEnabled` is `false` whenever the
-    /// container fell back to the local store.
+    /// Returns a named tuple so the caller can surface the CloudKit status in `AppState` and the
+    /// status bar without re-querying the container. `cloudKitEnabled` is `false` whenever the
+    /// container fell back to the local store. `initError` carries the actual `NSError` behind a
+    /// fallback, and `storeDiagnostic` names the record-type difference between the store on disk
+    /// and this build (see ``StoreSchemaDiagnostic``) — non-`nil` only on the fallback path, and
+    /// only when there was a store to inspect.
     ///
     /// ## Calling convention
     /// Call once at app startup from `FRUSExplorerApp`. The resulting container
@@ -156,7 +158,28 @@ extension ModelContainer {
     //
     // See Planning/130-CloudKit-SchemaInit.md for full context.
 
-    static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool, initError: NSError?) {
+    /// The on-disk locations of the two stores this app manages: the CloudKit-mirrored default
+    /// store and the local-only fallback.
+    ///
+    /// Derived from `ModelConfiguration.url` rather than assembled from a path, so the app and
+    /// ``PendingStoreReset`` can never disagree with SwiftData about where a store lives — the
+    /// class of bug that made the old reset a no-op. Order is significant only in that the first
+    /// element is the mirrored store; both are cleared together by a reset.
+    static var managedStoreURLs: [URL] {
+        // Separate `Schema` instances: a Schema handed to a CloudKit configuration can carry
+        // CloudKit validation state into any later container built from it (see `frusModelTypes`).
+        // Neither of these configurations is used to build a container, but the rule is cheap to
+        // keep and expensive to rediscover.
+        let cloud = ModelConfiguration(schema: Schema(frusModelTypes), isStoredInMemoryOnly: false)
+        let local = ModelConfiguration(
+            "FRUSExplorerLocal", schema: Schema(frusModelTypes),
+            isStoredInMemoryOnly: false, cloudKitDatabase: .none
+        )
+        return [cloud.url, local.url]
+    }
+
+    static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool,
+                                       initError: NSError?, storeDiagnostic: StoreSchemaDiagnostic?) {
         // Skip CloudKit when running under the unit-test host (XCTestConfigurationFilePath)
         // or the UI-test app process (FRUS_UI_TEST_MODE injected via launchEnvironment).
         // Without this, CloudKit's background sync fires a SIGTRAP ~30 s after launch
@@ -167,7 +190,18 @@ extension ModelContainer {
             let reason = ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
                 ? "UI test mode" : "XCTest host"
             print("[SwiftData] \(reason) detected — using an in-memory store (no CloudKit)")
-            return (makeEphemeralContainer(), false, nil)
+            return (makeEphemeralContainer(), false, nil, nil)
+        }
+
+        // A reset requested from Settings ▸ Data & Recovery ▸ Fix iCloud Sync. This is the only
+        // point in the process where no store is open, which is why the button defers to here
+        // rather than deleting the files under a live connection. Deliberately AFTER the test-host
+        // guard: a test process must never consume the owner's pending reset.
+        if let outcome = PendingStoreReset.performIfRequested(storeURLs: managedStoreURLs) {
+            print("[SwiftData] Fix iCloud Sync: removed \(outcome.removed.count) file(s) — \(outcome.removed.joined(separator: ", "))")
+            if !outcome.isClean {
+                print("[SwiftData] ⚠️  Fix iCloud Sync could not remove: \(outcome.failed.joined(separator: ", "))")
+            }
         }
 
         // Use a fresh schema for the CloudKit attempt.
@@ -184,7 +218,7 @@ extension ModelContainer {
             // this path — a local-only or test-host container never talks to CloudKit, so its
             // deploy state is not a fact about anything. Costs one `isEmpty` on an array literal.
             CloudKitSchemaInventory.logDeployStateIfNeeded()
-            return (container, true, nil)
+            return (container, true, nil, nil)
         } catch {
             // CloudKit unavailable: log the full error so developers/testers can diagnose
             // the exact failure reason (schema migration, entitlement, sign-in, etc.).
@@ -203,7 +237,18 @@ extension ModelContainer {
             print("[SwiftData] ⚠️  Error: \(nsError)")
             print("[SwiftData] ⚠️  localizedDescription: \(nsError.localizedDescription)")
             print("[SwiftData] ⚠️  Data changes will NOT sync across devices until this is resolved.")
-            return (makeLocalContainer(), false, nsError)
+            // Name the record-type difference between the store on disk and this build, at the
+            // moment of failure. Diagnosing this by hand took a sqlite3 session against
+            // Z_METADATA; the comparison is two sets and a subtraction, so the app does it. Safe
+            // here specifically because the failure means nothing holds the file open.
+            let diagnostic = StoreSchemaDiagnostic.diagnose(
+                storeURL: cloudConfig.url,
+                modelEntityNames: cloudSchema.entities.map(\.name)
+            )
+            if let diagnostic {
+                print("[SwiftData] ⚠️  \(diagnostic.summary)")
+            }
+            return (makeLocalContainer(), false, nsError, diagnostic)
         }
     }
 

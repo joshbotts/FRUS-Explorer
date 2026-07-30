@@ -272,6 +272,17 @@ final class AppState {
     /// note on `ModelContainer.frusModelTypes`) without attaching a console.
     var cloudKitInitError: String? = nil
 
+    /// The record-type difference between the store on disk and this build, when the container
+    /// fell back to local-only and there was a store to inspect.
+    ///
+    /// `nil` on a healthy launch, and also `nil` when the fallback had no store to compare against
+    /// (a first launch) — those are different facts from "the lists agree", which is a non-`nil`
+    /// value with `isMismatch == false` and rules out a stale store as the cause.
+    ///
+    /// Set by `FRUSExplorerApp.bootApp()`. Read by the debug launch alert, which exists because a
+    /// silent fallback ran for 31 launches over four days behind nothing but a small orange chip.
+    var storeSchemaMismatch: StoreSchemaDiagnostic? = nil
+
     /// Real-time CloudKit sync state, updated by observing
     /// `NSPersistentCloudKitContainer.eventChangedNotification`.
     ///
