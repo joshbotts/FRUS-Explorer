@@ -980,6 +980,65 @@ struct RunnerEndToEndTests {
         #expect(try sandbox.outputFiles()["series/rg_486.json"] != good)
     }
 
+    @Test("PROJECT_ONLY re-projects an API store at the depth it was HARVESTED at")
+    func projectOnlyHonoursHarvestedDepth() async throws {
+        // The bug that cost 21 groups their file units: PROJECT_ONLY took depth from the plan, which
+        // defaults to `series`, so a bare consolidation over a seriesAndFileUnits store silently
+        // discarded every file unit and still reported success.
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+
+        let deepPlan = RecordGroupHarvestPlan(
+            groups: [RecordGroupPlan(number: 486, depth: .seriesAndFileUnits)])
+        let harvested = try await RecordGroupCatalogRunner.run(
+            plan: deepPlan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: ScriptedTransport(bodies: [:]), generated: "2026-07-30",
+            mode: .init(apiOnly: true), apiKey: "test-key",
+            apiTransport: ScriptedAPITransport(responses: [
+                (ScriptedAPITransport.groupNodePage(seriesCount: 2), 200),
+                (ScriptedAPITransport.page(naIds: [1, 2], total: 2), 200),          // series
+                (ScriptedAPITransport.fileUnitPage(naIds: [100, 101], total: 2), 200),
+            ]))
+        #expect(harvested.manifest.recordGroups.first?.harvestedFileUnitCount == 2)
+
+        // Now consolidate with NO DEPTH set — the plan therefore says `series`.
+        let consolidated = try await RecordGroupCatalogRunner.run(
+            plan: Self.plan, outputDirectory: sandbox.output, cacheDirectory: sandbox.cache,
+            transport: ScriptedTransport(bodies: [:]), generated: "2026-07-30",
+            mode: .init(projectOnly: true))
+        // The file units survive, because the depth came from the API checkpoint.
+        let group = try #require(consolidated.manifest.recordGroups.first)
+        #expect(group.depth == .seriesAndFileUnits)
+        #expect(group.harvestedFileUnitCount == 2)
+        #expect(group.harvestedSeriesCount == 2)
+    }
+
+    @Test("The committed sample is capped, and stays a cross-section rather than a prefix")
+    func sampleIsCapped() throws {
+        // A fixed interval does not bound a committed file: 1-in-25 of 751,880 file-unit records
+        // produced a 250 MB series-sample.json, which is not a thing to put in git.
+        let many = (1...5000).map {
+            HarvestedRecord(naId: String($0), title: "T\($0)", levelOfDescription: "series",
+                            recordGroupNumber: 486, catalogURL: "u")
+        }
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let writer = RecordGroupCatalogWriter(outputDirectory: sandbox.output, sampleEvery: 1)
+        try writer.prepare()
+        try writer.writeSample(many, totalRecords: 5000, generated: "2026-07-30")
+
+        struct Sample: Codable { let totalRecords: Int; let sampledRecords: Int
+                                 let records: [HarvestedRecord] }
+        let decoded = try JSONDecoder().decode(
+            Sample.self, from: try Data(contentsOf: writer.sampleURL))
+        #expect(decoded.records.count == RecordGroupCatalogWriter.sampleCap)
+        #expect(decoded.sampledRecords == RecordGroupCatalogWriter.sampleCap)
+        #expect(decoded.totalRecords == 5000)
+        // Evenly spread, not the first 500: the last kept record is near the end of the input.
+        let lastNaId = Int(decoded.records.last?.naId ?? "0") ?? 0
+        #expect(lastNaId > 4000, "sample should span the corpus, got last naId \(lastNaId)")
+    }
+
     @Test("API_SURVEY writes into its own subtree and cannot clobber a harvest's report")
     func surveyDoesNotClobber() async throws {
         let sandbox = try Sandbox()

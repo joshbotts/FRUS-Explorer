@@ -211,6 +211,13 @@ public struct RecordGroupCatalogRunner {
         let rawStore = RawRecordStore(directory: cacheDirectory.appendingPathComponent("raw"))
         let checkpoints = CheckpointStore(
             directory: cacheDirectory.appendingPathComponent("checkpoints"))
+        // A separate checkpoint namespace for API harvests, recording the DEPTH the store was
+        // harvested at. Without it, PROJECT_ONLY fell back to the plan's depth — which defaults to
+        // `series` — and silently re-projected a file-unit store at series depth, dropping 495,212
+        // file units from 21 groups' shards while reporting success. Separate from the bulk
+        // checkpoints because a group can legitimately have both.
+        let apiCheckpoints = CheckpointStore(
+            directory: cacheDirectory.appendingPathComponent("checkpoints-api"))
         let harvester = RecordGroupHarvester(client: client, rawStore: rawStore,
                                             checkpoints: checkpoints, log: log)
         // The refresh lives in its own store rather than overwriting the snapshot's. Keeping both is
@@ -342,8 +349,12 @@ public struct RecordGroupCatalogRunner {
                         recordGroup: group.number, depth: group.depth, state: .partial))
                     continue
                 }
-                // Success: swap the staged fetch in.
+                // Success: swap the staged fetch in, and record the depth it was harvested at.
                 try apiStore.commitStaging(recordGroup: group.number)
+                try apiCheckpoints.save(HarvestCheckpoint(
+                    recordGroup: group.number, depth: group.depth,
+                    lastCompletedShardIndex: 1, shardCount: 1,
+                    recordsWritten: fetch.recordCount))
                 outcome = RecordGroupHarvestOutcome(
                     recordGroup: group.number, depth: group.depth,
                     recordsStored: fetch.recordCount, state: .complete)
@@ -401,8 +412,20 @@ public struct RecordGroupCatalogRunner {
                     // fetched sits in that same store — so a short store still fails the run.
                     builderForGroup = apiBuilder
                     sourcesUsed.insert(Self.apiSourceKind)
+                    // Depth comes from the API checkpoint, NOT from the plan. The plan's depth defaults
+                    // to `series`, so a bare `PROJECT_ONLY=1` over a file-unit store re-projected it at
+                    // series depth and quietly discarded every file unit — 495,212 of them across 21
+                    // groups, with the run reporting success.
+                    let apiCheckpoint = apiCheckpoints.load(recordGroup: group.number)
+                    let storedDepth = apiCheckpoint?.depth ?? group.depth
+                    if apiCheckpoint == nil {
+                        reviewNotes.append("RG \(group.number): no API checkpoint, so its harvested "
+                                           + "depth is unknown — re-projecting at '\(group.depth.rawValue)'. "
+                                           + "If the store holds deeper levels they will be dropped; "
+                                           + "pass DEPTH explicitly or re-harvest.")
+                    }
                     outcome = RecordGroupHarvestOutcome(
-                        recordGroup: group.number, depth: group.depth, state: .complete)
+                        recordGroup: group.number, depth: storedDepth, state: .complete)
                 }
             } else {
                 sourcesUsed.insert(Self.bulkSourceKind)

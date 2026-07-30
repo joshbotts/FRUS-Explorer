@@ -71,6 +71,25 @@ extension ScriptedAPITransport {
         """
     }
 
+    /// A page of fileUnit-level records, each carrying a series ancestor as the real data does.
+    static func fileUnitPage(naIds: [Int], recordGroup: Int = 486, total: Int? = nil) -> String {
+        let hits = naIds.map { naId in
+            """
+            {"_source":{"record":{"naId":\(naId),"title":"File unit \(naId)",
+              "levelOfDescription":"fileUnit",
+              "ancestors":[
+                {"distance":1,"levelOfDescription":"series","naId":1,"title":"Series One"},
+                {"distance":2,"levelOfDescription":"recordGroup","naId":22345815,
+                 "recordGroupNumber":\(recordGroup),"title":"RG"}]}},
+             "sort":["\(naId)"]}
+            """
+        }.joined(separator: ",")
+        let totalBlock = total.map { ",\"total\":{\"value\":\($0)}" } ?? ""
+        return """
+        {"statusCode":200,"body":{"hits":{"hits":[\(hits)]\(totalBlock)}}}
+        """
+    }
+
     static let emptyPage = """
     {"statusCode":200,"body":{"hits":{"hits":[]}}}
     """

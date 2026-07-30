@@ -54,6 +54,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10448682,"Department of State. U.S. Embassy, Mexico. (ca. 12/08/1898 - )",organization,34,1,84,Compiler=8 Most Recent=26
 10447057,Board of Economic Warfare. (12/17/1941 - 07/15/1943),organization,33,1,169,Most Recent=4 Predecessor=29
 10467395,Commission Established by an Exchange of Notes between the United States and Great Britain. (1872 - 05/29/1876),organization,33,1,76,Most Recent=33
+10581698,"Roosevelt, Theodore, 1858-1919",person,33,1,59,Recipient=32 Signer=1
 10477287,Foreign Operations Administration. Office of the Deputy Director for Operations. Office of Far Eastern Operations. (08/01/1953 - 06/30/1955),organization,32,1,469,Most Recent=16 Predecessor=16
 10506651,Department of State. Bureau of European Affairs. (1949 - 09/15/1983),organization,31,1,59,Most Recent=21 Predecessor=10
 10481865,Department of State. Bureau of Far Eastern Affairs. (10/03/1949 - 11/01/1966),organization,31,1,59,Collector=1 Most Recent=20 Predecessor=10
@@ -141,6 +142,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10477980,Mutual Security Agency. Productivity and Technical Assistance Division. (1951 - 08/01/1953),organization,21,2,286 469,Most Recent=10 Predecessor=11
 10477071,Reparation Commission. Section of Reparations and Restitutions in Kind. (ca. 12/1919 - ca. 1930),organization,21,1,43,Most Recent=21
 10462214,U.S. Information Agency. Bureau of Information. Office of Information Resources. Library Programs Division. Special Collections Branch. Office of the Historical Librarian. (1995 - 10/01/1999),organization,21,1,306,Most Recent=19 Predecessor=2
+10582216,"Cleveland, Grover, 1837-1908",person,20,1,59,Corrector=1 Correspondent=12 Recipient=7
 10534478,Department of State. Agency for International Development. Bureau for Program and Policy Coordination. Office of International Assistance Coordination. (1970 - 1977),organization,20,1,286,Most Recent=20
 10478522,Department of State. Bureau of African Affairs. Office of West African Affairs. (ca. 1960 - 1985 ?),organization,20,1,59,Most Recent=18 Predecessor=2
 10477586,Department of State. Bureau of Near Eastern and South Asian Affairs. (08/20/1958 - 08/24/1992),organization,20,1,59,Most Recent=19 Predecessor=1
@@ -154,6 +156,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10468624,"Department of State. U.S. Embassy, Portugal. (ca. 05/04/1944 - )",organization,20,2,59 84,Most Recent=20
 10477664,Department of State. U.S. Mission Berlin. (ca. 1945 - 10/03/1990),organization,20,1,84,Most Recent=19 Predecessor=1
 10466252,"Department of State. U.S. Section, Alaska Boundary Tribunal. (1903 - 1906)",organization,20,1,76,Most Recent=19 Predecessor=1
+10568015,"McKinley, William, 1843-1901",person,20,1,59,Correspondent=15 Recipient=5
 10453200,Office for Emergency Management. Office of the Coordinator of Inter-American Affairs. (07/30/1941 - 03/23/1945),organization,20,2,229 469,Most Recent=9 Predecessor=11
 10511440,President (1913-1921 : Wilson). The Inquiry. (1917 - 12/1918),organization,20,1,256,Most Recent=20
 10497429,U.S. Information Agency. Research and Reference Service. The Agency Library. (10/04/1961 - 07/01/1966),organization,20,1,306,Most Recent=1 Predecessor=19
@@ -551,6 +554,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10479710,Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Labor Affairs. Labor Programs Division. (08/01/1953 - 06/30/1955),organization,9,1,469,Predecessor=9
 10479662,Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Transportation. (08/01/1953 - 06/30/1955),organization,9,1,469,Most Recent=1 Predecessor=8
 10473638,Geneva Tribunal of Arbitration. (12/15/1871 - 09/14/1872),organization,9,2,59 76,Most Recent=9
+10581634,"Harrison, Benjamin, 1833-1901",person,9,1,59,Correspondent=4 Recipient=5
 18510957,Interdepartmental Committee on Cultural and Scientific Cooperation. (12/20/1944 - 1950),organization,9,1,353,Most Recent=9
 10475832,"Mixed Claims Commission, United States and Germany. Office of the Umpire. (1922 - 06/30/1941)",organization,9,1,76,Most Recent=9
 10478489,Mutual Security Agency. Executive Secretariat. Policy Information Staff. (11/01/1951 - 08/01/1953),organization,9,1,469,Predecessor=9
@@ -651,6 +655,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10479695,"Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Public Services. Public Health Division. Near East, South Asia, and Africa Branch. (08/01/1953 - 06/30/1955)",organization,8,1,469,Predecessor=8
 10475176,"Halifax Fisheries Commission, United States and Great Britain. (06/15/1877 - 11/23/1877)",organization,8,1,76,Most Recent=8
 10479214,International Development Advisory Board. (09/08/1950 - 1955),organization,8,1,469,Most Recent=7 Predecessor=1
+10580370,"Lincoln, Abraham, 1809-1865",person,8,1,59,Recipient=8
 10477306,Mutual Security Agency. Office of the Assistant Director for Supply. Food and Agriculture Division. Tobacco Branch. Office of the Chief. (1951 - 08/01/1953),organization,8,1,469,Most Recent=8
 10505444,Mutual Security Agency. Office of the Assistant Director for Supply. Industrial Commodities Division. Forest Products Branch. (ca. 09/1952 - 08/01/1953),organization,8,1,469,Most Recent=4 Predecessor=4
 10478030,Mutual Security Agency. Technical Cooperation Administration. Asian Development Service. Pakistan Branch. (06/01/1953 - 08/01/1953),organization,8,1,469,Predecessor=8
@@ -677,6 +682,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10476441,"Commission Representing the United States at the Brazilian Centennial Exposition, 1922-23. (1921 - 1923)",organization,7,1,43,Most Recent=7
 10474670,"Commission Representing the United States at the International Exhibition at Melbourne, Australia. (1879 - 1881)",organization,7,1,43,Most Recent=7
 10476316,"Commission Representing the United States at the International Exposition at Seville, Spain. (1925 - 1930)",organization,7,1,43,Most Recent=7
+10475820,Commission Representing the United States at the Paris Universal Exposition of 1878. 1878-1881,organization,7,1,43,Most Recent=6 Participant=1
 10476120,Commission Representing the United States at the Paris Universal Exposition of 1900. Exhibits Department. (1899 - 1900),organization,7,1,43,Most Recent=7
 10472891,Committee on Public Information. Executive Division. (04/13/1917 - 08/21/1919),organization,7,1,63,Most Recent=7
 10507846,Department of State. Agency for International Development. Bureau for Africa. Office of Capital Development and Finance. (1963 - 1971),organization,7,1,286,Most Recent=5 Predecessor=2
@@ -740,6 +746,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10456424,"Department of State. U.S. Consulate, Mexico City, Mexico. (1817 - 1946)",organization,7,1,84,Most Recent=7
 10485884,"Department of State. U.S. Consulate, Nuevo Laredo, Mexico. (ca. 11/30/1871 - 1967)",organization,7,1,84,Most Recent=7
 10487561,"Department of State. U.S. Consulate, Palermo, Italy. (ca. 06/02/1803 - 1974)",organization,7,1,84,Most Recent=7
+10479226,"Department of State. U.S. Consulate, Paramaribo, Suriname. 1858-11/25/1975",organization,7,2,59 84,Correspondent=1 Most Recent=4 Predecessor=2
 10480841,"Department of State. U.S. Consulate, Strasbourg, France. (1919 - 1965)",organization,7,1,84,Most Recent=7
 10455916,"Department of State. U.S. Consulate, Suez, Egypt. (1904 - 1946)",organization,7,1,84,Most Recent=7
 10486915,"Department of State. U.S. Consulate, Tunis, Tunisia. (ca. 1795 - ca. 06/05/1956)",organization,7,1,84,Most Recent=6 Predecessor=1
@@ -815,7 +822,6 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10473306,Arbitration between the United States and Venezuela. (10/27/1894 - 04/05/1895),organization,6,1,76,Most Recent=6
 10476135,"Arbitration of the Emperor of Germany under Article XXXIV of the Treaty of May 8, 1871, between the United States and Great Britain. (12/12/1871 - 03/10/1873)",organization,6,1,76,Most Recent=6
 10473124,"Board of U.S. Commissioners Appointed Pursuant to a Convention with France, April 30, 1803. (05/18/1803 - 12/01/1804)",organization,6,1,76,Most Recent=6
-10475820,Commission Representing the United States at the Paris Universal Exposition of 1878. (1878 - 1881),organization,6,1,43,Most Recent=6
 10476119,Commission Representing the United States at the Paris Universal Exposition of 1900. Business Department. (1898 - 1901),organization,6,1,43,Most Recent=6
 10457257,Conference of Deputy Foreign Ministers. (1945 - 1946),organization,6,1,43,Most Recent=6
 10476571,"Conference on Near Eastern Affairs (Lausanne, Switzerland). First Phase. U.S. Mission. (11/20/1922 - 02/04/1923)",organization,6,1,43,Most Recent=6
@@ -915,7 +921,6 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10488268,"Department of State. U.S. Consulate, Medellin, Colombia. (ca. 1859 - 1970)",organization,6,1,84,Most Recent=6
 10456602,"Department of State. U.S. Consulate, Mexicali, Mexico. (ca. 1918 - 06/30/1973)",organization,6,1,84,Most Recent=6
 10485876,"Department of State. U.S. Consulate, Montreal, Quebec, Canada. (ca. 02/09/1850 - 1971)",organization,6,1,84,Most Recent=6
-10479226,"Department of State. U.S. Consulate, Paramaribo, Suriname. (1858 - 11/25/1975)",organization,6,1,84,Most Recent=4 Predecessor=2
 10456428,"Department of State. U.S. Consulate, Piedras Negras, Mexico. (1863 - 1963)",organization,6,1,84,Most Recent=6
 10486075,"Department of State. U.S. Consulate, Plymouth, England. (ca. 1875 - 1948)",organization,6,1,84,Most Recent=6
 10479296,"Department of State. U.S. Consulate, Port of Spain, Trinidad. (1855 - 08/31/1962)",organization,6,1,84,Most Recent=3 Predecessor=3
@@ -958,9 +963,11 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10478491,Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Industrial Resources. Industrial Procurement Division. (08/01/1953 - 06/30/1955),organization,6,1,469,Most Recent=1 Predecessor=5
 10506049,Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Industrial Resources. Industrial Training Division. Work Study Training Branch. (08/01/1953 - 06/30/1955),organization,6,1,469,Most Recent=3 Predecessor=3
 10479694,"Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Public Services. Public Health Division. Latin America, Europe, and Africa Branch. (08/01/1953 - 06/30/1955)",organization,6,1,469,Most Recent=1 Predecessor=5
+10568548,"Grant, Ulysses S., 1822-1885",person,6,1,59,Recipient=6
 10474616,International Authority of the Ruhr. Permanent Financial Committee. (1949 - 1952),organization,6,1,43,Most Recent=6
 10475764,International Technical Commission of Aerial Legal Experts. U.S. Delegation. (05/1926 - 01/1948),organization,6,1,43,Most Recent=6
 10491598,International Telecommunications Union. International Radio Consultative Committee. (1932 - 1992),organization,6,1,43,Most Recent=5 Publisher=1
+10581911,"Jefferson, Thomas, 1743-1826",person,6,1,59,Author=1 Correspondent=4 Recipient=1
 10472639,"Mixed Claims Commission, United States and Great Britain. (08/25/1823 - 03/26/1827)",organization,6,1,76,Most Recent=4 Predecessor=2
 10477788,Mutual Security Agency. Office of Labor Advisors. (1951 - 08/01/1953),organization,6,1,469,Most Recent=2 Predecessor=4
 10478560,Mutual Security Agency. Office of the Assistant Director for Programs. (1951 - 08/01/1953),organization,6,1,469,Most Recent=1 Predecessor=5
@@ -1291,6 +1298,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10473044,Arbitration by the King of England of the Alsop & Company Claim. (12/01/1909 - 07/05/1910),organization,4,1,76,Most Recent=4
 10530182,Arms Control and Disarmament Agency. Office of the Director. Office of the General Counsel. (1961 - ca. 1970),organization,4,1,383,Most Recent=4
 10473045,"Board of Commissioners Established by an Act of March 3, 1859. (11/14/1859 - 01/13/1860)",organization,4,1,76,Most Recent=4
+10582993,"Buchanan, James, 1791-1868",person,4,1,59,Recipient=4
 10487333,Combined Economic Board. Secretariat. Finance Committee. (1950 ? - 1961 ?),organization,4,1,469,Most Recent=4
 10485682,Combined Economic Board. Secretariat. Overall Requirements Committee. (1951 ? - 1961 ?),organization,4,1,469,Most Recent=4
 10485854,Combined Economic Board. Secretariat. Relief and Aid Goods Committee. (1951 ? - 1961 ?),organization,4,1,469,Most Recent=4
@@ -1625,6 +1633,8 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10456896,Paris Peace Conference. Political and Territorial Commission for Italy. (08/13/1946 - 10/05/1946),organization,4,1,43,Most Recent=4
 10457076,Paris Peace Conference. Political and Territorial Commission for Romania. (08/16/1946 - 09/25/1946),organization,4,1,43,Most Recent=4
 10474582,Peace Corps. Office of General Counsel. (1982 - ),organization,4,1,490,Most Recent=4
+10581430,"Pierce, Franklin, 1804-1869",person,4,1,59,Recipient=4
+10569778,"Polk, James K. (James Knox), 1795-1849",person,4,1,59,Recipient=4
 10448340,President (1933-1945 : Roosevelt). Harriman Mission to London. (03/06/1941 - 10/23/1943),organization,4,1,169,Predecessor=4
 10449236,President (1933-1945 : Roosevelt). Interdepartmental Committee for Coordination of Foreign and Domestic Military Purchases. (12/06/1939 - 04/14/1941),organization,4,1,169,Most Recent=4
 10468017,President (1933-1945 : Roosevelt). President's War Relief Control Board. (07/25/1942 - 05/15/1946),organization,4,1,469,Most Recent=1 Predecessor=3
@@ -1646,6 +1656,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10473577,"Trail Smelter Arbitration between the United States and Canada under the Convention of April 15, 1935. (10/1928 - 03/11/1941)",organization,4,1,76,Most Recent=3 Predecessor=1
 10474150,"Tribunal Convened by a Convention between the United States and the Dominican Republic, April 28, 1902. (03/18/1903 - 04/30/1904)",organization,4,1,76,Most Recent=4
 10450595,Tripartite Commission for the Restitution of Monetary Gold. (09/27/1946 - 09/09/1998),organization,4,2,59 84,Collector=1 Originator=3
+10580347,"Tyler, John, 1790-1862",person,4,1,59,Recipient=4
 10536327,U.S. Agency for International Development. (04/01/1999 - ),organization,4,1,286,Most Recent=2 Predecessor=2
 10535035,U.S. Agency for International Development. Bureau for Europe and Eurasia. Office of European Country Affairs. (ca. 2000 - ca. 2011),organization,4,1,286,Most Recent=4
 10481581,U.S. Citizens' Commission on NATO (11/16/1957 - 06/30/1962),organization,4,1,59,Most Recent=4
@@ -1692,6 +1703,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10450540,War Trade Board. Bureau of Imports. Office of the Director. (10/15/1917 - 06/30/1919),organization,4,2,182 229,Most Recent=4
 10462513,War Trade Board. Bureau of War Trade Intelligence. (10/15/1917 - 05/12/1919),organization,4,1,182,Most Recent=3 Predecessor=1
 10454543,War Trade Board. Contraband Committee. (02/12/1918 - 10/11/1918),organization,4,1,182,Most Recent=1 Predecessor=3
+10677887,"Washington, George, 1732-1799",person,4,1,59,Correspondent=3 Recipient=1
 10569305,"Wick, Charles Z., 1917-2008",person,4,1,306,Correspondent=2 Director=1 Participant=1
 10503523,Yalta Conference. (02/04/1945 - 02/11/1945),organization,4,1,43,Most Recent=4
 10474581,ACTION. Peace Corps. Office of General Counsel. (07/01/1971 - 1982),organization,3,1,490,Most Recent=3
@@ -1705,6 +1717,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10472680,Arbitration between the United States and the Netherlands. (1925 - 1928),organization,3,1,76,Most Recent=3
 10515458,Arms Control and Disarmament Agency. Multilateral Affairs Bureau. (1977 - 1989),organization,3,1,383,Most Recent=3
 10530180,Arms Control and Disarmament Agency. Office of the Director. Office of the Public Affairs Adviser. (1961 - ca. 1970),organization,3,1,383,Most Recent=3
+10581802,"Arthur, Chester Alan, 1829-1886",person,3,1,59,Recipient=3
 10461853,Associated Press. World Wide Photos,organization,3,1,306,Photographer=3
 10474154,"Board of Commissioners Convened by a Convention between the United States and Ecuador, November 25, 1862. (08/22/1864 - 08/17/1865)",organization,3,1,76,Most Recent=3
 10463150,Board of Control and Management of U.S. Government Exhibits to the World's Columbian Exposition. (04/25/1890 - ca. 1894),organization,3,1,43,Most Recent=3
@@ -2107,6 +2120,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10678039,"Eisenhower, Dwight D. (Dwight David), 1890-1969",person,3,2,306 469,Correspondent=2 Recipient=1
 10475928,Emergency Advisory Committee for Political Defense. (1942 - 1947),organization,3,1,43,Most Recent=3
 10479282,European Advisory Commission. (11/01/1943 - 09/10/1945),organization,3,1,43,Most Recent=3
+10582402,"Fillmore, Millard, 1800-1874",person,3,1,59,Recipient=3
 10568056,"Finley, David E. (David Edward)",person,3,1,239,Originator=3
 10479768,Foreign Operations Administration. Mission to Bolivia. Office of Administrative Services. (08/01/1953 - 06/30/1955),organization,3,1,469,Most Recent=3
 10477389,Foreign Operations Administration. Mission to Bolivia. Office of the Director. (08/01/1953 - 06/30/1955),organization,3,1,469,Most Recent=3
@@ -2138,6 +2152,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10679523,"Goldberg, Arthur J. (Arthur Joseph), 1908-1990",person,3,1,84,Author=2 Speaker=1
 10569656,"Hall, Glenn E.",person,3,1,59,Photographer=3
 10599410,"Handley, William Jules, 1918-1979",person,3,1,306,Correspondent=3
+10583125,"Hayes, Rutherford Birchard, 1822-1893",person,3,2,59 76,Correspondent=1 Recipient=2
 10679508,"Hoover, J. Edgar (John Edgar), 1895-1972",person,3,2,76 306,Author=1 Correspondent=1 Writer of accompanying material=1
 10568186,"Hull, Cordell, 1871-1955",person,3,3,43 59 84,Correspondent=2 Originator=1
 10497483,Inter-American Committee on the Alliance for Progress. Office of the U.S. Representative (1963 - ca. 1968),organization,3,1,43,Most Recent=3
@@ -2152,14 +2167,19 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10503567,International Labour Organization. International Labor Office. Governing Body. Office of the U.S. Government Member. (ca. 1946 - ),organization,3,1,43,Most Recent=3
 10493373,International Telecommunication Union. Provisional Frequency Board. (07/1948 - 03/1950),organization,3,1,43,Most Recent=3
 10467363,International Tin Study Group,organization,3,1,43,Predecessor=3
+10581349,"Jackson, Andrew, 1767-1845",person,3,1,59,Recipient=3
+10582826,"Johnson, Andrew, 1808-1875",person,3,1,59,Recipient=3
 18549938,Joint USA-USSR Documentary Publication Project on Russian-American Relations. (10/1976 - 1981),organization,3,1,353,Most Recent=3
+10581521,"Léopold II, King of the Belgians, 1835-1909",person,3,1,59,Author=1 Correspondent=2
 10442921,"Magnum Photos, inc.",organization,3,1,306,Photographer=3
 10472059,Meetings of Military Governors and Ministers President of the Western Zone on Future German Political Organization. (07/01/1948 - 08/07/1948),organization,3,1,43,Most Recent=3
+10586162,"Meiji, Emperor of Japan, 1852-1912",person,3,1,59,Correspondent=3
 10472235,Ministers of Foreign Affairs of the American Republics. Meeting (1st : 1939 : Panama). U.S. Delegation. (09/15/1939 - 10/09/1939),organization,3,1,43,Most Recent=3
 10476401,"Ministers of Foreign Affairs of the American Republics. Meeting (2nd : 1940 : Havana, Cuba). U.S. Delegation. (1940 - 1940)",organization,3,1,43,Most Recent=3
 10477137,"Ministers of Foreign Affairs of the American States Meeting (4th : 1951 : Washington, D.C.). U.S. Delegation. (03/1951 - 04/1951)",organization,3,1,43,Most Recent=2 Predecessor=1
 10475164,"Mixed Claims Commission, United States and Germany. German Commission. Office of the Commissioner. (1922 - 1939)",organization,3,1,76,Most Recent=3
 10472347,"Mixed Claims Commission, United States and Peru. (09/04/1869 - 02/26/1870)",organization,3,1,76,Most Recent=3
+10582971,"Monroe, James, 1758-1831",person,3,1,59,Correspondent=1 Recipient=2
 10478981,Mutual Security Agency. Office of Information. Office of the Director. (1951 - 08/01/1953),organization,3,1,469,Most Recent=3
 10477699,Mutual Security Agency. Office of the Assistant Director for Europe. European Program Division. Dependent Areas Branch. (12/30/1951 - 08/01/1953),organization,3,1,469,Most Recent=2 Predecessor=1
 10477524,Mutual Security Agency. Office of the Assistant Director for Europe. European Program Division. Office of the Director. (12/30/1951 - 08/01/1953),organization,3,1,469,Most Recent=1 Predecessor=2
@@ -2226,6 +2246,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 23807285,Peace Corps. Office of Volunteer Recruitment and Selection. Office of the Associate Director. (1985 - ),organization,3,1,490,Most Recent=3
 10475291,Peace Corps. Office of Volunteer Support. Office of Medical Services. (ca. 1994 - 2013),organization,3,1,490,Most Recent=3
 10476615,Peace Corps. Office of the Director. Executive Secretariat. (1982 - ),organization,3,1,490,Most Recent=3
+10573574,"Popper, David H. (David Henry), 1912-",person,3,1,59,Correspondent=1 Originator=1 Recipient=1
 10502860,Potsdam Conference. (07/16/1945 - 08/02/1945),organization,3,1,43,Most Recent=3
 10481719,President (1933-1945 : Roosevelt). Executive Committee on Commercial Policy. (11/11/1933 - 08/07/1944),organization,3,1,353,Most Recent=3
 10448341,President (1933-1945 : Roosevelt). U.S. Mission for Economic Affairs in London. (10/19/1943 - 07/1947),organization,3,2,59 169,Most Recent=3
@@ -2335,12 +2356,16 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10462689,War Trade Board. Bureau of War Trade Intelligence. Examining Division. (10/15/1917 - 05/12/1919),organization,3,1,182,Most Recent=3
 10462867,War Trade Board. Bureau of War Trade Intelligence. Listing Division. (10/15/1917 - 05/12/1919),organization,3,1,182,Most Recent=3
 10572810,"Webb, James E. (James Edwin), 1906-1992",person,3,1,59,Correspondent=1 Originator=2
+10570288,"Wilhelmina, Queen of the Netherlands, 1880-1962",person,3,1,59,Correspondent=3
 10535547,,organization,2,1,286,Most Recent=2
 10461861,,organization,2,1,306,Most Recent=2
 10473380,ACTION. Peace Corps. Office of Congressional Relations. (07/01/1971 - 1982),organization,2,1,490,Predecessor=2
+10580812,"Adams, John, 1735-1826",person,2,1,59,Correspondent=2
+10574330,"Adolph, Grand Duke of Luxembourg, 1817-1905",person,2,1,59,Correspondent=2
 10474059,Advisory Commission on International Educational and Cultural Affairs. (09/21/1961 - 04/01/1978),organization,2,2,59 306,Author=1 Most Recent=1
 10444713,Agence Gamma (1967 - ),organization,2,1,306,Photographer=2
 10441833,Alaskan Boundary Tribunal.,organization,2,1,76,Most Recent=2
+10571828,"Aleksandar Obrenovic, King of Serbia, 1876-1903",person,2,1,59,Correspondent=2
 10477299,Allied Commission for Austria. Vienna Inter-Allied Command. Office of the U.S. Representative. (06/28/1946 - 07/27/1955),organization,2,1,84,Most Recent=2
 10469267,Allied Council for Japan (12/26/1945 - ca. 1952),organization,2,1,43,Most Recent=2
 10488677,Allied High Commission for Germany. (09/21/1949 - 05/05/1955),organization,2,2,43 466,Most Recent=2
@@ -2365,7 +2390,9 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10581206,"Bryan, William Jennings, 1860-1925",person,2,1,59,Correspondent=2
 10678016,"Bush, George, 1924-2018",person,2,2,59 306,Correspondent=1 Speaker=1
 10569819,"Caffery, Jefferson, 1886-1974",person,2,1,84,Correspondent=2
+10572620,"Carol I, King of Romania, 1839-1914",person,2,1,59,Correspondent=2
 10476877,"Centennial Exhibition (1876 : Philadelphia, Pa.) (05/10/1876 - 11/10/1876)",organization,2,1,43,Most Recent=2
+10581211,"Chulalongkorn, King of Siam, 1853-1910",person,2,1,59,Correspondent=2
 10601110,"Cleveland, James Harlan, 1918-2008",person,2,2,84 306,Correspondent=1 Originator=1
 10485853,Combined Economic Board. Secretariat. Community Development Committee. (1951 ? - 1961 ?),organization,2,1,469,Most Recent=2
 10487172,Combined Economic Board. Secretariat. Export Promotion Committee. (1950 ? - 1961 ?),organization,2,1,469,Most Recent=2
@@ -3069,6 +3096,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10460245,Displaced Persons Commission. Information and Editorial Division. (06/25/1948 - 08/31/1952),organization,2,1,278,Most Recent=2
 10462925,Displaced Persons Commission. Legal Division. Office of the General Counsel. (06/25/1948 - 08/31/1952),organization,2,1,278,Most Recent=2
 10576079,"Dutton, Frederick Gary, 1923- 2005",person,2,1,59,Author=1 Compiler=1
+10581801,"Díaz, Porfirio, 1830-1915",person,2,1,59,Correspondent=2
 10479324,Economic Cooperation Administration. Fiscal and Trade Policy Division. Office of the Special Economic Advisor. (1948 - 1951),organization,2,1,469,Predecessor=2
 10479667,Economic Cooperation Administration. Food and Agriculture Division. Fruit and Vegetable Branch. (1948 - 1951),organization,2,1,469,Most Recent=2
 10479836,Economic Cooperation Administration. Food and Agriculture Division. Livestock and Poultry Branch. Office of the Chief. (1948 - 1951),organization,2,1,469,Predecessor=2
@@ -3134,9 +3162,11 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10479527,Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Public Services. Public Health Division. Far East Branch. (08/01/1953 - 06/30/1955),organization,2,1,469,Predecessor=2
 10493276,Foreign Operations Administration. Office of the Deputy Director for Technical Services. Office of Public Services. Public Safety Division. (08/01/1953 - 06/30/1955),organization,2,1,286,Predecessor=2
 10485645,Foreign Operations Administration. U.S. Operations Mission to Laos. Agriculture Division. (08/01/1953 - 06/30/1955),organization,2,1,469,Most Recent=2
+196015584,"Gearan, Mark Daniel, 1956-",person,2,1,490,Author=2
 18557730,General Services Administration. National Archives and Records Service. Office of the Archivist of the United States. Office of the Special Assistant to the Archivist. (ca. 1977 - ca. 1980),organization,2,1,353,Most Recent=2
+26444799,"Gore, Christopher, 1758-1827",person,2,1,59,Correspondent=2
+10583117,"Hancock, John, 1737-1793",person,2,1,59,Correspondent=2
 10475174,Havana Round of the General Agreement on Tariffs and Trade. U.S. Delegation. (11/21/1947 - 03/1948),organization,2,1,43,Most Recent=1 Predecessor=1
-10583125,"Hayes, Rutherford Birchard, 1822-1893",person,2,1,76,Correspondent=1 Recipient=1
 10475015,Honduras-Nicaragua Boundary Arbitration. (1918 - 1918),organization,2,1,76,Most Recent=2
 10474823,Honorary Commission Representing the United States at the International Exposition of Electricity at Paris. (1881 - 1882),organization,2,1,43,Most Recent=2
 10583175,"Hughes, Charles Evans, 1862-1948",person,2,2,59 76,Originator=2
@@ -3164,7 +3194,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 18546321,International Working Group on Pact Organization. (ca. 1949 - 1950),organization,2,1,353,Most Recent=2
 18549955,International Working Group on the Washington Security Talks. (07/1948 - 04/1949),organization,2,1,353,Most Recent=2
 10511726,J. William Fulbright Foreign Scholarship Board. (02/16/1990 - ),organization,2,2,59 306,Most Recent=1 Predecessor=1
-10581911,"Jefferson, Thomas, 1743-1826",person,2,1,59,Author=1 Correspondent=1
+10581348,"Jay, John, 1745-1829",person,2,1,59,Correspondent=2
 10580733,"Jessup, Philip C. (Philip Caryl), 1897-",person,2,1,59,Originator=2
 10475104,Jessup-Malik Conversations. (03/1949 - 05/1949),organization,2,1,43,Most Recent=2
 10569863,"Johnston, Frank, 1941-",person,2,1,306,Photographer=2
@@ -3173,6 +3203,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 18549942,Joint USA-USSR Documentary Publication Project on Russian American Relations. Joint Editorial Board. U.S. Members. (10/1976 - 1981),organization,2,1,353,Most Recent=2
 10581021,"Khrushchev, Nikita Sergeevich, 1894-1971",person,2,2,306 469,Correspondent=2
 10574254,"Kiesselbach, Wilhelm, 1867-",person,2,1,76,Other=1 Signer=1
+10580532,"Knox, Henry, 1750-1806",person,2,1,59,Correspondent=2
 10581458,"Kohler, Foy D.",person,2,1,59,Author=1 Originator=1
 10611920,"Korry, Edward M. (Edward Malcolm), 1922-2003",person,2,2,59 84,Author=1 Originator=1
 10582412,"Lansing, Robert, 1864-1928",person,2,1,59,Correspondent=2
@@ -3180,9 +3211,12 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10474955,London Reparations Conference (1924). (07/16/1924 - 08/16/1924),organization,2,1,43,Originator=2
 10446004,"Louisiana Purchase Exposition (1904 : Saint Louis, Mo.). Board of Lady Managers.",organization,2,1,43,Most Recent=1 Originator=1
 10572122,"MacKnight, Jesse M. (Jesse Mackenzie), 1910-",person,2,1,59,Originator=2
+10581754,"Madison, James, 1751-1836",person,2,1,59,Recipient=2
 10582295,"Marshall, George C. (George Catlett), 1880-1959",person,2,1,59,Correspondent=2
+22337786,"Mauk, Rosie K.",person,2,1,490,Author=2
 10475105,Meetings Regarding a Swiss-Allied Accord (1949 : Washington). (05/05/1949 - 06/10/1949),organization,2,1,43,Most Recent=2
 10478561,Mixed Parole and Clemency Board. (06/10/1955 - 10/31/1958),organization,2,1,84,Most Recent=2
+10581415,"Morris, Robert, 1734-1806",person,2,1,59,Correspondent=2
 10485971,Mutual Security Agency. Mission to Germany. Office of Economic Affairs. (1951 - 08/01/1953),organization,2,1,469,Most Recent=2
 10485810,Mutual Security Agency. Mission to Italy. Food and Agriculture Division. (1951 - 08/01/1953),organization,2,1,469,Most Recent=2
 10487375,Mutual Security Agency. Mission to Portugal. Office of the Director. (1951 - 08/01/1953),organization,2,1,469,Most Recent=2
@@ -3210,6 +3244,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10479391,Mutual Security Agency. Technical Cooperation Administration. Office of the Legal Counsel. (06/01/1953 - 08/01/1953),organization,2,1,469,Most Recent=2
 10535231,Mutual Security Agency. U.S. Technical Cooperation Mission to India. (1951 - 08/01/1953),organization,2,1,469,Predecessor=2
 10443344,New China Pictures Co.,organization,2,1,306,Photographer=2
+10582469,"Nicholas II, Emperor of Russia, 1868-1918",person,2,1,59,Correspondent=2
 12009932,Office for Emergency Management. Division of Information. Radio Section. (03/1941 - 06/13/1942),organization,2,1,208,Most Recent=1 Predecessor=1
 10509776,Office for Emergency Management. Foreign Economic Administration. Bureau of Areas. European Branch. (11/13/1943 - 09/27/1945),organization,2,1,169,Most Recent=1 Predecessor=1
 10487371,Office for Emergency Management. Foreign Economic Administration. Bureau of Areas. European Branch. French Division. (ca. 01/1944 - ca. 07/1945),organization,2,1,169,Most Recent=2
@@ -3278,6 +3313,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10488653,Office of the Coordinator of Information. Foreign Information Service Branch. (07/11/1941 - 06/1942),organization,2,1,208,Predecessor=2
 10677881,"Ohly, John H. (John Hallowell), 1911-1990",person,2,2,59 469,Originator=2
 10487352,Organisation for European Economic Co-operation. (04/16/1948 - 09/1961),organization,2,2,59 469,Correspondent=1 Originator=1
+10569955,"Oscar II, King of Sweden, 1829-1907",person,2,1,59,Correspondent=2
 10600676,"Parker, Edwin Brewington, 1868-1929",person,2,1,76,Other=1 Signer=1
 10491383,Peace Corps. Office of Communications. (1982 - 1984),organization,2,1,490,Most Recent=1 Predecessor=1
 39055107,Peace Corps. Office of Health Services. Office of Medical Services. Epidemiology and Surveillance Unit. (2013 - ),organization,2,1,490,Most Recent=2
@@ -3303,13 +3339,14 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10460790,President (1969-1974 : Nixon). General Advisory Committee on Arms Control and Disarmament. (01/20/1969 - 08/09/1974),organization,2,1,383,Most Recent=2
 10503356,Quebec Conference (1st : 1943). (08/10/1943 - 08/25/1943),organization,2,1,43,Most Recent=2
 10503362,Quebec Conference (2nd : 1944). (09/12/1944 - 09/16/1944),organization,2,1,43,Most Recent=2
+10582261,"Randolph, Edmund, 1753-1813",person,2,1,59,Correspondent=2
 10476575,Reparation Commission. (1919 - 04/1931),organization,2,2,43 59,Most Recent=2
 10475612,Reparation Commission. Intelligence Service. (ca. 06/1921 - ca. 11/1924),organization,2,1,43,Most Recent=2
 10476577,Reparation Commission. Organization Committee. (1919 - 1921),organization,2,1,43,Most Recent=2
 10475949,Reparations Conference (2nd : 1929-30 : The Hague). (ca. 08/06/1929 - ca. 02/25/1930),organization,2,1,43,Originator=2
 10446331,Reuters ltd.,organization,2,1,306,Photographer=2
 10582598,"Rogers, William P. (William Pierce), 1913-2001",person,2,2,59 84,Correspondent=1 Recipient=1
-10581698,"Roosevelt, Theodore, 1858-1919",person,2,1,59,Recipient=1 Signer=1
+10580748,"Root, Elihu, 1845-1937",person,2,1,59,Author=1 Correspondent=1
 10575756,"Roskens, Ronald William, 1932-",person,2,1,286,Correspondent=1 Speaker=1
 10446068,"Rossiiskoe informatsionnoe agentstvo ""Novosti""",organization,2,1,306,Photographer=2
 10567746,"Rush, Kenneth, 1910-",person,2,2,59 84,Originator=2
@@ -3321,11 +3358,15 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 18556257,State-Army-Navy-Air Force Coordinating Committee. Subcommittee for Europe. (11/05/1947 - ca. 1948),organization,2,1,353,Most Recent=2
 18546339,State-War-Navy Coordinating Committee. Subcommittee on the United Nations. (1945 - 11/05/1947),organization,2,1,353,Most Recent=2
 10582274,"Stevenson, Adlai E. (Adlai Ewing), 1900- 1965",person,2,1,84,Author=2
+10582634,"Taft, William H. (William Howard), 1857-1930",person,2,1,59,Recipient=2
+10581251,"Taylor, Zachary, 1784-1850",person,2,1,59,Recipient=2
 10503027,Teheran Conference. (11/28/1943 - 12/01/1943),organization,2,1,43,Most Recent=2
 10481074,Thomas Jefferson Statue Commission. (1904 - 06/26/1934),organization,2,1,59,Most Recent=2
 10599409,"Thompson, Clary, 1912-1961",person,2,1,306,Correspondent=2
+10581520,"Thomson, Charles, 1729-1824",person,2,1,59,Correspondent=2
 10476975,Trade and Commercial Policy Committee. (08/1949 - 08/1949),organization,2,1,43,Most Recent=2
 10475831,"Tripartite Claims Commission, United States, Austria, and Hungary. Office of the Commissioner. (11/26/1924 - 05/18/1934)",organization,2,1,76,Most Recent=2
+10575886,"Turnbull, William, engineer",person,2,1,59,Engineer=2
 10450014,U.S. Advisory Commission on Public Diplomacy. (10/01/1979 - ),organization,2,1,306,Author=1 Most Recent=1
 10526592,"U.S. Agency for International Development. Bureau for Democracy, Conflict, and Humanitarian Assistance. (08/27/2001 - 2020)",organization,2,1,286,Most Recent=2
 10526023,"U.S. Agency for International Development. Bureau for Democracy, Conflict, and Humanitarian Assistance. Office of U.S. Foreign Disaster Assistance. Disaster Response and Mitigation Division. (08/27/2001 - 2020)",organization,2,1,286,Most Recent=2
@@ -3470,14 +3511,21 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10446690,United Nations. Office of the United Nations High Commissioner for Refugees. (12/14/1950 - ),organization,2,2,59 286,Most Recent=2
 10468558,United Press International,organization,2,1,306,Photographer=2
 10472130,United States and Venezuela Mixed Claims Commission. (08/30/1867 - 08/03/1868),organization,2,1,76,Most Recent=2
+10581382,"Van Buren, Martin, 1782-1862",person,2,1,59,Correspondent=1 Recipient=1
 10570069,"Vance, Cyrus R. (Cyrus Roberts), 1917-2002",person,2,1,59,Author=2
+10568193,"Victor Emmanuel III, King of Italy, 1869-1947",person,2,1,59,Correspondent=2
 10475534,War Department. Office of the Assistant Secretary of War. Strategic Services Unit. Art Looting Investigation Unit. (09/1945 - ca. 10/1946),organization,2,1,239,Most Recent=2
 10518171,War Department. Office of the Provost Marshal General. Provost Division. Criminal Investigation and Apprehension Branch. (ca. 1946 - 09/18/1947),organization,2,1,466,Predecessor=2
 10461259,"War Department. U.S. Forces, European Theater. Office of Military Government for Germany (U.S.) (10/01/1945 - 03/15/1947)",organization,2,1,466,Predecessor=2
 10511262,War Trade Board. Bureau of Research and Statistics. Division of Tabulation and Statistics. (11/12/1918 - 06/30/1919),organization,2,1,182,Most Recent=1 Predecessor=1
 10442582,Washington Post Company.,organization,2,1,306,Photographer=2
+10581742,"Webster, Daniel, 1782-1852",person,2,2,59 76,Correspondent=1 Recipient=1
 10582011,"Welles, Sumner, 1892-1961",person,2,1,84,Correspondent=2
 10528467,White House Office. (09/08/1939 - ),organization,2,1,306,Correspondent=2
+10575791,"William I, King of the Netherlands, 1772-1843",person,2,1,59,Correspondent=2
+10580709,"William II, German Emperor, 1859-1941",person,2,1,59,Correspondent=2
+10573361,"William II, King of the Netherlands, 1792-1849",person,2,1,59,Correspondent=2
+10569005,"William III, King of the Netherlands, 1817-1890",person,2,1,59,Correspondent=2
 10446725,A.T. International.,organization,1,1,286,Correspondent=1
 10442310,ACCION International (Organization),organization,1,1,286,Correspondent=1
 58995311,ACTION. Peace Corps. Latin American Regional Office. (07/01/1971 - 1982),organization,1,1,490,Predecessor=1
@@ -3486,11 +3534,17 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10492106,"ANZUS Council of Foreign Ministers. Meeting (1st : 1952 : Kaneohe, Hawaii). (08/04/1952 - 08/06/1952)",organization,1,1,43,Most Recent=1
 10568899,"Aaron, Hank, 1934-2021",person,1,1,490,Speaker=1
 10444749,Academy for Educational Development,organization,1,1,286,Recipient=1
+10583041,"Adams, John Quincy, 1767-1848",person,1,1,59,Recipient=1
 10568134,"Adee, Alvey A. (Alvey Augustus), 1842-1924",person,1,1,76,Correspondent=1
 10441528,Adventist Development and Relief Agency,organization,1,1,286,Correspondent=1
 10464019,Advisory Commission of Railway Experts to the Russian Railway Service Corps. (06/1917 - 03/05/1919),organization,1,1,43,Most Recent=1
 10492195,Advisory Commission of the United Nations Relief and Works Agency for Palestine Refugees in the Near East. Office of the U.S. Representative. (1950 - ),organization,1,1,59,Most Recent=1
 10441912,Aguirre International,organization,1,1,286,Recipient=1
+10582871,"Alexander I, Emperor of Russia, 1777-1825",person,1,1,59,Author=1
+10582043,"Alexander II, Emperor of Russia, 1818-1881",person,1,1,59,Author=1
+10569802,"Alexander III, Emperor of Russia, 1845-1894",person,1,1,59,Correspondent=1
+10568917,"Alfaro, Eloy, 1842-1912",person,1,1,59,Correspondent=1
+10582129,"Alfonso XIII, King of Spain, 1886-1941",person,1,1,59,Correspondent=1
 10573391,"Allen, George V. (George Venable), 1903-1970",person,1,1,306,Correspondent=1
 10479503,Allied Commission for Austria. (07/24/1945 - 07/27/1955),organization,1,1,43,Most Recent=1
 10479673,Allied Commission for Austria. Allied Secretariat. (07/24/1945 - 07/27/1955),organization,1,1,84,Originator=1
@@ -3504,6 +3558,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10486283,Allied Kommandatura. Berlin Air Safety Center. (1945 - 1990),organization,1,1,84,Most Recent=1
 10526903,Allied Mission for Observing Greek Elections. U.S. Section. (10/20/1945 - 04/18/1946),organization,1,1,59,Predecessor=1
 10574711,"Allison, John M. (John Moore), 1905-1978",person,1,1,59,Compiler=1
+10573239,"Amador Guerrero, Manuel, 1883-1909",person,1,1,59,Correspondent=1
 18549952,Ambassador's Committee on the Washington Security Talks. (07/06/1948 - 04/04/1949),organization,1,1,353,Most Recent=1
 10441173,American Bar Association. Central and East European Law Initiative,organization,1,1,286,Participant=1
 10441349,American Council on Education,organization,1,1,286,Recipient=1
@@ -3530,6 +3585,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10472518,Arbitration between the United States and Guatemala. (1929 - 1930),organization,1,1,76,Most Recent=1
 10472519,Arbitration between the United States and Haiti. (11/10/1884 - 06/13/1885),organization,1,1,76,Most Recent=1
 10473531,"Arbitration of the Claim of the United States and Great Britain Against Portugal under a Protocol of June 13, 1891. (1891 - 1900)",organization,1,1,76,Most Recent=1
+10571686,"Arce, Aniceto, 1824-1906",person,1,1,59,Correspondent=1
 12023185,Arms Control and Disarmament Agency. International Relations Bureau. (09/26/1961 - 05/1977),organization,1,1,383,Most Recent=1
 10444134,Asociación Nicaragüense Pro-Derechos Humanos,organization,1,1,286,Recipient=1
 10583208,"Atherton, Alfred Leroy, 1921-2002",person,1,1,59,Originator=1
@@ -3537,11 +3593,16 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10567958,"Baker, James Addison, 1930-",person,1,1,306,Author=1
 10568958,"Baker, Nancy Kassebaum, 1932-",person,1,1,490,Speaker=1
 10582743,"Ball, George W. (George Wildman), 1909- 1994",person,1,1,59,Author=1
+10568510,"Ballivián, Adolfo, 1831-1873",person,1,1,59,Correspondent=1
 10503786,"Baltic and North Sea Radiotelephone Conference (1955 : Göteborg, Sweden). U.S. Delegation. (09/06/1955 - 09/06/1955)",organization,1,1,43,Most Recent=1
 10574983,"Bardos, Arthur",person,1,1,306,Compiler=1
 10444936,Barents Group,organization,1,1,286,Participant=1
 10580389,"Barkley, Alben William, 1877-1956",person,1,1,59,Correspondent=1
 10571611,"Barrett, Edward W. (Edward Ware), 1910-1989",person,1,1,59,Originator=1
+10575069,"Barrios, Gerardo, 1813-1865",person,1,1,59,Correspondent=1
+10572582,"Barry, John, 1745-1803",person,1,1,59,Correspondent=1
+10571091,"Bates, Edward, 1793-1869",person,1,1,59,Recipient=1
+10569942,"Batlle y Ordóñez, José, 1856-1929",person,1,1,59,Correspondent=1
 10600934,"Bauernschmidt, John E., 1916-1997",person,1,1,306,Correspondent=1
 10446385,Bean/Cowpea Collaborative Research Support Program,organization,1,1,286,Correspondent=1
 10572346,"Bell, David E. (David Elliot), 1919-2000",person,1,1,286,Speaker=1
@@ -3550,6 +3611,8 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10573678,"Bienville, Jean Baptiste Le Moyne, sieur de, 1680-1767",person,1,1,59,Author=1
 10472396,"Big Four Foreign Ministers. Meeting (1945 : Washington, D.C.). (04/22/1945 - 04/23/1945)",organization,1,1,43,Most Recent=1
 10582201,"Bischof, Werner Adalbert, 1916-1954",person,1,1,286,Photographer=1
+10569101,"Blaine, James Gillespie, 1830-1893",person,1,1,59,Recipient=1
+10609842,"Blair, John, 1732-1800",person,1,1,59,Correspondent=1
 10448718,Board for International Broadcasting. (10/19/1973 - 09/30/1995),organization,1,1,306,Author=1
 10534750,Board for International Food and Agriculture Development and Economic Cooperation. (01/1991 - 1995),organization,1,1,286,Most Recent=1
 10472894,Board of Economic Warfare. Interdepartmental Foreign Requirements Committee. (12/1941 - ca. 07/15/1943),organization,1,1,169,Most Recent=1
@@ -3566,6 +3629,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10474091,Board of Economic Warfare. Office of the General Counsel. Imports Division. (04/1942 - 07/15/1943),organization,1,1,169,Predecessor=1
 10474090,Board of Economic Warfare. Office of the General Counsel. Projects Division. (07/1942 - 06/1943),organization,1,1,169,Most Recent=1
 10568329,"Bonesteel, Charles H. (Charles Hartwell), 1909-1977",person,1,1,59,Originator=1
+10571841,"Bonilla, Manuel, 1849-1913",person,1,1,59,Correspondent=1
 10600558,"Bourgin, Simon (Simon E.), 1914-",person,1,1,306,Correspondent=1
 10581289,"Bowles, Chester Bliss, 1901- 1986",person,1,1,59,Author=1
 10568026,"Brandt, Willy, 1913-1992",person,1,1,59,Correspondent=1
@@ -3574,6 +3638,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10600358,"Bundy, Frederic O. (Frederic Oliver), 1914-2001",person,1,1,306,Correspondent=1
 10474719,Bureau of the Budget. (07/01/1939 - 07/01/1970),organization,1,1,306,Correspondent=1
 10570128,"Byrnes, James F. (James Francis), 1882-1972",person,1,1,59,Correspondent=1
+10569382,"Báez, Cecilio, 1862-1941",person,1,1,59,Correspondent=1
 10569012,"Bénard de La Harpe, Jean Baptiste, 1683-1765",person,1,1,59,Compiler=1
 10445177,CARE Inc.,organization,1,1,306,Correspondent=1
 10468933,Canadian Broadcasting Corporation,organization,1,1,59,Producer=1
@@ -3587,16 +3652,19 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10492421,Caribbean Council. Meeting (5th : 1964 : Curacao). Office of U.S. Observers. (11/26/1964 - 12/04/1964),organization,1,1,43,Most Recent=1
 10502461,"Caribbean Health Ministers Conference (5th : 1973 : Roseau, Dominica). (02/05/1973 - 02/09/1973)",organization,1,1,43,Most Recent=1
 10501477,"Caribbean Regional Air Navigation Meeting (1946 : Washington, D.C.). U.S. Delegation. (08/22/1946 - 08/22/1946)",organization,1,1,43,Predecessor=1
+10568642,"Carlos I, King of Portugal, 1863-1908",person,1,1,59,Correspondent=1
 10575097,"Carlu, Jean",person,1,1,208,Artist=1
 10571518,"Carter, Charles L.",person,1,1,59,Participant=1
 10569552,"Cash, Richard A.",person,1,1,286,Correspondent=1
 10574781,"Castilla, Ramón, 1797-1867",person,1,1,59,Signer=1
 10575427,"Castle, William Richards, 1849-1935",person,1,1,59,Participant=1
+10568564,"Castro, Cipriano, 1856?-1924",person,1,1,59,Correspondent=1
 10573883,"Castro, Raul H. (Raul Hector), 1916-",person,1,1,84,Correspondent=1
 10441914,Center for International Forestry Research,organization,1,1,286,Correspondent=1
 10445216,Central Connecticut State University.,organization,1,1,286,Recipient=1
 10570173,"Chandra, Ranjit Kumar.",person,1,1,286,Correspondent=1
 10571795,"Chapman, Oscar L. (Oscar Littleton), 1896-1978",person,1,1,59,Correspondent=1
+10570221,"Charles Albert, King of Sardinia, 1798-1849",person,1,1,59,Author=1
 10573494,"Chase, Chevy, 1943-",person,1,1,286,Host=1
 10568383,"Chase, Samuel, 1741-1811",person,1,1,59,Author=1
 10599979,"Chayes, Edward, 1894-1983",person,1,1,306,Correspondent=1
@@ -3604,10 +3672,12 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10441101,Chemonics (Firm),organization,1,1,286,Participant=1
 10474855,Chile-Argentine Boundary Arbitration. (1898 - 1899),organization,1,1,76,Most Recent=1
 10570223,"Chnoupek, Bohus.",person,1,1,84,Correspondent=1
+10569254,"Christian IX, King of Denmark, 1818-1906",person,1,1,59,Correspondent=1
 10568555,"Christopher, Warren, 1925-2011",person,1,1,59,Compiler=1
 10446426,Citizens Democracy Corps,organization,1,1,286,Participant=1
 10462932,Civil Aeronautics Board. (06/30/1940 - 01/01/1985),organization,1,1,59,Collaborator=1
 10569763,"Clark, Bob, 1922-",person,1,1,306,Interviewer=1
+10580252,"Clark, George Rogers, 1752-1818",person,1,1,59,Correspondent=1
 10582770,"Clay, Henry, 1777-1852",person,1,1,59,Correspondent=1
 123838624,"Coffin, Frank Morey, 1919-2009",person,1,1,286,Speaker=1
 10492249,Colombo Plan for Cooperative Economic and Social Development in Asia and the Pacific. Consultative Committee. Meeting (10th : 1958 : Seattle). (10/1958 - 11/1958),organization,1,1,43,Predecessor=1
@@ -3676,14 +3746,17 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10475457,Council of Foreign Ministers. Meeting (4th : 1947 : Moscow). Deputies for Trieste. (04/22/1947 - 04/24/1947),organization,1,1,43,Most Recent=1
 10475944,Council of Foreign Ministers. Meeting (4th : 1947 : Moscow). U.S. Delegation. Office of the Legal Counselor. (01/1947 - 04/1947),organization,1,1,43,Most Recent=1
 10475783,Council of Foreign Ministers. Trieste Commission of Inquiry. (ca. 03/1947 - ca. 04/1947),organization,1,1,43,Most Recent=1
+10580505,"Coxe, Tench, 1755-1824",person,1,1,59,Correspondent=1
 10445594,Creative Associates,organization,1,1,286,Recipient=1
 28264012,Cryptographic Security Board. Cryptographic Security Coordinating Committee. (1945 - ca. 1946),organization,1,1,353,Most Recent=1
 10569311,"Cuny, Frederick C.",person,1,1,286,Correspondent=1
 10505870,Customs Cooperation Council. Sessions (37th and 38th : 1962 : Brussels). (09/25/1962 - 10/06/1962),organization,1,1,43,Organizer of meeting=1
+10571728,"Cutting, Nat. (Nathaniel)",person,1,1,59,Correspondent=1
 10573212,"D'Hauteville, Ellen",person,1,1,76,Originator=1
 10581365,"Daly, John A.",person,1,1,286,Correspondent=1
 10570026,"Davidow, Jeffrey.",person,1,1,59,Speaker=1
 10596264,"Davis, Monnett Bain, 1893-1953",person,1,1,84,Correspondent=1
+10573153,"Deinard, Ephraim, 1846-1930",person,1,1,59,Correspondent=1
 10487788,Department of Agriculture. Forest Service. (07/01/1905 - ),organization,1,1,286,Correspondent=1
 10448036,Department of Commerce and Labor. Coast and Geodetic Survey. Office of the Superintendent. (1903 - 1913),organization,1,1,76,Predecessor=1
 10515472,Department of Commerce. Bureau of Public Roads. (08/20/1949 - 04/01/1967),organization,1,1,286,Author=1
@@ -4537,8 +4610,8 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10506541,Department of State. International Cooperation Administration. U.S. Operations Mission to Haiti. Office of the Director. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10504881,Department of State. International Cooperation Administration. U.S. Operations Mission to Haiti. Program Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10511753,Department of State. International Cooperation Administration. U.S. Operations Mission to Haiti. Public Health Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
-10535947,Department of State. International Cooperation Administration. U.S. Operations Mission to Israel. Agriculture Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10501379,Department of State. International Cooperation Administration. U.S. Operations Mission to Israel. Agriculture Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
+10535947,Department of State. International Cooperation Administration. U.S. Operations Mission to Israel. Agriculture Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10506085,Department of State. International Cooperation Administration. U.S. Operations Mission to Israel. Education Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10493639,Department of State. International Cooperation Administration. U.S. Operations Mission to Israel. Executive Office. Administrative Services Branch. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10501865,Department of State. International Cooperation Administration. U.S. Operations Mission to Israel. Executive Office. Mass Communications Branch. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
@@ -4564,8 +4637,8 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10504412,Department of State. International Cooperation Administration. U.S. Operations Mission to Lebanon. Natural Resources Division. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10504960,Department of State. International Cooperation Administration. U.S. Operations Mission to Lebanon. Training Office. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10527474,Department of State. International Cooperation Administration. U.S. Operations Mission to Morocco. Executive Office. (ca. 1956 - 11/03/1961),organization,1,1,469,Most Recent=1
-10493214,Department of State. International Cooperation Administration. U.S. Operations Mission to Nepal. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10526573,Department of State. International Cooperation Administration. U.S. Operations Mission to Nepal. (06/30/1955 - 11/03/1961),organization,1,1,286,Most Recent=1
+10493214,Department of State. International Cooperation Administration. U.S. Operations Mission to Nepal. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10526870,Department of State. International Cooperation Administration. U.S. Operations Mission to Nepal. Executive Office. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10528104,Department of State. International Cooperation Administration. U.S. Operations Mission to Paraguay. Executive Office. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
 10486630,Department of State. International Cooperation Administration. U.S. Operations Mission to Peru. (06/30/1955 - 11/03/1961),organization,1,1,469,Most Recent=1
@@ -5651,6 +5724,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10679485,"Donovan, William J. (William Joseph), 1883-1959",person,1,1,76,Writer of accompanying material=1
 10568394,"Dornan, Robert K., 1933-",person,1,1,59,Correspondent=1
 10570273,"Douglas, Lewis W. (Lewis Williams), 1894-1974",person,1,1,306,Participant=1
+10580423,"Douglass, Frederick, 1817?-1895",person,1,1,59,Correspondent=1
 10571446,"Durbrow, Elbridge, 1903-1997",person,1,1,59,Originator=1
 10474794,"East European Economic Conference (1922 : Portorosa, Italy). (11/1922 - 11/1922)",organization,1,1,43,Originator=1
 10601304,"Echols, James R., 1924-",person,1,1,306,Correspondent=1
@@ -5699,11 +5773,14 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10485670,Economic Cooperation Administration. U.S. Foreign Relief Mission to Trieste. Office of the Director. (1948 - 1951),organization,1,1,469,Most Recent=1
 10535073,Economic Cooperation Administration. U.S. Technical Cooperation Mission to India. (1948 - 1951),organization,1,1,469,Predecessor=1
 10447056,Economic Defense Board. (06/30/1941 - 12/17/1941),organization,1,1,169,Most Recent=1
+10582270,"Edward VII, King of Great Britain, 1841-1910",person,1,1,59,Correspondent=1
 10487470,Egyptian-American Joint Committee for Education,organization,1,1,469,Most Recent=1
 10582637,"Einstein, Albert, 1879-1955",person,1,1,306,Correspondent=1
 10574260,"Ellsworth, Robert F.",person,1,1,84,Author=1
+10572646,"Emma, Queen, consort of William III, King of the Netherlands, 1858-1934",person,1,1,59,Correspondent=1
 10503566,Energy Coordinating Group (03/1974 - 11/1974),organization,1,1,43,Most Recent=1
 10481078,Environmental Protection Agency. (12/02/1970 - ),organization,1,1,286,Recipient=1
+10569982,"Estrada Cabrera, Manuel, 1857-1924",person,1,1,59,Correspondent=1
 10571615,"Ethridge, Mark F. (Mark Foster), 1896-1981",person,1,1,306,Participant=1
 10502353,European - Mediterranean Regional Air Navigation Meeting (2nd : 1948 : Paris). U.S. Delegation. (05/04/1948 - 05/14/1948),organization,1,1,43,Predecessor=1
 10502354,European - Mediterranean Regional Air Navigation Meeting (3rd : 1952 : Paris). U.S. Delegation. (02/1952 - 03/1952),organization,1,1,43,Predecessor=1
@@ -5715,7 +5792,9 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10491687,"European Civil Aviation Conference. Session (4th : 1961 : Strasbourg, France). U.S. Delegation. (07/1961 - 07/1961)",organization,1,1,43,Predecessor=1
 10491843,"European Civil Aviation Conference. Session (5th : 1964 : Strasbourg, France). U.S. Delegation. (07/1964 - 07/1964)",organization,1,1,43,Most Recent=1
 10601504,"Evans, John William, 1928-",person,1,1,306,Correspondent=1
+10568306,"Evarts, William Maxwell, 1818-1901",person,1,1,59,Recipient=1
 10567768,"Fairbank, Wilma",person,1,1,59,Compiler=1
+10575029,"Fallières, Armand, 1841-1931",person,1,1,59,Correspondent=1
 10454934,"Far Eastern Commission. Committee I, Reparations. (ca. 03/11/1946 - ca. 03/14/1950)",organization,1,1,43,Most Recent=1
 10476252,"Far Eastern Commission. Committee II, Economic and Financial Affairs. (ca. 03/12/1946 - ca. 03/20/1950)",organization,1,1,43,Most Recent=1
 10455109,"Far Eastern Commission. Committee III, Constitutional and Legal Reform. (03/13/1946 - 05/02/1946)",organization,1,1,43,Most Recent=1
@@ -5727,9 +5806,13 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10455472,Far Eastern Commission. Joint Committee on Labor. (ca. 03/16/1949 - ca. 04/26/1949),organization,1,1,43,Most Recent=1
 10476093,Far Eastern Commission. Steering Committee. (1946 - 1952),organization,1,1,43,Most Recent=1
 10460571,Federal Communications Commission. (1934 - ),organization,1,1,306,Correspondent=1
+10570291,"Ferdinand I, King of the Two Sicilies, 1751-1825",person,1,1,59,Author=1
+10580390,"Ferdinand II, King of the Two Sicilies, 1810-1859",person,1,1,59,Author=1
+10574739,"Ferreira, Benigno, 1846-1920",person,1,1,59,Correspondent=1
 10455474,First Samoan Conference. (06/25/1887 - 07/26/1887),organization,1,1,43,Most Recent=1
 10600935,"Flanagan, John C., 1923-1999",person,1,1,306,Correspondent=1
 10571280,"Flannery, Harry W., 1900-",person,1,1,306,Interviewer=1
+10570208,"Fonseca, Deodoro da, 1827-1892",person,1,1,59,Correspondent=1
 10493456,"Food and Agriculture Organization. Animal Production and Health Conference (1967 : Gainesville, Florida). (09/10/1967 - 09/20/1967)",organization,1,1,43,Most Recent=1
 10493132,Food and Agriculture Organization. Committee on Commodity Problems. Session (31st : 1959 : Rome). U.S. Delegation. (05/1959 - 05/1959),organization,1,1,43,Predecessor=1
 10493287,Food and Agriculture Organization. Committee on Commodity Problems. Session (33rd : 1960 : Rome). U.S. Delegation. (06/07/1960 - 06/22/1960),organization,1,1,43,Predecessor=1
@@ -5881,14 +5964,18 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10442824,Foundation for the Peoples of the South Pacific.,organization,1,1,286,Correspondent=1
 10489226,Four Party Joint Military Commission. (01/27/1973 - 03/31/1973),organization,1,1,84,Originator=1
 10441800,France. Ministère des affaires étrangères,organization,1,1,84,Correspondent=1
+10575567,"Francesco I, King of the Two Sicilies, 1777-1830",person,1,1,59,Author=1
+10570199,"Francesco II Borbone, King of the Two Sicilies, 1836-1894",person,1,1,59,Author=1
+10569125,"Francesco IV, Duke of Modena, 1779-1846",person,1,1,59,Author=1
+10580907,"Franz Joseph I, Emperor of Austria, 1830-1916",person,1,1,59,Correspondent=1
 10575905,"French, Jerome T.",person,1,1,286,Correspondent=1
 18542051,French-Anglo-U.S. Tripartite Committee. (ca. 1944 - ca. 1944),organization,1,1,353,Most Recent=1
 10573788,"Friedrichs, Hanns Joachim",person,1,1,306,Interviewer=1
 10582440,"Galbraith, Francis J. (Francis Joseph), 1913-1986",person,1,1,84,Originator=1
 10581865,"Gardiner, William.",person,1,1,76,Correspondent=1
 10580410,"Gardner, Richard N.",person,1,1,59,Originator=1
+10583114,"Garfield, James A. (James Abram), 1831-1881",person,1,1,59,Recipient=1
 10571304,"Gay, Merrill C. (Merrill Cochrane), 1907-",person,1,1,59,Originator=1
-196015584,"Gearan, Mark Daniel, 1956-",person,1,1,490,Author=1
 10502772,"General Assemby of the International Union of Radio Science (10th : 1952 : Sydney, Australia). (08/1952 - 08/1952)",organization,1,1,43,Most Recent=1
 10489472,General Services Administration. National Archives and Records Service. Office of the Federal Register. (1959 - 04/01/1985),organization,1,1,306,Correspondent=1
 10475012,Geneva Round of the General Agreement on Tariffs and Trade. U.S. Delegation. (1955 - 1956),organization,1,1,43,Most Recent=1
@@ -5905,10 +5992,12 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10491158,"Greene Mission to Finland, Esthonia, Latvia, and Lithuania. (03/23/1919 - 08/04/1919)",organization,1,1,256,Most Recent=1
 10582880,"Gropper, William, 1897-1977",person,1,1,208,Artist=1
 10444189,Growth and Equity through Microenterprise Investments and Institutions (Project),organization,1,1,286,Researcher=1
+10568375,"Haakon VII, King of Norway, 1872-1957",person,1,1,59,Correspondent=1
 10581820,"Haas, Ernst, 1921-",person,1,1,286,Photographer=1
 10573732,"Hale, Charles, 1831-1882",person,1,1,59,Originator=1
 10611257,"Hall, Ardelia R. (Ardelia Ripley), 1899-1979",person,1,1,59,Originator=1
 10601124,"Hamilton, Albert H. (Albert Hyde), 1923-",person,1,1,306,Correspondent=1
+10581887,"Hamilton, Alexander, 1757-1804",person,1,1,59,Correspondent=1
 10580713,"Harding, Warren G. (Warren Gamaliel), 1865-1923",person,1,1,59,Signer=1
 10449105,Harris & Ewing,organization,1,1,59,Photographer=1
 10568844,"Harris, Reed",person,1,1,306,Correspondent=1
@@ -5917,8 +6006,10 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10581152,"Hawthorne, Nathaniel, 1804-1864",person,1,1,306,Author=1
 10571078,"Hayes, Edward.",person,1,1,76,Writer of accompanying material=1
 10571315,"Henderson, Douglas, 1914-2010",person,1,1,84,Correspondent=1
+10575578,"Herrera, José Joaquín de, 1792-1854",person,1,1,59,Correspondent=1
 10609978,"Hibbs, Ben, 1901-1975",person,1,1,306,Participant=1
 10581936,"Hillenbrand, Martin Joseph, 1915-",person,1,1,59,Correspondent=1
+10568547,"Ho, Chi Minh, 1890-1969",person,1,1,59,Correspondent=1
 10580337,"Holcombe, Arthur Norman, 1884-1977",person,1,1,286,Correspondent=1
 10475016,Honduras-Guatemala Boundary Arbitration. (1918 - 1918),organization,1,1,76,Most Recent=1
 10600627,"Howell, David, 1747-1824",person,1,1,59,Author=1
@@ -6255,6 +6346,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10493051,International Wool Study Group Meeting (3rd : 1949 : London). U.S. Delegation. (11/07/1949 - 11/09/1949),organization,1,1,43,Predecessor=1
 10493052,International Wool Study Group Meeting (5th : 1952 : London). U.S. Delegation. (11/04/1952 - 11/04/1952),organization,1,1,43,Most Recent=1
 10442148,Iowa State University.,organization,1,1,286,Recipient=1
+10570361,"Jackson, William",person,1,1,59,Correspondent=1
 10575847,"Jacobs, Fenno, 1904-1975",person,1,1,286,Photographer=1
 10581881,"James, Henry, 1843-1916",person,1,1,306,Author=1
 10611701,"Johnson, Louis Arthur, 1891-1966",person,1,1,59,Correspondent=1
@@ -6271,6 +6363,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10568980,"Jorden, William J. (William John), 1923-",person,1,1,43,Correspondent=1
 10572341,"Josephson, William H. (William Howard), 1934-",person,1,1,490,Originator=1
 10581650,"Jusserand, J. J. (Jean Jules), 1855-1932",person,1,1,59,Author=1
+10581845,"Juárez, Benito, 1806-1872",person,1,1,59,Correspondent=1
 10581188,"Kalb, Marvin L.",person,1,1,306,Interviewer=1
 10569366,"Kasson, John A. (John Adam), 1822-1910",person,1,1,59,Author=1
 10571724,"Keating, Kenneth B. (Kenneth Barnard), 1900-1975",person,1,1,84,Compiler=1
@@ -6296,18 +6389,23 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10475604,League of Nations. Lytton Commission. Office of the U.S. Representative. (1930 - 1932),organization,1,1,43,Most Recent=1
 10502321,League of Nations. Permanent Central Narcotics Board. (1931 ? - 1946),organization,1,1,59,Predecessor=1
 10582250,"Lebenthal, Emanuel, 1939-",person,1,1,286,Correspondent=1
+10570280,"Lee, Charles, 1758-1815",person,1,1,59,Correspondent=1
 10445560,"Lewis and Clark Centennial Exposition (1905 : Portland, Or.)",organization,1,1,43,Other=1
 10502518,Limited European - Mediterranean Regional Air Navigation Meeting (1961 : Paris). U.S. Delegation. (01/03/1961 - 01/23/1961),organization,1,1,43,Most Recent=1
 10501692,Limited Middle East Regional Air Navigation Meeting (1965 : Geneva). U.S. Delegation. (10/1965 - 10/1965),organization,1,1,43,Most Recent=1
+10568885,"Livingston, Edward, 1764-1836",person,1,1,59,Recipient=1
 10473585,London Conference on Germany. U.S. Delegation. (01/1948 - 12/1948),organization,1,1,43,Most Recent=1
 10474615,London Reparations Meeting. (ca. 12/1948 - ca. 01/1949),organization,1,1,43,Most Recent=1
 10580771,"London, Jack, 1876-1916",person,1,1,306,Author=1
 10581547,"Lord, Winston.",person,1,1,59,Compiler=1
 10601510,"Lott, Vestel, 1907-1968",person,1,1,306,Correspondent=1
+10574472,"Loubet, Emile, 1838-1929",person,1,1,59,Correspondent=1
+10568825,"Louis Bonaparte, King of Holland, 1778-1846",person,1,1,59,Correspondent=1
 10476811,"Louisiana Purchase Exposition (1904 : Saint Louis, Mo.) (05/01/1904 - 12/01/1904)",organization,1,1,43,Other=1
 10572639,"Lovett, Robert A. (Robert Abercrombie), 1895-1986",person,1,1,59,Correspondent=1
 10574866,"Luers, William H.",person,1,1,59,Originator=1
 10581459,"Lynch, Frank, 1921-",person,1,1,286,Speaker=1
+10569294,"Léopold I, King of the Belgians, 1790-1865",person,1,1,59,Correspondent=1
 10570003,"Lê, Ðuc Tho, 1912-",person,1,1,43,Participant=1
 10610043,"MacArthur, Douglas, 1909-1997",person,1,1,59,Compiler=1
 10600552,"MacMaster, Bruce, 1928-2000",person,1,1,306,Correspondent=1
@@ -6315,14 +6413,18 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10503363,Malta Conference. (01/30/1945 - 02/02/1945),organization,1,1,43,Most Recent=1
 10572777,"Mann, A. Dudley (Ambrose Dudley), 1801-1889",person,1,1,59,Recipient=1
 10570588,"Mann, Thomas C. (Thomas Clifton), 1912-1999",person,1,1,59,Compiler=1
+10570480,"Marcy, William L. (William Learned), 1786-1857",person,1,1,59,Recipient=1
+10567948,"Maria I, Queen of Portugal, 1734-1816",person,1,1,59,Author=1
 10570777,"Marks, Leonard Harold, 1916-2006",person,1,1,306,Correspondent=1
-22337786,"Mauk, Rosie K.",person,1,1,490,Author=1
 10582554,"May, Mark Arthur, 1891-",person,1,1,306,Participant=1
 10573651,"McCormick, Vance Criswell, 1872-1946",person,1,1,182,Correspondent=1
+10582464,"McHenry, James, 1753-1816",person,1,1,59,Correspondent=1
 10580500,"McNamara, Robert Strange, 1916-2009",person,1,1,306,Correspondent=1
 10503331,Meeting of Government Experts for the Revision of International Conventions Relating to the Treatment of Prisoners of War and Civilian Internees (1947 : Geneva). U.S. Delegation. (04/14/1947 - 04/26/1947),organization,1,1,43,Most Recent=1
 10503104,"Meeting of the Interdepartmental Steering Committee for the United Nations Scientific Conference on the Conservation and Utilization of Resources at New York, New York. (07/12/1949 - 07/12/1949)",organization,1,1,43,Most Recent=1
 10474614,Meetings of Foreign Ministers at Paris. (11/19/1948 - 11/19/1948),organization,1,1,43,Most Recent=1
+10568050,"Melgarejo, Mariano, 1820-1871",person,1,1,59,Correspondent=1
+10569348,"Menéndez, Francisco, 1830-1890",person,1,1,59,Correspondent=1
 10442491,"Metropolitan Museum of Art (New York, N.Y.)",organization,1,1,306,Correspondent=1
 10582652,"Mickelwait, Donald R.",person,1,1,286,Correspondent=1
 10501529,Middle East Regional Air Navigation Meeting (1st : 1946 : Cairo). U.S. Delegation. (10/01/1946 - 10/18/1946),organization,1,1,43,Predecessor=1
@@ -6331,7 +6433,9 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10475809,"Ministers of Foreign Affairs of the American Republics. Meeting (3rd : 1942 : Rio de Janeiro, Brazil). U.S. Delegation. (1942 - 1942)",organization,1,1,43,Most Recent=1
 10473382,"Mixed Claims Commission, United States and Nicaragua. (05/1911 - 01/20/1915)",organization,1,1,76,Most Recent=1
 10472684,"Mixed Claims Commission, United States and Spain. (05/17/1797 - 12/08/1798)",organization,1,1,76,Most Recent=1
-10582971,"Monroe, James, 1758-1831",person,1,1,59,Correspondent=1
+10583106,"Mongkut, King of Siam, 1804-1868",person,1,1,59,Correspondent=1
+10573536,"Morais, Prudente de",person,1,1,59,Correspondent=1
+10573738,"Morales, Agustín, 1808-1872",person,1,1,59,Correspondent=1
 10582653,"Morss, Elliott R.",person,1,1,286,Correspondent=1
 10503529,Moscow Conference (3rd : 1943). (10/01/1943 - 11/10/1943),organization,1,1,43,Most Recent=1
 10479074,Mutual Security Agency. Mission to Austria. (1951 - 08/01/1953),organization,1,1,59,Predecessor=1
@@ -6383,6 +6487,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10478233,Mutual Security Agency. Technical Cooperation Administration. Near East and Africa Development Service. Office of the Assistant Administrator. (06/01/1953 - 08/01/1953),organization,1,1,469,Most Recent=1
 10485842,Mutual Security Agency. U.S. Foreign Relief Mission to Trieste. Information Office. (1951 - 08/01/1953),organization,1,1,469,Most Recent=1
 25496722,Mutual and Balanced Force Reduction Talks. U.S. Delegation. Office of the U.S. Deputy Representative. (1973 - 02/09/1989),organization,1,1,59,Most Recent=1
+10572601,"Muzaffar al-Din Shah, Shah of Iran, 1853-1907",person,1,1,59,Correspondent=1
 10486634,National Aeronautics and Space Administration. (10/01/1958 - ),organization,1,1,306,Correspondent=1
 10441318,National Association of Broadcasters,organization,1,1,306,Correspondent=1
 10442881,National Baseball Hall of Fame and Museum,organization,1,1,306,Correspondent=1
@@ -6395,6 +6500,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10570809,"Negroponte, John D. (John Dimitri), 1939-",person,1,1,59,Speaker=1
 10571946,"Nguyen, Thai Binh",person,1,1,43,Correspondent=1
 10471541,Nicaragua Canal Commission. (07/29/1897 - 03/1899),organization,1,1,59,Most Recent=1
+10582418,"Nicholas I, Emperor of Russia, 1796-1855",person,1,1,59,Author=1
 10491750,Nine Power Conference on the Status of Tangier. U.S. Delegation. (10/08/1956 - 10/29/1956),organization,1,1,43,Most Recent=1
 10573706,"Noon, John A.",person,1,1,306,Correspondent=1
 10505037,"North American Regional Broadcasting Conference. Session (2nd : 1946 : Washington, D.C.). U.S. Delegation. (02/04/1946 - 02/21/1946)",organization,1,1,43,Predecessor=1
@@ -6545,6 +6651,8 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10492276,"Organization of American States. Meeting of National Directors of Migration, Customs, and Tourism of the United States, Mexico, Central America, and Panama (1962 : San Salvador). U.S. Delegation. (02/15/1962 - 03/07/1962)",organization,1,1,43,Most Recent=1
 10505369,Organization of American States. Special Meeting of the Inter-American Economic and Social Council at the Ministerial Level (1961 : Punta del Este). U.S. Delegation. (08/1961 - 08/1961),organization,1,1,43,Most Recent=1
 10446681,PADCO.,organization,1,1,286,Recipient=1
+10570418,"Pacheco, Gregorio, 1824-1899",person,1,1,59,Correspondent=1
+10582088,"Paine, Thomas, 1737-1809",person,1,1,59,Correspondent=1
 10601688,"Painter, Norman W. (Norman Wellington), 1918-1998",person,1,1,306,Correspondent=1
 10492553,Pan American Health Organization. Directing Council. Meeting (12th : 1960 : Havana). (08/10/1960 - 08/26/1960),organization,1,1,43,Most Recent=1
 10491936,"Pan American Health Organization. Pan American Sanitary Conference (15th : 1958 : San Juan, Puerto Rico). (09/1958 - 10/1958)",organization,1,1,43,Most Recent=1
@@ -6559,6 +6667,8 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10446646,Pan American Union,organization,1,1,59,Most Recent=1
 10514755,Panama Canal Company. (07/01/1951 - 10/01/1979),organization,1,1,59,Originator=1
 10500297,"Panama-Pacific International Exposition (1915 : San Francisco, California). (02/20/1915 - 12/04/1915)",organization,1,1,43,Other=1
+10568654,"Pando, José Manuel, 1848-1917",person,1,1,59,Correspondent=1
+10583061,"Pardo y Barreda, José",person,1,1,59,Correspondent=1
 10456540,Paris Peace Conference. General Commission. (08/21/1946 - 09/02/1946),organization,1,1,43,Most Recent=1
 10446206,"Paris. Conference on Reparation, 1945.",organization,1,1,43,Most Recent=1
 10580539,"Pasvolsky, Leo, 1893-1953",person,1,1,59,Originator=1
@@ -6571,19 +6681,24 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10491227,Peace Corps. Office of Public Affairs. (1984 - 1996 ?),organization,1,1,490,Most Recent=1
 10467374,Peace Corps. Office of Training and Program Support. (01/1990 - ca. 1993),organization,1,1,490,Most Recent=1
 20797141,"Peace Corps. Office of the Director. Office of Planning, Policy, and Analysis. (ca. 1995 - ca. 2007)",organization,1,1,490,Most Recent=1
+10580891,"Pedro II, Emperor of Brazil, 1825-1891",person,1,1,59,Correspondent=1
+10569515,"Pedro V, King of Portugal, 1837-1861",person,1,1,59,Author=1
+10569152,"Peixoto, Floriano, 1839-1895",person,1,1,59,Correspondent=1
 10503241,"Permanent International Association of Road Congresses. World Road Congress (13th : 1967 : Tokyo, Japan). (11/05/1967 - 11/12/1967)",organization,1,1,43,Most Recent=1
 10502817,"Permanent Technical Committee on Technical Matters. Meeting (3rd : 1868 : San Salvador, El salvador). U.S. Delegation. (05/19/1968 - 05/22/1968)",organization,1,1,43,Most Recent=1
 10568357,"Perry, Oliver Hazard, 1785-1819",person,1,1,59,Correspondent=1
 10581807,"Pershing, John J. (John Joseph), 1860-1948",person,1,1,76,Originator=1
 10486795,Philippine War Damage Commission. (06/03/1946 - 03/31/1951),organization,1,1,268,Most Recent=1
 10488182,Philippine War Damage Commission. Appraisal Division. (1946 - 1951),organization,1,1,268,Most Recent=1
+10569741,"Pinckney, Charles Cotesworth, 1746-1825",person,1,1,59,Correspondent=1
+10571251,"Pinklao, King of Siam, 1808-1865",person,1,1,59,Correspondent=1
 10610662,"Pinto, Joseph, 1915-1997",person,1,1,306,Photographer=1
 10599980,"Plapinger, Jerome Stanley, 1916-2003",person,1,1,306,Correspondent=1
+10573541,"Pleasants, James, 1769-1836",person,1,1,59,Correspondent=1
 10509343,"Plenipotentiary Conference of the International Telecommunication Union (1965 : Montreux, Switzerland). U.S. Delegation. (09/14/1965 - 11/12/1965)",organization,1,1,43,Most Recent=1
 10582268,"Poe, Edgar Allan, 1809-1849",person,1,1,306,Author=1
 10581351,"Poitier, Sidney.",person,1,1,306,Writer of accompanying material=1
 10445971,Poland. Ministerstwo Spraw Zagranicznych.,organization,1,1,59,Predecessor=1
-10573574,"Popper, David H. (David Henry), 1912-",person,1,1,59,Originator=1
 10502278,"Preparatory Meeting for the Working Group on Transnational Enterprises of the Meeting of Foreign Ministers (1974 : Washington, D.C.). (08/19/1974 - 08/22/1974)",organization,1,1,43,Most Recent=1
 10487438,President (1913-1921 : Wilson). Exports Council. (06/22/1917 - 10/12/1917),organization,1,1,182,Most Recent=1
 10473226,President (1913-1921 : Wilson). The Inquiry. Economics and Statistics Division. (1917 - 12/1918),organization,1,1,256,Most Recent=1
@@ -6635,6 +6750,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10568715,"Putnam, William L. (William Le Baron), 1835-1918",person,1,1,76,Originator=1
 10568554,"Quainton, Anthony C. E. (Anthony Cecil Eden), 1934-",person,1,1,59,Speaker=1
 10443943,Radio Corporation of America,organization,1,1,306,Correspondent=1
+10575289,"Ranavalona III, Queen of Madagascar, 1861-1917",person,1,1,59,Correspondent=1
 10575401,"Rankin, Karl Lott",person,1,1,59,Originator=1
 10441557,Rawlings Company,organization,1,1,306,Correspondent=1
 10568444,"Rayburn, Sam, 1882-1961",person,1,1,59,Correspondent=1
@@ -6653,12 +6769,13 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10580392,"Richardson, John, 1921-",person,1,1,59,Compiler=1
 10582064,"Ridgway, Matthew B. (Matthew Bunker), 1895-1993",person,1,1,59,Correspondent=1
 10582310,"Ripley, Robert L. (Robert LeRoy), 1890-1949",person,1,1,208,Artist=1
+10571154,"Roberts, Edmund, 1784-1836",person,1,1,59,Author=1
 10600368,"Roberts, Edward V., 1912-",person,1,1,306,Correspondent=1
 10572513,"Roberts, Walter R., 1916-",person,1,1,306,Correspondent=1
 10574114,"Robinson, Blake",person,1,1,306,Correspondent=1
 10609872,"Robinson, Charles W. (Charles Wesley), 1919-",person,1,1,59,Compiler=1
 10572687,"Robinson, Jeremy, 1787-1834",person,1,1,59,Correspondent=1
-10580748,"Root, Elihu, 1845-1937",person,1,1,59,Author=1
+10568820,"Rodrigues Alves, Francisco de Paula, 1848-1919",person,1,1,59,Correspondent=1
 10444204,Roper Center for Public Opinion Research,organization,1,1,306,Metadata contact=1
 10571383,"Roy, J. Stapleton.",person,1,1,59,Originator=1
 10572368,"Russell, Francis H. (Francis Henry), 1904-1989",person,1,1,59,Originator=1
@@ -6706,6 +6823,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10570679,"Steeves, John M. (John Milton), 1905-1998",person,1,1,84,Originator=1
 10611803,"Stephansky, Ben S. (Ben Solomon), 1913-1999",person,1,1,84,Correspondent=1
 10582938,"Stettinius, Edward R. (Edward Reilly), 1900-1949",person,1,1,59,Correspondent=1
+10598831,"Stockton, Richard",person,1,1,59,Correspondent=1
 10601496,"Strasburg, William E. (William Edward), 1927-",person,1,1,306,Correspondent=1
 10582449,"Streibert, Theodore Cuyler, 1899-1987",person,1,1,306,Speaker=1
 169489574,Supreme Commander for the Allied Powers. Diplomatic Section. (04/18/1946 - 04/28/1952),organization,1,1,84,Originator=1
@@ -6737,7 +6855,6 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10475782,Tripartite Foreign Ministers Meeting (1947-48 : London). (12/20/1947 - 01/26/1948),organization,1,1,43,Most Recent=1
 10679518,"Truman, Harry S., 1884-1972",person,1,1,59,Recipient=1
 10574740,"Tuck, S. Pinkney (Somerville Pinkney), 1891-1967",person,1,1,59,Correspondent=1
-10575886,"Turnbull, William, engineer",person,1,1,59,Engineer=1
 10581697,"Twain, Mark, 1835-1910",person,1,1,306,Author=1
 10611902,"Tyler, William R. (William Royall), 1910-2003",person,1,1,59,Author=1
 10492891,U.S. - British Commonwealth Telecommunications Conference (1945 : Bermuda). U.S. Delegation. (11/21/1945 - 11/21/1945),organization,1,1,43,Most Recent=1
@@ -7181,6 +7298,7 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10466254,"U.S. Section, International Commission Established under Convention Signed July 1, 1863. (1865 - 1869)",organization,1,1,76,Most Recent=1
 10492890,"U.S. Seminar on Communication Satellite Earth Station Technology (1966 : Washington, D.C.). U.S. Delegation. (05/16/1966 - 05/27/1966)",organization,1,1,43,Most Recent=1
 10459973,U.S. Senate. Committee on Foreign Relations. (12/10/1816 - ),organization,1,1,76,Most Recent=1
+10568371,"Umberto I, King of Italy, 1844-1900",person,1,1,59,Correspondent=1
 10449106,Underwood & Underwood,organization,1,1,59,Photographer=1
 10443575,Union de banques suisses,organization,1,1,84,Correspondent=1
 10502000,United Maritime Consultative Council. Meeting (2nd : 1946 : Washington D.C.). U.S. Delegation. (10/24/1946 - 10/30/1946),organization,1,1,43,Most Recent=1
@@ -7224,9 +7342,10 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10442470,University of Pittsburgh,organization,1,1,286,Recipient=1
 10442468,University of Washington,organization,1,1,286,Recipient=1
 10571933,"Van Blarcom, Bonni J.",person,1,1,286,Correspondent=1
-10581382,"Van Buren, Martin, 1782-1862",person,1,1,59,Correspondent=1
 10581673,"Vance, Sheldon Baird, 1917-1995",person,1,1,59,Originator=1
 10570218,"Vanocur, Sander.",person,1,1,306,Interviewer=1
+10580837,"Victor Emmanuel II, King of Italy, 1820-1878",person,1,1,59,Author=1
+10582813,"Victoria, Queen of Great Britain, 1819-1901",person,1,1,59,Correspondent=1
 10581158,"Vincent, John Carter, 1900-",person,1,1,59,Originator=1
 10444338,"Virginia State Convention of 1861 (Richmond, Va.)",organization,1,1,59,Author=1
 10442273,Volunteers in Overseas Cooperative Assistance,organization,1,1,286,Participant=1
@@ -7246,7 +7365,6 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10503190,Washington Conference (3rd : 1943). (05/12/1943 - 05/27/1943),organization,1,1,43,Most Recent=1
 10501637,Washington Diplomatic Conference on the Patent Cooperation Treaty. U.S. Delegation. (05/25/1970 - 06/19/1970),organization,1,1,43,Most Recent=1
 10444733,Washington State University,organization,1,1,286,Recipient=1
-10581742,"Webster, Daniel, 1782-1852",person,1,1,76,Correspondent=1
 10583273,"Weinman, Adolph A., 1870-1952",person,1,1,43,Designer=1
 10581136,"Weiss, Seymour, 1925-1992",person,1,1,59,Compiler=1
 10571502,"Weschler, Irving R.",person,1,1,306,Compiler=1
@@ -7316,4 +7434,6 @@ creatorNaId,heading,authorityType,recordCount,recordGroupCount,recordGroups,crea
 10509173,World Symposium on Sferics. U.S. Observer Mission. (03/17/1953 - 03/24/1953),organization,1,1,43,Most Recent=1
 10442122,"World's Columbian Exposition (1893 : Chicago, Ill.)",organization,1,1,43,Other=1
 10476479,"World's Industrial and Cotton Centennial Exposition at New Orleans, Louisiana. (1884 - 1885)",organization,1,1,43,Most Recent=1
+10569400,"Zaldívar, Rafael, 1837-1903",person,1,1,59,Correspondent=1
+10573995,"Zelaya, José Santos, 1853-1919",person,1,1,59,Correspondent=1
 10569928,"Zetterström, Rolf.",person,1,1,286,Correspondent=1

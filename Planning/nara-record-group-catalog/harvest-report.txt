@@ -5,75 +5,103 @@ Export snapshot: 2026-04-09T13:40:17.000Z
 ──────────────────────────────────────────────────────────────────────────────
 RECORD GROUPS      22
 SERIES HARVESTED   20188 (NARA states 20187)
+FILE UNITS         731692
 BYTES READ         0 B over 0 shards
 ──────────────────────────────────────────────────────────────────────────────
 PRIORITY PAYLOADS
-  creators                 20180 records (100.0%), 7318 distinct creators
-  variantControlNumbers    19881 records (98.5%), 23 distinct types
-  contributors             462 records (2.3%)
-  localIdentifier          725 records (3.6%) — agency-assigned, and NOT part of variantControlNumbers
+  creators                 20180 records (2.7%), 7438 distinct creators
+  variantControlNumbers    53174 records (7.1%), 28 distinct types
+  contributors             536 records (0.1%)
+  localIdentifier          14561 records (1.9%) — agency-assigned, and NOT part of variantControlNumbers
   creator authority        not run (set CREATOR_AUTHORITY=1)
 ──────────────────────────────────────────────────────────────────────────────
 FIELD ALIAS REPORT (which key spelling matched)
-  contributors              contributors=462  presentButEmpty=0 absent=19726
-  creators                  creators=20180  presentButEmpty=0 absent=8
-  custodialHistoryNote      custodialHistoryNote=19  presentButEmpty=0 absent=20169
-  findingAids               findingAids=3243  presentButEmpty=0 absent=16945
-  generalRecordsTypes       generalRecordsTypes=20188  presentButEmpty=0 absent=0
-  microformPublications     microformPublications=200  presentButEmpty=0 absent=19988
-  physicalOccurrences       physicalOccurrences=20188  presentButEmpty=0 absent=0
-  scopeAndContentNote       scopeAndContentNote=17761  presentButEmpty=0 absent=2427
-  variantControlNumbers     variantControlNumbers=19881  presentButEmpty=0 absent=307
+  contributors              contributors=536  presentButEmpty=0 absent=751344
+  creators                  creators=20180  presentButEmpty=0 absent=731700
+  custodialHistoryNote      custodialHistoryNote=21  presentButEmpty=0 absent=751859
+  findingAids               findingAids=3247  presentButEmpty=0 absent=748633
+  generalRecordsTypes       generalRecordsTypes=751878  presentButEmpty=0 absent=2
+  microformPublications     microformPublications=9165  presentButEmpty=0 absent=742715
+  physicalOccurrences       physicalOccurrences=751880  presentButEmpty=0 absent=0
+  scopeAndContentNote       scopeAndContentNote=20738  presentButEmpty=0 absent=731142
+  variantControlNumbers     variantControlNumbers=53174  presentButEmpty=0 absent=698706
 ──────────────────────────────────────────────────────────────────────────────
 PER-RECORD-GROUP
    RG  series  NARA  delta  creators  ctrlNums  state       title
-   43    1727  1727      0      1727      1719  complete    Records of International Conferences, Co
-   59    4449  4449      0      4447      4399  complete    General Records of the Department of Sta
-   63      84    84      0        84        84  complete    Records of the Committee on Public Infor
-   76    1614  1614      0      1614      1559  complete    Records of Boundary and Claims Commissio
-   84    3963  3962     +1      3963      3958  complete    Records of the Foreign Service Posts of 
+   43    1727  1727      0      1727      1723  complete    Records of International Conferences, Co
+   59    4449  4449      0      4447     18170  complete    General Records of the Department of Sta
+   63      84    84      0        84        85  complete    Records of the Committee on Public Infor
+   76    1614  1614      0      1614      1564  complete    Records of Boundary and Claims Commissio
+   84    3963  3962     +1      3963      4896  complete    Records of the Foreign Service Posts of 
   169     496   496      0       496       493  complete    Records of the Foreign Economic Administ
   182     232   232      0       232       232  complete    Records of the War Trade Board
-  208     606   606      0       606       594  complete    Records of the Office of War Information
-  229     168   168      0       168       162  complete    Records of the Office of Inter-American 
-  239      95    95      0        95        95  complete    Records of the American Commission for t
+  208     606   606      0       606       658  complete    Records of the Office of War Information
+  229     168   168      0       168       164  complete    Records of the Office of Inter-American 
+  239      95    95      0        95      3193  complete    Records of the American Commission for t
   256      33    33      0        33        32  complete    Records of the American Commission to Ne
   268      31    31      0        31        31  complete    Records of the Philippine War Damage Com
   278      34    34      0        34        34  complete    Records of the Displaced Persons Commiss
-  286    1979  1979      0      1979      1958  complete    Records of the Agency for International 
-  306     997   997      0       997       894  complete    Records of the U.S. Information Agency
+  286    1979  1979      0      1979      2231  complete    Records of the Agency for International 
+  306     997   997      0       997     15457  complete    Records of the U.S. Information Agency
   353     621   621      0       621       621  complete    Records of Interdepartmental and Intrade
-  383     172   172      0       172       167  complete    Records of the U.S. Arms Control and Dis
+  383     172   172      0       172       168  complete    Records of the U.S. Arms Control and Dis
   420      31    31      0        31        31  complete    Records of the United States Internation
-  466     309   309      0       309       308  complete    Records of the U.S. High Commissioner fo
-  469    2250  2250      0      2244      2243  complete    Records of U.S. Foreign Assistance Agenc
+  466     309   309      0       309       309  complete    Records of the U.S. High Commissioner fo
+  469    2250  2250      0      2244      2257  complete    Records of U.S. Foreign Assistance Agenc
   486      11    11      0        11        11  resumedComp Records of the U.S. Trade and Developmen
-  490     286   286      0       286       256  complete    Records of the Peace Corps
+  490     286   286      0       286       814  complete    Records of the Peace Corps
 ──────────────────────────────────────────────────────────────────────────────
 CONTROL-NUMBER TYPES (most frequent first; recordGroups shows spread)
-    20713   22 RG  HMS/MLR Entry Number
-    15463   19 RG  Declassification Project Number
-     6737   17 RG  Former HMS/MLR Entry Number
-     6269    9 RG  Agency-Assigned Identifier
-     5807   19 RG  HMS Record Entry ID
-     5189   10 RG  State Department Lot File Number
-      754   11 RG  Former HMS Record Entry ID
-      373   15 RG  NAIL Control Number
+    26901   22 RG  HMS/MLR Entry Number
+    20074   19 RG  Declassification Project Number
+    16387   17 RG  Former HMS/MLR Entry Number
+     8826    5 RG  Search Identifier
+     8703    9 RG  Agency-Assigned Identifier
+     6967   19 RG  HMS Record Entry ID
+     5197   10 RG  State Department Lot File Number
+     3107    4 RG  XMIS Number
+     1769    5 RG  Former ARC Identifier
+     1581    4 RG  Ref ID
+      991    7 RG  HMS Asset ID
+      757   11 RG  Former HMS Record Entry ID
+      374   15 RG  NAIL Control Number
       280    3 RG  Agency Disposition Number
+      270   10 RG  Reparative Description Identifier
       184    5 RG  Inventory Entry Number
-      177    5 RG  Former ARC Identifier
-      142   10 RG  Former National Archives Identifier
-      127    5 RG  Search Identifier
+      177   10 RG  Former National Archives Identifier
+       65    3 RG  Download Display Identifier
        47    6 RG  Other Identifier
-       29    9 RG  Reparative Description Identifier
        28    5 RG  Former Local Identifier
-       13    4 RG  FOIA Tracking Number
-        8    4 RG  HMS Asset ID
-        3    1 RG  Download Display Identifier
+       14    4 RG  FOIA Tracking Number
         3    1 RG  PRESNET Number
+        2    2 RG  ReDiscovery Number
         1    1 RG  Kennedy Assassination Document ID
+        1    1 RG  Legislative Transfer Number
         1    1 RG  Off-Site Storage Transaction Number
+        1    1 RG  Preliminary Checklist Identifier
         1    1 RG  Select List Identifier
+──────────────────────────────────────────────────────────────────────────────
+FILE-UNIT COMPLETENESS (harvested vs NARA's own fileUnitCount)
+  RG 43: 15451 harvested vs 15451 stated  ✓
+  RG 59: 236480 harvested vs 236517 stated  (-37)
+  RG 63: 980 harvested vs 980 stated  ✓
+  RG 76: 721 harvested vs 721 stated  ✓
+  RG 84: 126455 harvested vs 126455 stated  ✓
+  RG 169: 9829 harvested vs 9829 stated  ✓
+  RG 208: 31595 harvested vs 31595 stated  ✓
+  RG 229: 2678 harvested vs 2678 stated  ✓
+  RG 239: 3186 harvested vs 3186 stated  ✓
+  RG 256: 689 harvested vs 689 stated  ✓
+  RG 268: 332 harvested vs 332 stated  ✓
+  RG 278: 2520 harvested vs 2520 stated  ✓
+  RG 286: 36822 harvested vs 36822 stated  ✓
+  RG 306: 132479 harvested vs 132479 stated  ✓
+  RG 353: 699 harvested vs 699 stated  ✓
+  RG 383: 400 harvested vs 400 stated  ✓
+  RG 420: 325 harvested vs 325 stated  ✓
+  RG 466: 17245 harvested vs 17245 stated  ✓
+  RG 469: 111081 harvested vs 111081 stated  ✓
+  RG 490: 1725 harvested vs 1725 stated  ✓
 ──────────────────────────────────────────────────────────────────────────────
 ⚠ MORE SERIES THAN NARA'S OWN COUNT
   Either NARA's seriesCount is stale, or records were counted twice. Check the
@@ -83,7 +111,7 @@ CONTROL-NUMBER TYPES (most frequent first; recordGroups shows spread)
 UNPROJECTED RAW KEYS (present in the data, absent from the typed index)
   Not necessarily a problem — but a new key here means NARA's schema has moved.
   beginCongress — 1 records
-  dataControlGroup — 20188 records
+  dataControlGroup — 751880 records
   editStatus — 12 records
   endCongress — 1 records
   internalTransferNumbers — 17 records
@@ -97,8 +125,29 @@ API REFRESH vs BULK SNAPSHOT
   catalog housekeeping (dataControlGroup's internal code, referenceUnits[].mailCode).
 ──────────────────────────────────────────────────────────────────────────────
 NOTES
+  • RG 43: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 59: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 63: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 76: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 84: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 169: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 182: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 208: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 229: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 239: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 256: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 268: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 278: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 286: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 306: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 353: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 383: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 420: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 466: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
+  • RG 469: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
   • RG 486: re-classified against the API refresh already on disk (no API calls spent)
+  • RG 490: no API checkpoint, so its harvested depth is unknown — re-projecting at 'seriesAndFileUnits'. If the store holds deeper levels they will be dropped; pass DEPTH explicitly or re-harvest.
   • API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0
 ──────────────────────────────────────────────────────────────────────────────
-Field census: 225 distinct key paths over 20188 records — see census/field-census.csv
-Creator census: 7318 distinct creators — see census/creator-census.csv
+Field census: 255 distinct key paths over 751880 records — see census/field-census.csv
+Creator census: 7438 distinct creators — see census/creator-census.csv

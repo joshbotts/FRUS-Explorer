@@ -1,44 +1,44 @@
 keyPath,value,occurrences,recordGroupCount,recordGroups
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(1) National Security,4258,13,43 59 84 268 286 306 353 383 420 466 469 486 490
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(6) Personal Information,1342,15,43 59 76 84 169 208 286 306 353 383 420 466 469 486 490
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(3) Statute,540,5,43 59 84 306 383
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7) Law Enforcement,35,7,59 84 286 306 383 469 490
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(2) Internal Personnel Rules and Practices,34,4,59 84 286 306
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(4) Trade Secrets and Commercial or Financial Information,23,4,59 84 286 383
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(1) National Security,65177,13,43 59 84 268 286 306 353 383 420 466 469 486 490
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(6) Personal Information,21791,15,43 59 76 84 169 208 286 306 353 383 420 466 469 486 490
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(3) Statute,3925,5,43 59 84 306 383
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(2) Internal Personnel Rules and Practices,1208,4,59 84 286 306
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7) Law Enforcement,673,7,59 84 286 306 383 469 490
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(4) Trade Secrets and Commercial or Financial Information,83,4,59 84 286 383
+accessRestriction.specificAccessRestrictions[].restriction,Other,80,2,59 286
 accessRestriction.specificAccessRestrictions[].restriction,Donated - Security Classified,17,6,59 84 286 306 383 490
-accessRestriction.specificAccessRestrictions[].restriction,John F. Kennedy Assassination Records Collection Act,6,3,59 84 306
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7e) Law Enforcement,3,2,59 84
+accessRestriction.specificAccessRestrictions[].restriction,John F. Kennedy Assassination Records Collection Act,12,3,59 84 306
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7e) Law Enforcement,5,2,59 84
 accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(8) Regulation or Supervision of Financial Institutions,3,1,286
 accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(9) Geological or Geophysical Information and Data,2,2,59 84
-accessRestriction.specificAccessRestrictions[].restriction,Other,2,2,59 286
 accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7b) Law Enforcement,1,1,59
 accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7d) Law Enforcement,1,1,59
 accessRestriction.specificAccessRestrictions[].restriction,Freedom of Information Act (FOIA),1,1,84
 accessRestriction.specificAccessRestrictions[].restriction,PRMPA - Personal Privacy (D),1,1,84
 accessRestriction.specificAccessRestrictions[].restriction,Presidential Records Act (p)(3) Statute,1,1,84
-accessRestriction.specificAccessRestrictions[].securityClassification,Secret,2928,12,43 59 84 268 286 306 353 383 420 466 469 490
-accessRestriction.specificAccessRestrictions[].securityClassification,Top Secret,911,9,43 59 84 286 306 353 383 469 486
-accessRestriction.specificAccessRestrictions[].securityClassification,Confidential,423,8,59 84 286 306 383 469 486 490
-accessRestriction.specificAccessRestrictions[].securityClassification,Restricted Data/Formerly Restricted Data,369,6,43 59 84 306 383 466
+accessRestriction.specificAccessRestrictions[].securityClassification,Secret,35981,12,43 59 84 268 286 306 353 383 420 466 469 490
+accessRestriction.specificAccessRestrictions[].securityClassification,Top Secret,10563,9,43 59 84 286 306 353 383 469 486
+accessRestriction.specificAccessRestrictions[].securityClassification,FOIA (b)(1) National Security,8332,6,59 84 286 306 383 469
+accessRestriction.specificAccessRestrictions[].securityClassification,Confidential,1176,8,59 84 286 306 383 469 486 490
+accessRestriction.specificAccessRestrictions[].securityClassification,Restricted Data/Formerly Restricted Data,953,6,43 59 84 306 383 466
+accessRestriction.specificAccessRestrictions[].securityClassification,Unmarked,300,2,59 84
 accessRestriction.specificAccessRestrictions[].securityClassification,Donated - Security Classified,17,6,59 84 286 306 383 490
-accessRestriction.specificAccessRestrictions[].securityClassification,Unmarked,11,2,59 84
-accessRestriction.specificAccessRestrictions[].securityClassification,FOIA (b)(1) National Security,1,1,383
-accessRestriction.status,Unrestricted,14544,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-accessRestriction.status,Restricted - Fully,2773,12,43 59 84 208 286 306 353 383 420 469 486 490
-accessRestriction.status,Restricted - Partly,1904,14,43 59 76 84 268 286 306 353 383 420 466 469 486 490
-accessRestriction.status,Restricted - Possibly,953,15,43 59 76 84 169 239 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Unrestricted,661905,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Restricted - Possibly,44761,15,43 59 76 84 169 239 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Restricted - Partly,25463,14,43 59 76 84 268 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Restricted - Fully,19737,12,43 59 84 208 286 306 353 383 420 469 486 490
 accessRestriction.status,Undetermined,13,3,76 383 490
-audiovisual,false,19318,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+audiovisual,false,205352,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
 audiovisual,true,2,2,59 306
-contributors[].authorityType,person,507,11,43 59 76 84 182 208 239 286 306 469 490
-contributors[].authorityType,organization,387,9,43 59 76 84 169 286 306 466 469
-contributors[].contributorType,Correspondent,325,8,43 59 76 84 182 286 306 469
+contributors[].authorityType,person,783,11,43 59 76 84 182 208 239 286 306 469 490
+contributors[].authorityType,organization,389,9,43 59 76 84 169 286 306 466 469
+contributors[].contributorType,Correspondent,473,8,43 59 76 84 182 286 306 469
 contributors[].contributorType,Originator,231,11,43 59 76 84 169 239 286 306 466 469 490
+contributors[].contributorType,Recipient,142,4,59 76 286 469
+contributors[].contributorType,Author,76,5,59 84 286 306 490
 contributors[].contributorType,Photographer,62,3,59 286 306
-contributors[].contributorType,Author,60,5,59 84 286 306 490
 contributors[].contributorType,Compiler,38,3,59 84 306
-contributors[].contributorType,Participant,35,4,43 59 286 306
-contributors[].contributorType,Recipient,31,4,59 76 286 469
+contributors[].contributorType,Participant,36,4,43 59 286 306
 contributors[].contributorType,Speaker,26,5,59 84 286 306 490
 contributors[].contributorType,Other,16,3,43 59 76
 contributors[].contributorType,Writer of accompanying material,14,3,59 76 306
@@ -50,6 +50,8 @@ contributors[].contributorType,Publisher,4,3,43 59 306
 contributors[].contributorType,Collector,3,2,59 84
 contributors[].contributorType,Host,3,2,286 306
 contributors[].contributorType,Collaborator,2,1,59
+contributors[].contributorType,Corrector,2,2,59 84
+contributors[].contributorType,Engineer,2,1,59
 contributors[].contributorType,Interviewee,2,2,84 306
 contributors[].contributorType,Organizer of meeting,2,1,43
 contributors[].contributorType,Printer,2,1,43
@@ -58,10 +60,8 @@ contributors[].contributorType,Author of screenplay,1,1,43
 contributors[].contributorType,Complainant,1,1,76
 contributors[].contributorType,Consultant,1,1,286
 contributors[].contributorType,Contractor,1,1,59
-contributors[].contributorType,Corrector,1,1,84
 contributors[].contributorType,Designer,1,1,43
 contributors[].contributorType,Director,1,1,306
-contributors[].contributorType,Engineer,1,1,59
 contributors[].contributorType,Illustrator,1,1,208
 contributors[].contributorType,Lithographer,1,1,59
 contributors[].contributorType,Metadata contact,1,1,306
@@ -69,9 +69,15 @@ contributors[].contributorType,Researcher,1,1,286
 creators[].authorityType,organization,24356,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
 creators[].creatorType,Most Recent,20162,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
 creators[].creatorType,Predecessor,4194,17,43 59 76 84 169 182 208 229 256 286 306 353 420 466 469 486 490
+digitalObjects[].objectType,Image (JPG),7698848,13,43 59 63 76 84 208 239 256 286 306 353 469 490
+digitalObjects[].objectType,Image (TIFF),2395889,5,59 76 84 239 306
+digitalObjects[].objectType,Portable Document File (PDF),20761,10,43 59 76 84 256 286 306 353 469 490
+digitalObjects[].objectType,ASCII Text,67,2,59 286
+digitalObjects[].objectType,Comma-separated values (CSV),5,1,286
+digitalObjects[].objectType,ZIP,1,1,383
 findingAids[].findingAidType,Folder List,1375,19,43 59 76 84 169 208 239 256 268 278 286 306 353 383 420 466 469 486 490
 findingAids[].findingAidType,Database,961,4,59 76 84 306
-findingAids[].findingAidType,Index,662,18,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+findingAids[].findingAidType,Index,666,18,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
 findingAids[].findingAidType,Other,234,16,43 59 63 76 84 169 208 229 239 256 268 286 306 466 469 490
 findingAids[].findingAidType,Container List,84,11,43 59 76 84 208 229 278 286 306 466 486
 findingAids[].findingAidType,Item List,62,14,43 59 76 84 169 208 256 286 306 353 420 466 469 490
@@ -83,39 +89,39 @@ findingAids[].findingAidType,Log,6,4,43 59 306 490
 findingAids[].findingAidType,Inventory,5,3,59 76 84
 findingAids[].findingAidType,Select List,3,2,59 76
 findingAids[].findingAidType,Calendar,1,1,59
-generalRecordsTypes[],Textual Records,19525,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-generalRecordsTypes[],Photographs and other Graphic Materials,1163,19,43 59 63 76 84 169 182 208 229 239 268 278 286 306 353 466 469 486 490
-generalRecordsTypes[],Maps and Charts,465,16,43 59 63 76 84 169 208 229 239 256 286 306 353 466 469 490
-generalRecordsTypes[],Moving Images,137,11,43 59 76 84 182 208 229 286 306 469 490
-generalRecordsTypes[],Architectural and Engineering Drawings,113,12,43 59 76 84 169 229 239 286 306 466 469 490
-generalRecordsTypes[],Sound Recordings,95,11,43 59 76 84 208 229 286 306 383 469 490
-generalRecordsTypes[],Artifacts,67,12,43 59 76 84 182 239 268 286 306 466 469 490
-generalRecordsTypes[],Data Files,37,6,59 84 286 306 383 490
+generalRecordsTypes[],Textual Records,711155,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+generalRecordsTypes[],Photographs and other Graphic Materials,45174,19,43 59 63 76 84 169 182 208 229 239 268 278 286 306 353 466 469 486 490
+generalRecordsTypes[],Data Files,2352,6,59 84 286 306 383 490
+generalRecordsTypes[],Maps and Charts,2139,16,43 59 63 76 84 169 208 229 239 256 286 306 353 466 469 490
+generalRecordsTypes[],Moving Images,139,11,43 59 76 84 182 208 229 286 306 469 490
+generalRecordsTypes[],Architectural and Engineering Drawings,129,12,43 59 76 84 169 229 239 286 306 466 469 490
+generalRecordsTypes[],Artifacts,106,12,43 59 76 84 182 239 268 286 306 466 469 490
+generalRecordsTypes[],Sound Recordings,96,11,43 59 76 84 208 229 286 306 383 469 490
 generalRecordsTypes[],Web Pages,1,1,59
-languages[],English,869,15,43 59 63 76 84 208 229 286 306 353 383 466 469 486 490
-languages[],French,353,11,43 59 76 84 208 229 286 306 466 469 490
-languages[],Spanish,329,11,43 59 76 84 208 229 286 306 353 469 490
-languages[],German,154,8,43 59 63 76 84 286 306 466
-languages[],Russian,87,9,43 59 63 76 84 208 286 306 383
-languages[],Arabic,58,8,43 59 76 84 208 286 306 469
-languages[],Italian,55,7,59 76 84 208 229 286 306
-languages[],Portuguese,40,6,43 59 76 84 286 306
-languages[],Japanese,37,6,43 59 84 286 306 469
-languages[],Chinese,35,5,43 59 84 286 306
+languages[],English,933,15,43 59 63 76 84 208 229 286 306 353 383 466 469 486 490
+languages[],French,377,11,43 59 76 84 208 229 286 306 466 469 490
+languages[],Spanish,369,11,43 59 76 84 208 229 286 306 353 469 490
+languages[],German,157,8,43 59 63 76 84 286 306 466
+languages[],Russian,92,9,43 59 63 76 84 208 286 306 383
+languages[],Arabic,63,8,43 59 76 84 208 286 306 469
+languages[],Italian,59,7,59 76 84 208 229 286 306
+languages[],Chinese,44,5,43 59 84 286 306
+languages[],Portuguese,44,6,43 59 76 84 286 306
+languages[],Japanese,40,6,43 59 84 286 306 469
 languages[],Vietnamese,27,6,43 59 84 286 306 469
 languages[],"Greek, Modern (1453- )",24,4,59 84 306 469
-languages[],Thai,21,3,59 84 306
-languages[],Dutch,20,3,59 84 306
+languages[],Dutch,23,3,59 84 306
+languages[],Thai,22,3,59 84 306
+languages[],Korean,20,3,59 286 306
 languages[],Polish,20,4,59 63 286 306
-languages[],Korean,19,3,59 286 306
 languages[],Indonesian,18,3,59 84 306
 languages[],Hungarian,17,4,59 84 286 306
+languages[],Swedish,15,4,43 59 84 306
+languages[],Persian,14,4,59 84 286 306
+languages[],Turkish,14,4,59 84 286 306
 languages[],Czech,13,4,59 84 286 306
-languages[],Swedish,13,4,43 59 84 306
-languages[],Turkish,13,3,84 286 306
 languages[],Bulgarian,12,3,59 286 306
 languages[],Finnish,12,3,59 84 306
-languages[],Persian,12,4,59 84 286 306
 languages[],Bengali,11,2,84 306
 languages[],Burmese,11,1,306
 languages[],Danish,11,3,59 84 306
@@ -129,10 +135,10 @@ languages[],Croatian,7,2,59 306
 languages[],Lao,7,1,306
 languages[],Tagalog,7,1,306
 languages[],Amharic,6,3,59 84 306
+languages[],Norwegian,6,2,59 306
 languages[],Serbian,6,1,306
 languages[],Malay,5,2,59 306
 languages[],Nepali,5,2,286 306
-languages[],Norwegian,5,1,306
 languages[],Sinhalese,5,1,306
 languages[],Slovak,5,2,286 306
 languages[],Slovenian,5,1,306
@@ -146,7 +152,9 @@ languages[],Swahili,4,2,59 306
 languages[],Afrikaans,3,1,59
 languages[],Cebuano,3,1,306
 languages[],Latvian,3,2,286 306
+languages[],Manchu,3,1,59
 languages[],Telugu,3,1,306
+languages[],"Turkish, Ottoman",3,1,59
 languages[],Assamese,2,1,306
 languages[],Bambara,2,1,306
 languages[],Georgian,2,2,59 306
@@ -166,8 +174,10 @@ languages[],"Creoles and Pidgins, French-based (Other)",1,1,59
 languages[],Estonian,1,1,306
 languages[],Filipino,1,1,306
 languages[],Hausa,1,1,306
+languages[],Hawaiian,1,1,59
 languages[],Hiligaynon,1,1,306
 languages[],Iloko,1,1,306
+languages[],Malagasy,1,1,59
 languages[],Maltese,1,1,84
 languages[],Mohlam,1,1,306
 languages[],Mongolian,1,1,306
@@ -178,14 +188,15 @@ languages[],Quechua,1,1,306
 languages[],Sindhi,1,1,306
 languages[],Tibetan,1,1,306
 languages[],Yiddish,1,1,63
+levelOfDescription,fileUnit,731692,20,43 59 63 76 84 169 208 229 239 256 268 278 286 306 353 383 420 466 469 490
 levelOfDescription,series,20188,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-physicalOccurrences[].copyStatus,Preservation-Reproduction-Reference,19782,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-physicalOccurrences[].copyStatus,Preservation,457,15,43 59 76 84 169 182 208 229 239 256 286 306 383 469 490
-physicalOccurrences[].copyStatus,Reference,152,9,43 59 182 208 229 286 306 469 490
+physicalOccurrences[].copyStatus,Preservation-Reproduction-Reference,748219,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].copyStatus,Preservation,3352,15,43 59 76 84 169 182 208 229 239 256 286 306 383 469 490
+physicalOccurrences[].copyStatus,Reproduction-Reference,1991,7,59 208 239 286 306 469 490
+physicalOccurrences[].copyStatus,Reference,254,9,43 59 182 208 229 286 306 469 490
 physicalOccurrences[].copyStatus,Reproduction,112,9,43 59 182 208 229 286 306 469 490
-physicalOccurrences[].copyStatus,Reproduction-Reference,20,6,59 208 286 306 469 490
-physicalOccurrences[].copyStatus,Preservation-Reproduction,19,6,43 59 208 286 306 469
-physicalOccurrences[].copyStatus,Preservation-Reference,17,9,43 59 76 84 169 208 268 286 306
+physicalOccurrences[].copyStatus,Preservation-Reproduction,63,6,43 59 208 286 306 469
+physicalOccurrences[].copyStatus,Preservation-Reference,21,9,43 59 76 84 169 208 268 286 306
 physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Standard",12079,21,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 490
 physicalOccurrences[].holdingsMeasurements[].type,"FRC Carton, Standard",3296,14,43 59 76 84 208 268 286 306 353 383 420 469 486 490
 physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Records Center",1800,9,43 59 76 84 208 286 306 466 469
@@ -413,83 +424,87 @@ physicalOccurrences[].holdingsMeasurements[].type,"Tube, 24 L, 4 W",1,1,59
 physicalOccurrences[].holdingsMeasurements[].type,"Tube, 36 L, 4 W",1,1,59
 physicalOccurrences[].holdingsMeasurements[].type,"Tube, 48 inch",1,1,76
 physicalOccurrences[].holdingsMeasurements[].type,"Tube, 60 L, 6 W",1,1,76
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Loose Sheets,5541,21,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 383 420 466 469 486 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Photographic Materials,400,14,43 59 76 84 169 208 229 239 286 306 353 469 486 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Bound Volumes,301,12,43 59 76 84 169 208 286 306 353 383 469 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Magnetic Media,268,12,43 59 76 84 208 229 286 306 383 469 486 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Motion Picture Film,199,9,43 59 76 84 208 229 286 306 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Microform,71,9,59 76 84 169 286 306 383 466 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Optical Disks,42,8,43 59 76 208 229 286 306 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Artworks and Graphic Materials,33,9,59 76 169 208 229 286 306 469 490
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Artifacts,25,7,43 59 76 84 286 306 466
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Grooved Media,14,5,43 59 208 229 306
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Paper,17545,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Bound Volume,3120,17,43 59 63 76 84 169 182 208 229 256 268 286 306 353 466 469 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Photographic Print,1025,17,43 59 63 76 84 169 208 229 239 268 286 306 353 466 469 486 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Cards,417,18,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Loose Sheets,137012,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Photographic Materials,29821,14,43 59 76 84 169 208 229 239 286 306 353 469 486 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Bound Volumes,5645,12,43 59 76 84 169 208 286 306 353 383 469 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Microform,1832,12,59 63 76 84 169 239 286 306 353 383 466 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Magnetic Media,1603,12,43 59 76 84 208 229 286 306 383 469 486 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Motion Picture Film,201,9,43 59 76 84 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Artworks and Graphic Materials,144,9,59 76 169 208 229 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Artifacts,49,7,43 59 76 84 286 306 466
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Optical Disks,43,8,43 59 76 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Grooved Media,18,5,43 59 208 229 306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Paper,703613,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Photographic Print,43544,17,43 59 63 76 84 169 208 229 239 268 286 306 353 466 469 486 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Bound Volume,8297,17,43 59 63 76 84 169 182 208 229 256 268 286 306 353 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Negative,3958,14,43 59 76 84 169 182 208 229 239 268 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Slide,3719,9,43 59 76 84 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Cartridge,2020,4,59 286 306 383
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Microfilm,1873,14,59 63 76 84 169 208 239 286 306 353 383 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk,1588,5,59 286 306 383 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Cards,1235,18,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk: Compact Disk,367,4,59 208 286 306
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Film Reel,283,11,43 59 76 84 182 208 229 286 306 469 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Negative,205,14,43 59 76 84 169 182 208 229 239 268 286 306 469 490
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Video Cassette,155,10,43 59 76 84 208 229 286 306 469 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Microfilm,112,12,59 76 84 169 208 239 286 306 383 466 469 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Slide,83,8,59 76 84 208 229 286 306 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Artifact,69,12,43 59 76 84 182 239 268 286 306 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Photomechanical Print,141,9,43 59 63 76 208 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Artifact,108,12,43 59 76 84 182 239 268 286 306 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Transparency,100,7,59 76 208 229 286 306 469
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Tape/Reel,64,10,43 59 76 84 208 229 286 306 469 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Photomechanical Print,50,9,43 59 63 76 208 286 306 469 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Transparency,37,7,59 76 208 229 286 306 469
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk,34,4,59 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Floppy Disk,39,6,59 84 286 306 486 490
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Cassette,33,8,43 59 76 208 286 306 383 490
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk: Digital Versatile Disk,29,8,43 59 76 208 229 286 306 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Disk,24,6,43 59 208 229 306 469
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Disk,28,6,43 59 208 229 306 469
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Video Open Reel,21,5,59 208 286 306 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Floppy Disk,20,6,59 84 286 306 486 490
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Artwork,19,7,43 59 76 208 286 306 469
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk: Compact Disk,18,4,59 208 286 306
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Cartridge,15,4,59 286 306 383
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Artwork,20,7,43 59 76 208 286 306 469
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Microfiche,13,5,59 169 286 306 490
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Reel,7,2,59 306
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Filmstrip,5,3,59 208 306
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Hard Drive,5,4,59 286 306 490
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Cassette,3,2,59 286
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Networked Storage,2,2,59 306
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Parchment,2,2,59 306
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Aperture Card,1,1,59
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Cylinder,1,1,182
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Manual Print,1,1,43
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Networked Storage,1,1,306
 physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk,1,1,286
-physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Textual Reference,19417,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Textual Reference,709321,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Still Pictures,40095,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Electronic Records,2768,5,59 286 306 383 490
+physicalOccurrences[].referenceUnits[].name,"National Archives at Washington, DC - Textual Reference",823,3,59 76 239
 physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Motion Pictures,454,12,43 59 76 84 182 208 229 286 306 383 469 490
-physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Still Pictures,443,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490
-physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Cartographic,100,10,43 59 76 84 169 229 239 256 286 306
+physicalOccurrences[].referenceUnits[].name,Harry S. Truman Library,214,2,59 466
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Cartographic,178,10,43 59 76 84 169 229 239 256 286 306
+physicalOccurrences[].referenceUnits[].name,National Archives at Fort Worth,84,1,76
 physicalOccurrences[].referenceUnits[].name,John F. Kennedy Library,52,6,59 84 286 306 383 490
-physicalOccurrences[].referenceUnits[].name,National Archives at Fort Worth,38,1,76
-physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Electronic Records,27,5,59 286 306 383 490
-physicalOccurrences[].referenceUnits[].name,National Archives at Seattle,8,1,43
+physicalOccurrences[].referenceUnits[].name,National Archives at Seattle,9,1,43
 physicalOccurrences[].referenceUnits[].name,Lyndon Baines Johnson Library,6,4,43 59 306 383
-physicalOccurrences[].referenceUnits[].name,Harry S. Truman Library,5,2,59 466
 physicalOccurrences[].referenceUnits[].name,National Archives at Philadelphia,3,1,306
 physicalOccurrences[].referenceUnits[].name,Dwight D. Eisenhower Library,2,2,59 306
 physicalOccurrences[].referenceUnits[].name,Gerald R. Ford Library,2,1,59
 physicalOccurrences[].referenceUnits[].name,Franklin D. Roosevelt Library,1,1,59
-physicalOccurrences[].referenceUnits[].name,"National Archives at Washington, DC - Textual Reference",1,1,59
-recordType,description,20188,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+recordType,description,751880,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
 soundType,Sound,13,5,59 84 229 306 469
 soundType,Silent,1,1,469
 soundType,Silent and Sound,1,1,59
-subjects[].authorityType,specificRecordsType,9312,16,43 59 76 84 169 182 208 229 239 286 306 353 383 466 469 490
-subjects[].authorityType,geographicPlaceName,9176,17,43 59 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
-subjects[].authorityType,topicalSubject,7547,17,43 59 76 84 169 182 208 229 256 286 306 353 383 466 469 486 490
-subjects[].authorityType,organization,2365,13,43 59 76 84 169 208 286 306 353 383 466 469 490
-subjects[].authorityType,person,1260,12,43 59 76 84 208 239 256 286 306 466 469 490
-subjects[].heading,Reports,1301,13,43 59 76 84 169 208 286 306 353 383 466 469 490
-subjects[].heading,Correspondence,1299,12,43 59 76 84 169 208 286 306 353 466 469 490
-subjects[].heading,Memorandums,1185,12,43 59 76 84 208 286 306 353 383 466 469 490
-subjects[].heading,Telegrams,709,8,43 59 84 208 286 306 353 469
-subjects[].heading,Notes,583,7,43 59 84 306 353 466 469
-subjects[].heading,"Speeches, addresses, etc.",325,6,43 59 84 306 383 490
+subjects[].authorityType,specificRecordsType,9356,16,43 59 76 84 169 182 208 229 239 286 306 353 383 466 469 490
+subjects[].authorityType,geographicPlaceName,9334,17,43 59 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+subjects[].authorityType,topicalSubject,8151,18,43 59 63 76 84 169 182 208 229 256 286 306 353 383 466 469 486 490
+subjects[].authorityType,organization,3836,13,43 59 76 84 169 208 286 306 353 383 466 469 490
+subjects[].authorityType,person,1895,12,43 59 76 84 208 239 256 286 306 466 469 490
+subjects[].heading,Marshall Plan,1398,4,59 84 286 469
+subjects[].heading,Correspondence,1325,12,43 59 76 84 169 208 286 306 353 466 469 490
+subjects[].heading,Reports,1304,13,43 59 76 84 169 208 286 306 353 383 466 469 490
+subjects[].heading,Memorandums,1188,12,43 59 76 84 208 286 306 353 383 466 469 490
+subjects[].heading,Telegrams,710,8,43 59 84 208 286 306 353 469
+subjects[].heading,Notes,586,7,43 59 84 306 353 466 469
+subjects[].heading,"Lincoln, Abraham, 1809-1865",444,2,59 306
+subjects[].heading,Condolence notes,438,2,59 84
+subjects[].heading,"Speeches, addresses, etc.",326,6,43 59 84 306 383 490
 subjects[].heading,"Clippings (Books, newspapers, etc.)",289,10,43 59 76 84 208 286 306 353 466 469
 subjects[].heading,Diplomacy,235,3,59 84 306
-subjects[].heading,International relations,221,5,43 59 84 208 306
-subjects[].heading,Photographs,189,11,59 76 84 208 229 286 306 353 466 469 490
+subjects[].heading,International relations,224,5,43 59 84 208 306
+subjects[].heading,Brazil,212,9,59 76 84 208 229 286 306 469 490
+subjects[].heading,Photographs,191,11,59 76 84 208 229 286 306 353 466 469 490
 subjects[].heading,Minutes,174,9,43 59 84 169 286 306 353 383 466
 subjects[].heading,Lists (Document genres),168,8,43 59 76 286 306 353 383 466
 subjects[].heading,Economics,160,6,43 59 84 286 306 469
@@ -498,7 +513,7 @@ subjects[].heading,Agendas,140,8,43 59 286 306 353 383 466 469
 subjects[].heading,International trade,126,5,43 59 84 286 306
 subjects[].heading,India,120,5,59 84 286 306 469
 subjects[].heading,Agriculture,119,9,59 76 84 169 286 306 353 466 469
-subjects[].heading,Mexico,117,8,43 59 76 84 229 286 306 469
+subjects[].heading,Mexico,118,8,43 59 76 84 229 286 306 469
 subjects[].heading,France,114,9,43 59 76 84 169 208 286 306 469
 subjects[].heading,Publications,113,5,59 84 286 306 466
 subjects[].heading,Soviet Union,106,6,59 84 169 306 353 466
@@ -508,28 +523,27 @@ subjects[].heading,Costa Rica,99,8,43 59 76 84 229 286 306 469
 subjects[].heading,Education,97,8,59 84 229 286 306 466 469 490
 subjects[].heading,Panama,97,7,43 59 76 84 286 306 469
 subjects[].heading,Agreements,96,6,43 59 84 286 306 466
+subjects[].heading,China,95,7,59 76 84 208 286 306 469
+subjects[].heading,Letters (Correspondence),95,7,43 59 76 84 208 286 306
 subjects[].heading,Germany,94,8,43 59 84 169 208 286 306 469
-subjects[].heading,Letters (Correspondence),92,7,43 59 76 84 208 286 306
+subjects[].heading,Japan,93,6,59 84 208 286 306 469
+subjects[].heading,Egypt,92,6,59 84 208 286 306 469
 subjects[].heading,Austria,91,7,43 59 76 84 286 306 469
-subjects[].heading,Brazil,91,9,59 76 84 208 229 286 306 469 490
-subjects[].heading,Egypt,91,6,59 84 208 286 306 469
-subjects[].heading,China,90,7,59 76 84 208 286 306 469
-subjects[].heading,Japan,90,6,59 84 208 286 306 469
 subjects[].heading,Pakistan,90,6,59 84 286 306 353 469
 subjects[].heading,Dispatches,87,3,43 59 306
 subjects[].heading,International conferences,87,5,43 59 84 286 306
-subjects[].heading,Thailand,86,6,59 84 286 306 469 490
+subjects[].heading,Thailand,87,6,59 84 286 306 469 490
 subjects[].heading,Propaganda,82,6,59 84 208 229 306 466
 subjects[].heading,Vietnam,80,7,43 59 84 169 286 306 469
 subjects[].heading,Educational exchanges,79,2,59 306
 subjects[].heading,United Nations,78,6,43 59 84 286 306 383
 subjects[].heading,Communism,77,5,59 84 306 466 469
+subjects[].heading,Ecuador,77,9,43 59 76 84 229 286 306 469 490
 subjects[].heading,Philippines,77,6,59 84 286 306 469 490
-subjects[].heading,Ecuador,76,9,43 59 76 84 229 286 306 469 490
 subjects[].heading,Indonesia,76,5,59 84 286 306 469
 subjects[].heading,Morocco,76,6,59 84 169 286 306 469
+subjects[].heading,Berlin (Germany),75,6,59 84 286 306 466 469
 subjects[].heading,Human rights,75,4,59 84 286 306
-subjects[].heading,Berlin (Germany),74,6,59 84 286 306 466 469
 subjects[].heading,Refugees,73,5,59 84 286 306 466
 subjects[].heading,Guatemala,72,6,43 59 84 286 306 469
 subjects[].heading,Forms (Documents),71,6,43 59 84 286 306 466
@@ -555,14 +569,15 @@ subjects[].heading,Great Britain,63,5,59 84 286 306 469
 subjects[].heading,Labor,63,4,59 84 286 306
 subjects[].heading,Cuba,62,6,43 59 84 229 286 306
 subjects[].heading,Iraq,62,5,59 84 286 306 469
-subjects[].heading,Spain,61,7,59 76 84 239 286 306 469
+subjects[].heading,Spain,62,7,59 76 84 239 286 306 469
+subjects[].heading,War of 1812,62,2,59 76
 subjects[].heading,North Atlantic Treaty Organization. (04/04/1949 - ),59,7,43 59 84 306 383 466 469
 subjects[].heading,Chile,58,7,59 76 84 229 286 306 469
 subjects[].heading,Honduras,58,9,43 59 76 84 229 286 306 469 490
 subjects[].heading,Proposals,58,6,43 59 286 306 353 490
+subjects[].heading,Dominican Republic,57,5,59 84 286 306 490
 subjects[].heading,Jordan,57,5,59 84 286 306 469
 subjects[].heading,Afghanistan,56,6,59 84 286 306 469 490
-subjects[].heading,Dominican Republic,56,5,59 84 286 306 490
 subjects[].heading,Nicaragua,56,8,43 59 76 84 229 286 306 469
 subjects[].heading,Colombia,55,8,43 59 76 84 229 286 306 490
 subjects[].heading,Haiti,55,5,59 84 286 306 469
@@ -576,8 +591,10 @@ subjects[].heading,Arms control,52,4,59 84 306 383
 subjects[].heading,Health,52,7,59 84 229 286 306 469 490
 subjects[].heading,Instructions,52,6,43 59 84 286 306 466
 subjects[].heading,Israel,50,5,59 84 286 306 469
+subjects[].heading,National Aeronautics and Space Administration. Apollo 11 (Spacecraft) 1969-1969,50,1,306
 subjects[].heading,Paraguay,50,7,59 76 84 229 286 306 490
 subjects[].heading,Radio broadcasting,50,4,43 59 229 306
+subjects[].heading,"World War, 1939-1945",50,6,59 84 169 208 306 466
 subjects[].heading,Burma,49,7,59 84 169 208 286 306 469
 subjects[].heading,International agencies,49,3,59 84 286
 subjects[].heading,Political affairs,49,4,59 84 306 466
@@ -585,12 +602,12 @@ subjects[].heading,Summaries,49,4,43 59 286 306
 subjects[].heading,Venezuela,49,7,59 76 84 229 286 306 469
 subjects[].heading,Yugoslavia,49,5,59 84 286 306 469
 subjects[].heading,Science,48,5,43 59 84 286 306
+subjects[].heading,Passports,47,2,59 84
 subjects[].heading,Technology,47,4,59 84 286 306
 subjects[].heading,Congo (Democratic Republic),46,5,59 84 286 306 469
-subjects[].heading,Passports,46,2,59 84
+subjects[].heading,El Salvador,46,6,43 59 84 229 286 306
 subjects[].heading,Portugal,46,5,59 84 286 306 469
 subjects[].heading,Sri Lanka,46,6,59 84 286 306 469 490
-subjects[].heading,El Salvador,45,6,43 59 84 229 286 306
 subjects[].heading,Germany (West),45,5,59 84 286 306 466
 subjects[].heading,Hungary,45,8,43 59 76 84 286 306 466 469
 subjects[].heading,Meetings,45,5,59 84 286 306 353
@@ -607,7 +624,6 @@ subjects[].heading,Switzerland,42,4,59 84 286 306
 subjects[].heading,Africa,41,5,59 286 306 469 490
 subjects[].heading,Belgium,41,6,59 84 169 286 306 469
 subjects[].heading,Middle East,41,5,59 84 286 306 469
-subjects[].heading,"World War, 1939-1945",41,6,59 84 169 208 306 466
 subjects[].heading,Foreign aid,40,5,59 84 286 306 469
 subjects[].heading,Kenya,40,6,59 84 286 306 469 490
 subjects[].heading,Shanghai (China),40,2,59 84
@@ -616,13 +632,14 @@ subjects[].heading,Laos,39,6,59 84 169 286 306 469
 subjects[].heading,Economic assistance,38,5,59 84 286 306 469
 subjects[].heading,Economic development,38,6,59 84 286 306 469 486
 subjects[].heading,Ethiopia,38,6,59 84 286 306 469 490
+subjects[].heading,Liberia,38,6,59 84 286 306 469 490
 subjects[].heading,Romania,38,6,43 59 84 286 306 466
 subjects[].heading,Czechoslovakia,37,4,59 84 306 466
 subjects[].heading,Disarmament,37,6,43 59 84 306 383 466
-subjects[].heading,Liberia,37,6,59 84 286 306 469 490
 subjects[].heading,Prisoners of war,37,4,59 84 306 466
 subjects[].heading,U.S. Information Agency. Voice of America. (08/01/1953 - 04/01/1978),37,2,59 306
 subjects[].heading,Military assistance,36,3,43 59 84
+subjects[].heading,Netherlands,36,6,59 84 169 286 306 469
 subjects[].heading,Nigeria,36,5,59 84 286 306 469
 subjects[].heading,Questionnaires,36,5,59 286 306 353 466
 subjects[].heading,Schedules (Time plans),36,3,59 306 466
@@ -638,7 +655,6 @@ subjects[].heading,United States,35,5,59 76 208 286 306
 subjects[].heading,Visas,35,4,59 84 306 353
 subjects[].heading,Congresses and conventions,34,4,59 84 286 306
 subjects[].heading,Libya,34,7,43 59 84 286 306 353 469
-subjects[].heading,Netherlands,34,6,59 84 169 286 306 469
 subjects[].heading,Programs,34,2,59 306
 subjects[].heading,Taiwan,34,5,59 84 286 306 469
 subjects[].heading,Sudan,33,5,59 84 286 306 469
@@ -661,6 +677,7 @@ subjects[].heading,Briefs,30,3,59 84 306
 subjects[].heading,Brussels (Belgium),30,3,59 84 306
 subjects[].heading,Claims involving the Federal Government,30,1,76
 subjects[].heading,Industries,30,6,59 84 286 306 466 469
+subjects[].heading,"Katyn Massacre, Katyn, Russia, 1940",30,4,59 84 306 466
 subjects[].heading,Manuals,30,4,59 286 306 490
 subjects[].heading,Norway,30,4,59 84 286 306
 subjects[].heading,Reparations,30,4,43 59 84 466
@@ -680,6 +697,7 @@ subjects[].heading,Surveys,28,4,59 84 286 306
 subjects[].heading,Yemen (Republic),28,5,59 84 286 306 469
 subjects[].heading,Cyprus,27,5,59 84 286 306 469
 subjects[].heading,"Nixon, Richard M. (Richard Milhous), 1913-1994",27,3,59 84 306
+subjects[].heading,African Americans,26,9,59 63 76 84 208 229 286 306 469
 subjects[].heading,Articles,26,6,43 59 76 84 306 466
 subjects[].heading,Cultural relations,26,3,59 306 466
 subjects[].heading,Culture,26,4,59 84 286 306
@@ -693,6 +711,7 @@ subjects[].heading,"Policy, Government",25,4,59 84 286 306
 subjects[].heading,Visits of state,25,2,59 306
 subjects[].heading,Housing,24,4,59 286 306 466
 subjects[].heading,Legislation,24,5,59 286 306 466 490
+subjects[].heading,Repatriation,24,3,59 84 306
 subjects[].heading,Singapore,24,5,59 84 286 306 469
 subjects[].heading,"United Nations Educational, Scientific and Cultural Organization.",24,5,43 59 84 286 306
 subjects[].heading,Administration,23,5,59 84 286 306 469
@@ -716,10 +735,12 @@ subjects[].heading,Saudi Arabia,22,5,59 84 286 306 469
 subjects[].heading,Statistics,22,5,43 59 286 306 466
 subjects[].heading,"Aeronautics, Commercial",21,5,43 59 84 466 469
 subjects[].heading,Algeria,21,5,59 84 286 306 469
+subjects[].heading,Assassination,21,3,59 84 306
 subjects[].heading,Banks and banking,21,5,59 84 286 306 466
 subjects[].heading,Cameroon,21,5,59 84 286 306 490
 subjects[].heading,Claims,21,4,59 76 84 306
 subjects[].heading,Intelligence,21,4,59 84 208 306
+subjects[].heading,Luxembourg,21,5,59 84 169 286 306
 subjects[].heading,Public relations,21,4,59 84 286 306
 subjects[].heading,Sierra Leone,21,6,59 84 286 306 469 490
 subjects[].heading,Uganda,21,5,59 84 286 306 469
@@ -731,17 +752,16 @@ subjects[].heading,Emigration and immigration,20,3,59 84 306
 subjects[].heading,Iceland,20,5,59 84 286 306 469
 subjects[].heading,Invitations,20,2,59 306
 subjects[].heading,Libraries,20,4,59 286 306 466
-subjects[].heading,Luxembourg,20,5,59 84 169 286 306
+subjects[].heading,Madagascar,20,6,59 84 286 306 469 490
+subjects[].heading,Russia,20,5,59 84 256 286 306
 subjects[].heading,Rwanda,20,4,59 286 306 490
 subjects[].heading,Tacna (Peru),20,2,76 84
+subjects[].heading,"Albright, Madeleine Korbel, 1937-",19,1,59
 subjects[].heading,Applications,19,5,59 84 286 306 466
 subjects[].heading,Economic policy,19,4,59 84 286 306
 subjects[].heading,"Eisenhower, Dwight D. (Dwight David), 1890-1969",19,5,59 84 208 306 466
 subjects[].heading,International cultural affairs,19,3,59 84 306
-subjects[].heading,Madagascar,19,6,59 84 286 306 469 490
 subjects[].heading,Nuclear nonproliferation,19,2,59 84
-subjects[].heading,Repatriation,19,3,59 84 306
-subjects[].heading,Russia,19,5,59 84 256 286 306
 subjects[].heading,Telecommunication,19,6,43 59 84 286 306 469
 subjects[].heading,Terrorism,19,4,59 84 286 306
 subjects[].heading,World Health Organization,19,4,43 59 84 286
@@ -753,6 +773,7 @@ subjects[].heading,Economic conditions,18,3,59 84 306
 subjects[].heading,Eswatini,18,2,84 286
 subjects[].heading,Geneva (Switzerland),18,5,43 59 84 286 306
 subjects[].heading,Government publications,18,1,306
+subjects[].heading,Paris (France),18,5,43 59 84 306 469
 subjects[].heading,United Nations. General Assembly,18,4,43 59 84 306
 subjects[].heading,Belize,17,4,59 84 286 306
 subjects[].heading,Burkina Faso,17,5,59 84 286 306 490
@@ -762,7 +783,6 @@ subjects[].heading,Korea (South),17,5,59 84 286 306 469
 subjects[].heading,"Laws, statutes, etc.",17,3,59 84 466
 subjects[].heading,Nutrition,17,2,59 286
 subjects[].heading,Organisation for Economic Co-operation and Development. (09/30/1961 - ),17,4,43 59 84 286
-subjects[].heading,Paris (France),17,5,43 59 84 306 469
 subjects[].heading,Public health,17,5,59 286 306 466 469
 subjects[].heading,Translations,17,2,59 306
 subjects[].heading,U.S. Information Agency. (08/01/1953 - 04/01/1978),17,5,43 59 84 286 306
@@ -804,7 +824,9 @@ subjects[].heading,International Committee of the Red Cross,14,3,59 84 286
 subjects[].heading,"Investments, Foreign",14,2,59 84
 subjects[].heading,"Kissinger, Henry, 1923-2023",14,2,59 84
 subjects[].heading,Management,14,4,59 84 286 306
+subjects[].heading,National security,14,3,59 84 306
 subjects[].heading,Peace,14,3,59 286 306
+subjects[].heading,"Philip, Prince, consort of Elizabeth II, Queen of Great Britain, 1921-2021",14,1,59
 subjects[].heading,Position papers,14,3,59 84 306
 subjects[].heading,Research,14,3,59 286 306
 subjects[].heading,Sanitation,14,3,59 286 469
@@ -824,11 +846,11 @@ subjects[].heading,Exchange of persons programs,13,1,306
 subjects[].heading,Imports,13,6,43 59 84 286 306 469
 subjects[].heading,Indochina,13,4,59 84 306 469
 subjects[].heading,Inspections,13,3,59 306 466
+subjects[].heading,"Kennedy, Robert F. (Robert Francis), 1925-1968",13,2,59 306
 subjects[].heading,Labor unions,13,5,59 84 286 306 466
 subjects[].heading,Logs (Records),13,4,59 84 208 306
 subjects[].heading,Military bases,13,3,59 84 306
 subjects[].heading,Montreal (Québec),13,3,43 84 306
-subjects[].heading,National security,13,3,59 84 306
 subjects[].heading,Nuclear weapons,13,3,59 84 306
 subjects[].heading,Resumes,13,2,286 306
 subjects[].heading,Rural development,13,2,286 469
@@ -864,6 +886,7 @@ subjects[].heading,Tunis (Tunisia),12,3,59 84 306
 subjects[].heading,UNICEF,12,6,43 59 84 286 306 469
 subjects[].heading,United Nations Relief and Rehabilitation Administration,12,3,43 59 84
 subjects[].heading,Washington (D.C.),12,5,43 59 84 182 306
+subjects[].heading,AFL-CIO,11,1,306
 subjects[].heading,Albania,11,2,84 306
 subjects[].heading,Amendments,11,3,59 286 306
 subjects[].heading,Appropriations and expenditures,11,4,59 286 306 490
@@ -877,10 +900,12 @@ subjects[].heading,European Economic Community. (1958 - 1967),11,3,59 84 306
 subjects[].heading,Gambia,11,2,59 286
 subjects[].heading,Helsinki (Finland),11,3,59 84 306
 subjects[].heading,International expositions,11,2,59 306
+subjects[].heading,"King, Martin Luther, Jr., 1929-1968",11,3,59 84 306
 subjects[].heading,Latvia,11,4,84 256 286 306
 subjects[].heading,Leaflets,11,1,306
 subjects[].heading,Loans,11,4,59 84 286 469
 subjects[].heading,Mexico City (Mexico),11,2,84 306
+subjects[].heading,National Aeronautics and Space Administration. Apollo 11 (Spacecraft) (1969 - 1969),11,2,84 306
 subjects[].heading,Palestine,11,4,59 84 306 469
 subjects[].heading,Procedures,11,3,59 286 306
 subjects[].heading,Registers (Lists),11,2,59 466
@@ -897,7 +922,6 @@ subjects[].heading,Whaling,11,2,43 59
 subjects[].heading,Zurich (Switzerland),11,2,59 84
 subjects[].heading,Algiers (Algeria),10,2,84 306
 subjects[].heading,Art,10,2,59 306
-subjects[].heading,Assassination,10,3,59 84 306
 subjects[].heading,Audits,10,2,59 286
 subjects[].heading,Briefs (Legal documents),10,3,59 76 306
 subjects[].heading,Catalogs,10,2,59 306
@@ -921,6 +945,7 @@ subjects[].heading,Irrigation,10,3,59 286 469
 subjects[].heading,Lesotho,10,2,84 286
 subjects[].heading,Mauritania,10,4,59 286 306 469
 subjects[].heading,Music,10,2,59 306
+subjects[].heading,Oman,10,4,59 286 306 469
 subjects[].heading,Personnel management,10,4,59 84 286 306
 subjects[].heading,Population Council,10,1,286
 subjects[].heading,Rabat (Morocco),10,3,84 286 306
@@ -961,7 +986,6 @@ subjects[].heading,Membership lists,9,2,59 306
 subjects[].heading,Monetary policy,9,3,59 84 286
 subjects[].heading,Munich (Germany),9,2,84 306
 subjects[].heading,National Academy of Sciences. (03/03/1863 - ),9,3,59 286 306
-subjects[].heading,Oman,9,4,59 286 306 469
 subjects[].heading,Prisons,9,3,59 84 466
 subjects[].heading,Research (Document genres),9,2,306 466
 subjects[].heading,Rio de Janeiro (Brazil),9,3,76 84 306
@@ -995,6 +1019,8 @@ subjects[].heading,Community development,8,3,59 286 469
 subjects[].heading,Curaçao,8,3,59 84 306
 subjects[].heading,Damascus (Syria),8,2,84 306
 subjects[].heading,Diplomats,8,2,59 306
+subjects[].heading,"Elizabeth II, Queen of Great Britain, 1926-2022",8,1,59
+subjects[].heading,Espionage,8,3,59 286 306
 subjects[].heading,"Europe, Eastern",8,3,59 84 306
 subjects[].heading,"Expo 67 (Montréal, Québec)",8,1,306
 subjects[].heading,Extradition,8,3,59 84 466
@@ -1006,13 +1032,11 @@ subjects[].heading,International Court of Justice,8,2,59 84
 subjects[].heading,International law,8,2,59 84
 subjects[].heading,International policy,8,1,306
 subjects[].heading,Investigations,8,3,59 84 306
-subjects[].heading,"King, Martin Luther, Jr., 1929-1968",8,3,59 84 306
 subjects[].heading,Kingston (Jamaica),8,2,84 306
 subjects[].heading,Kinshasa (Congo),8,2,84 306
 subjects[].heading,Language and education,8,3,59 286 306
 subjects[].heading,Manila (Philippines),8,4,43 59 84 306
 subjects[].heading,Manpower planning,8,2,286 306
-subjects[].heading,Marshall Plan,8,3,59 84 469
 subjects[].heading,Medical care,8,4,59 286 306 490
 subjects[].heading,Minerals,8,5,59 84 169 286 469
 subjects[].heading,Nairobi (Kenya),8,3,59 84 306
@@ -1036,6 +1060,8 @@ subjects[].heading,São Paulo (Brazil),8,2,84 306
 subjects[].heading,Tables (Systematic lists),8,3,76 84 306
 subjects[].heading,Taxation,8,3,59 84 286
 subjects[].heading,Television,8,2,286 306
+subjects[].heading,Texas,8,4,59 76 84 306
+subjects[].heading,Tibet Autonomous Region (China),8,2,59 306
 subjects[].heading,Tokyo (Japan),8,3,59 84 306
 subjects[].heading,Vaccination,8,3,59 286 306
 subjects[].heading,"Visitors, Foreign",8,2,59 306
@@ -1055,9 +1081,9 @@ subjects[].heading,Cornell University,7,2,59 286
 subjects[].heading,Dhaka (Bangladesh),7,1,84
 subjects[].heading,East-West trade,7,4,59 84 466 469
 subjects[].heading,Energy industries,7,3,59 84 286
-subjects[].heading,Espionage,7,3,59 286 306
 subjects[].heading,Export controls,7,3,59 84 466
 subjects[].heading,Florence (Italy),7,3,59 84 239
+subjects[].heading,"Franklin, Benjamin, 1706-1790",7,3,59 76 306
 subjects[].heading,Germany (East),7,3,59 84 306
 subjects[].heading,"Gorbachev, Mikhail Sergeevich, 1931-2022",7,2,59 306
 subjects[].heading,Guaymas (Mexico),7,1,84
@@ -1093,6 +1119,7 @@ subjects[].heading,Radio programs,7,1,306
 subjects[].heading,Restitution,7,3,59 84 466
 subjects[].heading,Rhodesia (Region),7,4,59 84 286 306
 subjects[].heading,"Rogers, William P. (William Pierce), 1913-2001",7,1,59
+subjects[].heading,"Roosevelt, Theodore, 1858-1919",7,1,59
 subjects[].heading,Sailors,7,2,59 84
 subjects[].heading,Saint John (N.B.),7,1,84
 subjects[].heading,San José (Costa Rica),7,1,84
@@ -1104,7 +1131,6 @@ subjects[].heading,Southeast Asia,7,3,59 286 306
 subjects[].heading,Students,7,2,59 306
 subjects[].heading,Suez (Egypt),7,1,84
 subjects[].heading,Suriname,7,4,59 84 286 306
-subjects[].heading,Texas,7,4,59 76 84 306
 subjects[].heading,Thessaloníki (Greece),7,2,84 306
 subjects[].heading,Toronto (Ont.),7,1,84
 subjects[].heading,Ukraine,7,2,286 306
@@ -1144,7 +1170,6 @@ subjects[].heading,Eritrea,6,3,43 59 84
 subjects[].heading,Executive orders,6,2,59 306
 subjects[].heading,Floods,6,4,59 286 306 469
 subjects[].heading,"Ford, Gerald R., 1913-2006",6,1,59
-subjects[].heading,"Franklin, Benjamin, 1706-1790",6,3,59 76 306
 subjects[].heading,Funchal (Madeira Islands),6,1,84
 subjects[].heading,Genoa (Italy),6,3,59 84 239
 subjects[].heading,Gibraltar,6,2,59 84
@@ -1207,7 +1232,6 @@ subjects[].heading,Steel industry and trade,6,3,59 286 466
 subjects[].heading,Strasbourg (France),6,1,84
 subjects[].heading,Student movements,6,3,59 84 306
 subjects[].heading,Talking points,6,1,59
-subjects[].heading,Tibet Autonomous Region (China),6,2,59 306
 subjects[].heading,Tripoli (Libya),6,4,59 84 306 353
 subjects[].heading,United Nations. Economic and Social Council. Economic Commission for Asia and the Far East. (1947 - 1974),6,3,43 59 84
 subjects[].heading,University of Wisconsin,6,2,59 286
@@ -1234,6 +1258,7 @@ subjects[].heading,Cartagena (Colombia),5,1,84
 subjects[].heading,Chaco Boreal (Paraguay and Bolivia),5,1,76
 subjects[].heading,"Chihuahua (Chihuahua, Mexico)",5,2,76 84
 subjects[].heading,Children,5,4,59 286 306 490
+subjects[].heading,"Cleveland, Grover, 1837-1908",5,1,59
 subjects[].heading,Coal,5,3,59 466 469
 subjects[].heading,Colombo (Sri Lanka),5,2,84 306
 subjects[].heading,Columbia University,5,1,286
@@ -1340,6 +1365,7 @@ subjects[].heading,Tobago (Trinidad and Tobago),5,3,59 84 306
 subjects[].heading,Tourism,5,4,59 229 286 306
 subjects[].heading,United Nations. Office of the United Nations High Commissioner for Refugees. (12/14/1950 - ),5,3,59 84 286
 subjects[].heading,Valletta (Malta),5,1,84
+subjects[].heading,"Vaughn, Jack Hood.",5,2,306 490
 subjects[].heading,Venice (Italy),5,3,84 239 306
 subjects[].heading,Vientiane (Laos : Municipality),5,3,84 286 306
 subjects[].heading,Vietnam (Democratic Republic),5,2,59 84
@@ -1352,7 +1378,6 @@ subjects[].heading,"Adenauer, Konrad, 1876-1967",4,2,59 306
 subjects[].heading,Adoption,4,1,466
 subjects[].heading,Aerial photographs,4,3,59 239 306
 subjects[].heading,Aerogrammes,4,1,59
-subjects[].heading,African Americans,4,4,59 76 208 306
 subjects[].heading,"Agua Prieta (Sonora, Mexico)",4,1,84
 subjects[].heading,"Allen, George V. (George Venable), 1903-1970",4,1,306
 subjects[].heading,American Jewish Joint Distribution Committee,4,3,84 286 469
@@ -1367,6 +1392,7 @@ subjects[].heading,Barranquilla (Colombia),4,1,84
 subjects[].heading,Belgrade (Serbia),4,2,84 306
 subjects[].heading,"Bradford (West Yorkshire, England)",4,1,84
 subjects[].heading,Brasília (Brazil),4,2,59 84
+subjects[].heading,"Bunche, Ralph J. (Ralph Johnson), 1904-1971",4,2,59 306
 subjects[].heading,Business enterprises,4,1,306
 subjects[].heading,Canals,4,1,59
 subjects[].heading,Cape Town (South Africa),4,1,84
@@ -1409,7 +1435,9 @@ subjects[].heading,Foreign Assistance Act of 1961,4,2,59 286
 subjects[].heading,Futures Group.,4,1,286
 subjects[].heading,"Gaulle, Charles de, 1890-1970",4,2,59 306
 subjects[].heading,Gaza Strip,4,2,59 286
+subjects[].heading,Germans,4,2,59 466
 subjects[].heading,Glasgow (Scotland),4,1,84
+subjects[].heading,"Glenn, John, 1921-2016",4,2,59 306
 subjects[].heading,Government programs,4,2,59 286
 subjects[].heading,Governmental investigations,4,2,59 306
 subjects[].heading,Great Seal of the United States,4,1,59
@@ -1430,8 +1458,6 @@ subjects[].heading,International trusteeships,4,1,59
 subjects[].heading,Iskenderun (Turkey),4,1,84
 subjects[].heading,"Jonestown Mass Suicide, Jonestown, Guyana, 1978",4,3,59 84 286
 subjects[].heading,Journals (Accounts),4,2,59 76
-subjects[].heading,"Katyn Massacre, Katyn, Russia, 1940",4,3,59 306 466
-subjects[].heading,"Kennedy, Robert F. (Robert Francis), 1925-1968",4,2,59 306
 subjects[].heading,Kidnapping,4,1,59
 subjects[].heading,Kobe-shi (Japan),4,1,84
 subjects[].heading,Leadership,4,3,59 286 306
@@ -1470,9 +1496,11 @@ subjects[].heading,Notifications,4,3,59 286 306
 subjects[].heading,Nouméa (New Caledonia),4,1,84
 subjects[].heading,Nuclear disarmament,4,1,59
 subjects[].heading,Ohio State University,4,1,286
+subjects[].heading,"Onassis, Jacqueline Kennedy, 1929-1994",4,2,59 306
 subjects[].heading,Ontario,4,2,76 84
 subjects[].heading,Operations research,4,1,286
 subjects[].heading,Organisation for Economic Co-operation and Development. Development Assistance Committee (09/1961 - ),4,2,59 286
+subjects[].heading,Paramaribo (Suriname),4,2,59 84
 subjects[].heading,Personnel records,4,2,59 306
 subjects[].heading,Plans (Drawings),4,2,43 59
 subjects[].heading,Police,4,3,59 306 466
@@ -1494,11 +1522,13 @@ subjects[].heading,Radio Martí Program (U.S.),4,1,306
 subjects[].heading,Regina (Sask.),4,1,84
 subjects[].heading,Research grants,4,2,286 306
 subjects[].heading,Restitution and indemnification claims (1933- ),4,3,59 84 466
+subjects[].heading,"Rice, Condoleezza, 1954-",4,1,59
 subjects[].heading,Rules (Instructions),4,2,59 306
 subjects[].heading,Security measures,4,2,59 306
 subjects[].heading,"Security, International",4,2,59 306
 subjects[].heading,"Shultz, George Pratt, 1920-2021",4,1,59
 subjects[].heading,Singapore (Singapore Island : City),4,1,84
+subjects[].heading,Slavery,4,2,59 76
 subjects[].heading,Soviet dissidents,4,2,59 306
 subjects[].heading,"Spiers, Ronald I. (Ronald Ian), 1925-2021",4,2,59 84
 subjects[].heading,Standard Oil Company,4,2,76 306
@@ -1515,7 +1545,6 @@ subjects[].heading,Turin (Italy),4,2,84 239
 subjects[].heading,U.S. Information Agency. Advisory Commission on Information. (08/01/1953 - 03/31/1978),4,1,306
 subjects[].heading,United Nations. Economic Commission for Africa,4,2,59 286
 subjects[].heading,University of Minnesota,4,1,286
-subjects[].heading,"Vaughn, Jack Hood.",4,1,490
 subjects[].heading,"Veracruz (Veracruz-Llave, Mexico)",4,1,84
 subjects[].heading,Vice-Presidents,4,2,59 306
 subjects[].heading,Vigo (Spain),4,1,84
@@ -1528,6 +1557,7 @@ subjects[].heading,Wildlife conservation,4,3,43 59 286
 subjects[].heading,Wood,4,1,469
 subjects[].heading,World Health Assembly.,4,2,59 84
 subjects[].heading,World Vision International.,4,1,286
+subjects[].heading,"World War, 1914-1918",4,4,59 182 256 306
 subjects[].heading,Yaoundé (Cameroon),4,3,84 286 306
 subjects[].heading,Abidjan (Côte d’Ivoire),3,3,43 286 306
 subjects[].heading,"Adams, Ansel, 1902-1984",3,1,306
@@ -1539,6 +1569,7 @@ subjects[].heading,Air bases,3,2,59 84
 subjects[].heading,Airports,3,3,59 466 469
 subjects[].heading,Aleppo (Syria),3,1,84
 subjects[].heading,Alexandria (Egypt),3,1,84
+subjects[].heading,Alexandria (Va.),3,1,59
 subjects[].heading,American Public Health Association,3,1,286
 subjects[].heading,Ammunition,3,2,59 466
 subjects[].heading,Animals,3,3,84 306 469
@@ -1557,6 +1588,7 @@ subjects[].heading,Bari (Italy),3,1,84
 subjects[].heading,Beans,3,1,286
 subjects[].heading,Belfast (Northern Ireland),3,1,84
 subjects[].heading,Bering Sea,3,2,59 76
+subjects[].heading,Berlin Crises,3,2,59 306
 subjects[].heading,"Berlin Wall, Berlin, Germany, 1961-1989",3,2,59 306
 subjects[].heading,Bermuda Islands,3,3,43 59 306
 subjects[].heading,Bibliography,3,2,59 84
@@ -1568,7 +1600,6 @@ subjects[].heading,Brisbane (Qld.),3,2,84 306
 subjects[].heading,Bristol (England),3,1,84
 subjects[].heading,Brno (Czech Republic),3,2,84 306
 subjects[].heading,Buenaventura (Colombia),3,1,84
-subjects[].heading,"Bunche, Ralph J. (Ralph Johnson), 1904-1971",3,2,59 306
 subjects[].heading,Business cards,3,2,59 306
 subjects[].heading,Calgary (Alta.),3,1,84
 subjects[].heading,Cali (Colombia),3,1,84
@@ -1584,13 +1615,13 @@ subjects[].heading,Catholic Relief Services,3,2,59 286
 subjects[].heading,Cattle,3,3,59 76 306
 subjects[].heading,Central Intelligence Agency. (12/04/1981 - ),3,1,59
 subjects[].heading,Civil service,3,3,59 208 306
+subjects[].heading,"Clinton, Bill, 1946-",3,2,59 306
 subjects[].heading,Cochabamba (Bolivia),3,1,84
 subjects[].heading,College students,3,1,306
 subjects[].heading,"Commission Established under Article V of the February 2, 1848, Treaty between the United States and Mexico. U.S. Sectio…",3,1,76
 subjects[].heading,Commission on Security and Cooperation in Europe. (06/03/1976 - ),3,1,59
 subjects[].heading,Commission on the Organization of the Executive Branch of the Federal Government. (1953 - 06/30/1955),3,3,59 306 469
 subjects[].heading,Conakry (Guinea),3,2,286 306
-subjects[].heading,Condolence notes,3,2,59 84
 subjects[].heading,Congressional committees,3,1,306
 subjects[].heading,"Conover, Willis",3,1,306
 subjects[].heading,Conservation,3,2,84 286
@@ -1634,6 +1665,7 @@ subjects[].heading,"Eisenhower, Milton Stover, 1899-1985",3,2,59 306
 subjects[].heading,Electric power,3,2,59 286
 subjects[].heading,Embargo,3,2,59 84
 subjects[].heading,Energy policy,3,2,59 84
+subjects[].heading,Enslaved persons,3,2,59 76
 subjects[].heading,Environmental management,3,2,84 286
 subjects[].heading,Environmental policy,3,2,59 84
 subjects[].heading,"Erhard, Ludwig, 1897-1977",3,3,59 306 466
@@ -1689,8 +1721,13 @@ subjects[].heading,International travel regulations,3,3,59 84 306
 subjects[].heading,Iowa State University.,3,1,286
 subjects[].heading,Iquitos (Peru),3,1,84
 subjects[].heading,Izmir Ili (Turkey),3,1,84
+subjects[].heading,"Jackson, Andrew, 1767-1845",3,1,59
+subjects[].heading,Japanese,3,1,59
+subjects[].heading,"Jefferson, Thomas, 1743-1826",3,1,59
 subjects[].heading,Jerusalem,3,2,59 84
 subjects[].heading,Jewish-Arab relations,3,1,306
+subjects[].heading,Jews,3,1,59
+subjects[].heading,"Johnson, Andrew, 1808-1875",3,1,59
 subjects[].heading,"Johnson, Lady Bird, 1912-2007",3,2,59 306
 subjects[].heading,Journalists,3,1,306
 subjects[].heading,Kampala (Uganda),3,2,84 306
@@ -1724,6 +1761,7 @@ subjects[].heading,"Mazatlán (Sinaloa, Mexico)",3,1,84
 subjects[].heading,"McCarthy, Joseph, 1908-1957",3,2,59 469
 subjects[].heading,Medical assistance,3,3,59 286 490
 subjects[].heading,Medical education,3,2,59 286
+subjects[].heading,"Melville, Herman, 1819-1891",3,1,306
 subjects[].heading,Merchant ships,3,2,59 84
 subjects[].heading,Meteorology,3,2,59 84
 subjects[].heading,Mexico (Mexico : State),3,1,76
@@ -1732,8 +1770,10 @@ subjects[].heading,Military policy,3,1,59
 subjects[].heading,Mills and mill-work,3,1,469
 subjects[].heading,"Molotov, Vyacheslav Mikhaylovich, 1890-",3,3,59 286 466
 subjects[].heading,Mongolia,3,2,59 490
+subjects[].heading,"Monroe, James, 1758-1831",3,1,59
 subjects[].heading,"Monterrey (Nuevo León, Mexico)",3,1,84
 subjects[].heading,Monthly reports,3,2,59 306
+subjects[].heading,"Moses, Grandma, 1860-1961",3,1,306
 subjects[].heading,Motion pictures and theater,3,1,306
 subjects[].heading,Movimento Popular de Libertação de Angola.,3,2,59 84
 subjects[].heading,Multilateral forces,3,1,59
@@ -1745,7 +1785,6 @@ subjects[].heading,Mérida (Mexico),3,1,84
 subjects[].heading,Nagasaki-shi (Japan),3,1,84
 subjects[].heading,Nagoya-shi (Japan),3,1,84
 subjects[].heading,National Academy of Sciences. National Research Council. (04/1916 - ),3,1,286
-subjects[].heading,National Aeronautics and Space Administration. Apollo 11 (Spacecraft) (1969 - 1969),3,2,84 306
 subjects[].heading,National Rural Electric Cooperative Association.,3,1,286
 subjects[].heading,National Science Foundation. (1950 - ),3,2,59 286
 subjects[].heading,National Telephone Cooperative Association.,3,1,286
@@ -1766,13 +1805,11 @@ subjects[].heading,Official reports,3,1,59
 subjects[].heading,Oil industries,3,3,43 59 286
 subjects[].heading,Okinawa (Japan),3,3,59 306 469
 subjects[].heading,Olympics,3,2,59 306
-subjects[].heading,"Onassis, Jacqueline Kennedy, 1929-1994",3,1,306
 subjects[].heading,Organization of African Unity (05/25/1963 - 07/09/2002),3,2,59 84
 subjects[].heading,Organization of American States. General Assembly.,3,2,59 84
 subjects[].heading,Organization of Petroleum Exporting Countries,3,2,59 84
 subjects[].heading,Organizational change,3,1,59
 subjects[].heading,Paper products,3,2,286 469
-subjects[].heading,Paramaribo (Suriname),3,1,84
 subjects[].heading,Paraná (Brazil : State),3,1,76
 subjects[].heading,Passenger lists,3,2,59 84
 subjects[].heading,Peace Corps. (1982 - ),3,2,286 306
@@ -1806,7 +1843,6 @@ subjects[].heading,Recognition (International law),3,1,59
 subjects[].heading,Recreation,3,1,306
 subjects[].heading,Remainders (Estates),3,2,59 76
 subjects[].heading,Research Triangle Institute,3,1,286
-subjects[].heading,"Rice, Condoleezza, 1954-",3,1,59
 subjects[].heading,Rio Grande (Colo.-Mexico and Tex.),3,2,59 76
 subjects[].heading,Rivers,3,2,43 59
 subjects[].heading,"Rockefeller, Nelson A. (Nelson Aldrich), 1908-1979",3,2,59 306
@@ -1832,17 +1868,18 @@ subjects[].heading,Science and state,3,3,59 84 286
 subjects[].heading,Seeds,3,1,286
 subjects[].heading,Seizure of vessels and cargoes,3,2,59 76
 subjects[].heading,Sexually transmitted diseases,3,2,59 466
-subjects[].heading,Slavery,3,2,59 76
 subjects[].heading,Social documentary photographs,3,2,306 469
 subjects[].heading,Social history,3,1,59
 subjects[].heading,Soil management,3,1,286
 subjects[].heading,Solomon Islands,3,3,84 286 306
 subjects[].heading,Southampton (England),3,1,84
+subjects[].heading,Space flight,3,2,84 306
 subjects[].heading,State-War-Navy Coordinating Committee. (12/01/1944 - 11/05/1947),3,1,59
 subjects[].heading,"Stevenson, Adlai E. (Adlai Ewing), 1900-1965",3,2,84 306
 subjects[].heading,Stockholm (Sweden),3,1,84
 subjects[].heading,Suez Canal,3,2,59 84
 subjects[].heading,Tabriz (Iran),3,1,84
+subjects[].heading,"Taft, William H. (William Howard), 1857-1930",3,1,59
 subjects[].heading,"Tapachula (Chiapas, Mexico)",3,1,84
 subjects[].heading,Technical reports,3,3,59 286 306
 subjects[].heading,Tegucigalpa (Honduras),3,2,84 306
@@ -1853,6 +1890,7 @@ subjects[].heading,"Tijuana (Baja California, Mexico)",3,1,84
 subjects[].heading,"Torreón (Coahuila, Mexico)",3,1,84
 subjects[].heading,Tours,3,1,306
 subjects[].heading,Tripartite Commission for the Restitution of Monetary Gold. (09/27/1946 - 09/09/1998),3,2,59 84
+subjects[].heading,"Tyler, John, 1790-1862",3,1,59
 subjects[].heading,U.S. Advisory Commission on Public Diplomacy. (10/01/1979 - ),3,1,306
 subjects[].heading,U.S. Information Agency. (08/24/1982 - 10/01/1999),3,2,286 306
 subjects[].heading,United Nations Refugee Fund,3,2,43 59
@@ -1869,6 +1907,7 @@ subjects[].heading,University of Illinois (Urbana-Champaign campus),3,1,286
 subjects[].heading,University of Kentucky,3,1,286
 subjects[].heading,University of Nebraska (Lincoln campus),3,1,286
 subjects[].heading,Valparaíso (Chile),3,1,84
+subjects[].heading,"Van Buren, Martin, 1782-1862",3,2,59 76
 subjects[].heading,Vermont,3,1,76
 subjects[].heading,Vichy (France),3,1,84
 subjects[].heading,Voluntarism,3,2,306 490
@@ -1889,8 +1928,8 @@ subjects[].heading,"Williams, G. Mennen, 1911-1988",3,2,59 286
 subjects[].heading,Women's rights,3,3,59 84 286
 subjects[].heading,Wool,3,1,59
 subjects[].heading,World Food Programme,3,1,286
-subjects[].heading,"World War, 1914-1918",3,3,182 256 306
 subjects[].heading,World politics,3,3,84 286 306
+subjects[].heading,"Wright, Frank Lloyd, 1867-1959",3,1,306
 subjects[].heading,Yantai (China),3,1,84
 subjects[].heading,"Yemen, North",3,3,59 286 306
 subjects[].heading,"Yemen, South",3,3,59 286 306
@@ -1903,6 +1942,7 @@ subjects[].heading,Acapulco (Mexico),2,1,84
 subjects[].heading,Accidents,2,2,306 490
 subjects[].heading,Accounts,2,2,59 84
 subjects[].heading,"Ackley, Gardner, 1915-1998",2,2,59 84
+subjects[].heading,"Adams, John Quincy, 1767-1848",2,1,59
 subjects[].heading,Adana (Turkey),2,1,84
 subjects[].heading,Addis Ababa (Ethiopia),2,2,84 306
 subjects[].heading,Administrative agencies,2,2,84 182
@@ -1910,12 +1950,11 @@ subjects[].heading,Administrative procedure,2,1,59
 subjects[].heading,Adult education,2,2,59 286
 subjects[].heading,Advisory Commission on International Educational and Cultural Affairs. (09/21/1961 - 04/01/1978),2,2,59 306
 subjects[].heading,Aeronautics law and legislation,2,2,43 84
+subjects[].heading,African American soldiers,2,2,208 306
 subjects[].heading,African and Malagasy Union,2,1,84
 subjects[].heading,Agricultural Cooperative Development International,2,1,286
 subjects[].heading,Aguascalientes (Mexico),2,1,84
 subjects[].heading,Aircraft,2,1,59
-subjects[].heading,"Albright, Madeleine Korbel, 1937-",2,1,59
-subjects[].heading,Alexandria (Va.),2,1,59
 subjects[].heading,Almanacs,2,2,59 306
 subjects[].heading,Almería (Spain),2,1,84
 subjects[].heading,American Association for the Advancement of Science.,2,1,286
@@ -1946,6 +1985,7 @@ subjects[].heading,Assistance in emergencies,2,1,59
 subjects[].heading,Association of Southeast Asian Nations. (08/08/1967 - ),2,1,59
 subjects[].heading,"Associations, institutions, etc.",2,1,84
 subjects[].heading,Astronautics,2,1,306
+subjects[].heading,Astronauts,2,2,59 306
 subjects[].heading,Aswan High Dam (Egypt),2,2,59 306
 subjects[].heading,Athletics,2,1,306
 subjects[].heading,Atomic Energy Commission. (1946 - 01/19/1975),2,2,59 306
@@ -1963,6 +2003,7 @@ subjects[].heading,Bamako (Mali),2,1,306
 subjects[].heading,Banghāzī (Libya),2,2,59 306
 subjects[].heading,Bangui (Central African Republic),2,2,84 306
 subjects[].heading,Bank statements,2,2,84 306
+subjects[].heading,"Bao Dai, King of Vietnam, 1913-1997",2,2,59 306
 subjects[].heading,Battle casualties,2,2,59 84
 subjects[].heading,Bavaria (Germany),2,1,466
 subjects[].heading,Beaches,2,1,169
@@ -1971,7 +2012,6 @@ subjects[].heading,Belo Horizonte (Brazil),2,1,84
 subjects[].heading,Belém (Brazil),2,1,84
 subjects[].heading,"Benton, William, 1900-1973",2,2,306 466
 subjects[].heading,Berlin (Germany : State),2,2,59 466
-subjects[].heading,Berlin Crises,2,1,306
 subjects[].heading,"Bidault, Georges",2,2,286 466
 subjects[].heading,Blantyre (Malawi),2,2,84 306
 subjects[].heading,Bluefields (Nicaragua),2,1,84
@@ -1989,10 +2029,13 @@ subjects[].heading,British Columbia,2,2,76 84
 subjects[].heading,Broadcast journalism,2,2,208 306
 subjects[].heading,Broadcasting policy,2,1,306
 subjects[].heading,"Brubeck, Dave",2,1,306
+subjects[].heading,"Buchanan, James, 1791-1868",2,1,59
 subjects[].heading,Bucharest (Romania),2,2,84 306
 subjects[].heading,Bujumbura (Burundi),2,2,84 306
 subjects[].heading,"Bulganin, Nikolay Aleksandrovich, 1895-1975",2,2,306 466
 subjects[].heading,"Bunker, Ellsworth, 1894-1984",2,2,59 84
+subjects[].heading,Burial,2,1,84
+subjects[].heading,"Burlingame, Anson, 1820-1870",2,1,59
 subjects[].heading,Cabinet officers,2,1,306
 subjects[].heading,California,2,2,76 306
 subjects[].heading,Cannes Film Festival.,2,2,43 306
@@ -2005,6 +2048,7 @@ subjects[].heading,"Carlucci, Frank Charles, 1930-",2,2,84 286
 subjects[].heading,"Carter, Benny",2,1,306
 subjects[].heading,Case files,2,2,43 306
 subjects[].heading,Cases (Law),2,1,59
+subjects[].heading,"Cather, Willa, 1873-1947",2,1,306
 subjects[].heading,Cebu City (Philippines),2,1,84
 subjects[].heading,Census,2,2,59 84
 subjects[].heading,Certifications,2,1,59
@@ -2014,6 +2058,7 @@ subjects[].heading,Chemical industry,2,2,306 466
 subjects[].heading,Chemical warfare,2,1,59
 subjects[].heading,"Chiang, Kai-shek, 1887-1975",2,1,59
 subjects[].heading,Child health,2,1,286
+subjects[].heading,Christmas,2,2,208 306
 subjects[].heading,"Churchill, Winston, Sir, 1874-1965",2,1,59
 subjects[].heading,Cienfuegos (Cuba),2,1,84
 subjects[].heading,Civil War Claims,2,1,76
@@ -2023,7 +2068,6 @@ subjects[].heading,Civitavecchia (Italy),2,2,84 239
 subjects[].heading,"Cleaver, Eldridge, 1935-",2,1,59
 subjects[].heading,Clemency,2,2,84 466
 subjects[].heading,Climatic changes,2,2,84 286
-subjects[].heading,"Clinton, Bill, 1946-",2,2,59 306
 subjects[].heading,"Clinton, Hillary Rodham, 1947-",2,1,59
 subjects[].heading,Coal mines and mining,2,1,469
 subjects[].heading,Coatzacoalcos (Mexico),2,1,84
@@ -2071,6 +2115,7 @@ subjects[].heading,Detente,2,1,59
 subjects[].heading,Development economics,2,1,84
 subjects[].heading,"Devres, Incorporated.",2,1,286
 subjects[].heading,Diagrams,2,2,43 76
+subjects[].heading,"Dickinson, Emily, 1830-1886",2,1,306
 subjects[].heading,Diplomatic etiquette,2,2,59 306
 subjects[].heading,Disasters,2,1,286
 subjects[].heading,Discovery and exploration,2,1,59
@@ -2091,7 +2136,6 @@ subjects[].heading,El Paso County (Tex.),2,1,76
 subjects[].heading,Electric power systems,2,2,286 469
 subjects[].heading,Employee fringe benefits,2,1,59
 subjects[].heading,Energy consumption,2,2,84 286
-subjects[].heading,Enslaved persons,2,2,59 76
 subjects[].heading,Entertainers,2,1,306
 subjects[].heading,Environmental law,2,2,59 84
 subjects[].heading,Epidemics,2,2,306 466
@@ -2113,6 +2157,7 @@ subjects[].heading,Fezzan (Libya),2,1,43
 subjects[].heading,"Finance, Public",2,2,286 466
 subjects[].heading,Fishery law and legislation,2,2,43 59
 subjects[].heading,"Fitzgerald, Ella",2,1,306
+subjects[].heading,"Fitzgerald, F. Scott (Francis Scott), 1896-1940",2,1,306
 subjects[].heading,Florida Agricultural and Mechanical University,2,1,286
 subjects[].heading,Flow charts,2,1,306
 subjects[].heading,Food for the Hungry International (Organization),2,1,286
@@ -2127,15 +2172,19 @@ subjects[].heading,Freight and freightage,2,2,59 469
 subjects[].heading,French Guiana,2,1,59
 subjects[].heading,Gaborone (Botswana),2,2,286 306
 subjects[].heading,General Agreement on Tariffs and Trade (Organization). Committee II.,2,1,59
+subjects[].heading,Genocide,2,1,59
+subjects[].heading,"Georgetown (Washington, D.C.)",2,1,59
 subjects[].heading,Georgia Institute of Technology,2,1,286
+subjects[].heading,Germans in the United States,2,1,59
 subjects[].heading,Ghent (Belgium),2,2,59 84
-subjects[].heading,"Glenn, John, 1921-2016",2,2,59 306
 subjects[].heading,"Goring, Hermann, 1893-1946",2,2,59 239
 subjects[].heading,Government employees,2,1,59
 subjects[].heading,Government missions,2,1,306
 subjects[].heading,Government salaries,2,1,59
+subjects[].heading,"Grant, Ulysses S., 1822-1885",2,1,59
 subjects[].heading,Graphs,2,2,59 306
 subjects[].heading,Great Britain. Ministry of Economic Warfare.,2,1,84
+subjects[].heading,"Greenhow, Rose O''Neal, 1817-1864",2,1,59
 subjects[].heading,Gross national product,2,2,59 286
 subjects[].heading,Groundwater,2,1,286
 subjects[].heading,Guadeloupe,2,1,59
@@ -2144,10 +2193,12 @@ subjects[].heading,Guidebooks,2,1,306
 subjects[].heading,Guilin (China),2,1,84
 subjects[].heading,Harare (Zimbabwe),2,2,84 286
 subjects[].heading,"Harriman, W. Averell (William Averell), 1891-1986",2,1,59
+subjects[].heading,"Harrison, William Henry, 1773-1841",2,1,59
 subjects[].heading,Harvard University,2,1,286
 subjects[].heading,Heads of state,2,2,59 306
 subjects[].heading,Health planning,2,2,286 490
 subjects[].heading,Heidelberg (Germany),2,1,84
+subjects[].heading,"Height, Dorothy I. (Dorothy Irene), 1912-",2,1,59
 subjects[].heading,Helicopters,2,2,43 59
 subjects[].heading,"Herman, Woody, 1913-1987",2,1,306
 subjects[].heading,"Hinton, Deane R. (Deane Roesch), 1923-2017",2,1,84
@@ -2200,7 +2251,6 @@ subjects[].heading,Inventories,2,2,59 306
 subjects[].heading,Isfahan (Iran),2,1,84
 subjects[].heading,Izmir (Turkey),2,2,84 306
 subjects[].heading,Jammu and Kashmir (India),2,1,59
-subjects[].heading,Jews,2,1,59
 subjects[].heading,Jiddah (Saudi Arabia),2,2,59 84
 subjects[].heading,John F. Kennedy Center for the Performing Arts (U.S.),2,1,306
 subjects[].heading,John Short & Associates.,2,1,286
@@ -2231,7 +2281,6 @@ subjects[].heading,Letters,2,1,59
 subjects[].heading,Libreville (Gabon),2,2,84 306
 subjects[].heading,Lima (Peru),2,2,84 306
 subjects[].heading,"Limerick (Limerick, Ireland)",2,1,84
-subjects[].heading,"Lincoln, Abraham, 1809-1865",2,2,59 306
 subjects[].heading,"Lodge, Henry Cabot, 1902-1985",2,1,59
 subjects[].heading,Lomé (Togo),2,2,286 306
 subjects[].heading,"Louisiana Purchase Exposition (1904 : Saint Louis, Mo.) (05/01/1904 - 12/01/1904)",2,1,43
@@ -2239,6 +2288,7 @@ subjects[].heading,Lubumbashi (Congo),2,1,84
 subjects[].heading,Lumber trade,2,2,59 286
 subjects[].heading,Lusaka (Zambia),2,2,59 306
 subjects[].heading,"Macmillan, Harold, 1894-",2,1,59
+subjects[].heading,"Madison, James, 1751-1836",2,1,59
 subjects[].heading,"Makarios III, Archbishop of Cyprus, 1913-1977",2,1,59
 subjects[].heading,Malmö (Sweden),2,1,84
 subjects[].heading,Malnutrition,2,1,286
@@ -2253,6 +2303,7 @@ subjects[].heading,Maryland,2,1,59
 subjects[].heading,Mashhad (Iran),2,1,84
 subjects[].heading,Master plans,2,1,43
 subjects[].heading,Maternal health services,2,1,286
+subjects[].heading,"McKinley, William, 1843-1901",2,1,59
 subjects[].heading,Medals,2,2,43 59
 subjects[].heading,"Medals, badges, decorations, etc.",2,1,59
 subjects[].heading,"Mediation, International",2,1,59
@@ -2271,7 +2322,6 @@ subjects[].heading,"Mobutu Sese Seko, 1930-",2,1,84
 subjects[].heading,Mogadishu (Somalia),2,1,306
 subjects[].heading,Mombasa (Kenya),2,1,84
 subjects[].heading,Money,2,2,59 306
-subjects[].heading,"Monroe, James, 1758-1831",2,1,59
 subjects[].heading,Monrovia (Liberia),2,2,84 306
 subjects[].heading,Monuments,2,2,76 84
 subjects[].heading,Motion picture producers and directors,2,1,306
@@ -2337,6 +2387,7 @@ subjects[].heading,Pan American Institute of Geography and History. (1929 - ),2,
 subjects[].heading,Pan American Sanitary Organization,2,2,43 59
 subjects[].heading,Panama Canal Treaties (1977),2,1,59
 subjects[].heading,Papeete (French Polynesia),2,1,84
+subjects[].heading,Paris Universal Exposition of 1878.,2,1,43
 subjects[].heading,"Parker, Charlie, 1920-1955",2,1,306
 subjects[].heading,Partido Africano da Independência da Guiné e Cabo Verde.,2,2,59 84
 subjects[].heading,Passamaquoddy Bay (N.B. and Me.),2,2,59 76
@@ -2348,16 +2399,20 @@ subjects[].heading,Peace treaties,2,1,59
 subjects[].heading,Performance appraisals,2,1,306
 subjects[].heading,Personal correspondence,2,2,59 306
 subjects[].heading,Photography,2,1,306
+subjects[].heading,"Pierce, Franklin, 1804-1869",2,1,59
 subjects[].heading,"Pinochet Ugarte, Augusto.",2,2,59 84
 subjects[].heading,Plovdiv (Bulgaria),2,1,306
+subjects[].heading,"Poe, Edgar Allan, 1809-1849",2,1,306
 subjects[].heading,Polar expeditions,2,1,59
 subjects[].heading,Poliomyelitis,2,2,59 466
 subjects[].heading,Political parties,2,2,84 306
 subjects[].heading,"Politics, Practical",2,2,84 466
+subjects[].heading,"Polk, James K. (James Knox), 1795-1849",2,1,59
 subjects[].heading,Ponta Delgada (Azores),2,1,84
 subjects[].heading,Port security,2,1,59
 subjects[].heading,Postal Union of the Americas and Spain,2,2,59 84
 subjects[].heading,Postal matters,2,1,84
+subjects[].heading,Potomac River,2,1,59
 subjects[].heading,Power (Mechanics),2,2,84 286
 subjects[].heading,Preparatory Commission for the International Refugee Organization,2,2,59 84
 subjects[].heading,Preparatory studies,2,1,59
@@ -2426,6 +2481,8 @@ subjects[].heading,Science attachés,2,1,59
 subjects[].heading,Screenplays,2,1,306
 subjects[].heading,Security (Law),2,2,59 306
 subjects[].heading,Security classification (Government documents),2,2,59 84
+subjects[].heading,Serbia,2,1,59
+subjects[].heading,"Seward, William Henry, 1801-1872",2,1,59
 subjects[].heading,Sheet music,2,1,306
 subjects[].heading,Sheffield (England),2,1,84
 subjects[].heading,"Shelton, Turner B.",2,1,84
@@ -2437,7 +2494,7 @@ subjects[].heading,Social security,2,1,59
 subjects[].heading,Solar energy,2,1,306
 subjects[].heading,Soldiers,2,1,59
 subjects[].heading,Sonneberg (Germany),2,1,84
-subjects[].heading,Space flight,2,2,84 306
+subjects[].heading,Space flight to the moon,2,1,306
 subjects[].heading,Specialists,2,1,59
 subjects[].heading,"Stalin, Joseph, 1879-1953",2,2,306 466
 subjects[].heading,Standard Oil Company of California.,2,2,76 286
@@ -2469,6 +2526,7 @@ subjects[].heading,Television stations,2,1,306
 subjects[].heading,"Tet Offensive, 1968",2,2,286 306
 subjects[].heading,"Thant, U, 1909-1974",2,2,59 84
 subjects[].heading,"Thompson, Llewellyn E., 1904-1972",2,2,84 306
+subjects[].heading,"Thoreau, Henry David, 1817-1862",2,1,306
 subjects[].heading,Tianjin (China),2,1,84
 subjects[].heading,Tickets,2,1,306
 subjects[].heading,Timisoara (Romania),2,1,306
@@ -2479,6 +2537,7 @@ subjects[].heading,Trade deficit,2,1,59
 subjects[].heading,Trade embargoes,2,2,59 84
 subjects[].heading,Transparencies,2,1,306
 subjects[].heading,Tripartite Conference on the Suez Canal. (08/01/1956 - 08/02/1956),2,2,43 84
+subjects[].heading,"Tsui, Kuo-yin, 1831-1909",2,1,59
 subjects[].heading,Tuberculosis,2,2,286 306
 subjects[].heading,"U-2 Incident, 1960",2,2,59 306
 subjects[].heading,U.S. Congress. (1789 - ),2,1,59
@@ -2518,6 +2577,7 @@ subjects[].heading,Uranium,2,1,84
 subjects[].heading,Urban renewal,2,2,59 286
 subjects[].heading,Vandalism,2,1,84
 subjects[].heading,Vanuatu,2,2,59 84
+subjects[].heading,"Victoria, Queen of Great Britain, 1819-1901",2,1,59
 subjects[].heading,Video recordings,2,2,286 306
 subjects[].heading,"Villa, Pancho, 1878-1923",2,1,76
 subjects[].heading,Vocational education,2,2,229 306
@@ -2526,6 +2586,7 @@ subjects[].heading,Wages,2,1,466
 subjects[].heading,"Waldheim, Kurt.",2,1,59
 subjects[].heading,"Walesa, Lech, 1943-",2,1,306
 subjects[].heading,Wars,2,1,59
+subjects[].heading,"Washington, George, 1732-1799",2,1,59
 subjects[].heading,Weeds,2,2,59 286
 subjects[].heading,West Indies,2,2,286 306
 subjects[].heading,"West Indies, British",2,2,59 306
@@ -2533,6 +2594,7 @@ subjects[].heading,"West Indies, French",2,2,59 306
 subjects[].heading,Western European Union. (10/23/1954 - 07/2011),2,1,59
 subjects[].heading,"Wick, Charles Z., 1917-2008",2,1,306
 subjects[].heading,Wildlife management,2,2,43 59
+subjects[].heading,"Wilkins, Roy, 1901-1981",2,2,59 208
 subjects[].heading,Windsor (Ont.),2,1,84
 subjects[].heading,World Council of Credit Unions,2,1,286
 subjects[].heading,World Federation of Trade Unions,2,2,59 84
@@ -2540,7 +2602,7 @@ subjects[].heading,World Meteorological Organization,2,2,43 59
 subjects[].heading,World Meteorological Organization.,2,1,84
 subjects[].heading,World Power Conference,2,2,43 84
 subjects[].heading,"World's Columbian Exposition (1893 : Chicago, Ill.)",2,1,43
-subjects[].heading,"Wright, Frank Lloyd, 1867-1959",2,1,306
+subjects[].heading,"Wu, Ting-fang, 1842-1922",2,1,59
 subjects[].heading,Wuhan (China),2,1,84
 subjects[].heading,YMCA,2,1,286
 subjects[].heading,Yale University,2,1,286
@@ -2548,10 +2610,10 @@ subjects[].heading,Yarmouth (N.S.),2,1,84
 subjects[].heading,Yearbooks,2,1,306
 subjects[].heading,"Yeltsin, Boris Nikolayevich, 1931-2007",2,2,59 306
 subjects[].heading,Youth services,2,2,59 466
-subjects[].heading,AFL-CIO,1,1,306
 subjects[].heading,Aachen (Germany),1,1,84
 subjects[].heading,Aarau (Switzerland),1,1,84
 subjects[].heading,Abandoned farms,1,1,306
+subjects[].heading,"Abdülmecit, Sultan of the Turks, 1823-1861",1,1,59
 subjects[].heading,Aberdeen (Scotland),1,1,84
 subjects[].heading,"Abramowitz, Morton Isaac, 1933-2024",1,1,59
 subjects[].heading,Abreu e Lima (Brazil),1,1,84
@@ -2572,6 +2634,7 @@ subjects[].heading,"Adams, John, 1735-1826",1,1,76
 subjects[].heading,"Adee, Alvey A. (Alvey Augustus), 1842-1924",1,1,59
 subjects[].heading,Administrative orders,1,1,59
 subjects[].heading,Administrative regulations,1,1,306
+subjects[].heading,"Adolph, Grand Duke of Luxembourg, 1817-1905",1,1,59
 subjects[].heading,Adventist Development and Relief Agency,1,1,286
 subjects[].heading,Advertisements,1,1,306
 subjects[].heading,Advertising,1,1,306
@@ -2600,11 +2663,13 @@ subjects[].heading,Alaska International Rail and Highway Commission. (07/30/1957
 subjects[].heading,Alba (Italy),1,1,239
 subjects[].heading,Albany (W.A.),1,1,84
 subjects[].heading,Albert Town (Bahamas),1,1,84
+subjects[].heading,"Albert, Prince Consort of Victoria, Queen of Great Britain, 1819-1861",1,1,59
 subjects[].heading,Alberta,1,1,76
 subjects[].heading,Alberton (P.E.I),1,1,84
 subjects[].heading,"Alden, James Madison, 1834-1922",1,1,76
 subjects[].heading,"Alderfer, Harold Freed, 1903-",1,1,286
 subjects[].heading,"Alexander III, Emperor of Russia, 1845-1894",1,1,59
+subjects[].heading,"Alfonso XIII, King of Spain, 1886-1941",1,1,59
 subjects[].heading,Algeciras (Spain),1,1,84
 subjects[].heading,"Algerian Revolution, 1954-1962",1,1,59
 subjects[].heading,"Alhaji, Alhaji Abubakar",1,1,306
@@ -2621,6 +2686,7 @@ subjects[].heading,"Alston, Charles Henry, 1907-1977",1,1,208
 subjects[].heading,Altata (Mexico),1,1,84
 subjects[].heading,Aluminum,1,1,59
 subjects[].heading,Alumni Federation of Columbia University.,1,1,306
+subjects[].heading,"Amador Guerrero, Manuel, 1883-1909",1,1,59
 subjects[].heading,"Amapala (Valle, Honduras)",1,1,84
 subjects[].heading,Amelia (Italy),1,1,239
 subjects[].heading,American Association for the Advancement of Science,1,1,286
@@ -2672,6 +2738,7 @@ subjects[].heading,"Antall, József",1,1,306
 subjects[].heading,Anti-Ballistic Missile Treaty (1972),1,1,59
 subjects[].heading,Antidumping duties,1,1,59
 subjects[].heading,Antiquities,1,1,59
+subjects[].heading,"Antonelli, Giacomo, 1806-1876",1,1,59
 subjects[].heading,Aosta (Italy),1,1,239
 subjects[].heading,"Appalachian Environmental Laboratory (Frostburg, Md.)",1,1,286
 subjects[].heading,Appeals,1,1,306
@@ -2696,6 +2763,7 @@ subjects[].heading,Armco Steel Corporation,1,1,306
 subjects[].heading,Armenian Assembly of America.,1,1,286
 subjects[].heading,Armenian General Benevolent Union,1,1,286
 subjects[].heading,Armenian Relief Society.,1,1,286
+subjects[].heading,Armenians,1,1,59
 subjects[].heading,"Armitage, Richard",1,1,59
 subjects[].heading,Arms Control and Disarmament Agency. ( 09/26/1961 - 04/01/1999),1,1,383
 subjects[].heading,Arms Control and Disarmament Agency. (09/26/1961 - 04/01/1999),1,1,59
@@ -2721,9 +2789,9 @@ subjects[].heading,"Associates in Rural Development, Inc.",1,1,286
 subjects[].heading,Association of Agricultural Development Planners in Africa,1,1,286
 subjects[].heading,Association of American Medical Colleges.,1,1,286
 subjects[].heading,Association of American Railroads.,1,1,84
+subjects[].heading,"Astaire, Fred, 1899-1987",1,1,306
 subjects[].heading,Asti (Italy),1,1,239
 subjects[].heading,"Astin, Allen Varley, 1904-1984",1,1,286
-subjects[].heading,Astronauts,1,1,306
 subjects[].heading,"Asylum, Right of",1,1,84
 subjects[].heading,Asyut (Egypt),1,1,84
 subjects[].heading,"Atherton, John Carlton, 1900-1952",1,1,208
@@ -2760,7 +2828,6 @@ subjects[].heading,Banco Centroamericano de Integración Económica.,1,1,59
 subjects[].heading,Bangladesh Fertility Research Programme.,1,1,286
 subjects[].heading,Bangladesh Rural Advancement Committee,1,1,286
 subjects[].heading,Banjul (Gambia),1,1,84
-subjects[].heading,"Bao Dai, King of Vietnam, 1913-1997",1,1,306
 subjects[].heading,"Baracoa (Guantánamo, Cuba)",1,1,84
 subjects[].heading,"Barcelona (Bolivar, Anzoátegui, Venezuela)",1,1,84
 subjects[].heading,Barclay & Company.,1,1,286
@@ -2774,6 +2841,7 @@ subjects[].heading,"Barrett, Robert S. (Robert South), 1927-",1,1,84
 subjects[].heading,Barrie (Ont.),1,1,84
 subjects[].heading,"Barrientos Ortuño, René, 1919-1969",1,1,84
 subjects[].heading,"Barrios de Chamorro, Violeta, 1929-",1,1,306
+subjects[].heading,"Barrios, Justo Rufino, 1835-1885",1,1,59
 subjects[].heading,"Barton, Clara, 1821-1912",1,1,306
 subjects[].heading,Baseball,1,1,306
 subjects[].heading,Baseball players,1,1,306
@@ -2786,6 +2854,7 @@ subjects[].heading,Bastimentos (Panama),1,1,84
 subjects[].heading,Bataan (Philippines : Province),1,1,59
 subjects[].heading,Bathurst Inlet (Nunavut),1,1,84
 subjects[].heading,"Batlle Beres, Luis, 1897-1964",1,1,59
+subjects[].heading,"Batlle y Ordóñez, José, 1856-1929",1,1,59
 subjects[].heading,Battelle Memorial Institute,1,1,286
 subjects[].heading,"Baudouin I, King of the Belgians, 1930-1993",1,1,59
 subjects[].heading,"Baumgartner, Leona, 1902-",1,1,286
@@ -2816,6 +2885,7 @@ subjects[].heading,"Berman, Howard L. (Howard Lawrence), 1941-",1,1,286
 subjects[].heading,"Berman, Sam, 1907-1995",1,1,208
 subjects[].heading,"Betancourt, Rómulo, 1908-",1,1,59
 subjects[].heading,Bethlehem Steel Company.,1,1,76
+subjects[].heading,"Bethune, Mary McLeod, 1875-1955",1,1,208
 subjects[].heading,Beverages,1,1,84
 subjects[].heading,"Bevin, Ernest, 1881-1951",1,1,286
 subjects[].heading,Bhutan,1,1,59
@@ -2827,6 +2897,7 @@ subjects[].heading,Bissau (Guinea-Bissau),1,1,286
 subjects[].heading,"Bitterman, Mary, 1944-",1,1,306
 subjects[].heading,"Biya, Paul, 1933-",1,1,306
 subjects[].heading,Bizerte (Tunisia),1,1,84
+subjects[].heading,Black Panther Party,1,1,59
 subjects[].heading,"Black River (Saint Elizabeth, Jamaica : Town)",1,1,84
 subjects[].heading,Black market,1,1,466
 subjects[].heading,"Blair House (Washington, D.C.)",1,1,59
@@ -2838,11 +2909,14 @@ subjects[].heading,Bloemfontein (South Africa),1,1,84
 subjects[].heading,"Blossom, Earl, 1891-1970",1,1,208
 subjects[].heading,Board of Foreign Scholarships. (1946 - 02/16/1990),1,1,306
 subjects[].heading,Boards of trade,1,1,466
+subjects[].heading,"Bográn, Luis, 1849-1895",1,1,59
 subjects[].heading,"Bolaños Geyer, Enrique.",1,1,59
 subjects[].heading,"Bolen, David B. (David Benjamin), 1923-",1,1,84
 subjects[].heading,"Bolton, Frances Payne Bingham, 1885-1977",1,1,59
 subjects[].heading,Bombings,1,1,84
 subjects[].heading,"Bongo, Omar, 1935-",1,1,306
+subjects[].heading,"Bonilla, Manuel, 1849-1913",1,1,59
+subjects[].heading,"Bonilla, Policarpo.",1,1,59
 subjects[].heading,"Bonynge, Robert W. (Robert William), 1863-1939",1,1,76
 subjects[].heading,Book catalogs,1,1,306
 subjects[].heading,Book industries and trade,1,1,306
@@ -2855,6 +2929,7 @@ subjects[].heading,Boulogne-sur-Mer (France),1,1,84
 subjects[].heading,"Boumédiene, Houari, 1927-",1,1,59
 subjects[].heading,"Bourguiba, Habib, 1903-",1,1,59
 subjects[].heading,"Bowen, Ezra.",1,1,76
+subjects[].heading,"Boxer Rebellion, China, 1899-1901",1,1,59
 subjects[].heading,"Boyce, Christopher John.",1,1,286
 subjects[].heading,Bracciano (Italy),1,1,239
 subjects[].heading,Bracero Program,1,1,59
@@ -2908,7 +2983,6 @@ subjects[].heading,"Bullitt, William C. (William Christian), 1891-1967",1,1,59
 subjects[].heading,"Bundy, William P. (William Putnam), 1917-2000",1,1,59
 subjects[].heading,"Bureau of Social Science Research (Washington, D.C.)",1,1,286
 subjects[].heading,Bureau of the Budget. (07/01/1939 - 07/01/1970),1,1,286
-subjects[].heading,Burial,1,1,84
 subjects[].heading,"Burnett, Leo Nobles, 1891-1971",1,1,208
 subjects[].heading,"Burnham, Forbes, 1923-",1,1,286
 subjects[].heading,Burns and Roe.,1,1,286
@@ -2939,6 +3013,7 @@ subjects[].heading,Camp David Agreements,1,1,59
 subjects[].heading,Campbellton (N.B.),1,1,84
 subjects[].heading,"Campeche (Campeche, Mexico)",1,1,84
 subjects[].heading,Camps,1,1,466
+subjects[].heading,Canadians,1,1,59
 subjects[].heading,Canal Zone Government. (07/01/1951 - 10/01/1979),1,1,59
 subjects[].heading,Cananea (Mexico),1,1,84
 subjects[].heading,Cancer,1,1,286
@@ -2963,12 +3038,12 @@ subjects[].heading,Casale Monferrato (Italy),1,1,239
 subjects[].heading,"Casals, Pablo, 1876-1973",1,1,306
 subjects[].heading,Case Western Reserve University,1,1,286
 subjects[].heading,"Case, Clifford P. (Clifford Philip), 1904-1982",1,1,59
+subjects[].heading,"Cass, Lewis, 1782- 1866",1,1,59
 subjects[].heading,Castellammare di Stabia (Italy),1,1,84
 subjects[].heading,"Castillo Armas, Carlos, 1914-1957",1,1,306
 subjects[].heading,"Castro, Raul H. (Raul Hector), 1916-",1,1,84
 subjects[].heading,Cataloging,1,1,306
 subjects[].heading,Catania (Italy),1,1,84
-subjects[].heading,"Cather, Willa, 1873-1947",1,1,306
 subjects[].heading,Catholic Charities USA,1,1,286
 subjects[].heading,"Catlin, George, 1796-1872",1,1,306
 subjects[].heading,"Catto, Henry Edward, Jr., 1930-2011",1,1,306
@@ -3001,6 +3076,7 @@ subjects[].heading,Champerico (Guatemala),1,1,84
 subjects[].heading,"Champlain, Lake",1,1,59
 subjects[].heading,"Chanaral (Chanaral, Chile)",1,1,84
 subjects[].heading,"Chance, Fred, 1911-",1,1,208
+subjects[].heading,"Chang, Yen Hoon, -1900",1,1,59
 subjects[].heading,"Changsha (Hunan Sheng, China)",1,1,84
 subjects[].heading,Chania (Greece),1,1,84
 subjects[].heading,Channel Port aux Basques (Nfld.),1,1,84
@@ -3008,6 +3084,7 @@ subjects[].heading,Channels,1,1,59
 subjects[].heading,Charities,1,1,306
 subjects[].heading,"Charities, Medical",1,1,306
 subjects[].heading,Charleroi (Belgium),1,1,84
+subjects[].heading,"Charles IV, King of Spain, 1748-1819",1,1,59
 subjects[].heading,"Charles T. Main, Inc.",1,1,286
 subjects[].heading,Charlottetown (P.E.I.),1,1,84
 subjects[].heading,"Charnay, Désiré, 1828-1915",1,1,59
@@ -3024,7 +3101,11 @@ subjects[].heading,Chemainus (B.C.),1,1,84
 subjects[].heading,Chemicals,1,1,59
 subjects[].heading,Chemnitz (Germany),1,1,84
 subjects[].heading,Chemonics (Firm),1,1,286
+subjects[].heading,"Chen, Lan-pin",1,1,59
 subjects[].heading,"Chenery, Hollis Burnley",1,1,286
+subjects[].heading,"Cheng, Tsao Ju, 1824-",1,1,59
+subjects[].heading,"Cheng, Tsao Ju, b. 1824",1,1,59
+subjects[].heading,"Chesapeake and Ohio Canal (Md. and Washington, D.C.)",1,1,59
 subjects[].heading,Chiang Mai (Thailand),1,1,84
 subjects[].heading,"Chiclayo (Lambayeque, Peru)",1,1,84
 subjects[].heading,"Chien, Chi-chen",1,1,306
@@ -3041,9 +3122,10 @@ subjects[].heading,Chittagong (Bangladesh),1,1,84
 subjects[].heading,Cholera,1,1,286
 subjects[].heading,"Chou, En-lai, 1898-1976",1,1,306
 subjects[].heading,Christchurch (N.Z.),1,1,84
+subjects[].heading,"Christian VII, King of Denmark and Norway, 1749-1808",1,1,59
+subjects[].heading,"Christian VIII, King of Denmark and Norway, 1786-1848",1,1,59
 subjects[].heading,Christiansted (V.I.),1,1,84
 subjects[].heading,"Christie, Gordon",1,1,76
-subjects[].heading,Christmas,1,1,306
 subjects[].heading,Christmas cards,1,1,306
 subjects[].heading,"Christopher, Warren, 1925-2011",1,1,59
 subjects[].heading,Chulalongkonmahawitthayalai,1,1,286
@@ -3203,6 +3285,7 @@ subjects[].heading,"Davis, Angela Yvonne, 1944-",1,1,84
 subjects[].heading,"Davis, Benjamin O. (Benjamin Oliver), Jr., 1912-2002",1,1,208
 subjects[].heading,"Davis, Elmer Holmes, 1890-1958",1,1,306
 subjects[].heading,"Davis, Floyd MacMillan, 1896-1966",1,1,208
+subjects[].heading,"Davis, Ruth A., 1942-",1,1,59
 subjects[].heading,Dawson (Yukon),1,1,84
 subjects[].heading,"De Pree, Willard A. (Willard Ames), 1928-",1,1,59
 subjects[].heading,"De Valera, Eamonn, 1882-1975",1,1,59
@@ -3287,6 +3370,8 @@ subjects[].heading,Department of State. Policy Committee on Arms and Armaments. 
 subjects[].heading,"Department of State. Prencinradio, Inc. (08/1945 - ca. 1946)",1,1,469
 subjects[].heading,"Department of State. U.S. Consulate General, Leningrad, Soviet Union. (1972 - 1991)",1,1,59
 subjects[].heading,"Department of State. U.S. Consulate, Geneva, Switzerland. (ca. 03/04/1855 - 1975)",1,1,43
+subjects[].heading,"Department of State. U.S. Consulate, Moscow, Russia. ca. 1/1/1857-1919",1,1,59
+subjects[].heading,"Department of State. U.S. Consulate, Riga, Latvia. 11/1918-1940",1,1,59
 subjects[].heading,"Department of State. U.S. Consulate, Tampico, Mexico. (ca. 05/29/1824 - 1967)",1,1,76
 subjects[].heading,"Department of State. U.S. Embassy, Algeria. (09/29/1962 - 06/10/1967)",1,1,59
 subjects[].heading,"Department of State. U.S. Embassy, Austria. (11/28/1951 - )",1,1,84
@@ -3321,11 +3406,11 @@ subjects[].heading,Development and Resources Corporation,1,1,286
 subjects[].heading,Development banks,1,1,59
 subjects[].heading,"Devlin, Harry, 1918-",1,1,208
 subjects[].heading,Diamonds,1,1,84
-subjects[].heading,"Dickinson, Emily, 1830-1886",1,1,306
 subjects[].heading,Digby (N.S.),1,1,84
 subjects[].heading,Dijon (France),1,1,84
 subjects[].heading,Dire Dawa (Ethiopia),1,1,306
 subjects[].heading,Discrimination in employment,1,1,286
+subjects[].heading,"Disney, Walt, 1901-1966",1,1,306
 subjects[].heading,Dissertations,1,1,59
 subjects[].heading,Divorce,1,1,466
 subjects[].heading,"Dixon, Jeremiah",1,1,59
@@ -3335,6 +3420,7 @@ subjects[].heading,"Dobrynin, Anatoly Fedorovich, 1919-2010",1,1,59
 subjects[].heading,Docks,1,1,466
 subjects[].heading,Documentary films,1,1,306
 subjects[].heading,"Doe, Samuel K. (Samuel Kanyon)",1,1,306
+subjects[].heading,"Dole, Sanford B. (Sanford Ballard), 1844-1926",1,1,59
 subjects[].heading,Dollar diplomacy,1,1,59
 subjects[].heading,Domestic relations,1,1,286
 subjects[].heading,"Donitz, Karl, 1891-1980",1,1,84
@@ -3439,6 +3525,7 @@ subjects[].heading,Esmeraldas (Ecuador),1,1,84
 subjects[].heading,Essays,1,1,306
 subjects[].heading,Essen (Germany),1,1,84
 subjects[].heading,Estate settlement costs,1,1,84
+subjects[].heading,"Estrada Cabrera, Manuel, 1857-1924",1,1,59
 subjects[].heading,Ethnic groups,1,1,208
 subjects[].heading,"Ethridge, Mark F. (Mark Foster), 1896-1981",1,1,306
 subjects[].heading,Etiquette,1,1,59
@@ -3472,6 +3559,7 @@ subjects[].heading,Extraordinary Administrative Radio Conference,1,1,84
 subjects[].heading,Fabriano (Italy),1,1,239
 subjects[].heading,Factory inspection,1,1,466
 subjects[].heading,Faenza (Italy),1,1,239
+subjects[].heading,"Fairfax, Wilson Miles Cary.",1,1,59
 subjects[].heading,"Faisal, King of Saudi Arabia, 1906-1975",1,1,59
 subjects[].heading,"Falkland Islands War, 1982",1,1,59
 subjects[].heading,Falmouth (Jamaica),1,1,84
@@ -3491,6 +3579,7 @@ subjects[].heading,Federal Maritime Commission. (08/12/1961 - ),1,1,59
 subjects[].heading,Federal Power Commission. (06/10/1920 - 10/01/1977),1,1,59
 subjects[].heading,Federal aid to research,1,1,286
 subjects[].heading,Federation of Southern Cooperatives,1,1,286
+subjects[].heading,"Ferdinand VII, King of Spain, 1784-1833",1,1,59
 subjects[].heading,Ferentino (Italy),1,1,239
 subjects[].heading,"Ferguson Bryan and Associates, Inc.",1,1,286
 subjects[].heading,Ferrol (Spain),1,1,84
@@ -3499,6 +3588,7 @@ subjects[].heading,Fes (Morocco),1,1,306
 subjects[].heading,Fidenza (Italy),1,1,239
 subjects[].heading,Field notes,1,1,76
 subjects[].heading,"Figueres Ferrer, Jose, 1906-1990",1,1,59
+subjects[].heading,"Fillmore, Millard, 1800-1874",1,1,59
 subjects[].heading,Filmstrips,1,1,59
 subjects[].heading,Final drafts,1,1,59
 subjects[].heading,"Financial institutions, International",1,1,59
@@ -3509,13 +3599,13 @@ subjects[].heading,"Fischer, Anton Otto, 1882-1962",1,1,208
 subjects[].heading,"Fisher, Joseph L.",1,1,286
 subjects[].heading,Fishing boats,1,1,59
 subjects[].heading,"Fitch, Lyle C. (Lyle Craig)",1,1,286
-subjects[].heading,"Fitzgerald, F. Scott (Francis Scott), 1896-1940",1,1,306
 subjects[].heading,Fiume Veneto (Italy),1,1,84
 subjects[].heading,Flags,1,1,59
 subjects[].heading,Flensburg (Germany),1,1,84
 subjects[].heading,"Flessel, Creig Valentine, 1912-2008",1,1,208
 subjects[].heading,Flight,1,1,306
 subjects[].heading,Flood control,1,1,59
+subjects[].heading,Flood damage,1,1,59
 subjects[].heading,Floor plans,1,1,306
 subjects[].heading,Flores Island (Azores),1,1,84
 subjects[].heading,"Florianópolis (Santa Catarina, Brazil)",1,1,84
@@ -3589,6 +3679,7 @@ subjects[].heading,"Garrett, John",1,1,84
 subjects[].heading,"Garthoff, Raymond L. (Raymond Leonard), 1929-",1,1,59
 subjects[].heading,"Garwood, Robert Russell",1,1,286
 subjects[].heading,Gaspé (Québec),1,1,84
+subjects[].heading,"Geffrard, Fabre Nicolas, 1806-1879",1,1,59
 subjects[].heading,"Geis, Irving, 1908-1997",1,1,208
 subjects[].heading,"Gelb, Bruce S. (Bruce Stuart), 1927-",1,1,306
 subjects[].heading,Gems,1,1,84
@@ -3598,15 +3689,13 @@ subjects[].heading,Geneva Conference (1955). (07/18/1955 - 07/18/1955),1,1,306
 subjects[].heading,Geneva Conference on Indochina and Korea. (04/24/1954 - 05/03/1954),1,1,43
 subjects[].heading,Genoa (Italy : Province),1,1,306
 subjects[].heading,Genoa Conference (1922),1,1,59
-subjects[].heading,Genocide,1,1,59
 subjects[].heading,Geodetic satellites,1,1,59
 subjects[].heading,George A. Fuller Company,1,1,306
+subjects[].heading,"George I, King of the Hellenes, 1845-1913",1,1,59
 subjects[].heading,Georgetown (P.E.I.),1,1,84
-subjects[].heading,"Georgetown (Washington, D.C.)",1,1,59
 subjects[].heading,Georgia (Republic),1,1,286
 subjects[].heading,Gera (Germany),1,1,84
 subjects[].heading,"Gerard, Sumner Kemble",1,1,84
-subjects[].heading,Germans,1,1,466
 subjects[].heading,Germany. Oberkommando der Wehrmacht. Amt Ausl/Abw.,1,1,59
 subjects[].heading,"Gershwin, George, 1898-1937",1,1,306
 subjects[].heading,Gesellschaft für Musikalische Aufführungs- und Mechanische Vervielfältigungsrechte.,1,1,306
@@ -3641,7 +3730,6 @@ subjects[].heading,Grand Turk (Turks and Caicos Islands),1,1,84
 subjects[].heading,"Grebler, Leo.",1,1,286
 subjects[].heading,Greeks,1,1,59
 subjects[].heading,"Greene, Warwick, 1879-1929",1,1,256
-subjects[].heading,"Greenhow, Rose O''Neal, 1817-1864",1,1,59
 subjects[].heading,Greenock (Scotland),1,1,84
 subjects[].heading,"Gregory, Bruce.",1,1,306
 subjects[].heading,Grenoble (France),1,1,84
@@ -3658,9 +3746,11 @@ subjects[].heading,Guairá (Paraguay),1,1,59
 subjects[].heading,Guanaja Island (Honduras),1,1,84
 subjects[].heading,Guanajuato (Mexico),1,1,84
 subjects[].heading,Guantánamo Bay (Cuba),1,1,84
+subjects[].heading,"Guardiola, Santos, 1816-1862",1,1,59
 subjects[].heading,"Guderian, Heinz, 1888-1954",1,1,59
 subjects[].heading,Guelph (Ont.),1,1,84
 subjects[].heading,Guinea-Bissau,1,1,59
+subjects[].heading,"Gustav V, King of Sweden, 1858-1950",1,1,59
 subjects[].heading,"Guyol, Nathaniel B., 1908-",1,1,286
 subjects[].heading,"Gwathmey, Robert, 1903-1988",1,1,208
 subjects[].heading,"Haedo, Eduardo Víctor",1,1,59
@@ -3680,6 +3770,7 @@ subjects[].heading,"Hare, Raymond Arthur, 1901-1994",1,1,59
 subjects[].heading,Harer (Ethiopia),1,1,306
 subjects[].heading,"Harman, Avraham.",1,1,59
 subjects[].heading,"Harris, Townsend, 1804-1878",1,1,59
+subjects[].heading,"Harrison, Benjamin, 1833-1901",1,1,59
 subjects[].heading,"Harrison, Wallace K. (Wallace Kirkman), 1895-",1,1,208
 subjects[].heading,Harvard-Radcliffe Orchestra,1,1,59
 subjects[].heading,"Hashimi Rafsanjani, Ali Akbar",1,1,306
@@ -3695,7 +3786,6 @@ subjects[].heading,"Healy, Kent T.",1,1,286
 subjects[].heading,"Hearst Metrotone News, Inc.",1,1,306
 subjects[].heading,Heart Mountain (Wyo.),1,1,59
 subjects[].heading,Heating,1,1,286
-subjects[].heading,"Height, Dorothy I. (Dorothy Irene), 1912-",1,1,59
 subjects[].heading,"Heinz, H. J.",1,1,469
 subjects[].heading,Helen Keller International. Vitamin A Technical Assistance Program,1,1,286
 subjects[].heading,"Helguera, Leon, 1899-1970",1,1,208
@@ -3738,6 +3828,7 @@ subjects[].heading,Howard University,1,1,208
 subjects[].heading,Hudaydah (Yemen),1,1,84
 subjects[].heading,Huddersfield (England),1,1,84
 subjects[].heading,"Hughes, Charles Evans, 1862-1948",1,1,59
+subjects[].heading,"Hughes, George W. (George Wurtz), 1806-1870",1,1,59
 subjects[].heading,Human behavior,1,1,306
 subjects[].heading,"Hummel, Arthur W. (Arthur William), 1920-2001",1,1,59
 subjects[].heading,"Hunter, Alberta.",1,1,306
@@ -3753,6 +3844,7 @@ subjects[].heading,Hydrology,1,1,469
 subjects[].heading,"Hyman, Dick, 1927-",1,1,306
 subjects[].heading,INTERTECT (Firm),1,1,286
 subjects[].heading,Ibiza (Spain),1,1,84
+subjects[].heading,"Idiarte Borda, Juan Bautista, 1844-1897",1,1,59
 subjects[].heading,"Idris I, King of Libya, 1890-",1,1,59
 subjects[].heading,Illinois Institute of Technology.,1,1,286
 subjects[].heading,Immigrants,1,1,59
@@ -3929,6 +4021,7 @@ subjects[].heading,Iron,1,1,59
 subjects[].heading,Iron industry and trade,1,1,466
 subjects[].heading,Iron ores,1,1,59
 subjects[].heading,"Irwin, John N. (John Nichol), 1913-2000",1,1,59
+subjects[].heading,"Isabella II, Queen of Spain, 1830-1904",1,1,59
 subjects[].heading,Islam,1,1,469
 subjects[].heading,Islamabad (Pakistan),1,1,286
 subjects[].heading,Island Resources Foundation (Virgin Islands of the United States),1,1,286
@@ -3946,12 +4039,16 @@ subjects[].heading,"Jagan, Cheddi",1,1,59
 subjects[].heading,Jalapa Enríquez (Mexico),1,1,84
 subjects[].heading,James River (N.D. and S.D.),1,1,59
 subjects[].heading,Jamiat al-Yarmuk.,1,1,286
+subjects[].heading,Japan. Rikugun. Kantogun. Hoten Prisoner of War Camp. 11/1942-8/20/1945,1,1,84
+subjects[].heading,Japan. Rikugun. Shina Heken Gun. Weihsien Internment Camp. 1942-8/12/1945,1,1,84
+subjects[].heading,Japan. Rikugun. Shina Heken Gun. Yanghow Internment Camp A. 1942-9/1943,1,1,84
+subjects[].heading,Japan. Rikugun. Shina Heken Gun. Yanghow Internment Camp B. 1942-9/1943,1,1,84
+subjects[].heading,Japan. Rikugun. Shina Heken Gun. Yanghow Internment Camp C. 1942-1945,1,1,84
 subjects[].heading,Japanese Americans,1,1,84
 subjects[].heading,"Jarring, Gunnar, 1907-",1,1,59
 subjects[].heading,"Jaruzelski, Wojciech, 1923-2014",1,1,306
 subjects[].heading,"Jay, John, 1745-1829",1,1,76
 subjects[].heading,Jazz musicians,1,1,306
-subjects[].heading,"Jefferson, Thomas, 1743-1826",1,1,59
 subjects[].heading,Jerez de la Frontera (Spain),1,1,84
 subjects[].heading,Jerome (Ark.),1,1,59
 subjects[].heading,Jets,1,1,59
@@ -3960,7 +4057,6 @@ subjects[].heading,Jinan (China),1,1,84
 subjects[].heading,Job creation,1,1,486
 subjects[].heading,John A. Burns School of Medicine. MEDEX Group,1,1,286
 subjects[].heading,"John Paul II, Pope, 1920-2005",1,1,59
-subjects[].heading,"Johnson, Andrew, 1808-1875",1,1,59
 subjects[].heading,"Johnson, Richard L.",1,1,84
 subjects[].heading,"Johnson, Robert L. (Robert Lee), 1929-",1,1,306
 subjects[].heading,"Johnson, Sherman E. (Sherman Elbridge), 1908-",1,1,286
@@ -3997,6 +4093,7 @@ subjects[].heading,"Kaufman, Joe, 1911-",1,1,208
 subjects[].heading,Kaunas (Lithuania),1,1,84
 subjects[].heading,"Kaunda, Kenneth D. (Kenneth David), 1924-",1,1,306
 subjects[].heading,Kazakhstan,1,1,286
+subjects[].heading,"Kearney, James, d. 1862",1,1,59
 subjects[].heading,"Keating, Kenneth B. (Kenneth Barnard), 1900-1975",1,1,84
 subjects[].heading,Kefa Kifle Hager (Ethiopia),1,1,306
 subjects[].heading,"Kehl (Baden-Wurttemberg, Germany)",1,1,84
@@ -4025,6 +4122,7 @@ subjects[].heading,Kimberley (South Africa),1,1,84
 subjects[].heading,"Kimmitt, Robert Michael, 1947-",1,1,59
 subjects[].heading,"King, Billie Jean, 1943-",1,1,306
 subjects[].heading,"King, Coretta Scott, 1927-2006",1,1,306
+subjects[].heading,"King, Larry, 1933-",1,1,59
 subjects[].heading,"King, M. Luther (Martin Luther), 1899-1965",1,1,306
 subjects[].heading,Kingstown (Saint Vincent and the Grenadines),1,1,84
 subjects[].heading,Kiribati,1,1,286
@@ -4051,6 +4149,7 @@ subjects[].heading,Krefeld (Germany),1,1,84
 subjects[].heading,"Kroll, Leon, 1884-1974",1,1,208
 subjects[].heading,"Krupa, Gene, 1909-1973",1,1,306
 subjects[].heading,Ku Klux Klan (1915- ),1,1,306
+subjects[].heading,"Kuang-hsü, Emperor of China, 1871-1908",1,1,59
 subjects[].heading,"Kuchel, Thomas H.",1,1,286
 subjects[].heading,Kuching (Sarawak),1,1,84
 subjects[].heading,"Kuniyoshi, Yasuo, 1889-1953",1,1,208
@@ -4127,6 +4226,7 @@ subjects[].heading,Levuka (Fiji),1,1,84
 subjects[].heading,"Lewis, Fulton, 1903-1966",1,1,59
 subjects[].heading,Leyte Island (Philippines),1,1,268
 subjects[].heading,"Li, Li-hua",1,1,306
+subjects[].heading,"Liang, Cheng, 1864-1917",1,1,59
 subjects[].heading,Liberec (Czech Republic),1,1,84
 subjects[].heading,Library employees,1,1,306
 subjects[].heading,Library science,1,1,306
@@ -4134,6 +4234,7 @@ subjects[].heading,Licata (Italy),1,1,84
 subjects[].heading,"Lieberman, Evelyn S., 1944-",1,1,306
 subjects[].heading,Liechtenstein,1,1,59
 subjects[].heading,Lighting,1,1,43
+subjects[].heading,"Liliuokalani, Queen of Hawaii, 1838-1917",1,1,59
 subjects[].heading,Lille (France),1,1,84
 subjects[].heading,Limoges (France),1,1,84
 subjects[].heading,Limón (Costa Rica : Province),1,1,84
@@ -4182,6 +4283,7 @@ subjects[].heading,Luzon (Philippines),1,1,84
 subjects[].heading,Lynching,1,1,306
 subjects[].heading,Légion d'honneur (France),1,1,59
 subjects[].heading,Lívingston (Guatemala),1,1,84
+subjects[].heading,"López, Francisco Solano, 1827-1870",1,1,59
 subjects[].heading,"López, Narciso, 1797-1851",1,1,59
 subjects[].heading,Lübeck (Germany),1,1,84
 subjects[].heading,MSU-MOA-USAID Food Security Project,1,1,286
@@ -4228,6 +4330,7 @@ subjects[].heading,"Manzanillo (Colima, Mexico)",1,1,84
 subjects[].heading,"Manzanillo (Granma, Cuba)",1,1,84
 subjects[].heading,Mar del Plata (Argentina),1,1,306
 subjects[].heading,Marbella (Spain),1,1,84
+subjects[].heading,"Marcy, William L. (William Learned), 1786-1857",1,1,59
 subjects[].heading,"Margaret, Princess, Countess of Snowdon, 1930-2002",1,1,306
 subjects[].heading,"Marin, John, 1870-1953",1,1,306
 subjects[].heading,Marine resources,1,1,59
@@ -4245,12 +4348,14 @@ subjects[].heading,Martha Graham Dance Company.,1,1,306
 subjects[].heading,"Martin, David Stone.",1,1,208
 subjects[].heading,"Martin, Graham A. (Graham Anderson), 1912-1990",1,1,84
 subjects[].heading,"Marvin, William",1,1,59
+subjects[].heading,"María Cristina, Queen, consort of Alfonso XII, King of Spain, 1858-1929",1,1,59
 subjects[].heading,"Mason, Charles",1,1,59
 subjects[].heading,Massa Marittima (Italy),1,1,239
 subjects[].heading,Massacres,1,1,59
 subjects[].heading,Matanzas (Cuba),1,1,84
 subjects[].heading,Matthew Town (Bahamas),1,1,84
 subjects[].heading,"Matzko, John J.",1,1,286
+subjects[].heading,Maui (Hawaii),1,1,84
 subjects[].heading,"Maurer, Sascha, 1897-1961",1,1,208
 subjects[].heading,"Maxamed Siyaad Barre, 1920-",1,1,306
 subjects[].heading,May Day,1,1,306
@@ -4265,12 +4370,14 @@ subjects[].heading,"McCully, Newton A., 1867-1951",1,1,59
 subjects[].heading,"McDermott, Walsh, 1909-",1,1,286
 subjects[].heading,"McGhee, George Crews, 1912-2005",1,1,306
 subjects[].heading,"McKelvey, V. E. (Vincent Ellis), 1916-",1,1,286
+subjects[].heading,Medallions (Medals),1,1,43
 subjects[].heading,Media consultants,1,1,306
 subjects[].heading,Medical College of Virginia,1,1,286
 subjects[].heading,Medical laws and legislation,1,1,59
 subjects[].heading,Medical policy,1,1,286
 subjects[].heading,Medical records,1,1,84
 subjects[].heading,"Medici, Giuseppe",1,1,59
+subjects[].heading,"Medina, José María, 1826-1878",1,1,59
 subjects[].heading,"Meeting of American Chiefs of State (1967 : Punta del Este, Uruguay)",1,1,59
 subjects[].heading,Meeting of Consultation of Ministers of Foreign Affairs,1,1,59
 subjects[].heading,"Meeting of Heads of Government and Chiefs of State (1960 : Paris, France)",1,1,59
@@ -4279,7 +4386,6 @@ subjects[].heading,Mek'ele (Ethiopia),1,1,306
 subjects[].heading,Mekhon Vaitsman le-mada,1,1,286
 subjects[].heading,Mekong River,1,1,469
 subjects[].heading,"Melton, Richard H. (Richard Huntington), 1935-",1,1,84
-subjects[].heading,"Melville, Herman, 1819-1891",1,1,306
 subjects[].heading,Menton (France),1,1,84
 subjects[].heading,"Mercer, Johnny, 1909-",1,1,306
 subjects[].heading,Merkaz Volkani.,1,1,286
@@ -4318,6 +4424,7 @@ subjects[].heading,Missouri,1,1,59
 subjects[].heading,Modena (Italy),1,1,239
 subjects[].heading,Moldova,1,1,286
 subjects[].heading,Mollendo (Peru),1,1,84
+subjects[].heading,Monaco,1,1,59
 subjects[].heading,Moncton (N.B.),1,1,84
 subjects[].heading,"Monk, Thelonious",1,1,306
 subjects[].heading,"Monnet, Jean, 1888-",1,1,59
@@ -4434,6 +4541,7 @@ subjects[].heading,"Nkomo, Joshua.",1,1,286
 subjects[].heading,Non-self-governing territories,1,1,59
 subjects[].heading,Nonalignment,1,1,306
 subjects[].heading,Noncitizens,1,1,59
+subjects[].heading,"Nord-Alexis, Pierre, 1820-1910",1,1,59
 subjects[].heading,Nordenham (Germany),1,1,84
 subjects[].heading,Norfolk Island,1,1,84
 subjects[].heading,"Noriega, Roger",1,1,59
@@ -4465,6 +4573,7 @@ subjects[].heading,OMNI (Project),1,1,286
 subjects[].heading,OPTIONS for Population Policy (Project),1,1,286
 subjects[].heading,Oak Ridge National Laboratory.,1,1,286
 subjects[].heading,Oaxaca (Mexico : State),1,1,84
+subjects[].heading,"Obaldía, José de, 1806-1889",1,1,59
 subjects[].heading,Obituaries,1,1,59
 subjects[].heading,"Obregón, Alvaro, 1880-1928",1,1,76
 subjects[].heading,Occupational training,1,1,59
@@ -4526,6 +4635,7 @@ subjects[].heading,"Orlich, Francisco J.",1,1,59
 subjects[].heading,"Ortega, Daniel.",1,1,306
 subjects[].heading,Orvieto (Italy),1,1,239
 subjects[].heading,Osaka (Japan : Prefecture),1,1,306
+subjects[].heading,"Oscar II, King of Sweden, 1829-1907",1,1,59
 subjects[].heading,Osorno (Chile),1,1,84
 subjects[].heading,Osoyoos Lake (B.C. and Wash.),1,1,59
 subjects[].heading,Ostend (Belgium),1,1,84
@@ -4610,6 +4720,7 @@ subjects[].heading,Petroleum refineries,1,1,469
 subjects[].heading,Philadelphia (Pa.),1,1,59
 subjects[].heading,"Philanthropic Society (London, England)",1,1,59
 subjects[].heading,Philosophy,1,1,59
+subjects[].heading,Photograph albums,1,1,469
 subjects[].heading,Photographers,1,1,306
 subjects[].heading,Photomechanical reproductions,1,1,306
 subjects[].heading,Phumi Vongvichit,1,1,59
@@ -4625,11 +4736,11 @@ subjects[].heading,Piraeus (Greece),1,1,84
 subjects[].heading,Pisa (Italy),1,1,239
 subjects[].heading,Pistoia (Italy),1,1,239
 subjects[].heading,Pittsburgh (Pa.),1,1,43
+subjects[].heading,"Pius IX, Pope, 1792-1878",1,1,59
 subjects[].heading,Planning,1,1,306
 subjects[].heading,Plauen (Germany),1,1,84
 subjects[].heading,Playgrounds,1,1,466
 subjects[].heading,Ploiesti (Romania),1,1,306
-subjects[].heading,"Poe, Edgar Allan, 1809-1849",1,1,306
 subjects[].heading,Pohnpei (Micronesia : State),1,1,84
 subjects[].heading,Point Roberts (Wash.),1,1,76
 subjects[].heading,"Poitier, Sidney.",1,1,306
@@ -4659,10 +4770,10 @@ subjects[].heading,Port-de-Paix (Haiti),1,1,84
 subjects[].heading,Portsmouth (England),1,1,84
 subjects[].heading,"Posen, Alvah, 1894-1960",1,1,208
 subjects[].heading,Postwar economic planning,1,1,466
-subjects[].heading,Potomac River,1,1,59
 subjects[].heading,Poultry,1,1,286
 subjects[].heading,"Powell, Adam Clayton, 1908-1972",1,1,84
 subjects[].heading,Powers of attorney,1,1,76
+subjects[].heading,"Prado, Mariano Ignacio, 1826-1902",1,1,59
 subjects[].heading,Prairie View A & M University.,1,1,286
 subjects[].heading,Praja Socialist Party.,1,1,306
 subjects[].heading,Prato (Italy),1,1,239
@@ -4708,6 +4819,7 @@ subjects[].heading,Projet des soins de santé primaires en milieu rural (USAID :
 subjects[].heading,Promotions,1,1,306
 subjects[].heading,Property tax,1,1,84
 subjects[].heading,Psychology,1,1,306
+subjects[].heading,"Pu-i, 1906-1967",1,1,59
 subjects[].heading,Public broadcasting,1,1,306
 subjects[].heading,Public housing,1,1,466
 subjects[].heading,Public law,1,1,306
@@ -4730,6 +4842,7 @@ subjects[].heading,"Pushkin, Georgi M.",1,1,59
 subjects[].heading,"Pye, Lucian W., 1921-",1,1,286
 subjects[].heading,"Pérez Jiménez, Marcos, 1914-",1,1,59
 subjects[].heading,"Pérez Larios, J. (José)",1,1,286
+subjects[].heading,"Pétion, Alexandre, 1770-1818",1,1,59
 subjects[].heading,Qatar,1,1,59
 subjects[].heading,Quantico (Va.),1,1,76
 subjects[].heading,"Quayle, Marilyn T. (Marilyn Tucker), 1949-",1,1,286
@@ -4755,6 +4868,7 @@ subjects[].heading,"Ragan, Leslie Darrell, 1897-1972",1,1,208
 subjects[].heading,Rainy River (Minn. and Ont.),1,1,59
 subjects[].heading,Rand Corporation,1,1,286
 subjects[].heading,"Rashidov, Sharof, 1917-",1,1,306
+subjects[].heading,Rationing,1,1,469
 subjects[].heading,"Rauschenberg, Robert, 1925-",1,1,306
 subjects[].heading,Ravenna (Italy),1,1,239
 subjects[].heading,Raytheon Company,1,1,59
@@ -4810,6 +4924,7 @@ subjects[].heading,Rivière-du-Loup (Québec),1,1,84
 subjects[].heading,Roatán (Honduras),1,1,84
 subjects[].heading,"Robbins, Franklin, 1917-1994",1,1,208
 subjects[].heading,Robert S. Sloan,1,1,208
+subjects[].heading,"Roberts, Edmund, 1784-1836",1,1,59
 subjects[].heading,"Robinson, Boardman, 1876-1952",1,1,208
 subjects[].heading,"Robock, Stefan Hyman, 1915-",1,1,286
 subjects[].heading,Rockefeller Institute.,1,1,286
@@ -4821,7 +4936,6 @@ subjects[].heading,Rohwer (Ark.),1,1,59
 subjects[].heading,"Romero, Oscar A. (Oscar Arnulfo), 1917-1980",1,1,59
 subjects[].heading,"Rondon, Fernando E. (Fernando Enrique), 1936-",1,1,84
 subjects[].heading,"Roosevelt, Eleanor Butler, 1889-1960",1,1,84
-subjects[].heading,"Roosevelt, Theodore, 1858-1919",1,1,59
 subjects[].heading,Roseau (Dominica),1,1,84
 subjects[].heading,Rosenberg case,1,1,59
 subjects[].heading,"Rosenberg, Ethel, 1915-1953",1,1,286
@@ -4853,6 +4967,7 @@ subjects[].heading,"Saccio, Leonard J. (Leonard John), 1911-",1,1,59
 subjects[].heading,Safi (Morocco),1,1,84
 subjects[].heading,Sahel (Burkina Faso : Region),1,1,286
 subjects[].heading,Sahel Institute,1,1,286
+subjects[].heading,"Said bin Sultan, Sultan of Zanzibar, 1791-1856",1,1,59
 subjects[].heading,"Said ibn Taimur, Sultan of Muscat and Oman, 1910-",1,1,306
 subjects[].heading,Saint Ann's Bay (Jamaica),1,1,84
 subjects[].heading,Saint Croix River (Me. and N.B.),1,1,59
@@ -4880,6 +4995,7 @@ subjects[].heading,Saipan,1,1,306
 subjects[].heading,"Sakharov, Andrei, 1921-1989",1,1,306
 subjects[].heading,Salaverry (Peru),1,1,84
 subjects[].heading,"Salk, Jonas Edward, 1914-1995",1,1,59
+subjects[].heading,"Salomon, Louis Etienne Félicité Lysius, 1815-1888",1,1,59
 subjects[].heading,Salt Lake City (Utah),1,1,59
 subjects[].heading,Samakhom Phatthana Prachakon læ Chumchon (Thailand),1,1,286
 subjects[].heading,"Samsun (Samsun Ili, Turkey)",1,1,84
@@ -4888,6 +5004,7 @@ subjects[].heading,San Francisco (Calif.),1,1,306
 subjects[].heading,"San Francisco Peace Conference (1951 : San Francisco, California). U.S. Delegation. (1951 - 1951)",1,1,43
 subjects[].heading,San Juan del Norte (Nicaragua),1,1,84
 subjects[].heading,San Juan del Sur (Nicaragua),1,1,84
+subjects[].heading,San Marino,1,1,59
 subjects[].heading,San Marino (San Marino),1,1,59
 subjects[].heading,"San Pedro (Los Angeles, Calif.)",1,1,59
 subjects[].heading,San Pedro de Macorís (Dominican Republic),1,1,84
@@ -4899,10 +5016,12 @@ subjects[].heading,Sana (Yemen),1,1,84
 subjects[].heading,Sanctions (International law),1,1,59
 subjects[].heading,Sandakan (Sabah),1,1,84
 subjects[].heading,Santa Catarina (Brazil : State),1,1,84
+subjects[].heading,Santa Claus,1,1,208
 subjects[].heading,Santa Fe (N.M.),1,1,59
 subjects[].heading,Santa Fé (Argentina),1,1,84
 subjects[].heading,"Santa Isabel (Chihuahua, Mexico)",1,1,76
 subjects[].heading,Santa Marta (Colombia),1,1,84
+subjects[].heading,"Santos, Máximo Benito, 1847-1889",1,1,59
 subjects[].heading,Sao Luis do Maranhao (Brazil),1,1,84
 subjects[].heading,"Saragat, Giuseppe",1,1,59
 subjects[].heading,Sarajevo (Bosnia and Hercegovina),1,1,84
@@ -4945,7 +5064,6 @@ subjects[].heading,"Selden, Armistead Inge, 1921-1985",1,1,84
 subjects[].heading,"Self-determination, National",1,1,59
 subjects[].heading,Semarang (Indonesia),1,1,84
 subjects[].heading,"Senghor, Léopold Sédar, 1906-",1,1,59
-subjects[].heading,Serbia,1,1,59
 subjects[].heading,Seville (Spain : Province),1,1,306
 subjects[].heading,Sewage disposal,1,1,286
 subjects[].heading,Seychelles,1,1,59
@@ -4988,6 +5106,7 @@ subjects[].heading,Slide presentations,1,1,59
 subjects[].heading,Sligo (Ireland),1,1,84
 subjects[].heading,Slovakia (Czechoslovakia),1,1,286
 subjects[].heading,Smallpox,1,1,59
+subjects[].heading,"Smith, Alfred Emanuel, 1873-1944",1,1,208
 subjects[].heading,"Smith, Datus Clifford, 1907-",1,1,286
 subjects[].heading,"Smythe, Hugh H. (Hugh Heyne), 1913-1977",1,1,84
 subjects[].heading,"Sobukwe, Robert Mangaliso",1,1,306
@@ -5019,7 +5138,6 @@ subjects[].heading,Sovereignty,1,1,59
 subjects[].heading,Soviet Union. Narodnyi komissariat vnutrennikh del,1,1,59
 subjects[].heading,Soviet Union. Posol'stvo (U.S.),1,1,59
 subjects[].heading,Soybean,1,1,286
-subjects[].heading,Space flight to the moon,1,1,306
 subjects[].heading,Space flights,1,1,306
 subjects[].heading,Space law,1,1,59
 subjects[].heading,Space sciences,1,1,84
@@ -5034,6 +5152,7 @@ subjects[].heading,"Spear, Moncrieff J. (Moncrieff Johnston), 1921-",1,1,84
 subjects[].heading,Special Projects Fund (1950 - ),1,1,466
 subjects[].heading,Specifications,1,1,59
 subjects[].heading,"Speer, Albert, 1905-1981",1,1,84
+subjects[].heading,Spies,1,1,59
 subjects[].heading,Spitak (Armenia),1,1,286
 subjects[].heading,Spitsbergen Island (Norway),1,1,59
 subjects[].heading,"Spitz, Mark.",1,1,306
@@ -5055,6 +5174,7 @@ subjects[].heading,State University of New York.,1,1,286
 subjects[].heading,Statehood (American politics),1,1,59
 subjects[].heading,Statesmen,1,1,306
 subjects[].heading,Stationery,1,1,306
+subjects[].heading,Statutes,1,1,59
 subjects[].heading,Stavanger (Norway),1,1,84
 subjects[].heading,Steamboats,1,1,84
 subjects[].heading,"Stearns, Monteagle, 1924-",1,1,84
@@ -5129,6 +5249,7 @@ subjects[].heading,Taranto (Italy),1,1,84
 subjects[].heading,"Tatum, Art, 1910-1956",1,1,306
 subjects[].heading,Tax records,1,1,84
 subjects[].heading,Taxation of personal property,1,1,84
+subjects[].heading,"Taylor, Zachary, 1784-1850",1,1,59
 subjects[].heading,Technical education,1,1,469
 subjects[].heading,Technology and state,1,1,286
 subjects[].heading,Technology transfer,1,1,59
@@ -5153,7 +5274,6 @@ subjects[].heading,Testing,1,1,286
 subjects[].heading,Texas A & M University,1,1,286
 subjects[].heading,"Texas Centennial (1936 : Dallas, Tex.)",1,1,43
 subjects[].heading,"Thackeray, William Makepeace, 1811-1863",1,1,76
-subjects[].heading,"Thoreau, Henry David, 1817-1862",1,1,306
 subjects[].heading,"Thorp, Willard Long, 1899-1992",1,1,59
 subjects[].heading,Thunder Bay (Ont.),1,1,84
 subjects[].heading,"Tiananmen Square Incident, 1989",1,1,306
@@ -5180,6 +5300,7 @@ subjects[].heading,"Toulmin, Harry T. (Harry Theophilus), 1916-",1,1,286
 subjects[].heading,Toulon (France),1,1,84
 subjects[].heading,Tourist maps,1,1,306
 subjects[].heading,Tovar (Venezuela),1,1,84
+subjects[].heading,"Tovar, Manuel Felipe de, 1803-1866",1,1,59
 subjects[].heading,"Town Hall, Inc.",1,1,306
 subjects[].heading,Townsville (Qld.),1,1,84
 subjects[].heading,Trabzon (Turkey),1,1,84
@@ -5225,6 +5346,7 @@ subjects[].heading,"Tuxpan (Jalisco, Mexico)",1,1,84
 subjects[].heading,"Twain, Mark, 1835-1910",1,1,306
 subjects[].heading,Twentieth Century Fund,1,1,286
 subjects[].heading,"Tybout, Richard A. (Richard Alton), 1920-",1,1,286
+subjects[].heading,"Tzu-hsi, Empress dowager of China, 1835-1908",1,1,59
 subjects[].heading,U.S. Agency for International Development. (04/01/1999 - ),1,1,59
 subjects[].heading,U.S. Congress (89th : 1st Session : 1965). (01/04/1965 - 10/23/1965),1,1,306
 subjects[].heading,U.S. Congress. Joint Committee on Atomic Energy. (1946 - 1977),1,1,306
@@ -5304,6 +5426,8 @@ subjects[].heading,United Nations. Sub-commission on Prevention of Discriminatio
 subjects[].heading,United Nations. Technical Assistance Administration,1,1,286
 subjects[].heading,United Nations/FAO Committee on Food Aid Policies and Programmes,1,1,286
 subjects[].heading,United Press Associations.,1,1,306
+subjects[].heading,"United States Capitol (Washington, D.C.)",1,1,306
+subjects[].heading,United States Capitol Historical Society.,1,1,306
 subjects[].heading,United States Virgin Islands,1,1,84
 subjects[].heading,United Steelworkers of America,1,1,306
 subjects[].heading,Universal Postal Union,1,1,43
@@ -5375,7 +5499,7 @@ subjects[].heading,"Vaky, Viron P.",1,1,84
 subjects[].heading,Valdivia (Chile),1,1,84
 subjects[].heading,Valencia (Venezuela),1,1,84
 subjects[].heading,"Valenti, Jack J. (Jack Joseph), 1921-2007",1,1,306
-subjects[].heading,"Van Buren, Martin, 1782-1862",1,1,76
+subjects[].heading,"Van Valkenburgh, R. B. (Robert Bruce), 1821-1888",1,1,59
 subjects[].heading,Vatican City,1,1,59
 subjects[].heading,"Vaughan, Sarah, 1924-",1,1,306
 subjects[].heading,Vehicles,1,1,306
@@ -5412,7 +5536,7 @@ subjects[].heading,"War Department. European Theater of Operations, U.S. Army. F
 subjects[].heading,"War Department. European Theater of Operations, U.S. Army. Seventh Army. (11/01/1944 - 07/1945)",1,1,466
 subjects[].heading,War damage compensation,1,1,76
 subjects[].heading,War memorials,1,1,59
-subjects[].heading,War of 1812,1,1,76
+subjects[].heading,"Ward, John Elliott, 1814- 1902",1,1,59
 subjects[].heading,"Warren, Earl, 1891-1974",1,1,306
 subjects[].heading,Warsaw Treaty Organization,1,1,84
 subjects[].heading,Warships,1,1,84
@@ -5422,7 +5546,6 @@ subjects[].heading,Washington (State),1,1,76
 subjects[].heading,Washington Post Company.,1,1,306
 subjects[].heading,Washington State University,1,1,286
 subjects[].heading,"Washington University (Saint Louis, Mo.)",1,1,286
-subjects[].heading,"Washington, George, 1732-1799",1,1,59
 subjects[].heading,Waste disposal,1,1,286
 subjects[].heading,Wastes,1,1,286
 subjects[].heading,Water conservation,1,1,469
@@ -5433,6 +5556,7 @@ subjects[].heading,Waterton River (Mont. and Alta.),1,1,59
 subjects[].heading,Waubaushene (Ont.),1,1,84
 subjects[].heading,Weapons systems,1,1,59
 subjects[].heading,Weather,1,1,59
+subjects[].heading,"Weaver, Robert Clifton, 1907-1997",1,1,208
 subjects[].heading,"Webster, Harold Tucker, 1885-1952",1,1,208
 subjects[].heading,"Weiss, Seymour, 1925-1992",1,1,84
 subjects[].heading,"Weller, Thomas Huckle, 1915-",1,1,286
@@ -5472,6 +5596,7 @@ subjects[].heading,Women domestics,1,1,286
 subjects[].heading,Women in politics,1,1,286
 subjects[].heading,Women's International Network.,1,1,286
 subjects[].heading,Women's health services,1,1,286
+subjects[].heading,Woodlawn Plantation (Va.),1,1,76
 subjects[].heading,Woodrow Wilson International Center for Scholars,1,1,59
 subjects[].heading,"Woodruff, Hale, 1900-",1,1,208
 subjects[].heading,"Woods, Lake of the (Minn., Man. and Ont.)",1,1,59
@@ -5507,6 +5632,8 @@ subjects[].heading,Xiamen (China),1,1,84
 subjects[].heading,Xuân Thuy,1,1,59
 subjects[].heading,YWCA,1,1,466
 subjects[].heading,Yalta Conference. (02/04/1945 - 02/11/1945),1,1,59
+subjects[].heading,"Yang, Yu, Chinese diplomat",1,1,59
+subjects[].heading,"Yankee Stadium (New York, N.Y.)",1,1,306
 subjects[].heading,"Yaounde Convention, 1963",1,1,59
 subjects[].heading,Yaqui River (Mexico),1,1,76
 subjects[].heading,"Yates, John Melvin, 1939-",1,1,84
@@ -5527,36 +5654,41 @@ subjects[].heading,Zinc,1,1,59
 subjects[].heading,Zittau (Germany),1,1,84
 subjects[].heading,"Zoellick, Robert B. (Robert Bruce), 1953-",1,1,59
 subjects[].heading,Álvaro Obregón,1,1,84
-useRestriction.specificUseRestrictions[],Copyright,4670,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490
+useRestriction.specificUseRestrictions[],Copyright,50052,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490
 useRestriction.specificUseRestrictions[],Public Law 101-246,58,1,306
 useRestriction.specificUseRestrictions[],Other,5,4,59 84 306 466
 useRestriction.specificUseRestrictions[],Donor Restrictions,2,1,306
 useRestriction.specificUseRestrictions[],Trademark,1,1,490
-useRestriction.status,Unrestricted,14764,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-useRestriction.status,Restricted - Possibly,5360,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-useRestriction.status,Restricted - Partly,43,8,43 59 84 208 286 306 469 490
-useRestriction.status,Undetermined,20,5,59 208 306 383 490
+useRestriction.status,Unrestricted,492297,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+useRestriction.status,Restricted - Possibly,259289,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+useRestriction.status,Undetermined,153,6,59 208 286 306 383 490
+useRestriction.status,Restricted - Partly,140,8,43 59 84 208 286 306 469 490
 useRestriction.status,Restricted - Fully,1,1,59
-variantControlNumbers[].type,HMS/MLR Entry Number,20713,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
-variantControlNumbers[].type,Declassification Project Number,15463,19,43 59 76 84 169 182 208 229 239 268 286 306 353 383 420 466 469 486 490
-variantControlNumbers[].type,Former HMS/MLR Entry Number,6737,17,43 59 76 84 169 182 208 239 256 286 306 353 383 420 466 469 490
-variantControlNumbers[].type,Agency-Assigned Identifier,6269,9,43 59 84 286 306 353 420 466 469
-variantControlNumbers[].type,HMS Record Entry ID,5807,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490
-variantControlNumbers[].type,State Department Lot File Number,5189,10,43 59 76 84 169 286 306 353 383 469
-variantControlNumbers[].type,Former HMS Record Entry ID,754,11,43 59 76 84 169 208 286 306 420 469 490
-variantControlNumbers[].type,NAIL Control Number,373,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490
+variantControlNumbers[].type,HMS/MLR Entry Number,26901,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+variantControlNumbers[].type,Declassification Project Number,20074,19,43 59 76 84 169 182 208 229 239 268 286 306 353 383 420 466 469 486 490
+variantControlNumbers[].type,Former HMS/MLR Entry Number,16387,17,43 59 76 84 169 182 208 239 256 286 306 353 383 420 466 469 490
+variantControlNumbers[].type,Search Identifier,8826,5,43 59 84 239 306
+variantControlNumbers[].type,Agency-Assigned Identifier,8703,9,43 59 84 286 306 353 420 466 469
+variantControlNumbers[].type,HMS Record Entry ID,6967,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490
+variantControlNumbers[].type,State Department Lot File Number,5197,10,43 59 76 84 169 286 306 353 383 469
+variantControlNumbers[].type,XMIS Number,3107,4,59 286 306 383
+variantControlNumbers[].type,Former ARC Identifier,1769,5,43 59 84 306 469
+variantControlNumbers[].type,Ref ID,1581,4,59 286 306 490
+variantControlNumbers[].type,HMS Asset ID,991,7,43 59 76 84 208 286 306
+variantControlNumbers[].type,Former HMS Record Entry ID,757,11,43 59 76 84 169 208 286 306 420 469 490
+variantControlNumbers[].type,NAIL Control Number,374,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490
 variantControlNumbers[].type,Agency Disposition Number,280,3,59 84 286
+variantControlNumbers[].type,Reparative Description Identifier,270,10,59 63 76 84 208 229 286 306 466 469
 variantControlNumbers[].type,Inventory Entry Number,184,5,59 76 256 286 420
-variantControlNumbers[].type,Former ARC Identifier,177,5,43 59 84 306 469
-variantControlNumbers[].type,Former National Archives Identifier,142,10,43 59 76 84 169 286 306 420 469 490
-variantControlNumbers[].type,Search Identifier,127,5,43 59 84 239 306
+variantControlNumbers[].type,Former National Archives Identifier,177,10,43 59 76 84 169 286 306 420 469 490
+variantControlNumbers[].type,Download Display Identifier,65,3,59 286 306
 variantControlNumbers[].type,Other Identifier,47,6,59 84 286 306 383 490
-variantControlNumbers[].type,Reparative Description Identifier,29,9,59 76 84 208 229 286 306 466 469
 variantControlNumbers[].type,Former Local Identifier,28,5,43 59 76 84 306
-variantControlNumbers[].type,FOIA Tracking Number,13,4,59 84 286 469
-variantControlNumbers[].type,HMS Asset ID,8,4,43 59 84 306
-variantControlNumbers[].type,Download Display Identifier,3,1,306
+variantControlNumbers[].type,FOIA Tracking Number,14,4,59 84 286 469
 variantControlNumbers[].type,PRESNET Number,3,1,59
+variantControlNumbers[].type,ReDiscovery Number,2,2,84 208
 variantControlNumbers[].type,Kennedy Assassination Document ID,1,1,59
+variantControlNumbers[].type,Legislative Transfer Number,1,1,306
 variantControlNumbers[].type,Off-Site Storage Transaction Number,1,1,268
+variantControlNumbers[].type,Preliminary Checklist Identifier,1,1,306
 variantControlNumbers[].type,Select List Identifier,1,1,59
