@@ -205,7 +205,11 @@ public struct HarvestReportBuilder: Sendable {
         line("NARA Catalog — Record Group Catalog Harvest")
         line("Generated: \(manifest.generated)")
         line("Source: \(manifest.source.kind) — \(manifest.source.baseURL)")
-        line("Export snapshot: \(manifest.source.snapshotLastModified.joined(separator: ", "))")
+        // An API harvest has no snapshot — it reads the live catalog — so an empty list is correct
+        // here and must say so rather than trailing off after the colon.
+        line("Export snapshot: " + (manifest.source.snapshotLastModified.isEmpty
+                                    ? "(none — live API harvest)"
+                                    : manifest.source.snapshotLastModified.joined(separator: ", ")))
         rule()
 
         // MARK: Headline

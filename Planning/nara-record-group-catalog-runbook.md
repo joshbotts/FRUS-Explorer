@@ -407,6 +407,69 @@ Only the named groups' shards are re-read; the others keep their existing index 
 
 ---
 
+## 2b. The completed harvest (2026-07-30)
+
+`API_ONLY=1` over all 22 groups: **20,188 series in ~56 calls**, a few MB, a couple of minutes.
+
+| Check | Result |
+|---|---|
+| Completeness | Every group's delta **0**, except RG 84 at **+1** |
+| `creators` | 20,180 of 20,188 records (100%), **7,318 distinct creators** |
+| `variantControlNumbers` | 19,881 records (98.5%), **23 distinct types** |
+| `contributors` | 462 records, concentrated in the audiovisual groups |
+| `localIdentifier` | 725 records |
+| Invariant violations / malformed lines | **none, in any group** |
+
+RG 84's `+1` is NARA's own count being stale, not a duplicate — the NAID de-duplication reported nothing,
+and the report says as much rather than passing it over.
+
+### The control-number census vindicates not filtering — with numbers
+
+State Department lot file numbers do **not** live under one type. Measured across the 22 groups:
+
+| Where | Occurrences | Record groups |
+|---|---|---|
+| `type = "State Department Lot File Number"` | 5,179 | 10 |
+| `type = "Agency-Assigned Identifier"`, across **7 distinct note spellings** | ~5,096 | up to 6 each |
+
+So roughly **half of all lot numbers hide under the generic type**, discriminated only by free-text notes
+reading "this is a department of state lot file number", "this is the department of state lot file
+number", "this is a state department lot file number", "this is a department of state assigned lot file
+number", "this is a usaid lot file number", and more. Any filter on `type` alone loses about 5,000 of
+them. This is precisely the failure the cross-tab design exists to prevent, now quantified rather than
+asserted.
+
+Second finding worth having: lot numbers appear in **10 record groups**, not just State's own two.
+
+### Genuinely agency-specific control-number types
+
+Types confined to three or fewer record groups — the answer to the original question:
+
+| Type | Occurrences | Record groups |
+|---|---|---|
+| Agency Disposition Number | 280 | 59, 84, 286 |
+| PRESNET Number | 3 | 59 |
+| Kennedy Assassination Document ID | 1 | 59 |
+| Select List Identifier | 1 | 59 |
+| Off-Site Storage Transaction Number | 1 | 268 |
+| Download Display Identifier | 3 | 306 |
+
+### Two bugs this harvest exposed
+
+Both were mine, both are fixed, and the second one did real damage before it was caught:
+
+1. **The manifest misattributed provenance.** `source.kind` was hard-coded `s3-bulk-export`, so an
+   API-only harvest of 20,188 records recorded its source as the bulk export with an empty snapshot
+   date. The manifest now reports the sources actually read.
+2. **`PROJECT_ONLY` could not see an API-harvested store.** `API_ONLY` writes to `raw-api/`;
+   `PROJECT_ONLY` read only `raw/`. So the consolidation step this runbook recommends found nothing for
+   21 of 22 groups and rewrote the manifest and all five censuses from the one group that *did* have a
+   bulk store — replacing a complete 22-group description with an 11-record one. It now reads both
+   stores, and re-running consolidation restored everything with **zero API calls**, because the raw
+   stores are the recovery path the design promises they are.
+
+---
+
 ## 3. Environment contract
 
 | Variable | Default | Effect |

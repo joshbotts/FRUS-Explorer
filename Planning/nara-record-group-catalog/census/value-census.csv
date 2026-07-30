@@ -1,38 +1,515 @@
 keyPath,value,occurrences,recordGroupCount,recordGroups
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(6) Personal Information,4,1,486
-accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(1) National Security,2,1,486
-accessRestriction.specificAccessRestrictions[].securityClassification,Confidential,1,1,486
-accessRestriction.specificAccessRestrictions[].securityClassification,Top Secret,1,1,486
-accessRestriction.status,Unrestricted,5,1,486
-accessRestriction.status,Restricted - Possibly,3,1,486
-accessRestriction.status,Restricted - Fully,2,1,486
-accessRestriction.status,Restricted - Partly,1,1,486
-audiovisual,false,7,1,486
-creators[].authorityType,organization,17,1,486
-creators[].creatorType,Most Recent,11,1,486
-creators[].creatorType,Predecessor,6,1,486
-findingAids[].findingAidType,Folder List,3,1,486
-findingAids[].findingAidType,Container List,2,1,486
-generalRecordsTypes[],Textual Records,11,1,486
-generalRecordsTypes[],Photographs and other Graphic Materials,1,1,486
-languages[],English,4,1,486
-levelOfDescription,series,11,1,486
-physicalOccurrences[].copyStatus,Preservation-Reproduction-Reference,11,1,486
-physicalOccurrences[].holdingsMeasurements[].type,"FRC Carton, Standard",9,1,486
-physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Narrow 4 inch",1,1,486
-physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Standard",1,1,486
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Loose Sheets,11,1,486
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Magnetic Media,1,1,486
-physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Photographic Materials,1,1,486
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Paper,11,1,486
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Floppy Disk,1,1,486
-physicalOccurrences[].mediaOccurrences[].specificMediaType,Photographic Print,1,1,486
-physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Textual Reference,11,1,486
-recordType,description,11,1,486
-subjects[].authorityType,topicalSubject,3,1,486
-useRestriction.specificUseRestrictions[],Copyright,1,1,486
-useRestriction.status,Unrestricted,10,1,486
-useRestriction.status,Restricted - Possibly,1,1,486
-variantControlNumbers[].type,HMS Record Entry ID,23,1,486
-variantControlNumbers[].type,HMS/MLR Entry Number,23,1,486
-variantControlNumbers[].type,Declassification Project Number,2,1,486
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(1) National Security,4258,13,43 59 84 268 286 306 353 383 420 466 469 486 490
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(6) Personal Information,1342,15,43 59 76 84 169 208 286 306 353 383 420 466 469 486 490
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(3) Statute,540,5,43 59 84 306 383
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7) Law Enforcement,35,7,59 84 286 306 383 469 490
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(2) Internal Personnel Rules and Practices,34,4,59 84 286 306
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(4) Trade Secrets and Commercial or Financial Information,23,4,59 84 286 383
+accessRestriction.specificAccessRestrictions[].restriction,Donated - Security Classified,17,6,59 84 286 306 383 490
+accessRestriction.specificAccessRestrictions[].restriction,John F. Kennedy Assassination Records Collection Act,6,3,59 84 306
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7e) Law Enforcement,3,2,59 84
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(8) Regulation or Supervision of Financial Institutions,3,1,286
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(9) Geological or Geophysical Information and Data,2,2,59 84
+accessRestriction.specificAccessRestrictions[].restriction,Other,2,2,59 286
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7b) Law Enforcement,1,1,59
+accessRestriction.specificAccessRestrictions[].restriction,FOIA (b)(7d) Law Enforcement,1,1,59
+accessRestriction.specificAccessRestrictions[].restriction,Freedom of Information Act (FOIA),1,1,84
+accessRestriction.specificAccessRestrictions[].restriction,PRMPA - Personal Privacy (D),1,1,84
+accessRestriction.specificAccessRestrictions[].restriction,Presidential Records Act (p)(3) Statute,1,1,84
+accessRestriction.specificAccessRestrictions[].securityClassification,Secret,2928,12,43 59 84 268 286 306 353 383 420 466 469 490
+accessRestriction.specificAccessRestrictions[].securityClassification,Top Secret,911,9,43 59 84 286 306 353 383 469 486
+accessRestriction.specificAccessRestrictions[].securityClassification,Confidential,423,8,59 84 286 306 383 469 486 490
+accessRestriction.specificAccessRestrictions[].securityClassification,Restricted Data/Formerly Restricted Data,369,6,43 59 84 306 383 466
+accessRestriction.specificAccessRestrictions[].securityClassification,Donated - Security Classified,17,6,59 84 286 306 383 490
+accessRestriction.specificAccessRestrictions[].securityClassification,Unmarked,11,2,59 84
+accessRestriction.specificAccessRestrictions[].securityClassification,FOIA (b)(1) National Security,1,1,383
+accessRestriction.status,Unrestricted,14544,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Restricted - Fully,2773,12,43 59 84 208 286 306 353 383 420 469 486 490
+accessRestriction.status,Restricted - Partly,1904,14,43 59 76 84 268 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Restricted - Possibly,953,15,43 59 76 84 169 239 286 306 353 383 420 466 469 486 490
+accessRestriction.status,Undetermined,13,3,76 383 490
+audiovisual,false,19318,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+audiovisual,true,2,2,59 306
+contributors[].authorityType,person,507,11,43 59 76 84 182 208 239 286 306 469 490
+contributors[].authorityType,organization,387,9,43 59 76 84 169 286 306 466 469
+contributors[].contributorType,Correspondent,325,8,43 59 76 84 182 286 306 469
+contributors[].contributorType,Originator,231,11,43 59 76 84 169 239 286 306 466 469 490
+contributors[].contributorType,Photographer,62,3,59 286 306
+contributors[].contributorType,Author,60,5,59 84 286 306 490
+contributors[].contributorType,Compiler,38,3,59 84 306
+contributors[].contributorType,Participant,35,4,43 59 286 306
+contributors[].contributorType,Recipient,31,4,59 76 286 469
+contributors[].contributorType,Speaker,26,5,59 84 286 306 490
+contributors[].contributorType,Other,16,3,43 59 76
+contributors[].contributorType,Writer of accompanying material,14,3,59 76 306
+contributors[].contributorType,Artist,7,2,59 208
+contributors[].contributorType,Interviewer,7,1,306
+contributors[].contributorType,Signer,6,2,59 76
+contributors[].contributorType,Producer,4,3,59 286 466
+contributors[].contributorType,Publisher,4,3,43 59 306
+contributors[].contributorType,Collector,3,2,59 84
+contributors[].contributorType,Host,3,2,286 306
+contributors[].contributorType,Collaborator,2,1,59
+contributors[].contributorType,Interviewee,2,2,84 306
+contributors[].contributorType,Organizer of meeting,2,1,43
+contributors[].contributorType,Printer,2,1,43
+contributors[].contributorType,Secretary,2,1,59
+contributors[].contributorType,Author of screenplay,1,1,43
+contributors[].contributorType,Complainant,1,1,76
+contributors[].contributorType,Consultant,1,1,286
+contributors[].contributorType,Contractor,1,1,59
+contributors[].contributorType,Corrector,1,1,84
+contributors[].contributorType,Designer,1,1,43
+contributors[].contributorType,Director,1,1,306
+contributors[].contributorType,Engineer,1,1,59
+contributors[].contributorType,Illustrator,1,1,208
+contributors[].contributorType,Lithographer,1,1,59
+contributors[].contributorType,Metadata contact,1,1,306
+contributors[].contributorType,Researcher,1,1,286
+creators[].authorityType,organization,24356,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+creators[].creatorType,Most Recent,20162,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+creators[].creatorType,Predecessor,4194,17,43 59 76 84 169 182 208 229 256 286 306 353 420 466 469 486 490
+findingAids[].findingAidType,Folder List,1375,19,43 59 76 84 169 208 239 256 268 278 286 306 353 383 420 466 469 486 490
+findingAids[].findingAidType,Database,961,4,59 76 84 306
+findingAids[].findingAidType,Index,662,18,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+findingAids[].findingAidType,Other,234,16,43 59 63 76 84 169 208 229 239 256 268 286 306 466 469 490
+findingAids[].findingAidType,Container List,84,11,43 59 76 84 208 229 278 286 306 466 486
+findingAids[].findingAidType,Item List,62,14,43 59 76 84 169 208 256 286 306 353 420 466 469 490
+findingAids[].findingAidType,Register,31,7,43 59 76 84 182 229 466
+findingAids[].findingAidType,Filing Plan,24,4,43 59 84 169
+findingAids[].findingAidType,Doc. Package,22,5,59 286 306 383 490
+findingAids[].findingAidType,Shelf List,7,3,59 286 306
+findingAids[].findingAidType,Log,6,4,43 59 306 490
+findingAids[].findingAidType,Inventory,5,3,59 76 84
+findingAids[].findingAidType,Select List,3,2,59 76
+findingAids[].findingAidType,Calendar,1,1,59
+generalRecordsTypes[],Textual Records,19525,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+generalRecordsTypes[],Photographs and other Graphic Materials,1163,19,43 59 63 76 84 169 182 208 229 239 268 278 286 306 353 466 469 486 490
+generalRecordsTypes[],Maps and Charts,465,16,43 59 63 76 84 169 208 229 239 256 286 306 353 466 469 490
+generalRecordsTypes[],Moving Images,137,11,43 59 76 84 182 208 229 286 306 469 490
+generalRecordsTypes[],Architectural and Engineering Drawings,113,12,43 59 76 84 169 229 239 286 306 466 469 490
+generalRecordsTypes[],Sound Recordings,95,11,43 59 76 84 208 229 286 306 383 469 490
+generalRecordsTypes[],Artifacts,67,12,43 59 76 84 182 239 268 286 306 466 469 490
+generalRecordsTypes[],Data Files,37,6,59 84 286 306 383 490
+generalRecordsTypes[],Web Pages,1,1,59
+languages[],English,869,15,43 59 63 76 84 208 229 286 306 353 383 466 469 486 490
+languages[],French,353,11,43 59 76 84 208 229 286 306 466 469 490
+languages[],Spanish,329,11,43 59 76 84 208 229 286 306 353 469 490
+languages[],German,154,8,43 59 63 76 84 286 306 466
+languages[],Russian,87,9,43 59 63 76 84 208 286 306 383
+languages[],Arabic,58,8,43 59 76 84 208 286 306 469
+languages[],Italian,55,7,59 76 84 208 229 286 306
+languages[],Portuguese,40,6,43 59 76 84 286 306
+languages[],Japanese,37,6,43 59 84 286 306 469
+languages[],Chinese,35,5,43 59 84 286 306
+languages[],Vietnamese,27,6,43 59 84 286 306 469
+languages[],"Greek, Modern (1453- )",24,4,59 84 306 469
+languages[],Thai,21,3,59 84 306
+languages[],Dutch,20,3,59 84 306
+languages[],Polish,20,4,59 63 286 306
+languages[],Korean,19,3,59 286 306
+languages[],Indonesian,18,3,59 84 306
+languages[],Hungarian,17,4,59 84 286 306
+languages[],Czech,13,4,59 84 286 306
+languages[],Swedish,13,4,43 59 84 306
+languages[],Turkish,13,3,84 286 306
+languages[],Bulgarian,12,3,59 286 306
+languages[],Finnish,12,3,59 84 306
+languages[],Persian,12,4,59 84 286 306
+languages[],Bengali,11,2,84 306
+languages[],Burmese,11,1,306
+languages[],Danish,11,3,59 84 306
+languages[],Icelandic,11,3,59 84 306
+languages[],Romanian,11,3,59 84 306
+languages[],Hebrew,9,3,59 84 306
+languages[],Hindi,9,3,84 286 306
+languages[],Tamil,9,1,306
+languages[],Khmer,8,2,59 306
+languages[],Croatian,7,2,59 306
+languages[],Lao,7,1,306
+languages[],Tagalog,7,1,306
+languages[],Amharic,6,3,59 84 306
+languages[],Serbian,6,1,306
+languages[],Malay,5,2,59 306
+languages[],Nepali,5,2,286 306
+languages[],Norwegian,5,1,306
+languages[],Sinhalese,5,1,306
+languages[],Slovak,5,2,286 306
+languages[],Slovenian,5,1,306
+languages[],Ukrainian,5,2,286 306
+languages[],Urdu,5,2,59 306
+languages[],Albanian,4,2,59 306
+languages[],Armenian,4,2,59 306
+languages[],Iranian (Other),4,1,306
+languages[],Lithuanian,4,2,286 306
+languages[],Swahili,4,2,59 306
+languages[],Afrikaans,3,1,59
+languages[],Cebuano,3,1,306
+languages[],Latvian,3,2,286 306
+languages[],Telugu,3,1,306
+languages[],Assamese,2,1,306
+languages[],Bambara,2,1,306
+languages[],Georgian,2,2,59 306
+languages[],Gujarati,2,1,306
+languages[],Kannada,2,1,306
+languages[],Macedonian,2,1,306
+languages[],Malayalam,2,1,306
+languages[],Marathi,2,1,306
+languages[],No Linguistic Content,2,1,490
+languages[],Oriya,2,1,306
+languages[],Somali,2,1,306
+languages[],Aymara,1,1,306
+languages[],Baltic (Other),1,1,306
+languages[],Bikol,1,1,306
+languages[],Creoles and Pidgins (Other),1,1,306
+languages[],"Creoles and Pidgins, French-based (Other)",1,1,59
+languages[],Estonian,1,1,306
+languages[],Filipino,1,1,306
+languages[],Hausa,1,1,306
+languages[],Hiligaynon,1,1,306
+languages[],Iloko,1,1,306
+languages[],Maltese,1,1,84
+languages[],Mohlam,1,1,306
+languages[],Mongolian,1,1,306
+languages[],Pampanga,1,1,306
+languages[],Pangasinan,1,1,306
+languages[],Pushto,1,1,286
+languages[],Quechua,1,1,306
+languages[],Sindhi,1,1,306
+languages[],Tibetan,1,1,306
+languages[],Yiddish,1,1,63
+levelOfDescription,series,20188,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].copyStatus,Preservation-Reproduction-Reference,19782,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].copyStatus,Preservation,457,15,43 59 76 84 169 182 208 229 239 256 286 306 383 469 490
+physicalOccurrences[].copyStatus,Reference,152,9,43 59 182 208 229 286 306 469 490
+physicalOccurrences[].copyStatus,Reproduction,112,9,43 59 182 208 229 286 306 469 490
+physicalOccurrences[].copyStatus,Reproduction-Reference,20,6,59 208 286 306 469 490
+physicalOccurrences[].copyStatus,Preservation-Reproduction,19,6,43 59 208 286 306 469
+physicalOccurrences[].copyStatus,Preservation-Reference,17,9,43 59 76 84 169 208 268 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Standard",12079,21,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"FRC Carton, Standard",3296,14,43 59 76 84 208 268 286 306 353 383 420 469 486 490
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Records Center",1800,9,43 59 76 84 208 286 306 466 469
+physicalOccurrences[].holdingsMeasurements[].type,"Volume, Oversize [larger than 9 x 3 x 14]",1284,10,43 59 63 76 84 169 182 208 229 306
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Standard",1264,21,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Narrow",971,13,43 59 76 84 182 208 256 286 306 383 466 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Volume, Ledger Size [between 9 x 1 x 11 and 9 x 3 x 14]",960,5,59 76 84 182 256
+physicalOccurrences[].holdingsMeasurements[].type,"Volume, Journal Size [9 x 1 x 11 or smaller]",409,4,59 76 84 306
+physicalOccurrences[].holdingsMeasurements[].type,"Index Card Box, 3 inch",312,16,43 59 63 76 84 169 182 208 229 239 256 268 306 353 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Narrow 2.5 inch",209,15,43 59 63 76 84 169 182 208 229 286 306 353 383 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Narrow 3.5 inch",186,12,43 59 76 84 208 229 268 286 306 383 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"35mm x 1,000' capacity (round)",182,10,43 59 84 182 208 229 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,16mm x 800' capacity (round),138,9,43 59 76 208 229 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Oversize",113,10,43 59 63 76 84 208 256 286 306 466
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 6 x 9 Grey White",110,16,43 59 63 76 84 169 182 208 239 256 286 306 353 466 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"16mm x 1,000' capacity (round)",101,8,59 76 208 229 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,Log and Printout Box,96,9,43 59 76 84 169 182 306 466 469
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, Small ('Pizza Box')",90,16,43 59 63 76 84 169 182 208 229 268 286 306 353 420 466 469
+physicalOccurrences[].holdingsMeasurements[].type,10-drawer Hamilton (TH),82,10,43 59 76 84 169 229 239 256 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"35mm x 1,000' capacity (square)",80,6,43 208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,16mm x 400' capacity (round),74,7,59 76 208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch VHS,72,7,43 59 208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Artifact,60,11,43 59 76 84 182 239 268 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch Betacam (small cassette),58,7,43 59 208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box G,55,4,59 84 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Index Card Box, 6 x 4 inch",52,14,43 59 63 76 84 169 182 239 286 306 353 466 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Microfilm Box, 35 mm",52,7,59 84 208 286 306 383 490
+physicalOccurrences[].holdingsMeasurements[].type,3/4 inch U-matic (regular),50,6,59 84 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 5 x 7 Negative Box",50,8,43 59 76 208 229 268 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph Box, 4 x 5 Shoe",49,10,43 59 76 169 208 229 268 286 306 469
+physicalOccurrences[].holdingsMeasurements[].type,16mm x 1200' capacity (round),47,7,59 208 229 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,Legal Size Box,47,7,43 59 76 229 306 383 490
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, Large",47,11,43 59 63 76 84 169 208 229 286 466 469
+physicalOccurrences[].holdingsMeasurements[].type,Magazine Box,46,10,43 59 76 84 169 182 286 306 466 469
+physicalOccurrences[].holdingsMeasurements[].type,Custom Designed Box,42,7,43 59 76 84 169 208 306
+physicalOccurrences[].holdingsMeasurements[].type,Logical Data Record,42,5,59 286 306 383 490
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box,40,9,43 59 76 84 208 239 286 306 469
+physicalOccurrences[].holdingsMeasurements[].type,7 inch single open reel tape,39,10,43 59 84 208 229 286 306 383 469 490
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch HDCAM SR (small cassette),29,7,43 59 208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, 4.6 inch",28,5,59 84 286 306 353
+physicalOccurrences[].holdingsMeasurements[].type,DVD Storage Case,27,6,59 208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch Betacam (large cassette),26,4,208 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, 20 inch Thin",26,4,43 59 76 84
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, 24 inch Medium",23,3,43 59 76
+physicalOccurrences[].holdingsMeasurements[].type,"1 inch Types A, B, and C",22,4,59 208 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"35mm x 2,000' capacity (round)",22,5,43 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Narrow 4.5 inch",21,4,59 76 84 306
+physicalOccurrences[].holdingsMeasurements[].type,16mm x 1600' capacity (round),20,6,208 229 286 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 16 x 20 Regular Drop Front",20,7,43 59 63 76 208 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 8 x 10 Half-Size",19,9,43 59 76 182 208 229 306 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, No Hinge",18,7,43 59 63 76 84 182 286
+physicalOccurrences[].holdingsMeasurements[].type,Audiocassette,17,6,43 59 208 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"Poster Drawer, Small",17,5,59 76 208 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Microfiche Box (also lantern slides),15,7,59 76 169 208 229 268 306
+physicalOccurrences[].holdingsMeasurements[].type,5-drawer Hamilton (H),14,2,76 256
+physicalOccurrences[].holdingsMeasurements[].type,Drop Front Map Box C,14,2,239 286
+physicalOccurrences[].holdingsMeasurements[].type,5 inch single open reel tape,13,6,43 59 76 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Disk box - 16 inch disks,13,4,59 208 229 306
+physicalOccurrences[].holdingsMeasurements[].type,"Microfilm Box, Multiple Reels",13,4,59 169 239 306
+physicalOccurrences[].holdingsMeasurements[].type,"Roller Drawer, 4 inch",13,4,59 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,10 1/2 inch single open reel tape,12,4,59 208 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box O,12,2,59 84
+physicalOccurrences[].holdingsMeasurements[].type,"Index Card Box, 4 inch",11,5,59 84 466 469 490
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, 24 inch Thin",11,3,43 59 306
+physicalOccurrences[].holdingsMeasurements[].type,"CD Jewel Case, Single Disc",10,3,43 208 306
+physicalOccurrences[].holdingsMeasurements[].type,"Index Card Box, 3 x 5 Grey-White",10,4,59 76 306 490
+physicalOccurrences[].holdingsMeasurements[].type,16mm x 2200' capacity (round),9,5,208 229 286 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Disk box - 12 inch disks,9,5,43 59 208 229 306
+physicalOccurrences[].holdingsMeasurements[].type,Extra Large Hamilton (XLH),9,3,59 76 286
+physicalOccurrences[].holdingsMeasurements[].type,"Folder, Custom D",9,2,59 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 16 x 20 Corrugated Drop Front",9,5,43 59 84 229 306
+physicalOccurrences[].holdingsMeasurements[].type,"Album, Unboxed, Custom",8,2,208 490
+physicalOccurrences[].holdingsMeasurements[].type,"Folder, Custom",8,4,59 76 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"Index Card Box, 8 x 5",8,3,59 84 229
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Narrow 4 inch",8,3,59 84 486
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, 8 x 9 Hat",8,4,43 59 256 353
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 20 x 24 Corrugated Drop Front",8,5,43 76 208 229 306
+physicalOccurrences[].holdingsMeasurements[].type,Slide Cabinet,8,3,208 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"FRC Carton, Half Size",7,2,59 286
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box,7,4,59 76 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, Separate Lid",7,5,43 59 76 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Map Case, Single Drawer",7,4,59 208 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 11 x 14 Regular Drop Front",7,4,59 208 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photographic Slide Box, Double",7,2,59 306
+physicalOccurrences[].holdingsMeasurements[].type,Catalog Card Drawer,6,3,59 208 306
+physicalOccurrences[].holdingsMeasurements[].type,"Clam Shell Box, Old Style",6,1,208
+physicalOccurrences[].holdingsMeasurements[].type,Index Card Box,6,3,59 84 268
+physicalOccurrences[].holdingsMeasurements[].type,Old Deep Gray (G),6,1,76
+physicalOccurrences[].holdingsMeasurements[].type,Tube,6,4,43 59 76 286
+physicalOccurrences[].holdingsMeasurements[].type,'Norton' film storage box,5,1,306
+physicalOccurrences[].holdingsMeasurements[].type,Bundle,5,3,59 84 286
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, Polar 7",5,2,59 76
+physicalOccurrences[].holdingsMeasurements[].type,"Roller Drawer, Negatives, F",5,3,59 306 490
+physicalOccurrences[].holdingsMeasurements[].type,Suit Box (Large 'Pizza Box'),5,4,59 76 84 208
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, Large, 30 inch",5,3,76 286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, Metal Edge Stays",4,2,286 306
+physicalOccurrences[].holdingsMeasurements[].type,Legal Archives Box E,4,2,84 306
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Oversize (DAVA)",4,4,59 306 353 469
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, 5 inch",4,3,208 306 490
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, Oversize 1",4,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph Box, 5 x 7 x 12",4,3,43 76 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 11 x 14 Corrugated Drop Front",4,3,59 76 208
+physicalOccurrences[].holdingsMeasurements[].type,"Volume, A",4,3,43 59 76
+physicalOccurrences[].holdingsMeasurements[].type,"5-drawer Gray, Oversized",3,2,59 76
+physicalOccurrences[].holdingsMeasurements[].type,Computer Card Box,3,2,84 466
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box A1,3,2,59 76
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Y,3,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Z,3,3,59 182 286
+physicalOccurrences[].holdingsMeasurements[].type,"Drop Front Box C, Metal Edge Stays",3,1,239
+physicalOccurrences[].holdingsMeasurements[].type,Microfiche Box D,3,2,286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, Polar 10",3,3,43 84 466
+physicalOccurrences[].holdingsMeasurements[].type,"Negative Box, 8 x 10, Full Lid",3,3,43 76 208
+physicalOccurrences[].holdingsMeasurements[].type,Other Container,3,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 20 x 24 Regular Drop Front",3,2,59 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 6 x 9 Lig-Free II",3,2,76 286
+physicalOccurrences[].holdingsMeasurements[].type,"Post Binder, 4",3,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Poster Folder, Custom",3,3,43 59 208
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch HDCAM SR (large cassette),2,2,286 306
+physicalOccurrences[].holdingsMeasurements[].type,2 inch quadruplex,2,2,286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Book Style Box, Hinged B",2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box 138,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box F,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box K,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box L,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box N,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box S,2,2,208 306
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio P1,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio P3,2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Drop Front Box I,2,2,59 306
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 4,2,2,84 306
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 56,2,2,286 306
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 6,2,1,169
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, Hinged",2,2,286 306
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, Metal Edge Stays, Separate Lid",2,2,59 286
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, No Hinge, B",2,1,84
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Wide",2,2,76 84
+physicalOccurrences[].holdingsMeasurements[].type,"Letter Archives Box, Wide",2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Microfiche/Lantern Slide Box, Short Lid Old",2,1,208
+physicalOccurrences[].holdingsMeasurements[].type,Packing Box 3,2,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph Box, 12 x 5.75, Grey",2,1,182
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 14 x 16 Corrugated Drop Front",2,1,84
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 5 x 7 Negative Half-Size",2,2,268 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 6 x 9 Lig-Free II Long Top",2,2,76 306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, Flat Storage, Small",2,1,84
+physicalOccurrences[].holdingsMeasurements[].type,"Ring Binder, 2.5 inch",2,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Roller Drawer, Negatives, G",2,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Shoebox, 7 inch audioreel (AII style)",2,2,306 469
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, 22 inch Medium",2,2,76 306
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, Large, 36 inch, Thin",2,2,59 169
+physicalOccurrences[].holdingsMeasurements[].type,"Treaty Box, 1 1/2 inch",2,2,59 306
+physicalOccurrences[].holdingsMeasurements[].type,"Treaty Box, 3 inch",2,2,59 306
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch HDCAM (large cassette),1,1,286
+physicalOccurrences[].holdingsMeasurements[].type,1/2 inch open reel,1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,10-drawer Off-white,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,3 inch single open reel tape,1,1,286
+physicalOccurrences[].holdingsMeasurements[].type,"5-drawer Off-white, Inherited",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,70mm medium can (round),1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,70mm x 1000’ capacity (round),1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,"Aerial Film Can, 500",1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,"Aerial Film Can, Standard",1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,"Audiocassette Box, 12 inch",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Clam Shell Box, Green, Grey, White",1,1,169
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box 76,1,1,208
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box A2,1,1,84
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 19,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 34,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 44,1,1,84
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 48,1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 51,1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 53,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 55,1,1,286
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Clam Shell 8,1,1,208
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box I,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box M,1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box Q,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box U,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Box V,1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio P2,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio P4,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio P7,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Custom Portfolio P8,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,D1/D2,1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,Drop Front Box L,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Drop Front Box S,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Drop Front Box V,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Drop Front Box, Metal Edge Stays",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Drop Front Map Box D,1,1,43
+physicalOccurrences[].holdingsMeasurements[].type,FRC Box,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 1,1,1,286
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 126,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 131,1,1,256
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 134,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,Flat Storage Box 7,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, No Hinge, E",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Flat Storage Box, No Hinge, G",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Folder, Custom E",1,1,43
+physicalOccurrences[].holdingsMeasurements[].type,"Index Card Box, 4 x 5 Speckled",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Ledger Sheet Box, Oversized",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, LBJ Red",1,1,490
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Old Green",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Legal Archives Box, Oversize 3",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Map Case, Double Drawer",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,Map drawer,1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Microfilm Box, 16 mm",1,1,84
+physicalOccurrences[].holdingsMeasurements[].type,Miscellaneous Box V,1,1,286
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, 1",1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, 3",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, Oversize 3",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Miscellaneous Box, Polar 9",1,1,84
+physicalOccurrences[].holdingsMeasurements[].type,"Newspaper Box, 25 inch Thin",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph Box, 4 x 5, Flip Top, Lig Free",1,1,208
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 8 x 10 Corrugated Drop Front",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, 8 x 10 Regular Drop Front",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Photograph, Flat Storage, Grey-White Lift Lid",1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,Pizza box (for 16 inch floppy disks),1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Poster Drawer, Large",1,1,208
+physicalOccurrences[].holdingsMeasurements[].type,"Ring Binder, 2 inch",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Ring Binder, 3 inch",1,1,306
+physicalOccurrences[].holdingsMeasurements[].type,"Roller Drawer, 6 inch",1,1,490
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box (Large, Thin 'Pizza Box')",1,1,84
+physicalOccurrences[].holdingsMeasurements[].type,"Suit Box, 20 inch Thick",1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,"Treaty Box, 2 inch",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Tube, 24 L, 4 W",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Tube, 36 L, 4 W",1,1,59
+physicalOccurrences[].holdingsMeasurements[].type,"Tube, 48 inch",1,1,76
+physicalOccurrences[].holdingsMeasurements[].type,"Tube, 60 L, 6 W",1,1,76
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Loose Sheets,5541,21,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Photographic Materials,400,14,43 59 76 84 169 208 229 239 286 306 353 469 486 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Bound Volumes,301,12,43 59 76 84 169 208 286 306 353 383 469 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Magnetic Media,268,12,43 59 76 84 208 229 286 306 383 469 486 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Motion Picture Film,199,9,43 59 76 84 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Microform,71,9,59 76 84 169 286 306 383 466 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Optical Disks,42,8,43 59 76 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Artworks and Graphic Materials,33,9,59 76 169 208 229 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Artifacts,25,7,43 59 76 84 286 306 466
+physicalOccurrences[].mediaOccurrences[].generalMediaTypes[],Grooved Media,14,5,43 59 208 229 306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Paper,17545,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Bound Volume,3120,17,43 59 63 76 84 169 182 208 229 256 268 286 306 353 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Photographic Print,1025,17,43 59 63 76 84 169 208 229 239 268 286 306 353 466 469 486 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Cards,417,18,43 59 63 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Film Reel,283,11,43 59 76 84 182 208 229 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Negative,205,14,43 59 76 84 169 182 208 229 239 268 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Video Cassette,155,10,43 59 76 84 208 229 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Microfilm,112,12,59 76 84 169 208 239 286 306 383 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Slide,83,8,59 76 84 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Artifact,69,12,43 59 76 84 182 239 268 286 306 466 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Tape/Reel,64,10,43 59 76 84 208 229 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Photomechanical Print,50,9,43 59 63 76 208 286 306 469 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Transparency,37,7,59 76 208 229 286 306 469
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk,34,4,59 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Cassette,33,8,43 59 76 208 286 306 383 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk: Digital Versatile Disk,29,8,43 59 76 208 229 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Audio Disk,24,6,43 59 208 229 306 469
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Video Open Reel,21,5,59 208 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Floppy Disk,20,6,59 84 286 306 486 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Artwork,19,7,43 59 76 208 286 306 469
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk: Compact Disk,18,4,59 208 286 306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Cartridge,15,4,59 286 306 383
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Microfiche,13,5,59 169 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Reel,7,2,59 306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Filmstrip,5,3,59 208 306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Disk: Hard Drive,5,4,59 286 306 490
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Magnetic Tape Cassette,3,2,59 286
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Parchment,2,2,59 306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Aperture Card,1,1,59
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Cylinder,1,1,182
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Manual Print,1,1,43
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Networked Storage,1,1,306
+physicalOccurrences[].mediaOccurrences[].specificMediaType,Optical Disk,1,1,286
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Textual Reference,19417,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Motion Pictures,454,12,43 59 76 84 182 208 229 286 306 383 469 490
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Still Pictures,443,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Cartographic,100,10,43 59 76 84 169 229 239 256 286 306
+physicalOccurrences[].referenceUnits[].name,John F. Kennedy Library,52,6,59 84 286 306 383 490
+physicalOccurrences[].referenceUnits[].name,National Archives at Fort Worth,38,1,76
+physicalOccurrences[].referenceUnits[].name,National Archives at College Park - Electronic Records,27,5,59 286 306 383 490
+physicalOccurrences[].referenceUnits[].name,National Archives at Seattle,8,1,43
+physicalOccurrences[].referenceUnits[].name,Lyndon Baines Johnson Library,6,4,43 59 306 383
+physicalOccurrences[].referenceUnits[].name,Harry S. Truman Library,5,2,59 466
+physicalOccurrences[].referenceUnits[].name,National Archives at Philadelphia,3,1,306
+physicalOccurrences[].referenceUnits[].name,Dwight D. Eisenhower Library,2,2,59 306
+physicalOccurrences[].referenceUnits[].name,Gerald R. Ford Library,2,1,59
+physicalOccurrences[].referenceUnits[].name,Franklin D. Roosevelt Library,1,1,59
+physicalOccurrences[].referenceUnits[].name,"National Archives at Washington, DC - Textual Reference",1,1,59
+recordType,description,20188,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+soundType,Sound,13,5,59 84 229 306 469
+soundType,Silent,1,1,469
+soundType,Silent and Sound,1,1,59
+subjects[].authorityType,specificRecordsType,9312,16,43 59 76 84 169 182 208 229 239 286 306 353 383 466 469 490
+subjects[].authorityType,geographicPlaceName,9176,17,43 59 76 84 169 182 208 229 239 256 268 286 306 353 466 469 490
+subjects[].authorityType,topicalSubject,7547,17,43 59 76 84 169 182 208 229 256 286 306 353 383 466 469 486 490
+subjects[].authorityType,organization,2365,13,43 59 76 84 169 208 286 306 353 383 466 469 490
+subjects[].authorityType,person,1260,12,43 59 76 84 208 239 256 286 306 466 469 490
+useRestriction.specificUseRestrictions[],Copyright,4670,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490
+useRestriction.specificUseRestrictions[],Public Law 101-246,58,1,306
+useRestriction.specificUseRestrictions[],Other,5,4,59 84 306 466
+useRestriction.specificUseRestrictions[],Donor Restrictions,2,1,306
+useRestriction.specificUseRestrictions[],Trademark,1,1,490
+useRestriction.status,Unrestricted,14764,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+useRestriction.status,Restricted - Possibly,5360,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+useRestriction.status,Restricted - Partly,43,8,43 59 84 208 286 306 469 490
+useRestriction.status,Undetermined,20,5,59 208 306 383 490
+useRestriction.status,Restricted - Fully,1,1,59
+variantControlNumbers[].type,HMS/MLR Entry Number,20713,22,43 59 63 76 84 169 182 208 229 239 256 268 278 286 306 353 383 420 466 469 486 490
+variantControlNumbers[].type,Declassification Project Number,15463,19,43 59 76 84 169 182 208 229 239 268 286 306 353 383 420 466 469 486 490
+variantControlNumbers[].type,Former HMS/MLR Entry Number,6737,17,43 59 76 84 169 182 208 239 256 286 306 353 383 420 466 469 490
+variantControlNumbers[].type,Agency-Assigned Identifier,6269,9,43 59 84 286 306 353 420 466 469
+variantControlNumbers[].type,HMS Record Entry ID,5807,19,43 59 63 76 84 169 182 208 229 239 286 306 353 383 420 466 469 486 490
+variantControlNumbers[].type,State Department Lot File Number,5189,10,43 59 76 84 169 286 306 353 383 469
+variantControlNumbers[].type,Former HMS Record Entry ID,754,11,43 59 76 84 169 208 286 306 420 469 490
+variantControlNumbers[].type,NAIL Control Number,373,15,43 59 63 76 84 169 182 208 229 239 268 286 306 469 490
+variantControlNumbers[].type,Agency Disposition Number,280,3,59 84 286
+variantControlNumbers[].type,Inventory Entry Number,184,5,59 76 256 286 420
+variantControlNumbers[].type,Former ARC Identifier,177,5,43 59 84 306 469
+variantControlNumbers[].type,Former National Archives Identifier,142,10,43 59 76 84 169 286 306 420 469 490
+variantControlNumbers[].type,Search Identifier,127,5,43 59 84 239 306
+variantControlNumbers[].type,Other Identifier,47,6,59 84 286 306 383 490
+variantControlNumbers[].type,Reparative Description Identifier,29,9,59 76 84 208 229 286 306 466 469
+variantControlNumbers[].type,Former Local Identifier,28,5,43 59 76 84 306
+variantControlNumbers[].type,FOIA Tracking Number,13,4,59 84 286 469
+variantControlNumbers[].type,HMS Asset ID,8,4,43 59 84 306
+variantControlNumbers[].type,Download Display Identifier,3,1,306
+variantControlNumbers[].type,PRESNET Number,3,1,59
+variantControlNumbers[].type,Kennedy Assassination Document ID,1,1,59
+variantControlNumbers[].type,Off-Site Storage Transaction Number,1,1,268
+variantControlNumbers[].type,Select List Identifier,1,1,59

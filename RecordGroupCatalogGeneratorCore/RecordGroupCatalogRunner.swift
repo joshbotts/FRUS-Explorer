@@ -52,6 +52,11 @@ public struct RecordGroupCatalogRunner {
     /// Default cache root (gitignored).
     public static let defaultCacheDir = ".cache/nara-rg-catalog"
 
+    /// Provenance label for the S3 bulk export.
+    public static let bulkSourceKind = "s3-bulk-export"
+    /// Provenance label for the live v2 search API.
+    public static let apiSourceKind = "nara-catalog-api-v2"
+
     /// Why the bulk export rather than the v2 search API. Recorded in the manifest so the choice
     /// travels with the data.
     static let sourceNote = """
@@ -274,15 +279,23 @@ public struct RecordGroupCatalogRunner {
         var reviewNotes: [String] = []
         var refusals: [String] = []
         var changeLog = RecordChangeLog()
+        // Which sources this run actually read. The manifest previously hard-coded "s3-bulk-export"
+        // regardless, so an API_ONLY harvest recorded its provenance as the bulk export with an empty
+        // snapshot date — misattributing where 20,188 records came from.
+        var sourcesUsed = Set<String>()
         var apiRequestsSpent = 0
         var firstAPIObservation: APIEnvelopeObservation?
 
         for group in plan.groups {
             let outcome: RecordGroupHarvestOutcome
-            // Which store this group's index is built from. API-only builds from the api store.
+            // Which store this group's index is built from. API-harvested groups build from the api
+            // store; bulk-harvested groups from the bulk store.
             var builderForGroup = builder
+            // A second store whose records supersede the base's, when both layers exist.
+            var overlayForGroup: RawRecordStore? = nil
 
             if mode.apiOnly, let apiClient {
+                sourcesUsed.insert(Self.apiSourceKind)
                 // No listing, no shards, no 22 GB. The API is the source of record for this group.
                 try apiStore.reset(recordGroup: group.number)
                 let fetch = try await Self.fetchGroupFromAPI(
@@ -305,37 +318,63 @@ public struct RecordGroupCatalogRunner {
                     recordsStored: fetch.recordCount, state: .complete)
                 builderForGroup = apiBuilder
             } else if mode.projectOnly {
-                guard rawStore.exists(recordGroup: group.number) else {
-                    reviewNotes.append("RG \(group.number): PROJECT_ONLY found no raw store at "
-                                       + "\(rawStore.url(recordGroup: group.number).path) — "
-                                       + "nothing to re-project; harvest it first")
+                // Look in BOTH stores. API_ONLY writes to raw-api/, so a PROJECT_ONLY that consulted
+                // only raw/ found nothing for an API-harvested group — and then rewrote the run-wide
+                // manifest and censuses from whatever few groups it COULD see, silently replacing a
+                // complete 22-group description with an 11-record one. The consolidation step the
+                // runbook recommends must never be able to do that.
+                let hasBulk = rawStore.exists(recordGroup: group.number)
+                let hasAPI = apiStore.exists(recordGroup: group.number)
+                guard hasBulk || hasAPI else {
+                    reviewNotes.append("RG \(group.number): PROJECT_ONLY found no raw store — neither "
+                                       + "raw/\(rawStore.url(recordGroup: group.number).lastPathComponent)"
+                                       + " nor raw-api/"
+                                       + "\(apiStore.url(recordGroup: group.number).lastPathComponent)"
+                                       + " exists; harvest it first")
                     continue
                 }
-                // Re-projection reads whatever the last harvest stored; its mechanics come from the
-                // checkpoint rather than from a fresh listing, so no network call is made.
-                //
-                // The state must come from the checkpoint, not be assumed: only the checkpoint knows
-                // how much of the export the store covers, and stamping `resumedComplete` on a
-                // half-finished store would put "complete" in the manifest for a group missing most
-                // of its shards.
-                let checkpoint = checkpoints.load(recordGroup: group.number)
-                let isComplete = checkpoint.map {
-                    $0.shardCount > 0 && $0.lastCompletedShardIndex >= $0.shardCount
-                } ?? false
-                outcome = RecordGroupHarvestOutcome(
-                    recordGroup: group.number,
-                    depth: checkpoint?.depth ?? group.depth,
-                    shardsListed: checkpoint?.shardCount ?? 0,
-                    recordsStored: checkpoint?.recordsWritten ?? 0,
-                    snapshotLastModified: checkpoint?.snapshotLastModified,
-                    state: isComplete ? .resumedComplete : .partial)
-                if !isComplete {
-                    reviewNotes.append("RG \(group.number): re-projected from an INCOMPLETE raw store "
-                                       + "(\(checkpoint?.lastCompletedShardIndex ?? 0) of "
-                                       + "\(checkpoint?.shardCount ?? 0) shards) — finish the harvest "
-                                       + "before trusting this group's counts")
+
+                if hasBulk {
+                    sourcesUsed.insert(Self.bulkSourceKind)
+                    // The state must come from the checkpoint, not be assumed: only the checkpoint
+                    // knows how much of the export the store covers, and stamping `resumedComplete` on
+                    // a half-finished store would put "complete" in the manifest for a group missing
+                    // most of its shards.
+                    let checkpoint = checkpoints.load(recordGroup: group.number)
+                    let isComplete = checkpoint.map {
+                        $0.shardCount > 0 && $0.lastCompletedShardIndex >= $0.shardCount
+                    } ?? false
+                    outcome = RecordGroupHarvestOutcome(
+                        recordGroup: group.number,
+                        depth: checkpoint?.depth ?? group.depth,
+                        shardsListed: checkpoint?.shardCount ?? 0,
+                        recordsStored: checkpoint?.recordsWritten ?? 0,
+                        snapshotLastModified: checkpoint?.snapshotLastModified,
+                        state: isComplete ? .resumedComplete : .partial)
+                    if !isComplete {
+                        reviewNotes.append("RG \(group.number): re-projected from an INCOMPLETE raw "
+                                           + "store (\(checkpoint?.lastCompletedShardIndex ?? 0) of "
+                                           + "\(checkpoint?.shardCount ?? 0) shards) — finish the "
+                                           + "harvest before trusting this group's counts")
+                    }
+                    // An API refresh already on disk still overlays, so re-classification stays free.
+                    if hasAPI {
+                        overlayForGroup = apiStore
+                        sourcesUsed.insert(Self.apiSourceKind)
+                        reviewNotes.append("RG \(group.number): re-classified against the API refresh "
+                                           + "already on disk (no API calls spent)")
+                    }
+                } else {
+                    // API-harvested group: the api store IS the base, with nothing to diff against.
+                    // Completeness is still checked, because the record-group node the API harvest
+                    // fetched sits in that same store — so a short store still fails the run.
+                    builderForGroup = apiBuilder
+                    sourcesUsed.insert(Self.apiSourceKind)
+                    outcome = RecordGroupHarvestOutcome(
+                        recordGroup: group.number, depth: group.depth, state: .complete)
                 }
             } else {
+                sourcesUsed.insert(Self.bulkSourceKind)
                 outcome = try await harvester.harvest(plan: group, refresh: mode.refresh,
                                                       byteBudget: remainingBudget)
                 if let budget = remainingBudget {
@@ -363,18 +402,8 @@ public struct RecordGroupCatalogRunner {
 
             // Refresh this group from the live API before building it, so the build sees both layers
             // and can classify the differences in one pass.
-            var overlayForGroup: RawRecordStore? = nil
-
-            // PROJECT_ONLY re-uses a refresh already on disk. This is the same principle the whole
-            // design rests on — re-projection must be free — applied to the diff: correcting how
-            // changes are CLASSIFIED must not cost another round of API calls, since the fetched
-            // records are already sitting in raw-api/.
-            if mode.projectOnly, apiStore.exists(recordGroup: group.number) {
-                overlayForGroup = apiStore
-                reviewNotes.append("RG \(group.number): re-classified against the API refresh already "
-                                   + "on disk (no API calls spent)")
-            }
             if mode.apiRefresh, !mode.apiOnly, let apiClient {
+                sourcesUsed.insert(Self.apiSourceKind)
                 do {
                     try apiStore.reset(recordGroup: group.number)
                     let writerHandle = try apiStore.openWriter(recordGroup: group.number)
@@ -553,7 +582,10 @@ public struct RecordGroupCatalogRunner {
         }
         let manifest = RecordGroupCatalogManifest(
             generated: generated,
-            source: .init(kind: "s3-bulk-export", baseURL: baseURL,
+            source: .init(kind: sourcesUsed.sorted().joined(separator: "+"),
+                          baseURL: sourcesUsed == [Self.apiSourceKind]
+                              ? CatalogAPIClient.defaultEndpoint
+                              : baseURL,
                           snapshotLastModified: snapshots.sorted(), note: sourceNote),
             totals: totals,
             recordGroups: summaries,

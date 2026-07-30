@@ -1,4 +1,411 @@
 type,note,noteClass,recordGroup,occurrences,recordsWithValue,exampleNumbers
+Agency Disposition Number,,,59,64,64,DAL-0059-2011-0062-0004 ⁝ DAL-0059-2011-0023-0003 ⁝ DAL-0059-2011-0023-0002 ⁝ DAL-0059-2011-0010-0004
+Agency Disposition Number,,,84,31,31,DAL-0084-2011-0013-0002 ⁝ DAL-0084-2011-0001-0001 ⁝ DAL-0084-2011-0014-0003 ⁝ DAL-0084-2011-0014-0001
+Agency Disposition Number,,,286,175,168,AID/01250 ⁝ AID/25010 ⁝ AID/08100 ⁝ AID/08070
+Agency Disposition Number,This agency-assigned identifier is a Department of State LOT number.,this agency assigned identifier is a department of state lot number,84,1,1,75F119
+Agency Disposition Number,This is a Department of State LOT file number.,this is a department of state lot file number,59,1,1,73D363
+Agency Disposition Number,This is a Department of State Lot file number.,this is a department of state lot file number,84,1,1,68F90
+Agency Disposition Number,This is a Department of State assigned Lot File Number.,this is a department of state assigned lot file number,59,3,1,75D435 ⁝ 76D428 ⁝ 775398
+Agency Disposition Number,This is a USAID Declassification Project Number.,this is a usaid declassification project number,286,1,1,94-166
+Agency Disposition Number,This is a USAID Declassification Project number.,this is a usaid declassification project number,286,2,2,73-181 ⁝ 89-35
+Agency Disposition Number,This number refers to item number 03200 in the USAID Washington Disposition Schedule.,this number refers to item number 03200 in the usaid washington disposition schedule,286,1,1,03200
+Agency-Assigned Identifier,,,59,652,267,69D520 ⁝ 62D424 ⁝ 62D430 ⁝ 75D27
+Agency-Assigned Identifier,,,84,24,14,69F159 ⁝ 69F066 ⁝ UD-UP 99 ⁝ 76F13
+Agency-Assigned Identifier,,,286,58,15,AID-1253 ⁝ 01-08 ⁝ 02-109 ⁝ 03-143
+Agency-Assigned Identifier,,,306,1,1,66D178
+Agency-Assigned Identifier,,,469,2,2,NND 978679 ⁝ NND 887702
+Agency-Assigned Identifier,Department of State Lot File Number,department of state lot file number,59,4,4,Lot 58D707 ⁝ Lot 90D309 ⁝ Lot 75D34 ⁝ Lot 88D259
+Agency-Assigned Identifier,Department of State Lot File number,department of state lot file number,59,2,1,Lot 73D212 ⁝ Lot 73D408
+Agency-Assigned Identifier,Department of State Lot Number,department of state lot number,84,1,1,76F159
+Agency-Assigned Identifier,Department of State Lot number,department of state lot number,59,1,1,62D23
+Agency-Assigned Identifier,State Department Lot File,state department lot file,59,3,1,84D250 ⁝ 84D251 ⁝ 84D252
+Agency-Assigned Identifier,State Department Lot File Number,state department lot file number,59,17,7,Lot 71D104 ⁝ Lot 71D105 ⁝ Lot 71D510 ⁝ Lot 74D460
+Agency-Assigned Identifier,State Department Lot file number.,state department lot file number,59,2,1,83D283 ⁝ 87D375
+Agency-Assigned Identifier,This  is a Department of State LOT File number.,this is a department of state lot file number,84,1,1,68F74
+Agency-Assigned Identifier,This Agency-Assigned Identifier is a Department of State LOT number.,this agency assigned identifier is a department of state lot number,84,11,2,69F8 ⁝ 70F11 ⁝ 70F130 ⁝ 71F26
+Agency-Assigned Identifier,This a Department of State lot file number.,this a department of state lot file number,59,1,1,58D728
+Agency-Assigned Identifier,This agency assigned identifier is a Department of State LOT number.,this agency assigned identifier is a department of state lot number,84,1,1,75F76
+Agency-Assigned Identifier,This agency-assigned identifier is a Department of State LOT file number.,this agency assigned identifier is a department of state lot file number,84,1,1,76F97
+Agency-Assigned Identifier,This agency-assigned identifier is a Department of State LOT number.,this agency assigned identifier is a department of state lot number,84,19,7,74F176 ⁝ 71F73 ⁝ 72F149 ⁝ 73F132
+Agency-Assigned Identifier,This identifier is the State Department lot file number.,this identifier is the state department lot file number,59,1,1,76D373
+Agency-Assigned Identifier,This is Department of State File Lot Number.,this is department of state file lot number,84,1,1,71F178
+Agency-Assigned Identifier,This is Department of State Lot File Number.,this is department of state lot file number,59,1,1,66D193
+Agency-Assigned Identifier,This is Department of State Lot File number.,this is department of state lot file number,43,1,1,62D193
+Agency-Assigned Identifier,This is Department of State Lot File number.,this is department of state lot file number,59,1,1,73D64
+Agency-Assigned Identifier,This is Department of State Lot file number.,this is department of state lot file number,84,1,1,77F053
+Agency-Assigned Identifier,This is USAID lot file number.,this is usaid lot file number,286,1,1,97-152
+Agency-Assigned Identifier,This is a Department of Sate LOT file number.,this is a department of sate lot file number,59,1,1,62D430
+Agency-Assigned Identifier,This is a Department of Sate Lot File number.,this is a department of sate lot file number,59,1,1,59D546
+Agency-Assigned Identifier,This is a Department of State File Lot Number.,this is a department of state file lot number,84,1,1,74F181
+Agency-Assigned Identifier,This is a Department of State File Lot number.,this is a department of state file lot number,84,1,1,78F3
+Agency-Assigned Identifier,This is a Department of State LOT File Number.,this is a department of state lot file number,59,1,1,59D448
+Agency-Assigned Identifier,This is a Department of State LOT File number.,this is a department of state lot file number,59,7,7,111 ⁝ 63D381 ⁝ 69D476 ⁝ 72D363
+Agency-Assigned Identifier,This is a Department of State LOT File number.,this is a department of state lot file number,84,1,1,74D255
+Agency-Assigned Identifier,This is a Department of State LOT file number,this is a department of state lot file number,84,5,3,69F1 ⁝ 70F117 ⁝ 65F76 ⁝ 67F67
+Agency-Assigned Identifier,This is a Department of State LOT file number.,this is a department of state lot file number,43,32,22,73F64 ⁝ 71D100 ⁝ 71D265 ⁝ 66D488
+Agency-Assigned Identifier,This is a Department of State LOT file number.,this is a department of state lot file number,59,159,119,66D148 ⁝ 66D95 ⁝ 63D351 ⁝ 62D430
+Agency-Assigned Identifier,This is a Department of State LOT file number.,this is a department of state lot file number,84,549,253,68F137 ⁝ 67F96 ⁝ 68F152 ⁝ 67F82
+Agency-Assigned Identifier,This is a Department of State LOT file number.,this is a department of state lot file number,306,6,6,69D361 ⁝ 68D286 ⁝ 70D450
+Agency-Assigned Identifier,This is a Department of State LOT file.,this is a department of state lot file,84,1,1,59F179
+Agency-Assigned Identifier,This is a Department of State LOT number.,this is a department of state lot number,84,5,1,70F48 ⁝ 71F140 ⁝ 72F4 ⁝ 73F67
+Agency-Assigned Identifier,This is a Department of State Lot File Number.,this is a department of state lot file number,43,1,1,66D101
+Agency-Assigned Identifier,This is a Department of State Lot File Number.,this is a department of state lot file number,59,21,8,71D204 ⁝ 71D234 ⁝ 71D375 ⁝ 71D383
+Agency-Assigned Identifier,This is a Department of State Lot File Number.,this is a department of state lot file number,84,3,2,76F159 ⁝ 69F38 ⁝ 75F210
+Agency-Assigned Identifier,This is a Department of State Lot File Number.,this is a department of state lot file number,306,2,2,69D503 ⁝ 64D287
+Agency-Assigned Identifier,This is a Department of State Lot File number,this is a department of state lot file number,43,1,1,56D693
+Agency-Assigned Identifier,This is a Department of State Lot File number.,this is a department of state lot file number,43,14,10,62D364 ⁝ 60D318 ⁝ 60D317 ⁝ 60D279
+Agency-Assigned Identifier,This is a Department of State Lot File number.,this is a department of state lot file number,59,62,27,71D205 ⁝ 73D179 ⁝ 75D126 ⁝ 77D201
+Agency-Assigned Identifier,This is a Department of State Lot File number.,this is a department of state lot file number,84,7,2,68F165 ⁝ 69F026 ⁝ 70F082 ⁝ 71F147
+Agency-Assigned Identifier,This is a Department of State Lot File number.,this is a department of state lot file number,306,1,1,71D122
+Agency-Assigned Identifier,This is a Department of State Lot File number.,this is a department of state lot file number,353,1,1,74D240
+Agency-Assigned Identifier,This is a Department of State Lot Number.,this is a department of state lot number,306,4,3,67D591 ⁝ 67D612 ⁝ 64D27 ⁝ 66D144
+Agency-Assigned Identifier,This is a Department of State Lot file number.,this is a department of state lot file number,43,1,1,66D120
+Agency-Assigned Identifier,This is a Department of State Lot file number.,this is a department of state lot file number,59,267,99,75D312 ⁝ 71D287 ⁝ 71D230 ⁝ 77D051
+Agency-Assigned Identifier,This is a Department of State Lot file number.,this is a department of state lot file number,84,84,21,70F053 ⁝ 72F051 ⁝ 73F097 ⁝ 73F101
+Agency-Assigned Identifier,This is a Department of State Lot file number.,this is a department of state lot file number,306,17,12,62D218 ⁝ 69D221 ⁝ 70D179 ⁝ 70D302
+Agency-Assigned Identifier,This is a Department of State Lot file number..,this is a department of state lot file number,59,1,1,56D625
+Agency-Assigned Identifier,This is a Department of State Lot file.,this is a department of state lot file,59,7,4,57D149 ⁝ 56D225 ⁝ 56D256 ⁝ 60D330
+Agency-Assigned Identifier,This is a Department of State Lot number.,this is a department of state lot number,59,1,1,69D525
+Agency-Assigned Identifier,This is a Department of State Lot number.,this is a department of state lot number,84,109,35,77F148 ⁝ 75F184 ⁝ 69F58 ⁝ 71F65
+Agency-Assigned Identifier,This is a Department of State Lot number.,this is a department of state lot number,306,3,2,67D429 ⁝ 62D90 ⁝ 70D269
+Agency-Assigned Identifier,This is a Department of State assigned Lot File Number.,this is a department of state assigned lot file number,59,125,32,72D457 ⁝ 73D404 ⁝ 75D437 ⁝ 76D464
+Agency-Assigned Identifier,This is a Department of State assigned Lot File Number.,this is a department of state assigned lot file number,84,33,8,68F172 ⁝ Lot 76F104 ⁝ Lot 77F105 ⁝ Lot 78F134
+Agency-Assigned Identifier,This is a Department of State assigned Lot File number.,this is a department of state assigned lot file number,59,1,1,69D060
+Agency-Assigned Identifier,This is a Department of State assigned Lot number.,this is a department of state assigned lot number,84,13,3,68F141 ⁝ 69F220 ⁝ 70f39 ⁝ 73F1
+Agency-Assigned Identifier,This is a Department of State assigned lot file number.,this is a department of state assigned lot file number,59,8,4,72D466 ⁝ 75D257 ⁝ 76D92 ⁝ 78D3
+Agency-Assigned Identifier,This is a Department of State assigned lot file number.,this is a department of state assigned lot file number,84,6,2,69F161 ⁝ 71F101 ⁝ 72F111 ⁝ 74F30
+Agency-Assigned Identifier,This is a Department of State lot file number,this is a department of state lot file number,43,1,1,66D449
+Agency-Assigned Identifier,This is a Department of State lot file number,this is a department of state lot file number,84,1,1,76F044
+Agency-Assigned Identifier,This is a Department of State lot file number,this is a department of state lot file number,306,1,1,66D423
+Agency-Assigned Identifier,This is a Department of State lot file number.,this is a department of state lot file number,43,11,8,53D452 ⁝ 75D375 ⁝ 56D693 ⁝ 56D654
+Agency-Assigned Identifier,This is a Department of State lot file number.,this is a department of state lot file number,59,356,174,75D474 ⁝ 54D137 ⁝ 84D254 ⁝ 54D140
+Agency-Assigned Identifier,This is a Department of State lot file number.,this is a department of state lot file number,84,428,111,67F29 ⁝ 68F11 ⁝ 69F18 ⁝ 70F60
+Agency-Assigned Identifier,This is a Department of State lot file number.,this is a department of state lot file number,306,175,108,64D399 ⁝ 62D202 ⁝ 68D53 ⁝ 56D610
+Agency-Assigned Identifier,This is a Department of State lot number.,this is a department of state lot number,59,2,2,64D266 ⁝ 88D410
+Agency-Assigned Identifier,This is a Department of State lot number.,this is a department of state lot number,84,9,1,65F59 ⁝ 65F62 ⁝ 70F002 ⁝ 72F127
+Agency-Assigned Identifier,This is a Department of State lot number.,this is a department of state lot number,306,2,2,65D50 ⁝ 65D85
+Agency-Assigned Identifier,This is a LOT number assigned by the Department of State.,this is a lot number assigned by the department of state,84,19,9,68F146 ⁝ 69F14 ⁝ 70F18 ⁝ 71F54
+Agency-Assigned Identifier,This is a State Department LOT File Number,this is a state department lot file number,84,1,1,68F97
+Agency-Assigned Identifier,This is a State Department LOT File Number.,this is a state department lot file number,84,1,1,69F52
+Agency-Assigned Identifier,This is a State Department LOT File number.,this is a state department lot file number,84,3,2,69F56 ⁝ 68F91 ⁝ 69F72
+Agency-Assigned Identifier,This is a State Department LOT file number.,this is a state department lot file number,84,41,12,70F67 ⁝ 72F37 ⁝ 73F41 ⁝ 74F20
+Agency-Assigned Identifier,This is a State Department LOT number.,this is a state department lot number,84,1,1,70F100
+Agency-Assigned Identifier,This is a State Department Lot File Number.,this is a state department lot file number,306,1,1,69D503
+Agency-Assigned Identifier,This is a State Department Lot File number.,this is a state department lot file number,43,3,3,75F155 ⁝ 75F35
+Agency-Assigned Identifier,This is a State Department Lot file number,this is a state department lot file number,59,12,1,63D102 ⁝ 66D94 ⁝ 67D46 ⁝ 68D465
+Agency-Assigned Identifier,This is a State Department Lot file number.,this is a state department lot file number,59,6,2,61D110 ⁝ 62D411 ⁝ 62D419 ⁝ 63D101
+Agency-Assigned Identifier,This is a State Department Lot file number.,this is a state department lot file number,84,6,4,78F005 ⁝ 78F208 ⁝ 79F127 ⁝ 59F178
+Agency-Assigned Identifier,This is a State Department Lot file.,this is a state department lot file,84,17,12,57F80 ⁝ 62F44 ⁝ 63F93 ⁝ 65F27
+Agency-Assigned Identifier,This is a State Department Lot number.,this is a state department lot number,59,2,1,62D353 ⁝ 64D316
+Agency-Assigned Identifier,This is a State Department lot file number.,this is a state department lot file number,59,165,16,77D30 ⁝ 67D595 ⁝ 69D4 ⁝ 70D198
+Agency-Assigned Identifier,This is a State Department lot file number.,this is a state department lot file number,84,19,6,68F184 ⁝ 69F213 ⁝ 71F070 ⁝ 72F093
+Agency-Assigned Identifier,This is a State Department lot file.,this is a state department lot file,84,2,2,61F17 ⁝ 61F119
+Agency-Assigned Identifier,This is a State Department lot number.,this is a state department lot number,306,14,13,61D233 ⁝ 61D378 ⁝ 65D514 ⁝ 60D499
+Agency-Assigned Identifier,This is a USAID LOT File Number.,this is a usaid lot file number,286,1,1,81-57
+Agency-Assigned Identifier,This is a USAID LOT File number.,this is a usaid lot file number,286,34,29,82-58 ⁝ AID 937 ⁝ 06-134 ⁝ 82-127
+Agency-Assigned Identifier,This is a USAID LOT assigned number.,this is a usaid lot assigned number,286,1,1,97-211
+Agency-Assigned Identifier,This is a USAID LOT file number.,this is a usaid lot file number,286,76,72,03-68 ⁝ 03-67 ⁝ 1007-D ⁝ 09-033
+Agency-Assigned Identifier,This is a USAID LOT file number.,this is a usaid lot file number,420,1,1,83-76
+Agency-Assigned Identifier,This is a USAID LOT number.,this is a usaid lot number,286,30,28,05-073 ⁝ 97-137 ⁝ 03-76 ⁝ 06-151
+Agency-Assigned Identifier,This is a USAID Lot File Number.,this is a usaid lot file number,286,1,1,78-99
+Agency-Assigned Identifier,This is a USAID Lot File number.,this is a usaid lot file number,286,8,8,04-069 ⁝ 86-156 ⁝ 96-87 ⁝ 97-304
+Agency-Assigned Identifier,This is a USAID Lot Number.,this is a usaid lot number,286,7,7,90-44 ⁝ 2356 ⁝ 86-13 ⁝ 81-38
+Agency-Assigned Identifier,This is a USAID Lot file number.,this is a usaid lot file number,286,9,6,03-78 ⁝ 09-021 ⁝ 08-008 ⁝ 09-018
+Agency-Assigned Identifier,This is a USAID Lot filing number.,this is a usaid lot filing number,286,2,1,98-179 ⁝ 98-189
+Agency-Assigned Identifier,This is a USAID Lot number.,this is a usaid lot number,286,2,2,80-25 ⁝ 97-154
+Agency-Assigned Identifier,This is a USAID lot file number.,this is a usaid lot file number,286,33,29,89-70 ⁝ 97-87 ⁝ 07-007 ⁝ 96-86
+Agency-Assigned Identifier,This is a USAID lot number.,this is a usaid lot number,286,4,3,97-093 ⁝ 02-84 ⁝ 02-85 ⁝ 02-18
+Agency-Assigned Identifier,This is an AID lot file number.,this is an aid lot file number,286,1,1,82-03
+Agency-Assigned Identifier,This is an USAID lot number.,this is an usaid lot number,286,1,1,2975
+Agency-Assigned Identifier,This is the Agency for International Development lot file number.,this is the agency for international development lot file number,286,104,93,94-36 ⁝ 2039 ⁝ 86-108 ⁝ 95-095
+Agency-Assigned Identifier,This is the Department of  State Lot File Number.,this is the department of state lot file number,43,1,1,57D479
+Agency-Assigned Identifier,This is the Department of  State Lot File Number.,this is the department of state lot file number,59,1,1,66D69
+Agency-Assigned Identifier,This is the Department of State File Lot Number.,this is the department of state file lot number,84,47,20,71F64 ⁝ 73F99 ⁝ 69F166 ⁝ 69F185
+Agency-Assigned Identifier,This is the Department of State File Lot number.,this is the department of state file lot number,84,47,22,78F112 ⁝ 71F119 ⁝ 69F55 ⁝ 71F118
+Agency-Assigned Identifier,This is the Department of State LOT File number.,this is the department of state lot file number,84,1,1,75F106
+Agency-Assigned Identifier,This is the Department of State Lot File Number,this is the department of state lot file number,59,10,5,56D107 ⁝ 71D55 ⁝ 72D184 ⁝ 72D509
+Agency-Assigned Identifier,This is the Department of State Lot File Number.,this is the department of state lot file number,43,366,234,62D102 ⁝ 69D411 ⁝ 67D325 ⁝ 55D624
+Agency-Assigned Identifier,This is the Department of State Lot File Number.,this is the department of state lot file number,59,1309,595,73D23 ⁝ 74D429 ⁝ 74D75 ⁝ 75D374
+Agency-Assigned Identifier,This is the Department of State Lot File Number.,this is the department of state lot file number,84,15,4,78F88 ⁝ 70F64 ⁝ 71F83 ⁝ 72F167
+Agency-Assigned Identifier,This is the Department of State Lot File Number.,this is the department of state lot file number,306,6,4,55D640 ⁝ 70D162 ⁝ 65D147 ⁝ 67D56
+Agency-Assigned Identifier,This is the Department of State Lot File Number.,this is the department of state lot file number,353,4,4,54D71 ⁝ 61D282A ⁝ 65D68 ⁝ 53D443
+Agency-Assigned Identifier,This is the Department of State Lot File Number.,this is the department of state lot file number,469,2,2,1590 ⁝ 68A944
+Agency-Assigned Identifier,This is the Department of State Lot File number.,this is the department of state lot file number,43,43,1,60D273 ⁝ 62D356 ⁝ 63D173 ⁝ 63D205
+Agency-Assigned Identifier,This is the Department of State Lot File number.,this is the department of state lot file number,59,78,49,58D269 ⁝ 54D219 ⁝ 55D163 ⁝ 54D197
+Agency-Assigned Identifier,This is the Department of State Lot File number.,this is the department of state lot file number,84,162,48,65F143 ⁝ 71F205 ⁝ 72F122 ⁝ 75F77
+Agency-Assigned Identifier,This is the Department of State Lot File number.,this is the department of state lot file number,306,147,47,63D28 ⁝ 59D298 ⁝ 58D269 ⁝ 63D27
+Agency-Assigned Identifier,This is the Department of State Lot File number.,this is the department of state lot file number,353,1,1,78D171
+Agency-Assigned Identifier,This is the Department of State Lot file number.,this is the department of state lot file number,59,1,1,60D11
+Agency-Assigned Identifier,This is the Department of State Lot file number.,this is the department of state lot file number,84,1,1,75F116
+Agency-Assigned Identifier,This is the Department of State Lot file number.,this is the department of state lot file number,306,1,1,71D296
+Agency-Assigned Identifier,This is the Department of State file lot number.,this is the department of state file lot number,84,1,1,78F6
+Agency-Assigned Identifier,This is the Department of State lot file number.,this is the department of state lot file number,59,9,8,70D374 ⁝ 69D193 ⁝ 53-322 ⁝ 52-184
+Agency-Assigned Identifier,This is the Department of State lot file number.,this is the department of state lot file number,84,4,3,79F066 ⁝ 73F096 ⁝ 74F122 ⁝ 68F031
+Agency-Assigned Identifier,This is the Department of State lot number.,this is the department of state lot number,59,3,3,55D115 ⁝ 56D617 ⁝ 56D509
+Agency-Assigned Identifier,This is the Department of State lot number.,this is the department of state lot number,84,11,1,69F22 ⁝ 70F152 ⁝ 71F169 ⁝ 73F2
+Agency-Assigned Identifier,This is the State Department Lot File Number for these records.,this is the state department lot file number for these records,59,1,1,73D381
+Agency-Assigned Identifier,This is the State Department Lot File number of which these records are a part.,this is the state department lot file number of which these records are a part,466,1,1,61F61
+Agency-Assigned Identifier,This is the State Department lot file number.,this is the state department lot file number,59,4,4,58D8 ⁝ 58D7 ⁝ 77D64 ⁝ 00D521
+Agency-Assigned Identifier,This is the State Department's lot file number.,this is the state department s lot file number,59,1,1,64D551
+Agency-Assigned Identifier,This is the former Department of State Lot File Number.,this is the former department of state lot file number,59,2,2,54D40 ⁝ 55D219
+Agency-Assigned Identifier,"This lot file is a consolidation of material found in lots 53D500, 58D159, 58D776, 60D644, 61D67, and 62D42 after screening.",this lot file is a consolidation of material found in lots 53d500 58d159 58d776 60d644 61d67 and 62d42 after screening,59,1,1,58D776
+Agency-Assigned Identifier,This number is a USAID lot number.,this number is a usaid lot number,286,1,1,2975
+Agency-Assigned Identifier,This the Department of State Lot File Number.,this the department of state lot file number,43,2,2,64D303 ⁝ 65D343
+Declassification Project Number,,,43,390,307,NND 58697 ⁝ NND 68327 ⁝ NND 978072 ⁝ NND 41202
+Declassification Project Number,,,59,4753,2692,NND 104958 ⁝ NND 104957 ⁝ NND 104959 ⁝ NND 104955
+Declassification Project Number,,,76,7,7,NND 978072 ⁝ 978072 ⁝ NND 795139
+Declassification Project Number,,,84,3981,2390,NND 104845 ⁝ NND 105084 ⁝ NND 105074 ⁝ NND 104964
+Declassification Project Number,,,169,85,77,NND 86379 ⁝ NW 53203 ⁝ NND 917556 ⁝ NND 30438
+Declassification Project Number,,,182,2,2,NND 937502 ⁝ NND 873540
+Declassification Project Number,,,208,123,122,NND 765006 ⁝ NND 785067 ⁝ NND 785063 ⁝ NND 785062
+Declassification Project Number,,,229,71,71,NND 795087 ⁝ NND 2068492
+Declassification Project Number,,,239,90,90,NND 750168
+Declassification Project Number,,,268,1,1,NND 77881
+Declassification Project Number,,,286,1149,856,NND 65372 ⁝ NW 38963 ⁝ NND 65762 ⁝ NND 988007
+Declassification Project Number,,,306,1475,529,NND 50614 ⁝ NND 50615 ⁝ NND 50767 ⁝ RC 3168
+Declassification Project Number,,,353,590,577,NND 760089 ⁝ NND 978072 ⁝ NND 812022 ⁝ NND 947320
+Declassification Project Number,,,383,156,100,NND 102630 ⁝ NND 79233 ⁝ NND 79227 ⁝ NND 79187
+Declassification Project Number,,,420,27,12,NND 978238 ⁝ NND 31057 ⁝ NND 31058 ⁝ NND 31059
+Declassification Project Number,,,466,14,7,NND 968095 ⁝ NND 917679 ⁝ NND 877510 ⁝ NND 877540
+Declassification Project Number,,,469,2500,2205,NND 978552 ⁝ NND 73840 ⁝ NND 73894 ⁝ NND 73838
 Declassification Project Number,,,486,2,1,NND 78730 ⁝ NND 78953
+Declassification Project Number,,,490,12,10,NND 74527 ⁝ NND 74532 ⁝ NND 74529 ⁝ NND 74531
+Declassification Project Number,Applies only to 1964 records.,applies only to 1964 records,84,1,1,NND 989024
+Declassification Project Number,Applies only to 1967 records.,applies only to 1967 records,84,1,1,NND 948832
+Declassification Project Number,IRC Project Number,irc project number,306,1,1,RC 929
+Declassification Project Number,The records in this series were reviewed and declassified as a special project under Variant Control Number NW 43021.,the records in this series were reviewed and declassified as a special project under variant control number nw 43021,84,1,1,NND 67356
+Declassification Project Number,This declassification project number applies to the 1964 portion only.,this declassification project number applies to the 1964 portion only,84,1,1,NND 948832
+Declassification Project Number,This declassification project number was assigned by the Special Access Staff.,this declassification project number was assigned by the special access staff,306,1,1,NW 24641
+Declassification Project Number,This is a Department of State LOT file number.,this is a department of state lot file number,84,5,2,70F169 ⁝ 71F170 ⁝ 73F120 ⁝ 76F183
+Declassification Project Number,This is a Department of State Lot file number.,this is a department of state lot file number,59,2,2,71D218 ⁝ 65D295
+Declassification Project Number,This is a Department of State assigned Lot File Number.,this is a department of state assigned lot file number,59,2,2,74D478 ⁝ 75D438
+Declassification Project Number,This is a Department of State lot file number.,this is a department of state lot file number,59,3,3,73D6 ⁝ 68D29 ⁝ NND 927339
+Declassification Project Number,This is a USAID Declassification Project Number.,this is a usaid declassification project number,286,1,1,NWDDC 988019
+Declassification Project Number,This is a bulk declassification survey number.,this is a bulk declassification survey number,84,5,1,NND 989606 ⁝ NND 989609 ⁝ NND 989610 ⁝ NND 989617
+Declassification Project Number,This is a number assigned by the Interagency Referral Center.,this is a number assigned by the interagency referral center,84,2,1,RC 3423 ⁝ RC 580
+Declassification Project Number,This is an interagency referral center number.,this is an interagency referral center number,59,2,1,RC 1347 ⁝ RC 415
+Declassification Project Number,This is the Department of State File Lot Number.,this is the department of state file lot number,84,1,1,76F149
+Declassification Project Number,This is the Department of State File Lot number.,this is the department of state file lot number,84,1,1,66F56
+Declassification Project Number,This is the Department of State Lot File Number.,this is the department of state lot file number,43,4,4,163 ⁝ 53D141 ⁝ 65D69 ⁝ 56D383
+Declassification Project Number,This is the primary project number for requesting withdrawn documents.,this is the primary project number for requesting withdrawn documents,84,1,1,NW 43021
+Download Display Identifier,,,306,3,3,NND 74743 ⁝ NND 51072 ⁝ NND 48564
+FOIA Tracking Number,,,59,2,2,NW 26064 ⁝ NND 931127
+FOIA Tracking Number,,,84,8,6,NW 25951 ⁝ NW 25952 ⁝ NW 26403 ⁝ NW26375
+FOIA Tracking Number,,,286,1,1,40297
+FOIA Tracking Number,,,469,2,2,NND 907814 ⁝ NND 795159
+Former ARC Identifier,,,43,4,4,UD-WX 38 ⁝ 2791277 ⁝ 2579400
+Former ARC Identifier,,,59,31,21,2658064 ⁝ 2068469 ⁝ 2143332 ⁝ 2641971
+Former ARC Identifier,,,84,2,2,UD-UP 62A ⁝ 302039
+Former ARC Identifier,,,306,121,56,7542992 ⁝ 1257716 ⁝ 1102850 ⁝ 615721
+Former ARC Identifier,,,469,19,17,1695847 ⁝ 2803236 ⁝ 1938521 ⁝ 1938534
+Former HMS Record Entry ID,,,43,14,3,345554 ⁝ 772215 ⁝ 345602 ⁝ 345618
+Former HMS Record Entry ID,,,59,95,46,HS1-296954179 ⁝ HS1-269408444 ⁝ 66422 ⁝ HS1-873328272
+Former HMS Record Entry ID,,,76,2,2,48311 ⁝ 47624
+Former HMS Record Entry ID,,,84,214,126,HS2-000005231 ⁝ HS2-000007901 ⁝ HS1-888253500 ⁝ 128977
+Former HMS Record Entry ID,,,169,1,1,82783
+Former HMS Record Entry ID,,,208,1,1,35618
+Former HMS Record Entry ID,,,286,8,6,319905 ⁝ 520394 ⁝ 321235 ⁝ HS1-100632323
+Former HMS Record Entry ID,,,306,396,104,311017 ⁝ 310725 ⁝ 310956 ⁝ 311139
+Former HMS Record Entry ID,,,420,16,5,293886 ⁝ 328580 ⁝ 408483 ⁝ 293914
+Former HMS Record Entry ID,,,469,2,2,796826 ⁝ 132320
+Former HMS Record Entry ID,,,490,5,2,HS1-496057957 ⁝ HS1-496074292 ⁝ HS1-496074312 ⁝ HS1-496074337
+Former HMS/MLR Entry Number,,,43,488,399,UD-14W 107 ⁝ UD 64 ⁝ UD-14W 22 ⁝ UD-14W 108
+Former HMS/MLR Entry Number,,,59,1132,717,UD-25D 21 ⁝ UD-24W 3 ⁝ UD-24D 83 ⁝ A1 801
+Former HMS/MLR Entry Number,,,76,100,99,UD-15D 47 ⁝ UD 11D 1 ⁝ UD-11D 1 ⁝ UD 68
+Former HMS/MLR Entry Number,,,84,1829,904,UD-25W 10 ⁝ UD-24D 209 ⁝ UD-24D 96 ⁝ UD-UP 75
+Former HMS/MLR Entry Number,,,169,56,53,UD-11D 1 ⁝ UD 500-A ⁝ UD-WW 38 ⁝ UD-WW 37
+Former HMS/MLR Entry Number,,,182,9,9,UD 203-A ⁝ UD 126-C ⁝ PI-100 254-A ⁝ PI-100 231-A
+Former HMS/MLR Entry Number,,,208,3,3,P 1 ⁝ UD 577 ⁝ UD 576B
+Former HMS/MLR Entry Number,,,239,8,5,UD 5 ⁝ ZZ 1 ⁝ UD 2 ⁝ UD 4
+Former HMS/MLR Entry Number,,,256,1,1,A1 206
+Former HMS/MLR Entry Number,,,286,1622,1037,UD-WW 778 ⁝ UD-WW 1314 ⁝ P 409 ⁝ UD-11W 11
+Former HMS/MLR Entry Number,,,306,1276,514,UD-WW 204 ⁝ UD-WW 190 ⁝ UD-WW 279 ⁝ UD-2010 73
+Former HMS/MLR Entry Number,,,353,5,4,UD-08D 1 ⁝ UD-WX 14 ⁝ P 243 ⁝ UD-2010 15
+Former HMS/MLR Entry Number,,,420,19,7,A1 6 ⁝ UD-17W 1 ⁝ UD-18W 1 ⁝ UD-04D 7
+Former HMS/MLR Entry Number,,,466,1,1,UD 297
+Former HMS/MLR Entry Number,,,469,109,83,UD-WX 1128 ⁝ UD-WX 1126 ⁝ UD-WX 1130 ⁝ UD UP 21
+Former HMS/MLR Entry Number,,,490,55,21,UD-19W 10 ⁝ UD-19W 4 ⁝ UD-19W 6 ⁝ UD-19W 8
+Former HMS/MLR Entry Number,Entry UD-15D 37 was part of RG 59.,entry ud 15d 37 was part of rg 59,383,1,1,UD-15D 37
+Former HMS/MLR Entry Number,Formerly box 161 and part of 162.,formerly box 161 and part of 162,306,1,1,UD-2010 67
+Former HMS/MLR Entry Number,Formerly box 35.,formerly box 35,306,1,1,UD-WW 318
+Former HMS/MLR Entry Number,Formerly box 84.,formerly box 84,306,1,1,UD-WW 180
+Former HMS/MLR Entry Number,Formerly boxes 2 and 3.,formerly boxes 2 and 3,306,1,1,UD-WW 272
+Former HMS/MLR Entry Number,"Formerly boxes 9, 11, 12.",formerly boxes 9 11 12,306,1,1,UD-2010 72
+Former HMS/MLR Entry Number,From RG 306,from rg 306,59,1,1,UD-WW 115
+Former HMS/MLR Entry Number,This entry is part of RG 43.,this entry is part of rg 43,59,1,1,UD-WX 57
+Former HMS/MLR Entry Number,This entry was transfered from RG 43 to RG 59.,this entry was transfered from rg 43 to rg 59,59,1,1,UD-WX 13
+Former HMS/MLR Entry Number,This is now UD 2192.,this is now ud 2192,84,1,1,UD 2192A
+Former HMS/MLR Entry Number,This is the HMS/MLR Entry Number in RG 59.,this is the hms mlr entry number in rg 59,353,1,1,A1 1451
+Former HMS/MLR Entry Number,This is the former HMS/MLR for this entry under RG 469.,this is the former hms mlr for this entry under rg 469,286,1,1,UD-UP 36
+Former HMS/MLR Entry Number,This was the HMS/MLR Entry Number in RG 59.,this was the hms mlr entry number in rg 59,353,3,2,A1 5102 ⁝ A1 5548 ⁝ UD-UP 251
+Former HMS/MLR Entry Number,UD-15D 41 was part of RG 59.,ud 15d 41 was part of rg 59,43,1,1,UD-15D 41
+Former HMS/MLR Entry Number,UD-WW 245 was part of RG 43.,ud ww 245 was part of rg 43,59,1,1,UD-WW 245
+Former HMS/MLR Entry Number,UD-WX 858 was part of RG 59.,ud wx 858 was part of rg 59,59,1,1,UD-WX 858
+Former HMS/MLR Entry Number,Variant control number UD-WX 1089 was part of RG 306.,variant control number ud wx 1089 was part of rg 306,59,1,1,UD-WX 1089
+Former HMS/MLR Entry Number,Variant control number UD-WX 858 was part or RG 59.,variant control number ud wx 858 was part or rg 59,59,1,1,UD-WX 858
+Former HMS/MLR Entry Number,boxes 24-25,boxes 24 25,306,1,1,UD-WW 396
+Former HMS/MLR Entry Number,boxes 29-30,boxes 29 30,306,1,1,UD-WW 324
+Former HMS/MLR Entry Number,boxes 41-42,boxes 41 42,306,1,1,UD-WW 144
+Former HMS/MLR Entry Number,boxes 70-71,boxes 70 71,306,1,1,UD-2010 68
+Former Local Identifier,,,43,8,8,SC8 ⁝ SC7 ⁝ SC6 ⁝ SC5
+Former Local Identifier,,,59,1,1,260-RT
+Former Local Identifier,,,84,2,2,UD-WX 1021 ⁝ UD 2507A
+Former Local Identifier,,,306,4,4,306-TODAY ⁝ 541811 ⁝ 306-ENa ⁝ 306-BRAZIL
+Former Local Identifier,This is the collection's former Local Identifier.,this is the collection s former local identifier,306,12,12,JFK-272
+Former Local Identifier,This is the former entry number.,this is the former entry number,76,1,1,76-20
+Former National Archives Identifier,,,43,1,1,2788538
+Former National Archives Identifier,,,59,46,36,1183045 ⁝ 1183046 ⁝ 632510 ⁝ 633145
+Former National Archives Identifier,,,76,2,2,2736903 ⁝ 2736911
+Former National Archives Identifier,,,84,11,11,6862111 ⁝ 6862110 ⁝ 6862098 ⁝ 6120616
+Former National Archives Identifier,,,169,2,2,6863607
+Former National Archives Identifier,,,286,25,9,26308999 ⁝ 25778103 ⁝ 5896786 ⁝ 6003320
+Former National Archives Identifier,,,306,25,20,1254485 ⁝ 25777862 ⁝ 25777859 ⁝ 25777895
+Former National Archives Identifier,,,420,9,3,23870135 ⁝ 6882745 ⁝ 74617191 ⁝ 23870133
+Former National Archives Identifier,,,469,1,1,2842804
+Former National Archives Identifier,,,490,2,1,7543349 ⁝ 7970102
+Former National Archives Identifier,"A portion of this series was formerly identified as the series ""Subject Files of Foreign Service Posts, 1/1/1962 - 12/31/1980"" and was described under National Archives Identifier 6862111.",a portion of this series was formerly identified as the series subject files of foreign service posts 1 1 1962 12 31 1980 and was described under national archives identifier 6862111,84,1,1,6862111
+Former National Archives Identifier,"The 1980 portion of this series, formerly part of UD-11W 12, was formerly described under National Archives Identifier 6862111.",the 1980 portion of this series formerly part of ud 11w 12 was formerly described under national archives identifier 6862111,84,1,1,6862111
+Former National Archives Identifier,The portion of the series formerly identified as UD-WW 235 was formerly described under National Archives Identifier 1257659.,the portion of the series formerly identified as ud ww 235 was formerly described under national archives identifier 1257659,306,1,1,1257659
+Former National Archives Identifier,The portion of this series formerly described as UD-11W 12 was formerly described under National Archives Identifier 6862111.,the portion of this series formerly described as ud 11w 12 was formerly described under national archives identifier 6862111,84,1,1,6862111
+Former National Archives Identifier,"The portion of this series formerly identified as UD-11W 11 was formerly described as a portion of the series ""Subject Files of Foreign Service Posts, 1/1/1962 - 12/31/1980"" (NAID 6862110).",the portion of this series formerly identified as ud 11w 11 was formerly described as a portion of the series subject files of foreign service posts 1 1 1962 12 31 1980 naid 6862110,84,1,1,6862110
+Former National Archives Identifier,"The portion of this series formerly identified as UD-11W 12 was formerly described as a portion of the series ""Subject Files of Foreign Service Posts, 1/1/1962 - 12/31/1980"" (NAID 6862111).",the portion of this series formerly identified as ud 11w 12 was formerly described as a portion of the series subject files of foreign service posts 1 1 1962 12 31 1980 naid 6862111,84,5,5,6862111
+Former National Archives Identifier,"The portion of this series formerly identified as UD-11W 12 was formerly described in the series ""Subject Files of Foreign Service Posts, 1/1/1962 - 12/31/1980"" (NAID 6862111).",the portion of this series formerly identified as ud 11w 12 was formerly described in the series subject files of foreign service posts 1 1 1962 12 31 1980 naid 6862111,84,1,1,6862111
+Former National Archives Identifier,The portion of this series formerly identified as UD-11W 12 was formerly described under National Archives Identifier 6862111.,the portion of this series formerly identified as ud 11w 12 was formerly described under national archives identifier 6862111,84,3,3,6862111
+Former National Archives Identifier,The portion of this series formerly identified as UD-14W 20 was formerly described under National Archives Identifier 55317369.,the portion of this series formerly identified as ud 14w 20 was formerly described under national archives identifier 55317369,286,1,1,55317369
+Former National Archives Identifier,The portion of this series formerly identified as part of P 265 was formerly described under National Archives Identifier 5939990.,the portion of this series formerly identified as part of p 265 was formerly described under national archives identifier 5939990,286,1,1,5939990
+Former National Archives Identifier,The portion of this series formerly identified as part of UD-WW 1471 was formerly described under National Archives Identifier 25778504.,the portion of this series formerly identified as part of ud ww 1471 was formerly described under national archives identifier 25778504,286,1,1,25778504
+Former National Archives Identifier,The portion of this series that was formerly part of RG 84 UD-11W 12 was formerly described under National Archives Identifier 6862111.,the portion of this series that was formerly part of rg 84 ud 11w 12 was formerly described under national archives identifier 6862111,84,1,1,6862111
+HMS Asset ID,,,43,1,1,57661
+HMS Asset ID,,,59,4,4,HS2-000003380 ⁝ HS1-379632393 ⁝ 65933 ⁝ 66696
+HMS Asset ID,,,84,1,1,716145
+HMS Asset ID,,,306,2,2,HS1-322163051 ⁝ HS1-320108505
+HMS Record Entry ID,,,43,31,29,613283 ⁝ 613398 ⁝ HS1-222971539 ⁝ HS1-217448385
+HMS Record Entry ID,,,59,1899,1563,HS2-000008278 ⁝ HS2-000004881 ⁝ HS2-000007807 ⁝ HS2-000007806
+HMS Record Entry ID,,,63,12,12,47055 ⁝ 46910 ⁝ 46747 ⁝ 46745
+HMS Record Entry ID,,,76,46,23,HS1-367548053 ⁝ HS1-195890341 ⁝ HS1-311358551 ⁝ HS1-264581491
+HMS Record Entry ID,,,84,891,802,HS2-000005231 ⁝ HS2-000005917 ⁝ HS2-000010462 ⁝ HS2-000005907
+HMS Record Entry ID,,,169,40,40,HS1-505919851 ⁝ HS1-505919842 ⁝ CR- 03161 ⁝ 85930
+HMS Record Entry ID,,,182,1,1,45035
+HMS Record Entry ID,,,208,17,17,HS1-416281987 ⁝ 85713513 ⁝ HS1-416281973 ⁝ HS1-416281906
+HMS Record Entry ID,,,229,1,1,358823
+HMS Record Entry ID,,,239,2,2,HS1-339320291 ⁝ CR- 02966
+HMS Record Entry ID,,,286,1309,1033,HS1-523871401 ⁝ HS1-818580874 ⁝ HS1-845266496 ⁝ HS1-836623687
+HMS Record Entry ID,,,306,410,345,HS2-000004756 ⁝ HS2-000004924 ⁝ HS1-888253391 ⁝ HS1-873326248
+HMS Record Entry ID,,,353,613,600,52266 ⁝ 52142 ⁝ 52136 ⁝ 52033
+HMS Record Entry ID,,,383,211,165,HS2-000005123 ⁝ HS2-000000756 ⁝ HS1-131425963 ⁝ HS1-131425831
+HMS Record Entry ID,,,420,62,28,HS1-496074128 ⁝ 353020 ⁝ HS1-336079675 ⁝ HS1-422711601
+HMS Record Entry ID,,,466,7,7,HS2-000002538 ⁝ HS1-96218561 ⁝ 125046 ⁝ 125014
+HMS Record Entry ID,,,469,86,86,346331 ⁝ 346327 ⁝ 483678 ⁝ 339047
 HMS Record Entry ID,,,486,23,11,425965 ⁝ HS1-83697564 ⁝ HS1-91949715 ⁝ HS1-91950056
+HMS Record Entry ID,,,490,138,112,HS2-000006423 ⁝ HS1-845266763 ⁝ HS1-902342009 ⁝ HS1-903673849
+HMS Record Entry ID,This is the Classified portion of the series.,this is the classified portion of the series,84,1,1,718203
+HMS Record Entry ID,This is the classified portion of the series.,this is the classified portion of the series,84,2,2,716686 ⁝ 716480
+HMS Record Entry ID,This is the declassified portion of the series.,this is the declassified portion of the series,84,2,2,HS1-481258489 ⁝ HS1-485359751
+HMS Record Entry ID,This portion of the series has been partially declassified.,this portion of the series has been partially declassified,84,2,2,HS1-459641305 ⁝ HS1-459854789
+HMS Record Entry ID,This portion of the series is still Classified.,this portion of the series is still classified,84,1,1,HS1-99200931
+HMS/MLR Entry Number,,,43,1742,1700,UD-WX 57-A ⁝ UD-WX 58-A ⁝ P 300 ⁝ P 298
+HMS/MLR Entry Number,,,59,4799,4301,UD-26D 1 ⁝ UD-25D 43 ⁝ UD-25D 78 ⁝ UD-25D 70
+HMS/MLR Entry Number,,,63,254,83,NC-7 141 ⁝ NC-7 104 ⁝ NC-7 36 ⁝ NC-7 35
+HMS/MLR Entry Number,,,76,1484,1482,P 101 ⁝ P 100 ⁝ P 98 ⁝ P 99
+HMS/MLR Entry Number,,,84,4071,3932,UD-25W 10 ⁝ P 928 ⁝ UD-25W 78 ⁝ UD-25W 68
+HMS/MLR Entry Number,,,169,488,487,P 54 ⁝ P 53 ⁝ UD-16 1 ⁝ UD 31
+HMS/MLR Entry Number,,,182,230,230,UD-16 1 ⁝ UD 1002 ⁝ UD 1001 ⁝ UD 255-A
+HMS/MLR Entry Number,,,208,510,510,NC-148 352A ⁝ NC-148 221A ⁝ NC-148 204A ⁝ NC-148 195A
+HMS/MLR Entry Number,,,229,155,155,UD 1 ⁝ PI-100 195 ⁝ I-7 4 ⁝ I-7 3
+HMS/MLR Entry Number,,,239,90,90,A1 93 ⁝ A1 92 ⁝ A1 91 ⁝ A1 90
+HMS/MLR Entry Number,,,256,31,31,P 1 ⁝ UD 1 ⁝ I9 31 ⁝ I9 30
+HMS/MLR Entry Number,,,268,28,27,HS1-144717436 ⁝ UD-13C 1 ⁝ A1 28 ⁝ A1 25
+HMS/MLR Entry Number,,,278,34,34,A1 34 ⁝ A1 33 ⁝ A1 32 ⁝ A1 31
+HMS/MLR Entry Number,,,286,2219,1934,UD-19W 6 ⁝ UD-23W 62 ⁝ UD-23W 160 ⁝ UD-23W 106
+HMS/MLR Entry Number,,,306,832,747,UD-25D 2 ⁝ UD-25D 3 ⁝ UD-24D 20 ⁝ UD-24D 3
+HMS/MLR Entry Number,,,353,646,621,A1 348 ⁝ A1 445 ⁝ A1 444 ⁝ A1 424
+HMS/MLR Entry Number,,,383,210,165,UD-25D 1 ⁝ UD-24D 53 ⁝ UD-12W 9 ⁝ UD-12W 3
+HMS/MLR Entry Number,,,420,60,29,UD-19W 2 ⁝ UD-UP 1 ⁝ P 4 ⁝ UD-18W 3
+HMS/MLR Entry Number,,,466,308,308,P 3A ⁝ UD 3 ⁝ A1 28 ⁝ A1 145
+HMS/MLR Entry Number,,,469,2238,2228,P 82 ⁝ UD-WX 1741 ⁝ UD-WX 1740 ⁝ UD-WX 1167
 HMS/MLR Entry Number,,,486,23,11,UD-05W 1 ⁝ UD-10W 1 ⁝ UD-11W 1 ⁝ UD-11W 2
+HMS/MLR Entry Number,,,490,245,219,UD-25 W 7 ⁝ UD-23W 5 ⁝ UD-24W 4 ⁝ UD-24W 8
+HMS/MLR Entry Number,This is the Classified portion of the series.,this is the classified portion of the series,84,1,1,P 808
+HMS/MLR Entry Number,This is the HMS finding aid number.,this is the hms finding aid number,490,1,1,UD-18W-3
+HMS/MLR Entry Number,This is the HMS/MLR Entry Number for the Reference Set.,this is the hms mlr entry number for the reference set,59,2,2,ZZ 1005 ⁝ ZZ 1004
+HMS/MLR Entry Number,This is the HMS/MLR Entry Number for the Security Set.,this is the hms mlr entry number for the security set,59,2,2,A1 5697 ⁝ A1 5667
+HMS/MLR Entry Number,This is the classified portion of the series.,this is the classified portion of the series,84,2,2,P 484 ⁝ P 442
+HMS/MLR Entry Number,This is the declassified portion of the series.,this is the declassified portion of the series,84,2,2,P 484-A ⁝ P 442-D
+HMS/MLR Entry Number,This portion of the series has been partially declassified.,this portion of the series has been partially declassified,84,2,2,P 808-B1 ⁝ P 808-1
+HMS/MLR Entry Number,This portion of the series is still classified.,this portion of the series is still classified,84,1,1,P 808-B
+HMS/MLR Entry Number,"This series was entry 747 in PI 157 ""Preliminary Inventory of the General Records of the Department of State.""",this series was entry 747 in pi 157 preliminary inventory of the general records of the department of state,59,1,1,A1 949
+HMS/MLR Entry Number,"Transfer W286-68S3602, Boxes 89-93",transfer w286 68s3602 boxes 89 93,286,1,1,UD-WW 1028
+HMS/MLR Entry Number,"Transfer W286-70E6124, Boxes 20-21",transfer w286 70e6124 boxes 20 21,286,1,1,UD-WW 1161
+Inventory Entry Number,,,59,6,4,I 15 534 ⁝ I 15 506 ⁝ PI 157 701 ⁝ PI 157 99
+Inventory Entry Number,,,256,1,1,I9 18
+Inventory Entry Number,,,286,1,1,P 307
+Inventory Entry Number,,,420,1,1,UD-18W 2
+Inventory Entry Number,"Entry 112 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International Boundaries (Record Group 76)"" (PI 170).",entry 112 is the entry number for this series found in preliminary inventory of the records relating to international boundaries record group 76 pi 170,76,1,1,Entry 112
+Inventory Entry Number,"Entry 113 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International Boundaries (Record Group 76)"" (PI 170).",entry 113 is the entry number for this series found in preliminary inventory of the records relating to international boundaries record group 76 pi 170,76,1,1,Entry 113
+Inventory Entry Number,"Entry 114 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International Boundaries (Record Group 76)"" (PI 170).",entry 114 is the entry number for this series found in preliminary inventory of the records relating to international boundaries record group 76 pi 170,76,1,1,Entry 114
+Inventory Entry Number,"Entry 123 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International Boundaries (Record Group 76)"" (PI 170).",entry 123 is the entry number for this series found in preliminary inventory of the records relating to international boundaries record group 76 pi 170,76,1,1,Entry 123
+Inventory Entry Number,"Entry 127 is the entry number for this series found in ""Preliminary Inventory of the Records Relating to International Boundaries (Record Group 76)"" (PI 170).",entry 127 is the entry number for this series found in preliminary inventory of the records relating to international boundaries record group 76 pi 170,76,1,1,Entry 127
+Inventory Entry Number,"This is the entry number for part of this series in NC-155, ""Preliminary Inventory of Records Relating to International Arbitrations.",this is the entry number for part of this series in nc 155 preliminary inventory of records relating to international arbitrations,76,1,1,98
+Inventory Entry Number,"This is the entry number for part of this series in NC-155, ""Preliminary Inventory of Records Relating to International Arbitrations.""",this is the entry number for part of this series in nc 155 preliminary inventory of records relating to international arbitrations,76,34,8,207 ⁝ 208 ⁝ 209 ⁝ 210
+Inventory Entry Number,"This is the entry number for part of this series in Preliminary Inventory 170, ""Preliminary Inventory of the Records Relating to International Boundaries.""",this is the entry number for part of this series in preliminary inventory 170 preliminary inventory of the records relating to international boundaries,76,131,27,514 ⁝ 519 ⁝ 454 ⁝ 491
+Inventory Entry Number,"This is the entry number for this series in Preliminary Inventory 177, ""Preliminary Inventory of the Records Relating to International Claims.""",this is the entry number for this series in preliminary inventory 177 preliminary inventory of the records relating to international claims,76,2,2,211 ⁝ 32
+Inventory Entry Number,"This series was entry 101 in the ""Preliminary Inventory of the General Records of the Department of State"" (Preliminary Inventory 157) which has been withdrawn.  The entry number is no longer valid.",this series was entry 101 in the preliminary inventory of the general records of the department of state preliminary inventory 157 which has been withdrawn the entry number is no longer valid,59,1,1,101
+Inventory Entry Number,"This series was entry 746 in PI 157 ""Preliminary Inventory of the General Records of the Department of State.""",this series was entry 746 in pi 157 preliminary inventory of the general records of the department of state,59,1,1,746
+Kennedy Assassination Document ID,,,59,1,1,HS1-810857285
+NAIL Control Number,,,43,10,10,NWDNS-43-S ⁝ NWDNS-43-PX ⁝ NWDNS-43-NR ⁝ NWDNS-43-MX
+NAIL Control Number,,,59,46,46,73D251 ⁝ 64D477 ⁝ NWDNS-260-RT ⁝ NWDNS-59-WP
+NAIL Control Number,,,63,1,1,NWDNS-63-CPI
+NAIL Control Number,,,76,33,33,NWDNS-76-WC ⁝ NWDNS-76-TX ⁝ NWDNS-76-SPL ⁝ NWDNS-76-SP
+NAIL Control Number,,,84,5,5,NWCTC-84-AMCONHAVANA ⁝ NWDNS-84-RC ⁝ NWDNS-84-IS ⁝ NWDNS-84-IJ
+NAIL Control Number,,,169,5,5,NWDNS-169-L ⁝ NWDNS-169-GP ⁝ NWDNS-169-GA ⁝ NWDNS-169-C
+NAIL Control Number,,,182,2,2,NWDNS-182-WTB ⁝ NWDNM(m)-182
+NAIL Control Number,,,208,84,84,NWDNS-208-Z ⁝ NWDNS-208-YE ⁝ NWDNS-208-X ⁝ NWDNS-208-WSO
+NAIL Control Number,,,229,7,7,NWDNS-229-R ⁝ NWDNS-229-PV ⁝ NWDNS-229-PG ⁝ NWDNS-229-MV
+NAIL Control Number,,,239,4,4,NWDNS-239-SFM ⁝ NWDNS-239-RC ⁝ NWDNS-239-PA ⁝ NWDNC-239-AERIAL
+NAIL Control Number,,,268,4,4,NWDNS-268-P ⁝ NWDNS-268-C ⁝ NWDNS-268-B ⁝ NWDNS-268-A
+NAIL Control Number,,,286,5,5,NWDNS-286-MPX ⁝ NWDNS-286-ME ⁝ NWDNS-286-CAM ⁝ NWDNS-286-C
+NAIL Control Number,,,306,131,130,NWCTC-306-SREPS ⁝ NWDT2-306-SREPS ⁝ NWDNS-306-Z ⁝ NWDNS-306-X
+NAIL Control Number,,,469,9,9,NWDNS-469-ZQ ⁝ NWDNS-469-V ⁝ NWDNS-469-TCA ⁝ NWDNS-469-PI
+NAIL Control Number,,,490,27,27,NWDNS-490-WW ⁝ NWDNS-490-T ⁝ NWDNS-490-STA ⁝ NWDNS-490-SP
+Off-Site Storage Transaction Number,,,268,1,1,RW-SB-000-2013-0006
+Other Identifier,,,84,4,4,RC 3484 ⁝ RC 3423 ⁝ RC 571 ⁝ RC 3469
+Other Identifier,This is a Department of State LOT file number.,this is a department of state lot file number,84,1,1,58F58
+Other Identifier,This is an IRC number.,this is an irc number,84,1,1,3423
+Other Identifier,This is the Digital Identifier for the U.S. Agency for International Development records located at the Kennedy Library.,this is the digital identifier for the u s agency for international development records located at the kennedy library,286,3,3,USAID
+Other Identifier,This is the Digital Identifier for the U.S. Arms Control and Disarmament Agency records located at the Kennedy Library.,this is the digital identifier for the u s arms control and disarmament agency records located at the kennedy library,383,2,2,USACDA
+Other Identifier,This is the Digital Identifier for the U.S. Department of State records located at the Kennedy Library.,this is the digital identifier for the u s department of state records located at the kennedy library,59,10,10,USDS
+Other Identifier,This is the Digital Identifier for the U.S. Information Agency records located at the Kennedy Library.,this is the digital identifier for the u s information agency records located at the kennedy library,306,12,12,USIA
+Other Identifier,This is the Digital Identifier for the U.S. Mission to the United Nations records located at the Kennedy Library.,this is the digital identifier for the u s mission to the united nations records located at the kennedy library,84,1,1,USDSUN
+Other Identifier,This is the Digital Identifier for the U.S. Peace Corps records located at the Kennedy Library.,this is the digital identifier for the u s peace corps records located at the kennedy library,490,9,9,USPC
+Other Identifier,This is the former microfilm publication number.,this is the former microfilm publication number,59,1,1,P-2276
+Other Identifier,This is the local accession number for this microfilm at the Kennedy Library (also written as PX65-98).,this is the local accession number for this microfilm at the kennedy library also written as px65 98,306,1,1,PX-1965-098
+Other Identifier,This is the local accession number for this microfilm at the Kennedy Library.,this is the local accession number for this microfilm at the kennedy library,306,1,1,MS-1965-052
+Other Identifier,This is the microfilm publication number.,this is the microfilm publication number,59,1,1,M1751
+PRESNET Number,,,59,3,3,045700002 ⁝ 045700001 ⁝ 70D443
+Reparative Description Identifier,,,59,8,8,R-2023-06-21 ⁝ NR-2023-08-24 ⁝ NR-2023-08-03 ⁝ R-2023-08-24
+Reparative Description Identifier,,,76,6,6,NR-2024-02-22 ⁝ R-2024-02-22 ⁝ R-2024-02-23
+Reparative Description Identifier,,,84,1,1,NR-2024-03-15
+Reparative Description Identifier,,,208,6,6,NR-2024-01-08 ⁝ NR-2024-09-09 ⁝ R-2023-08-31 ⁝ R-2023-08-30
+Reparative Description Identifier,,,229,2,2,NR-2024-02-01 ⁝ NR-2024-01-18
+Reparative Description Identifier,,,286,2,2,NR-2023-08-15
+Reparative Description Identifier,,,306,2,2,NR-2023-08-31 ⁝ NR-2023-08-24
+Reparative Description Identifier,,,466,1,1,NR-2024-04-08
+Reparative Description Identifier,,,469,1,1,NR-2024-02-08
+Search Identifier,,,43,2,2,A2 Vault Holdings
+Search Identifier,,,59,12,11,JFK Assassination Records Collection ⁝ 56D620 ⁝ A2 Vault Holdings ⁝ siFootnote Revolution and the New Nation
+Search Identifier,,,84,22,22,JFK Assassination Records Collection ⁝ siHolocaust Era Assets RG 84
+Search Identifier,,,239,90,90,siHolocaust Era Assets RG 239
+Search Identifier,,,306,1,1,JFK Assassination Records Collection
+Select List Identifier,"This is the appendix in Special List 37, ""Inspection Reports on Foreign Service Posts, 1906-1939.""",this is the appendix in special list 37 inspection reports on foreign service posts 1906 1939,59,1,1,Appendix D
+State Department Lot File Number,,,43,74,24,69D441 ⁝ 69D472 ⁝ 69D495 ⁝ 69D546
+State Department Lot File Number,,,59,2759,1464,2017D0426 ⁝ 2017D0511 ⁝ 1998D0082 ⁝ 1999D0341
+State Department Lot File Number,,,76,5,5,84D294 ⁝ 68D449 ⁝ 70D103 ⁝ 68D448
+State Department Lot File Number,,,84,1352,772,2000F0235 ⁝ 1999F0124 ⁝ 2000F0234 ⁝ 1998F0197
+State Department Lot File Number,,,169,3,3,04D210
+State Department Lot File Number,,,286,45,45,13-086 ⁝ 08-067 ⁝ 11-030 ⁝ 85-137
+State Department Lot File Number,,,306,893,284,2000D0632 ⁝ 1993D0623 ⁝ 2008D0407 ⁝ 2006D0219
+State Department Lot File Number,,,353,11,11,69D541 ⁝ 81D308 ⁝ 67D158 ⁝ 55D422
+State Department Lot File Number,,,383,32,28,1998D0828 ⁝ 2012D0438 ⁝ 2014D0353 ⁝ 70D404
+State Department Lot File Number,,,469,5,5,Lot 1692 ⁝ Lot 1954 ⁝ Lot 1487 ⁝ Lot 1644
+State Department Lot File Number,This is a Department of State lot file number.,this is a department of state lot file number,84,8,1,69F053 ⁝ 70F187 ⁝ 73F073 ⁝ 73F090
+State Department Lot File Number,This is a State Department Lot File number.,this is a state department lot file number,43,2,2,75F155

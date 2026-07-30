@@ -1,37 +1,37 @@
 {
   "fieldAliasReport" : [
     {
-      "absent" : 11,
+      "absent" : 19726,
       "field" : "contributors",
       "matchedAliases" : {
-
+        "contributors" : 462
       },
       "presentButEmpty" : 0,
       "required" : false
     },
     {
-      "absent" : 0,
+      "absent" : 8,
       "field" : "creators",
       "matchedAliases" : {
-        "creators" : 11
+        "creators" : 20180
       },
       "presentButEmpty" : 0,
       "required" : true
     },
     {
-      "absent" : 11,
+      "absent" : 20169,
       "field" : "custodialHistoryNote",
       "matchedAliases" : {
-
+        "custodialHistoryNote" : 19
       },
       "presentButEmpty" : 0,
       "required" : false
     },
     {
-      "absent" : 6,
+      "absent" : 16945,
       "field" : "findingAids",
       "matchedAliases" : {
-        "findingAids" : 5
+        "findingAids" : 3243
       },
       "presentButEmpty" : 0,
       "required" : false
@@ -40,16 +40,16 @@
       "absent" : 0,
       "field" : "generalRecordsTypes",
       "matchedAliases" : {
-        "generalRecordsTypes" : 11
+        "generalRecordsTypes" : 20188
       },
       "presentButEmpty" : 0,
       "required" : false
     },
     {
-      "absent" : 11,
+      "absent" : 19988,
       "field" : "microformPublications",
       "matchedAliases" : {
-
+        "microformPublications" : 200
       },
       "presentButEmpty" : 0,
       "required" : false
@@ -58,22 +58,22 @@
       "absent" : 0,
       "field" : "physicalOccurrences",
       "matchedAliases" : {
-        "physicalOccurrences" : 11
+        "physicalOccurrences" : 20188
       },
       "presentButEmpty" : 0,
       "required" : false
     },
     {
-      "absent" : 6,
+      "absent" : 2427,
       "field" : "scopeAndContentNote",
       "matchedAliases" : {
-        "scopeAndContentNote" : 5
+        "scopeAndContentNote" : 17761
       },
       "presentButEmpty" : 0,
       "required" : false
     },
     {
-      "absent" : 11,
+      "absent" : 20188,
       "field" : "specificRecordsTypes",
       "matchedAliases" : {
 
@@ -82,10 +82,10 @@
       "required" : false
     },
     {
-      "absent" : 0,
+      "absent" : 307,
       "field" : "variantControlNumbers",
       "matchedAliases" : {
-        "variantControlNumbers" : 11
+        "variantControlNumbers" : 19881
       },
       "presentButEmpty" : 0,
       "required" : true
@@ -93,6 +93,716 @@
   ],
   "generated" : "2026-07-30",
   "recordGroups" : [
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/372",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 13,
+      "distinctCreators" : 840,
+      "expectedFileUnitCount" : 15451,
+      "expectedSeriesCount" : 1727,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 1727,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "372",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 43,
+      "recordsWithContributors" : 52,
+      "recordsWithControlNumbers" : 1719,
+      "recordsWithCreators" : 1727,
+      "recordsWithLocalIdentifier" : 17,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of International Conferences, Commissions, and Expositions",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 1727,
+        "numberingNote" : 9
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/388",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 21,
+      "distinctCreators" : 1332,
+      "expectedFileUnitCount" : 236406,
+      "expectedSeriesCount" : 4449,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 4449,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "388",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 59,
+      "recordsWithContributors" : 169,
+      "recordsWithControlNumbers" : 4399,
+      "recordsWithCreators" : 4447,
+      "recordsWithLocalIdentifier" : 103,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "General Records of the Department of State",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 4449,
+        "editStatus" : 3,
+        "internalTransferNumbers" : 3,
+        "numberingNote" : 61,
+        "scaleNote" : 1,
+        "transferNote" : 2
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/392",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 3,
+      "distinctCreators" : 28,
+      "expectedFileUnitCount" : 980,
+      "expectedSeriesCount" : 84,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 84,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "392",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 63,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 84,
+      "recordsWithCreators" : 84,
+      "recordsWithLocalIdentifier" : 1,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Committee on Public Information",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 84,
+        "numberingNote" : 1
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/405",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 11,
+      "distinctCreators" : 191,
+      "expectedFileUnitCount" : 721,
+      "expectedSeriesCount" : 1614,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 1614,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "405",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 76,
+      "recordsWithContributors" : 26,
+      "recordsWithControlNumbers" : 1559,
+      "recordsWithCreators" : 1614,
+      "recordsWithLocalIdentifier" : 125,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of Boundary and Claims Commissions and Arbitrations",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 1614,
+        "numberingNote" : 29,
+        "scaleNote" : 3
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/413",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 17,
+      "distinctCreators" : 1524,
+      "expectedFileUnitCount" : 126455,
+      "expectedSeriesCount" : 3962,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 3963,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "413",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 84,
+      "recordsWithContributors" : 76,
+      "recordsWithControlNumbers" : 3958,
+      "recordsWithCreators" : 3963,
+      "recordsWithLocalIdentifier" : 12,
+      "seriesCountDelta" : 1,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Foreign Service Posts of the Department of State",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 3963,
+        "editStatus" : 3,
+        "numberingNote" : 9,
+        "scaleNote" : 1
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/498",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 8,
+      "distinctCreators" : 155,
+      "expectedFileUnitCount" : 9829,
+      "expectedSeriesCount" : 496,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 496,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "498",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 169,
+      "recordsWithContributors" : 3,
+      "recordsWithControlNumbers" : 493,
+      "recordsWithCreators" : 496,
+      "recordsWithLocalIdentifier" : 7,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Foreign Economic Administration",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 496,
+        "numberingNote" : 6,
+        "scaleNote" : 1
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/511",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 5,
+      "distinctCreators" : 38,
+      "expectedSeriesCount" : 232,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 232,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "511",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 182,
+      "recordsWithContributors" : 2,
+      "recordsWithControlNumbers" : 232,
+      "recordsWithCreators" : 232,
+      "recordsWithLocalIdentifier" : 2,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the War Trade Board",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 232,
+        "numberingNote" : 1
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/535",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 7,
+      "distinctCreators" : 160,
+      "expectedFileUnitCount" : 31595,
+      "expectedSeriesCount" : 606,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 606,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "535",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 208,
+      "recordsWithContributors" : 2,
+      "recordsWithControlNumbers" : 594,
+      "recordsWithCreators" : 606,
+      "recordsWithLocalIdentifier" : 96,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Office of War Information",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 606,
+        "numberingNote" : 79
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/556",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 5,
+      "distinctCreators" : 79,
+      "expectedFileUnitCount" : 2678,
+      "expectedSeriesCount" : 168,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 168,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "556",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 229,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 162,
+      "recordsWithCreators" : 168,
+      "recordsWithLocalIdentifier" : 13,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Office of Inter-American Affairs",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 168,
+        "editStatus" : 1,
+        "numberingNote" : 7
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/566",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 6,
+      "distinctCreators" : 5,
+      "expectedFileUnitCount" : 3186,
+      "expectedSeriesCount" : 95,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 95,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "566",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 239,
+      "recordsWithContributors" : 7,
+      "recordsWithControlNumbers" : 95,
+      "recordsWithCreators" : 95,
+      "recordsWithLocalIdentifier" : 4,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the American Commission for the Protection and Salvage of Artistic and Historic Monuments in War Areas",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 95,
+        "numberingNote" : 3
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/583",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 3,
+      "distinctCreators" : 5,
+      "expectedFileUnitCount" : 689,
+      "expectedSeriesCount" : 33,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 33,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "583",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 256,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 32,
+      "recordsWithCreators" : 33,
+      "recordsWithLocalIdentifier" : 1,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the American Commission to Negotiate Peace",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 33
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/595",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 4,
+      "distinctCreators" : 4,
+      "expectedFileUnitCount" : 332,
+      "expectedSeriesCount" : 31,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 31,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "595",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 268,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 31,
+      "recordsWithCreators" : 31,
+      "recordsWithLocalIdentifier" : 4,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Philippine War Damage Commission",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 31,
+        "numberingNote" : 4
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/604",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 1,
+      "distinctCreators" : 8,
+      "expectedFileUnitCount" : 2520,
+      "expectedSeriesCount" : 34,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 34,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "604",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 278,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 34,
+      "recordsWithCreators" : 34,
+      "recordsWithLocalIdentifier" : 0,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Displaced Persons Commission",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 34
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/608",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 14,
+      "distinctCreators" : 1263,
+      "expectedFileUnitCount" : 36822,
+      "expectedSeriesCount" : 1979,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 1979,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "608",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 286,
+      "recordsWithContributors" : 31,
+      "recordsWithControlNumbers" : 1958,
+      "recordsWithCreators" : 1979,
+      "recordsWithLocalIdentifier" : 25,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Agency for International Development",
+      "unprojectedKeyCounts" : {
+        "beginCongress" : 1,
+        "dataControlGroup" : 1979,
+        "endCongress" : 1,
+        "internalTransferNumbers" : 1,
+        "numberingNote" : 15,
+        "transferNote" : 1
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/622",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 16,
+      "distinctCreators" : 467,
+      "expectedFileUnitCount" : 132479,
+      "expectedSeriesCount" : 997,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 997,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "622",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 306,
+      "recordsWithContributors" : 83,
+      "recordsWithControlNumbers" : 894,
+      "recordsWithCreators" : 997,
+      "recordsWithLocalIdentifier" : 242,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the U.S. Information Agency",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 997,
+        "editStatus" : 4,
+        "internalTransferNumbers" : 13,
+        "numberingNote" : 109,
+        "transferNote" : 10
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/661",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 6,
+      "distinctCreators" : 181,
+      "expectedFileUnitCount" : 699,
+      "expectedSeriesCount" : 621,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 621,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "661",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 353,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 621,
+      "recordsWithCreators" : 621,
+      "recordsWithLocalIdentifier" : 0,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of Interdepartmental and Intradepartmental Committees (State Department)",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 621
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/685",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 6,
+      "distinctCreators" : 11,
+      "expectedFileUnitCount" : 400,
+      "expectedSeriesCount" : 172,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 172,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "685",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 383,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 167,
+      "recordsWithCreators" : 172,
+      "recordsWithLocalIdentifier" : 3,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the U.S. Arms Control and Disarmament Agency",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 172
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/6036306",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 8,
+      "distinctCreators" : 9,
+      "expectedFileUnitCount" : 325,
+      "expectedSeriesCount" : 31,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 31,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "6036306",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 420,
+      "recordsWithContributors" : 0,
+      "recordsWithControlNumbers" : 31,
+      "recordsWithCreators" : 31,
+      "recordsWithLocalIdentifier" : 0,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the United States International Development Finance Corporation",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 31
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/740",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 6,
+      "distinctCreators" : 135,
+      "expectedFileUnitCount" : 17245,
+      "expectedSeriesCount" : 309,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 309,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "740",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 466,
+      "recordsWithContributors" : 4,
+      "recordsWithControlNumbers" : 308,
+      "recordsWithCreators" : 309,
+      "recordsWithLocalIdentifier" : 0,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the U.S. High Commissioner for Germany",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 309
+      }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/743",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 12,
+      "distinctCreators" : 1130,
+      "expectedFileUnitCount" : 111081,
+      "expectedSeriesCount" : 2250,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 2250,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "743",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 469,
+      "recordsWithContributors" : 3,
+      "recordsWithControlNumbers" : 2243,
+      "recordsWithCreators" : 2244,
+      "recordsWithLocalIdentifier" : 16,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of U.S. Foreign Assistance Agencies",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 2250,
+        "editStatus" : 1,
+        "numberingNote" : 13
+      }
+    },
     {
       "bytesRead" : 0,
       "catalogURL" : "https://catalog.archives.gov/id/22345815",
@@ -126,17 +836,51 @@
       "unprojectedKeyCounts" : {
         "dataControlGroup" : 11
       }
+    },
+    {
+      "bytesRead" : 0,
+      "catalogURL" : "https://catalog.archives.gov/id/752",
+      "depth" : "series",
+      "distinctControlNumberTypes" : 8,
+      "distinctCreators" : 59,
+      "expectedFileUnitCount" : 1725,
+      "expectedSeriesCount" : 286,
+      "harvestedFileUnitCount" : 0,
+      "harvestedItemCount" : 0,
+      "harvestedSeriesCount" : 286,
+      "invariantExamples" : [
+
+      ],
+      "invariantViolations" : {
+
+      },
+      "malformedLines" : 0,
+      "naId" : "752",
+      "rawRecordsStored" : 0,
+      "recordGroup" : 490,
+      "recordsWithContributors" : 4,
+      "recordsWithControlNumbers" : 256,
+      "recordsWithCreators" : 286,
+      "recordsWithLocalIdentifier" : 54,
+      "seriesCountDelta" : 0,
+      "shardsListed" : 0,
+      "shardsRead" : 0,
+      "state" : "complete",
+      "title" : "Records of the Peace Corps",
+      "unprojectedKeyCounts" : {
+        "dataControlGroup" : 286,
+        "numberingNote" : 39
+      }
     }
   ],
   "reviewNotes" : [
     "RG 486: re-classified against the API refresh already on disk (no API calls spent)",
-    "SUBSET RUN (1 record group(s)): manifest.json, the census CSVs, series-sample.json and this report describe ONLY these groups. Per-group index shards for other groups are untouched. When every group has been harvested, run PROJECT_ONLY=1 with no RECORD_GROUPS to rebuild the run-wide artifacts over all of them (offline, no re-download).",
     "API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0"
   ],
   "schemaVersion" : 1,
   "source" : {
     "baseURL" : "https://nara-national-archives-catalog.s3.us-east-2.amazonaws.com",
-    "kind" : "s3-bulk-export",
+    "kind" : "nara-catalog-api-v2+s3-bulk-export",
     "note" : "NARA's public S3 bulk export (no credentials, no API key, no quota). Chosen over the v2 search API because it needs no CATALOG_API_KEY, is not subject to the 10,000-query monthly quota, carries every level of description in one pass (so adding file units for a chosen record group later is a filter change rather than a second harvest), and includes each group's own recordGroup record whose seriesCount field is NARA's own expected series total — which makes a truncated harvest self-detecting.",
     "snapshotLastModified" : [
       "2026-04-09T13:40:17.000Z"
@@ -144,17 +888,17 @@
   },
   "totals" : {
     "bytesRead" : 0,
-    "distinctControlNumberTypes" : 3,
-    "distinctCreators" : 3,
-    "expectedSeriesCount" : 11,
+    "distinctControlNumberTypes" : 23,
+    "distinctCreators" : 7318,
+    "expectedSeriesCount" : 20187,
     "harvestedFileUnitCount" : 0,
     "harvestedItemCount" : 0,
-    "harvestedSeriesCount" : 11,
+    "harvestedSeriesCount" : 20188,
     "invariantViolations" : 0,
     "malformedLines" : 0,
-    "recordGroupCount" : 1,
-    "recordsWithControlNumbers" : 11,
-    "recordsWithCreators" : 11,
+    "recordGroupCount" : 22,
+    "recordsWithControlNumbers" : 19881,
+    "recordsWithCreators" : 20180,
     "shardsRead" : 0
   }
 }
