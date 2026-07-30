@@ -733,6 +733,133 @@ final class SearchViewModel {
     // them — a restored `SavedSearch`/`pendingSearch` snapshot can still populate them via
     // `applyParameters(_:)`, and when it does, that state genuinely affects the query, so
     // the "Clear Filters" affordance must remain available to reset it.
+    /// The match total to show the facet panel, or `nil` when it is not known (R-1c).
+    ///
+    /// iOS has never held a whole-query count: `resultCount` is the *fetched* count, capped
+    /// at `searchHardLimit` (1,000). So this returns the fetched count only when the fetch
+    /// demonstrably did **not** hit its cap — at the cap the real total is unknown, and
+    /// reporting 1,000 as "all 1,000 matches" would be exactly the lie the Q-M2 work removed
+    /// from macOS. The panel renders "total unavailable" instead.
+    ///
+    /// The facet *sections* are unaffected either way: they aggregate over the whole match in
+    /// SQL, independent of what was fetched.
+    var totalMatchCountForFacets: Int? {
+        Self.facetTotal(fetched: results.count, cap: Self.searchHardLimit)
+    }
+
+    /// The rule behind ``totalMatchCountForFacets``, extracted so it can be tested at the
+    /// boundary.
+    ///
+    /// It has to be: a test that only exercises an empty result set cannot distinguish
+    /// "return the fetched count" from "return nil at the cap" — both give 0 — and a
+    /// mutation replacing the whole rule with `fetched` passed on exactly that basis.
+    /// Reaching the real cap in a test would need a thousand-document fixture.
+    static func facetTotal(fetched: Int, cap: Int) -> Int? {
+        fetched >= cap ? nil : fetched
+    }
+
+    /// Applies a facet narrowing (R-1c).
+    ///
+    /// iOS holds filter state as individual fields rather than macOS's single
+    /// `SearchParameters`, so `FacetNarrowing.apply(to:)` cannot be shared — the fields are
+    /// this view model's own. What *is* shared is the destination: every case writes a field
+    /// the filter sheet also owns, so a facet and the sheet can never disagree, which is the
+    /// property the design asks for.
+    func applyFacetNarrowing(_ narrowing: FacetNarrowing) {
+        switch narrowing {
+        case .year(let year):
+            guard let start = Self.date(fromISO: "\(year)-01-01"),
+                  let end = Self.date(fromISO: "\(year)-12-31") else { return }
+            dateRangeEnabled = true
+            dateRangeStart = start
+            dateRangeEnd = end
+        case .volume(let volumeId):
+            // Replace rather than add: the facet's count is for that volume alone, so
+            // unioning would return more documents than the row promised.
+            selectedVolumeIds = [volumeId]
+            selectedSubseriesIds = []
+        case .person(let rollupId):
+            personRollupId = rollupId
+            // A rollup and a typed ref are alternative spellings of one filter; leaving the
+            // text set would AND them and silently undercount.
+            personRefText = ""
+        case .documentType(let filter):
+            documentTypeFilter = filter
+        }
+        // No version bump: unlike macOS, this view model has no `parametersVersion` and iOS
+        // re-runs the search explicitly. The caller owns that — see `SearchView`.
+    }
+
+    /// Parses a `yyyy-MM-dd` string into a `Date`, for the year-facet narrowing.
+    private static func date(fromISO iso: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: iso)
+    }
+
+    /// The narrowings currently in force, as clearable summaries (R-1c).
+    ///
+    /// iOS has never had an active-filter row — only a filled filter glyph, which says
+    /// *that* something is filtered but not what, and offers no way back. That gap is
+    /// tolerable when every filter was set in a sheet the user just closed; it is not
+    /// tolerable once a single tap in a facet list can narrow the result set, because then
+    /// the narrowing is the interaction and it needs to be legible and reversible.
+    ///
+    /// Derived from the live fields rather than remembered from the tap, so it cannot drift
+    /// from what is actually filtering, and so it also covers filters set in the sheet.
+    var activeNarrowings: [ActiveNarrowing] {
+        var out: [ActiveNarrowing] = []
+        if dateRangeEnabled {
+            out.append(ActiveNarrowing(
+                id: "date",
+                label: String(localized: "search.narrowing.date",
+                              defaultValue: "\(Self.isoDate(dateRangeStart)) to \(Self.isoDate(dateRangeEnd))")))
+        }
+        if !selectedVolumeIds.isEmpty {
+            out.append(ActiveNarrowing(
+                id: "volume",
+                label: selectedVolumeIds.count == 1
+                    ? selectedVolumeIds[0]
+                    : String(localized: "search.narrowing.volumes",
+                             defaultValue: "\(selectedVolumeIds.count) volumes")))
+        }
+        if !selectedSubseriesIds.isEmpty {
+            out.append(ActiveNarrowing(
+                id: "subseries",
+                label: String(localized: "search.narrowing.subseries",
+                              defaultValue: "\(selectedSubseriesIds.count) subseries")))
+        }
+        if let personRollupId {
+            out.append(ActiveNarrowing(
+                id: "person",
+                label: String(localized: "search.narrowing.person",
+                              defaultValue: "person #\(personRollupId)")))
+        }
+        if documentTypeFilter != .all {
+            out.append(ActiveNarrowing(
+                id: "type",
+                label: documentTypeFilter == .editorialNotesOnly
+                    ? String(localized: "search.narrowing.notes", defaultValue: "Editorial notes")
+                    : String(localized: "search.narrowing.documents", defaultValue: "Documents")))
+        }
+        return out
+    }
+
+    /// Clears one active narrowing by its identifier.
+    func clearNarrowing(_ id: String) {
+        switch id {
+        case "date": dateRangeEnabled = false
+        case "volume": selectedVolumeIds = []
+        case "subseries": selectedSubseriesIds = []
+        case "person": personRollupId = nil; personRefText = ""
+        case "type": documentTypeFilter = .all
+        default: return
+        }
+        // Caller re-runs the search, matching this view model's existing convention.
+    }
+
     var hasActiveFilters: Bool {
         if documentTypeFilter != .all { return true }
         if personRollupId != nil { return true }

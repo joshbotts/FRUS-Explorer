@@ -347,8 +347,8 @@ Prefix a term with `=` to search for the literal word instead:
   (`=negoti*`), and on anything that is not a single word (`="co-operate"`). The query still
   runs, stemmed.
 
-**The result-set breakdown.** Click **Breakdown** in the sort bar to open a panel that
-describes your whole result set rather than one row at a time — by year, volume, person,
+**Facets.** Click **Facets** in the sort bar to open a panel that describes your whole
+result set rather than one row at a time — by year, volume, person,
 document type and archival provenance.
 
 - Sections compute when you open them, not when you search, so the panel never adds latency

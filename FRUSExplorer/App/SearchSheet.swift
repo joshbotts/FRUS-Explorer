@@ -873,7 +873,7 @@ struct MacSearchWindowView: View {
             Button {
                 showFacetPanel.toggle()
             } label: {
-                Label(String(localized: "search.facets.short", defaultValue: "Breakdown"),
+                Label(String(localized: "search.facets.short", defaultValue: "Facets"),
                       systemImage: "chart.bar.doc.horizontal")
                     .font(.system(size: 12))
                     .foregroundStyle(showFacetPanel ? Color.accentColor : Color.secondary)
@@ -884,11 +884,11 @@ struct MacSearchWindowView: View {
             .disabled(searchVM.results.isEmpty)
             .help(showFacetPanel
                   ? String(localized: "search.facets.off.help",
-                           defaultValue: "Hide the result-set breakdown")
+                           defaultValue: "Hide the result-set facets")
                   : String(localized: "search.facets.on.help",
                            defaultValue: "Break this result set down by year, volume, person, type and provenance"))
             .accessibilityLabel(String(localized: "search.facets.a11y",
-                                       defaultValue: "Result-set breakdown"))
+                                       defaultValue: "Result-set facets"))
 
             Divider().frame(height: 16)
 
