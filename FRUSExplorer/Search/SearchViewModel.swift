@@ -733,6 +733,59 @@ final class SearchViewModel {
     // them — a restored `SavedSearch`/`pendingSearch` snapshot can still populate them via
     // `applyParameters(_:)`, and when it does, that state genuinely affects the query, so
     // the "Clear Filters" affordance must remain available to reset it.
+    /// The search service, for tests that need to drive the count loader.
+    var searchServiceForTesting: SearchService { searchService }
+
+    /// How many documents in the current result set carry each user tag, keyed by
+    /// `UUID.uuidString` (R-1 follow-up).
+    ///
+    /// Populated on demand when the filter sheet opens — never eagerly, and never for the
+    /// facet panel. An absent key means the tag matched nothing, or counts have not been
+    /// computed; the surface distinguishes those with ``hasUserTagCounts``.
+    var userTagCounts: [String: Int] = [:]
+
+    /// Whether the tag counts have been computed for the current match.
+    ///
+    /// Separate from `userTagCounts.isEmpty`, because "every tag matched nothing" and "not
+    /// computed yet" must render differently — the first is an answer.
+    var hasUserTagCounts: Bool = false
+
+    /// Whether the count pass is running.
+    var isCountingUserTags: Bool = false
+
+    /// Counts each of `tags` against the result set `matchParameters` describes.
+    ///
+    /// - Parameter matchParameters: the query to count against. Passed in rather than read
+    ///   from `self` because on macOS this view model is the *filter sheet's* — seeded by
+    ///   `MacSearchViewModel.syncToFilterVM`, which copies `phrase` but **not** `keywords`.
+    ///   Counting against `self.searchParameters` there would silently describe a different
+    ///   result set than the one on screen.
+    func loadUserTagCounts(
+        matching matchParameters: SearchParameters,
+        tags: [UserTag],
+        service: SearchService?,
+        pipeline: IndexingPipeline?
+    ) async {
+        guard let service, let pipeline, !tags.isEmpty else { return }
+        isCountingUserTags = true
+        defer { isCountingUserTags = false }
+        do {
+            let expressions = try await service.matchExpressions(for: matchParameters)
+            let filters = await service.filtersForTesting(matchParameters)
+            let counts = try await pipeline.userTagCounts(
+                corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
+                filters: filters, tagIds: tags.map(\.id.uuidString))
+            guard !Task.isCancelled else { return }
+            userTagCounts = counts
+            hasUserTagCounts = true
+        } catch {
+            // A query with no searchable content throws `emptyQuery`; that is not a count
+            // failure and must not leave `hasUserTagCounts` true with stale numbers.
+            userTagCounts = [:]
+            hasUserTagCounts = false
+        }
+    }
+
     /// The match total to show the facet panel, or `nil` when it is not known (R-1c).
     ///
     /// iOS has never held a whole-query count: `resultCount` is the *fetched* count, capped
@@ -837,6 +890,21 @@ final class SearchViewModel {
                 label: String(localized: "search.narrowing.person",
                               defaultValue: "person #\(personRollupId)")))
         }
+        if !selectedUserTagIds.isEmpty {
+            // `Set<UUID>`, not an array — so no index subscript, and a stable label needs a
+            // deterministic pick rather than whatever the set iterates first.
+            let onlyName = selectedUserTagIds.count == 1
+                ? selectedUserTagIds.first.flatMap { id in
+                    availableUserTags.first { $0.id == id }?.name }
+                : nil
+            out.append(ActiveNarrowing(
+                id: "tag",
+                label: onlyName
+                    ?? (selectedUserTagIds.count == 1
+                        ? String(localized: "search.narrowing.tag.one", defaultValue: "1 tag")
+                        : String(localized: "search.narrowing.tags",
+                                 defaultValue: "\(selectedUserTagIds.count) tags"))))
+        }
         if documentTypeFilter != .all {
             out.append(ActiveNarrowing(
                 id: "type",
@@ -855,6 +923,7 @@ final class SearchViewModel {
         case "subseries": selectedSubseriesIds = []
         case "person": personRollupId = nil; personRefText = ""
         case "type": documentTypeFilter = .all
+        case "tag": selectedUserTagIds = []
         default: return
         }
         // Caller re-runs the search, matching this view model's existing convention.

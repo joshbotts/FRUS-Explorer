@@ -1568,6 +1568,25 @@ public actor IndexingPipeline {
         )
     }
 
+    /// Updates a document's note text and **nothing else**.
+    ///
+    /// Use this whenever the caller has no authoritative tag string to write. The
+    /// `userTagIds:` overload sets `user_tag_ids` to whatever it is passed, so passing `nil`
+    /// there *erases* the document's tags — and `user_tag_ids` is per **document**, not per
+    /// note, so a note that carries no tags of its own would wipe tags contributed by
+    /// another note on the same document. A new note has no tags to contribute, so it must
+    /// not speak for the column at all.
+    func updateNoteText(
+        volumeId: String,
+        documentId: String,
+        bodyText: String
+    ) async throws {
+        try updateCacheColumns(
+            volumeId: volumeId, documentId: documentId, label: "updateNoteText(textOnly)",
+            assignments: [("note_text", bodyText)]
+        )
+    }
+
     /// Updates user-tag assignments for a document without touching the note or
     /// summary text.
     ///
@@ -2370,6 +2389,85 @@ public actor IndexingPipeline {
             provenance: provenance, provenanceCoverage: coverage, bounds: bounds)
     }
 
+    /// Counts how many documents in the current match carry each of `tagIds`.
+    ///
+    /// Deliberately **not** a `FacetSection`. The facet panel exists to triage dimensions too
+    /// long to read — 552 volumes, 14,615 person rollups — and user tags are the opposite
+    /// problem: measured on the real store, 67 of 316,839 documents carry a tag (0.021%), so a
+    /// permanent sixth section would render "Nothing to break down here" for almost every
+    /// query and teach the researcher the dimension is broken. These counts belong on the
+    /// filter sheet's existing My Tags toggles, which appear only when opened and already
+    /// perform the narrowing.
+    ///
+    /// ## Two rules, both settled by measurement rather than reasoning
+    /// **The empty-string guard is what makes it affordable.** Because 99.98% of rows have no
+    /// tags, `WHERE user_tag_ids <> ''` removes all string work for almost every seek. With
+    /// it, cost is 0.18 s over a 195,519-document match — parity with the shipped Volumes
+    /// aggregate's 0.19 s — and **flat in tag count** (500 tags measured at the same 0.18 s).
+    /// Without it, 100 tags cost 1.74 s.
+    ///
+    /// **`COUNT(DISTINCT)` is not optional.** 14 of the 67 tagged rows on the real store repeat
+    /// an id inside one string, so `COUNT(*)` reported 25 for a tag the shipped filter matches
+    /// on 22 documents. `people` and `provenance` already count distinct for the same reason.
+    ///
+    /// Keys come from the caller's live `UserTag` list, not from the column, so a stale id
+    /// left in `user_tag_ids` can never produce a phantom row.
+    ///
+    /// - Returns: counts keyed by tag-id string. Tags matching nothing are omitted.
+    func userTagCounts(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        tagIds: [String]
+    ) throws -> [String: Int] {
+        guard !tagIds.isEmpty else { return [:] }
+        let matchCount = try materializeMatchSet(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+        defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
+        guard matchCount > 0 else { return [:] }
+
+        let values = tagIds.map { _ in "(?)" }.joined(separator: ",")
+        let sql = """
+            WITH tv(id) AS (VALUES \(values))
+            SELECT tv.id AS k, COUNT(DISTINCT ms.docrowid) AS c
+            FROM temp.facet_mset ms
+            CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+            JOIN tv ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || tv.id || ' %')
+            WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
+            GROUP BY k
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (index, id) in tagIds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(index + 1), id, -1, SQLITE_TRANSIENT_IP)
+        }
+        var counts: [String: Int] = [:]
+        while try auxStep(stmt) {
+            guard let key = auxColumnString(stmt, 0) else { continue }
+            counts[key] = Int(sqlite3_column_int64(stmt, 1))
+        }
+        return counts
+    }
+
+    /// `EXPLAIN QUERY PLAN` for the tag-count aggregate, so a test can assert its drive order
+    /// against the same three rules the facet sections are held to.
+    func userTagCountPlanForTesting(tagIds: [String]) throws -> String {
+        let values = tagIds.map { _ in "(?)" }.joined(separator: ",")
+        // The plan does not depend on the bound values, so a scratch match set is enough.
+        try auxExec("DROP TABLE IF EXISTS temp.facet_mset")
+        try auxExec("CREATE TEMP TABLE facet_mset (docrowid INTEGER PRIMARY KEY)")
+        defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
+        return try queryPlanForTesting("""
+            WITH tv(id) AS (VALUES \(values))
+            SELECT tv.id AS k, COUNT(DISTINCT ms.docrowid) AS c
+            FROM temp.facet_mset ms
+            CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+            JOIN tv ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || tv.id || ' %')
+            WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
+            GROUP BY k
+            """)
+    }
+
     /// Materialises the current match into `temp.facet_mset(docrowid INTEGER PRIMARY KEY)`
     /// and returns its size.
     ///
@@ -2549,6 +2647,20 @@ public actor IndexingPipeline {
         }
         guard try auxStep(stmt) else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    /// The raw `user_tag_ids` value for a document, so a test can assert the column was or
+    /// was not disturbed.
+    func userTagIdsForTesting(volumeId: String, documentId: String) throws -> String? {
+        let stmt = try auxPrepare("""
+            SELECT user_tag_ids FROM document_cache
+            WHERE volume_id = ? AND document_id = ?
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard try auxStep(stmt) else { return nil }
+        return auxColumnString(stmt, 0)
     }
 
     /// The names of every index on `table`, for tests that assert an index exists.

@@ -408,7 +408,20 @@ final class MacSearchViewModel {
 
     var tagFilterLabel: String? {
         guard !parameters.userTagIds.isEmpty else { return nil }
-        return parameters.userTagIds.count == 1 ? parameters.userTagIds[0] : "\(parameters.userTagIds.count) tags"
+        guard parameters.userTagIds.count == 1 else {
+            return String(localized: "search.filter.tags.count",
+                          defaultValue: "\(parameters.userTagIds.count) tags")
+        }
+        // Resolve to the tag's name. This used to return the raw id, so the chip read
+        // "Tagged 37A4D180-4990-4C2A-A0F9-BB41B4116EC2" — already the case for the shipped
+        // result-row chip tap, before any facet existed.
+        let id = parameters.userTagIds[0]
+        if let name = filterVM?.availableUserTags.first(where: { $0.id.uuidString == id })?.name {
+            return name
+        }
+        // No tag list yet (the Advanced panel has never been opened) or the id no longer
+        // resolves. A truncated id beats a full one, and beats claiming a name we do not have.
+        return String(localized: "search.filter.tags.unresolved", defaultValue: "1 tag")
     }
 
     var activeFilterSummary: String? {

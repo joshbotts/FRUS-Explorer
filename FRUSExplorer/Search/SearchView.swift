@@ -263,6 +263,18 @@ struct SearchView: View {
                 // types — the design's "a researcher learns NEAR by watching the
                 // expression change". The controller debounces; a keystroke costs nothing
                 // until typing settles. The search itself still runs only on submit.
+                // The facet panel MUST be invalidated when the search changes. Without this
+                // — which is how R-1c shipped — `load` early-returns on
+                // `loadedSections.contains(section)` and `@State facetController` lives for
+                // the tab's lifetime, so a section opened once was shown against every later
+                // search: stale buckets beside a live match count. `narrowedFrom` was also
+                // unreachable, because it is only promoted inside `invalidate`.
+                //
+                // Keyed on `executedSearchVersion`, which bumps once per *executed* search —
+                // `keywords` changes while typing and would discard the panel mid-read.
+                .onChange(of: vm.executedSearchVersion) { _, _ in
+                    facetController.invalidate(signature: "ios-\(vm.executedSearchVersion)")
+                }
                 .task(id: vm.keywords) {
                     await inspectorController.refresh(
                         parameters: vm.searchParameters,
@@ -273,7 +285,9 @@ struct SearchView: View {
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
                 // declared inside SearchFilterView.
                 .sheet(isPresented: $vm.showFilterPanel) {
-                    SearchFilterView(vm: vm)
+                    // iOS's filter sheet shares this view model, so its parameters ARE the
+                    // search's — but pass them explicitly anyway, because macOS's do not.
+                    SearchFilterView(vm: vm, tagCountParameters: vm.searchParameters)
                         .environment(appState)
                         .modelContainer(modelContext.container)
                 }
