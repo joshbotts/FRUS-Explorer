@@ -98,8 +98,19 @@ enum AnalyticsChartAxis: String, CaseIterable, Codable {
 /// crashes when `rawValue` re-encodes `self` — see the codable-rawrepresentable-recursion note).
 /// Normalization mode is intentionally NOT captured (it's forced to % while comparing anyway).
 ///
+/// ## Why the counting unit IS captured, when normalisation is not
+/// They look like the same kind of setting and are not. Normalisation is a *display* choice — the same
+/// query, drawn against a denominator. The counting unit changes **what the query asks**: documents
+/// and occurrences are different numbers over the same corpus, and on this corpus they can move in
+/// opposite directions (`Article 43`'s documents fall 34 → 11 from 1948 to 1949 while its occurrences
+/// rise 77 → 92). A starred query that silently re-ran in the other unit would re-export a
+/// numerically different figure under an identical title and the same filename stem.
+///
+/// Optional with a `documents` default so queries saved before PR-D still decode.
+///
 /// Version history:
 ///   1.0 — D1 Phase 3: initial implementation
+///   1.1 — R-2 PR-D: `valueUnit` captured — it changes what is counted, not how it is drawn
 struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
     /// Stable identity for `ForEach` / list membership (not part of query equality).
     let id: UUID
@@ -115,6 +126,8 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
     var scopeLabel: String?
     /// When the query was last saved / viewed (drives recents ordering; not part of equality).
     var savedAt: Date
+    /// What the query counted. `nil` in queries saved before PR-D; treated as `documents`.
+    var valueUnit: AnalyticsValueUnit?
 
     /// Query equality ignoring `id`/`savedAt` — used for de-duplication and the "is the current
     /// query already saved?" check. Scope identity is the volume-id set; `scopeLabel` is derived.
@@ -124,7 +137,8 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
     /// make the star read "unsaved" — and let the user pile up duplicate entries — for queries that
     /// render an identical chart (review fix).
     func matchesQuery(_ other: SavedAnalyticsQuery) -> Bool {
-        guard terms == other.terms, axis == other.axis, scopeVolumeIds == other.scopeVolumeIds else {
+        guard terms == other.terms, axis == other.axis, scopeVolumeIds == other.scopeVolumeIds,
+              (valueUnit ?? .documents) == (other.valueUnit ?? .documents) else {
             return false
         }
         guard !axis.isCategorical else { return true }
@@ -225,6 +239,12 @@ struct AnalyticsView: View {
     /// charts. Stays SINGLE (not per-term): source coloring is dropped while comparing, so this is
     /// fetched only for a single committed term.
     @State private var yearVolumeData: [YearVolumeFrequency] = []
+    /// Per-term occurrence series (PR-D). Populated only for By Year / By Decade — the axes
+    /// `measureApplies` admits — and only for query shapes with an honest occurrence count.
+    @State private var occurrenceYearDataByTerm: [String: [YearFrequency]] = [:]
+    /// Whether the committed query can be counted by occurrence, and if not, why. Fetched with the
+    /// data so the notice and the picker's enablement agree with what was actually loaded.
+    @State private var occurrenceAvailability: OccurrenceAvailability = .unavailable(reason: .noPositiveTerm)
     @State private var decadeDataByTerm: [String: [DecadeFrequency]] = [:]
     @State private var monthDataByTerm: [String: [MonthFrequency]] = [:]
     @State private var dayDataByTerm: [String: [DayFrequency]] = [:]
@@ -315,8 +335,34 @@ struct AnalyticsView: View {
     private var committedTerm: String { committedTerms.first ?? "" }
     /// The primary term's per-axis data — the single-term view the existing chart code reads. The
     /// compare charts (a later phase) read the `*DataByTerm` dictionaries directly.
-    private var yearData: [YearFrequency] { yearDataByTerm[committedTerm] ?? [] }
-    private var decadeData: [DecadeFrequency] { decadeDataByTerm[committedTerm] ?? [] }
+    private var yearData: [YearFrequency] { yearSeries(for: committedTerm) }
+    private var decadeData: [DecadeFrequency] { decadeSeries(for: committedTerm) }
+
+    /// The By-Year series for `term` in the active unit.
+    ///
+    /// Every chart, table, footnote and export reads its data through here and its decade sibling, so
+    /// switching measure cannot leave one surface plotting documents while another plots occurrences.
+    private func yearSeries(for term: String) -> [YearFrequency] {
+        valueUnit == .occurrences
+            ? (occurrenceYearDataByTerm[term] ?? [])
+            : (yearDataByTerm[term] ?? [])
+    }
+
+    /// The By-Decade series for `term` in the active unit.
+    ///
+    /// Occurrences are bucketed from the year series rather than fetched: a decade is the sum of its
+    /// years, so a second query would cost latency for a number arithmetic already has — and any
+    /// disagreement between the two would be a bug with no way to tell which side was wrong.
+    private func decadeSeries(for term: String) -> [DecadeFrequency] {
+        guard valueUnit == .occurrences else { return decadeDataByTerm[term] ?? [] }
+        var byDecade: [Int: Int] = [:]
+        for entry in occurrenceYearDataByTerm[term] ?? [] {
+            byDecade[(entry.year / 10) * 10, default: 0] += entry.count
+        }
+        return byDecade
+            .map { DecadeFrequency(decadeStart: $0.key, count: $0.value) }
+            .sorted { $0.decadeStart < $1.decadeStart }
+    }
     private var monthData: [MonthFrequency] { monthDataByTerm[committedTerm] ?? [] }
     private var dayData: [DayFrequency] { dayDataByTerm[committedTerm] ?? [] }
     private var subseriesData: [SubseriesFrequency] { subseriesDataByTerm[committedTerm] ?? [] }
@@ -415,7 +461,13 @@ struct AnalyticsView: View {
     /// same raw counts. Coupling it here fixes the screen, the provenance and the export together,
     /// because all three read this one property.
     private var isNormalized: Bool {
-        normalizationApplies && viewMode == .chart
+        // `valueUnit == .documents` is load-bearing, not defensive. `normalizedValue` divides by the
+        // period's DOCUMENT total and every consumer calls the result a percentage; occurrences
+        // divided by documents is a rate that runs freely past 100% and is not a share of anything.
+        // So the combination is made unreachable here rather than clamped or relabelled later — and
+        // the Measure picker is what the researcher reaches for, so occurrences win and the share
+        // mode yields.
+        normalizationApplies && viewMode == .chart && valueUnit == .documents
             && effectiveNormalizationMode == .percentOfDocuments
     }
 
@@ -481,11 +533,11 @@ struct AnalyticsView: View {
 
     /// One committed term's By-Year data, filtered to the active year range.
     private func filteredYearData(for term: String) -> [YearFrequency] {
-        (yearDataByTerm[term] ?? []).filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
+        yearSeries(for: term).filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
     }
     /// One committed term's By-Decade data, filtered to decades intersecting the active range.
     private func filteredDecadeData(for term: String) -> [DecadeFrequency] {
-        (decadeDataByTerm[term] ?? []).filter { $0.decadeStart + 9 >= yearRangeStart && $0.decadeStart <= yearRangeEnd }
+        decadeSeries(for: term).filter { $0.decadeStart + 9 >= yearRangeStart && $0.decadeStart <= yearRangeEnd }
     }
     /// One committed term's By-Month data, filtered to the active year range.
     private func filteredMonthData(for term: String) -> [MonthFrequency] {
@@ -534,7 +586,12 @@ struct AnalyticsView: View {
     private func currentQuery() -> SavedAnalyticsQuery {
         SavedAnalyticsQuery(id: UUID(), terms: committedTerms, axis: chartAxis,
                             yearStart: yearRangeStart, yearEnd: yearRangeEnd,
-                            scopeVolumeIds: scopeVolumeIds, scopeLabel: scopeLabel, savedAt: Date())
+                            scopeVolumeIds: scopeVolumeIds, scopeLabel: scopeLabel, savedAt: Date(),
+                            // The PREFERENCE, not the effective unit: restoring must reinstate what
+                            // the researcher asked for. `valueUnit` falls back to documents on an axis
+                            // or query that cannot serve occurrences, and saving that fallback would
+                            // quietly demote the query for every later restore.
+                            valueUnit: storedValueUnit)
     }
 
     /// `true` when the current query is already in the saved list (drives the star's filled state).
@@ -587,6 +644,7 @@ struct AnalyticsView: View {
         yearRangeEnd = q.yearEnd
         scopeVolumeIds = (q.scopeVolumeIds?.isEmpty == true) ? nil : q.scopeVolumeIds
         scopeLabel = scopeVolumeIds == nil ? nil : q.scopeLabel
+        storedValueUnit = q.valueUnit ?? .documents
         termInput = ""
         reloadData()
     }
@@ -637,7 +695,11 @@ struct AnalyticsView: View {
             valueMode: normalizationApplies
                 ? (isNormalized ? effectiveNormalizationMode.pickerLabel
                                 : AnalyticsNormalizationMode.raw.pickerLabel)
-                : nil
+                : nil,
+            // The EFFECTIVE unit, not the preference: this describes the numbers in the file. A
+            // figure exported from an axis that cannot serve occurrences contains document counts,
+            // whatever the picker still says.
+            countingUnit: valueUnit.axisLabel
         )
     }
 
@@ -1458,6 +1520,7 @@ struct AnalyticsView: View {
     @ViewBuilder
     private var chartContent: some View {
         ScrollView {
+            occurrenceNotice
             switch chartAxis {
             case .byDecade:    decadeChartSection
             case .byYear:      yearChartSection
@@ -1602,12 +1665,38 @@ struct AnalyticsView: View {
 
     /// Y-axis title for the date charts — "Documents" in raw mode, "% of documents"
     /// when the normalization toggle is active for the axis.
-    /// What this view's numbers count. The single seam a second unit changes.
+    /// What this view's numbers count, as the researcher last chose.
     ///
-    /// A stored preference is deliberately NOT introduced here: with one case there is nothing to
-    /// choose, and a picker over a one-element set is worse than none. PR-D adds the case, the
-    /// preference and the control together — at which point every label below already tracks it.
-    private var valueUnit: AnalyticsValueUnit { .documents }
+    /// Read through ``valueUnit``, never directly: the preference persists across axes, but only
+    /// By Year and By Decade can serve occurrences, so the effective unit falls back to documents
+    /// elsewhere rather than the picker's choice silently applying where no data backs it.
+    @AppStorage(AnalyticsValueUnit.storageKey) private var storedValueUnit: AnalyticsValueUnit = .documents
+
+    /// What this view's numbers actually count right now.
+    ///
+    /// Documents whenever occurrences cannot be served: on an axis without an occurrence series, or
+    /// for a query shape that has no honest occurrence count (see ``OccurrenceAvailability``). The
+    /// fallback is silent in the data and **loud in the UI** — `occurrenceNotice` states the reason —
+    /// because a chart that quietly switched units would be the exact defect this workstream removed.
+    private var valueUnit: AnalyticsValueUnit {
+        guard storedValueUnit == .occurrences, measureApplies, occurrenceAvailability.isAvailable
+        else { return .documents }
+        return .occurrences
+    }
+
+    /// Whether a measure other than documents can be offered on the current axis.
+    ///
+    /// By Year and By Decade only — the same two axes normalisation applies to, and for the same
+    /// underlying reason: they are the axes with a per-period series the service can produce. Only
+    /// `termOccurrencesByYear` exists; the sub-year and categorical axes would each need their own
+    /// method with its own population reasoning, which is deliberately not in this change.
+    ///
+    /// Separate from ``normalizationApplies`` even though the two currently agree: they answer
+    /// different questions (what is counted vs. whether it is divided by a denominator), and
+    /// collapsing them would make the next axis-scope change edit the wrong one.
+    private var measureApplies: Bool {
+        chartAxis == .byYear || chartAxis == .byDecade
+    }
 
     private var valueAxisLabel: String {
         isNormalized
@@ -2146,6 +2235,39 @@ struct AnalyticsView: View {
         .padding(.vertical)
     }
 
+    // MARK: - Occurrence measure notice (R-2 PR-D)
+
+    /// States why the Measure picker is unavailable, when the researcher has asked for occurrences
+    /// and this query cannot honestly supply them.
+    ///
+    /// ## Why this exists rather than a disabled control alone
+    /// A greyed-out picker says "not here" and nothing else. The reasons are not guessable — that
+    /// exact-word searches cannot be counted by occurrence is a fact about how the index stores
+    /// stems, and no amount of looking at the UI would reveal it. So the reason is stated, once, in
+    /// the researcher's own terms.
+    ///
+    /// Shown only when the preference is `occurrences`: someone who never asked for the measure does
+    /// not need to be told which of their queries could not have provided it. And only on the axes
+    /// that offer the measure at all, so switching to By Volume does not produce a notice about a
+    /// control that is not on screen.
+    @ViewBuilder
+    private var occurrenceNotice: some View {
+        if storedValueUnit == .occurrences, measureApplies, !committedTerm.isEmpty,
+           let reason = occurrenceAvailability.reason {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                Text(reason.explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .accessibilityElement(children: .combine)
+        }
+    }
+
     // MARK: - Dispersion (R-2 PR-C)
 
     /// How widely the current term's matches are spread across volumes, and whether they concentrate.
@@ -2561,7 +2683,11 @@ struct AnalyticsView: View {
             // inapplicable, so an un-gated button would open an empty menu (R3).
             // D3 adds Export to this menu, so the gate gains `canExport` — still "shown only when the
             // menu would have content" (never unconditionally), which is what R3 fixed.
-            if normalizationApplies || (chartAxis.isDateBased && viewMode == .chart) || canExport {
+            // `measureApplies` belongs in this gate for the same reason the others do: without it a
+            // By-Year chart whose only available control is Measure would open an EMPTY menu on
+            // iPhone — no compile error, no test failure, and invisible on a Mac.
+            if measureApplies || normalizationApplies
+                || (chartAxis.isDateBased && viewMode == .chart) || canExport {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         compactChartOptionsMenu
@@ -2575,6 +2701,29 @@ struct AnalyticsView: View {
                 }
             }
         } else {
+            // Measure: documents vs occurrences (PR-D). Same two axes as normalisation, for the same
+            // underlying reason — those are the axes with a per-period series. Disabled rather than
+            // hidden when the query has no honest occurrence count, so the control's absence never
+            // has to be inferred; `occurrenceNotice` says why.
+            if measureApplies {
+                ToolbarItem(placement: .primaryAction) {
+                    Picker(
+                        String(localized: "analytics.measure.picker", defaultValue: "Measure"),
+                        selection: $storedValueUnit
+                    ) {
+                        ForEach(AnalyticsValueUnit.allCases, id: \.self) { unit in
+                            Text(unit.pickerLabel).tag(unit)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(committedTerm.isEmpty || !occurrenceAvailability.isAvailable)
+                    .help(String(
+                        localized: "analytics.measure.help",
+                        defaultValue: "Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions."
+                    ))
+                }
+            }
+
             // Normalization: raw count vs % of documents (CA-4). Only meaningful for the
             // date-based By-Year / By-Decade axes, so it is hidden for the others.
             if normalizationApplies {
@@ -2782,6 +2931,18 @@ struct AnalyticsView: View {
             }
         }
         // Axis granularity moved to the filter row's "Group by" chip (Wave B).
+        // Measure (PR-D) leads the normalisation picker: it decides WHAT is counted, and "Values"
+        // only decides whether that is divided by a denominator.
+        if measureApplies {
+            Picker(selection: $storedValueUnit) {
+                ForEach(AnalyticsValueUnit.allCases, id: \.self) { unit in
+                    Text(unit.pickerLabel).tag(unit)
+                }
+            } label: {
+                Text(String(localized: "analytics.measure.picker", defaultValue: "Measure"))
+            }
+            .disabled(committedTerm.isEmpty || !occurrenceAvailability.isAvailable)
+        }
         if normalizationApplies {
             Picker(selection: normalizationBinding) {
                 ForEach(AnalyticsNormalizationMode.allCases, id: \.self) { mode in
@@ -2838,6 +2999,8 @@ struct AnalyticsView: View {
             yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
             dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
             yearVolumeData = []; documentTotalsByYear = [:]; documentTotalsByDecade = [:]
+            occurrenceYearDataByTerm = [:]
+            occurrenceAvailability = .unavailable(reason: .noPositiveTerm)
             errorMessage = nil   // clear a stale error so removing the last term shows the empty state
             isLoading = false
             return
@@ -2849,6 +3012,7 @@ struct AnalyticsView: View {
         dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
         yearVolumeData = []
         documentTotalsByYear = [:]; documentTotalsByDecade = [:]
+        occurrenceYearDataByTerm = [:]
         // Restrict every axis to the active volume-ID scope (Word Cloud → Analytics handoff);
         // `nil`/empty means the whole corpus, the default presentation.
         let scope: Set<String>? = scopeVolumeIds.map(Set.init)
@@ -2873,6 +3037,19 @@ struct AnalyticsView: View {
                 var days:      [String: [DayFrequency]]       = [:]
                 var subseries: [String: [SubseriesFrequency]] = [:]
                 var volumes:   [String: [VolumeFrequency]]    = [:]
+                // Occurrences (PR-D): only for a single committed term, and only when the shape has
+                // an honest count. Compare mode is excluded deliberately — the availability notice
+                // names ONE reason, and a mixed set where some chips are countable and others are not
+                // would need per-chip suppression the chart cannot express without inventing a
+                // legend for absence.
+                var occurrenceYears: [String: [YearFrequency]] = [:]
+                let availability = singleTerm
+                    ? await service.occurrenceAvailability(for: terms[0])
+                    : OccurrenceAvailability.unavailable(reason: .compositeQuery)
+                if singleTerm, availability.isAvailable {
+                    occurrenceYears[terms[0]] = try await service.termOccurrencesByYear(
+                        term: terms[0], volumeIds: scope)
+                }
                 for term in terms {
                     async let y  = service.termFrequencyByYear(term: term, volumeIds: scope)
                     async let d  = service.termFrequencyByDecade(term: term, volumeIds: scope)
@@ -2900,6 +3077,8 @@ struct AnalyticsView: View {
                 yearVolumeData = yearVolumes
                 documentTotalsByYear = ty
                 documentTotalsByDecade = td
+                occurrenceYearDataByTerm = occurrenceYears
+                occurrenceAvailability = availability
             } catch {
                 guard token == fetchToken else { return }
                 errorMessage = error.localizedDescription

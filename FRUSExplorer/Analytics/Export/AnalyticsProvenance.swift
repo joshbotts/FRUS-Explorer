@@ -65,6 +65,13 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var appliesDocumentDating: Bool = true
     /// The value mode, e.g. `Raw count` / `% of documents`; `nil` where normalization never applies.
     var valueMode: String?
+    /// What the figure counts, e.g. `Documents` / `Occurrences (stems)`.
+    ///
+    /// Emitted **unconditionally** where supplied, unlike ``valueMode``, which is `nil` on the four
+    /// axes normalisation never reaches. The unit is a fact about every figure: a reader of an
+    /// occurrence chart who is told only "Raw count" has been told the one thing they could have
+    /// guessed and not the one they could not.
+    var countingUnit: String?
     /// View-specific caveats appended verbatim (e.g. the cross-reference excluded-references note).
     var extraCaveats: [String] = []
     /// When the export was produced.
@@ -165,6 +172,9 @@ struct AnalyticsProvenance: Sendable, Equatable {
         lines.append("\(String(localized: "analytics.export.field.scope", defaultValue: "Scope")): \(scopeDescription)")
         if appliesDocumentDating {
             lines.append("\(String(localized: "analytics.export.field.yearRange", defaultValue: "Year range")): \(yearRangeDescription)")
+        }
+        if let countingUnit {
+            lines.append("\(String(localized: "analytics.export.field.counting", defaultValue: "Counting")): \(countingUnit)")
         }
         if let valueMode {
             lines.append("\(String(localized: "analytics.export.field.values", defaultValue: "Values")): \(valueMode)")
