@@ -391,6 +391,57 @@ Three guards worth knowing about, each of which exists because the failure would
 `MAX_API_REQUESTS_PER_GROUP` (default 200) is a hard per-group ceiling, so a paging bug cannot drain
 the monthly quota. A non-advancing cursor throws rather than looping.
 
+### Later — file units, and what the first attempt taught
+
+The first RG 59 file-unit attempt failed with a bare `HTTP 500`, and diagnosing it turned up five
+defects. All are fixed; the numbers below are why.
+
+**Page size has to be level-aware.** Measured on RG 59 from the bulk export: a **series** record
+averages 3,100 bytes, so `limit=1000` is a comfortable ~3 MB response. A **fileUnit** record has a
+median of 1,889 bytes but a **mean of 20,878 and a maximum of 4.24 MB** — that skew makes `limit=1000`
+a ~20 MB response on average and potentially hundreds of MB for an unlucky page. `API_PAGE_SIZE` now
+defaults per level: **1000 series / 250 file units / 100 items**, overridable.
+
+**And it has to adapt.** No fixed number is safe against that distribution, so a failing page now
+**halves the limit and retries the same cursor** (1000 → 500 → … → 25 floor). A genuinely unservable
+page therefore costs 7 calls before it gives up — worth knowing as a quota cost.
+
+**Levels are harvested coarsest-first.** `admittedLevels.sorted()` put `"fileUnit"` before `"series"`
+alphabetically, so the file-unit level ran first and its 500 aborted the group having harvested **zero
+series** — a level that had worked reliably at `limit=1000` minutes earlier.
+
+**A non-2xx no longer reads as end-of-results.** `decode` hands 4xx back as an empty page so the survey
+can inspect a 400, and `harvestGroup` treated zero hits as the end of the stream. A revoked key or an
+exhausted quota mid-harvest would have truncated silently.
+
+**A failed harvest no longer destroys the previous good one.** This was the expensive one. The harvest
+used to `reset()` the store and *then* fetch into it, so the 500 wiped 4,449 already-harvested RG 59
+series before dying. Fetches now stage to a `.partial` file and are swapped in only on success; a
+failure leaves the previous store byte-identical. Relatedly, a build that comes in **materially short
+no longer overwrites an existing shard** — that is how RG 59's index went to zero records, and
+`ALLOW_SHORT=1` is the opt-in if a shortfall is genuinely expected.
+
+Failures are also **isolated per group** now. One bad page used to throw out of the entire run; in a
+22-group harvest that is most of the work lost.
+
+#### Revised call budget
+
+`fileUnitCount` on the harvested series gives NARA's own expected total: **731,618 file units** across
+the 22 groups.
+
+| fileUnit `limit` | total calls | worst group (RG 59) |
+|---|---|---|
+| 250 (default) | ~3,485 | 952 |
+| 500 | ~2,023 | 479 |
+
+Both fit a 10,000/month quota, but neither is the ~797 an earlier estimate suggested — that assumed
+`limit=1000` works at file-unit level, which the 500 disproved. `MAX_API_REQUESTS_PER_GROUP` must be
+raised well above its 200 default for RG 59 either way.
+
+Note that 731,618 is a **floor**: only 1,466 of RG 59's 4,449 series state a `fileUnitCount` at all, so
+a positive `fileUnitCountDelta` is plausible and is reported rather than failed. A *negative* delta is
+the one to act on.
+
 ### Later — file units for chosen record groups
 
 ```bash

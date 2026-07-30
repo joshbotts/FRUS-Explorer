@@ -78,6 +78,12 @@ public struct RecordGroupCatalogWriter: Sendable {
 
     // MARK: Index shards
 
+    /// Whether a shard already exists for this group.
+    public func shardExists(recordGroup: Int) -> Bool {
+        FileManager.default.fileExists(
+            atPath: seriesDirectory.appendingPathComponent("rg_\(recordGroup).json").path)
+    }
+
     /// Writes one record group's index shard.
     @discardableResult
     public func writeShard(_ shard: RecordGroupIndexShard) throws -> Int {

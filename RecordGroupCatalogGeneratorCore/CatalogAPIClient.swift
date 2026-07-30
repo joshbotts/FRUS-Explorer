@@ -96,6 +96,13 @@ public enum CatalogAPIError: Error, Sendable, Equatable, CustomStringConvertible
     case unrecognisedEnvelope(observedTopLevelKeys: [String])
     /// The cursor did not advance, so paging would loop forever.
     case cursorDidNotAdvance(String)
+    /// A page failed even at the minimum page size.
+    ///
+    /// Carries the context a bare `HTTP 500` does not. The first RG 59 file-unit attempt failed with
+    /// exactly that bare message, and locating it meant going to the on-disk store to count what had
+    /// been written — which is not a diagnosis path anyone should need.
+    case pageFailed(recordGroup: Int, level: String, pageIndex: Int, pageSize: Int,
+                    recordsSoFar: Int, underlying: String)
 
     public var description: String {
         switch self {
@@ -108,6 +115,10 @@ public enum CatalogAPIError: Error, Sendable, Equatable, CustomStringConvertible
             return "No known hits container; response top-level keys: \(keys.joined(separator: ", "))"
         case .cursorDidNotAdvance(let cursor):
             return "Cursor '\(cursor)' repeated — paging would loop; aborting rather than burning quota"
+        case .pageFailed(let rg, let level, let page, let size, let soFar, let underlying):
+            return "RG \(rg) [\(level)]: page \(page) failed at limit=\(size) after \(soFar) "
+                + "record(s) — \(underlying). Page size was already at the adaptive floor, so this is "
+                + "not a response-size problem."
         }
     }
 }
@@ -260,6 +271,30 @@ public struct CatalogAPIClient: Sendable {
     /// Seed for the first request's `searchAfter`. See the comment in ``fetchPage``.
     public static let firstCursorSeed = "*"
 
+    /// Default page size per level of description.
+    ///
+    /// Not one number, because record size varies by two orders of magnitude between levels. Measured
+    /// on RG 59 from the bulk export: a **series** record averages 3,100 bytes, so `limit=1000` is a
+    /// comfortable ~3 MB response. A **fileUnit** record has a median of 1,889 bytes but a *mean* of
+    /// 20,878 and a maximum of **4.24 MB** — that skew makes `limit=1000` a ~20 MB response on average
+    /// and potentially hundreds of MB for an unlucky page, which is what returned HTTP 500 and killed
+    /// the first RG 59 file-unit harvest.
+    ///
+    /// These are starting points, not ceilings: ``harvestGroup`` halves the page size and retries when
+    /// a request fails, so a page that is still too large self-corrects rather than aborting the group.
+    public static func defaultPageSize(forLevel level: String?) -> Int {
+        switch level {
+        case "series", "recordGroup", "collection": return 1000
+        case "fileUnit":                            return 250
+        case "item":                                return 100
+        default:                                    return 250
+        }
+    }
+
+    /// Page size below which the adaptive halving gives up. A request failing at 25 rows is not a size
+    /// problem, so continuing to shrink would only mask a real fault.
+    public static let minAdaptivePageSize = 25
+
     private let endpoint: String
     private let apiKey: String
     private let pageSize: Int
@@ -299,14 +334,16 @@ public struct CatalogAPIClient: Sendable {
         recordGroup: Int,
         level: String?,
         cursor: String?,
-        includeQ: Bool = false
+        includeQ: Bool = false,
+        pageSizeOverride: Int? = nil
     ) async throws -> Page {
+        let effectivePageSize = pageSizeOverride ?? pageSize
         var items = [
             // Top-level facet, NOT `description.recordGroupNumber` — the prefixed form filters
             // descendants and was silently ignored on a record-group query (see the #321-era comments
             // in NARACatalogHarvestClient.resolveRecordGroup).
             URLQueryItem(name: "recordGroupNumber", value: String(recordGroup)),
-            URLQueryItem(name: "limit", value: String(pageSize)),
+            URLQueryItem(name: "limit", value: String(effectivePageSize)),
         ]
         if let level { items.append(URLQueryItem(name: "levelOfDescription", value: level)) }
         // `searchAfter` is sent on EVERY request, seeded with `*` on the first — matching the repo's
@@ -328,7 +365,7 @@ public struct CatalogAPIClient: Sendable {
         guard let url = components.url else { throw CatalogAPIError.invalidURL(endpoint) }
 
         let (body, status) = try await transport.get(url, apiKey: apiKey)
-        var page = try Self.decode(body, httpStatus: status, requestedLimit: pageSize)
+        var page = try Self.decode(body, httpStatus: status, requestedLimit: effectivePageSize)
         page.observation.omittedQ = !includeQ
 
         // If a q-less request was rejected, say so loudly and retry once WITH q. A permissive `q`
@@ -338,7 +375,8 @@ public struct CatalogAPIClient: Sendable {
             log("[RecordGroupCatalogGenerator] ⚠ API rejected a q-less request (HTTP 400) — "
                 + "retrying with q=*; note this changes relevance scoring and thus the sort array")
             var retried = try await fetchPage(recordGroup: recordGroup, level: level,
-                                              cursor: cursor, includeQ: true)
+                                              cursor: cursor, includeQ: true,
+                                              pageSizeOverride: effectivePageSize)
             retried.observation.rejectedWithoutQ = true
             return retried
         }
@@ -454,9 +492,16 @@ public struct CatalogAPIClient: Sendable {
         recordGroup: Int,
         level: String?,
         maxRequests: Int,
+        startingPageSize: Int? = nil,
         sink: (CatalogJSONValue) throws -> Void
     ) async throws -> (recordCount: Int, requestsSpent: Int, observation: APIEnvelopeObservation?) {
 
+        // Adaptive, because no single page size is safe across levels. RG 59's file-unit records have a
+        // median of 1,889 bytes and a maximum of 4.24 MB, so a page of 1,000 is usually ~2 MB and
+        // occasionally hundreds — and the occasional one returns HTTP 500. Halving on failure lets the
+        // harvest ride over a bad page instead of aborting the group.
+        var effectivePageSize = startingPageSize ?? Self.defaultPageSize(forLevel: level)
+        var adaptations = 0
         var cursor: String? = nil
         var issuedCursors = Set<String>()
         var recordCount = 0
@@ -467,8 +512,45 @@ public struct CatalogAPIClient: Sendable {
         var firstObservation: APIEnvelopeObservation?
 
         while requests < maxRequests {
-            let page = try await fetchPage(recordGroup: recordGroup, level: level, cursor: cursor)
-            requests += 1
+            // Halve the page size and retry the SAME cursor. Below the floor a failure is not about
+            // size, so stop pretending it is and surface the error with the context to diagnose it.
+            // Factored out because two distinct paths need it: a transport that THROWS on 5xx, and a
+            // non-2xx that `decode` hands back as an empty page.
+            func adaptOrFail(_ reason: String) throws {
+                guard effectivePageSize > Self.minAdaptivePageSize else {
+                    throw CatalogAPIError.pageFailed(
+                        recordGroup: recordGroup, level: level ?? "(all)",
+                        pageIndex: requests, pageSize: effectivePageSize,
+                        recordsSoFar: recordCount, underlying: reason)
+                }
+                effectivePageSize = max(Self.minAdaptivePageSize, effectivePageSize / 2)
+                adaptations += 1
+                log("[RecordGroupCatalogGenerator] RG \(recordGroup) [\(level ?? "all")]: page "
+                    + "\(requests) failed (\(reason)) — retrying at limit=\(effectivePageSize)")
+            }
+
+            // One HTTP call, counted exactly once. Incrementing inside both the `do` and the `catch`
+            // double-counted a single failed request, which then over-reported quota spend.
+            let fetched: Page
+            do {
+                fetched = try await fetchPage(recordGroup: recordGroup, level: level, cursor: cursor,
+                                             pageSizeOverride: effectivePageSize)
+                requests += 1
+            } catch {
+                requests += 1
+                try adaptOrFail(String(describing: error))
+                continue
+            }
+
+            // A non-2xx must NOT fall through to the zero-hits termination below. `decode` hands 4xx
+            // back as an empty page so the survey can inspect a 400 — which means an unhandled 4xx
+            // mid-harvest (a revoked key, an exhausted quota) would otherwise read as end-of-results
+            // and truncate the harvest silently. Only a real 200 with no hits ends the stream.
+            guard (200..<300).contains(fetched.observation.httpStatus) else {
+                try adaptOrFail("HTTP \(fetched.observation.httpStatus)")
+                continue
+            }
+            let page = fetched
             if firstObservation == nil { firstObservation = page.observation }
             if totalHits == nil { totalHits = page.observation.totalHits }
 
@@ -503,6 +585,11 @@ public struct CatalogAPIClient: Sendable {
             cursor = next
         }
 
+        if adaptations > 0 {
+            log("[RecordGroupCatalogGenerator] RG \(recordGroup) [\(level ?? "all")]: reduced page "
+                + "size \(adaptations) time(s), finishing at limit=\(effectivePageSize) — some pages "
+                + "were too large for the API to serve")
+        }
         if duplicates > 0 {
             log("[RecordGroupCatalogGenerator] RG \(recordGroup): \(duplicates) duplicate record(s) "
                 + "across pages were dropped — the API's page ordering is not stable for this query")

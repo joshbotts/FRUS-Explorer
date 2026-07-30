@@ -275,6 +275,69 @@ struct CatalogAPIPagingTests {
         }
     }
 
+    @Test("Levels are harvested coarsest-first, so a deep failure cannot cost a shallow one")
+    func harvestsLevelsHierarchically() {
+        // `admittedLevels.sorted()` put "fileUnit" before "series" alphabetically. When RG 59's first
+        // file-unit page returned HTTP 500, the group aborted having harvested ZERO series — losing a
+        // level that had worked reliably at limit=1000 minutes earlier.
+        #expect(HarvestDepth.seriesAndFileUnits.orderedLevels == ["series", "fileUnit"])
+        #expect(HarvestDepth.all.orderedLevels == ["series", "fileUnit", "item", "collection"])
+        #expect(HarvestDepth.series.orderedLevels == ["series"])
+        // The old alphabetical order really did invert it.
+        #expect(Array(HarvestDepth.seriesAndFileUnits.admittedLevels.sorted()) == ["fileUnit", "series"])
+    }
+
+    @Test("Default page size is level-aware, because record size differs by orders of magnitude")
+    func pageSizeIsLevelAware() {
+        // Measured on RG 59 from the bulk export: a series record averages 3,100 bytes; a fileUnit has
+        // a median of 1,889 but a mean of 20,878 and a max of 4.24 MB. One number cannot serve both.
+        #expect(CatalogAPIClient.defaultPageSize(forLevel: "series") == 1000)
+        #expect(CatalogAPIClient.defaultPageSize(forLevel: "fileUnit") == 250)
+        #expect(CatalogAPIClient.defaultPageSize(forLevel: "item") == 100)
+    }
+
+    @Test("A failing page halves the limit and retries the same cursor")
+    func halvesPageSizeOnFailure() async throws {
+        // Note the scripted transport RETURNS the 500 rather than throwing, exactly as `decode` hands a
+        // non-2xx back — which is how the latent "4xx reads as end-of-results" truncation was found.
+        // The RG 59 fix: ride over an over-large page instead of aborting the group.
+        let (api, transport) = client([
+            ("{\"message\":\"boom\"}", 500),                                  // limit=250 fails
+            (ScriptedAPITransport.page(naIds: [1, 2], total: 2), 200),        // limit=125 works
+        ], pageSize: 250)
+        var collected: [String] = []
+        let result = try await api.harvestGroup(
+            recordGroup: 59, level: "fileUnit", maxRequests: 10, startingPageSize: 250) {
+            collected.append($0["naId"]?.stringValue ?? "")
+        }
+        #expect(collected == ["1", "2"])
+        // Both attempts are charged, and the retry used half the limit against the SAME cursor.
+        #expect(result.requestsSpent == 2)
+        try #require(transport.requests.count >= 2)
+        #expect(transport.requests[0].contains("limit=250"))
+        #expect(transport.requests[1].contains("limit=125"))
+        #expect(transport.requests[1].contains("searchAfter=%2A")
+                || transport.requests[1].contains("searchAfter=*"))
+    }
+
+    @Test("Below the adaptive floor the error surfaces with full context, not a bare HTTP 500")
+    func reportsContextAtTheFloor() async throws {
+        // A bare "HTTP 500" is what the first RG 59 attempt produced, and locating it meant counting
+        // records in the on-disk store. Not a diagnosis path anyone should need.
+        let failing = Array(repeating: ("{\"message\":\"boom\"}", 500), count: 12)
+        let (api, _) = client(failing, pageSize: 50)
+        do {
+            _ = try await api.harvestGroup(recordGroup: 59, level: "fileUnit",
+                                           maxRequests: 20, startingPageSize: 50) { _ in }
+            Issue.record("expected a throw at the adaptive floor")
+        } catch let error as CatalogAPIError {
+            let text = error.description
+            #expect(text.contains("RG 59"))
+            #expect(text.contains("fileUnit"))
+            #expect(text.contains("not a response-size problem"))
+        }
+    }
+
     @Test("The per-group request ceiling stops paging")
     func respectsRequestCeiling() async throws {
         let (api, transport) = client([
