@@ -1,0 +1,104 @@
+NARA Catalog — Record Group Catalog Harvest
+Generated: 2026-07-30
+Source: nara-catalog-api-v2+s3-bulk-export — https://nara-national-archives-catalog.s3.us-east-2.amazonaws.com
+Export snapshot: 2026-04-09T13:40:17.000Z
+──────────────────────────────────────────────────────────────────────────────
+RECORD GROUPS      22
+SERIES HARVESTED   20188 (NARA states 20187)
+BYTES READ         0 B over 0 shards
+──────────────────────────────────────────────────────────────────────────────
+PRIORITY PAYLOADS
+  creators                 20180 records (100.0%), 7318 distinct creators
+  variantControlNumbers    19881 records (98.5%), 23 distinct types
+  contributors             462 records (2.3%)
+  localIdentifier          725 records (3.6%) — agency-assigned, and NOT part of variantControlNumbers
+  creator authority        not run (set CREATOR_AUTHORITY=1)
+──────────────────────────────────────────────────────────────────────────────
+FIELD ALIAS REPORT (which key spelling matched)
+  contributors              contributors=462  presentButEmpty=0 absent=19726
+  creators                  creators=20180  presentButEmpty=0 absent=8
+  custodialHistoryNote      custodialHistoryNote=19  presentButEmpty=0 absent=20169
+  findingAids               findingAids=3243  presentButEmpty=0 absent=16945
+  generalRecordsTypes       generalRecordsTypes=20188  presentButEmpty=0 absent=0
+  microformPublications     microformPublications=200  presentButEmpty=0 absent=19988
+  physicalOccurrences       physicalOccurrences=20188  presentButEmpty=0 absent=0
+  scopeAndContentNote       scopeAndContentNote=17761  presentButEmpty=0 absent=2427
+  variantControlNumbers     variantControlNumbers=19881  presentButEmpty=0 absent=307
+──────────────────────────────────────────────────────────────────────────────
+PER-RECORD-GROUP
+   RG  series  NARA  delta  creators  ctrlNums  state       title
+   43    1727  1727      0      1727      1719  complete    Records of International Conferences, Co
+   59    4449  4449      0      4447      4399  complete    General Records of the Department of Sta
+   63      84    84      0        84        84  complete    Records of the Committee on Public Infor
+   76    1614  1614      0      1614      1559  complete    Records of Boundary and Claims Commissio
+   84    3963  3962     +1      3963      3958  complete    Records of the Foreign Service Posts of 
+  169     496   496      0       496       493  complete    Records of the Foreign Economic Administ
+  182     232   232      0       232       232  complete    Records of the War Trade Board
+  208     606   606      0       606       594  complete    Records of the Office of War Information
+  229     168   168      0       168       162  complete    Records of the Office of Inter-American 
+  239      95    95      0        95        95  complete    Records of the American Commission for t
+  256      33    33      0        33        32  complete    Records of the American Commission to Ne
+  268      31    31      0        31        31  complete    Records of the Philippine War Damage Com
+  278      34    34      0        34        34  complete    Records of the Displaced Persons Commiss
+  286    1979  1979      0      1979      1958  complete    Records of the Agency for International 
+  306     997   997      0       997       894  complete    Records of the U.S. Information Agency
+  353     621   621      0       621       621  complete    Records of Interdepartmental and Intrade
+  383     172   172      0       172       167  complete    Records of the U.S. Arms Control and Dis
+  420      31    31      0        31        31  complete    Records of the United States Internation
+  466     309   309      0       309       308  complete    Records of the U.S. High Commissioner fo
+  469    2250  2250      0      2244      2243  complete    Records of U.S. Foreign Assistance Agenc
+  486      11    11      0        11        11  resumedComp Records of the U.S. Trade and Developmen
+  490     286   286      0       286       256  complete    Records of the Peace Corps
+──────────────────────────────────────────────────────────────────────────────
+CONTROL-NUMBER TYPES (most frequent first; recordGroups shows spread)
+    20713   22 RG  HMS/MLR Entry Number
+    15463   19 RG  Declassification Project Number
+     6737   17 RG  Former HMS/MLR Entry Number
+     6269    9 RG  Agency-Assigned Identifier
+     5807   19 RG  HMS Record Entry ID
+     5189   10 RG  State Department Lot File Number
+      754   11 RG  Former HMS Record Entry ID
+      373   15 RG  NAIL Control Number
+      280    3 RG  Agency Disposition Number
+      184    5 RG  Inventory Entry Number
+      177    5 RG  Former ARC Identifier
+      142   10 RG  Former National Archives Identifier
+      127    5 RG  Search Identifier
+       47    6 RG  Other Identifier
+       29    9 RG  Reparative Description Identifier
+       28    5 RG  Former Local Identifier
+       13    4 RG  FOIA Tracking Number
+        8    4 RG  HMS Asset ID
+        3    1 RG  Download Display Identifier
+        3    1 RG  PRESNET Number
+        1    1 RG  Kennedy Assassination Document ID
+        1    1 RG  Off-Site Storage Transaction Number
+        1    1 RG  Select List Identifier
+──────────────────────────────────────────────────────────────────────────────
+⚠ MORE SERIES THAN NARA'S OWN COUNT
+  Either NARA's seriesCount is stale, or records were counted twice. Check the
+  duplicateRecord row in the invariant block below before trusting the totals.
+  RG 84: 3963 harvested vs 3962 stated (+1)
+──────────────────────────────────────────────────────────────────────────────
+UNPROJECTED RAW KEYS (present in the data, absent from the typed index)
+  Not necessarily a problem — but a new key here means NARA's schema has moved.
+  beginCongress — 1 records
+  dataControlGroup — 20188 records
+  editStatus — 12 records
+  endCongress — 1 records
+  internalTransferNumbers — 17 records
+  scaleNote — 6 records
+  transferNote — 13 records
+──────────────────────────────────────────────────────────────────────────────
+API REFRESH vs BULK SNAPSHOT
+  no indexed field changed — the snapshot matches the live catalog for these
+  groups
+  11 record(s) differed outside the indexed fields only — incidental
+  catalog housekeeping (dataControlGroup's internal code, referenceUnits[].mailCode).
+──────────────────────────────────────────────────────────────────────────────
+NOTES
+  • RG 486: re-classified against the API refresh already on disk (no API calls spent)
+  • API refresh spent 0 request(s); added=0 modified=0 unchanged=0 missingFromRefresh=0
+──────────────────────────────────────────────────────────────────────────────
+Field census: 225 distinct key paths over 20188 records — see census/field-census.csv
+Creator census: 7318 distinct creators — see census/creator-census.csv
