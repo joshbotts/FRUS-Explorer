@@ -214,6 +214,21 @@ struct QueryInspectorStrip: View {
             parts.append(String(localized: "search.inspector.corpusCount",
                                 defaultValue: "\(corpus) across everything you have indexed"))
         }
+        // Occurrences, and only when they say something the document count does not.
+        //
+        // The two numbers can point in opposite directions: on this corpus "Article 43" appears in
+        // 34 documents in 1948 and 11 in 1949, while its occurrences RISE 77 → 92, because one 1949
+        // document carries 54 of them. A document count alone reads that as a topic disappearing.
+        //
+        // Shown only above 1.5 per document, because at 1.0-1.1 — which is most words — the ratio
+        // is noise and a second number per pill would cost more attention than it returns. The
+        // threshold is a display choice, not a claim about the data, so the number itself is always
+        // exact when shown. Both figures are corpus-wide; `denominatorCaption` carries that.
+        if let occurrences = item.corpusOccurrences,
+           let perDocument = item.corpusOccurrencesPerDocument, perDocument >= 1.5 {
+            parts.append(String(localized: "search.inspector.corpusOccurrences",
+                                defaultValue: "\(occurrences) occurrences, \(perDocument.formatted(.number.precision(.fractionLength(1)))) per document"))
+        }
         if parts.isEmpty {
             return String(localized: "search.inspector.noCount",
                           defaultValue: "no corpus count — this term has no single index form")
