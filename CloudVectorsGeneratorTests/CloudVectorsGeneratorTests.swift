@@ -144,6 +144,140 @@ struct CloudVectorsAggregatorTests {
         return Dictionary(uniqueKeysWithValues: list.entries.map { (file.vocabulary[$0.term], $0.count) })
     }
 
+    // MARK: - Keyness baseline (S-1)
+
+    @Test("The baseline keeps far more terms than a cloud list, from the UNtruncated roll-up")
+    func baselineIsNotTruncatedToACloudList() {
+        // 200 distinct terms: well past the 50 a cloud draws, well inside the baseline's 20,000.
+        // A baseline built from the packed cloud lists instead of the raw roll-up would hold 50.
+        var counts: [String: Int] = [:]
+        for i in 0..<200 { counts["term\(i)"] = 200 - i }
+        let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
+                                    generated: "d", tuning: .standard)
+        let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
+        #expect(lens?.terms.count == 200)
+        #expect(lens?.distinctTerms == 200)
+        #expect(out.core.scopes[CloudVectorsAggregator.corpusScopeKey]?
+            .lists[WordCloudLens.topics.rawValue]?.entries.count
+                == CloudVectorsAggregator.topTermsPerList,
+                "…while the cloud list is still capped at 50 — the two artifacts answer different questions")
+    }
+
+    @Test("totalTokens counts EVERY term, including ones truncation dropped")
+    func totalTokensSurvivesTruncation() {
+        // More terms than the baseline retains, so truncation definitely bites.
+        var counts: [String: Int] = [:]
+        // Distinct counts, so truncation cuts BETWEEN bands and genuinely drops tokens — with every
+        // term tied the band extension would keep them all and the test would prove nothing.
+        let overflow = CloudVectorsAggregator.baselineTermsPerLens + 500
+        for i in 0..<overflow { counts["t\(String(format: "%06d", i))"] = overflow - i }
+        counts["dominant"] = 1_000_000
+        let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
+                                    generated: "d", tuning: .standard)
+        let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
+
+        #expect(lens?.terms.count == CloudVectorsAggregator.baselineTermsPerLens)
+        #expect(lens?.distinctTerms == overflow + 1)
+        // The whole point. Summing the RETAINED terms would give a smaller denominator, inflating
+        // every corpus relative frequency — and inflating it by a different factor than the scope
+        // side, which is precisely the error keyness exists to avoid.
+        let expectedTotal = (1...overflow).reduce(0, +) + 1_000_000
+        #expect(lens?.totalTokens == expectedTotal)
+        let retainedSum = lens?.terms.values.reduce(0, +) ?? 0
+        #expect(retainedSum < (lens?.totalTokens ?? 0),
+                "Precondition: truncation must actually have dropped tokens, or this proves nothing")
+    }
+
+    @Test("The baseline is the term-wise sum across volumes, like every other roll-up")
+    func baselineSumsVolumes() {
+        let out = aggregator().pack(volumes: [
+            volume("v1", "1969-76", [.topics: ["treaty": 10, "missile": 4]]),
+            volume("v2", "1969-76", [.topics: ["treaty": 5]]),
+            volume("v3", "1977-80", [.topics: ["treaty": 1]]),
+        ], generated: "d", tuning: .standard)
+        let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
+        #expect(lens?.terms["treaty"] == 16)
+        #expect(lens?.terms["missile"] == 4)
+        #expect(lens?.totalTokens == 20)
+    }
+
+    @Test("EVERY lens in the roll-up gets its own baseline, keyed by its own name")
+    func baselineCarriesEveryLens() {
+        // Every other keyness test packs a single lens, so a hard-coded `lenses[.topics.rawValue]`
+        // key — or a topics/actions swap — would survive all of them and ship an artifact with one
+        // lens instead of six. Distinguishable counts, so a swap is visible and not just a nil.
+        let out = aggregator().pack(volumes: [volume("v1", "e", [
+            .topics: ["treaty": 10],
+            .actions: ["negotiate": 7, "ratify": 2],
+            .concepts: ["security": 3],
+        ])], generated: "d", tuning: .standard)
+        let lenses = out.keynessBaseline.lenses
+        #expect(Set(lenses.keys) == ["topics", "actions", "concepts"])
+        #expect(lenses["topics"]?.totalTokens == 10)
+        #expect(lenses["actions"]?.totalTokens == 9)
+        #expect(lenses["concepts"]?.totalTokens == 3)
+        #expect(lenses["actions"]?.terms["negotiate"] == 7)
+    }
+
+    @Test("The cut is a FREQUENCY, not a rank — the whole tied band is kept")
+    func baselineCutsOnACountBoundary() {
+        // A plain prefix(N) cuts inside a tie and the tiebreak is alphabetical, so two terms with
+        // identical corpus evidence would get different references because of their first letter.
+        // In the real corpus this is not academic: `actions` cuts at a count of 1 with 12,364 verbs
+        // tied there, which a rank cut would have split 4,302 / 8,062 by spelling.
+        var counts: [String: Int] = [:]
+        for i in 0..<(CloudVectorsAggregator.baselineTermsPerLens - 10) { counts["big\(i)"] = 100 }
+        // 50 terms all tied at the boundary count — far more than the 10 slots left in the budget.
+        for i in 0..<50 { counts["tied\(String(format: "%02d", i))"] = 5 }
+        let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
+                                    generated: "d", tuning: .standard)
+        let lens = out.keynessBaseline.lenses["topics"]
+
+        #expect(lens?.terms.count == CloudVectorsAggregator.baselineTermsPerLens + 40,
+                "the budget is exceeded by exactly the overhang of the tied band, and not by more")
+        #expect(lens?.cutoffCount == 5)
+        for i in 0..<50 {
+            let term = "tied\(String(format: "%02d", i))"
+            #expect(lens?.terms[term] == 5,
+                    "\(term) shares the boundary count and was dropped anyway — membership is deciding on spelling")
+        }
+    }
+
+    @Test("cutoffCount is the smallest RETAINED count, so absence means 'rarer than this'")
+    func baselineReportsItsCutoff() {
+        let out = aggregator().pack(volumes: [volume("v1", "e",
+            [.topics: ["a": 9, "b": 4, "c": 4]])], generated: "d", tuning: .standard)
+        // Nothing was truncated here, so the cutoff is simply the rarest term present.
+        #expect(out.keynessBaseline.lenses["topics"]?.cutoffCount == 4)
+    }
+
+    @Test("The configuration the runner pins is carried into the artifact verbatim")
+    func baselineCarriesItsConfiguration() {
+        let configuration = KeynessBaselineFile.Configuration(
+            tuning: .init(minimumLength: 4), includeDiplomatic: false,
+            lexiconsDigest: "lex", stopwordsDigest: "stop")
+        let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: ["treaty": 1]])],
+                                    generated: "d", tuning: .standard,
+                                    configuration: configuration)
+        // Without this the artifact ships unpinned and a later lexicon edit corrupts every ranking.
+        #expect(out.keynessBaseline.configuration == configuration)
+    }
+
+    @Test("Truncation keeps the LARGEST terms, breaking ties on the term")
+    func baselineKeepsTheLargest() {
+        // A baseline that kept an arbitrary subset would price common words as rare.
+        var counts: [String: Int] = ["kept": 100]
+        for i in 0..<CloudVectorsAggregator.baselineTermsPerLens { counts["small\(i)"] = 1 }
+        let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
+                                    generated: "d", tuning: .standard)
+        let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
+        #expect(lens?.terms["kept"] == 100, "The most common term must never be the one dropped")
+        // The budget is exceeded here because every "small" term ties at 1 and the band is kept
+        // whole — a rank cut would have dropped one of them for having a late spelling.
+        #expect(lens?.terms.count == CloudVectorsAggregator.baselineTermsPerLens + 1)
+        #expect(lens?.cutoffCount == 1)
+    }
+
     @Test("Subseries and corpus are the term-wise SUM of their volumes")
     func rollsUpBySummingRawCounts() {
         let out = aggregator().pack(volumes: [

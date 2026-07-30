@@ -75,7 +75,15 @@ struct WordCloudMultiLensParityTests {
     ))
 
     /// The four lenses the bundled cloud vectors carry.
-    private static let lenses = WordCloudLens.bundledCloudLenses
+    /// Every lens the one-pass tokenizer is asked for in production — which since S-1 is not just
+    /// the four the cloud draws. `.allTerms` and `.descriptors` are gathered for the keyness
+    /// baseline, and `.allTerms` is the one whose parity matters MOST: it is the app's default lens,
+    /// and the app counts it through the SINGLE-lens tokenizer, which builds its tagger with
+    /// `[.lemma]` while the multi-lens one adds `.lexicalClass`. That asymmetry is exactly what this
+    /// suite exists to pin, and leaving the default lens out of it left the keyness reference for
+    /// the default screen unpinned.
+    private static let lenses = [WordCloudLens.allTerms, .descriptors]
+        + WordCloudLens.bundledCloudLenses
 
     // MARK: - Helpers
 

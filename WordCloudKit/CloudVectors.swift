@@ -176,3 +176,180 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
         }
     }
 }
+
+// MARK: - KeynessBaselineFile
+
+/// Corpus term frequencies for keyness — the reference side of "what is distinctive about these
+/// documents?".
+///
+/// ## Why this is a third artifact and not more of `cloud-vectors-core.json`
+/// The cloud vectors keep the **top 50** terms per list, because a word cloud draws fifty words.
+/// A keyness baseline has to answer "how common is *this* term corpus-wide" for whatever terms the
+/// researcher's documents happen to contain — a question the top fifty cannot answer for anything
+/// outside them. `cloud-vectors-core.json`'s corpus scope holds three terms per lens; using it as a
+/// baseline would score every real term against a reference count of zero.
+///
+/// ## Why not `fts5vocab`, which already has corpus counts
+/// Because it counts something else. `fts5vocab` holds SQLite `porter unicode61` **stems** over
+/// header, dateline, source note and body; the word-cloud pipeline that produces the *scope* side
+/// counts NLTagger **lemmas** over `body_text`. Keyness divides one by the other, so the two must
+/// be the same tokenisation of the same field or the ratio is between two different vocabularies —
+/// and it fails systematically, mis-scoring every word whose lemma and stem diverge in the same
+/// direction. This artifact is produced by the same tokenizer, over the same field, as the scope
+/// side, precisely so the division is legitimate.
+///
+/// The *extraction path* to that field is not identical, and the difference is stated rather than
+/// glossed: the generator byte-scans TEI with `TEIBodyTextExtractor` while the app reads
+/// `document_cache.body_text` written by `IndexingPipeline`. `CloudVectorsAggregator`'s own
+/// "Known divergence from the live cloud" note is the authority on what that costs.
+///
+/// ## `totalTokens` is not the sum of `terms`
+/// It is the true total for the lens, across every term including the ones truncation dropped.
+/// A relative frequency computed against the sum of a truncated list is inflated for every term,
+/// and inflated *unevenly* between a scope and its reference — which is exactly the error keyness
+/// exists to avoid.
+///
+/// ## The configuration is pinned, because the scope side's is not
+/// The generator runs at `WordCloudTuning.standard` with the diplomatic stopword layer on. The app
+/// assembles its tokenizer from **live user settings** — and `excludeBoilerplate` is one tap away
+/// in the word cloud's own overflow menu. Turn it off and the scope fills with `department`,
+/// `telegram`, `washington`, none of which this reference has ever counted; keyness would rank the
+/// boilerplate as the corpus's most distinctive vocabulary. ``configuration`` records what the
+/// artifact was built under and ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:)``
+/// is how a caller refuses rather than reports that.
+///
+/// Version history:
+///   1.0 — S-1: initial implementation
+public struct KeynessBaselineFile: Codable, Sendable, Equatable {
+
+    /// Schema version.
+    public let version: Int
+    /// Generation date stamp.
+    public let generated: String
+    /// The same provenance block the cloud vectors carry.
+    public let provenance: CloudVectorsFile.Provenance
+    /// The nominal cap on terms retained per lens.
+    ///
+    /// A lens may hold slightly **more** than this: the cut is extended through the whole tied
+    /// band so membership depends only on a term's frequency, never on its spelling. See
+    /// `CloudVectorsAggregator.baseline(corpus:...)`.
+    public let termsPerLens: Int
+    /// The tokenisation the counts were produced under. A scope counted differently is not
+    /// comparable to them.
+    public let configuration: Configuration
+    /// Lens raw value → that lens's baseline.
+    public let lenses: [String: Lens]
+
+    // MARK: - Configuration
+
+    /// Everything about the tokenisation that a scope must match for the division to be legitimate.
+    public struct Configuration: Codable, Sendable, Equatable {
+
+        /// The tuning the generator ran at.
+        public let tuning: WordCloudTuning
+        /// Whether the diplomatic-boilerplate stopword layer was active (the app's
+        /// `excludeBoilerplate` setting).
+        public let includeDiplomatic: Bool
+        /// SHA-256 of the lexicon payload the concepts and sentiment lenses were built from.
+        public let lexiconsDigest: String
+        /// SHA-256 of the stopword payload every lens was filtered by.
+        public let stopwordsDigest: String
+
+        /// Creates a configuration stamp.
+        public init(tuning: WordCloudTuning, includeDiplomatic: Bool,
+                    lexiconsDigest: String, stopwordsDigest: String) {
+            self.tuning = tuning
+            self.includeDiplomatic = includeDiplomatic
+            self.lexiconsDigest = lexiconsDigest
+            self.stopwordsDigest = stopwordsDigest
+        }
+
+        /// A way in which a scope's tokenisation makes it incomparable to this reference.
+        public enum Mismatch: String, Codable, Sendable, Equatable, CaseIterable {
+            /// The scope folded plurals differently, so `treaties` and `treaty` are one term on one
+            /// side and two on the other.
+            case foldPlurals
+            /// The scope kept classification markings the reference dropped, or the reverse.
+            case filterMarkings
+            /// The scope kept diplomatic boilerplate the reference dropped — the
+            /// `excludeBoilerplate` toggle.
+            case diplomaticLayer
+            /// The scope admits tokens shorter than any the reference could have counted.
+            case minimumLength
+            /// The bundled lexicon payload has changed since the artifact was built.
+            case lexicons
+            /// The bundled stopword payload has changed since the artifact was built.
+            case stopwords
+        }
+
+        /// Every way the given scope tokenisation is incomparable to this reference. Empty means
+        /// the division is legitimate.
+        ///
+        /// The test is deliberately **asymmetric**, because the two directions are not equally
+        /// harmful. A scope setting that only *removes* terms — a higher `minimumLength`, a higher
+        /// `minimumCount`, the user's own hidden words — costs at most a missing row and a slightly
+        /// smaller scope total; every term that survives still has a reference count. A setting
+        /// that lets a term into the scope which the reference could never have counted gives that
+        /// term a reference frequency of zero and floats it to the top of the ranking. Only the
+        /// second kind is reported.
+        ///
+        /// - Parameters:
+        ///   - tuning: The tuning the scope was counted under.
+        ///   - includeDiplomatic: Whether the scope had the diplomatic stopword layer active.
+        ///   - lexiconsDigest: SHA-256 of the lexicon payload the scope used.
+        ///   - stopwordsDigest: SHA-256 of the stopword payload the scope used.
+        public func mismatches(against tuning: WordCloudTuning,
+                               includeDiplomatic: Bool,
+                               lexiconsDigest: String,
+                               stopwordsDigest: String) -> [Mismatch] {
+            var found: [Mismatch] = []
+            if tuning.foldPlurals != self.tuning.foldPlurals { found.append(.foldPlurals) }
+            if tuning.filterMarkings != self.tuning.filterMarkings { found.append(.filterMarkings) }
+            if includeDiplomatic != self.includeDiplomatic { found.append(.diplomaticLayer) }
+            // Only a SHORTER minimum admits terms the reference never saw. A longer one just
+            // trims the scope.
+            if tuning.minimumLength < self.tuning.minimumLength { found.append(.minimumLength) }
+            if lexiconsDigest != self.lexiconsDigest { found.append(.lexicons) }
+            if stopwordsDigest != self.stopwordsDigest { found.append(.stopwords) }
+            return found
+        }
+    }
+
+    /// One lens's corpus frequencies.
+    public struct Lens: Codable, Sendable, Equatable {
+        /// **True** total occurrences for this lens across the whole corpus, including terms
+        /// truncation dropped. The keyness denominator.
+        public let totalTokens: Int
+        /// How many distinct terms the corpus had, before truncation — so a reader can see what
+        /// fraction `terms` represents.
+        public let distinctTerms: Int
+        /// The retained terms and their corpus occurrence counts.
+        public let terms: [String: Int]
+        /// The smallest corpus count that is priced. Every term at or above it is present; no term
+        /// below it is.
+        ///
+        /// This is what makes "absent from `terms`" mean something precise — a caller can say
+        /// "occurs fewer than `cutoffCount` times corpus-wide" rather than guessing between
+        /// *unpriced* and *absent from the corpus*.
+        public let cutoffCount: Int
+
+        /// Creates a lens baseline.
+        public init(totalTokens: Int, distinctTerms: Int, terms: [String: Int], cutoffCount: Int) {
+            self.totalTokens = totalTokens
+            self.distinctTerms = distinctTerms
+            self.terms = terms
+            self.cutoffCount = cutoffCount
+        }
+    }
+
+    /// Creates a baseline file.
+    public init(version: Int, generated: String, provenance: CloudVectorsFile.Provenance,
+                termsPerLens: Int, configuration: Configuration, lenses: [String: Lens]) {
+        self.version = version
+        self.generated = generated
+        self.provenance = provenance
+        self.termsPerLens = termsPerLens
+        self.configuration = configuration
+        self.lenses = lenses
+    }
+}

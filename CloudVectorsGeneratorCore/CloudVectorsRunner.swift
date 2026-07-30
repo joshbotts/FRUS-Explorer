@@ -27,6 +27,12 @@ import GeneratorKit
 ///   1.0 — O-1: initial implementation
 public enum CloudVectorsRunner {
 
+    /// Every lens the run tokenises: the four the cloud draws, plus the two extra the keyness
+    /// baseline needs. Named once so the artifact test and the parity suite can assert against the
+    /// same list rather than a repeated literal.
+    public static let baselineLenses: [WordCloudLens] =
+        [.allTerms, .descriptors] + WordCloudLens.bundledCloudLenses
+
     /// Runs the generator, honouring the environment overrides documented in `CLAUDE.md`.
     public static func run() throws {
         let env = ProcessInfo.processInfo.environment
@@ -55,11 +61,35 @@ public enum CloudVectorsRunner {
         let tuning = WordCloudTuning.standard
         // The diplomatic layer matches the app's default (`excludeBoilerplate` on): without
         // it every cloud is "telegram / department / washington" and previews nothing.
-        let stopwords = stopwordSet.active(includeDiplomatic: true)
+        let includeDiplomatic = true
+        let stopwords = stopwordSet.active(includeDiplomatic: includeDiplomatic)
         let markings = tuning.filterMarkings ? stopwordSet.markings : []
 
+        // The keyness baseline pins itself to the payloads it was built from. Digested here, from
+        // the same bytes the app will digest at read time — a lexicon edit without a regeneration
+        // would otherwise give every newly-added concept a reference count of zero and float it to
+        // the top of the concepts keyness list, silently, forever.
+        guard let lexiconsDigest = WordCloudPayloadDigest.digest(
+                  ofFileAt: URL(fileURLWithPath: lexiconsPath)),
+              let stopwordsDigest = WordCloudPayloadDigest.digest(
+                  ofFileAt: URL(fileURLWithPath: stopwordsPath))
+        else { throw RunError.undigestiblePayloads(lexiconsPath, stopwordsPath) }
+        let configuration = KeynessBaselineFile.Configuration(
+            tuning: tuning, includeDiplomatic: includeDiplomatic,
+            lexiconsDigest: lexiconsDigest, stopwordsDigest: stopwordsDigest)
+
         guard let tokenizer = WordCloudMultiLensTokenizer(
-            lenses: WordCloudLens.bundledCloudLenses,
+            // `.allTerms` and `.descriptors` join the four bundled cloud lenses because the keyness
+            // baseline needs them and the cloud does not. `WordCloudView` offers every
+            // `WordCloudLens.allCases`, and DEFAULTS to `.allTerms`; a baseline without it could
+            // not price the lens a researcher sees first, and one without `.descriptors` would make
+            // keyness silently unavailable on a lens the picker offers. Both cost nothing extra —
+            // `WordCloudMultiLensTokenizer` counts every lens in ONE NLTagger pass — and the cloud
+            // artifacts ignore them, since a fifth and sixth list are not something the cloud draws.
+            //
+            // The three ENTITY lenses (people/places/organizations) remain unpriced: the multi-lens
+            // tokenizer refuses them outright, so their gap is structural rather than an omission.
+            lenses: Self.baselineLenses,
             tuning: tuning,
             stopwords: stopwords,
             lexicons: lexicons,
@@ -102,13 +132,39 @@ public enum CloudVectorsRunner {
         }
 
         let output = CloudVectorsAggregator(lexicons: lexicons)
-            .pack(volumes: volumeCounts, generated: generated, tuning: tuning)
+            .pack(volumes: volumeCounts, generated: generated, tuning: tuning,
+                  configuration: configuration)
 
         try write(output.core, to: outputDir.appendingPathComponent("cloud-vectors-core.json"))
         try write(output.volumes, to: outputDir.appendingPathComponent("cloud-vectors-volumes.json"))
+        try writeBaseline(output.keynessBaseline,
+                          to: outputDir.appendingPathComponent("keyness-baseline.json"))
     }
 
     // MARK: - IO
+
+    /// Writes the keyness baseline, with the same determinism guarantees as the cloud files.
+    ///
+    /// The per-lens line it logs is the acceptance number: `retained of distinct` states how much
+    /// of the corpus vocabulary the artifact prices, and `tokens` is the denominator every
+    /// reference frequency divides by. A `totalTokens` close to the sum of the retained counts
+    /// would mean the total was taken from the truncated head rather than the whole lens.
+    private static func writeBaseline(_ file: KeynessBaselineFile, to url: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(file)
+        try data.write(to: url)
+        for (lens, values) in file.lenses.sorted(by: { $0.key < $1.key }) {
+            let priced = values.totalTokens == 0 ? 0
+                : Double(values.terms.values.reduce(0, +)) / Double(values.totalTokens)
+            generatorLog(String(
+                format: "keyness baseline %@: %d of %d terms (cut at count %d), %d tokens, %.2f%% of token mass priced",
+                lens, values.terms.count, values.distinctTerms, values.cutoffCount,
+                values.totalTokens, priced * 100))
+        }
+        generatorLog("keyness baseline pinned to lexicons \(file.configuration.lexiconsDigest.prefix(12))… "
+                     + "stopwords \(file.configuration.stopwordsDigest.prefix(12))…")
+    }
 
     /// Encodes deterministically and reports the size, which is the acceptance number:
     /// a core file over ~500 KB or a volumes file over ~2.5 MB means the vocabulary
@@ -136,6 +192,7 @@ public enum CloudVectorsRunner {
         case emptyStopwords(String)
         case emptyLexicons(String)
         case tokenizerConfiguration
+        case undigestiblePayloads(String, String)
 
         public var description: String {
             switch self {
@@ -148,6 +205,10 @@ public enum CloudVectorsRunner {
             case .tokenizerConfiguration:
                 return "WordCloudMultiLensTokenizer rejected the configured lenses "
                      + "(empty, or an entity lens was included)."
+            case .undigestiblePayloads(let lexicons, let stopwords):
+                return "Could not digest \(lexicons) or \(stopwords). The keyness baseline pins "
+                     + "itself to these payloads; writing it unpinned would let a later lexicon "
+                     + "edit corrupt every keyness ranking with nothing to detect it."
             }
         }
     }
