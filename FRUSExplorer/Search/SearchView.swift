@@ -109,6 +109,12 @@ struct SearchView: View {
     /// The Query Inspector's state (Q-2).
     @State private var inspectorController = QueryInspectorController()
 
+    /// The facet panel's state (R-1).
+    @State private var facetController = FacetPanelController()
+
+    /// Whether the facet sheet is showing.
+    @State private var showFacetSheet = false
+
     /// Whether the inspector card's detail rows are showing. `@SceneStorage` so the choice
     /// survives per scene, matching the macOS strip.
     @SceneStorage("search.inspector.expanded") private var inspectorExpanded = false
@@ -213,7 +219,45 @@ struct SearchView: View {
                     VStack(spacing: 0) {
                         searchActionsBar
                         queryInspectorCard
+                        narrowedByRow
                     }
+                }
+                // The facet sheet (R-1c). Medium and large detents per the design, so it can
+                // be skimmed beside the results or opened fully to work through a long list.
+                .sheet(isPresented: $showFacetSheet) {
+                    NavigationStack {
+                        FacetPanelView(
+                            controller: facetController,
+                            matchCount: vm.hasSearched ? vm.totalMatchCountForFacets : nil,
+                            displayedCount: vm.displayedResults.count,
+                            isChecklistHiding: vm.checklistMode
+                                && vm.displayedResults.count < vm.results.count,
+                            onNarrow: { narrowing in
+                                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
+                                vm.applyFacetNarrowing(narrowing)
+                                showFacetSheet = false
+                                Task { await runSearch() }
+                            },
+                            onDiscloseSection: { section in
+                                Task {
+                                    await facetController.load(
+                                        section,
+                                        parameters: vm.searchParameters,
+                                        service: appState.searchService,
+                                        pipeline: appState.indexingPipeline)
+                                }
+                            })
+                            .navigationTitle(String(localized: "search.facets.title",
+                                                    defaultValue: "This result set"))
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button(String(localized: "search.done", defaultValue: "Done")) {
+                                        showFacetSheet = false
+                                    }
+                                }
+                            }
+                    }
+                    .presentationDetents([.medium, .large])
                 }
                 // Keyed on the live field so the expression updates as the researcher
                 // types — the design's "a researcher learns NEAR by watching the
@@ -445,18 +489,32 @@ struct SearchView: View {
 
     /// Timeline toggle — disabled until there are results to chart.
     @ViewBuilder
+    /// The actions-bar chart control: a menu of ways to look at the result set (R-1c).
+    ///
+    /// The design turns this single toggle into a menu — Timeline · This result set — and
+    /// R-3b will add Concordance to the same menu, so it is built as a list of modes rather
+    /// than a pair of special cases.
     private var timelineButton: some View {
-        Button {
-            showTimeline.toggle()
+        Menu {
+            Button {
+                showTimeline.toggle()
+            } label: {
+                Label(String(localized: "search.mode.timeline", defaultValue: "Timeline"),
+                      systemImage: showTimeline ? "checkmark" : "chart.bar")
+            }
+            Button {
+                showFacetSheet = true
+            } label: {
+                Label(String(localized: "search.mode.facets", defaultValue: "Facets"),
+                      systemImage: "chart.bar.doc.horizontal")
+            }
         } label: {
             Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
         }
         .controlHelp(
-            showTimeline
-                ? String(localized: "search.timeline.hide.a11y", defaultValue: "Hide timeline")
-                : String(localized: "search.timeline.show.a11y", defaultValue: "Show timeline"),
-            detail: String(localized: "search.timeline.help",
-                           defaultValue: "Chart how the search results distribute over time"),
+            String(localized: "search.mode.a11y", defaultValue: "Ways to view these results"),
+            detail: String(localized: "search.mode.help",
+                           defaultValue: "Chart the results over time, or break the whole result set down by year, volume, person, type and provenance"),
             systemImage: "chart.bar"
         )
         .disabled(vm.results.isEmpty)
@@ -550,6 +608,54 @@ struct SearchView: View {
     /// Persistent search-action row pinned below the `.searchable` field on iOS. An active search
     /// field suppresses the nav-bar trailing items, which used to make filters / timeline / Save
     /// disappear over the results; this content row keeps them reachable in every state.
+    /// Active narrowings, as clearable chips under the inspector card (R-1c).
+    ///
+    /// iOS has never had an active-filter row — only a filled filter glyph, which says *that*
+    /// something is filtered but neither what nor how to undo it. That was tolerable while
+    /// every filter was set in a sheet the user had just closed. Once a single tap in a facet
+    /// list narrows the result set, the narrowing *is* the interaction, and it has to be
+    /// legible and reversible on the screen where it took effect.
+    @ViewBuilder
+    private var narrowedByRow: some View {
+        let narrowings = vm.activeNarrowings
+        if !narrowings.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    Text(String(localized: "search.narrowedBy", defaultValue: "Narrowed by"))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    ForEach(narrowings) { narrowing in
+                        Button {
+                            vm.clearNarrowing(narrowing.id)
+                            Task { await runSearch() }
+                        } label: {
+                            HStack(spacing: 3) {
+                                Text(narrowing.label)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8, weight: .semibold))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.accentColor.opacity(0.12),
+                                        in: Capsule())
+                            .foregroundStyle(Color.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(String(
+                            localized: "search.narrowing.clear.a11y",
+                            defaultValue: "Remove the \(narrowing.label) filter"))
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+            }
+            .background(.bar)
+            .overlay(alignment: .bottom) { Divider() }
+        }
+    }
+
     /// The Query Inspector as a disclosure card under the search field (Q-2).
     ///
     /// Collapsed it is one mono line — the expression the search will actually run.

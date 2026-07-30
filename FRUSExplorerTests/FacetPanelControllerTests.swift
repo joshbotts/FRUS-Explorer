@@ -291,3 +291,158 @@ struct FacetPanelControllerTests {
         #expect(merged.bounds[.volumes] == FacetBound(shown: 1, total: 1))
     }
 }
+
+/// The iOS half of the facet panel (R-1c).
+///
+/// iOS holds filter state as individual fields rather than macOS's single `SearchParameters`,
+/// so its narrowing applier is a separate implementation of the same contract — which means
+/// it needs its own tests rather than inheriting macOS's confidence.
+///
+/// Version history:
+///   1.0 — R-1c: initial implementation
+@Suite("iOS facet narrowing")
+@MainActor
+struct IOSFacetNarrowingTests {
+
+    private func makeViewModel() async throws -> (dir: URL, vm: SearchViewModel) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSiOSFacet-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        return (dir, SearchViewModel(searchService: SearchService(fts5Store: fts5, pipeline: pipeline)))
+    }
+
+    private func cleanUp(_ dir: URL) { try? FileManager.default.removeItem(at: dir) }
+
+    // MARK: - The applier writes the same fields the filter sheet owns
+
+    @Test("A year narrowing sets an enabled, correctly-bounded date range")
+    func yearNarrowing() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.year("1948"))
+        #expect(vm.dateRangeEnabled)
+        // The bounds must reach the whole year, and must survive the round-trip into the
+        // parameters the search actually uses.
+        let range = try #require(vm.searchParameters.dateRange)
+        #expect(range.earliest == "1948-01-01")
+        #expect(range.latest == "1948-12-31")
+    }
+
+    @Test("A volume narrowing replaces rather than adds")
+    func volumeNarrowingReplaces() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.selectedVolumeIds = ["frus1945v01", "frus1946v02"]
+        vm.selectedSubseriesIds = ["1945"]
+        vm.applyFacetNarrowing(.volume("frus1948v03"))
+        // Unioning would return more documents than the facet row's own count promised.
+        #expect(vm.selectedVolumeIds == ["frus1948v03"])
+        #expect(vm.selectedSubseriesIds.isEmpty, "a stale subseries would widen the gate back out")
+    }
+
+    @Test("A person narrowing clears the typed ref that would AND with it")
+    func personNarrowingClearsTheRefText() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.personRefText = "acheson"
+        vm.applyFacetNarrowing(.person(77))
+        #expect(vm.personRollupId == 77)
+        #expect(vm.personRefText.isEmpty, "a stale ref would silently undercount")
+    }
+
+    @Test("A document-type narrowing sets the shared filter field")
+    func documentTypeNarrowing() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.documentType(.editorialNotesOnly))
+        #expect(vm.documentTypeFilter == .editorialNotesOnly)
+        #expect(vm.searchParameters.documentTypeFilter == .editorialNotesOnly)
+    }
+
+    // MARK: - The narrowed-by row
+
+    @Test("Every narrowing becomes a visible, clearable chip")
+    func narrowingsAreVisibleAndClearable() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        #expect(vm.activeNarrowings.isEmpty)
+
+        vm.applyFacetNarrowing(.year("1948"))
+        vm.applyFacetNarrowing(.volume("frus1948v03"))
+        vm.applyFacetNarrowing(.person(77))
+        vm.applyFacetNarrowing(.documentType(.documentsOnly))
+
+        let ids = Set(vm.activeNarrowings.map(\.id))
+        #expect(ids == ["date", "volume", "person", "type"],
+                "a narrowing with no chip is a filter the user cannot see or undo")
+
+        for id in ids { vm.clearNarrowing(id) }
+        #expect(vm.activeNarrowings.isEmpty, "every chip must actually clear its filter")
+    }
+
+    @Test("Clearing one narrowing leaves the others alone")
+    func clearingIsScoped() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.year("1948"))
+        vm.applyFacetNarrowing(.volume("frus1948v03"))
+        vm.clearNarrowing("date")
+        #expect(!vm.dateRangeEnabled)
+        #expect(vm.selectedVolumeIds == ["frus1948v03"])
+    }
+
+    @Test("The row also reflects filters set in the sheet, not only from facets")
+    func rowReflectsSheetFilters() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        // Set the fields directly, as the filter sheet does. The row is derived from live
+        // state precisely so it cannot drift from what is actually filtering.
+        vm.dateRangeEnabled = true
+        vm.documentTypeFilter = .editorialNotesOnly
+        #expect(Set(vm.activeNarrowings.map(\.id)) == ["date", "type"])
+    }
+
+    @Test("An unknown identifier is ignored rather than clearing something else")
+    func unknownClearIsANoOp() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.year("1948"))
+        vm.clearNarrowing("not-a-dimension")
+        #expect(vm.dateRangeEnabled)
+    }
+
+    // MARK: - The honest total
+
+    /// iOS has never held a whole-query count. Reporting the fetched count as the total at
+    /// the cap would be the same lie the Q-M2 work removed from macOS.
+    @Test("At the fetch cap the facet total is unavailable, not the cap")
+    func totalIsUnavailableAtTheCap() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        #expect(vm.totalMatchCountForFacets == 0, "an empty result set is a known zero")
+
+        // The rule itself, at the boundary. Asserting only the empty case — or only the cap
+        // constant — cannot tell the rule from "just return the fetched count": a mutation
+        // doing exactly that passed until this was added.
+        #expect(SearchViewModel.facetTotal(fetched: 0, cap: 1_000) == 0)
+        #expect(SearchViewModel.facetTotal(fetched: 999, cap: 1_000) == 999)
+        #expect(SearchViewModel.facetTotal(fetched: 1_000, cap: 1_000) == nil,
+                "at the cap the real total is unknown — reporting 1,000 as the total is the lie")
+        #expect(SearchViewModel.facetTotal(fetched: 1_001, cap: 1_000) == nil)
+    }
+}

@@ -82,6 +82,25 @@ enum FacetNarrowing: Sendable, Equatable {
     }
 }
 
+// MARK: - ActiveNarrowing
+
+/// One narrowing currently in force, as something a surface can show and clear.
+///
+/// Derived from live filter state rather than remembered from the tap that set it, so it
+/// cannot drift from what is actually filtering — and so it also covers filters set in the
+/// filter sheet, not only those set from a facet.
+///
+/// Version history:
+///   1.0 — R-1c: initial implementation
+struct ActiveNarrowing: Sendable, Equatable, Identifiable {
+
+    /// A stable key naming which dimension this is, used to clear it.
+    let id: String
+
+    /// What to show.
+    let label: String
+}
+
 // MARK: - FacetPanelController
 
 /// Owns the facet panel's state, and decides what is affordable to compute.
