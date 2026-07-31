@@ -284,6 +284,16 @@ enum CloudKitSchemaInventory {
         "CD_UserTag.CD_id",
         "CD_UserTag.CD_lastModified",
         "CD_UserTag.CD_name",
+        "CD_WorkingCorpus",
+        "CD_WorkingCorpus.CD_capturedAt",
+        "CD_WorkingCorpus.CD_createdAt",
+        "CD_WorkingCorpus.CD_documentKeys",
+        "CD_WorkingCorpus.CD_id",
+        "CD_WorkingCorpus.CD_indexedVolumeCountAtCapture",
+        "CD_WorkingCorpus.CD_lastModified",
+        "CD_WorkingCorpus.CD_name",
+        "CD_WorkingCorpus.CD_sourceDescription",
+        "CD_WorkingCorpus.CD_sourceQuery",
     ]
 
     // MARK: - The deploy marker (owner-attested)
@@ -333,7 +343,19 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build (deployed 2026-07-26).
+        // M-1 — `WorkingCorpus`, the document-grain scope, and its nine fields. NOT yet deployed.
+        // The app reports this at launch and in Settings ▸ Data & Recovery ▸ iCloud Schema, and
+        // `ResearchTrailMigration` refuses to run while anything is listed here.
+        "CD_WorkingCorpus",
+        "CD_WorkingCorpus.CD_capturedAt",
+        "CD_WorkingCorpus.CD_createdAt",
+        "CD_WorkingCorpus.CD_documentKeys",
+        "CD_WorkingCorpus.CD_id",
+        "CD_WorkingCorpus.CD_indexedVolumeCountAtCapture",
+        "CD_WorkingCorpus.CD_lastModified",
+        "CD_WorkingCorpus.CD_name",
+        "CD_WorkingCorpus.CD_sourceDescription",
+        "CD_WorkingCorpus.CD_sourceQuery",
     ]
 
     // MARK: - Derived state

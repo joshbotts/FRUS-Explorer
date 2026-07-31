@@ -29,10 +29,14 @@ import SwiftData
 /// suggestions, not filters: users can override them per-session.
 ///
 /// ## `lastModified`
-/// Updated automatically via `didSet` on every mutable property. Used by CloudKit
-/// last-write-wins conflict resolution. Note: mutating elements of an array property
-/// in-place (e.g. via `append`) does not trigger `didSet`; replace the array to
-/// ensure the observer fires.
+/// Stamped at **save time** by `ModelModificationStamper`, and used by CloudKit last-write-wins
+/// conflict resolution.
+///
+/// The `didSet` observers on the properties below do **not** fire and never did: the `@Model` macro
+/// rewrites a stored property into a computed pair backed by the managed store, and a computed
+/// property cannot carry a property observer, so the bodies are discarded. `ModelLastModifiedTests`
+/// measures this. They are left in place pending a mechanical sweep; do not add more, and do not
+/// rely on them.
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
