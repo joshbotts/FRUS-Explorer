@@ -107,8 +107,15 @@ struct SaveWorkingCorpusSheet: View {
                 } footer: {
                     Text(String(localized: "corpus.save.footer",
                                 defaultValue: "The set is fixed at capture. Re-running the query later may find different documents; this corpus will not change, which is what makes counts taken inside it reproducible."))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            #if os(macOS)
+            // Plain `Form` on macOS lays labels into a narrow leading column and pushes section
+            // footers into the value column — the cramped result in the seeding run. Grouped is
+            // what every other macOS Form in this app uses.
+            .formStyle(.grouped)
+            #endif
             .navigationTitle(String(localized: "corpus.save.title",
                                     defaultValue: "Save Working Corpus"))
             #if os(iOS)
@@ -125,7 +132,9 @@ struct SaveWorkingCorpusSheet: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 420, minHeight: 340)
+        // Wider than the first attempt: at 420 the grouped form's label column squeezed the
+        // provenance values into two lines each.
+        .frame(minWidth: 520, minHeight: 420)
         #endif
     }
 

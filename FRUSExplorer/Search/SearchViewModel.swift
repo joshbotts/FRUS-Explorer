@@ -257,6 +257,12 @@ final class SearchViewModel {
         parts.append(includeSummaries ? "1" : "0")
         parts.append(includeNotes ? "1" : "0")
         parts.append(selectedSubseriesIds.sorted().joined(separator: ","))
+        // M-1: without this the Mac's `applyAdvancedFilters` never fires on an apply or a clear —
+        // the signature is what tells it the filter VM changed — so the corpus was set, shown as
+        // applied, and silently ignored by the search. The count is enough to distinguish; the keys
+        // themselves can be thousands of strings and this runs on every filter edit.
+        parts.append(appliedWorkingCorpusName ?? "")
+        parts.append(String(appliedWorkingCorpusKeys?.count ?? -1))
         parts.append(selectedVolumeIds.joined(separator: ","))
         // User-tag filter (188-D): sorted for order-independence so toggling a tag perturbs the
         // signature deterministically, which drives the macOS live-apply observer (#212). iOS

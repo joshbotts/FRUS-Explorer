@@ -204,3 +204,70 @@ struct WorkingCorpusTests {
     }
 
 }
+
+// MARK: - WorkingCorpusPlatformParityTests
+
+/// That an applied corpus reaches the **search**, on both platforms.
+///
+/// The seeding run found it did not on macOS. Two independent breaks, either alone enough:
+/// `MacSearchViewModel.scopeDerivedParams` never consulted the corpus, and
+/// `advancedFilterSignature` — which is what tells the Mac its filter view model changed — did not
+/// mention it, so nothing re-applied even once the composition existed.
+///
+/// `WorkingCorpusTests` covered the composition rule in isolation and passed throughout, because the
+/// rule was right and simply was not called. The two search surfaces share no code, and this repo
+/// already records that as a standing hazard; a rule tested only in isolation cannot see it.
+///
+/// Source-text checks, because `MacSearchViewModel` needs a live `SearchService` and a container to
+/// instantiate. They are weak on their own, so each carries a floor.
+///
+/// Version history:
+///   1.0 — M-1 seeding follow-up: initial implementation
+@Suite("Working corpus platform parity")
+struct WorkingCorpusPlatformParityTests {
+
+    private func source(_ relativePath: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
+        #expect(text.count > 1_000, "\(relativePath) is implausibly small — did it move?")
+        return text
+    }
+
+    @Test("Both search paths compose the corpus into the document gate")
+    func bothPathsCompose() throws {
+        let ios = try source("FRUSExplorer/Search/SearchViewModel.swift")
+        let mac = try source("FRUSExplorer/App/MacSearchViewModel.swift")
+        for (name, text) in [("iOS", ios), ("macOS", mac)] {
+            #expect(text.contains("DocumentScopeGate.combine"),
+                    "\(name) builds its own SearchParameters and must compose the corpus itself — the two surfaces share no code")
+            #expect(text.contains("appliedWorkingCorpusKeys"),
+                    "\(name) never reads the applied corpus")
+        }
+    }
+
+    @Test("The macOS filter signature carries the corpus, or nothing re-applies")
+    func macSignatureCarriesTheCorpus() throws {
+        let vm = try source("FRUSExplorer/Search/SearchViewModel.swift")
+        let start = try #require(vm.range(of: "var advancedFilterSignature"))
+        let rest = vm[start.upperBound...]
+        let end = try #require(rest.range(of: "\n    }"), "no closing brace for advancedFilterSignature")
+        let body = String(vm[start.lowerBound..<end.upperBound])
+        #expect(body.count < 2_500, "the extracted window is too large to be one computed property")
+        #expect(body.contains("parts.append"), "sanity: this really is the signature body")
+        // The Mac copies filter state into `parameters` only when this string changes. Applying or
+        // clearing a corpus without touching it left the corpus set, shown as applied, and ignored.
+        #expect(body.contains("appliedWorkingCorpusName") || body.contains("appliedWorkingCorpusKeys"),
+                "applying a working corpus must change the signature that triggers applyAdvancedFilters")
+
+    }
+
+    @Test("The corpus is applied through the shared rule, never re-implemented")
+    func compositionIsNotDuplicated() throws {
+        let mac = try source("FRUSExplorer/App/MacSearchViewModel.swift")
+        // Two hand-rolled intersections would drift, and the empty-vs-nil contract is exactly the
+        // detail that would drift first.
+        #expect(!mac.contains(".intersection("),
+                "macOS should call DocumentScopeGate.combine rather than intersect by hand")
+    }
+}
