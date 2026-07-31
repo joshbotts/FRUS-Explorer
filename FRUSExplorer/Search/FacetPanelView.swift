@@ -250,6 +250,12 @@ struct FacetPanelView: View {
     /// How many results the list is currently showing, for the checklist-mode note.
     let displayedCount: Int
 
+    /// Whether the match behind these facets is a subset of the answer to the question — because
+    /// the fetch capped, or because the search is inside a corpus that was itself a capped capture.
+    ///
+    /// Beside ``matchCount`` deliberately: it is the qualifier on that denominator.
+    let isPartialEvidence: Bool
+
     /// Whether checklist mode is hiding reviewed rows.
     let isChecklistHiding: Bool
 
@@ -381,7 +387,11 @@ struct FacetPanelView: View {
                             .foregroundStyle(.tertiary)
                     }
                     if kind == .provenance { provenanceCaveat(facets.provenanceCoverage) }
-                    if kind == .volumes, let share = facets.topVolumeShare(3) {
+                    // Suppressed outright when the evidence is partial. "The top three hold
+                    // 60%" over a BM25-selected subset is partly a statement about the ranking
+                    // that selected it, and unlike a count there is no caveat that repairs a
+                    // concentration figure — the honest move is not to make the claim.
+                    if kind == .volumes, !isPartialEvidence, let share = facets.topVolumeShare(3) {
                         // Computed, never templated: the design's "Top 3 hold 60%" is 1.7%
                         // for a common term across 552 volumes, so it is only worth saying
                         // when it is actually a concentration.

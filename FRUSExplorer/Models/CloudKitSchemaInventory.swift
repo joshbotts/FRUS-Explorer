@@ -294,6 +294,8 @@ enum CloudKitSchemaInventory {
         "CD_WorkingCorpus.CD_name",
         "CD_WorkingCorpus.CD_sourceDescription",
         "CD_WorkingCorpus.CD_sourceQuery",
+        "CD_WorkingCorpus.CD_totalMatchCountAtCapture",
+        "CD_WorkingCorpus.CD_wasTruncatedAtCapture",
     ]
 
     // MARK: - The deploy marker (owner-attested)
@@ -343,7 +345,16 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build. `CD_WorkingCorpus` and its nine fields were seeded
+        // The two typed capture-truncation fields, pending a Production deploy.
+        //
+        // A working corpus is cited, and four sentences the app shows inside one were wrong
+        // because every truncation question it could ask was about the CURRENT fetch — which never
+        // caps inside a corpus, the corpus already being smaller than the ceiling. A `String`
+        // cannot be tested in a `guard`, and parsing a localized sentence to recover a boolean
+        // fails OPEN: it stops warning silently. Hence typed.
+        "CD_WorkingCorpus.CD_totalMatchCountAtCapture",
+        "CD_WorkingCorpus.CD_wasTruncatedAtCapture",
+        // Was empty: Production matched this build. `CD_WorkingCorpus` and its nine fields were seeded
         // into the Development schema by saving a real working corpus (CloudKit creates a record
         // type only when a record of it is first saved — the trap behind #488) and promoted on
         // 2026-07-31.

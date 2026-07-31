@@ -237,18 +237,7 @@ struct MacSearchWindowView: View {
                                    set: { collocationOrderRaw = $0.rawValue }),
                     isLoading: isLoadingCollocation)
             } else if showConcordance {
-                ConcordanceView(scope: resultSetScope, result: concordance, sort: $concordanceSort) { line in
-                    // Same destination a results-list row reaches, so a concordance line and a row
-                    // behave identically.
-                    if let result = searchVM.pagedResults.first(where: {
-                        $0.volumeId == line.volumeId && $0.documentId == line.documentId
-                    }) {
-                        selectedResultId = result.id
-                        navigateToResult(result)
-                    }
-                }
-                // Matches SearchView's overlay. macOS had none, so a rebuild simply looked frozen.
-                .overlay { if isLoadingConcordance { ProgressView() } }
+                concordancePanel
             } else if showTimeline {
                 timelineView
             } else if searchVM.isSearching, searchVM.results.isEmpty {
@@ -316,6 +305,7 @@ struct MacSearchWindowView: View {
                 controller: facetController,
                 matchCount: searchVM.totalMatchCount,
                 displayedCount: searchVM.displayedResults.count,
+                isPartialEvidence: resultSetScope.isPartialEvidence,
                 isChecklistHiding: searchVM.checklistMode
                     && searchVM.displayedResults.count < searchVM.results.count,
                 onNarrow: { narrowing in
@@ -1202,13 +1192,36 @@ struct MacSearchWindowView: View {
 
     /// Which set this window is showing. Unlike iOS, macOS holds a real whole-query count, so the
     /// sentences that can name a total will name one here and not there.
+    /// The concordance branch, lifted out of the reading chain.
+    ///
+    /// Not cosmetic: the chain is a `ViewBuilder` `if/else if` over five branches, and adding one
+    /// member to ``ResultSetScope`` pushed the whole expression past the type-checker's budget
+    /// ("unable to type-check this expression in reasonable time"). Extracting the largest branch
+    /// gives the solver a boundary.
+    @ViewBuilder
+    private var concordancePanel: some View {
+        ConcordanceView(scope: resultSetScope, result: concordance, sort: $concordanceSort) { line in
+            // Same destination a results-list row reaches, so a concordance line and a row
+            // behave identically.
+            if let result = searchVM.pagedResults.first(where: {
+                $0.volumeId == line.volumeId && $0.documentId == line.documentId
+            }) {
+                selectedResultId = result.id
+                navigateToResult(result)
+            }
+        }
+        // Matches SearchView's overlay. macOS had none, so a rebuild simply looked frozen.
+        .overlay { if isLoadingConcordance { ProgressView() } }
+    }
+
     private var resultSetScope: ResultSetScope {
         ResultSetScope(loaded: searchVM.results.count,
                        shown: searchVM.displayedResults.count,
                        fetchLimit: MacSearchViewModel.searchHardLimit,
                        totalMatchCount: searchVM.totalMatchCount,
                        documentsOnPage: searchVM.pagedResults.count,
-                       pageCount: searchVM.totalPages)
+                       pageCount: searchVM.totalPages,
+                       appliedCorpusTruncation: searchVM.filterVM?.appliedWorkingCorpusTruncation)
     }
 
     /// Advisory banner shown directly below the results header when the underlying

@@ -255,3 +255,114 @@ struct ResultHeaderTests {
         #expect(guidance.contains("filters"))
     }
 }
+
+// MARK: - CaptureTruncationTests
+
+/// What the app says inside a corpus that was itself a capped capture.
+///
+/// Every truncation question `ResultSetScope` could ask used to be about the CURRENT fetch — and a
+/// fetch inside a corpus never caps, the corpus already being smaller than the ceiling. So each
+/// one silently answered "complete" about a set frozen from a capped capture. These pin the four
+/// sentences that changed, and the one state that must NOT trigger them.
+///
+/// Version history:
+///   1.0 — Q wave half 2: initial implementation
+@Suite("Capture truncation inside a corpus")
+struct CaptureTruncationTests {
+
+    /// A search inside a corpus: small, well under the ceiling, so the fetch never caps.
+    private func inCorpus(_ truncation: WorkingCorpus.CaptureTruncation?,
+                          shown: Int = 267) -> ResultSetScope {
+        ResultSetScope(loaded: shown, shown: shown, fetchLimit: 1_000, totalMatchCount: nil,
+                       documentsOnPage: 25, pageCount: 11,
+                       appliedCorpusTruncation: truncation)
+    }
+
+    // MARK: - The model's read surface
+
+    @Test("The three states are kept apart")
+    func threeStates() {
+        let corpus = WorkingCorpus(name: "n", documentKeys: ["v/d"])
+        #expect(corpus.truncationAtCapture == .unrecorded,
+                "a corpus that recorded nothing must not claim to be complete")
+
+        corpus.wasTruncatedAtCapture = false
+        #expect(corpus.truncationAtCapture == .complete)
+
+        corpus.wasTruncatedAtCapture = true
+        corpus.totalMatchCountAtCapture = 195_519
+        #expect(corpus.truncationAtCapture == .truncated(total: 195_519))
+
+        corpus.totalMatchCountAtCapture = nil
+        #expect(corpus.truncationAtCapture == .truncated(total: nil),
+                "truncated-with-no-total is a real state, not a defect — it is the iPhone case")
+    }
+
+    // MARK: - isPartialEvidence
+
+    @Test("A truncated corpus makes the evidence partial though the fetch did not cap")
+    func truncatedCorpusIsPartial() {
+        let scope = inCorpus(.truncated(total: 195_519))
+        #expect(!scope.didHitFetchLimit, "the fetch inside a corpus does not cap — that is the trap")
+        #expect(scope.isPartialEvidence)
+    }
+
+    @Test("A complete corpus leaves the evidence whole")
+    func completeCorpusIsNotPartial() {
+        #expect(!inCorpus(.complete).isPartialEvidence)
+        #expect(!inCorpus(nil).isPartialEvidence, "no corpus applied")
+    }
+
+    /// The state that must stay silent. A corpus captured before the fields existed *might* have
+    /// been complete; captioning every legacy corpus as partial is a different false claim, not a
+    /// repair of the first.
+    @Test("An unrecorded capture does not make the evidence partial")
+    func unrecordedIsNotPartial() {
+        #expect(!inCorpus(.unrecorded).isPartialEvidence)
+        #expect(inCorpus(.unrecorded).timelineBiasCaption == nil)
+    }
+
+    // MARK: - The four sentences
+
+    @Test("The timeline caption fires inside a truncated corpus")
+    func timelineCaptionInsideCorpus() throws {
+        // The highest-value line in the change: the caption was guarded on the fetch, so it
+        // vanished exactly when the skew had been frozen, synced and made citable.
+        let caption = try #require(inCorpus(.truncated(total: 195_519)).timelineBiasCaption)
+        #expect(caption.contains("shape"))
+        #expect(inCorpus(.complete).timelineBiasCaption == nil)
+    }
+
+    @Test("The collocation stops claiming it saw every matching document")
+    func collocationStopsClaimingCompleteness() {
+        let truncated = inCorpus(.truncated(total: 195_519)).collocationScopeDescription
+        #expect(!truncated.contains("every matching document"),
+                "a positive assertion of completeness atop a frozen relevance-ranked sample")
+        #expect(inCorpus(.complete).collocationScopeDescription.contains("every matching document"))
+    }
+
+    /// Nesting. A capture taken inside a truncated corpus is itself partial, for a reason the
+    /// capturing fetch cannot see — it did not cap, because the corpus was already under the
+    /// ceiling. The value written to `wasTruncatedAtCapture` has to be the one that knows that.
+    @Test("A capture taken inside a truncated corpus is recorded as partial")
+    func nestedCaptureIsPartial() {
+        let nested = inCorpus(.truncated(total: 195_519))
+        #expect(!nested.didHitFetchLimit)
+        #expect(nested.isPartialEvidence,
+                "this is the value the capture must store, not didHitFetchLimit")
+    }
+
+    @Test("The header names the corpus capture rather than printing a bare count")
+    func headerInsideTruncatedCorpus() {
+        let withTotal = inCorpus(.truncated(total: 195_519)).headerDescription
+        #expect(withTotal.contains("in this corpus"))
+        #expect(withTotal.contains(195_519.formatted()))
+
+        let withoutTotal = inCorpus(.truncated(total: nil)).headerDescription
+        #expect(withoutTotal.contains("partial capture"))
+
+        // Unchanged where nothing is truncated — the bare count is still correct there.
+        #expect(inCorpus(.complete).headerDescription == "267 results")
+        #expect(inCorpus(.unrecorded).headerDescription == "267 results")
+    }
+}
