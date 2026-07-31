@@ -502,17 +502,22 @@ final class SearchViewModel {
         // Freeze the query text for `recordSearchHistory` before awaiting anything (see
         // `submittedQuery`).
         submittedQuery = keywords.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Bumped once per executed search so views that must react to a *completed*
-        // search — the Query Inspector's zero-result decomposition — have a `.task(id:)`
-        // key. `keywords` alone is the live field and changes while typing; `hasSearched`
-        // latches true and never changes again.
-        executedSearchVersion &+= 1
         isSearching = true
         searchError = nil
         hasSearched = true
         do {
             results = try await searchService.search(parameters: params,
                                                      limit: Self.searchHardLimit)
+            // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
+            // promises is what consumers actually observe. It used to be bumped in the
+            // synchronous prefix, five lines and one actor hop earlier: SwiftUI re-evaluated the
+            // body during the await — it must, or the `isSearching` spinner would never appear —
+            // and every `.task(id:)` keyed on the version fired against the PREVIOUS query's
+            // results. The concordance survived that by accident, because its key also carries the
+            // page and `currentPage = 0` re-triggered it; a key without a page member had no such
+            // rescue and settled on a confident ranking of the wrong documents. Matches
+            // `MacSearchViewModel.performSearch`, which has always ordered these correctly.
+            executedSearchVersion &+= 1
             currentPage = 0
             // A new query is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
             // clear prior marks, so results reviewed under a *previous* query aren't silently
@@ -528,6 +533,9 @@ final class SearchViewModel {
             #endif
         } catch {
             results = []
+            // Bumped here too: a failed search is a completed one for every consumer keyed on the
+            // version, and leaving it unchanged would strand them on the previous query's answer.
+            executedSearchVersion &+= 1
             searchError = error.localizedDescription
             #if DEBUG
             print("[SearchView] Search error: \(error)")
@@ -674,6 +682,19 @@ final class SearchViewModel {
                 ? (nil, [])                                             // neither → match nothing
                 : (projectFocusVolumeIds, nil)                         // subject-derived
         }
+    }
+
+    /// The parameters of the search that actually **ran**.
+    ///
+    /// `searchParameters` reads the live `keywords` field, which changes on every keystroke. Any
+    /// consumer describing the results on screen — the concordance, the collocation — must anchor on
+    /// what produced them, or it reports on a query the user has typed but not run. Mirrors
+    /// `MacSearchViewModel.submittedSearchParameters`, which this side lacked.
+    var submittedSearchParameters: SearchParameters {
+        var params = searchParameters
+        let trimmed = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        params.keywords = trimmed.isEmpty ? nil : trimmed
+        return params
     }
 
     var searchParameters: SearchParameters {

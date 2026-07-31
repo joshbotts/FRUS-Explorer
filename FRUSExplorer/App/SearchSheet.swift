@@ -127,6 +127,16 @@ struct MacSearchWindowView: View {
     @State private var showConcordance = false
     @State private var concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
     @State private var concordanceSort: KWICSort = .leftContext
+    /// Collocates mode (S-2). Mutually exclusive with the other two — all three replace the list.
+    @State private var showCollocates = false
+    @State private var collocation: CollocationAnalysis.Outcome = .pending
+    @State private var isLoadingCollocation = false
+    /// macOS had no concordance loading indicator at all: `rebuildConcordance` set nothing, so a
+    /// slow rebuild simply looked frozen. Added here because a collocation scan is heavier still.
+    @State private var isLoadingConcordance = false
+    @AppStorage(SearchCollocationDefaults.windowKey) private var collocationWindow = 10
+    @AppStorage(SearchCollocationDefaults.orderKey)
+    private var collocationOrderRaw = CollocationOrder.evidence.rawValue
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
     @State private var saveSearchName = ""
@@ -217,6 +227,13 @@ struct MacSearchWindowView: View {
                             parameters: searchVM.submittedSearchParameters,
                             service: appState.searchService)
                     }
+            } else if showCollocates {
+                CollocationView(
+                    outcome: collocation,
+                    windowSize: $collocationWindow,
+                    order: Binding(get: { CollocationOrder(rawValue: collocationOrderRaw) ?? .evidence },
+                                   set: { collocationOrderRaw = $0.rawValue }),
+                    isLoading: isLoadingCollocation)
             } else if showConcordance {
                 ConcordanceView(result: concordance, sort: $concordanceSort) { line in
                     // Same destination a results-list row reaches, so a concordance line and a row
@@ -228,6 +245,8 @@ struct MacSearchWindowView: View {
                         navigateToResult(result)
                     }
                 }
+                // Matches SearchView's overlay. macOS had none, so a rebuild simply looked frozen.
+                .overlay { if isLoadingConcordance { ProgressView() } }
             } else if showTimeline {
                 timelineView
             } else if searchVM.isSearching, searchVM.results.isEmpty {
@@ -338,6 +357,12 @@ struct MacSearchWindowView: View {
             if let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) {
                 searchVM.applyParameters(params)
             }
+        }
+        // Not keyed on the page: a collocation reads the whole retained set, so paging changes
+        // nothing about the answer. Keyed on the window, which does.
+        .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
+                                        version: searchVM.executedSearchVersion)) {
+            await rebuildCollocation()
         }
         .onChange(of: appState.pendingSearch) { _, _ in
             guard let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) else { return }
@@ -948,19 +973,32 @@ struct MacSearchWindowView: View {
             // the toggle in SearchView.swift so the feature reaches macOS too.
             Button {
                 showTimeline.toggle()
-                if showTimeline { showConcordance = false }
+                if showTimeline { showConcordance = false; showCollocates = false }
             } label: {
                 Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
                     .font(.system(size: 12))
+                    .foregroundStyle(showTimeline ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
             .disabled(searchVM.results.isEmpty)
+            // Its own tooltip and label at last. These strings previously sat on the CONCORDANCE
+            // button — a second, stacked `.help` that silently won, plus the timeline's
+            // accessibility label attached to the wrong control — so the timeline toggle had
+            // neither and the concordance announced itself as the timeline.
+            .help(showTimeline
+                  ? String(localized: "search.timeline.hide.help",
+                           defaultValue: "Hide the chronological timeline and show the results list")
+                  : String(localized: "search.timeline.show.help",
+                           defaultValue: "Show these results as a chronological timeline"))
+            .accessibilityLabel(showTimeline
+                ? String(localized: "search.timeline.hide.a11y", defaultValue: "Hide timeline")
+                : String(localized: "search.timeline.show.a11y", defaultValue: "Show timeline"))
 
             Button {
                 showConcordance.toggle()
-                if showConcordance { showTimeline = false }
+                if showConcordance { showTimeline = false; showCollocates = false }
             } label: {
-                Image(systemName: showConcordance ? "text.alignleft" : "text.alignleft")
+                Image(systemName: showConcordance ? "text.alignleft" : "text.alignright")
                     .font(.system(size: 12))
                     .foregroundStyle(showConcordance ? Color.accentColor : Color.secondary)
             }
@@ -971,14 +1009,28 @@ struct MacSearchWindowView: View {
                            defaultValue: "Hide the concordance and show the results list")
                   : String(localized: "search.kwic.show.help",
                            defaultValue: "Show every occurrence of your term on its own line, aligned"))
-            .help(showTimeline
-                  ? String(localized: "search.timeline.hide.help",
-                           defaultValue: "Hide the chronological timeline and show the results list")
-                  : String(localized: "search.timeline.show.help",
-                           defaultValue: "Show these results as a chronological timeline"))
-            .accessibilityLabel(showTimeline
-                ? String(localized: "search.timeline.hide.a11y", defaultValue: "Hide timeline")
-                : String(localized: "search.timeline.show.a11y", defaultValue: "Show timeline"))
+            .accessibilityLabel(showConcordance
+                ? String(localized: "search.kwic.hide.a11y", defaultValue: "Hide concordance")
+                : String(localized: "search.kwic.show.a11y", defaultValue: "Show concordance"))
+
+            Button {
+                showCollocates.toggle()
+                if showCollocates { showTimeline = false; showConcordance = false }
+            } label: {
+                Image(systemName: "circle.grid.cross")
+                    .font(.system(size: 12))
+                    .foregroundStyle(showCollocates ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.results.isEmpty)
+            .help(showCollocates
+                  ? String(localized: "search.collocates.hide.help",
+                           defaultValue: "Hide the collocates and show the results list")
+                  : String(localized: "search.collocates.show.help",
+                           defaultValue: "Show which words appear near your search term across all of these results"))
+            .accessibilityLabel(showCollocates
+                ? String(localized: "search.collocates.hide.a11y", defaultValue: "Hide collocates")
+                : String(localized: "search.collocates.show.a11y", defaultValue: "Show collocates"))
 
             Divider().frame(height: 14)
 
@@ -1506,9 +1558,54 @@ struct MacSearchWindowView: View {
             concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
             return
         }
+        isLoadingConcordance = true
+        defer { isLoadingConcordance = false }
         concordance = (try? await service.concordance(
             for: page, parameters: searchVM.submittedSearchParameters))
             ?? ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+    }
+
+    /// Recomputes the collocation over the whole retained result set.
+    ///
+    /// `displayedResults`, not `pagedResults`: a measure over one page cannot clear its own floor.
+    /// This window retains up to 7,500 results, so the scan is bounded by a match budget rather than
+    /// by document count — see `SearchService.collocationMatchBudget`.
+    private func rebuildCollocation() async {
+        guard showCollocates, let service = appState.searchService else { return }
+        let results = searchVM.displayedResults
+        guard !results.isEmpty else { collocation = .unavailable(.noMatches); return }
+        isLoadingCollocation = true
+        defer { isLoadingCollocation = false }
+
+        await BundledKeynessBaseline.prepare()
+        // ONE resolution of the live settings, shared by the tokenizer and the reference lookup.
+        let configuration = CollocationConfiguration.live()
+        let availability = BundledKeynessBaseline.baseline(
+            for: .allTerms, tuning: configuration.tuning,
+            includeDiplomatic: configuration.includeDiplomatic)
+        let reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int)
+        switch availability {
+        case .unavailable(.noArtifact), .unavailable(.lensNotPriced):
+            collocation = .unavailable(.noArtifact); return
+        case .unavailable(.configurationMismatch(let mismatches)):
+            collocation = .unavailable(.configurationMismatch(mismatches)); return
+        case .available(let terms, let total, let cutoff):
+            reference = (terms, total, cutoff)
+        }
+
+        do {
+            collocation = try await service.collocation(
+            for: results, parameters: searchVM.submittedSearchParameters,
+            windowSize: collocationWindow, configuration: configuration,
+            reference: reference, generated: BundledKeynessBaseline.generated)
+        } catch is CancellationError {
+            // Switching modes or re-running a search cancels a scan in flight — the common case.
+            // Writing a verdict here would replace a fresh panel with a stale one's failure, and
+            // `.noMatches` would state something specific and false about the query.
+            return
+        } catch {
+            collocation = .unavailable(.scanFailed)
+        }
     }
 
     private func openResultInNewWindow(_ result: SearchResult) {
