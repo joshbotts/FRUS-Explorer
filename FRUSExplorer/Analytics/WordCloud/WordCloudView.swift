@@ -82,6 +82,10 @@ enum WordCloudViewMode: String, CaseIterable {
 ///          Scopes" section (FTS-grain Menu idiom), and custom-scope clouds join the
 ///          volume-aligned scoped-Analytics handoff (offered only when the resolved
 ///          indexed set is non-empty — never hand Analytics a bare empty set)
+///   1.6 — Q wave: the index-unavailable placeholder named `cloud.slash`, which does not
+///          exist — it had been rendering as a blank. `SymbolNameAuditTests` now gates every
+///          literal symbol name in the app.
+
 struct WordCloudView: View {
 
     /// The body of material to visualise.
@@ -1038,7 +1042,7 @@ struct WordCloudView: View {
     private var unavailablePlaceholder: some View {
         ContentUnavailableView(
             String(localized: "wordcloud.unavailable.title", defaultValue: "Word Cloud Unavailable"),
-            systemImage: "cloud.slash",
+            systemImage: "exclamationmark.magnifyingglass",
             description: Text(String(
                 localized: "wordcloud.unavailable.detail",
                 defaultValue: "The search index could not be opened, so word clouds are unavailable."
