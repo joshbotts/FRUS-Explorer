@@ -1,0 +1,180 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import Foundation
+import Testing
+@testable import FRUSExplorer
+
+// MARK: - ResultSetScopeTests
+
+/// The sentences that name which set a surface is looking at.
+///
+/// Every one is a computed property on a value type precisely so it can be checked here — with no
+/// search service, no fixture and no simulator. The alternative was four string literals at four
+/// call sites, which is how the app came to use the word "results" for three different sets.
+///
+/// Version history:
+///   1.0 — Q wave: initial implementation
+@Suite("Result set scope")
+struct ResultSetScopeTests {
+
+    /// The iPhone shape: 1,000-document ceiling, no whole-query count.
+    private func iOS(loaded: Int, shown: Int? = nil,
+                     onPage: Int = 25, pages: Int = 1) -> ResultSetScope {
+        ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: 1_000,
+                       totalMatchCount: nil, documentsOnPage: onPage, pageCount: pages)
+    }
+
+    /// The Mac shape: 7,500-document ceiling, and a real total.
+    private func mac(loaded: Int, total: Int?, shown: Int? = nil,
+                     onPage: Int = 25, pages: Int = 1) -> ResultSetScope {
+        ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: 7_500,
+                       totalMatchCount: total, documentsOnPage: onPage, pageCount: pages)
+    }
+
+    // MARK: - Which set is which
+
+    @Test("A fetch below its ceiling with no known total is complete")
+    func completeFetch() {
+        #expect(!iOS(loaded: 412).didHitFetchLimit)
+    }
+
+    @Test("A fetch at its ceiling is truncated")
+    func cappedFetch() {
+        #expect(iOS(loaded: 1_000).didHitFetchLimit)
+        #expect(mac(loaded: 7_500, total: 195_519).didHitFetchLimit)
+    }
+
+    /// macOS's own `isResultSetTruncated` counts this case, so the type must too — otherwise a set
+    /// that a filter reduced below the ceiling would be reported as the whole match.
+    @Test("A known total above the fetch is truncated even below the ceiling")
+    func totalExceedsFetchBelowCeiling() {
+        #expect(mac(loaded: 300, total: 5_000).didHitFetchLimit)
+        #expect(!mac(loaded: 300, total: 300).didHitFetchLimit)
+    }
+
+    @Test("Checklist-hidden documents are the gap between loaded and shown")
+    func checklistGap() {
+        #expect(iOS(loaded: 1_000, shown: 987).hiddenByChecklist == 13)
+        #expect(iOS(loaded: 412).hiddenByChecklist == 0)
+        // Never negative, whatever a host hands over.
+        #expect(iOS(loaded: 10, shown: 99).hiddenByChecklist == 0)
+    }
+
+    // MARK: - Capture: the sentences with citation consequences
+
+    @Test("A complete capture carries no truncation warning")
+    func completeCaptureIsSilent() {
+        #expect(iOS(loaded: 412).captureTruncationWarning == nil)
+        #expect(iOS(loaded: 412).captureChecklistWarning == nil)
+    }
+
+    @Test("A capped capture says so, and names the total when it has one")
+    func cappedCaptureWarns() throws {
+        let withoutTotal = try #require(iOS(loaded: 1_000).captureTruncationWarning)
+        #expect(withoutTotal.contains("1000") || withoutTotal.contains("1,000"))
+        #expect(withoutTotal.contains("larger match"),
+                "with no total it must not imply one is known")
+
+        let withTotal = try #require(mac(loaded: 7_500, total: 195_519).captureTruncationWarning)
+        #expect(withTotal.contains("195519") || withTotal.contains("195,519"))
+    }
+
+    @Test("A capture that checklist mode is filtering says what it will leave out")
+    func checklistCaptureWarns() throws {
+        let warning = try #require(iOS(loaded: 1_000, shown: 987).captureChecklistWarning)
+        #expect(warning.contains("13"))
+    }
+
+    // MARK: - Capture: the record's own description
+
+    @Test("A complete capture's stored description stays plain")
+    func plainProvenance() {
+        #expect(iOS(loaded: 412).captureProvenanceDescription == "Search results")
+    }
+
+    /// This string is written to `WorkingCorpus.sourceDescription` and syncs. A corpus read on
+    /// another device, or a year later, has only this to say what it is a capture of.
+    @Test("A truncated capture's stored description carries its truncation")
+    func truncatedProvenance() {
+        let iPhone = iOS(loaded: 1_000).captureProvenanceDescription
+        #expect(iPhone.contains("highest-scoring"))
+        #expect(iPhone.contains("1000") || iPhone.contains("1,000"))
+
+        let macOS = mac(loaded: 7_500, total: 195_519).captureProvenanceDescription
+        #expect(macOS.contains("195519") || macOS.contains("195,519"))
+    }
+
+    @Test("A checklist-filtered capture's stored description says so too")
+    func checklistProvenance() {
+        let description = iOS(loaded: 1_000, shown: 987).captureProvenanceDescription
+        #expect(description.contains("13"))
+        #expect(description.contains("highest-scoring"), "both facts, not whichever came first")
+    }
+
+    // MARK: - Panels
+
+    @Test("The concordance count is unqualified on a single page")
+    func singlePageConcordance() {
+        let text = iOS(loaded: 20, onPage: 20, pages: 1).concordanceCountDescription(occurrences: 214)
+        #expect(text.contains("214"))
+        #expect(!text.contains("this page"), "there is no other page to distinguish it from")
+    }
+
+    @Test("The concordance count names its page when there is more than one")
+    func multiPageConcordance() {
+        let text = iOS(loaded: 1_000, onPage: 25, pages: 40)
+            .concordanceCountDescription(occurrences: 214)
+        #expect(text.contains("214"))
+        #expect(text.contains("25"))
+        #expect(text.contains("this page"))
+    }
+
+    /// macOS renders `overCapAdvisory` above every analysis panel with the loaded count and the
+    /// total already on it. A panel line repeating them puts the same fact on screen three times.
+    @Test("The collocation scope line carries no numbers of its own")
+    func collocationScopeIsNumberless() {
+        let text = mac(loaded: 7_500, total: 195_519).collocationScopeDescription
+        #expect(!text.contains("7500") && !text.contains("7,500"))
+        #expect(!text.contains("195519") && !text.contains("195,519"))
+        #expect(text.contains("not the page on screen"))
+    }
+
+    @Test("An uncapped collocation says the set is every matching document")
+    func collocationComplete() {
+        #expect(iOS(loaded: 412).collocationScopeDescription.contains("every matching document"))
+    }
+
+    @Test("The collocation line adds the checklist exclusion, and only then")
+    func collocationChecklist() {
+        #expect(iOS(loaded: 1_000, shown: 987).collocationScopeDescription.contains("13"))
+        #expect(!iOS(loaded: 1_000).collocationScopeDescription.contains("excluded"))
+    }
+
+    // MARK: - The timeline's shape
+
+    @Test("An uncapped timeline gets no caption")
+    func uncappedTimelineIsSilent() {
+        #expect(iOS(loaded: 412).timelineBiasCaption == nil)
+    }
+
+    /// The distinction the whole caption exists for: every other capped surface reports a size,
+    /// which a reader can discount. This one has to say the SHAPE is not the whole match's.
+    @Test("A capped timeline states that the shape is skewed, not merely the size")
+    func cappedTimelineNamesTheShape() throws {
+        let caption = try #require(iOS(loaded: 1_000).timelineBiasCaption)
+        #expect(caption.contains("shape"))
+        #expect(caption.contains("highest-scoring"))
+    }
+}

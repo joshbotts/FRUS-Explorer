@@ -30,6 +30,9 @@ import SwiftUI
 ///   1.0 — R-3b: initial implementation
 struct ConcordanceView: View {
 
+    /// Which set the search is showing, so the occurrence count can name its own denominator.
+    let scope: ResultSetScope
+
     /// The lines to show, already built for the page on screen.
     let result: ConcordanceResult
     /// The active ordering.
@@ -77,8 +80,9 @@ struct ConcordanceView: View {
             .frame(maxWidth: 380)
             #endif
             Spacer(minLength: 8)
-            Text(String(localized: "search.kwic.count",
-                        defaultValue: "\(result.lines.count) occurrences"))
+            // Qualified by the set it came from: a bare "214 occurrences" travels out of context
+            // in a screenshot with nothing to say it came from 25 documents rather than a thousand.
+            Text(scope.concordanceCountDescription(occurrences: result.lines.count))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()

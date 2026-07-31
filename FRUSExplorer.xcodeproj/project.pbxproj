@@ -51,6 +51,7 @@
 		0B202FBACFE72F6ADE672D7D /* FTS5InlineQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F026464A582483E73619623 /* FTS5InlineQueryParser.swift */; };
 		0B30E744796DF2DF4BAB6EC6 /* keyness-baseline.json in Resources */ = {isa = PBXBuildFile; fileRef = CD0BCCE9ACC924CAC60C8286 /* keyness-baseline.json */; };
 		0B8AD25C9DA672120BE9EC40 /* CollocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C47F6740B2EBDAD0B2DC52 /* CollocationService.swift */; };
+		0BA7E22B89C8CD9C660EA080 /* ResultSetScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137C9DEC5D05370A63B369BC /* ResultSetScope.swift */; };
 		0BAA185CAEA88839CFFE430D /* FTS5Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAD8B667D9DBC00CF58162F /* FTS5Errors.swift */; };
 		0C08DC37FC97EA45E4C6580F /* broken-refs-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 8738FC0CC480434D7E92E5CD /* broken-refs-index.json */; };
 		0CD288609D6056F954B01F89 /* RelatedDocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A364FA04305F32B1651686AF /* RelatedDocumentsView.swift */; };
@@ -246,6 +247,7 @@
 		473607E99AF1A2EA973CAE62 /* UserTagAdmin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8F2A8CBFD003B2CEF53A92 /* UserTagAdmin.swift */; };
 		47CD55B7FCDC83BA11445A9F /* FrontMatterPersonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D4101100CE5F1F5C3C9024 /* FrontMatterPersonsView.swift */; };
 		48491876D648872B3A051420 /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */; };
+		4871F9F9F9B9A1D75C5ED41D /* ResultSetScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137C9DEC5D05370A63B369BC /* ResultSetScope.swift */; };
 		4B1E5BC3628F3947820CB5CC /* volume-subject-profiles-index.json in Resources */ = {isa = PBXBuildFile; fileRef = C25B54A639FAB01DAC7A345A /* volume-subject-profiles-index.json */; };
 		4B1E7F751087937BD2EAF15D /* ResearchSessionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501B372A37F778939C006313 /* ResearchSessionsView.swift */; };
 		4B72551F127ADEFB79ED3C2B /* PersonIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */; };
@@ -667,6 +669,7 @@
 		BFDEB2CEDF9A15EA9206B00B /* ExactWordMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = E848C4A48A1B678D71CB0452 /* ExactWordMatcher.swift */; };
 		C0033907B3EF66024D0AF4B7 /* StorageRemovalPlanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69B7B2A090578E6987E953B /* StorageRemovalPlanTests.swift */; };
 		C00DEB8F6FC62A2D8CF72C9D /* SeriesChartCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B423F6A8DB5D743C0EC17A /* SeriesChartCard.swift */; };
+		C0A3E09831F7587CE4D932FE /* ResultSetScopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E76118D8DF3D5FC2A4B4F3F9 /* ResultSetScopeTests.swift */; };
 		C0B484455AD2909CD188A3BD /* WordCloudLens+UI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFA94B8E26AC23FF5BE3CD2 /* WordCloudLens+UI.swift */; };
 		C18061CD97F79FE201E22E73 /* GeneratedSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */; };
 		C1BC832019A8E5C2780B80A5 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373770EEFB83CBEE8238D8D2 /* SubseriesView.swift */; };
@@ -985,6 +988,7 @@
 		11B1E35A00A17577B953CCCA /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		1242DB8819CA5517FA76085B /* FRUSDocumentParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSDocumentParser.swift; sourceTree = "<group>"; };
 		1252D064E6BC3892ADE9BFBB /* HTMLCollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLCollectionExporter.swift; sourceTree = "<group>"; };
+		137C9DEC5D05370A63B369BC /* ResultSetScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSetScope.swift; sourceTree = "<group>"; };
 		14174F8D94A941FF7716FDF3 /* QueryInspection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryInspection.swift; sourceTree = "<group>"; };
 		14897C6413138665C6AD33A0 /* FTS5Tokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Tokenizer.swift; sourceTree = "<group>"; };
 		1580185F6CAD33F08EDA329B /* NARACatalogLookupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NARACatalogLookupView.swift; sourceTree = "<group>"; };
@@ -1434,6 +1438,7 @@
 		E66DF50A2864E16436FAB665 /* CloudKitErrorInspectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitErrorInspectorTests.swift; sourceTree = "<group>"; };
 		E7173CE609A9BBD12A098CB4 /* CrossReferenceStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceStatsTests.swift; sourceTree = "<group>"; };
 		E75611D891C39B761AB3548C /* WorkingCorpus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingCorpus.swift; sourceTree = "<group>"; };
+		E76118D8DF3D5FC2A4B4F3F9 /* ResultSetScopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultSetScopeTests.swift; sourceTree = "<group>"; };
 		E77140715ABB6E7F1429C474 /* WordCloudTuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudTuning.swift; sourceTree = "<group>"; };
 		E80DA93DED6A670C6150EC07 /* WordCloudSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudSettings.swift; sourceTree = "<group>"; };
 		E848C4A48A1B678D71CB0452 /* ExactWordMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExactWordMatcher.swift; sourceTree = "<group>"; };
@@ -1524,6 +1529,7 @@
 				14174F8D94A941FF7716FDF3 /* QueryInspection.swift */,
 				5BC74E6037A541C694313F3F /* QueryInspectorView.swift */,
 				C4A7E132DFFF36D1164504F6 /* ResultSetFacets.swift */,
+				137C9DEC5D05370A63B369BC /* ResultSetScope.swift */,
 				76FE996BF10FA9666F16732F /* SavedSearchesView.swift */,
 				35B53B859463313FD1C4B454 /* SaveWorkingCorpusSheet.swift */,
 				A3220858C8D9E432263F066F /* SearchFilterView.swift */,
@@ -1913,6 +1919,7 @@
 				C69E9AFFBFB5AAA0F89AC6BC /* ResponseFormatCodingTests.swift */,
 				C46091CDA27D8DD3D84F848F /* ResultReadingTests.swift */,
 				401EA9904778715D7450A488 /* ResultSetFacetsTests.swift */,
+				E76118D8DF3D5FC2A4B4F3F9 /* ResultSetScopeTests.swift */,
 				00CF1BC1CCEDD32E576EAF25 /* RISExporterTests.swift */,
 				A10E5C844D2026643A8CF214 /* SceneEnvironmentAuditTests.swift */,
 				70DDF61949EEEC6895B1B09E /* SearchCountCostTests.swift */,
@@ -2826,6 +2833,7 @@
 				8FCA0B5568BF76DBAC192108 /* ResearchView.swift in Sources */,
 				553AD868A5582A368A285378 /* ResetService.swift in Sources */,
 				A49C4E252DBD4E21BB70B02B /* ResultSetFacets.swift in Sources */,
+				0BA7E22B89C8CD9C660EA080 /* ResultSetScope.swift in Sources */,
 				6FEE8641A0A34DB561265ABE /* SaveWorkingCorpusSheet.swift in Sources */,
 				AA926188B6D4C730DF47DA64 /* SavedSearch.swift in Sources */,
 				F2B15E00E76F768700726491 /* SavedSearchesView.swift in Sources */,
@@ -3178,6 +3186,7 @@
 				3BA472BCF073A16C6A7D4643 /* ResearchView.swift in Sources */,
 				F0B56D898B525E95AFC2DC39 /* ResetService.swift in Sources */,
 				E914BA63632F57B7D5FD201B /* ResultSetFacets.swift in Sources */,
+				4871F9F9F9B9A1D75C5ED41D /* ResultSetScope.swift in Sources */,
 				B54C32A38AFEBF0189D4E139 /* SaveWorkingCorpusSheet.swift in Sources */,
 				830A26532D247F5C56B05483 /* SavedSearch.swift in Sources */,
 				6AA8E8A4C607455582DA5869 /* SavedSearchesView.swift in Sources */,
@@ -3407,6 +3416,7 @@
 				E3F856DF02689CB52541EE2D /* ResponseFormatCodingTests.swift in Sources */,
 				A9B359CA0A64BA799BAFD9D1 /* ResultReadingTests.swift in Sources */,
 				2BB80DF3BF34BBC275A00A7C /* ResultSetFacetsTests.swift in Sources */,
+				C0A3E09831F7587CE4D932FE /* ResultSetScopeTests.swift in Sources */,
 				A2AB2CC7A2643DA091F309E3 /* SceneEnvironmentAuditTests.swift in Sources */,
 				0DE7DC82BC5EB18DA42DDB2D /* SearchCountCostTests.swift in Sources */,
 				42D28CE4FF272178BEB3E191 /* SearchNearHighlightTests.swift in Sources */,
