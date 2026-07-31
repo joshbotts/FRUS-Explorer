@@ -436,7 +436,20 @@ final class MacSearchViewModel {
         var parts: [String] = []
         if parameters.dateRange != nil           { parts.append("date") }
         if parameters.volumeIds != nil           { parts.append("volume") }
-        if parameters.documentIds != nil         { parts.append("project") }
+        // `documentIds` has TWO producers — an applied working corpus and a project History
+        // gate — and `DocumentScopeGate.combine` intersects them, so it can carry either or both.
+        // Labelling it unconditionally "project" named the wrong scope whenever a corpus was the
+        // source, which is the common case: the corpus is applied from the filter sheet two
+        // controls away, while a History gate needs an active project in History mode.
+        if parameters.documentIds != nil {
+            let corpus = filterVM?.appliedWorkingCorpusKeys != nil
+            let project = filterVM?.projectScope != .off
+            switch (corpus, project) {
+            case (true, true):  parts.append("corpus + project")
+            case (true, false): parts.append("corpus")
+            default:            parts.append("project")
+            }
+        }
         if !parameters.userTagIds.isEmpty        { parts.append("tags") }
         if parameters.phrase != nil              { parts.append("phrase") }
         if parameters.personRef != nil || parameters.personRollupId != nil { parts.append("person") }

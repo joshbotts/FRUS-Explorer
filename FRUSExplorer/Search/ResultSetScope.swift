@@ -106,6 +106,14 @@ struct ResultSetScope: Equatable, Sendable {
     /// Whether the shown set fits on one page, in which case "on this page" says nothing.
     var isSinglePage: Bool { pageCount <= 1 }
 
+    /// A count with the reader's thousands separators.
+    ///
+    /// `String(format: "%lld", …)` never groups, so a truncated capture read "the highest-scoring
+    /// 7500 of 195519 matches". macOS's `resultCountLabel` and `overCapAdvisory` have always used
+    /// `.formatted()`; these sentences now match. Caught by a test of this type's own that had
+    /// hedged `"1000" || "1,000"` — the hedge was the tell.
+    private func grouped(_ value: Int) -> String { value.formatted() }
+
     // MARK: - The results header
 
     /// The results-count header — the line where the three-way collision lived.
@@ -124,24 +132,24 @@ struct ResultSetScope: Equatable, Sendable {
             return String(localized: "search.count.none", defaultValue: "No results")
         }
         if !didHitFetchLimit, hiddenByChecklist == 0 {
-            return String(format: String(localized: "search.count %lld",
-                                         defaultValue: "%lld results"), Int64(shown))
+            return String(format: String(localized: "search.count %@",
+                                         defaultValue: "%@ results"), grouped(shown))
         }
         if !didHitFetchLimit {
-            return String(format: String(localized: "search.count.shownOf %lld %lld",
-                                         defaultValue: "%1$lld shown of %2$lld results"),
-                          Int64(shown), Int64(loaded))
+            return String(format: String(localized: "search.count.shownOf %@ %@",
+                                         defaultValue: "%1$@ shown of %2$@ results"),
+                          grouped(shown), grouped(loaded))
         }
         var parts: [String] = []
         if hiddenByChecklist > 0 {
-            parts.append(String(format: String(localized: "search.count.shown %lld",
-                                               defaultValue: "%lld shown"), Int64(shown)))
+            parts.append(String(format: String(localized: "search.count.shown %@",
+                                               defaultValue: "%@ shown"), grouped(shown)))
         }
-        parts.append(String(format: String(localized: "search.count.loaded %lld",
-                                           defaultValue: "%lld loaded"), Int64(loaded)))
+        parts.append(String(format: String(localized: "search.count.loaded %@",
+                                           defaultValue: "%@ loaded"), grouped(loaded)))
         parts.append(totalMatchCount.map {
-            String(format: String(localized: "search.count.total %lld",
-                                  defaultValue: "%lld total"), Int64($0))
+            String(format: String(localized: "search.count.total %@",
+                                  defaultValue: "%@ total"), grouped($0))
         } ?? String(localized: "search.count.total.unavailable",
                     defaultValue: "total unavailable"))
         return parts.joined(separator: " · ")
@@ -171,14 +179,14 @@ struct ResultSetScope: Equatable, Sendable {
         guard didHitFetchLimit else { return nil }
         if let totalMatchCount {
             return String(format: String(
-                localized: "corpus.save.truncated.total %lld %lld",
-                defaultValue: "These %1$lld documents are the highest-scoring of %2$lld matching documents. Counts taken inside this corpus are counts inside that subset."),
-                Int64(loaded), Int64(totalMatchCount))
+                localized: "corpus.save.truncated.total %@ %@",
+                defaultValue: "These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts taken inside this corpus are counts inside that subset."),
+                grouped(loaded), grouped(totalMatchCount))
         }
         return String(format: String(
-            localized: "corpus.save.truncated.unknown %lld",
-            defaultValue: "These %lld documents are the highest-scoring of a larger match, not all of it. Counts taken inside this corpus are counts inside that subset."),
-            Int64(loaded))
+            localized: "corpus.save.truncated.unknown %@",
+            defaultValue: "These %@ documents are the highest-scoring of a larger match, not all of it. Counts taken inside this corpus are counts inside that subset."),
+            grouped(loaded))
     }
 
     /// What checklist mode is keeping out of the capture.
@@ -189,9 +197,9 @@ struct ResultSetScope: Equatable, Sendable {
     var captureChecklistWarning: String? {
         guard hiddenByChecklist > 0 else { return nil }
         return String(format: String(
-            localized: "corpus.save.checklistHiding %lld",
-            defaultValue: "Checklist mode is hiding %lld reviewed documents. They will not be in this corpus."),
-            Int64(hiddenByChecklist))
+            localized: "corpus.save.checklistHiding %@",
+            defaultValue: "Checklist mode is hiding %@ reviewed documents. They will not be in this corpus."),
+            grouped(hiddenByChecklist))
     }
 
     /// The provenance sentence stored on the corpus itself.
@@ -204,21 +212,21 @@ struct ResultSetScope: Equatable, Sendable {
         if didHitFetchLimit {
             if let totalMatchCount {
                 description += String(format: String(
-                    localized: "corpus.save.source.truncated.total %lld %lld",
-                    defaultValue: " — the highest-scoring %1$lld of %2$lld matches"),
-                    Int64(loaded), Int64(totalMatchCount))
+                    localized: "corpus.save.source.truncated.total %@ %@",
+                    defaultValue: " — the highest-scoring %1$@ of %2$@ matches"),
+                    grouped(loaded), grouped(totalMatchCount))
             } else {
                 description += String(format: String(
-                    localized: "corpus.save.source.truncated.unknown %lld",
-                    defaultValue: " — the highest-scoring %lld of a larger match"),
-                    Int64(loaded))
+                    localized: "corpus.save.source.truncated.unknown %@",
+                    defaultValue: " — the highest-scoring %@ of a larger match"),
+                    grouped(loaded))
             }
         }
         if hiddenByChecklist > 0 {
             description += String(format: String(
-                localized: "corpus.save.source.checklist %lld",
-                defaultValue: "; %lld reviewed documents excluded"),
-                Int64(hiddenByChecklist))
+                localized: "corpus.save.source.checklist %@",
+                defaultValue: "; %@ reviewed documents excluded"),
+                grouped(hiddenByChecklist))
         }
         return description
     }
@@ -232,13 +240,13 @@ struct ResultSetScope: Equatable, Sendable {
     /// there is only one page, where "on this page" would be a distinction without a difference.
     func concordanceCountDescription(occurrences: Int) -> String {
         guard !isSinglePage else {
-            return String(format: String(localized: "search.kwic.count %lld",
-                                         defaultValue: "%lld occurrences"), Int64(occurrences))
+            return String(format: String(localized: "search.kwic.count %@",
+                                         defaultValue: "%@ occurrences"), grouped(occurrences))
         }
         return String(format: String(
-            localized: "search.kwic.count.paged %lld %lld",
-            defaultValue: "%1$lld occurrences in the %2$lld documents on this page"),
-            Int64(occurrences), Int64(documentsOnPage))
+            localized: "search.kwic.count.paged %@ %lld",
+            defaultValue: "%1$@ occurrences in the %2$lld documents on this page"),
+            grouped(occurrences), Int64(documentsOnPage))
     }
 
     /// What the collocation measured over.
@@ -254,9 +262,9 @@ struct ResultSetScope: Equatable, Sendable {
                      defaultValue: "Measured over every result this search loaded, which is every matching document.")
         if hiddenByChecklist > 0 {
             description += String(format: String(
-                localized: "search.collocation.caveat.scope.checklist %lld",
-                defaultValue: " %lld reviewed documents are excluded."),
-                Int64(hiddenByChecklist))
+                localized: "search.collocation.caveat.scope.checklist %@",
+                defaultValue: " %@ reviewed documents are excluded."),
+                grouped(hiddenByChecklist))
         }
         return description
     }

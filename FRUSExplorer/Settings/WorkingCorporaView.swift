@@ -117,8 +117,16 @@ struct WorkingCorporaView: View {
     }
 
     /// Where the corpus came from and when — the part that makes it citable.
+    ///
+    /// `sourceDescription` leads, because it is the part that says what the set IS: "Search
+    /// results", or "Search results — the highest-scoring 1,000 of a larger match". It is composed
+    /// at capture by `ResultSetScope.captureProvenanceDescription` and, until now, was written and
+    /// never read — the truncation was recorded correctly and shown to nobody.
     private func provenanceLine(_ corpus: WorkingCorpus) -> String? {
         var parts: [String] = []
+        if let source = corpus.sourceDescription, !source.isEmpty {
+            parts.append(source)
+        }
         if let captured = corpus.capturedAt {
             parts.append(String(format: String(localized: "corpora.captured %@",
                                                defaultValue: "Captured %@"),

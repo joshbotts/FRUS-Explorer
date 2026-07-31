@@ -311,6 +311,7 @@ struct SearchView: View {
                     // volume-scope banner. Both reserve zero height when inactive.
                     VStack(spacing: 0) {
                         WorkingOnBanner()
+                        workingCorpusBanner
                         volumeScopeBanner
                     }
                 }
@@ -958,7 +959,48 @@ struct SearchView: View {
     }
     #endif
 
-    // MARK: - Volume Scope Banner
+    // MARK: - Scope Banners
+
+    /// The applied working corpus, named on the screen it governs.
+    ///
+    /// `appliedWorkingCorpusName` has existed since M-1 with a doc comment promising "the
+    /// applied-scope chip", and nothing rendered it — so a researcher searching inside a corpus
+    /// saw a bare result count, an unfilled filter glyph (the corpus was absent from
+    /// `hasActiveFilters`) and nothing at all naming the scope every row had passed through.
+    ///
+    /// Deliberately the sibling of ``volumeScopeBanner`` rather than a new idiom: the two are the
+    /// same idea at two grains, and a researcher who has learned one should recognise the other.
+    @ViewBuilder
+    private var workingCorpusBanner: some View {
+        if let name = vm.appliedWorkingCorpusName {
+            HStack(spacing: 8) {
+                Image(systemName: "tray.full.fill")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(String(format: String(localized: "search.corpusScope.label %@",
+                                           defaultValue: "Inside “%@”"), name))
+                    .font(.footnote)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Button {
+                    vm.clearWorkingCorpus()
+                    Task { await runSearch() }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "search.corpusScope.clear.a11y",
+                                           defaultValue: "Leave this working corpus"))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .overlay(alignment: .bottom) { Divider() }
+        }
+    }
 
     /// A dismissible banner pinned above the results whenever the search is
     /// scoped to one or more volumes. Lets the user see the active scope (the
