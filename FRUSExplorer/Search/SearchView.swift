@@ -125,6 +125,7 @@ struct SearchView: View {
     @State private var concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
     @State private var concordanceSort: KWICSort = .leftContext
     @State private var showCollocates = false
+    @State private var showSaveCorpusSheet = false
     @State private var collocation: CollocationAnalysis.Outcome = .pending
     @State private var isLoadingCollocation = false
     @AppStorage(SearchCollocationDefaults.windowKey) private var collocationWindow = 10
@@ -233,6 +234,7 @@ struct SearchView: View {
                         narrowedByRow
                     }
                 }
+                .sheet(isPresented: $showSaveCorpusSheet) { saveCorpusSheet }
                 // The facet sheet (R-1c). Medium and large detents per the design, so it can
                 // be skimmed beside the results or opened fully to work through a long list.
                 .sheet(isPresented: $showFacetSheet) {
@@ -563,6 +565,14 @@ struct SearchView: View {
                 Label(String(localized: "search.mode.facets", defaultValue: "Facets"),
                       systemImage: "chart.bar.doc.horizontal")
             }
+            Divider()
+            Button {
+                showSaveCorpusSheet = true
+            } label: {
+                Label(String(localized: "search.corpus.save", defaultValue: "Save as Working Corpus…"),
+                      systemImage: "tray.full")
+            }
+            .disabled(vm.displayedResults.isEmpty)
         } label: {
             Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
         }
@@ -1266,6 +1276,17 @@ struct SearchView: View {
         } catch {
             collocation = .unavailable(.scanFailed)
         }
+    }
+
+    /// The capture sheet, extracted from the modifier chain: inlined, it pushed the body past the
+    /// type-checker's budget outright.
+    ///
+    /// Captures the whole retained set, not the page — a corpus is the answer to a query, and a page
+    /// is an accident of pagination.
+    private var saveCorpusSheet: some View {
+        SaveWorkingCorpusSheet(results: vm.displayedResults,
+                               queryText: vm.submittedSearchParameters.keywords ?? "",
+                               indexedVolumeCount: appState.indexedVolumeIds.count)
     }
 
     private func openResult(_ entry: DocumentBrowserEntry) {

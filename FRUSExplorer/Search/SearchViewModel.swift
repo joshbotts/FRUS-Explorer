@@ -663,6 +663,22 @@ final class SearchViewModel {
         return ids.sorted()
     }
 
+    /// The applied working corpus, as its **indexed** document keys, or `nil` when none is applied.
+    ///
+    /// Document-grain scope (M-1). Held as resolved keys rather than as the corpus's identifier so
+    /// the search parameters stay a self-contained value — the same reason `documentIds` exists at
+    /// all — and so an applied corpus survives the corpus being renamed mid-session.
+    var appliedWorkingCorpusKeys: [String]?
+
+    /// The corpus's name, for the applied-scope chip. Cleared with the keys.
+    var appliedWorkingCorpusName: String?
+
+    /// Clears any applied working corpus.
+    func clearWorkingCorpus() {
+        appliedWorkingCorpusKeys = nil
+        appliedWorkingCorpusName = nil
+    }
+
     /// The volume scope + History/Focus document gate the active project scope produces
     /// (#377 Phase 2). History gates `documentIds` to the engaged set. Focus scopes to
     /// volumes: a **manual** volume selection (or applied custom scope) *overrides* the
@@ -722,7 +738,8 @@ final class SearchViewModel {
             subjectTagIds: [],
             userTagIds: selectedUserTagIds.map(\.uuidString),
             volumeIds: scoped.volumeIds,
-            documentIds: scoped.documentIds,
+            documentIds: DocumentScopeGate.combine(corpus: appliedWorkingCorpusKeys,
+                                                   projectGate: scoped.documentIds),
             // Project Focus "only new" (#377 Phase 2b): excludes the engaged set so discovery
             // emphasizes fresh material. Only in `.focus` with the toggle on.
             excludeDocumentIds: (projectScope == .focus && projectOnlyNew)
