@@ -300,28 +300,28 @@ enum CloudKitSchemaInventory {
 
     /// The build at which the Production CloudKit schema was last promoted.
     ///
-    /// Build 36. Two promotions are recorded here. Issue #488's closing comment — *"Resolved by
+    /// Build 36. Three promotions are recorded here. Issue #488's closing comment — *"Resolved by
     /// deploying the missing CloudKit schema"* (2026-07-26) — brought Production level with the
     /// build-35 additions. The second, the same day, promoted `CD_ExportHistoryEntry` and its six
-    /// fields for Wave R-2a, after a Development build exported a collection so the record type
-    /// existed to promote (CloudKit creates a record type only when a record of it is first saved —
-    /// the trap that made #488 possible).
+    /// fields for Wave R-2a. The third (2026-07-31) promoted `CD_WorkingCorpus` and its nine fields
+    /// for M-1 — again after a Development build saved a real record, since CloudKit creates a
+    /// record type only when one is first written, the trap that made #488 possible.
     static let deployedThroughBuild = "36"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-07-26"
+    static let deployedOn = "2026-07-31"
 
     /// How many identifiers the Production schema is attested to carry. Pinned by the test
     /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
     /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 213
+    static let deployedIdentifierCount = 223
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "8d31f02cae584f2f0d738a30bbd7ca2f978b56b9702a217780890a5826a59118"
+        "d5debf45358dfe0e68be10f0c905804912fbda4040b25d6f1fecde6e5cee1b15"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -343,19 +343,10 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // M-1 — `WorkingCorpus`, the document-grain scope, and its nine fields. NOT yet deployed.
-        // The app reports this at launch and in Settings ▸ Data & Recovery ▸ iCloud Schema, and
-        // `ResearchTrailMigration` refuses to run while anything is listed here.
-        "CD_WorkingCorpus",
-        "CD_WorkingCorpus.CD_capturedAt",
-        "CD_WorkingCorpus.CD_createdAt",
-        "CD_WorkingCorpus.CD_documentKeys",
-        "CD_WorkingCorpus.CD_id",
-        "CD_WorkingCorpus.CD_indexedVolumeCountAtCapture",
-        "CD_WorkingCorpus.CD_lastModified",
-        "CD_WorkingCorpus.CD_name",
-        "CD_WorkingCorpus.CD_sourceDescription",
-        "CD_WorkingCorpus.CD_sourceQuery",
+        // Empty: Production matches this build. `CD_WorkingCorpus` and its nine fields were seeded
+        // into the Development schema by saving a real working corpus (CloudKit creates a record
+        // type only when a record of it is first saved — the trap behind #488) and promoted on
+        // 2026-07-31.
     ]
 
     // MARK: - Derived state
