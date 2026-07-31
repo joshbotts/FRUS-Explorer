@@ -9,6 +9,87 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - ResultReading
+
+/// The mutually exclusive ways the search screen can present a result set.
+///
+/// The three analytical readings each replace the result list entirely, so only one can be on at
+/// a time. They used to be three independent `Bool`s whose toggles hand-cleared the other two,
+/// and the active one was signalled *only* by swapping a menu row's `systemImage` to a checkmark.
+/// `Label(_:systemImage:)` contributes no accessible text from its image, so VoiceOver announced
+/// "Timeline" identically whether Timeline was on or off — state carried by icon alone, with no
+/// programmatic equivalent.
+///
+/// Modelling the choice as one value lets an inline `Picker` draw the checkmarks *and* announce
+/// the selection for free, and the mutual exclusion stops being bookkeeping that a fourth reading
+/// could forget to join. The three flags remain the storage the view body and the `.task(id:)`
+/// rebuild keys read; this is a projection over them, not a replacement for them.
+///
+/// Version history:
+///   1.0 — Q-wave: initial implementation
+enum ResultReading: String, CaseIterable, Identifiable {
+
+    /// The ordinary paged result list — the absence of a reading, not a fourth one.
+    case list
+    /// Matches plotted over time.
+    case timeline
+    /// Every occurrence of the query term on its own line, aligned.
+    case concordance
+    /// The words that occur near the query term.
+    case collocates
+
+    var id: String { rawValue }
+
+    /// The menu row's title. Keys are the ones these rows already shipped with, so the change
+    /// does not orphan translations.
+    var title: String {
+        switch self {
+        case .list:
+            String(localized: "search.mode.list", defaultValue: "List")
+        case .timeline:
+            String(localized: "search.mode.timeline", defaultValue: "Timeline")
+        case .concordance:
+            String(localized: "search.mode.concordance", defaultValue: "Concordance")
+        case .collocates:
+            String(localized: "search.mode.collocates", defaultValue: "Collocates")
+        }
+    }
+
+    /// The menu row's glyph. Each reading keeps the mark it shipped with; the checkmark that used
+    /// to displace it now comes from the `Picker` instead of replacing the icon.
+    var systemImage: String {
+        switch self {
+        case .list: "list.bullet"
+        case .timeline: "chart.bar"
+        case .concordance: "text.alignleft"
+        case .collocates: "circle.grid.cross"
+        }
+    }
+
+    /// Which reading three stored flags amount to.
+    ///
+    /// The precedence order mirrors the `else if` chain in `SearchView.resultsList` exactly. If
+    /// the two ever disagree the control names one reading while the screen shows another, so this
+    /// lives beside the flags it reads rather than inside a view where no test can reach it.
+    static func active(timeline: Bool, concordance: Bool, collocates: Bool) -> ResultReading {
+        if collocates { return .collocates }
+        if concordance { return .concordance }
+        if timeline { return .timeline }
+        return .list
+    }
+
+    /// The flags this reading implies — all three, always, never a toggle.
+    ///
+    /// Assigning the whole triple is what makes exclusivity structural: there is no assignment
+    /// reachable from here that leaves two readings on at once, which is exactly the invariant the
+    /// three hand-cleared `Bool`s relied on every call site to maintain.
+    var flags: (timeline: Bool, concordance: Bool, collocates: Bool) {
+        (timeline: self == .timeline,
+         concordance: self == .concordance,
+         collocates: self == .collocates)
+    }
+}
+
 // MARK: - SearchView
 
 /// Full composable search view with keyword search, advanced filters, and a results list.
@@ -78,6 +159,13 @@ import SwiftData
 ///          empty for anyone who never used the Mac app.
 ///   1.17 — Wave R-2a: `vm.appState` is no longer wired in `.task` — the only thing it fed was
 ///          the retired `.searchSubmit` session event. `runSearch()` is unchanged.
+///   1.18 — Q wave: the actions-bar chart control becomes `examineMenu` — `binoculars`,
+///          named after what it does rather than after one of its four children. The three
+///          mutually exclusive readings become an inline `Picker` over ``ResultReading`` so
+///          VoiceOver can announce the selection, the glyph now fills for any active reading
+///          (it tracked only Timeline), and Save as Working Corpus moves to `moreMenu` beside
+///          Save this search — it is an action, not a reading.
+
 struct SearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -222,7 +310,7 @@ struct SearchView: View {
                         Button(String(localized: "search.done", defaultValue: "Done")) { dismiss() }
                     }
                     ToolbarItem(placement: .primaryAction) { filterButton }
-                    ToolbarItem(placement: .primaryAction) { timelineButton }
+                    ToolbarItem(placement: .primaryAction) { examineMenu }
                     ToolbarItem(placement: .primaryAction) { moreMenu }
                     #endif
                 }
@@ -529,59 +617,83 @@ struct SearchView: View {
         )
     }
 
-    /// Timeline toggle — disabled until there are results to chart.
-    @ViewBuilder
-    /// The actions-bar chart control: a menu of ways to look at the result set (R-1c).
+    /// The active reading, derived from the three flags the body and rebuild keys still read.
     ///
-    /// The design turns this single toggle into a menu — Timeline · This result set — and
-    /// R-3b will add Concordance to the same menu, so it is built as a list of modes rather
-    /// than a pair of special cases.
-    private var timelineButton: some View {
+    /// The precedence order mirrors the `else if` chain in `resultsList` exactly. If the two ever
+    /// disagree, the control would name one reading while the screen showed another.
+    private var activeReading: ResultReading {
+        ResultReading.active(timeline: showTimeline,
+                             concordance: showConcordance,
+                             collocates: showCollocates)
+    }
+
+    /// A single-selection projection over the three flags, so the menu can host a `Picker`.
+    ///
+    /// The setter assigns all three unconditionally rather than toggling, which is what makes the
+    /// exclusivity structural: there is no assignment that can leave two readings on.
+    private var readingSelection: Binding<ResultReading> {
+        Binding(
+            get: { activeReading },
+            set: { selected in
+                let flags = selected.flags
+                showTimeline = flags.timeline
+                showConcordance = flags.concordance
+                showCollocates = flags.collocates
+            }
+        )
+    }
+
+    /// The actions-bar control for examining the result set as a whole (R-1c, R-3b, S-2, M-1).
+    ///
+    /// ## Why binoculars, and not a chart
+    /// This menu once held Timeline and Facets and was labelled `chart.bar` — the glyph of one of
+    /// its own children. Three readings later only Timeline produces a chart, so the icon promised
+    /// a picture the other three do not deliver, and named the container after a single child. No
+    /// symbol depicts "timeline + concordance + collocates + facets" because they share no picture;
+    /// binoculars is chosen for being *about surveying what is already in front of you* while
+    /// colliding with nothing — the app's optical vocabulary is otherwise `magnifyingglass`
+    /// (search) and `eye` (visibility), and neither is this.
+    ///
+    /// ## Why the readings are a `Picker`
+    /// See ``ResultReading``. The three were `Button`s that toggled `Bool`s and showed a checkmark
+    /// in place of their icon, which VoiceOver could not read.
+    ///
+    /// Facets sits below the divider because it is not a reading: it opens a sheet over the
+    /// results rather than replacing them, and it is the one item measured against the whole match
+    /// rather than the retained set.
+    @ViewBuilder
+    private var examineMenu: some View {
         Menu {
-            Button {
-                showTimeline.toggle()
-                if showTimeline { showConcordance = false; showCollocates = false }
-            } label: {
-                Label(String(localized: "search.mode.timeline", defaultValue: "Timeline"),
-                      systemImage: showTimeline ? "checkmark" : "chart.bar")
+            Picker(String(localized: "search.mode.picker", defaultValue: "Read as"),
+                   selection: readingSelection) {
+                ForEach(ResultReading.allCases) { reading in
+                    Label(reading.title, systemImage: reading.systemImage).tag(reading)
+                }
             }
-            Button {
-                showConcordance.toggle()
-                if showConcordance { showTimeline = false; showCollocates = false }
-            } label: {
-                Label(String(localized: "search.mode.concordance", defaultValue: "Concordance"),
-                      systemImage: showConcordance ? "checkmark" : "text.alignleft")
-            }
-            Button {
-                showCollocates.toggle()
-                if showCollocates { showTimeline = false; showConcordance = false }
-            } label: {
-                Label(String(localized: "search.mode.collocates", defaultValue: "Collocates"),
-                      systemImage: showCollocates ? "checkmark" : "circle.grid.cross")
-            }
+            .pickerStyle(.inline)
+
+            Divider()
+
             Button {
                 showFacetSheet = true
             } label: {
                 Label(String(localized: "search.mode.facets", defaultValue: "Facets"),
                       systemImage: "chart.bar.doc.horizontal")
             }
-            Divider()
-            Button {
-                showSaveCorpusSheet = true
-            } label: {
-                Label(String(localized: "search.corpus.save", defaultValue: "Save as Working Corpus…"),
-                      systemImage: "tray.full")
-            }
-            .disabled(vm.displayedResults.isEmpty)
         } label: {
-            Image(systemName: showTimeline ? "chart.bar.fill" : "chart.bar")
+            Image(systemName: activeReading == .list ? "binoculars" : "binoculars.fill")
         }
         .controlHelp(
-            String(localized: "search.mode.a11y", defaultValue: "Ways to view these results"),
+            String(localized: "search.mode.a11y", defaultValue: "Examine these results"),
             detail: String(localized: "search.mode.help",
-                           defaultValue: "Chart the results over time, or break the whole result set down by year, volume, person, type and provenance"),
-            systemImage: "chart.bar"
+                           defaultValue: "Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, type and provenance."),
+            // The Large Content Viewer HUD is driven by this SEPARATE literal. Left behind, a
+            // low-vision user would keep seeing chart.bar after the visible glyph had moved.
+            systemImage: "binoculars"
         )
+        // The control had no value at all: with a reading active, the whole results region is
+        // replaced while nothing announces which control did it.
+        .accessibilityValue(activeReading.title)
         .disabled(vm.results.isEmpty)
     }
 
@@ -629,6 +741,19 @@ struct SearchView: View {
                       systemImage: "bookmark")
             }
             .disabled(!vm.hasSearched)
+            // Saving the RESULTS is the sibling of saving the QUERY, which is why it lives here
+            // and not among the readings. Every other item in the examine menu re-presents the set
+            // and leaves nothing behind; this one writes a CloudKit-synced `WorkingCorpus` whose
+            // consumer is a different control on a different surface. It also carried the only
+            // second enablement rule in that menu — `displayedResults`, where the readings gate on
+            // `results` — which is a further sign it was never the same kind of thing.
+            Button {
+                showSaveCorpusSheet = true
+            } label: {
+                Label(String(localized: "search.corpus.save", defaultValue: "Save as Working Corpus…"),
+                      systemImage: "tray.full")
+            }
+            .disabled(vm.displayedResults.isEmpty)
             Button {
                 showSavedSearches = true
             } label: {
@@ -663,7 +788,7 @@ struct SearchView: View {
         .controlHelp(
             String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
             detail: String(localized: "search.moreActions.help",
-                           defaultValue: "Save this search, revisit saved searches, or find a document by citation"),
+                           defaultValue: "Save this search or its results, revisit saved searches, or find a document by citation"),
             systemImage: "ellipsis.circle"
         )
     }
@@ -769,7 +894,7 @@ struct SearchView: View {
     private var searchActionsBar: some View {
         HStack(spacing: 20) {
             filterButton
-            timelineButton
+            examineMenu
             checklistButton
             sortMenu
             Spacer()
