@@ -124,6 +124,12 @@ struct SearchView: View {
     @State private var showConcordance = false
     @State private var concordance = ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
     @State private var concordanceSort: KWICSort = .leftContext
+    @State private var showCollocates = false
+    @State private var collocation: CollocationAnalysis.Outcome = .pending
+    @State private var isLoadingCollocation = false
+    @AppStorage(SearchCollocationDefaults.windowKey) private var collocationWindow = 10
+    @AppStorage(SearchCollocationDefaults.orderKey)
+    private var collocationOrderRaw = CollocationOrder.evidence.rawValue
     @State private var isLoadingConcordance = false
     @State private var showSaveSearchSheet = false
     @State private var showSavedSearches = false
@@ -284,6 +290,13 @@ struct SearchView: View {
         .task(id: ConcordanceRebuildKey(mode: showConcordance, page: vm.currentPage,
                                         version: vm.executedSearchVersion)) {
             await rebuildConcordance()
+        }
+        // Keyed on the WINDOW too, and NOT on the page: a collocation reads the whole retained
+        // result set, so paging changes nothing about it — rebuilding on page turn would rescan
+        // thousands of documents to produce the identical ranking.
+        .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
+                                        version: vm.executedSearchVersion)) {
+            await rebuildCollocation()
         }
         .onChange(of: vm.executedSearchVersion) { _, _ in
                     facetController.invalidate(signature: "ios-\(vm.executedSearchVersion)")
@@ -525,16 +538,24 @@ struct SearchView: View {
         Menu {
             Button {
                 showTimeline.toggle()
+                if showTimeline { showConcordance = false; showCollocates = false }
             } label: {
                 Label(String(localized: "search.mode.timeline", defaultValue: "Timeline"),
                       systemImage: showTimeline ? "checkmark" : "chart.bar")
             }
             Button {
                 showConcordance.toggle()
-                if showConcordance { showTimeline = false }
+                if showConcordance { showTimeline = false; showCollocates = false }
             } label: {
                 Label(String(localized: "search.mode.concordance", defaultValue: "Concordance"),
                       systemImage: showConcordance ? "checkmark" : "text.alignleft")
+            }
+            Button {
+                showCollocates.toggle()
+                if showCollocates { showTimeline = false; showConcordance = false }
+            } label: {
+                Label(String(localized: "search.mode.collocates", defaultValue: "Collocates"),
+                      systemImage: showCollocates ? "checkmark" : "circle.grid.cross")
             }
             Button {
                 showFacetSheet = true
@@ -892,6 +913,13 @@ struct SearchView: View {
                     description: Text(String(localized: "search.checklist.allReviewed.detail",
                                              defaultValue: "You've reviewed every result. Turn off Checklist Mode to see them again."))
                 )
+            } else if showCollocates {
+                CollocationView(
+                    outcome: collocation,
+                    windowSize: $collocationWindow,
+                    order: Binding(get: { CollocationOrder(rawValue: collocationOrderRaw) ?? .evidence },
+                                   set: { collocationOrderRaw = $0.rawValue }),
+                    isLoading: isLoadingCollocation)
             } else if showConcordance {
                 ConcordanceView(result: concordance, sort: $concordanceSort) { line in
                     // Open the line's document through the same path a list row uses, so a
@@ -1190,8 +1218,54 @@ struct SearchView: View {
         isLoadingConcordance = true
         defer { isLoadingConcordance = false }
         concordance = (try? await service.concordance(
-            for: page, parameters: vm.searchParameters))
+            for: page, parameters: vm.submittedSearchParameters))
             ?? ConcordanceResult(lines: [], omittedCount: 0, documentsWithoutLines: 0)
+    }
+
+    /// Recomputes the collocation over the whole retained result set.
+    ///
+    /// `vm.displayedResults`, not `vm.pagedResults`: a measure over one page cannot clear its own
+    /// floor — 25 documents yield roughly 400 window tokens across ~290 distinct lemmas, so almost
+    /// nothing reaches three occurrences and the panel reads as broken rather than bounded.
+    private func rebuildCollocation() async {
+        guard showCollocates, let service = appState.searchService else { return }
+        let results = vm.displayedResults
+        guard !results.isEmpty else { collocation = .unavailable(.noMatches); return }
+        isLoadingCollocation = true
+        defer { isLoadingCollocation = false }
+
+        // The reference decodes off the main actor at launch; a read taken before it lands would
+        // verdict `.noArtifact`, which is a different claim from "not yet".
+        await BundledKeynessBaseline.prepare()
+        // ONE resolution of the live settings, shared by the tokenizer and the reference lookup —
+        // the guard validates what a caller claims, not what its tokenizer was built with.
+        let configuration = CollocationConfiguration.live()
+        let availability = BundledKeynessBaseline.baseline(
+            for: .allTerms, tuning: configuration.tuning,
+            includeDiplomatic: configuration.includeDiplomatic)
+        let reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int)
+        switch availability {
+        case .unavailable(.noArtifact), .unavailable(.lensNotPriced):
+            collocation = .unavailable(.noArtifact); return
+        case .unavailable(.configurationMismatch(let mismatches)):
+            collocation = .unavailable(.configurationMismatch(mismatches)); return
+        case .available(let terms, let total, let cutoff):
+            reference = (terms, total, cutoff)
+        }
+        let generated = BundledKeynessBaseline.generated
+
+        do {
+            collocation = try await service.collocation(
+            for: results, parameters: vm.submittedSearchParameters, windowSize: collocationWindow,
+            configuration: configuration, reference: reference, generated: generated)
+        } catch is CancellationError {
+            // Switching modes or re-running a search cancels a scan in flight — the common case.
+            // Writing a verdict here would replace a fresh panel with a stale one's failure, and
+            // `.noMatches` would state something specific and false about the query.
+            return
+        } catch {
+            collocation = .unavailable(.scanFailed)
+        }
     }
 
     private func openResult(_ entry: DocumentBrowserEntry) {

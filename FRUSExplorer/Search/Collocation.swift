@@ -156,8 +156,12 @@ struct CollocationResult: Equatable {
     let windowSize: Int
     /// Documents whose text was actually scanned.
     let documentsScanned: Int
-    /// Documents in the result set. Larger than ``documentsScanned`` when a bound stopped the scan.
+    /// Documents in the result set.
     let documentsInScope: Int
+    /// Documents the scan actually reached before the budget stopped it. Distinct from
+    /// ``documentsScanned``, which counts only those that had cached text — conflating the two made
+    /// a complete scan report itself as truncated whenever a document was missing from the cache.
+    let documentsOffered: Int
     /// Matches found across the scanned documents.
     let anchorCount: Int
     /// Matches dropped by the per-document bound.
@@ -171,8 +175,12 @@ struct CollocationResult: Equatable {
     /// The reference artifact's generation stamp.
     let generated: String?
 
-    /// Whether a bound stopped the scan short of the whole result set.
-    var wasBounded: Bool { documentsScanned < documentsInScope }
+    /// Whether the budget stopped the scan short of the whole result set.
+    ///
+    /// Keyed on what the scan was OFFERED, not on what had text: a result set containing documents
+    /// whose body was never cached is not a bounded scan, and reporting it as one would tell a
+    /// researcher their ranking is partial when it is complete.
+    var wasBounded: Bool { documentsOffered < documentsInScope }
 }
 
 // MARK: - CollocationAnalysis
@@ -196,6 +204,13 @@ enum CollocationAnalysis {
     enum Unavailable: Equatable {
         /// No verdict yet.
         case pending
+        /// The scan could not finish — it was cancelled, or the index could not be read.
+        ///
+        /// Emphatically NOT folded into ``noMatches``. A cancelled scan says nothing whatever about
+        /// the query, and "none of these results contains a whole word this measure can centre on"
+        /// is a specific, checkable, false claim about it. Switching modes or re-running a search
+        /// cancels a scan in flight, so this is the common case, not the rare one.
+        case scanFailed
         /// The bundled reference is missing or would not decode.
         case noArtifact
         /// The live tokenisation is not comparable to the reference's.
@@ -237,6 +252,7 @@ enum CollocationAnalysis {
         windowSize: Int,
         documentsScanned: Int,
         documentsInScope: Int,
+        documentsOffered: Int,
         anchorCount: Int,
         omittedAnchorCount: Int,
         reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int),
@@ -265,6 +281,7 @@ enum CollocationAnalysis {
             windowSize: windowSize,
             documentsScanned: documentsScanned,
             documentsInScope: documentsInScope,
+            documentsOffered: documentsOffered,
             anchorCount: anchorCount,
             omittedAnchorCount: omittedAnchorCount,
             windowTokenCount: windowTokenCount,

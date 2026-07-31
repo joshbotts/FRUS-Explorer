@@ -140,12 +140,14 @@ struct CollocationAnalysisTests {
         anchors: Set<String> = [],
         scanned: Int = 40,
         inScope: Int = 40,
+        offered: Int? = nil,
         anchorCount: Int = 60,
         omitted: Int = 0
     ) -> CollocationAnalysis.Outcome {
         CollocationAnalysis.rank(
             counts: counts, windowTokenCount: windowTokens, anchorLemmas: anchors,
             windowSize: 10, documentsScanned: scanned, documentsInScope: inScope,
+            documentsOffered: offered ?? inScope,
             anchorCount: anchorCount, omittedAnchorCount: omitted,
             reference: reference, generated: "2026-07-27")
     }
@@ -232,13 +234,24 @@ struct CollocationAnalysisTests {
 
     @Test("The bounds travel with the result, so a partial scan can never read as a complete one")
     func boundsTravel() throws {
-        let r = try #require(result(rank(["ratify": 90], scanned: 280, inScope: 1_000, omitted: 44)))
+        let r = try #require(result(rank(["ratify": 90], scanned: 280, inScope: 1_000,
+                                         offered: 280, omitted: 44)))
         #expect(r.wasBounded)
         #expect(r.documentsScanned == 280)
         #expect(r.documentsInScope == 1_000)
         #expect(r.omittedAnchorCount == 44)
         let whole = try #require(result(rank(["ratify": 90], scanned: 40, inScope: 40)))
         #expect(!whole.wasBounded)
+    }
+
+    @Test("A document with no indexed text is not a bounded scan")
+    func missingTextIsNotTruncation() throws {
+        // The scan was offered all 40 and reached all 40; 3 simply had no cached body. Keying
+        // `wasBounded` on documentsScanned would report a COMPLETE ranking as partial, and tell a
+        // researcher their evidence is clipped when it is not.
+        let r = try #require(result(rank(["ratify": 90], scanned: 37, inScope: 40, offered: 40)))
+        #expect(!r.wasBounded)
+        #expect(r.documentsScanned == 37)
     }
 
     @Test("The reference's unpriced cutoff travels too")
