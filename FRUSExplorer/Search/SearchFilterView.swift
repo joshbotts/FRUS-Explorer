@@ -681,6 +681,17 @@ struct SearchFilterView: View {
                     Text(resolution.coverageDescription)
                         .font(.caption)
                         .foregroundStyle(resolution.isComplete ? Color.secondary : Color.orange)
+                    // What the set IS, beneath what this device can reach of it. These are two
+                    // different facts and both matter here: coverage is about this device, while
+                    // `sourceDescription` says whether the corpus was ever the whole answer to its
+                    // query. This is the moment the researcher decides to work inside it, so it is
+                    // the moment the truncation has to be legible.
+                    if let source = corpus.sourceDescription, !source.isEmpty {
+                        Text(source)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer()
                 if isApplied {

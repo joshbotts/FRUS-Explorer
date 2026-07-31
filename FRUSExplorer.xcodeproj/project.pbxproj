@@ -166,6 +166,7 @@
 		2BC7798EB292D4F4F15DFD78 /* word-cloud-lexicons.json in Resources */ = {isa = PBXBuildFile; fileRef = C8DF61F3D994D634101C919B /* word-cloud-lexicons.json */; };
 		2BFDC571A924C58EBA1970D4 /* ControlHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C9422F6CC80557BB550335 /* ControlHelp.swift */; };
 		2C11F536879BAC97EBA6FDFA /* DocumentViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D8BE5332FFC2F2CBCDF4E4 /* DocumentViewTests.swift */; };
+		2C801BC7789950F1492445DE /* WorkingCorpusVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E7729E7ECD239B193AC7772 /* WorkingCorpusVisibilityTests.swift */; };
 		2C9048C93034F2F9777EF382 /* VolumeSourcesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFC3D2EF12D1AB4841E13DE /* VolumeSourcesView.swift */; };
 		2CA89F2357210239C28C134D /* VolumeStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FCCD03E349C0DB27DEA489 /* VolumeStructure.swift */; };
 		2CE2897C230039CEEA847CFF /* NARACatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEBCC915167AB40F815AD6B /* NARACatalogClient.swift */; };
@@ -1264,6 +1265,7 @@
 		9D18FFCBBDD8710C84CA7540 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
 		9D2B69CD9C8F98784E45944C /* StorageIndexViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageIndexViewTests.swift; sourceTree = "<group>"; };
 		9E3DCC71337106388B5176A6 /* AnalyticsChartTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsChartTables.swift; sourceTree = "<group>"; };
+		9E7729E7ECD239B193AC7772 /* WorkingCorpusVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingCorpusVisibilityTests.swift; sourceTree = "<group>"; };
 		9ECB12934B74A080479BC4FA /* VolumeMetadataDiscoveredTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeMetadataDiscoveredTests.swift; sourceTree = "<group>"; };
 		9EDB3F1592C8C223D1967038 /* AdministrationProfilesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationProfilesStore.swift; sourceTree = "<group>"; };
 		9F22A8C030EF1BBC980F1156 /* HTMLTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
@@ -1959,6 +1961,7 @@
 				BFD09A7610552D32EC319FC5 /* WordCloudLayoutRegressionTests.swift */,
 				0FA30F56D426612E1A60D22F /* WordCloudTests.swift */,
 				2022C7FF20BF287B5CAB8803 /* WorkingCorpusTests.swift */,
+				9E7729E7ECD239B193AC7772 /* WorkingCorpusVisibilityTests.swift */,
 				6AE3C1692EE4BEA75C7DC777 /* ZoteroAPITests.swift */,
 				1E6442286D639EB1B90EBEBC /* ZoteroJSONExporterTests.swift */,
 			);
@@ -3456,6 +3459,7 @@
 				DD423FDD805E3288FA12E4A4 /* WordCloudLayoutRegressionTests.swift in Sources */,
 				8AF497E762EE4ED25681C3CC /* WordCloudTests.swift in Sources */,
 				9A42088ABADB1C91F1A06A19 /* WorkingCorpusTests.swift in Sources */,
+				2C801BC7789950F1492445DE /* WorkingCorpusVisibilityTests.swift in Sources */,
 				971DC9A65F7308AE8C2933B0 /* ZoteroAPITests.swift in Sources */,
 				C22BFBE7A607AB4E0437144F /* ZoteroJSONExporterTests.swift in Sources */,
 			);

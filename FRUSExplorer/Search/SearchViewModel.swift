@@ -683,6 +683,9 @@ final class SearchViewModel {
         // re-populate only when the project changes).
         projectScope = .off
         projectOnlyNew = false
+        // Cleared with the rest. Leaving it made Clear Filters a promise it did not keep for the
+        // one filter the control could not display either.
+        clearWorkingCorpus()
     }
 
     func clearAll() {
@@ -1034,6 +1037,11 @@ final class SearchViewModel {
         if !includeDocumentText || !includeSummaries || !includeNotes { return true }
         if !includeFrontMatter { return true }
         if projectScope != .off { return true }
+        // An applied working corpus gates every row, so the filter glyph must say so. It was
+        // missing here because a corpus is applied through its own field rather than through the
+        // volume-checkbox field a custom volume scope writes — so it inherited none of the filter
+        // vocabulary that field carries for free.
+        if appliedWorkingCorpusKeys != nil { return true }
         switch booleanMode {
         case .or: return true
         case .and: return false
