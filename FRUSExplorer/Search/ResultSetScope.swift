@@ -143,6 +143,28 @@ struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The results header
 
+    /// The clause naming the applied corpus's OWN capture, for whichever count grammar a
+    /// platform uses around it.
+    ///
+    /// The two search surfaces do not share a count line — iOS renders ``headerDescription`` and
+    /// macOS renders `SearchSheet.resultCountLabel`, which has its own settled "loaded · total"
+    /// dialect with page ranges. Importing one platform's phrasing into the other would give the
+    /// app a third grammar for the same facts. Sharing the *clause* instead keeps the wording in
+    /// one place, testable, and unable to drift, while each surface keeps its own sentence.
+    ///
+    /// `nil` unless the corpus was a truncated capture — including when no corpus is applied, and
+    /// when the capture predates the fields (`unrecorded`), which must stay silent.
+    var corpusCaptureClause: String? {
+        guard case .truncated(let capturedTotal) = appliedCorpusTruncation else { return nil }
+        if let capturedTotal {
+            return String(format: String(localized: "search.corpus.capturedFrom %@",
+                                         defaultValue: "captured from %@ matches"),
+                          grouped(capturedTotal))
+        }
+        return String(localized: "search.corpus.partialCapture",
+                      defaultValue: "a partial capture")
+    }
+
     /// The results-count header — the line where the three-way collision lived.
     ///
     /// It read `"%lld results"` over the checklist-**filtered** count while the line beneath read
@@ -163,17 +185,11 @@ struct ResultSetScope: Equatable, Sendable {
             // this type exists to stop: the number is exact for the corpus and says nothing about
             // the question the corpus was an answer to. The corpus's own total is the honest
             // second figure — not this fetch's, which has none.
-            if case .truncated(let capturedTotal) = appliedCorpusTruncation {
-                if let capturedTotal {
-                    return String(format: String(
-                        localized: "search.count.inTruncatedCorpus %@ %@",
-                        defaultValue: "%1$@ in this corpus · captured from %2$@ matches"),
-                        grouped(shown), grouped(capturedTotal))
-                }
+            if let clause = corpusCaptureClause {
                 return String(format: String(
-                    localized: "search.count.inTruncatedCorpus.unknownTotal %@",
-                    defaultValue: "%@ in this corpus · a partial capture"),
-                    grouped(shown))
+                    localized: "search.count.inTruncatedCorpus %@ %@",
+                    defaultValue: "%1$@ in this corpus · %2$@"),
+                    grouped(shown), clause)
             }
             return String(format: String(localized: "search.count %@",
                                          defaultValue: "%@ results"), grouped(shown))

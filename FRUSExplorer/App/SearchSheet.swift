@@ -1124,9 +1124,22 @@ struct MacSearchWindowView: View {
         let end      = min(start + searchVM.pageSize - 1, loaded)
         let truncated = searchVM.isResultSetTruncated
 
+        // Inside a corpus that was itself a capped capture, BOTH `loaded` and `total` describe
+        // the corpus-scoped query — so the ordinary "267 loaded · 267 total" reads as a complete
+        // set, which is the claim #607 removed on iOS and left standing here. The corpus branch
+        // drops both figures rather than qualifying them: neither is the denominator a reader
+        // would want, and the corpus's own capture total is.
+        let corpusClause = resultSetScope.corpusCaptureClause
+
         HStack(spacing: 6) {
             if loaded == 0 {
                 Text("No results")
+                    .font(.system(size: 11, weight: .medium))
+            } else if let corpusClause, loaded <= searchVM.pageSize {
+                Text("\(loaded.formatted()) in this corpus · \(corpusClause)")
+                    .font(.system(size: 11, weight: .medium))
+            } else if let corpusClause {
+                Text("\(start)–\(end) of \(loaded.formatted()) in this corpus · \(corpusClause)")
                     .font(.system(size: 11, weight: .medium))
             } else if let total, loaded <= searchVM.pageSize {
                 Text("\(loaded) of \(total.formatted()) result\(total == 1 ? "" : "s")")
