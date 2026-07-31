@@ -41,6 +41,13 @@ struct SaveWorkingCorpusSheet: View {
     let queryText: String
     /// Volumes indexed on this device, recorded with the capture.
     let indexedVolumeCount: Int
+    /// Which set these results are, so the capture can say what it is a capture OF.
+    ///
+    /// A working corpus is the one artifact here that is durable, synced and cited. Its
+    /// `documentCount` becomes the denominator of a claim, and the same query captured on an
+    /// iPhone and a Mac at the same instant against the same index yields 1,000 keys and 7,500 —
+    /// with nothing on either record to say so.
+    let scope: ResultSetScope
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -102,6 +109,20 @@ struct SaveWorkingCorpusSheet: View {
                                           defaultValue: "Volumes indexed now")) {
                         Text("\(indexedVolumeCount)").monospacedDigit()
                     }
+                    // The modal states the WHOLE chain, unlike the panels: nothing is visible
+                    // behind it, so there is no other copy on screen to duplicate.
+                    if let truncation = scope.captureTruncationWarning {
+                        Label(truncation, systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(Color.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let checklist = scope.captureChecklistWarning {
+                        Label(checklist, systemImage: "checklist")
+                            .font(.caption)
+                            .foregroundStyle(Color.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 } header: {
                     Text(String(localized: "corpus.save.provenance.header", defaultValue: "Captured"))
                 } footer: {
@@ -143,8 +164,10 @@ struct SaveWorkingCorpusSheet: View {
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             documentKeys: keys,
             sourceQuery: queryText.isEmpty ? nil : queryText,
-            sourceDescription: String(localized: "corpus.save.source.search",
-                                      defaultValue: "Search results"),
+            // Into `sourceDescription`, an existing stored property already in
+            // `installedIdentifiers` — so the record becomes self-describing at zero CloudKit
+            // schema cost. Read on another device, or a year later, it carries its truncation.
+            sourceDescription: scope.captureProvenanceDescription,
             indexedVolumeCountAtCapture: indexedVolumeCount)
         modelContext.insert(corpus)
         try? modelContext.save()

@@ -631,6 +631,19 @@ struct SearchView: View {
         )
     }
 
+    /// Which set this screen is showing — the one place iOS composes it, so no surface can
+    /// invent its own account of the same numbers. `totalMatchCount` is `nil` because iOS has
+    /// never held a whole-query count; every sentence in ``ResultSetScope`` is written to be true
+    /// without one.
+    private var resultSetScope: ResultSetScope {
+        ResultSetScope(loaded: vm.results.count,
+                       shown: vm.displayedResults.count,
+                       fetchLimit: SearchViewModel.searchHardLimit,
+                       totalMatchCount: nil,
+                       documentsOnPage: vm.pagedResults.count,
+                       pageCount: vm.totalPages)
+    }
+
     /// The active reading, derived from the three flags the body and rebuild keys still read.
     ///
     /// The precedence order mirrors the `else if` chain in `resultsList` exactly. If the two ever
@@ -1064,13 +1077,14 @@ struct SearchView: View {
                 )
             } else if showCollocates {
                 CollocationView(
+                    scope: resultSetScope,
                     outcome: collocation,
                     windowSize: $collocationWindow,
                     order: Binding(get: { CollocationOrder(rawValue: collocationOrderRaw) ?? .evidence },
                                    set: { collocationOrderRaw = $0.rawValue }),
                     isLoading: isLoadingCollocation)
             } else if showConcordance {
-                ConcordanceView(result: concordance, sort: $concordanceSort) { line in
+                ConcordanceView(scope: resultSetScope, result: concordance, sort: $concordanceSort) { line in
                     // Open the line's document through the same path a list row uses, so a
                     // concordance line and a result row land in exactly the same place.
                     if let result = vm.pagedResults.first(where: {
@@ -1081,6 +1095,20 @@ struct SearchView: View {
                 }
                 .overlay { if isLoadingConcordance { ProgressView() } }
             } else if showTimeline {
+                // The bias caption, above the chart rather than below it — a distribution is read
+                // before a footnote. It states that the SHAPE is skewed, which nothing else on
+                // screen says: the cap notice reports a size, and a reader can discount a size.
+                // A relevance-ranked top-N is not date-neutral, so no amount of knowing "there are
+                // more" corrects the shape of what is plotted.
+                if let bias = resultSetScope.timelineBiasCaption {
+                    Text(bias)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.top, 6)
+                }
                 // Plot the checklist-filtered set so the timeline hides reviewed documents the
                 // same way the list does (#189-D).
                 DocumentTimelineView(
@@ -1428,7 +1456,8 @@ struct SearchView: View {
     private var saveCorpusSheet: some View {
         SaveWorkingCorpusSheet(results: vm.displayedResults,
                                queryText: vm.submittedSearchParameters.keywords ?? "",
-                               indexedVolumeCount: appState.indexedVolumeIds.count)
+                               indexedVolumeCount: appState.indexedVolumeIds.count,
+                               scope: resultSetScope)
     }
 
     private func openResult(_ entry: DocumentBrowserEntry) {

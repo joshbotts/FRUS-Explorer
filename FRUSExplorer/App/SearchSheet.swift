@@ -230,13 +230,14 @@ struct MacSearchWindowView: View {
                     }
             } else if showCollocates {
                 CollocationView(
+                    scope: resultSetScope,
                     outcome: collocation,
                     windowSize: $collocationWindow,
                     order: Binding(get: { CollocationOrder(rawValue: collocationOrderRaw) ?? .evidence },
                                    set: { collocationOrderRaw = $0.rawValue }),
                     isLoading: isLoadingCollocation)
             } else if showConcordance {
-                ConcordanceView(result: concordance, sort: $concordanceSort) { line in
+                ConcordanceView(scope: resultSetScope, result: concordance, sort: $concordanceSort) { line in
                     // Same destination a results-list row reaches, so a concordance line and a row
                     // behave identically.
                     if let result = searchVM.pagedResults.first(where: {
@@ -373,7 +374,8 @@ struct MacSearchWindowView: View {
             SaveWorkingCorpusSheet(
                 results: searchVM.displayedResults,
                 queryText: searchVM.submittedSearchParameters.keywords ?? "",
-                indexedVolumeCount: appState.indexedVolumeIds.count)
+                indexedVolumeCount: appState.indexedVolumeIds.count,
+                scope: resultSetScope)
         }
         .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
                                         version: searchVM.executedSearchVersion)) {
@@ -1198,6 +1200,17 @@ struct MacSearchWindowView: View {
         }
     }
 
+    /// Which set this window is showing. Unlike iOS, macOS holds a real whole-query count, so the
+    /// sentences that can name a total will name one here and not there.
+    private var resultSetScope: ResultSetScope {
+        ResultSetScope(loaded: searchVM.results.count,
+                       shown: searchVM.displayedResults.count,
+                       fetchLimit: MacSearchViewModel.searchHardLimit,
+                       totalMatchCount: searchVM.totalMatchCount,
+                       documentsOnPage: searchVM.pagedResults.count,
+                       pageCount: searchVM.totalPages)
+    }
+
     /// Advisory banner shown directly below the results header when the underlying
     /// match count exceeds what was loaded (capped at `searchHardLimit`).
     ///
@@ -1312,7 +1325,20 @@ struct MacSearchWindowView: View {
     /// and the Collections editor — so chart/list display modes, year
     /// grouping, and undated-document handling all come for free.
     private var timelineView: some View {
-        DocumentTimelineView(
+        VStack(spacing: 0) {
+            // Above the chart, as on iOS. The over-cap advisory two rows up reports a SIZE; this
+            // is the only thing on screen that says the plotted SHAPE is a relevance ranking's,
+            // not the whole match's.
+            if let bias = resultSetScope.timelineBiasCaption {
+                Text(bias)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+            }
+            DocumentTimelineView(
             // Page over the checklist-filtered set (#189-D) so reviewed documents drop out of
             // the timeline just as they do from the list.
             items: searchVM.displayedResults.map {
@@ -1329,7 +1355,8 @@ struct MacSearchWindowView: View {
                     navigateToResult(result)
                 }
             }
-        )
+            )
+        }
     }
 
     private var resultsList: some View {

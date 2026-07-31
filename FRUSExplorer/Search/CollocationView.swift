@@ -35,6 +35,9 @@ import SwiftUI
 ///   1.0 — S-2: initial implementation
 struct CollocationView: View {
 
+    /// Which set the search is showing, so the panel can say what it measured over.
+    let scope: ResultSetScope
+
     /// The outcome to present.
     let outcome: CollocationAnalysis.Outcome
     /// Words either side of a match, adjustable here.
@@ -99,6 +102,9 @@ struct CollocationView: View {
     /// What the scan could and could not see. Stated, never implied by a short list.
     private func caveat(_ result: CollocationResult) -> some View {
         var parts: [String] = [
+            // WHICH set was measured, before how much of it was seen. Carries no numbers: macOS's
+            // over-cap advisory sits above every panel with the same two figures.
+            scope.collocationScopeDescription,
             String(format: String(localized: "search.collocation.caveat.scope.v2 %lld %lld",
                                   defaultValue: "%lld matches, in %lld documents that had indexed text."),
                    Int64(result.anchorCount), Int64(result.documentsScanned))
