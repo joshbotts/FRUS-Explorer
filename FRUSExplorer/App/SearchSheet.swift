@@ -1005,7 +1005,10 @@ struct MacSearchWindowView: View {
                 showConcordance.toggle()
                 if showConcordance { showTimeline = false; showCollocates = false }
             } label: {
-                Image(systemName: showConcordance ? "text.alignleft" : "text.alignright")
+                // `text.alignright` when off meant macOS showed, for the INACTIVE state, the very
+                // symbol iOS uses for the ACTIVE one. Tint already carries the state on this bar
+                // (every neighbour does it that way), so the glyph should simply stay put.
+                Image(systemName: "text.alignleft")
                     .font(.system(size: 12))
                     .foregroundStyle(showConcordance ? Color.accentColor : Color.secondary)
             }
@@ -1019,20 +1022,6 @@ struct MacSearchWindowView: View {
             .accessibilityLabel(showConcordance
                 ? String(localized: "search.kwic.hide.a11y", defaultValue: "Hide concordance")
                 : String(localized: "search.kwic.show.a11y", defaultValue: "Show concordance"))
-
-            Button {
-                showSaveCorpusSheet = true
-            } label: {
-                Image(systemName: "tray.full")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(searchVM.displayedResults.isEmpty)
-            .help(String(localized: "search.corpus.save.help",
-                         defaultValue: "Save these results as a named working corpus you can search inside later"))
-            .accessibilityLabel(String(localized: "search.corpus.save",
-                                       defaultValue: "Save as Working Corpus…"))
 
             Button {
                 showCollocates.toggle()
@@ -1054,6 +1043,28 @@ struct MacSearchWindowView: View {
                 : String(localized: "search.collocates.show.a11y", defaultValue: "Show collocates"))
 
             Divider().frame(height: 14)
+
+            // Behind the divider, after the three readings rather than wedged between two of
+            // them. Timeline / Concordance / Collocates are mutually exclusive ways of looking at
+            // the set; this writes a durable `WorkingCorpus` and is the only one of the four with
+            // an effect that outlives the search. It also gates on `displayedResults` where the
+            // readings gate on `results`.
+            Button {
+                showSaveCorpusSheet = true
+            } label: {
+                Image(systemName: "tray.full")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.displayedResults.isEmpty)
+            .help(String(localized: "search.corpus.save.help",
+                         defaultValue: "Save these results as a named working corpus you can search inside later"))
+            .accessibilityLabel(String(localized: "search.corpus.save",
+                                       defaultValue: "Save as Working Corpus…"))
+
+            Divider().frame(height: 14)
+
 
             pageSizePicker
 

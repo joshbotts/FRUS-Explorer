@@ -30,7 +30,7 @@ import Testing
 /// anti-vacuity floor and the file paths are asserted to exist.
 ///
 /// Version history:
-///   1.0 — S-2: initial implementation
+///   1.0 — S-2: initial implementation\n///   1.1 — Q wave: mutual exclusion is asserted as an invariant, not as one mechanism —\n///          iOS now gets it structurally from ``ResultReading``, macOS still clears by hand
 @Suite("Collocation wiring audit")
 struct CollocationWiringAuditTests {
 
@@ -112,18 +112,30 @@ struct CollocationWiringAuditTests {
         }
     }
 
-    @Test("The three view modes are mutually exclusive on both hosts")
+    @Test("Each host enforces mutual exclusion, structurally or by clearing")
     func modesAreMutuallyExclusive() throws {
-        // Three booleans rather than one enum, matching what was already here. That only stays
-        // correct if EVERY toggle clears the other two — the shape that produced the empty-menu
-        // defect recorded in AnalyticsView.
+        // The INVARIANT is that no two readings can be on at once; the two hosts now reach it by
+        // different means, so pinning one mechanism everywhere would fail the host that improved.
+        // Branching is safe because a host doing NEITHER falls into the `else` and fails there.
         for host in try bothHosts() {
-            #expect(host.text.contains("if showTimeline { showConcordance = false; showCollocates = false }"),
-                    "\(host.name): the timeline toggle must clear both other modes")
-            #expect(host.text.contains("if showConcordance { showTimeline = false; showCollocates = false }"),
-                    "\(host.name): the concordance toggle must clear both other modes")
-            #expect(host.text.contains("if showCollocates { showTimeline = false; showConcordance = false }"),
-                    "\(host.name): the collocates toggle must clear both other modes")
+            if host.text.contains("selection: readingSelection") {
+                // iOS (Q wave): exclusivity is structural. `ResultReading.flags` yields all three
+                // values at once and the setter assigns all three, so no reachable assignment
+                // leaves two on. The hand-clearing toggles are gone BECAUSE of that.
+                #expect(host.text.contains("let flags = selected.flags"),
+                        "\(host.name): a Picker without the whole-triple assignment behind it")
+                #expect(!host.text.contains("showTimeline.toggle()"),
+                        "\(host.name): a hand-rolled toggle returned alongside the Picker")
+            } else {
+                // macOS: still three independent buttons, so every toggle must clear the other two
+                // — the shape whose absence produced the empty-menu defect recorded in AnalyticsView.
+                #expect(host.text.contains("if showTimeline { showConcordance = false; showCollocates = false }"),
+                        "\(host.name): the timeline toggle must clear both other modes")
+                #expect(host.text.contains("if showConcordance { showTimeline = false; showCollocates = false }"),
+                        "\(host.name): the concordance toggle must clear both other modes")
+                #expect(host.text.contains("if showCollocates { showTimeline = false; showConcordance = false }"),
+                        "\(host.name): the collocates toggle must clear both other modes")
+            }
         }
     }
 
