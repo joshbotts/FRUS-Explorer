@@ -978,8 +978,8 @@ struct MacSearchWindowView: View {
             .help(showFacetPanel
                   ? String(localized: "search.facets.off.help",
                            defaultValue: "Hide the result-set facets")
-                  : String(localized: "search.facets.on.help",
-                           defaultValue: "Break this result set down by year, volume, person, type and provenance"))
+                  : String(localized: "search.facets.on.help.v2",
+                           defaultValue: "Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply"))
             .accessibilityLabel(String(localized: "search.facets.a11y",
                                        defaultValue: "Result-set facets"))
 
@@ -1053,8 +1053,8 @@ struct MacSearchWindowView: View {
             .help(showConcordance
                   ? String(localized: "search.kwic.hide.help",
                            defaultValue: "Hide the concordance and show the results list")
-                  : String(localized: "search.kwic.show.help",
-                           defaultValue: "Show every occurrence of your term on its own line, aligned"))
+                  : String(localized: "search.kwic.show.help.v2",
+                           defaultValue: "Show every occurrence of your term on its own line, aligned — for the documents on this page"))
             .accessibilityLabel(showConcordance
                 ? String(localized: "search.kwic.hide.a11y", defaultValue: "Hide concordance")
                 : String(localized: "search.kwic.show.a11y", defaultValue: "Show concordance"))

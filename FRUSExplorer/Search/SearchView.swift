@@ -66,6 +66,32 @@ enum ResultReading: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The set this reading runs over, stated only where it DIFFERS from its neighbours'.
+    ///
+    /// The five surfaces behind this control span three denominators: the concordance covers one
+    /// page, the list/timeline/collocates the whole retained set, and the facets the whole match
+    /// before any narrowing. A reader has no way to know that, and the numbers each produces are
+    /// quotable — "214 occurrences" reads as a fact about the search, not about twenty-five rows.
+    ///
+    /// Only the two OUTLIERS are labelled. Annotating all five would put a line under every row
+    /// and the distinction — which is the whole point — would disappear into it. `nil` here means
+    /// "the same set as the reading above", not "unknown".
+    var denominatorDescription: String? {
+        switch self {
+        case .concordance:
+            String(localized: "search.mode.denominator.concordance", defaultValue: "This page")
+        case .list, .timeline, .collocates:
+            nil
+        }
+    }
+
+    /// What the facet panel covers. Not a ``ResultReading`` — it opens a sheet over the results
+    /// rather than replacing them — but it is the other outlier, and its wording belongs beside
+    /// the one it contrasts with rather than at a call site on each platform.
+    static let facetsDenominatorDescription = String(
+        localized: "search.mode.denominator.facets",
+        defaultValue: "The whole match, before any narrowing")
+
     /// Whether this reading is a view of ONE PAGE, and so pages with the pagination controls.
     ///
     /// The list and the concordance are; the timeline and the collocates panel are not — both cover
@@ -697,7 +723,16 @@ struct SearchView: View {
             Picker(String(localized: "search.mode.picker", defaultValue: "Read as"),
                    selection: readingSelection) {
                 ForEach(ResultReading.allCases) { reading in
-                    Label(reading.title, systemImage: reading.systemImage).tag(reading)
+                    // Two `Text`s in a `Label`'s title slot render as title + subtitle in a menu.
+                    Label {
+                        Text(reading.title)
+                        if let denominator = reading.denominatorDescription {
+                            Text(denominator)
+                        }
+                    } icon: {
+                        Image(systemName: reading.systemImage)
+                    }
+                    .tag(reading)
                 }
             }
             .pickerStyle(.inline)
@@ -707,8 +742,12 @@ struct SearchView: View {
             Button {
                 showFacetSheet = true
             } label: {
-                Label(String(localized: "search.mode.facets", defaultValue: "Facets"),
-                      systemImage: "chart.bar.doc.horizontal")
+                Label {
+                    Text(String(localized: "search.mode.facets", defaultValue: "Facets"))
+                    Text(ResultReading.facetsDenominatorDescription)
+                } icon: {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                }
             }
         } label: {
             Image(systemName: activeReading == .list ? "binoculars" : "binoculars.fill")
