@@ -155,6 +155,25 @@ struct MacSearchWindowView: View {
     @Query private var allProjects: [Project]
 
     var body: some View {
+        // The S6 boot guard, which this window never had — the same one `PeopleWindowView` and
+        // `CitationLookupView` carry so a restored window "never renders the definitive empty
+        // state as a lie".
+        //
+        // Without it, a Search window that came up before the search stack existed answered every
+        // query with "No Results. Try different keywords." over an index holding 316,839
+        // documents, left Facets disabled, and rendered the Advanced popover as an empty box —
+        // three symptoms of one absence, none of them saying so.
+        if appState.searchService == nil {
+            ProgressView(String(localized: "search.preparingIndex",
+                                defaultValue: "Preparing your index…"))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            loadedBody
+        }
+    }
+
+    /// The window proper, once there is an index behind it.
+    private var loadedBody: some View {
         VStack(spacing: 0) {
 
             // Checklist mode (#189-D): a zero-size, always-mounted observer keeps the reviewed
@@ -776,6 +795,23 @@ struct MacSearchWindowView: View {
             // immediately via the `advancedFilterSignature` observation below;
             // there is no dismiss-time batch.
             .popover(isPresented: $showAdvancedFilters, arrowEdge: .bottom) {
+                // `filterVM` is created by `syncToFilterVM` only once `appState.searchService`
+                // exists. When it does not, this used to render nothing at all — a zero-size
+                // popover, which reads as a control that simply does not work. The guard above
+                // should make that unreachable now; this stays because "unreachable" is a claim
+                // about today's scene graph, and the failure it replaces was silent.
+                if searchVM.filterVM == nil {
+                    VStack(spacing: 6) {
+                        ProgressView()
+                        Text(String(localized: "search.filters.preparing",
+                                    defaultValue: "Filters aren’t ready yet — the index is still loading."))
+                            .font(.callout)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(24)
+                    .frame(width: 320)
+                }
                 if let filterVM = searchVM.filterVM {
                     // `filterVM` is the sheet's own view model and `syncToFilterVM` copies
                     // `phrase` but not `keywords`, so counting against its own parameters

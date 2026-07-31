@@ -500,6 +500,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
             // #338 aux-window origin: republish the launching window's scene so this document window's
             // rail producers (cross-ref, edge-tap, word cloud) route back to it, not `.anyWindow`.
             .auxWindowOrigin(appState)
@@ -553,6 +554,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
             // #338 aux-window origin: republish the launching window's scene so nested launchers here
             // (Archival Neighbors) route documents back to it, not `.anyWindow`.
             .auxWindowOrigin(appState)
@@ -602,6 +604,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
             // #338 aux-window origin: republish the launching window's scene so the graph's Archival
             // Neighbors launcher routes documents back to it.
             .auxWindowOrigin(appState)
@@ -645,6 +648,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
             // Same 640 pt reading-column floor as the main window (C2.3); the rail overlays below
             // the 900 pt breakpoint so the document never squeezes below ~340 pt.
             .frame(minWidth: 640, minHeight: 600)
@@ -655,6 +659,7 @@ struct FRUSExplorerApp: App {
             MacSearchWindowView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 820, height: 680)
         // #363 #5: Search's key equivalent is now ⌘S, owned by the Find command menu
@@ -675,6 +680,7 @@ struct FRUSExplorerApp: App {
             CitationLookupWindowView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 620, height: 560)
 
@@ -683,6 +689,7 @@ struct FRUSExplorerApp: App {
             CorpusBrowserWindowView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 700)
         .keyboardShortcut("b", modifiers: [.command, .shift])
@@ -702,6 +709,7 @@ struct FRUSExplorerApp: App {
             PeopleWindowView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 640)
 
@@ -714,6 +722,7 @@ struct FRUSExplorerApp: App {
                 // About window is what a latent one looks like after two months, so it is closed
                 // here rather than left for the first `@Query` added to this subtree.
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         // Sized for a graph canvas + side legend/info panel (UI audit gap 16).
         // Same class of bug Session 94 fixed for Source Explorer: the old
@@ -728,6 +737,7 @@ struct FRUSExplorerApp: App {
                 // Latent, same as the Cross-Reference Graph window above: no `@Query` under
                 // `SourceExplorer/` today.
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 700, height: 440)
 
@@ -769,6 +779,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 440, height: 520)
 
@@ -780,6 +791,7 @@ struct FRUSExplorerApp: App {
                 // this window needs the shared container — without it the query has no
                 // store (the Phase-2 review's unreachable-pane class, container edition).
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 760, height: 560)
 
@@ -797,6 +809,7 @@ struct FRUSExplorerApp: App {
                 // this window needs the shared container — without it the query has no
                 // store (the Phase-2 review's unreachable-pane class, container edition).
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 780, height: 620)
 
@@ -814,6 +827,7 @@ struct FRUSExplorerApp: App {
                 // this window needs the shared container — without it the query has no
                 // store (the Phase-2 review's unreachable-pane class, container edition).
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 820, height: 660)
 
@@ -823,6 +837,7 @@ struct FRUSExplorerApp: App {
             WordCloudWindowContent()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 760, height: 620)
 
@@ -832,6 +847,7 @@ struct FRUSExplorerApp: App {
             ChronologyView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 720, height: 600)
 
@@ -841,6 +857,7 @@ struct FRUSExplorerApp: App {
             ResearchView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 760, height: 600)
         // #363 #2: ⌘⌥R now lives solely on the Research command menu (ResearchMenuContent) —
@@ -867,6 +884,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 720, height: 720)
 
@@ -885,6 +903,7 @@ struct FRUSExplorerApp: App {
             ProjectEditorView(showsInlineHeader: false)
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .windowResizability(.contentSize)
 
@@ -893,6 +912,7 @@ struct FRUSExplorerApp: App {
             MacCollectionManagerView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         // Composer v2 (§B): wide enough for Contents (372) + live preview + the optional Document
         // inspector (320) on a 13-inch screen.
@@ -928,6 +948,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 560, height: 620)
 
@@ -942,6 +963,7 @@ struct FRUSExplorerApp: App {
             HistoryWindowView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 640, height: 600)
 
@@ -950,6 +972,7 @@ struct FRUSExplorerApp: App {
             FRUSSettingsView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
 
         // MARK: - About Window
@@ -973,6 +996,7 @@ struct FRUSExplorerApp: App {
             AboutView()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .windowResizability(.contentSize)
 
@@ -998,6 +1022,7 @@ struct FRUSExplorerApp: App {
                 // scopes) and this window reaches them via IndexingEducationView — without
                 // the container the query has no store (the Phase-3 container class).
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 880, height: 620)
         #endif
@@ -1048,6 +1073,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 560)
     }
@@ -1076,6 +1102,7 @@ struct FRUSExplorerApp: App {
             }
             .environment(appState)
             .modelContainer(modelContainer)
+            .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 600)
     }
@@ -1086,6 +1113,7 @@ struct FRUSExplorerApp: App {
             ContentViewWithSplash()
                 .environment(appState)
                 .modelContainer(modelContainer)
+                .task { await bootSearchInfrastructureOnce() }
                 #if os(macOS)
                 // 640 pt = the reading-column floor (340 pt) + the 300 pt Research rail. At the
                 // C2.3 900 pt breakpoint the rail is side-by-side; below it the rail OVERLAYS and the
@@ -1096,7 +1124,7 @@ struct FRUSExplorerApp: App {
                 .frame(minWidth: 640, minHeight: 600)
                 #endif
                 .task {
-                    await bootDownloadManager()
+                    await bootSearchInfrastructureOnce()
                     // O-2: decode the core cloud vectors AFTER the first frame and off the
                     // main actor. Deliberately last in this task and never in a view body:
                     // O-0's trace put `FRUSExplorerApp.init()` at 119–158 ms, most of it a
@@ -1250,6 +1278,7 @@ struct FRUSExplorerApp: App {
             CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
                 ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
                     .modelContainer(modelContainer)
+                    .task { await bootSearchInfrastructureOnce() }
             }
         }
         #endif
@@ -1324,6 +1353,35 @@ struct FRUSExplorerApp: App {
     /// Creates the DownloadManager the first time `.task` fires, then immediately
     /// resumes any queue that was persisted from the previous app session.
     @MainActor
+    /// Boots the search infrastructure exactly once, from whichever scene appears first.
+    ///
+    /// ## The defect this closes
+    /// `bootDownloadManager()` builds the FTS5 store, the indexing pipeline and
+    /// `appState.searchService`, and it was awaited from ONE place: a `.task` on the primary
+    /// `WindowGroup`. Every standalone macOS window — Search, Corpus Browser, People, the
+    /// analytics windows — boots nothing. So an app that came up showing only the Search window
+    /// (a restored session, or ⌘S before the main window) had `searchService == nil` for the
+    /// whole session: every query returned zero, Facets stayed disabled, and the Advanced
+    /// popover rendered an empty box. Silently — search reported "No Results" over an index
+    /// holding 316,839 documents.
+    ///
+    /// ## Why a stored `Task` rather than the callee's own guard
+    /// `bootDownloadManager` guards on `appState.downloadManager == nil`, which is idempotent for
+    /// *sequential* calls but not concurrent ones: it awaits several times between that check and
+    /// the assignment, so two scenes appearing together could both pass the guard and build two
+    /// pipelines over one database. Holding the `Task` makes the second caller await the first's
+    /// work instead of repeating it. The check-and-store below is synchronous on the main actor,
+    /// so it cannot interleave.
+    private func bootSearchInfrastructureOnce() async {
+        if let running = appState.searchInfrastructureBoot {
+            await running.value
+            return
+        }
+        let task = Task { @MainActor in await bootDownloadManager() }
+        appState.searchInfrastructureBoot = task
+        await task.value
+    }
+
     private func bootDownloadManager() async {
         guard appState.downloadManager == nil else { return }
 
