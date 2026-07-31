@@ -366,3 +366,95 @@ struct CaptureTruncationTests {
         #expect(inCorpus(.unrecorded).headerDescription == "267 results")
     }
 }
+
+// MARK: - CorpusCaptureClauseTests
+
+/// The one clause both count lines share.
+///
+/// The two search surfaces do not share a count line — iOS renders `headerDescription`, macOS
+/// renders `SearchSheet.resultCountLabel` with its own "loaded · total" dialect and page ranges.
+/// Sharing the *clause* is what stops a third grammar for the same facts appearing, and is why
+/// these tests are worth having: the clause is the contract between two sentences neither of which
+/// can see the other.
+///
+/// Version history:
+///   1.0 — Q wave: initial implementation
+@Suite("Corpus capture clause")
+struct CorpusCaptureClauseTests {
+
+    private func scope(_ truncation: WorkingCorpus.CaptureTruncation?) -> ResultSetScope {
+        ResultSetScope(loaded: 267, shown: 267, fetchLimit: 1_000, totalMatchCount: nil,
+                       documentsOnPage: 20, pageCount: 14, appliedCorpusTruncation: truncation)
+    }
+
+    @Test("The clause is silent unless the corpus was a truncated capture")
+    func silentWhenNotTruncated() {
+        #expect(scope(nil).corpusCaptureClause == nil, "no corpus applied")
+        #expect(scope(.complete).corpusCaptureClause == nil)
+        // The state that must stay quiet: a pre-fields capture might have been complete.
+        #expect(scope(.unrecorded).corpusCaptureClause == nil)
+    }
+
+    @Test("The clause names the capture's own total when there was one")
+    func namesTheCaptureTotal() throws {
+        let clause = try #require(scope(.truncated(total: 195_519)).corpusCaptureClause)
+        #expect(clause.contains(195_519.formatted()))
+        #expect(clause.contains("captured from"))
+    }
+
+    @Test("A capture with no total says so rather than inventing one")
+    func partialWithoutTotal() throws {
+        let clause = try #require(scope(.truncated(total: nil)).corpusCaptureClause)
+        #expect(clause.contains("partial capture"))
+        #expect(!clause.contains("267"), "the corpus size is not the capture's total")
+    }
+
+    /// Both count lines must be built from this clause, or they drift. iOS is checked directly;
+    /// macOS's is a `View` and is checked by the source audit below.
+    @Test("The iOS header is built from the shared clause")
+    func headerUsesTheClause() throws {
+        let scope = scope(.truncated(total: 195_519))
+        let clause = try #require(scope.corpusCaptureClause)
+        #expect(scope.headerDescription.contains(clause))
+    }
+}
+
+// MARK: - MacResultCountLabelAuditTests
+
+/// macOS's count line, which no runtime test in this target can render.
+///
+/// Version history:
+///   1.0 — Q wave: initial implementation
+@Suite("macOS result count label")
+struct MacResultCountLabelAuditTests {
+
+    private static func sheet() throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: "FRUSExplorer/App/SearchSheet.swift"),
+                              encoding: .utf8)
+        #expect(text.count > 1_000)
+        return text
+    }
+
+    @Test("macOS builds its corpus case from the shared clause, not its own wording")
+    func usesSharedClause() throws {
+        let sheet = try Self.sheet()
+        #expect(sheet.contains("resultSetScope.corpusCaptureClause"))
+        // If macOS spelled the clause itself, the two platforms could drift silently — which is
+        // exactly how the header ended up iOS-only in the first place.
+        #expect(!sheet.contains("captured from"),
+                "the wording belongs to ResultSetScope, not to this view")
+    }
+
+    /// The corpus branches must precede the ordinary `total` branches, or they are unreachable:
+    /// inside a corpus a total is always present, so `else if let total` would win first.
+    @Test("The corpus branches are reachable")
+    func corpusBranchesComeFirst() throws {
+        let sheet = try Self.sheet()
+        let corpusAt = try #require(sheet.range(of: "} else if let corpusClause, loaded <= searchVM.pageSize {"))
+        let totalAt = try #require(sheet.range(of: "} else if let total, loaded <= searchVM.pageSize {"))
+        #expect(corpusAt.lowerBound < totalAt.lowerBound,
+                "a total is always present inside a corpus, so the total branch would win first")
+    }
+}
