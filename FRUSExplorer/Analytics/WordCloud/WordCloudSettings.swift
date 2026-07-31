@@ -34,6 +34,9 @@ enum WordCloudSettings {
         static let filterMarkings = "frus.wordcloud.filterMarkings"
         /// Diplomatic-boilerplate toggle (shared with the in-view menu toggle).
         static let excludeBoilerplate = "frus.wordcloud.excludeBoilerplate"
+        /// Which measure the cloud ranks by (`KeynessCloudMeasure`). Persisted rather than held as
+        /// view state because the macOS host rebuilds `WordCloudView` on every scope change.
+        static let measure = "frus.wordcloud.measure"
         /// Global custom stop list (JSON `[String]`).
         static let globalStopwords = "frus.wordcloud.customStopwords"
         /// Per-lens custom stop lists (JSON `[lensRawValue: [String]]`).

@@ -1097,6 +1097,11 @@ struct FRUSExplorerApp: App {
                     // the launch this backdrop exists to decorate measurably worse. Until
                     // it resolves, `WordCloudBackdropView` renders nothing.
                     await BundledCloudVectors.prepareCore()
+                    // Same schedule, same reason: the keyness reference is ~1.2 MB and nothing on
+                    // the launch path needs it. Without this call every keyness read returns
+                    // `.unavailable(.noArtifact)` — a failure indistinguishable from a missing
+                    // bundle resource, so the feature would look wired and be permanently dark.
+                    await BundledKeynessBaseline.prepare()
                 }
                 .onChange(of: appState.isOnline) { _, isOnline in
                     guard let dm = appState.downloadManager else { return }
