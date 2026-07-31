@@ -169,8 +169,39 @@ struct ConcordanceView: View {
 struct ConcordanceRebuildKey: Equatable {
     /// Whether concordance mode is open at all.
     let mode: Bool
-    /// The page on screen — the concordance covers exactly it.
-    let page: Int
+    /// The documents on screen — the concordance covers exactly them.
+    ///
+    /// This was the page *index*, which is not the same thing. Two things change which documents
+    /// a page holds without re-running a search or moving the page: **changing the sort order**
+    /// (`sortedResults` re-orders `results` in place) and **marking a document reviewed** in
+    /// checklist mode (`displayedResults` drops it and everything after shifts up). Neither moved
+    /// `page` or `version`, so neither rebuilt, and the concordance went on showing lines from
+    /// documents that were no longer on screen.
+    ///
+    /// That is precisely the failure the page bound exists to prevent:
+    /// `SearchService.concordance(for:parameters:radius:)` takes the caller's displayed rows rather
+    /// than re-running the query specifically so "the concordance and the list [cannot] disagree
+    /// about what they are showing". Keying on the identity of those rows is what actually
+    /// enforces it; keying on the page index only enforced it against paging.
+    ///
+    /// Empty while `mode` is false, so the composite keys are not built on every body pass of a
+    /// screen that is not showing a concordance.
+    let documentKeys: [String]
     /// Bumped once per COMPLETED search, so a rebuild cannot fire against a half-replaced set.
+    ///
+    /// Still needed alongside ``documentKeys``: a new query can match the same documents while
+    /// centring on a different term, and the lines would differ though the keys did not.
     let version: Int
+
+    /// Builds the key for a host, taking the rows only when a concordance is actually open.
+    ///
+    /// - Parameters:
+    ///   - mode: whether concordance mode is on.
+    ///   - rows: the displayed page. Not read at all when `mode` is false.
+    ///   - version: the host's completed-search counter.
+    init(mode: Bool, rows: @autoclosure () -> [SearchResult], version: Int) {
+        self.mode = mode
+        self.documentKeys = mode ? rows().map { "\($0.volumeId)/\($0.documentId)" } : []
+        self.version = version
+    }
 }
