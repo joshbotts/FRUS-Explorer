@@ -595,6 +595,13 @@ final class AppState {
     /// finishes refreshes instead of showing the empty results a stale connection returns (#275).
     var readOnlyStoresGeneration: Int = 0
 
+    /// The one-time boot of the search infrastructure, held so scenes that appear together await
+    /// the same work rather than each starting their own.
+    ///
+    /// Any scene may be the first on screen — a restored Search window boots the app just as the
+    /// main window does — so the boot cannot belong to one of them.
+    var searchInfrastructureBoot: Task<Void, Never>?
+
     /// The `frus.db` URL, set at boot alongside the read-only stores. Retained so any in-session
     /// index rebuild (Settings "Reindex All" / "Rebuild Index", boot reindex) can reopen the stores
     /// against it via `refreshReadOnlyStores()` (#275).
