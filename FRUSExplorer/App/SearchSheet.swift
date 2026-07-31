@@ -275,13 +275,21 @@ struct MacSearchWindowView: View {
                 firstSearchPendingView
             } else {
                 resultsList
+            }
 
-                if searchVM.totalPages > 1 {
-                    Divider()
-                    paginationBar
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                }
+            // Hoisted out of the results-list branch. It was unreachable under the concordance,
+            // which covers exactly the page on screen (`SearchService.concordance` takes the
+            // caller's displayed page) — so a macOS user could read the first page's occurrences
+            // and had no control to reach the second. It must stay hidden under the timeline and
+            // the collocates panel, which cover the whole retained set.
+            if ResultReading.active(timeline: showTimeline,
+                                    concordance: showConcordance,
+                                    collocates: showCollocates).isPaged,
+               searchVM.totalPages > 1 {
+                Divider()
+                paginationBar
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
             }
 
             if searchVM.showTips {
@@ -346,7 +354,7 @@ struct MacSearchWindowView: View {
         }
         // R-3b: rebuild the concordance for the page on screen. `sort` is not a trigger — ordering is
         // applied at render time, and making it a fetch would stall a control that must feel instant.
-        .task(id: ConcordanceRebuildKey(mode: showConcordance, page: searchVM.currentPage,
+        .task(id: ConcordanceRebuildKey(mode: showConcordance, rows: searchVM.pagedResults,
                                         version: searchVM.executedSearchVersion)) {
             await rebuildConcordance()
         }

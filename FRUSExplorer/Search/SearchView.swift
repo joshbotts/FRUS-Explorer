@@ -66,6 +66,20 @@ enum ResultReading: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Whether this reading is a view of ONE PAGE, and so pages with the pagination controls.
+    ///
+    /// The list and the concordance are; the timeline and the collocates panel are not — both cover
+    /// the whole retained set, so a page control does nothing to them. Getting this wrong was live
+    /// on both platforms in opposite directions: iOS rendered the controls over the collocates
+    /// panel where they moved nothing, and macOS hid them under the concordance, which covers
+    /// exactly one page and therefore *needs* them.
+    var isPaged: Bool {
+        switch self {
+        case .list, .concordance: true
+        case .timeline, .collocates: false
+        }
+    }
+
     /// Which reading three stored flags amount to.
     ///
     /// The precedence order mirrors the `else if` chain in `SearchView.resultsList` exactly. If
@@ -377,7 +391,7 @@ struct SearchView: View {
         // when the page turns, and when a new search replaces the results. `executedSearchVersion`
         // rather than `results` — it is bumped once per COMPLETED search, so this cannot fire against
         // a half-replaced set.
-        .task(id: ConcordanceRebuildKey(mode: showConcordance, page: vm.currentPage,
+        .task(id: ConcordanceRebuildKey(mode: showConcordance, rows: vm.pagedResults,
                                         version: vm.executedSearchVersion)) {
             await rebuildConcordance()
         }
@@ -1142,8 +1156,11 @@ struct SearchView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 Spacer()
-                // Page controls — only meaningful for the paged list (not the timeline).
-                if !showTimeline && vm.totalPages > 1 {
+                // Page controls, shown for the readings that actually page. `!showTimeline` let
+                // them render over the collocates panel, where turning the page moved nothing:
+                // `CollocationRebuildKey` deliberately excludes the page, so the controls worked
+                // and had no effect.
+                if activeReading.isPaged && vm.totalPages > 1 {
                     pageControls
                 }
             }
