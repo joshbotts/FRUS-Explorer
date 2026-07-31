@@ -129,6 +129,7 @@ struct MacSearchWindowView: View {
     @State private var concordanceSort: KWICSort = .leftContext
     /// Collocates mode (S-2). Mutually exclusive with the other two — all three replace the list.
     @State private var showCollocates = false
+    @State private var showSaveCorpusSheet = false
     @State private var collocation: CollocationAnalysis.Outcome = .pending
     @State private var isLoadingCollocation = false
     /// macOS had no concordance loading indicator at all: `rebuildConcordance` set nothing, so a
@@ -360,6 +361,12 @@ struct MacSearchWindowView: View {
         }
         // Not keyed on the page: a collocation reads the whole retained set, so paging changes
         // nothing about the answer. Keyed on the window, which does.
+        .sheet(isPresented: $showSaveCorpusSheet) {
+            SaveWorkingCorpusSheet(
+                results: searchVM.displayedResults,
+                queryText: searchVM.submittedSearchParameters.keywords ?? "",
+                indexedVolumeCount: appState.indexedVolumeIds.count)
+        }
         .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
                                         version: searchVM.executedSearchVersion)) {
             await rebuildCollocation()
@@ -1012,6 +1019,20 @@ struct MacSearchWindowView: View {
             .accessibilityLabel(showConcordance
                 ? String(localized: "search.kwic.hide.a11y", defaultValue: "Hide concordance")
                 : String(localized: "search.kwic.show.a11y", defaultValue: "Show concordance"))
+
+            Button {
+                showSaveCorpusSheet = true
+            } label: {
+                Image(systemName: "tray.full")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(searchVM.displayedResults.isEmpty)
+            .help(String(localized: "search.corpus.save.help",
+                         defaultValue: "Save these results as a named working corpus you can search inside later"))
+            .accessibilityLabel(String(localized: "search.corpus.save",
+                                       defaultValue: "Save as Working Corpus…"))
 
             Button {
                 showCollocates.toggle()

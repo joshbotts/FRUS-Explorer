@@ -186,6 +186,8 @@ struct SettingsView: View {
             NavigationLink { UserTagsView() } label: { paneLabel(pane) }
         case .scopes:
             NavigationLink { CustomScopesView() } label: { paneLabel(pane) }
+        case .workingCorpora:
+            NavigationLink { WorkingCorporaView() } label: { paneLabel(pane) }
         case .summarization:
             NavigationLink { SummarizationPromptsSettingsView() } label: { paneLabel(pane) }
         case .wordCloud:
@@ -632,6 +634,7 @@ private struct ProjectsSettingsView: View {
     @Query(sort: \Project.name) private var projects: [Project]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
     @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
+    @Query(sort: \WorkingCorpus.name) private var workingCorpora: [WorkingCorpus]
 
     /// The project open in the editor sheet.
     @State private var editingProject: Project? = nil
@@ -744,6 +747,14 @@ private struct ProjectsSettingsView: View {
                                    systemImage: "square.stack.3d.up",
                                    detail: scopesDetail)
                 }
+                NavigationLink {
+                    WorkingCorporaView()
+                } label: {
+                    SettingsNavRow(label: String(localized: "settings.pane.workingCorpora",
+                                                 defaultValue: "Working Corpora"),
+                                   systemImage: "tray.full",
+                                   detail: workingCorporaDetail)
+                }
             } header: {
                 Text(String(localized: "settings.projects.related.header", defaultValue: "Related"))
             } footer: {
@@ -809,6 +820,22 @@ private struct ProjectsSettingsView: View {
                ? String(localized: "settings.projects.related.tags.one", defaultValue: "1 tag")
                : String(format: String(localized: "settings.projects.related.tags.many %lld",
                                        defaultValue: "%lld tags"), Int64(tags.count)))
+    }
+
+    /// The corpora row's detail: how many, and how many this device cannot fully reach.
+    private var workingCorporaDetail: String {
+        guard !workingCorpora.isEmpty else {
+            return String(localized: "settings.projects.related.scopes.none", defaultValue: "None yet")
+        }
+        let resolver = WorkingCorpusResolver(indexedVolumeIds: appState.indexedVolumeIds)
+        let partial = workingCorpora.filter { !resolver.resolve($0).isComplete }.count
+        guard partial > 0 else {
+            return String(format: String(localized: "settings.corpora.detail %lld",
+                                         defaultValue: "%lld"), Int64(workingCorpora.count))
+        }
+        return String(format: String(localized: "settings.corpora.detail.partial %lld %lld",
+                                     defaultValue: "%lld · %lld partly indexed"),
+                      Int64(workingCorpora.count), Int64(partial))
     }
 
     private var scopesDetail: String {

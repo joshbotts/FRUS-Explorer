@@ -137,6 +137,47 @@ struct WorkingCorpusTests {
         #expect(resolution.totalCount == 2, "the stored set is reported as stored, even where a key is unusable")
     }
 
+    // MARK: - Scope composition
+
+    @Test("A working corpus INTERSECTS the project gate rather than replacing it")
+    func gateComposesByIntersection() {
+        // Both are document-grain constraints the user asked for. Replacing one with the other would
+        // silently widen or narrow the search under two scope labels.
+        let combined = DocumentScopeGate.combine(corpus: ["v1/d1", "v1/d2", "v2/d1"],
+                                                 projectGate: ["v1/d2", "v2/d1", "v3/d9"])
+        #expect(combined == ["v1/d2", "v2/d1"])
+        #expect(combined?.contains("v1/d1") == false,
+                "`v1/d1` is in the corpus but NOT in the project gate — a composition that returns the corpus would keep it, and the user would be searching outside a scope they applied")
+        #expect(combined?.contains("v3/d9") == false,
+                "`v3/d9` is in the gate but not the corpus — returning the gate would be the same failure the other way round")
+    }
+
+    @Test("With no project gate the corpus stands alone; with no corpus the gate is untouched")
+    func gatePassesThroughWhenOnlyOneIsPresent() {
+        #expect(DocumentScopeGate.combine(corpus: nil, projectGate: ["v1/d1"]) == ["v1/d1"])
+        #expect(DocumentScopeGate.combine(corpus: ["v9/d9"], projectGate: nil) == ["v9/d9"])
+        #expect(DocumentScopeGate.combine(corpus: nil, projectGate: nil) == nil,
+                "no constraint at all must stay nil, or every unscoped search would match nothing")
+    }
+
+    @Test("A disjoint corpus and gate match NOTHING, never the whole corpus")
+    func disjointGatesMatchNothing() {
+        // The empty array is the "match nothing" contract IndexingPipeline honours. Degrading to
+        // `nil` here would search the entire corpus while two scope labels are on screen — the
+        // worst possible answer, because it looks like a result.
+        let gate = DocumentScopeGate.combine(corpus: ["v1/d1"], projectGate: ["v2/d2"])
+        #expect(gate == [])
+        #expect(gate != nil)
+    }
+
+    @Test("The composition is order-independent and canonical")
+    func compositionIsCanonical() {
+        let a = DocumentScopeGate.combine(corpus: ["v2/d1", "v1/d1"], projectGate: ["v1/d1", "v2/d1"])
+        let b = DocumentScopeGate.combine(corpus: ["v1/d1", "v2/d1"], projectGate: ["v2/d1", "v1/d1"])
+        #expect(a == b)
+        #expect(a == ["v1/d1", "v2/d1"], "sorted, so a gate cannot reorder between renders")
+    }
+
     // MARK: - Persistence
 
     @Test("It round-trips through SwiftData with its provenance intact")

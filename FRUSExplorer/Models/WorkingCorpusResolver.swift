@@ -89,3 +89,32 @@ struct WorkingCorpusResolver {
         )
     }
 }
+
+// MARK: - DocumentScopeGate
+
+/// Composes the document-grain constraints a search may carry at once.
+///
+/// A working corpus and a project History scope are both sets of documents the user asked to be
+/// inside. Living here rather than in the view model because it is a rule about what a scope
+/// *means*, not about how a screen holds state — and because a rule this consequential should be
+/// testable without standing up a search service.
+///
+/// Version history:
+///   1.0 — M-1: initial implementation
+enum DocumentScopeGate {
+
+    /// Intersects the constraints, preserving the empty-set contract.
+    ///
+    /// **Intersection, not replacement.** Both constraints were asked for, so a History scope inside
+    /// a working corpus means the documents in both.
+    ///
+    /// An empty result stays an empty **array**, never `nil`: `IndexingPipeline` reads an empty
+    /// `documentIds` as "match nothing" and `nil` as "no constraint". Collapsing a disjoint
+    /// intersection to `nil` would search the entire corpus while two scope labels sit on screen —
+    /// the worst available answer, because it looks like a result rather than an error.
+    static func combine(corpus: [String]?, projectGate: [String]?) -> [String]? {
+        guard let corpus else { return projectGate }
+        guard let projectGate else { return corpus }
+        return Set(corpus).intersection(projectGate).sorted()
+    }
+}

@@ -113,6 +113,7 @@ struct FRUSSettingsView: View {
                 case .projects:       SettingsProjectsPane()
                 case .tags:           SettingsTagsPane()
                 case .scopes:         SettingsScopesPane()
+                case .workingCorpora: WorkingCorporaView()
                 case .notes:          NotesSettingsView()
                 case .researchSessions: ResearchSessionsView()
                 case .wordCloud:      WordCloudSettingsView()

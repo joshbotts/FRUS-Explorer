@@ -445,6 +445,8 @@ Checklist Mode is a per-session working aid: it isn't saved, it resets when you 
 
 ### 5.8 Custom Volume Scopes
 
+**Working corpora.** A **working corpus** is a fixed set of documents you define once and then work inside. Run a search, then **Save as Working Corpus** to capture those results as a named set; apply it from the search filters to search only within it. The set is fixed at capture, which is what makes counts taken inside it reproducible — re-running the query later may find different documents, but the corpus will not change. It syncs whole to your other devices, and every screen that shows one states how much of it is indexed here ("142 of 267 documents indexed on this device"), so a corpus means the same thing everywhere even where fewer of its volumes are downloaded. Manage them in Settings → Working Corpora.
+
 A **volume scope** is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration — that you define once and apply anywhere the app scopes an analysis: the Search filters (the **My Volume Scopes** section, Section 5.3), the Corpus, Person, and Cross-Reference Analytics scope menus (Section 13), the Word Cloud scope picker (Section 13.4), and the About the Series dashboards (Section 17.3a). Scopes sync to your other devices via iCloud.
 
 Manage scopes in **Settings → Research → Volume Scopes** (Section 16):

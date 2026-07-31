@@ -99,7 +99,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
     // Library
     case volumesStorage
     // Research
-    case projects, tags, scopes, summarization, wordCloud, notes, researchSessions
+    case projects, tags, scopes, workingCorpora, summarization, wordCloud, notes, researchSessions
     // Reading & Search
     case display, search
     // System
@@ -116,6 +116,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .projects:        return String(localized: "settings.pane.projects", defaultValue: "Projects")
         case .tags:            return String(localized: "settings.pane.tags", defaultValue: "Tags")
         case .scopes:          return String(localized: "settings.pane.scopes", defaultValue: "Volume Scopes")
+        case .workingCorpora:  return String(localized: "settings.pane.workingCorpora", defaultValue: "Working Corpora")
         case .summarization:   return String(localized: "settings.pane.summarization", defaultValue: "Summarization")
         case .wordCloud:       return String(localized: "settings.pane.wordCloud", defaultValue: "Word Cloud")
         case .notes:           return String(localized: "settings.pane.notes", defaultValue: "Notes")
@@ -137,6 +138,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .projects:        return "folder"
         case .tags:            return "tag"
         case .scopes:          return "square.stack.3d.up"
+        case .workingCorpora:  return "tray.full"
         case .summarization:   return "sparkles"
         case .wordCloud:       return "text.word.spacing"
         case .notes:           return "note.text"
@@ -157,7 +159,7 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         switch self {
         case .volumesStorage:
             return .library
-        case .projects, .tags, .scopes, .summarization, .wordCloud, .notes, .researchSessions:
+        case .projects, .tags, .scopes, .workingCorpora, .summarization, .wordCloud, .notes, .researchSessions:
             return .research
         case .display, .search:
             return .readingAndSearch
@@ -193,6 +195,9 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
         case .projects:        return ["project", "research question", "active project"]
         case .tags:            return ["user tags", "labels", "merge", "rename"]
         case .scopes:          return ["volume scope", "custom scope", "my volume scopes", "subset"]
+        // Searchable by what it does, so "working corpus" and "document set" both find it — the
+        // pane search is how a researcher who half-remembers the feature gets back to it.
+        case .workingCorpora:  return ["working corpus", "document set", "sub-corpus", "fixed set", "corpus scope"]
         case .summarization:   return ["ai", "apple intelligence", "prompts", "summaries", "batch", "background"]
         case .wordCloud:       return ["stop words", "stopwords", "hidden words", "lens", "density", "typeface", "font"]
         case .notes:           return ["research notes", "annotations"]

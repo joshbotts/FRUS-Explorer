@@ -70,6 +70,9 @@ struct SearchFilterView: View {
     /// appear in the picker without plumbing. (Per the sketch's corrected §4 contract this
     /// re-renders the MENU only — an applied scope is a seeded snapshot.)
     @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
+    @Query(sort: \WorkingCorpus.name) private var workingCorpora: [WorkingCorpus]
+    /// Names the corpus that refused to apply, so the refusal is visible rather than a dead tap.
+    @State private var corpusWarningName: String?
     /// Name of the scope whose apply attempt found no indexed members (the inline warning),
     /// or `nil`. Cleared on a successful apply. Shared by the custom-scope and subject-facet
     /// rows — both seed the volume picker through the same #258 indexed-resolution guard.
@@ -137,6 +140,7 @@ struct SearchFilterView: View {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
                 if showVolumeScopeSections          { customScopeSection }
+                if showVolumeScopeSections          { workingCorpusSection }
                 if showVolumeScopeSections          { subjectFacetSection }
                 if showVolumeScopeSections          { volumeScopeSectionMac }
                 documentTypeSection
@@ -182,6 +186,7 @@ struct SearchFilterView: View {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
                 if showVolumeScopeSections          { customScopeSection }
+                if showVolumeScopeSections          { workingCorpusSection }
                 if showVolumeScopeSections          { subjectFacetSection }
                 if showVolumeScopeSections          { volumeScopeSectioniOS }
                 documentTypeSection
@@ -617,6 +622,83 @@ struct SearchFilterView: View {
             // The stale-clear onChange handlers moved to the Form (both bodies): attached here
             // they only ran when the user HAD custom scopes, so a no-scopes user's facet state
             // never stale-cleared (cumulative-review fix).
+        }
+    }
+
+    /// Working corpora — the document-grain scope (M-1).
+    ///
+    /// Separate from "My Volume Scopes" rather than folded in with it, because the two are different
+    /// grains and mixing them would make a list where tapping one row narrows to a set of volumes
+    /// and the next narrows to a set of documents, with nothing saying which.
+    @ViewBuilder
+    private var workingCorpusSection: some View {
+        if !workingCorpora.isEmpty {
+            Section {
+                ForEach(workingCorpora) { corpus in
+                    workingCorpusRow(corpus)
+                }
+                if vm.appliedWorkingCorpusName != nil {
+                    Button(role: .destructive) {
+                        vm.clearWorkingCorpus()
+                    } label: {
+                        Label(String(localized: "search.corpus.clear",
+                                     defaultValue: "Clear working corpus"),
+                              systemImage: "xmark.circle")
+                    }
+                }
+            } header: {
+                Text(String(localized: "search.section.workingCorpora",
+                            defaultValue: "My Working Corpora"))
+            } footer: {
+                Text(String(localized: "search.corpus.footer",
+                            defaultValue: "A working corpus is a fixed set of documents. Applying one searches only inside it. Manage them in Settings."))
+            }
+        }
+    }
+
+    /// One corpus row: name, and how much of it this device can actually reach.
+    @ViewBuilder
+    private func workingCorpusRow(_ corpus: WorkingCorpus) -> some View {
+        let resolution = WorkingCorpusResolver(
+            indexedVolumeIds: Set(vm.availableVolumes.map(\.volumeId))).resolve(corpus)
+        let isApplied = vm.appliedWorkingCorpusName == corpus.name
+        Button {
+            // Refuses rather than degrading, exactly as an unindexed volume scope does: applying a
+            // corpus none of whose documents are indexed would otherwise set an empty gate and
+            // return nothing, which reads as "no matches for your query" rather than "you have not
+            // indexed this corpus".
+            guard !resolution.indexedKeys.isEmpty else {
+                corpusWarningName = corpus.name
+                return
+            }
+            vm.appliedWorkingCorpusKeys = resolution.indexedKeys
+            vm.appliedWorkingCorpusName = corpus.name
+            corpusWarningName = nil
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(corpus.name)
+                    Text(resolution.coverageDescription)
+                        .font(.caption)
+                        .foregroundStyle(resolution.isComplete ? Color.secondary : Color.orange)
+                }
+                Spacer()
+                if isApplied {
+                    Image(systemName: "checkmark").foregroundStyle(.tint)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isApplied ? [.isSelected] : [])
+        if corpusWarningName == corpus.name {
+            Label(String(format: String(
+                localized: "search.corpus.noneIndexed %@",
+                defaultValue: "None of “%@” is indexed on this device yet — download and index its volumes first."),
+                corpus.name), systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.orange)
         }
     }
 
