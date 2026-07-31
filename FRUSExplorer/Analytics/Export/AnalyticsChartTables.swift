@@ -358,4 +358,42 @@ enum AnalyticsChartTables {
         }
         return ChartInspectorData(id: "wordcloud.terms", title: title, columns: columns, rowCells: cells)
     }
+
+    /// The word cloud's KEYNESS reading as a table.
+    ///
+    /// A separate builder rather than a flag on ``wordCloudTable(title:terms:totalTokens:)``, because
+    /// every column differs. That table's "Occurrences" and "Share of counted words (%)" describe a
+    /// frequency ranking; emitting a keyness ordering under those headers would produce a file that
+    /// positively asserts the wrong method — and a CSV outlives the screen that explains it.
+    ///
+    /// Both raw counts travel with each row so a reader can recompute the statistic, and the effect
+    /// size travels beside the significance because G² alone conflates effect with sample size.
+    static func wordCloudKeynessTable(
+        title: String,
+        scores: [(term: String, logLikelihood: Double, logRatio: Double,
+                  scopeCount: Int, referenceCount: Int)]
+    ) -> ChartInspectorData {
+        let columns = [
+            String(localized: "analytics.export.column.rank", defaultValue: "Rank"),
+            String(localized: "analytics.export.column.term", defaultValue: "Term"),
+            String(localized: "analytics.export.column.keyness",
+                   defaultValue: "Keyness (log-likelihood G²)"),
+            String(localized: "analytics.export.column.logRatio",
+                   defaultValue: "Effect size (log₂ ratio)"),
+            String(localized: "analytics.export.column.scopeOccurrences",
+                   defaultValue: "Occurrences in scope"),
+            String(localized: "analytics.export.column.corpusOccurrences",
+                   defaultValue: "Occurrences in reference corpus"),
+        ]
+        let cells = scores.enumerated().map { index, row -> [String] in
+            [
+                "\(index + 1)", row.term,
+                row.logLikelihood.formatted(.number.precision(.fractionLength(0...3))),
+                row.logRatio.formatted(.number.precision(.fractionLength(0...3))),
+                "\(row.scopeCount)", "\(row.referenceCount)",
+            ]
+        }
+        return ChartInspectorData(id: "wordcloud.keyness", title: title,
+                                  columns: columns, rowCells: cells)
+    }
 }

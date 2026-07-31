@@ -22,7 +22,22 @@ enum WordCloudLoader {
 
     /// The standard number of terms requested by the main view and the background
     /// precompute, kept in one place so their on-disk cache keys always match.
-    static let standardTermLimit = 220
+    ///
+    /// ## Why 1,000 and not the 220 this shipped with
+    /// The cloud itself never draws more than `WordCloudLayout.place`'s 180-word cap, so this
+    /// number is not about the picture — it is the candidate pool the **keyness** measure re-ranks.
+    /// Measured on real volumes: at 220 the pool bottoms out at words occurring ~140–240 times in a
+    /// volume, and a keyness ranking of *The Conference of Berlin* reached 169 terms; at 1,000 it
+    /// bottoms out around 30 and reaches 607. The top ~30 are identical either way — what the extra
+    /// depth buys is the second tier (`attlee`, `ruhr`, `clayton`, `mikołajczyk`; `golan`, `assad`,
+    /// `unef`), which is usually where the research is.
+    ///
+    /// It costs no extra CPU: `WordFrequencyService.finalize` sorts the whole tally and applies
+    /// `.prefix(limit)` afterwards, so only the prefix changes. It does cost **one** recomputation
+    /// of every disk-cached scope (corpus, subseries, subject categories), because `limit` is part
+    /// of both cache keys — deliberate, and paid once. Scopes a researcher builds (collections,
+    /// tags, saved searches, custom scopes) were never persisted, so for them it costs nothing.
+    static let standardTermLimit = 1_000
 
     /// AppStorage key for the diplomatic-boilerplate stopword toggle (mirrors the
     /// `@AppStorage` used by `WordCloudView`).

@@ -46,6 +46,17 @@ struct KeynessScore: Equatable, Sendable, Identifiable {
 
     /// Whether the term is over-represented in the scope.
     var isOverused: Bool { logLikelihood > 0 }
+
+    /// The effect size as a plain multiple: how many times more often the term is used here than in
+    /// the reference, per word of text.
+    ///
+    /// ``logRatio`` is log₂, which is the corpus-linguistics convention and what an export should
+    /// carry for citation — but it is not a number a reader can act on. 5.26 and 8.32 are "38×" and
+    /// "320×", and the gap between those two claims is far larger than the gap between the logs
+    /// makes it look. Lives here rather than in a view so it can be tested: a renderer that printed
+    /// `logRatio` directly would understate a 320× concentration as "8×" and nothing about the
+    /// screen would look wrong.
+    var foldOverRepresentation: Double { pow(2, logRatio) }
 }
 
 // MARK: - Keyness

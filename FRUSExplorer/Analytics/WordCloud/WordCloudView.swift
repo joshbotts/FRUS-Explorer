@@ -107,6 +107,12 @@ struct WordCloudView: View {
     /// to the always-on English stopwords. Persisted; defaults on.
     @AppStorage(WordCloudSettings.Keys.excludeBoilerplate) private var excludeBoilerplate = true
 
+    /// Whether the cloud ranks by raw frequency or by keyness against the bundled corpus reference.
+    /// `@AppStorage`, not `@State`: the macOS window applies `.id(scope.signature)` to this view, so
+    /// view state is destroyed whenever the window is retargeted — a `@State` measure would revert
+    /// to frequency on the Mac while surviving the same action on iOS.
+    @AppStorage(WordCloudSettings.Keys.measure) private var measureRaw = KeynessCloudMeasure.frequency.rawValue
+
     // Word-cloud criteria mirrored from Settings so changing any of them recomputes
     // an open cloud. The list-based stop lists are covered by `settingsRevision`.
     @AppStorage(WordCloudSettings.Keys.filterMarkings) private var filterMarkings = true
@@ -146,6 +152,12 @@ struct WordCloudView: View {
     @State private var sessionHiddenWords: Set<String> = []
     @State private var comparisonScope: WordCloudScope?
     @State private var lens: WordCloudLens = .allTerms
+    /// The keyness reading of the current result, or why there isn't one.
+    ///
+    /// Recomputed by a `.task(id:)` rather than in a body-computed property: the reference is a
+    /// 20,000-entry dictionary and the score is a pass over every term, and a view body may be
+    /// evaluated many times per frame.
+    @State private var keyness: KeynessCloud.Outcome?
 
     @Query(sort: \Collection.name) private var collections: [Collection]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
@@ -153,6 +165,11 @@ struct WordCloudView: View {
     /// Maximum terms requested from the service (the cloud places a subset).
     /// Shared with the background precompute so their cache keys match.
     private static let termLimit = WordCloudLoader.standardTermLimit
+
+    #if DEBUG
+    /// Test seam: the limit this view requests, so an audit can prove it matches the precompute's.
+    static var termLimitForTesting: Int { termLimit }
+    #endif
 
     /// Colour palette — all system colours so the cloud adapts to light/dark mode.
     private static let palette: [Color] = [
@@ -194,6 +211,22 @@ struct WordCloudView: View {
             loadTask = nil
             await load()
         }
+        // Keyed on everything that changes the ANSWER, including the live settings the availability
+        // check reads: flipping "Hide common diplomatic words" in this view's own Options menu is
+        // one tap, and it is the exact case the reference's configuration guard exists for — a
+        // verdict cached against the lens alone would go stale on that tap. `result` is fingerprinted
+        // rather than compared, since `WordCloudResult` is not Equatable.
+        .task(id: KeynessKey(measure: measureRaw, lens: lens, exclude: excludeBoilerplate,
+                             settings: settingsToken, termCount: result.terms.count,
+                             tokenTotal: result.totalTokenCount, hidden: sessionHiddenWords,
+                             referenceReady: BundledKeynessBaseline.isAvailable)) {
+            // The reference decodes off the main actor during launch, so a keyness read taken
+            // before it lands verdicts `.noArtifact` — and without `referenceReady` in the key,
+            // nothing would ever re-evaluate it. The mode would stay dark for the whole session
+            // with a message blaming a missing bundle resource that is present.
+            await BundledKeynessBaseline.prepare()
+            recomputeKeyness()
+        }
         .sheet(item: $exportShareItem) { item in
             AnalyticsExportShareSheet(item: item)
         }
@@ -214,14 +247,20 @@ struct WordCloudView: View {
         VStack(spacing: 0) {
             scopeHeader
             lensBar
+            measureBar
             if lens.colorsBySentiment { sentimentLegend }
             Divider()
             if belowSignalThreshold {
                 insufficientSignalView
+            } else if measure == .keyness, case .unavailable(let reason) = keyness ?? .pending {
+                // `.pending` is NOT `.noArtifact`: before the first recompute lands there is no
+                // verdict yet, and rendering "the bundled corpus reference could not be loaded" for
+                // that frame states a failure that has not happened.
+                keynessUnavailableView(reason)
             } else {
                 switch viewMode {
                 case .cloud: cloudCanvas
-                case .list:  rankedList
+                case .list:  measure == .keyness ? AnyView(keynessList) : AnyView(rankedList)
                 }
             }
         }
@@ -240,6 +279,27 @@ struct WordCloudView: View {
     /// checks deliberately keep reading the full `result` so a user can't hide into a dead end.
     private var visibleTerms: [TermCount] {
         result.visibleTerms(excluding: sessionHiddenWords)
+    }
+
+    /// The active measure.
+    private var measure: KeynessCloudMeasure {
+        KeynessCloudMeasure(rawValue: measureRaw) ?? .frequency
+    }
+
+    /// The keyness ranking, when one is available and the user has asked for it.
+    private var ranking: KeynessCloud.Ranking? {
+        guard measure == .keyness, case .ranked(let ranking) = keyness else { return nil }
+        return ranking
+    }
+
+    /// The terms handed to the layout.
+    ///
+    /// Under keyness these are **scaled scores, not counts** — layout input only. Nothing that
+    /// renders a number reads them; the keyness list builds its own rows from `KeynessScore`, which
+    /// is what stops a G² of 1,240 being printed under the "occurrences" label.
+    private var layoutInputTerms: [TermCount] {
+        guard let ranking else { return visibleTerms }
+        return KeynessCloud.layoutTerms(ranking.scores)
     }
 
     /// Horizontally-scrolling lens selector. A scrolling chip bar rather than a
@@ -277,6 +337,263 @@ struct WordCloudView: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+
+    /// Chooses what the cloud is measuring. A segmented picker rather than a menu item because it
+    /// changes what every word on screen means, and that should be visible without opening anything.
+    private var measureBar: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Picker(selection: $measureRaw) {
+                ForEach(KeynessCloudMeasure.allCases, id: \.rawValue) {
+                    Text($0.pickerLabel).tag($0.rawValue)
+                }
+            } label: {
+                Text(String(localized: "wordcloud.measure.label", defaultValue: "Size words by"))
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            #if os(macOS)
+            // Unbounded, a segmented picker stretches the full window width on a wide Mac window.
+            .frame(maxWidth: 320, alignment: .leading)
+            #endif
+            if let ranking {
+                // NOT `.fixedSize(vertical:)`: a fixed-size multi-line Text above a greedy List in a
+                // non-scrolling VStack pushes content out of view — the shape that blanked the
+                // macOS corpus browser. Bounded instead, with the full text available to VoiceOver
+                // and as a hover/long-press tooltip.
+                Text(keynessCaveat(ranking))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .help(keynessCaveat(ranking))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 4)
+    }
+
+    /// What the keyness ranking can and cannot see, stated on screen.
+    ///
+    /// Two facts a reader needs and cannot infer. The ranking covers only the terms the cloud
+    /// fetched, so a word that is rare here but unique to this scope is out of reach — and that is
+    /// only true when the fetch was actually cut short, which `rankedAmongTopFrequent` computes
+    /// rather than assumes. And the reference prices a truncated head of the corpus vocabulary, so a
+    /// term rarer than its cutoff is *unpriced*, not absent — a distinction that decides whether a
+    /// word at the top of this list is a finding or an artefact.
+    private func keynessCaveat(_ ranking: KeynessCloud.Ranking) -> String {
+        var parts: [String] = []
+        if ranking.rankedAmongTopFrequent {
+            parts.append(String(format: String(
+                localized: "wordcloud.keyness.caveat.truncated %lld",
+                defaultValue: "Ranked among this scope’s %lld most frequent words."),
+                Int64(ranking.candidateCount)))
+        } else {
+            parts.append(String(format: String(
+                localized: "wordcloud.keyness.caveat.complete %lld",
+                defaultValue: "Ranked over every word occurring at least %lld times here."),
+                Int64(ranking.minimumScopeCount)))
+        }
+        if ranking.referenceCutoffCount > 1 {
+            parts.append(String(format: String(
+                localized: "wordcloud.keyness.caveat.reference %lld",
+                defaultValue: "Words occurring fewer than %lld times corpus-wide are unpriced and score as if new."),
+                Int64(ranking.referenceCutoffCount)))
+        }
+        return parts.joined(separator: " ")
+    }
+
+    /// The keyness reading as a list: the term, how distinctive it is, and both raw counts.
+    ///
+    /// A separate list from ``rankedList`` rather than a re-sort of it, because the numbers differ in
+    /// kind. Printing a G² of 1,240 under the existing "%lld occurrences" label would be a plain
+    /// falsehood, and that label is also what VoiceOver announces.
+    private var keynessList: some View {
+        let scores = ranking?.scores ?? []
+        let maxScore = scores.first?.logLikelihood ?? 1
+        return List {
+            ForEach(Array(scores.enumerated()), id: \.element.id) { index, score in
+                Button { analyze(for: score.term) } label: {
+                    HStack(spacing: 10) {
+                        Text("\(index + 1)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                            .frame(minWidth: 28, alignment: .trailing)
+                        VStack(alignment: .leading, spacing: 1) {
+                            // A8 parity with `rankedList`: under Differentiate Without Color the
+                            // sentiment lens conveys polarity with +/− marks rather than hue, and a
+                            // keyness list that dropped them would convey polarity by colour alone.
+                            Text(useSentimentMarks
+                                 ? WordCloudLexicons.markedTerm(score.term) : score.term)
+                                .font(.body)
+                                .foregroundStyle(lens.colorsBySentiment
+                                                 ? wordColor(term: score.term, colorIndex: index)
+                                                 : Color.primary)
+                            Text("\(foldDifference(score)) · \(countsCaption(for: score))")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .monospacedDigit()
+                                .lineLimit(2)
+                        }
+                        Spacer()
+                        keynessBar(score: score.logLikelihood, maxScore: maxScore)
+                        Text(Self.keynessFormatter.string(from: NSNumber(value: score.logLikelihood))
+                             ?? "")
+                            .font(.callout.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(minWidth: 56, alignment: .trailing)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: score.term))
+                // Announced as what it IS. Reusing the frequency row's "%lld occurrences" would read
+                // a log-likelihood aloud as an occurrence count.
+                .accessibilityValue(Text(String(format: String(
+                    localized: "wordcloud.keyness.row.a11y %@ %@ %@",
+                    defaultValue: "keyness %@; %@; %@"),
+                    Self.keynessFormatter.string(from: NSNumber(value: score.logLikelihood)) ?? "",
+                    foldDifference(score), countsCaption(for: score))))
+                .accessibilityHint(String(localized: "wordcloud.tap.hint",
+                                          defaultValue: "Charts this term in Corpus Analytics"))
+                .accessibilityAction(named: Text(String(localized: "wordcloud.word.search",
+                                                        defaultValue: "Search for this term"))) {
+                    search(for: score.term)
+                }
+                .contextMenu { wordContextMenu(term: score.term) }
+            }
+        }
+        .listStyle(.plain)
+    }
+
+    /// The effect size, as a fold difference — "38×" rather than "5.26".
+    ///
+    /// `KeynessScore.logRatio` is log₂ of the two relative frequencies, which is the corpus-linguistics
+    /// convention and is what the CSV export carries for citation. On screen it is raised back to a
+    /// plain multiple, because that is the number a reader can act on: `stalin` at log₂ 5.26 and
+    /// `babelsberg` at 8.32 are "38× more often here" and "320× more often here", and the second is
+    /// a far stronger claim than the two logs make it look.
+    ///
+    /// This sits beside G², not instead of it, because they answer different questions and the list is
+    /// ranked on G². G² conflates effect size with sample size: in *The Conference of Berlin*,
+    /// `germany` scores 3,244 on 1,787 uses at 6× while `babelsberg` scores 3,806 on 429 uses at 320×.
+    /// Ranking on G² alone therefore ranks partly by how much text a scope contains, which is exactly
+    /// what misleads when comparing a small collection with a large volume.
+    private func foldDifference(_ score: KeynessScore) -> String {
+        let fold = score.foldOverRepresentation
+        guard fold.isFinite, fold > 0 else { return "" }
+        let formatted = fold >= 10
+            ? fold.formatted(.number.precision(.fractionLength(0)))
+            : fold.formatted(.number.precision(.fractionLength(1)))
+        return String(format: String(localized: "wordcloud.keyness.row.fold %@",
+                                     defaultValue: "%@× more often here"), formatted)
+    }
+
+    /// The two raw counts under a keyness row — with "unpriced" said plainly.
+    ///
+    /// A reference count of zero means one of two very different things: the corpus genuinely never
+    /// used the word, or the word is rarer corpus-wide than the reference's truncation cutoff and
+    /// was never priced. A bare "0 corpus-wide" asserts the first. It is also the row a high keyness
+    /// score will have floated to the very top, so it is the one most likely to be read as a finding.
+    private func countsCaption(for score: KeynessScore) -> String {
+        if ranking?.isUnpriced(score) == true, let cutoff = ranking?.referenceCutoffCount {
+            return String(format: String(
+                localized: "wordcloud.keyness.row.counts.unpriced %lld %lld",
+                defaultValue: "%lld here · fewer than %lld corpus-wide (unpriced)"),
+                Int64(score.scopeCount), Int64(cutoff))
+        }
+        return String(format: String(
+            localized: "wordcloud.keyness.row.counts %lld %lld",
+            defaultValue: "%lld here · %lld corpus-wide"),
+            Int64(score.scopeCount), Int64(score.referenceCount))
+    }
+
+    /// One decimal place: G² spans single digits to thousands, and a bare Int would show the whole
+    /// bottom of the list as the same number.
+    private static let keynessFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 1
+        f.minimumFractionDigits = 1
+        return f
+    }()
+
+    /// A proportional bar over the keyness score. Separate from ``weightBar(count:maxCount:)``,
+    /// which takes Ints and would produce a negative frame width from a signed score.
+    private func keynessBar(score: Double, maxScore: Double) -> some View {
+        let fraction = maxScore > 0 ? CGFloat(max(0, min(1, score / maxScore))) : 0
+        return RoundedRectangle(cornerRadius: 2)
+            .fill(Color.accentColor.opacity(0.55))
+            .frame(width: 60 * fraction, height: 6)
+            .frame(width: 60, alignment: .leading)
+    }
+
+    /// Why there is no keyness reading — always with the reason, and with the fix when there is one.
+    ///
+    /// The three unavailable reasons are NOT interchangeable. A configuration mismatch is the only
+    /// one the user can act on, so it names the setting; the others explain a structural limit so the
+    /// reader stops looking for a control that does not exist.
+    private func keynessUnavailableView(_ reason: KeynessCloud.Unavailable) -> some View {
+        let detail: String
+        switch reason {
+        case .pending:
+            detail = String(localized: "wordcloud.keyness.unavailable.pending",
+                            defaultValue: "Loading the bundled corpus reference…")
+        case .noArtifact:
+            detail = String(localized: "wordcloud.keyness.unavailable.noArtifact",
+                            defaultValue: "The bundled corpus reference could not be loaded, so there is nothing to measure this scope against.")
+        case .lensNotPriced(let lens):
+            detail = String(format: String(
+                localized: "wordcloud.keyness.unavailable.lens %@",
+                defaultValue: "The “%@” lens has no corpus reference. Names of people, places and organizations aren’t counted corpus-wide, so there is no baseline to compare them with. Switch to another lens, or size words by frequency."),
+                lens.label)
+        case .configurationMismatch(let mismatches):
+            detail = String(format: String(
+                localized: "wordcloud.keyness.unavailable.mismatch %@",
+                defaultValue: "Your settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to compare this scope with the corpus."),
+                Self.mismatchDescription(mismatches))
+        case .noTermsAboveFloor(let minimum):
+            detail = String(format: String(
+                localized: "wordcloud.keyness.unavailable.floor %lld",
+                defaultValue: "No word occurs at least %lld times in this scope. A word appearing once or twice can top a keyness ranking without saying anything about the documents, so nothing is ranked."),
+                Int64(minimum))
+        case .nothingOverRepresented:
+            detail = String(localized: "wordcloud.keyness.unavailable.nothingDistinctive",
+                            defaultValue: "Nothing here is used more than it is across the corpus. That is a real result, not an error: this scope’s vocabulary is typical of the series.")
+        }
+        return ContentUnavailableView(
+            String(localized: "wordcloud.keyness.unavailable.title", defaultValue: "No Distinctiveness Ranking"),
+            systemImage: "chart.bar.doc.horizontal",
+            description: Text(detail)
+        )
+    }
+
+    /// Names the mismatched settings in the user's own vocabulary — the Settings labels, not the
+    /// enum cases.
+    private static func mismatchDescription(
+        _ mismatches: [KeynessBaselineFile.Configuration.Mismatch]
+    ) -> String {
+        mismatches.map { mismatch in
+            switch mismatch {
+            case .diplomaticLayer:
+                String(localized: "wordcloud.keyness.mismatch.boilerplate",
+                       defaultValue: "“Hide common diplomatic words” is off")
+            case .foldPlurals:
+                String(localized: "wordcloud.keyness.mismatch.plurals",
+                       defaultValue: "plural folding differs")
+            case .filterMarkings:
+                String(localized: "wordcloud.keyness.mismatch.markings",
+                       defaultValue: "classification-marking filtering differs")
+            case .minimumLength:
+                String(localized: "wordcloud.keyness.mismatch.length",
+                       defaultValue: "your minimum word length is shorter")
+            case .lexicons, .stopwords:
+                String(localized: "wordcloud.keyness.mismatch.payload",
+                       defaultValue: "the bundled word lists have changed since the reference was built")
+            }
+        }
+        // Duplicates are possible: `.lexicons` and `.stopwords` share one description.
+        .reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+        .joined(separator: "; ")
     }
 
     /// Colour key shown under the lens bar while the sentiment lens is active.
@@ -378,6 +695,28 @@ struct WordCloudView: View {
                                                  defaultValue: "Your stop lists: %lld word(s) on your global hidden-word list and %lld on your list for the \"%@\" lens were removed before counting, so they appear neither in this table nor in its denominator. Both lists are editable in Settings → Word Cloud."),
                                   Int64(globalStops), Int64(lensStops), lens.label))
         }
+        if let ranking {
+            caveats.append(String(format: String(
+                localized: "wordcloud.export.caveat.keyness %lld %lld %@",
+                defaultValue: "Keyness: each word is scored against a bundled reference of the whole FRUS corpus (%lld of that corpus's %lld distinct words for this lens, generated %@). Only words used MORE here than corpus-wide are listed; a word used conspicuously less is a real finding this table does not carry."),
+                Int64(ranking.referenceRetained), Int64(ranking.referenceDistinct),
+                ranking.generated ?? String(localized: "common.unknown", defaultValue: "unknown")))
+            caveats.append(ranking.rankedAmongTopFrequent
+                ? String(format: String(
+                    localized: "wordcloud.export.caveat.keyness.truncated %lld",
+                    defaultValue: "Keyness candidates: only this scope's %lld most frequent words were scored, so a word that is rare here but unique to it is outside this ranking."),
+                    Int64(ranking.candidateCount))
+                : String(format: String(
+                    localized: "wordcloud.export.caveat.keyness.complete %lld",
+                    defaultValue: "Keyness candidates: every word occurring at least %lld times in this scope was scored."),
+                    Int64(ranking.minimumScopeCount)))
+            if ranking.referenceCutoffCount > 1 {
+                caveats.append(String(format: String(
+                    localized: "wordcloud.export.caveat.keyness.cutoff %lld",
+                    defaultValue: "Reference coverage: the reference prices words occurring at least %lld times corpus-wide. A rarer word is UNPRICED, not absent, and is scored as though the corpus never used it — treat a high score on a rare word with care."),
+                    Int64(ranking.referenceCutoffCount)))
+            }
+        }
         if lens != .allTerms {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.lens %@",
                                                  defaultValue: "Lens: the cloud is filtered to the \"%@\" word list, so this is a subset of the scope's vocabulary, not its whole frequency ranking."),
@@ -388,12 +727,23 @@ struct WordCloudView: View {
             // preamble that prints the same long volume title twice reads like a bug.
             figureTitle: String(format: String(localized: "wordcloud.export.figureTitle %@",
                                                defaultValue: "Word Cloud — %@"), title),
-            axisLabel: String(localized: "wordcloud.export.axis",
-                              defaultValue: "Ranked by frequency across the scope's documents"),
+            // Not a constant: under keyness the ranking is not by frequency, and a plate or CSV
+            // that says it is would be a positive assertion of the wrong method — the one thing an
+            // exported research artefact must never do.
+            axisLabel: ranking != nil
+                ? String(localized: "wordcloud.export.axis.keyness",
+                         defaultValue: "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference")
+                : String(localized: "wordcloud.export.axis",
+                         defaultValue: "Ranked by frequency across the scope's documents"),
             scopeLabel: title,
             indexedVolumeCount: appState.indexedVolumeIds.count,
             yearRange: nil,
             appliesDocumentDating: false,
+            // Deliberately nil in BOTH measures. `AnalyticsProvenance.valueModeCaveat` appends a
+            // fixed sentence explaining that "a share is that period's matching documents divided by
+            // all indexed documents in the same period" — true of the Corpus Analytics charts it was
+            // written for, and nonsense above a word cloud, which has no periods and (under keyness)
+            // no share column at all. The measure travels in `axisLabel` and the caveats instead.
             valueMode: nil,
             extraCaveats: caveats
         )
@@ -401,10 +751,20 @@ struct WordCloudView: View {
 
     /// Exports the cloud's terms as a provenance-stamped CSV.
     private func exportCSV() {
-        let table = AnalyticsChartTables.wordCloudTable(
-            title: title,
-            terms: visibleTerms.map { (term: $0.term, count: $0.count) },
-            totalTokens: result.totalTokenCount)
+        let table: ChartInspectorData
+        if let ranking {
+            table = AnalyticsChartTables.wordCloudKeynessTable(
+                title: title,
+                scores: ranking.scores.map {
+                    (term: $0.term, logLikelihood: $0.logLikelihood, logRatio: $0.logRatio,
+                     scopeCount: $0.scopeCount, referenceCount: $0.referenceCount)
+                })
+        } else {
+            table = AnalyticsChartTables.wordCloudTable(
+                title: title,
+                terms: visibleTerms.map { (term: $0.term, count: $0.count) },
+                totalTokens: result.totalTokenCount)
+        }
         let filename = AnalyticsExportDelivery.filenameStem(title: title, prefix: Self.filenamePrefix) + ".csv"
         report(AnalyticsExportDelivery.deliver(text: table.provenancedCSV(cloudProvenance),
                                                filename: filename))
@@ -426,7 +786,14 @@ struct WordCloudView: View {
                                   defaultValue: "%lld documents"), Int64(result.documentCount)),
             String(format: String(localized: "wordcloud.export.caption.terms %lld %lld",
                                   defaultValue: "%lld of %lld terms drawn"),
-                   Int64(drawnTerms), Int64(visibleTerms.count)),
+                   Int64(drawnTerms), Int64(layoutInputTerms.count)),
+            // Without this a keyness plate and a frequency plate are indistinguishable once they
+            // leave the app, and they are answers to different questions.
+            ranking != nil
+                ? String(localized: "wordcloud.export.caption.keyness",
+                         defaultValue: "sized by keyness vs. the FRUS corpus")
+                : String(localized: "wordcloud.export.caption.frequency",
+                         defaultValue: "sized by frequency"),
             AnalyticsProvenance.appCredit,
             cloudProvenance.formattedDate,
         ].joined(separator: " · ")
@@ -435,7 +802,7 @@ struct WordCloudView: View {
     /// Exports the cloud artwork as a PNG or PDF.
     private func exportImage(_ format: AnalyticsFigureFormat) {
         guard let data = WordCloudExporter.imageData(
-            terms: visibleTerms, title: title,
+            terms: layoutInputTerms, title: title,
             provenanceLine: { cloudFigureCaption(drawnTerms: $0) },
             format: format, palette: Self.palette,
             sentimentColors: lens.colorsBySentiment, sentimentMarks: useSentimentMarks
@@ -483,10 +850,13 @@ struct WordCloudView: View {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
+                // Counts what is ACTUALLY shown. Under keyness the cloud draws only the
+                // over-represented terms, so reporting the frequency count here would name a
+                // number of words the reader cannot find anywhere on screen.
                 Text(String(
                     format: String(localized: "wordcloud.provenance %lld %lld",
                                    defaultValue: "%lld terms from %lld documents"),
-                    Int64(visibleTerms.count), Int64(result.documentCount)
+                    Int64(ranking?.scores.count ?? visibleTerms.count), Int64(result.documentCount)
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -520,7 +890,11 @@ struct WordCloudView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .contentShape(Rectangle())
-            .task(id: LayoutKey(width: geo.size.width, height: geo.size.height,
+            // Re-ranking leaves `termCount` untouched, so without the measure (and the ranking's
+            // own size) the spiral would keep the frequency arrangement while the list re-ordered
+            // underneath it.
+            .task(id: LayoutKey(measure: measureRaw, rankedCount: ranking?.scores.count ?? 0,
+                                width: geo.size.width, height: geo.size.height,
                                 signature: scope.signature, exclude: excludeBoilerplate,
                                 lens: lens, termCount: result.terms.count,
                                 fontDesign: fontDesign, density: density,
@@ -530,7 +904,7 @@ struct WordCloudView: View {
                 // width they render with. Filter this cloud's session hides first (#233),
                 // before the mark mapping, so hidden words don't reappear under the
                 // sentiment lens (where the layout term carries a +/− prefix).
-                let base = visibleTerms
+                let base = layoutInputTerms
                 let layoutTerms = useSentimentMarks
                     ? base.map { TermCount(term: WordCloudLexicons.markedTerm($0.term),
                                            count: $0.count) }
@@ -541,7 +915,14 @@ struct WordCloudView: View {
                 )
             }
         }
-        .accessibilityRepresentation { rankedList }
+        // The representation must follow the MEASURE. `KeynessCloud` drops under-represented terms
+        // specifically because this list is what VoiceOver reads instead of the canvas, so leaving
+        // it on the frequency list would hand a VoiceOver reader a different set of words, in a
+        // different order, announced as occurrence counts — the exact invariant that design note
+        // claims to preserve.
+        .accessibilityRepresentation {
+            measure == .keyness && ranking != nil ? AnyView(keynessList) : AnyView(rankedList)
+        }
     }
 
     /// Ranked term list — also the accessibility representation of the cloud.
@@ -690,8 +1071,17 @@ struct WordCloudView: View {
                 items: [
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.shows.title", defaultValue: "What you're seeing"),
-                        detail: String(localized: "wordcloud.info.shows.detail",
-                                       defaultValue: "The most frequent meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus — each sized by how often it appears.")),
+                        detail: String(localized: "wordcloud.info.shows.detail.v2",
+                                       defaultValue: "The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.measure.title", defaultValue: "Frequency vs. Distinctive"),
+                        detail: String(localized: "wordcloud.info.measure.detail",
+                                       defaultValue: "Frequency sizes each word by how often it appears here — which tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a bundled reference of the whole corpus and sizes each word by how much MORE it is used here than across the series, using log-likelihood keyness, the corpus-linguistics standard. It lists only words used more here than corpus-wide; a word this scope conspicuously avoids is a real finding it does not show. Words occurring fewer than three times here are never ranked, because one or two mentions can top a keyness list without saying anything about the documents.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.keyness.numbers.title",
+                                      defaultValue: "Reading the Distinctive list"),
+                        detail: String(localized: "wordcloud.info.keyness.numbers.detail",
+                                       defaultValue: "Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²) — the strength of the evidence that the difference is real — and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume produces larger scores than a short collection for the same effect; when you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely corpus-wide to be counted in the reference, so its multiple is an upper bound.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.lenses.title", defaultValue: "Lenses"),
                         detail: String(localized: "wordcloud.info.lenses.detail",
@@ -760,7 +1150,11 @@ struct WordCloudView: View {
                 // Gated on isLoading too: during a recompute `result` still holds the PREVIOUS
                 // criteria's terms and totals, while the provenance reads settings live — so an
                 // export taken mid-reload would stamp the new method onto the old numbers.
-                .disabled(visibleTerms.isEmpty || isLoading)
+                // Also gated on the keyness verdict: with Distinctive selected but no ranking, the
+                // data would be frequency rows while the user believes they are exporting keyness.
+                // Gating the provenance alone is not enough — the FILE would be honest and the
+                // ACTION still surprising.
+                .disabled(visibleTerms.isEmpty || isLoading || (measure == .keyness && ranking == nil))
             } label: {
                 Label(String(localized: "wordcloud.menu", defaultValue: "Options"),
                       systemImage: "ellipsis.circle")
@@ -774,6 +1168,14 @@ struct WordCloudView: View {
     @ViewBuilder
     private var compareMenu: some View {
         Menu {
+            // `ComparativeCloudColumn` is a separate host with its own loader and no measure of its
+            // own, so a side-by-side comparison is always by frequency. Offering it unlabelled two
+            // rows under a keyness cloud would put two contradictory answers to one question in one
+            // menu. Out of scope to unify here; stated rather than left to be discovered.
+            if measure == .keyness {
+                Section(String(localized: "wordcloud.compare.frequencyOnly",
+                               defaultValue: "Side-by-side compares by frequency")) { EmptyView() }
+            }
             if scope != .corpus {
                 Button(String(localized: "wordcloud.compare.corpus", defaultValue: "Corpus")) {
                     comparisonScope = .corpus
@@ -810,6 +1212,40 @@ struct WordCloudView: View {
     }
 
     // MARK: - Loading & Actions
+
+    /// Resolves the scope and computes its top terms.
+    ///
+    /// Runs inside either the criteria-driven `.task(id:)` or a manual reload task
+    /// (`loadTask`). Callers cancel any previous load *before* starting a new one;
+    /// `load()` itself must never cancel `loadTask`, because when it runs inside
+    /// `loadTask` a self-cancel aborts the load it is performing — the early
+    /// cancellation return then skips `isLoading = false` and the spinner never clears.
+    /// Re-ranks the loaded terms by keyness, or records why it cannot.
+    ///
+    /// Reads `WordCloudSettings.tuning` rather than this view's four raw `@AppStorage` mirrors: the
+    /// static accessor CLAMPS (`max(2, minLength)`, `max(1, minCount)`) and is the value
+    /// `WordCloudLoader` actually counted the scope with. Checking availability against the
+    /// unclamped mirrors would describe a tokenisation that did not produce the numbers on screen.
+    ///
+    /// `includeDiplomatic:` is `excludeBoilerplate` **verbatim**. The two names sound opposite and
+    /// are not: `WordCloudLoader.load` passes `includeDiplomaticStopwords: excludeBoilerplate`
+    /// straight through. Negating it here would compile, read plausibly, and invert the one guard
+    /// that stops `department`/`telegram`/`washington` — reference count zero — from being ranked as
+    /// the corpus's most distinctive vocabulary.
+    private func recomputeKeyness() {
+        guard measure == .keyness else { keyness = nil; return }
+        keyness = KeynessCloud.rank(
+            terms: visibleTerms,
+            scopeTotal: result.totalTokenCount,
+            // The FETCHED count, not `visibleTerms.count`: a single session hide would otherwise
+            // take a full 220-term fetch to 219 and flip the caveat to a claim of completeness.
+            fetchedTermCount: result.terms.count,
+            termLimit: Self.termLimit,
+            lens: lens,
+            tuning: WordCloudSettings.tuning,
+            includeDiplomatic: excludeBoilerplate
+        )
+    }
 
     /// Resolves the scope and computes its top terms.
     ///
@@ -1173,6 +1609,24 @@ struct WordCloudView: View {
     }
 
     /// Drives a reload when the scope, stopword policy, lens, or criteria change.
+    /// Everything that changes a keyness verdict.
+    ///
+    /// `exclude` and `settings` are members because the availability check reads the LIVE tokenisation
+    /// — not the defaults — and both are reachable without leaving this view.
+    private struct KeynessKey: Equatable {
+        let measure: String
+        let lens: WordCloudLens
+        let exclude: Bool
+        let settings: String
+        let termCount: Int
+        let tokenTotal: Int
+        let hidden: Set<String>
+        /// Whether the bundled reference has finished decoding, so a verdict taken before it landed
+        /// is re-evaluated rather than cached as a permanent failure.
+        let referenceReady: Bool
+    }
+
+    /// Drives a reload when the scope, stopword policy, lens, or criteria change.
     private struct TaskKey: Equatable {
         let signature: String
         let exclude: Bool
@@ -1182,6 +1636,10 @@ struct WordCloudView: View {
 
     /// Drives a spiral relayout when the canvas size, scope, policy, or lens changes.
     private struct LayoutKey: Equatable {
+        /// The active measure, so switching frequency↔keyness re-lays out.
+        let measure: String
+        /// How many terms the keyness ranking kept, which the raw term count does not track.
+        let rankedCount: Int
         let width: CGFloat
         let height: CGFloat
         let signature: String
