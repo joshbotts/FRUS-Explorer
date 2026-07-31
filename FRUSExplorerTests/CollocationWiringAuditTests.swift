@@ -30,7 +30,7 @@ import Testing
 /// anti-vacuity floor and the file paths are asserted to exist.
 ///
 /// Version history:
-///   1.0 — S-2: initial implementation\n///   1.1 — Q wave: mutual exclusion is asserted as an invariant, not as one mechanism —\n///          iOS now gets it structurally from ``ResultReading``, macOS still clears by hand
+///   1.0 — S-2: initial implementation\n///   1.2 — Q wave step 6: the version-bump audit re-anchored onto the concurrent search,\n///          and extended to pin that the whole-query total lands before the bump\n///   1.1 — Q wave: mutual exclusion is asserted as an invariant, not as one mechanism —\n///          iOS now gets it structurally from ``ResultReading``, macOS still clears by hand
 @Suite("Collocation wiring audit")
 struct CollocationWiringAuditTests {
 
@@ -171,11 +171,13 @@ struct CollocationWiringAuditTests {
         }
     }
 
-    @Test("iOS bumps its search version AFTER the results land")
+    @Test("iOS bumps its search version AFTER the results and the total land")
     func versionBumpFollowsTheResults() throws {
         let vm = try source("FRUSExplorer/Search/SearchViewModel.swift")
-        let body = try #require(vm.range(of: "results = try await searchService.search"))
-        let after = String(vm[body.lowerBound...].prefix(1_400))
+        // Anchored on the assignment, not on the call: the search and the whole-query count are
+        // now started together with `async let`, so the fetch no longer appears inline here.
+        let body = try #require(vm.range(of: "results = try await fetched"))
+        let after = String(vm[body.lowerBound...].prefix(1_600))
         // Bumped in the synchronous prefix, every `.task(id:)` keyed on it fires during the await —
         // against the PREVIOUS query's results, and never again.
         #expect(after.contains("executedSearchVersion &+= 1"),
@@ -183,6 +185,15 @@ struct CollocationWiringAuditTests {
         let before = String(vm[..<body.lowerBound].suffix(600))
         #expect(!before.contains("executedSearchVersion &+= 1"),
                 "a bump before the await makes the key fire against the previous result set")
+
+        // The total must land with the results, before the bump. The version is what consumers
+        // key on; a total assigned after it would let one read the new results beside the
+        // previous query's denominator — the same defect the bump ordering exists to prevent,
+        // one field over.
+        let totalAt = try #require(after.range(of: "totalMatchCount = await counted"))
+        let bumpAt = try #require(after.range(of: "executedSearchVersion &+= 1"))
+        #expect(totalAt.upperBound < bumpAt.lowerBound,
+                "the whole-query total must be assigned before the version is bumped")
     }
 
     @Test("The scan budget is on tokens and scales with the window")

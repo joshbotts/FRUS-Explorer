@@ -632,14 +632,14 @@ struct SearchView: View {
     }
 
     /// Which set this screen is showing — the one place iOS composes it, so no surface can
-    /// invent its own account of the same numbers. `totalMatchCount` is `nil` because iOS has
-    /// never held a whole-query count; every sentence in ``ResultSetScope`` is written to be true
-    /// without one.
+    /// invent its own account of the same numbers. `totalMatchCount` is now a real whole-query
+    /// count, taken concurrently with the search; it stays `Optional` because the count can fail,
+    /// and every sentence in ``ResultSetScope`` is written to be true without one.
     private var resultSetScope: ResultSetScope {
         ResultSetScope(loaded: vm.results.count,
                        shown: vm.displayedResults.count,
                        fetchLimit: SearchViewModel.searchHardLimit,
-                       totalMatchCount: nil,
+                       totalMatchCount: vm.totalMatchCount,
                        documentsOnPage: vm.pagedResults.count,
                        pageCount: vm.totalPages)
     }
@@ -1174,12 +1174,7 @@ struct SearchView: View {
     private var resultCountHeader: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(
-                    String(
-                        format: String(localized: "search.count %lld",
-                                       defaultValue: "%lld results"),
-                        Int64(vm.resultCount)
-                    )
+                Text(resultSetScope.headerDescription
                 )
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -1195,12 +1190,8 @@ struct SearchView: View {
             // Over-cap guidance: shown when the result set hit the hard limit, meaning
             // there are likely more matching documents not visible in the list.
             // Over-cap guidance — only when the result set hit the hard limit.
-            if vm.isResultsCapped {
-                Text(String(
-                    format: String(localized: "search.capped.guidance %lld",
-                                   defaultValue: "Showing the first %lld results — add more keywords or filters to see more specific results."),
-                    Int64(SearchViewModel.searchHardLimit)
-                ))
+            if let guidance = resultSetScope.overCapGuidance {
+                Text(guidance)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             }

@@ -106,6 +106,57 @@ struct ResultSetScope: Equatable, Sendable {
     /// Whether the shown set fits on one page, in which case "on this page" says nothing.
     var isSinglePage: Bool { pageCount <= 1 }
 
+    // MARK: - The results header
+
+    /// The results-count header — the line where the three-way collision lived.
+    ///
+    /// It read `"%lld results"` over the checklist-**filtered** count while the line beneath read
+    /// `"Showing the first 1,000 results"` over the **fetched** count, so a filtered capped search
+    /// rendered "987 results" directly above "Showing the first 1,000 results".
+    ///
+    /// Now every number is labelled, and only the numbers that mean something appear: an ordinary
+    /// complete search still reads "412 results", because when nothing is hidden and nothing is
+    /// truncated one number does mean one thing, and labelling it would be noise. The grammar
+    /// follows macOS's existing `resultCountLabel` — "loaded", "total", "total unavailable" —
+    /// rather than inventing a third dialect for the same facts.
+    var headerDescription: String {
+        if shown == 0 {
+            return String(localized: "search.count.none", defaultValue: "No results")
+        }
+        if !didHitFetchLimit, hiddenByChecklist == 0 {
+            return String(format: String(localized: "search.count %lld",
+                                         defaultValue: "%lld results"), Int64(shown))
+        }
+        if !didHitFetchLimit {
+            return String(format: String(localized: "search.count.shownOf %lld %lld",
+                                         defaultValue: "%1$lld shown of %2$lld results"),
+                          Int64(shown), Int64(loaded))
+        }
+        var parts: [String] = []
+        if hiddenByChecklist > 0 {
+            parts.append(String(format: String(localized: "search.count.shown %lld",
+                                               defaultValue: "%lld shown"), Int64(shown)))
+        }
+        parts.append(String(format: String(localized: "search.count.loaded %lld",
+                                           defaultValue: "%lld loaded"), Int64(loaded)))
+        parts.append(totalMatchCount.map {
+            String(format: String(localized: "search.count.total %lld",
+                                  defaultValue: "%lld total"), Int64($0))
+        } ?? String(localized: "search.count.total.unavailable",
+                    defaultValue: "total unavailable"))
+        return parts.joined(separator: " · ")
+    }
+
+    /// The advice under a truncated result set — advice only, with no number of its own.
+    ///
+    /// It used to carry `searchHardLimit`, which is what put a second unlabelled "results" count
+    /// on screen. ``headerDescription`` states the numbers now, once, with labels.
+    var overCapGuidance: String? {
+        guard didHitFetchLimit else { return nil }
+        return String(localized: "search.capped.guidance",
+                      defaultValue: "Add more keywords or filters to see more specific results.")
+    }
+
     // MARK: - Capture (the modal — states the whole chain)
 
     /// Why the captured set may not be the whole answer to the query.

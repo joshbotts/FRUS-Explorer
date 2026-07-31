@@ -178,3 +178,80 @@ struct ResultSetScopeTests {
         #expect(caption.contains("highest-scoring"))
     }
 }
+
+// MARK: - ResultHeaderTests
+
+/// The results-count header — the line the whole diagnosis started from.
+///
+/// It rendered `"%lld results"` over the checklist-FILTERED count while the line beneath rendered
+/// `"Showing the first 1,000 results"` over the FETCHED count. These pin that every number is now
+/// labelled, and — just as important — that an ordinary search is left alone, because labelling a
+/// number that means only one thing is noise.
+///
+/// Version history:
+///   1.0 — Q wave step 6: initial implementation
+@Suite("Results header grammar")
+struct ResultHeaderTests {
+
+    private func scope(loaded: Int, shown: Int? = nil, total: Int?,
+                       limit: Int = 1_000) -> ResultSetScope {
+        ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: limit,
+                       totalMatchCount: total, documentsOnPage: 25, pageCount: 1)
+    }
+
+    @Test("An ordinary complete search is left unlabelled")
+    func plainCount() {
+        // 412 loaded, 412 shown, and the fetch did not cap: one number, one meaning.
+        #expect(scope(loaded: 412, total: 412).headerDescription == "412 results")
+        #expect(scope(loaded: 412, total: nil).headerDescription == "412 results")
+    }
+
+    @Test("An empty result set says so")
+    func noResults() {
+        #expect(scope(loaded: 0, total: 0).headerDescription == "No results")
+    }
+
+    @Test("A checklist-filtered but complete search names both numbers")
+    func filteredComplete() {
+        let text = scope(loaded: 412, shown: 399, total: 412).headerDescription
+        #expect(text.contains("399"))
+        #expect(text.contains("412"))
+        #expect(text.contains("shown"), "the smaller number must be labelled as the shown one")
+    }
+
+    /// The exact collision this work exists to remove.
+    @Test("A capped search labels loaded and total, and never repeats a bare count")
+    func cappedLabelled() {
+        let text = scope(loaded: 1_000, total: 195_519).headerDescription
+        #expect(text.contains("loaded"))
+        #expect(text.contains("total"))
+        #expect(!text.contains("results"),
+                "'results' is the word that meant three things — a labelled line must not reuse it")
+    }
+
+    @Test("A capped search with no total says the total is unavailable, not a wrong number")
+    func cappedWithoutTotal() {
+        let text = scope(loaded: 1_000, total: nil).headerDescription
+        #expect(text.contains("total unavailable"))
+        #expect(!text.contains("1000 total") && !text.contains("1,000 total"),
+                "the fetched count must never be presented as the total")
+    }
+
+    @Test("Capped and filtered together names all three")
+    func cappedAndFiltered() {
+        let text = scope(loaded: 1_000, shown: 987, total: 195_519).headerDescription
+        #expect(text.contains("987"))
+        #expect(text.contains("shown"))
+        #expect(text.contains("loaded"))
+        #expect(text.contains("total"))
+    }
+
+    @Test("The over-cap guidance carries advice, not a second unlabelled count")
+    func guidanceHasNoNumber() throws {
+        #expect(scope(loaded: 412, total: 412).overCapGuidance == nil)
+        let guidance = try #require(scope(loaded: 1_000, total: 195_519).overCapGuidance)
+        #expect(!guidance.contains("1000") && !guidance.contains("1,000"),
+                "the header states the numbers; this line would be the second unlabelled one")
+        #expect(guidance.contains("filters"))
+    }
+}
