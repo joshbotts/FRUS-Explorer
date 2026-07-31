@@ -23,28 +23,10 @@ import SwiftData
 /// delete all its entries.
 ///
 /// ## `lastModified`
-/// Updated automatically on mutations to `name`, `note`, `projectIds`, and the
-/// `documentEntries` relationship. Individual entry mutations update the entry's
-/// own `lastModified`; the collection is not touched in that case.
-///
-/// Version history:
-///   1.0 — Session 04: initial implementation
-///   1.1 — Session 89: deleteRule changed .cascade → .nullify for CloudKit compatibility;
-///          callers now delete associated entries manually before deleting a Collection
-///   1.2 — Session 97: `savedSearchId` added; when non-nil the collection is a "smart collection"
-///          whose document list is resolved dynamically from the linked `SavedSearch` at export time
-///   1.3 — Collections rework Phase 1a: persisted composition settings (`defaultBodyDepth`,
-///          `footnoteStyle`, `tocStyle`, `applyHighlights`, `includeNotes`, `includeWordCloud`,
-///          `summaryPromptId`) — the export-content decisions moved out of the ephemeral export sheet
-///   1.4 — Authoring Phase 4: front-matter fields (`subtitle`, `authorLine`,
-///          `introductionText` + `introductionRichText`, `includeColophon`) — all additive,
-///          optional-or-defaulted, CloudKit-safe; defaults reproduce pre-Phase-4 exports exactly.
-///          `note` keeps its existing role as the one-line title-page description
-///   1.5 — Authoring Phase 5: footnote tri-state fix — `includeFootnotes` +
-///          `includeSourceNote` Bool pair (both optional; `nil` derives from the legacy
-///          `footnoteStyle`, which keeps being written for old readers/devices — never
-///          delete or re-purpose a synced field). "All footnotes AND the source note"
-///          becomes expressible; the effective accessors are the only read surface
+/// Stamped at **save time** by `ModelModificationStamper`, and used by CloudKit last-write-wins
+/// conflict resolution. The `didSet` observers below do **not** fire — the `@Model` macro discards
+/// property observers — and are left pending a mechanical sweep. Editing an entry updates the
+/// entry's own `lastModified`; the collection is not touched in that case.
 @Model final class Collection {
 
     // MARK: - Identity

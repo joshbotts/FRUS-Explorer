@@ -35,7 +35,7 @@ extension ModelContainer {
     ///          `FRUSExplorerApp.cloudKitDiagnostic(_:)` and surface the real domain/code/
     ///          description in the UI, instead of a hardcoded "check console" placeholder
     ///   1.4 — `PersonClusterOverride` (2026-06-17) and `SyncedPreferences` (2026-06-27)
-    ///          added to the schema (16 at the time). Both are new CloudKit record types —
+    ///          added to the schema. Both are new CloudKit record types —
     ///          deploy the Development schema to Production before shipping (see note).
     ///   1.5 — Wave R-7: the list had grown to 18 while this block went on claiming 16, through
     ///          two additions (`CustomVolumeScope`, #258; `ProjectLeadEntry`,
@@ -48,7 +48,7 @@ extension ModelContainer {
     ///          build a `Schema` from it) and these comments.
     ///   1.6 — Wave R-2a: `ExportHistoryEntry` added (contract D1 — the only record that a
     ///          collection was exported, and the Zotero Web-API push has a real external side
-    ///          effect), bringing the list to **19 record types**. `ResearchSession`/`SessionEvent`
+    ///          effect), adding one record type. `ResearchSession`/`SessionEvent`
     ///          are **retiring but still listed**: the migration has to be able to read them.
     ///          R-2b removes them, at which point the count drops to 17. The gate fired on this
     ///          change, as designed, and its seven identifiers are in
@@ -109,6 +109,11 @@ extension ModelContainer {
             // #377 Phase 3 — NEW CloudKit record type (project discovery leads): deploy the
             // schema to Production before shipping, per the note above.
             ProjectLeadEntry.self,
+            // M-1 — NEW CloudKit record type (document-grain working corpora): deploy the
+            // schema to Production before shipping, per the note above. The current count is
+            // `CloudKitSchemaInventory.recordTypeCount`, which is derived and cannot drift —
+            // restating it in prose is what `CodingStandards`' stale-count audit exists to catch.
+            WorkingCorpus.self,
         ]
     }
 

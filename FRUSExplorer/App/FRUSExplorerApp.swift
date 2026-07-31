@@ -233,6 +233,13 @@ final class FRUSAppDelegate: NSObject, UIApplicationDelegate {
 struct FRUSExplorerApp: App {
 
     @State private var appState = AppState()
+    /// Keeps `lastModified` current on every synced model, at save time.
+    ///
+    /// Four models relied on `didSet` observers for this — 73 of them — and none ever fired: the
+    /// `@Model` macro rewrites stored properties into computed pairs, which cannot carry observers.
+    /// `lastModified` is what CloudKit's last-writer-wins resolves on, so it was frozen at creation
+    /// and a stale device won every merge. Measured in `ModelLastModifiedTests`.
+    @State private var modificationStamper = ModelModificationStamper()
     #if os(iOS)
     @UIApplicationDelegateAdaptor(FRUSAppDelegate.self) private var appDelegate
     #endif
@@ -1102,6 +1109,8 @@ struct FRUSExplorerApp: App {
                     // `.unavailable(.noArtifact)` — a failure indistinguishable from a missing
                     // bundle resource, so the feature would look wired and be permanently dark.
                     await BundledKeynessBaseline.prepare()
+                    // Before anything can edit a synced model. Cheap: one notification observer.
+                    modificationStamper.start(observing: modelContainer.mainContext)
                 }
                 .onChange(of: appState.isOnline) { _, isOnline in
                     guard let dm = appState.downloadManager else { return }
