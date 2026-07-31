@@ -346,6 +346,7 @@ struct SearchView: View {
                             controller: facetController,
                             matchCount: vm.hasSearched ? vm.totalMatchCountForFacets : nil,
                             displayedCount: vm.displayedResults.count,
+                            isPartialEvidence: resultSetScope.isPartialEvidence,
                             isChecklistHiding: vm.checklistMode
                                 && vm.displayedResults.count < vm.results.count,
                             onNarrow: { narrowing in
@@ -642,7 +643,8 @@ struct SearchView: View {
                        fetchLimit: SearchViewModel.searchHardLimit,
                        totalMatchCount: vm.totalMatchCount,
                        documentsOnPage: vm.pagedResults.count,
-                       pageCount: vm.totalPages)
+                       pageCount: vm.totalPages,
+                       appliedCorpusTruncation: vm.appliedWorkingCorpusTruncation)
     }
 
     /// The active reading, derived from the three flags the body and rebuild keys still read.

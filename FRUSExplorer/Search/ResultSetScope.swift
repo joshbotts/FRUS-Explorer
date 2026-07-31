@@ -86,6 +86,17 @@ struct ResultSetScope: Equatable, Sendable {
     /// How many pages the shown set divides into.
     let pageCount: Int
 
+    // MARK: - The corpus this search is inside
+
+    /// What is known about the truncation of the applied working corpus, or `nil` when the search
+    /// is not scoped to one.
+    ///
+    /// This is the member that makes the sentences correct inside a corpus. Without it every
+    /// truncation question on this type is about **this fetch**, and a fetch inside a corpus never
+    /// caps — the corpus is already smaller than the ceiling — so each one silently answered
+    /// "complete" about a set that was frozen from a capped capture.
+    var appliedCorpusTruncation: WorkingCorpus.CaptureTruncation? = nil
+
     // MARK: - Derived
 
     /// Whether more documents match the query than were loaded.
@@ -97,6 +108,22 @@ struct ResultSetScope: Equatable, Sendable {
     var didHitFetchLimit: Bool {
         if loaded >= fetchLimit { return true }
         if let totalMatchCount { return totalMatchCount > loaded }
+        return false
+    }
+
+    /// Whether what is on screen is a subset of the answer to the question — for **either** reason:
+    /// this fetch stopped short, or the corpus it is inside was itself a capped capture.
+    ///
+    /// Distinct from ``didHitFetchLimit``, which is only ever about this fetch. Every sentence
+    /// that warns a reader about partial evidence keys on this; anything describing the mechanics
+    /// of *this* fetch keys on the other.
+    ///
+    /// `unrecorded` does **not** count. A corpus captured before the app recorded truncation might
+    /// have been complete, and captioning every legacy corpus as partial would be a different
+    /// false claim rather than a repair of the first one.
+    var isPartialEvidence: Bool {
+        if didHitFetchLimit { return true }
+        if case .truncated = appliedCorpusTruncation { return true }
         return false
     }
 
@@ -132,6 +159,22 @@ struct ResultSetScope: Equatable, Sendable {
             return String(localized: "search.count.none", defaultValue: "No results")
         }
         if !didHitFetchLimit, hiddenByChecklist == 0 {
+            // Inside a corpus that was itself a capped capture, a bare count is the very claim
+            // this type exists to stop: the number is exact for the corpus and says nothing about
+            // the question the corpus was an answer to. The corpus's own total is the honest
+            // second figure — not this fetch's, which has none.
+            if case .truncated(let capturedTotal) = appliedCorpusTruncation {
+                if let capturedTotal {
+                    return String(format: String(
+                        localized: "search.count.inTruncatedCorpus %@ %@",
+                        defaultValue: "%1$@ in this corpus · captured from %2$@ matches"),
+                        grouped(shown), grouped(capturedTotal))
+                }
+                return String(format: String(
+                    localized: "search.count.inTruncatedCorpus.unknownTotal %@",
+                    defaultValue: "%@ in this corpus · a partial capture"),
+                    grouped(shown))
+            }
             return String(format: String(localized: "search.count %@",
                                          defaultValue: "%@ results"), grouped(shown))
         }
@@ -255,7 +298,7 @@ struct ResultSetScope: Equatable, Sendable {
     /// with the same two figures, and the sort bar's result count is a third. The distinction this
     /// draws — the whole loaded set, not the page — is the one nothing else on screen states.
     var collocationScopeDescription: String {
-        var description = didHitFetchLimit
+        var description = isPartialEvidence
             ? String(localized: "search.collocation.caveat.scope.loaded.capped",
                      defaultValue: "Measured over every result this search loaded, not the page on screen — those are the highest-scoring matches, not a sample of all of them.")
             : String(localized: "search.collocation.caveat.scope.loaded.complete",
@@ -277,7 +320,7 @@ struct ResultSetScope: Equatable, Sendable {
     /// correct a *shape*. `nil` when the fetch did not hit its ceiling: an uncapped "plotting all
     /// 412 results" caption is chrome carrying no information.
     var timelineBiasCaption: String? {
-        guard didHitFetchLimit else { return nil }
+        guard isPartialEvidence else { return nil }
         return String(localized: "search.timeline.bias",
                       defaultValue: "These are the highest-scoring matches, not a sample across time — this shape is theirs, not the whole match’s.")
     }

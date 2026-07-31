@@ -168,7 +168,18 @@ struct SaveWorkingCorpusSheet: View {
             // `installedIdentifiers` — so the record becomes self-describing at zero CloudKit
             // schema cost. Read on another device, or a year later, it carries its truncation.
             sourceDescription: scope.captureProvenanceDescription,
-            indexedVolumeCountAtCapture: indexedVolumeCount)
+            // Typed alongside the prose, not instead of it. The prose is what a READER needs; a
+            // guard needs a Bool, and a fraction needs an Int. `didHitFetchLimit` is recorded
+            // even when the total is unknown, which is the iPhone case.
+            indexedVolumeCountAtCapture: indexedVolumeCount,
+            // `isPartialEvidence`, not `didHitFetchLimit`. Capturing a corpus while already
+            // inside a truncated one produces a set that is partial for a reason this fetch
+            // cannot see — the fetch did not cap, because the corpus it ran in was already
+            // smaller than the ceiling. Recording the fetch's own answer would stamp that
+            // capture "complete", which is the precise defect these fields exist to end, one
+            // level of nesting down.
+            wasTruncatedAtCapture: scope.isPartialEvidence,
+            totalMatchCountAtCapture: scope.totalMatchCount)
         modelContext.insert(corpus)
         try? modelContext.save()
         dismiss()

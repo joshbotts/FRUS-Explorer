@@ -725,10 +725,19 @@ final class SearchViewModel {
     /// The corpus's name, for the applied-scope chip. Cleared with the keys.
     var appliedWorkingCorpusName: String?
 
+    /// What is known about the applied corpus's own truncation, captured at the moment it is
+    /// applied because that is the only place the `WorkingCorpus` object is in hand.
+    ///
+    /// Carried alongside the keys rather than looked up by name later: names are deliberately not
+    /// unique (`WorkingCorpus` says so — uniqueness cannot be guaranteed across CloudKit devices),
+    /// so a by-name lookup could resolve the wrong corpus's truncation onto the applied one.
+    var appliedWorkingCorpusTruncation: WorkingCorpus.CaptureTruncation?
+
     /// Clears any applied working corpus.
     func clearWorkingCorpus() {
         appliedWorkingCorpusKeys = nil
         appliedWorkingCorpusName = nil
+        appliedWorkingCorpusTruncation = nil
     }
 
     /// The volume scope + History/Focus document gate the active project scope produces

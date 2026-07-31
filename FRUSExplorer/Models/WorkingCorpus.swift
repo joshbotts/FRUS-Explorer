@@ -99,6 +99,28 @@ import SwiftData
     /// and one captured against 552 are different evidence, and nothing else records the difference.
     var indexedVolumeCountAtCapture: Int?
 
+    /// Whether the capturing fetch reached every matching document, or stopped short of them.
+    ///
+    /// `nil` means **not recorded** — a corpus captured before this field existed. Never read
+    /// directly; go through ``truncationAtCapture``.
+    ///
+    /// ## Why optional, and not `Bool = false`
+    /// A non-optional default would make every already-captured corpus positively assert "this is
+    /// the whole match", silently and wrongly, for exactly the population that motivated the
+    /// field. Optional plus an exhaustive read surface forces each consumer to decide what
+    /// *unrecorded* means for it, and the answers genuinely differ: the timeline caption must not
+    /// fire on unrecorded (it would caption every legacy corpus), while the corpora list should
+    /// say so out loud. `Collection.includeFootnotes` is the same shape for the same reason.
+    var wasTruncatedAtCapture: Bool?
+
+    /// Every document matching the capture query, when the capturing device obtained a count.
+    ///
+    /// `nil` when the count was unavailable *or* not recorded — ``truncationAtCapture`` keeps the
+    /// two apart. This is the field that makes a **fraction** computable rather than printed:
+    /// `coverageDescription` says "267 of 267 documents indexed on this device", and the other
+    /// half of the real fraction is this number. A sentence cannot be divided.
+    var totalMatchCountAtCapture: Int?
+
     // MARK: - Bookkeeping
 
     /// Creation timestamp; optional for CloudKit schema compatibility.
@@ -121,7 +143,9 @@ import SwiftData
          documentKeys: [String],
          sourceQuery: String? = nil,
          sourceDescription: String? = nil,
-         indexedVolumeCountAtCapture: Int? = nil) {
+         indexedVolumeCountAtCapture: Int? = nil,
+         wasTruncatedAtCapture: Bool? = nil,
+         totalMatchCountAtCapture: Int? = nil) {
         self.id = UUID()
         self.name = name
         self.documentKeys = Array(Set(documentKeys)).sorted()
@@ -129,6 +153,8 @@ import SwiftData
         self.sourceQuery = sourceQuery
         self.sourceDescription = sourceDescription
         self.indexedVolumeCountAtCapture = indexedVolumeCountAtCapture
+        self.wasTruncatedAtCapture = wasTruncatedAtCapture
+        self.totalMatchCountAtCapture = totalMatchCountAtCapture
         self.createdAt = Date()
         self.lastModified = Date()
     }
@@ -155,6 +181,29 @@ import SwiftData
     }
 
     // MARK: - Derived
+
+    /// What is known about whether the capture was the whole answer to its query.
+    ///
+    /// Three states, not two. `unrecorded` is not a synonym for `complete`: it is the honest
+    /// description of every corpus captured before the fields existed, and a consumer that
+    /// collapses it into `complete` re-tells the lie the fields were added to stop.
+    enum CaptureTruncation: Equatable, Sendable {
+        /// The fetch stopped short. `total` is the whole-query count where the device had one.
+        case truncated(total: Int?)
+        /// The capture was every matching document.
+        case complete
+        /// Captured before the app recorded this. Nothing can be concluded either way.
+        case unrecorded
+    }
+
+    /// ``CaptureTruncation`` for this corpus. The only supported way to read the two fields.
+    var truncationAtCapture: CaptureTruncation {
+        switch wasTruncatedAtCapture {
+        case .some(true): .truncated(total: totalMatchCountAtCapture)
+        case .some(false): .complete
+        case nil: .unrecorded
+        }
+    }
 
     /// How many documents the corpus names.
     var documentCount: Int { documentKeys.count }
