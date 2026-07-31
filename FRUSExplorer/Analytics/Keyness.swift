@@ -76,8 +76,8 @@ struct KeynessScore: Equatable, Sendable, Identifiable {
 /// lemmas over `body_text`, and SQLite's `porter unicode61` stems over header, dateline, source note
 /// and body. Dividing one by the other produces a ratio of two different vocabularies over two
 /// different populations, and it fails *systematically* rather than randomly — every word whose lemma
-/// and stem diverge is mis-scored in the same direction. ``verifyComparable(_:_:)`` exists so a caller
-/// can assert the pairing rather than assume it.
+/// and stem diverge is mis-scored in the same direction. ``vocabularyOverlap(scopeCounts:referenceCounts:)`` exists so a
+/// caller can assert the pairing rather than assume it.
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
