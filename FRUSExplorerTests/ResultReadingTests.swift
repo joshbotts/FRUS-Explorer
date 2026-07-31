@@ -279,3 +279,55 @@ struct ExamineMenuAuditTests {
         #expect(source.contains(#"Image(systemName: "text.alignleft")"#))
     }
 }
+
+// MARK: - ReadingDenominatorTests
+
+/// Which reading states its own denominator, and which deliberately does not.
+///
+/// The five surfaces behind the examine control span three sets — the concordance covers one
+/// page, the list/timeline/collocates the whole retained set, the facets the whole match before
+/// narrowing — and each produces a quotable number. "214 occurrences" reads as a fact about the
+/// search rather than about twenty-five rows.
+///
+/// Only the two OUTLIERS are labelled. That restraint is the design, not an omission, so it is
+/// pinned: annotate all five and the distinction disappears into the annotation.
+///
+/// Version history:
+///   1.0 — Q wave: initial implementation
+@Suite("Reading denominators")
+struct ReadingDenominatorTests {
+
+    @Test("Only the concordance names its own set among the readings")
+    func onlyTheOutlierIsLabelled() {
+        #expect(ResultReading.concordance.denominatorDescription != nil)
+        #expect(ResultReading.list.denominatorDescription == nil)
+        #expect(ResultReading.timeline.denominatorDescription == nil)
+        #expect(ResultReading.collocates.denominatorDescription == nil)
+    }
+
+    /// The restraint, stated as a count so that labelling a second reading fails here and has to
+    /// be a decision rather than a drift.
+    @Test("Exactly one reading carries a denominator")
+    func exactlyOneLabelled() {
+        let labelled = ResultReading.allCases.filter { $0.denominatorDescription != nil }
+        #expect(labelled == [.concordance],
+                "labelled: \(labelled.map(\.rawValue)) — annotating more dissolves the contrast")
+    }
+
+    @Test("The concordance says it is the page, and the facets the whole match")
+    func theTwoOutliersSayWhatTheyAre() throws {
+        let concordance = try #require(ResultReading.concordance.denominatorDescription)
+        #expect(concordance.localizedCaseInsensitiveContains("page"))
+        #expect(ResultReading.facetsDenominatorDescription
+            .localizedCaseInsensitiveContains("whole match"))
+        #expect(ResultReading.facetsDenominatorDescription
+            .localizedCaseInsensitiveContains("narrowing"))
+    }
+
+    /// The two must not say the same thing — they exist to contrast.
+    @Test("The two denominators are distinct")
+    func theyContrast() throws {
+        let concordance = try #require(ResultReading.concordance.denominatorDescription)
+        #expect(concordance != ResultReading.facetsDenominatorDescription)
+    }
+}
