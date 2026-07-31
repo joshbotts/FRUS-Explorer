@@ -280,6 +280,33 @@ final class SearchViewModel {
     var results: [SearchResult] = [] {
         didSet { if currentPage >= totalPages { currentPage = 0 } }
     }
+    /// Every document matching the query, uncapped — or `nil` when the count could not be taken.
+    ///
+    /// ## Why this now exists, having been argued against
+    /// The doc comment on `recordSearchHistory` recorded the decision not to have one: "adding
+    /// [a count] would put a second FTS5 `COUNT(*)` on every iPhone search to improve a number
+    /// nothing yet displays". Both halves have changed. ``ResultSetScope`` displays it — in the
+    /// capture warning, in the corpus's own stored provenance, and in the results header — and the
+    /// cost turns out not to be a second query's worth of work.
+    ///
+    /// Measured against the real 6.3 GB store, a filtered count over a date range, as the marginal
+    /// cost of running it directly after the search that shares its joins:
+    ///
+    ///     term            filtered match   search    count     marginal
+    ///     petroleum            1,506       0.099 s   0.021 s      21%
+    ///     negotiations        35,275       0.974 s   0.104 s      11%
+    ///     ambassador          53,388       1.189 s   0.156 s      13%
+    ///
+    /// Taken cold and alone the same count is 10.96 s — but that is the first touch of the join
+    /// pages, and `searchDocuments` pays it already: it emits the identical CTE, joins and WHERE,
+    /// differing only by `ORDER BY m.score LIMIT n`, and ordering on a computed score means the
+    /// join is evaluated for **every** matched row however small the limit. The expensive part is
+    /// not added by counting; it is already the search's.
+    ///
+    /// `nil` rather than a fallback when the count fails: a wrong total is worse than none here,
+    /// since it becomes the denominator stored on a working corpus.
+    var totalMatchCount: Int?
+
     var isSearching: Bool = false
     var searchError: String? = nil
     var hasSearched: Bool = false
@@ -512,8 +539,19 @@ final class SearchViewModel {
         searchError = nil
         hasSearched = true
         do {
-            results = try await searchService.search(parameters: params,
+            // Concurrently, not sequentially: the two statements share their joins, so the
+            // second runs against pages the first has already faulted in. Mirrors
+            // `MacSearchViewModel.performSearch`, which has always done it this way.
+            async let fetched = searchService.search(parameters: params,
                                                      limit: Self.searchHardLimit)
+            async let counted: Int? = {
+                // A failed count must not fail the search. The header and the capture warning
+                // both degrade to "total unavailable", which is what macOS already shows.
+                do { return try await searchService.searchCount(parameters: params) }
+                catch { return nil }
+            }()
+            results = try await fetched
+            totalMatchCount = await counted
             // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
             // promises is what consumers actually observe. It used to be bumped in the
             // synchronous prefix, five lines and one actor hop earlier: SwiftUI re-evaluated the
@@ -539,6 +577,9 @@ final class SearchViewModel {
             #endif
         } catch {
             results = []
+            // Cleared with the results, at every site that clears them: a total left over from
+            // the previous query is a denominator for a set that no longer exists.
+            totalMatchCount = nil
             // Bumped here too: a failed search is a completed one for every consumer keyed on the
             // version, and leaving it unchanged would strand them on the previous query's answer.
             executedSearchVersion &+= 1
@@ -586,9 +627,10 @@ final class SearchViewModel {
     /// `resultCount` is `results.count`, the fetched count — capped at `searchHardLimit`
     /// (1,000). `MacSearchViewModel` records `totalMatchCount`, the true uncapped total, because
     /// its `performSearch` already runs `SearchService.searchCount` in parallel for its
-    /// truncation banner. This view model runs no such count, and adding one would put a second
-    /// FTS5 `COUNT(*)` on every iPhone search to improve a number nothing yet displays. A query
-    /// matching more than 1,000 documents is therefore recorded as 1,000 on iOS.
+    /// truncation banner. This view model now runs the same count concurrently — see
+    /// ``totalMatchCount`` for the measurements that overturned the argument against it — but
+    /// **`resultCount` is still the fetched, checklist-filtered count**, and history records that
+    /// rather than the total. A history entry describes what the user was looking at.
     ///
     /// - Parameters:
     ///   - projectId: The active project, stamped onto the entry; `nil` when none is active.
@@ -647,6 +689,7 @@ final class SearchViewModel {
         keywords = ""
         clearFilters()
         results = []
+        totalMatchCount = nil
         hasSearched = false
         searchError = nil
     }
@@ -841,7 +884,11 @@ final class SearchViewModel {
     /// The facet *sections* are unaffected either way: they aggregate over the whole match in
     /// SQL, independent of what was fetched.
     var totalMatchCountForFacets: Int? {
-        Self.facetTotal(fetched: results.count, cap: Self.searchHardLimit)
+        // The real total when one was taken; otherwise the old rule, which refuses to report the
+        // fetched count as a total once the fetch hit its ceiling. The fallback is not dead code —
+        // `searchCount` can fail, and `nil` is what the panel already renders as "total
+        // unavailable".
+        totalMatchCount ?? Self.facetTotal(fetched: results.count, cap: Self.searchHardLimit)
     }
 
     /// The rule behind ``totalMatchCountForFacets``, extracted so it can be tested at the

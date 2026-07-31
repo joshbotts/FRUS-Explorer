@@ -43,6 +43,58 @@ private func writeSearchFixture(
 
 struct SearchViewTests {
 
+    // MARK: - TotalMatchCountTests
+
+    /// The whole-query count iOS gained in Q-wave step 6, end to end.
+    ///
+    /// Worth an integration test rather than a unit one: the count is taken *concurrently* with
+    /// the search, and the two must land together — an `async let` that was awaited in the wrong
+    /// order, or not at all, would leave a total describing the previous query. That is the exact
+    /// defect class the surrounding work exists to remove, so it is pinned against a real index.
+    @Test("The whole-query total is taken with the search and cleared with it")
+    @MainActor
+    func totalMatchCountAccompaniesTheSearch() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSTotal-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dbURL = dir.appendingPathComponent("total.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+        try writeSearchFixture(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+            volumeId: "frus1969-76v01",
+            documents: [
+                (id: "d1", xml: "<head>Memorandum</head><p>Discussed détente policy at length.</p>"),
+                (id: "d2", xml: "<head>Telegram</head><p>A further note on détente.</p>"),
+                (id: "d3", xml: "<head>Letter</head><p>Unrelated administrative matter.</p>")
+            ]
+        )
+        try await pipeline.indexVolume("frus1969-76v01")
+
+        let vm = SearchViewModel(searchService: service)
+        vm.keywords = "détente"
+        await vm.search()
+
+        // Far below the 1,000 ceiling, so the total is exactly what was fetched — which is the
+        // case that proves the count RAN, since a count that silently failed would be nil.
+        #expect(vm.results.count == 2)
+        #expect(vm.totalMatchCount == 2)
+
+        // And it must not outlive the results. A total left behind is a denominator for a set
+        // that no longer exists.
+        vm.clearAll()
+        #expect(vm.results.isEmpty)
+        #expect(vm.totalMatchCount == nil)
+    }
+
     // MARK: - KeywordSearchTest
 
     @Test("Searching for a known keyword returns matching documents")
