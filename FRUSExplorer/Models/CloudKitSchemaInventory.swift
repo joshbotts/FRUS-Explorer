@@ -302,12 +302,15 @@ enum CloudKitSchemaInventory {
 
     /// The build at which the Production CloudKit schema was last promoted.
     ///
-    /// Build 36. Three promotions are recorded here. Issue #488's closing comment — *"Resolved by
+    /// Build 36. Four promotions are recorded here. Issue #488's closing comment — *"Resolved by
     /// deploying the missing CloudKit schema"* (2026-07-26) — brought Production level with the
     /// build-35 additions. The second, the same day, promoted `CD_ExportHistoryEntry` and its six
     /// fields for Wave R-2a. The third (2026-07-31) promoted `CD_WorkingCorpus` and its nine fields
     /// for M-1 — again after a Development build saved a real record, since CloudKit creates a
-    /// record type only when one is first written, the trap that made #488 possible.
+    /// record type only when one is first written, the trap that made #488 possible. The fourth
+    /// (also 2026-07-31) promoted `CD_WorkingCorpus`'s two typed capture-truncation fields, which
+    /// are what let four corpus-scoped sentences stop asserting completeness they could not know —
+    /// a `String` cannot be tested in a `guard`, and parsing one to recover a boolean fails open.
     static let deployedThroughBuild = "36"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
@@ -317,13 +320,13 @@ enum CloudKitSchemaInventory {
     /// How many identifiers the Production schema is attested to carry. Pinned by the test
     /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
     /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 223
+    static let deployedIdentifierCount = 225
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "d5debf45358dfe0e68be10f0c905804912fbda4040b25d6f1fecde6e5cee1b15"
+        "a862a1593762a19359d598247803ed7270c4ffb2b4ae2977d8195b4be5b6195e"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -345,16 +348,10 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // The two typed capture-truncation fields, pending a Production deploy.
-        //
-        // A working corpus is cited, and four sentences the app shows inside one were wrong
-        // because every truncation question it could ask was about the CURRENT fetch — which never
-        // caps inside a corpus, the corpus already being smaller than the ceiling. A `String`
-        // cannot be tested in a `guard`, and parsing a localized sentence to recover a boolean
-        // fails OPEN: it stops warning silently. Hence typed.
-        "CD_WorkingCorpus.CD_totalMatchCountAtCapture",
-        "CD_WorkingCorpus.CD_wasTruncatedAtCapture",
-        // Was empty: Production matched this build. `CD_WorkingCorpus` and its nine fields were seeded
+        // Empty: Production matches this build. `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
+        // `CD_WorkingCorpus.CD_totalMatchCountAtCapture` were seeded by saving a real TRUNCATED
+        // capture with a known total — both fields non-nil, since CloudKit creates a field only
+        // when a record carrying it is first written — and promoted on 2026-07-31. `CD_WorkingCorpus` and its nine fields were seeded
         // into the Development schema by saving a real working corpus (CloudKit creates a record
         // type only when a record of it is first saved — the trap behind #488) and promoted on
         // 2026-07-31.
