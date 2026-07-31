@@ -138,6 +138,20 @@ struct KeynessWiringAuditTests {
                 "nothing else in the app loads keyness-baseline.json")
     }
 
+    @Test("The candidate depth is the measured value, not whatever the constant drifted to")
+    @MainActor
+    func candidateDepthIsPinned() {
+        // 1,000 is a measured product decision, not an implementation detail: at 220 a keyness
+        // ranking of a FRUS volume reaches ~170 terms and bottoms out at words used ~150 times; at
+        // 1,000 it reaches ~610 and bottoms out around 30, which is where the second-tier actors and
+        // places live. Reverting it is invisible to every other test in the suite — checked by
+        // mutation — so the number is pinned to a literal here.
+        #expect(WordCloudLoader.standardTermLimit == 1_000)
+        // The precompute and the view must request the SAME limit or the warmed disk entry is never
+        // a hit, and nothing would report that — the cloud would just always be slow.
+        #expect(WordCloudView.termLimitForTesting == WordCloudLoader.standardTermLimit)
+    }
+
     @Test("Export cannot assert frequency ranking over a keyness list")
     func exportNamesTheMeasure() throws {
         let view = try source("FRUSExplorer/Analytics/WordCloud/WordCloudView.swift")

@@ -166,6 +166,11 @@ struct WordCloudView: View {
     /// Shared with the background precompute so their cache keys match.
     private static let termLimit = WordCloudLoader.standardTermLimit
 
+    #if DEBUG
+    /// Test seam: the limit this view requests, so an audit can prove it matches the precompute's.
+    static var termLimitForTesting: Int { termLimit }
+    #endif
+
     /// Colour palette — all system colours so the cloud adapts to light/dark mode.
     private static let palette: [Color] = [
         .blue, .teal, .indigo, .purple, .pink, .orange, .green, .red, .cyan, .mint
@@ -423,10 +428,11 @@ struct WordCloudView: View {
                                 .foregroundStyle(lens.colorsBySentiment
                                                  ? wordColor(term: score.term, colorIndex: index)
                                                  : Color.primary)
-                            Text(countsCaption(for: score))
+                            Text("\(foldDifference(score)) · \(countsCaption(for: score))")
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
                                 .monospacedDigit()
+                                .lineLimit(2)
                         }
                         Spacer()
                         keynessBar(score: score.logLikelihood, maxScore: maxScore)
@@ -443,10 +449,10 @@ struct WordCloudView: View {
                 // Announced as what it IS. Reusing the frequency row's "%lld occurrences" would read
                 // a log-likelihood aloud as an occurrence count.
                 .accessibilityValue(Text(String(format: String(
-                    localized: "wordcloud.keyness.row.a11y %@ %@",
-                    defaultValue: "keyness %@; %@"),
+                    localized: "wordcloud.keyness.row.a11y %@ %@ %@",
+                    defaultValue: "keyness %@; %@; %@"),
                     Self.keynessFormatter.string(from: NSNumber(value: score.logLikelihood)) ?? "",
-                    countsCaption(for: score))))
+                    foldDifference(score), countsCaption(for: score))))
                 .accessibilityHint(String(localized: "wordcloud.tap.hint",
                                           defaultValue: "Charts this term in Corpus Analytics"))
                 .accessibilityAction(named: Text(String(localized: "wordcloud.word.search",
@@ -457,6 +463,29 @@ struct WordCloudView: View {
             }
         }
         .listStyle(.plain)
+    }
+
+    /// The effect size, as a fold difference — "38×" rather than "5.26".
+    ///
+    /// `KeynessScore.logRatio` is log₂ of the two relative frequencies, which is the corpus-linguistics
+    /// convention and is what the CSV export carries for citation. On screen it is raised back to a
+    /// plain multiple, because that is the number a reader can act on: `stalin` at log₂ 5.26 and
+    /// `babelsberg` at 8.32 are "38× more often here" and "320× more often here", and the second is
+    /// a far stronger claim than the two logs make it look.
+    ///
+    /// This sits beside G², not instead of it, because they answer different questions and the list is
+    /// ranked on G². G² conflates effect size with sample size: in *The Conference of Berlin*,
+    /// `germany` scores 3,244 on 1,787 uses at 6× while `babelsberg` scores 3,806 on 429 uses at 320×.
+    /// Ranking on G² alone therefore ranks partly by how much text a scope contains, which is exactly
+    /// what misleads when comparing a small collection with a large volume.
+    private func foldDifference(_ score: KeynessScore) -> String {
+        let fold = score.foldOverRepresentation
+        guard fold.isFinite, fold > 0 else { return "" }
+        let formatted = fold >= 10
+            ? fold.formatted(.number.precision(.fractionLength(0)))
+            : fold.formatted(.number.precision(.fractionLength(1)))
+        return String(format: String(localized: "wordcloud.keyness.row.fold %@",
+                                     defaultValue: "%@× more often here"), formatted)
     }
 
     /// The two raw counts under a keyness row — with "unpriced" said plainly.
@@ -1048,6 +1077,11 @@ struct WordCloudView: View {
                         title: String(localized: "wordcloud.info.measure.title", defaultValue: "Frequency vs. Distinctive"),
                         detail: String(localized: "wordcloud.info.measure.detail",
                                        defaultValue: "Frequency sizes each word by how often it appears here — which tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a bundled reference of the whole corpus and sizes each word by how much MORE it is used here than across the series, using log-likelihood keyness, the corpus-linguistics standard. It lists only words used more here than corpus-wide; a word this scope conspicuously avoids is a real finding it does not show. Words occurring fewer than three times here are never ranked, because one or two mentions can top a keyness list without saying anything about the documents.")),
+                    FeatureInfoItem(
+                        title: String(localized: "wordcloud.info.keyness.numbers.title",
+                                      defaultValue: "Reading the Distinctive list"),
+                        detail: String(localized: "wordcloud.info.keyness.numbers.detail",
+                                       defaultValue: "Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²) — the strength of the evidence that the difference is real — and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume produces larger scores than a short collection for the same effect; when you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely corpus-wide to be counted in the reference, so its multiple is an upper bound.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.lenses.title", defaultValue: "Lenses"),
                         detail: String(localized: "wordcloud.info.lenses.detail",

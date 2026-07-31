@@ -262,6 +262,50 @@ struct KeynessCloudTests {
 
     // MARK: - Layout input
 
+    @Test("The effect size is carried alongside G², and they can disagree about rank")
+    func effectSizeIsIndependentOfSignificance() throws {
+        // REAL figures, not invented ones: the scope and reference counts below are what
+        // `FRUS, The Conference of Berlin (Potsdam), 1945, Vol. II` and the shipped
+        // keyness-baseline.json actually contain. A first attempt at a synthetic fixture put both
+        // rankings the same way round, and this test's own precondition caught it.
+        //
+        // `reparation` ranks 3rd on G² and `babelsberg` 5th — but babelsberg is 320x
+        // over-represented against reparation's 25x. Ranked on evidence they go one way; ranked on
+        // effect they go the other. A reader shown only the score would take reparation to be the
+        // stronger finding, when babelsberg is the word that is almost unique to this volume.
+        injectReference(["reparation": 21_314, "babelsberg": 507], totalTokens: 94_622_813)
+        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        let r = try #require(ranking(rank([("reparation", 1_423), ("babelsberg", 429)],
+                                          scopeTotal: 250_418)))
+        let common = try #require(r.scores.first(where: { $0.term == "reparation" }))
+        let rare = try #require(r.scores.first(where: { $0.term == "babelsberg" }))
+        #expect(common.logLikelihood > rare.logLikelihood,
+                "precondition: G² must favour the higher-volume term, or this proves nothing")
+        #expect(rare.logRatio > common.logRatio,
+                "…while the effect size favours the more concentrated one — which is why both are shown")
+        // ~25x vs ~320x — the numbers the row actually renders, via the property it renders them
+        // from. Printing `logRatio` itself would show "4.7x" and "8.3x": a 13-fold understatement of
+        // the gap, on a screen where nothing would look wrong.
+        #expect(common.foldOverRepresentation > 20 && common.foldOverRepresentation < 30)
+        #expect(rare.foldOverRepresentation > 250 && rare.foldOverRepresentation < 400)
+        #expect(rare.foldOverRepresentation / common.foldOverRepresentation > 10,
+                "the effect sizes must differ by an order of magnitude, or the fold conversion is not doing its job")
+    }
+
+    @Test("A term absent from the reference gets a finite effect size, not an infinity")
+    func absentTermHasFiniteEffectSize() throws {
+        injectReference()
+        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        let r = try #require(ranking(rank([("matsu", 40)])))
+        let score = try #require(r.scores.first)
+        // The +0.5 continuity correction. Without it the ratio is log2(x/0) = infinity, which the
+        // fold conversion would render as "inf× more often here" and which breaks every sort.
+        #expect(score.referenceCount == 0)
+        #expect(score.logRatio.isFinite)
+        #expect(score.foldOverRepresentation.isFinite,
+                "an infinite multiple would render as \"inf× more often here\"")
+    }
+
     @Test("Layout counts are positive and preserve the ranking's order")
     func layoutTermsArePositiveAndOrdered() throws {
         injectReference()
