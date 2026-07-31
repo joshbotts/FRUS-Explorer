@@ -56,8 +56,12 @@ struct WorkingCorporaView: View {
                     ForEach(corpora) { corpus in row(corpus) }
                         .onDelete(perform: delete)
                 } footer: {
+                    // `.fixedSize(vertical:)` so the footer WRAPS. Without it a macOS List footer
+                    // takes a single line and truncates with an ellipsis — the explanatory text
+                    // was cut mid-sentence in the seeding run, which is worse than absent.
                     Text(String(localized: "corpora.footer",
                                 defaultValue: "A working corpus is a fixed set of documents, captured once. It syncs to your other devices whole, so a count taken inside it means the same thing everywhere — even where fewer of its volumes are indexed."))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -86,7 +90,10 @@ struct WorkingCorporaView: View {
                 .font(.caption)
                 .foregroundStyle(resolution.isComplete ? Color.secondary : Color.orange)
             if let provenance = provenanceLine(corpus) {
-                Text(provenance).font(.caption2).foregroundStyle(.tertiary)
+                Text(provenance)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.vertical, 2)

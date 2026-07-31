@@ -713,7 +713,13 @@ final class MacSearchViewModel {
         }
         let exclude = (fvm.projectScope == .focus && fvm.projectOnlyNew)
             ? fvm.projectEngagedDocumentKeys : nil
-        return (volumeIds, documentIds, exclude)
+        // M-1: the working corpus composes with whatever the project scope already gated, by
+        // INTERSECTION — both are document-grain constraints the user applied. Missing here, an
+        // applied corpus was written to `filterVM` and never reached `parameters`, so the Mac
+        // search ignored it entirely while the filter sheet showed it as applied.
+        let gated = DocumentScopeGate.combine(corpus: fvm.appliedWorkingCorpusKeys,
+                                              projectGate: documentIds)
+        return (volumeIds, gated, exclude)
     }
 
     // MARK: - Search
