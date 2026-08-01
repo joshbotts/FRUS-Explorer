@@ -2,7 +2,7 @@
 
 **Date**: 2026-08-01
 **Issues**: #559, #597, #561, #553, #586, #562, #560, #626
-**Status**: plan, awaiting owner decisions (§6)
+**Status**: revised 2026-08-01 after owner decisions on #553, #597 and #586 (§0)
 
 Every effort estimate below was checked against code, and three claims were re-verified by hand
 before this was written. Four issues turned out to be a different size than their titles suggest,
@@ -11,28 +11,77 @@ inherits a wrong premise builds the wrong thing.
 
 ---
 
+## 0. Owner decisions, and what they changed
+
+**#553 — snippets first: accepted.** No change; Step 1 was already the plan and the peek stays
+deferred.
+
+**#597 — the tip suite is back in, and my "decline" is overruled.** The owner's justification is a
+real division of labour and it is now the scoping rule for the whole item:
+
+> The research guide helps users understand **what the app can do**; the TipKit disclosures guide
+> them in seeing **where and how to access** those capabilities.
+
+That line does more work than a scope cut would have. A tip earns its place when a capability's
+*access point* is invisible — an unlabelled glyph, a transparent tap zone, a context menu with no
+affordance. A tip does **not** earn its place by explaining what a feature is for. Applied
+strictly, a fresh inventory of every access point in the app yields **16 tips across 20 anchor
+sites**, not the ~40 surfaces the decline was priced against — and the first-contact set is four
+tips at four anchors. §2 now carries the phased plan.
+
+**Honest note the owner should have:** Phase 0 + Phase 1 is materially smaller than the declined
+version — about 10% of the surfaces and under 7% of the strings. The **full five-phase program is
+not**. At 16 tips / 20 sites / 32 strings, plus infrastructure the declined version never priced
+(a tip registry, an audit test, UI-test suppression, a new obstruction scenario, a Settings
+affordance), it is roughly 50–60% of the original in engineering hours. The recommendation is to
+commit to Phase 0 + 1, ship, live with it a build cycle, then re-decide phases 2–4 individually.
+
+**#586 — sorting is first-class, and the framing is better than mine.** The owner's point is that
+users may want to work with *slices* of results in different orders, which makes facets a way to
+**manage** results, not just understand their shape.
+
+That is already half-built and I under-read it: **facet rows are already tappable to narrow** —
+`Button { onNarrow(narrowing) }` at `FacetPanelView.swift:445`, writing real `SearchSQLFilters`
+fields and surfacing as a clearable chip. So the management capability exists; what is missing is
+the ability to *reach* the slice you want. That sharpens the item rather than growing it: this is
+about reachability of an existing action, not a new interaction. It also independently produced a
+priority-1 tip candidate (see Phase 1, tip 4) — a narrowable row is visually identical to a
+descriptive one.
+
+---
+
 ## 1. The sequence
 
-| # | Issue | Scope as planned (not as reported) | Effort | Schema | Platforms |
+| # | Item | Scope as planned (not as reported) | Effort | Schema | Platforms |
 |---|---|---|---|---|---|
 | 1 | **#559** keyboard never dismisses | `@FocusState` + resign-on-submit (iOS-gated) + `.scrollDismissesKeyboard` | **XS** | none | iOS behaviour, shared file |
-| 2 | **#597** TipKit — *narrowed* | Re-anchor the dead tip + suppress tips under UI test. **Decline the suite.** Guide pass as PR 2 | **XS** → **S** | none | both, shared |
-| 3 | **#561** duplicate prompts | Split seeder into seed / collapse; run the collapse from the existing post-import debounce | **S** | none | both, shared |
-| 4 | **#553** Project Home leads | **Step 1 only**: snippets on lead rows. Peek sheet is a later, separate decision | **S** | none | both, one file |
-| 5 | **#586** facet sort / truncation | Fetch all buckets, sort locally, display cap + "Show top N / All". **Cut paging** | **S** (large) | none | both, one file |
-| 6 | **#562** corpus proximity axis | Depth-normalised in-volume gradient off the already-indexed `volume_structures` | **M** (small) | none | both, shared |
-| 7 | **#560** bulk summarization | Truth + counting + retry classification + enumeration progress. **Cut generation controls** | **M** (mid) | none | both, shared engine |
-| 8 | **#626** editable summaries | Edit + provenance chip on both document summary views + FTS5 push + export attribution | **M** (large) | none | both, **two platform-private views** |
+| 2 | **#597 Phase 0** — repair + guard | **Delete** the dead tip, suppress tips under UI test, `.hourly` frequency, tip registry, audit test | **XS** | none | both, shared |
+| 3 | **#553** Project Home leads | **Step 1 only**: snippets on lead rows (~20 lines). Peek stays deferred | **S** | none | both, one file |
+| 4 | **#561** duplicate prompts | Split seeder into seed / collapse; run the collapse from the existing post-import debounce | **S** | none | both, shared |
+| 5 | **#597 PR 2** — Research Guide | ~6 sections for the Q&CA wave + the `Docs/` mirror. Prose in one file | **S** | none | both, shared |
+| 6 | **#597 Phase 1** — first-contact tips | 4 tips · 4 anchors · 8 strings · **zero** double-authoring | **S** (large) | none | 3 iOS-only, 1 shared |
+| 7 | **#586** facet sort / reachability | Fetch all buckets, sort locally, display cap + "Show top N / All" | **S** (large) | none | both, one file |
+| 8 | **#562** corpus proximity axis | Depth-normalised in-volume gradient off the already-indexed `volume_structures` | **M** (small) | none | both, shared |
+| 9 | **#560** bulk summarization | Truth + counting + retry classification + enumeration progress | **M** (mid) | none | both, shared engine |
+| 10 | **#626** editable summaries | Edit + provenance chip on both document summary views + FTS5 push + export attribution | **M** (large) | none | both, **two platform-private views** |
 
-**Tie-breaks.** #559 before #597 — both XS, but #559 is one file and a daily irritant. #561 before
-#553 — both S, but #561 is deterministically testable and needs no owner decision. #553 before
-#586 — #586 has more new UI states and a load-bearing ordering constraint. #562 before #560 —
-#562 is contained; #560 has more files and retracts a shipped promise. #560 before #626 — #560
-splits into a shippable subset; #626 has no cheap half.
+*(#597 is three items because its parts are genuinely different sizes and ship separately. Later
+tip phases 2–4 are sized in §2 but deliberately not scheduled.)*
 
-**De-risking argument for slot 2.** The tip-suppression half of #597 (`Tips.hideAllTipsForTesting()`
-under the existing `FRUS_UI_TEST_MODE` flag) protects every later item that touches the rail or
-search. Do it early or it becomes a mystery `UIObstructionTests` failure during item 8.
+**Tie-breaks.** #559 before #597 Phase 0 — both XS, but #559 is one file and a daily irritant.
+#553 before #561 — #553 Step 1 is ~20 lines and its owner decision is now made, while #561 is a
+seeder split plus a lossless cleanup pass. The guide pass before the tips: it is the highest
+value-per-hour item in the set, and under the owner's own division of labour the tips point *at*
+capabilities the guide explains — building the signposts before the destination is written is the
+wrong order. #586 after the tips because it is the larger S and carries a correctness-ordering
+constraint. #562 before #560 — #562 is contained; #560 has more files and retracts a shipped
+promise. #560 before #626 — #560 splits into a shippable subset; #626 has no cheap half.
+
+**De-risking argument for slot 2.** The tip-suppression half of Phase 0
+(`Tips.hideAllTipsForTesting()` under the existing `FRUS_UI_TEST_MODE` flag) protects every later
+item that touches the rail or search. Without it a popover intercepts `app.buttons[…].tap()` and
+the symptom is "the tap did nothing" — the exact misdiagnosis `UIObstructionTests` records having
+cost three investigations. Do it early or it becomes a mystery failure during item 10.
 
 ---
 
@@ -63,32 +112,126 @@ cover. **Do not ship an accessory bar in this PR.**
 *Correction: sized S by the investigator on "it lands in #498 territory". Re-running an existing
 suite is table stakes, not implementation cost. It is XS.*
 
-### 2 · #597 — TipKit, narrowed (XS → S)
+### 2, 5, 6 · #597 — TipKit, three parts (XS → S → S)
 
 **The premise is false, and the finding is better than the request.** TipKit shipped in Session 162
 and is live — but a census of `popoverTip(` / `TipView(` over the whole tree returns exactly **two**
 display sites, both inside `CrossReferenceGraphView`. **`ExploreCrossReferencesTip` has no display
 site anywhere** (verified: its only non-declaration reference is the `.invalidate` at
 `DocumentView.swift:779`). It died when the Research Rail redesign deleted the toolbar button its
-popover was attached to; the invalidate rode along on the surviving handler. So the two tips that
-work are buried inside a window the user must already have found, and the tip that pointed *at* that
-window can never fire. **Net first-contact discovery today is zero.**
+popover was attached to; the invalidate rode along on the surviving handler. **Net first-contact
+discovery today is zero.**
 
-**PR 1 (XS).** Anchor `ExploreCrossReferencesTip` to the `.graph` row in the shared
-`ResearchRailView`; update its glyph to match the row; add `Tips.hideAllTipsForTesting()` to
-`configureTipKit()` under `FRUS_UI_TEST_MODE`. Add a ~10-line test enumerating declared `Tip` types
-and asserting each has a display site — that is what would have caught this.
+#### Phase 0 — repair and guard (XS)
 
-**PR 2 (S), and the highest value-per-hour item in the set.** The Research Guide does not mention the
-Q&CA wave at all: measured on `IndexingEducationView.swift`, `keyness` 0 hits, `collocation` 0,
-`working corpus` 0, `Query Inspector` 0, `facet` 0. Add ~6 sections plus the `Docs/` mirror.
+**Delete `ExploreCrossReferencesTip`; do not re-anchor it.** Its id is burned: the orphan
+`.invalidate` at `DocumentView.swift:779` has been running on every document open, so for every
+existing user that id is already recorded as invalidated and would never display again. Re-anchoring
+ships a tip that is dead on arrival for exactly the users who have the app. Replace it with a new
+type under a new id (Phase 1, tip 1) and never reuse the name.
 
-**Decline the tip suite.** ~40 candidate surfaces, ~55–65 anchor sites once platform-private views
-are counted, ~120 new localized keys against no String Catalog — and the two tips that already ship
-are invisible. A user who missed a popover can go to the guide; a user who missed the guide has
-nowhere to go. Fix the guide first.
+Also in Phase 0: `Tips.hideAllTipsForTesting()` under `FRUS_UI_TEST_MODE`; change
+`FRUSExplorerApp.swift:283` from `.displayFrequency(.immediate)` to `.hourly` — that line has not
+been revisited since there were three tips and two display sites, and it is the app-wide
+anti-pile-on lever; a **tip registry** (`type`, id literal, platforms, anchor files), modelled on
+`SettingsPane`; and `DiscoveryTipWiringAuditTests`.
 
-### 3 · #561 — duplicate default prompts (S)
+**Six assertions the audit can actually make.** Every declared `Tip` is in the registry; every
+registry anchor file exists, passes a size floor, and contains both `.popoverTip(` and the type
+name; every `.popoverTip(` in the tree names a registered type; **the id literal is pinned** (a
+refactor rename silently mints a new tip and re-fires it for every user); per-platform anchor
+coverage as `(file, platform)` pairs; and an **anchor denylist**. Match on the *pair*
+`.popoverTip(` + `TypeName(`, never the bare substring `Tips` — `SearchSheet` has an unrelated
+`showTips` toggle for the search-syntax panel.
+
+**Also add a `UIObstructionTests` scenario.** A tip popover on the rail toggle is a new class of
+transient chrome over the navigation bar, which is what that suite exists for after #486. The
+anchor already carries `.accessibilityIdentifier("researchRailToggle")`.
+
+#### Phase 1 — first contact (S, one session)
+
+Four tips, **four anchor sites, zero double-authoring**.
+
+| Tip | Anchor | Scope | Why priority 1 |
+|---|---|---|---|
+| `ResearchRailTip` | `DocumentView.swift:986` | iOS only | One unlabelled `doc.text.magnifyingglass` gates ~10 capabilities. On iPhone #404 forces the rail closed on every open, so a user who never taps it sees a plain reader with no tools at all. Nothing else buys ten capabilities with one impression. |
+| `EdgeTapNavigationTip` | `DocumentView.swift:1428` | iOS only | Literally invisible `Color.clear` strips, and the **only** iOS access point for prev/next document. A DEBUG env var exists purely so developers can see them. |
+| `ExamineResultsTip` | `SearchView.swift:757` | iOS only | Four readings behind one binoculars glyph, deliberately not the glyph of any child — the doc comment records it was renamed off `chart.bar` because no symbol depicts the set. |
+| `FacetNarrowTip` | `FacetPanelView.swift:273` | **SHARED** | A narrowable row renders identically to a descriptive one; the only signal is a macOS-hover-only tooltip. Reaches iPhone, iPad and both macOS search surfaces from one anchor. |
+
+Only the iPhone rail toggle needs a tip — iPad and macOS default the rail visible, so the other
+three near-identical anchors stay untouched. That drops the most expensive candidate from three
+sites to one. Anchor the examine tip on the **menu label**, not its items (`.popoverTip` cannot
+attach inside a `Menu`'s content), and the facet tip on the **preamble**, not the row buttons
+(which would mint one popover per row).
+
+**Cost: 4 tips · 4 anchors · 8 strings · 4 files.**
+
+#### Phases 2–4 — sized, not scheduled
+
+Phase 2, the document/graph surface (3 tips, 3 anchors, all shared) — remove-highlight, archival
+neighbours, timeline brush, plus `TipGroup(.ordered)` to sequence the graph's four tips. This is
+the only screen that will own more than one tip, which is why the grouping work belongs here and
+nowhere else. Phase 3, collections and working corpora (4 tips, **8 anchors** — all the
+double-authoring in the program is here). Phase 4, long tail (5 tips, 5 anchors).
+
+**Cut outright:** the macOS History window and macOS project switching are menu-bar-only, and
+TipKit cannot attach to a `CommandMenu` item. These are **UI gaps, and the fix costs less than the
+tip** — add "Complete History…" to the existing "My Research" menu, and a project picker to the
+macOS window chrome. File two issues. Likewise iOS search-operator syntax: macOS has a labelled
+"Tips" button beside the field and iOS has nothing, and a tip cannot reveal an access point that
+does not exist.
+
+#### Mechanics — four decisions
+
+**Fire timing: the anchor is the gate.** No `Tip.Rule`, no `@Parameter`. None of Phase 1's anchors
+can render during first-run indexing — the user is behind the indexing banner and the
+auto-presented `WhileIndexingSheet` — and two anchors gate themselves on capability availability
+already. `@Parameter` is rejected explicitly: it persists a mirror of `AppState` in the TipKit
+datastore, `ResetService.resetLocalData` would leave it stale, and it cannot be seeded from
+`configureTipKit()`, which runs in `init()` before the pipeline exists.
+
+**Recall: one app-wide "Show Tips Again" button in `DisplaySettingsView`**, iterating the registry
+and calling `Tip.resetEligibility()`. That view is shared since S-5b — **one edit, both platforms**
+— and already owns `edgeTapNavigationEnabled`, the preference behind Phase-1 tip 2. Do *not* use
+`Tips.resetDatastore()`: it throws once the datastore is configured, so at best it becomes a
+next-launch reset. App-wide, not per-area: per-area done honestly means listing 16 tips by name in
+Settings, which is a feature tour inside Settings — the exact thing the owner's principle rules out.
+
+**Sequencing: `.hourly` is the sequencer.** One tip per sitting; a user exploring across a week
+still collects all four. Give `ResearchRailTip` — and only it — `IgnoresDisplayFrequency(true)`,
+because it gates the capabilities the others assume the user has seen.
+
+**Multi-window: measure once, design nothing.** Both platforms can show the same anchor in two
+windows. Whether TipKit arbitrates or double-fires is **undetermined** — measure on a build. The
+escape hatch (`popoverTip(_:isPresented:)`) is already in the SDK at this deployment target; do not
+pre-build it.
+
+**Flag, not a decision:** tips are per-device today. In an app that syncs everything else, a tip
+dismissed on iPad will reappear on the Mac. `Tips.ConfigurationOption.cloudKitContainer(_:)` would
+sync them — but whether that interacts with the R-7 schema gate is undetermined, so do not enable
+it without its own investigation.
+
+#### The one thing most likely to make this fail
+
+**A tip ships anchored on a view the user's build never renders, and nothing notices — because that
+is exactly how `ExploreCrossReferencesTip` died, and the codebase contains at least two anchor sites
+that would reproduce it verbatim.** `BrowserView.swift:441` is a `ProjectPickerMenu` in
+`splitLayout`, which the file's own note records as unreferenced since #238 routed every size class
+through `stackLayout` — it sits 52 lines above the live copy at `:493` and looks identical.
+`GlobalContextView.swift` is unpresented dead code, documented at its own `:28`. The denylist
+assertion must refuse both **by name, with the reason in the failure message**.
+
+The worse inverse: a naive "does any file contain `.popoverTip(RailTip())`?" assertion passes when
+the only anchor is inside `#if os(macOS)` — reporting the tip as covered while it reaches no iOS
+user. That is the same class of defect as #617 hiding a collection toggle from every Mac user, which
+is why coverage is asserted as `(file, platform)` pairs.
+
+And the part no source scan can do: every tip PR must carry a visual-review checklist naming the
+device, the tap sequence and the expected popover. The audit proves the modifier is in the file;
+only the owner's eyes prove the file is on screen.
+
+### 4 · #561 — duplicate default prompts (S)
 
 `SummarizationPromptSeeder.seed(in:)` dedups by localized name and runs from one call site inside the
 once-per-process boot, so its dedup pass sees the store *as it exists at boot* — and SwiftData's
@@ -107,7 +250,7 @@ these are synced deletions.
 **Biggest risk.** Keeper divergence. If two devices pick different keepers they delete each other's
 survivor and the prompt is gone everywhere. Never rank by anything that differs mid-sync.
 
-### 4 · #553 — Project Home leads (S) — ship Step 1 alone
+### 3 · #553 — Project Home leads (S) — Step 1, decision made
 
 Both halves reproduce. `leadRow` renders only the header plus "Related to N of your documents",
 because `ProjectLeadEntry` stores no body text and `ProjectLeadsService` deliberately passes
@@ -122,17 +265,25 @@ push into Search's own stack and do not dump into Browse.
 lead key set, not `projectId`**, or a recompute leaves snippets pointing at leads that are gone. Do
 not flip `includeSnippets` in the service.
 
-**Framing correction the owner should see.** The reporter's stated complaint is *navigation*. A peek
-sheet does not fix that, it routes around it. The fix that matches the report is pushing the document
-into the sheet's own `NavigationStack` — the pattern `SearchView` already uses successfully. See Q1.
+**Decided:** snippets first. The framing point stands as a note for later — the reporter's stated
+complaint is *navigation*, and a peek sheet routes around it rather than fixing it. If richer rows
+do not settle it, the fix that matches the report is pushing the document into the sheet's own
+`NavigationStack`, the pattern `SearchView` already uses successfully. Not a peek.
 
-### 5 · #586 — facet sort and truncation (large S)
+### 7 · #586 — facet sort and reachability (large S)
 
-**This is a defect, not an enhancement, and the report's premise is wrong.** Years are *not* sorted
-by count — it is `ORDER BY k DESC` (year descending, verified at `IndexingPipeline.swift:2335`),
-truncated to 50. On a broad query the visible head is metadata noise (2024|1, 2023|1…) and
-**everything before roughly 1953 is unreachable.** That reframes it: not "let me re-sort", but
-"three quarters of the match is hidden."
+**The owner's framing is the right one, and it makes this a reachability defect.** Facets are meant
+to be a way to *manage* results, not just read their shape — and they already are: **facet rows are
+tappable and narrow the search** (`Button { onNarrow(narrowing) }` at `FacetPanelView.swift:445`,
+writing real `SearchSQLFilters` fields and surfacing as a clearable chip). I under-read that in the
+first pass. The management capability exists; what is missing is the ability to **reach the slice you
+want**.
+
+And the report's premise about years is wrong in a way that makes the case stronger. Years are *not*
+sorted by count — it is `ORDER BY k DESC` (year descending, verified at
+`IndexingPipeline.swift:2335`), truncated to 50. On a broad query the visible head is metadata noise
+(2024|1, 2023|1…) and **everything before roughly 1953 is unreachable**. So the slices a historian
+most wants to work with are precisely the ones no amount of scrolling reaches today.
 
 One product file. Raise the limit so every bucket returns (years and volumes are corpus-bounded; cap
 people ~5,000), sort locally, and use the `controls:` slot that already exists on
@@ -147,10 +298,15 @@ the panel on both platforms. The display cap must ship in the *same PR* as the r
 the guard, not a nicety. And the sort control must not land before the limit rise, or you get a
 correct-looking wrong list — alphabetising the top-50-by-count is not the alphabetical list.
 
-**Cut the explicit paging.** It needs a page index that must reset on `invalidate(signature:)` or
-page 7 of the previous match survives into a new one, and it buys nothing over scrolling a capped list.
+**Still cut: explicit paging** (1-10, 11-20…) — but re-examined against the owner's justification,
+not just on cost. "Work with slices in different orders" is delivered by *sort + Show top N / All*:
+the user picks the order, then takes as much of it as they want, and every value stays one tap from
+narrowing. Paging adds a page index that must reset on `invalidate(signature:)` or page 7 of the
+previous match survives into a new one — and it makes a value's position depend on a mode the user
+has to remember. If living with sort + All shows a real need to work a long list in fixed chunks,
+add it then; it is additive and nothing here forecloses it.
 
-### 6 · #562 — corpus proximity axis (small M)
+### 8 · #562 — corpus proximity axis (small M)
 
 `SubseriesScorer` is a two-branch step: same volume → 1.0, same subseries → 0.5. **The enabling
 finding: the full per-volume hierarchy is already indexed and queryable** — `volume_structures` is
@@ -178,7 +334,7 @@ a volume you *know* is chaptered.
 shape to change, which is a parse-output change and therefore forces `currentDateIndexVersion` up and
 a corpus reindex — the app's most-complained-about cost — to buy adjacency for 2.2% of documents.
 
-### 7 · #560 — bulk summarization (mid M)
+### 9 · #560 — bulk summarization (mid M)
 
 **The premise is dead, and that is the most valuable result here.** Measured: Apple's on-device model
 serialises inference system-wide — 6 concurrent calls 11.50 s vs 6 serial 11.88 s (1.03×); reversing
@@ -215,7 +371,7 @@ takes hours and the UI finally says so.
 latencies may be optimistic. The serial-vs-concurrent ratio is measured under identical conditions on
 both sides and is what the diagnosis rests on. Re-confirm in-app.*
 
-### 8 · #626 — editable summaries on document surfaces (large M)
+### 10 · #626 — editable summaries on document surfaces (large M)
 
 The affordance exists in exactly one shared place (`CollectionEntryInspector`) and every
 document-facing surface is read-only and authorship-blind: `SummaryStripView` hardcodes
@@ -286,33 +442,46 @@ a day the owner cannot reach the CloudKit Dashboard.**
 
 ## 5. What I would cut
 
-1. **#597's tip suite** — decline outright; substitute the dead-tip repair plus the guide pass.
-2. **#560's generation controls** — defer to its own issue; it is the only part that can silently
-   change summary quality.
-3. **#553 Step 2 (the peek sheet)** — narrow to Step 1 and decide after living with richer rows.
-4. **#586's explicit paging** — "Show top N / All" plus sort delivers the ask.
-5. **#562's global-ordinal version** — forces a corpus reindex to buy adjacency for 2.2% of documents.
+1. **#597 phases 2–4** — sized in §2, deliberately not scheduled. Commit to Phase 0 + 1, ship, live
+   with it a build cycle, then re-decide each. Phase 3 is the one to interrogate hardest: it is 40%
+   of the anchor sites for 25% of the tips, and it is where the shared/private split stops
+   protecting you. *(Not a decline — a staging.)*
+2. **Two #597 candidates that are UI gaps, not tips** — the macOS History window and macOS project
+   switching are menu-bar-only and TipKit cannot attach to a `CommandMenu` item. Adding
+   "Complete History…" to the existing "My Research" menu and a project picker to the macOS chrome
+   costs less than the tip would. File as two issues.
+3. **#560's generation controls** — defer to its own issue; the only part that can silently change
+   summary quality.
+4. **#553 Step 2 (the peek sheet)** — deferred by owner decision; revisit only if richer rows do not
+   settle the navigation complaint.
+5. **#586's explicit paging** — re-examined against the owner's justification in §2 and still cut,
+   with the condition under which to add it.
+6. **#562's global-ordinal version** — forces a corpus reindex to buy adjacency for 2.2% of documents.
 
 ---
 
 ## 6. Open questions for the owner
 
-**Q1 — #553: is the ask "richer rows" or "Back should return to the leads list"?** The peek answers
-the first and sidesteps the second. The shape that answers the second is pushing the document into
-the sheet's own `NavigationStack`, which `SearchView` already does. *Lean: ship snippets alone; if the
-navigation complaint survives a week, do the in-sheet push — not a peek. Building both is building
-the wrong one twice.*
+Three of the four original questions are now answered (#553 snippets-first; #597 build the
+discovery layer; #586 sorting is first-class). What remains:
 
-**Q2 — #560: what happens to the concurrency Stepper?** Measurement says 6 is 1.0–1.4× faster than 1
-and the hint promises otherwise. *Lean: narrow to 1–3 and rewrite the hint. Removing it outright is
-the most honest and least code, but retracting a shipped setting is a bigger statement than the
-finding warrants.*
+**Q1 — #560: what happens to the concurrency Stepper?** Measurement says 6 is 1.0–1.4× faster than
+1, and the hint currently promises otherwise. *Lean: narrow to 1–3 and rewrite the hint. Removing it
+outright is the most honest and least code, but retracting a shipped setting is a bigger statement
+than the finding warrants.*
 
-**Q3 — #562: normalise by the anchor's own path depth, and leave subseries at 0.5?** *Lean: yes to
-both. Keeping subseries at 0.5 makes the change monotone-safe — nothing that outranks something today
-drops below it.*
+**Q2 — #562: normalise by the anchor's own path depth, and leave subseries at 0.5?** *Lean: yes to
+both. Keeping subseries at 0.5 makes the change monotone-safe — nothing that outranks something
+today drops below it.*
 
-**Q4 — #626: edit in place, or mint a second summary?** Both are zero-schema; storing the original
+**Q3 — #626: edit in place, or mint a second summary?** Both are zero-schema; storing the original
 *on the row* is not. *Lean: mint a second. It costs one carousel entry and it is the only option that
 lets you compare what the model wrote against what you corrected — which, for a provenance record, is
 the point of the feature.*
+
+**Q4 — #597: should tips sync across your devices?** They are per-device today, in an app that syncs
+everything else, so a tip you dismiss on iPad will greet you again on the Mac. Enabling
+`Tips.ConfigurationOption.cloudKitContainer(_:)` would fix that — but whether TipKit's own record
+types interact with the R-7 schema-deploy gate is **undetermined**. *Lean: ship Phase 1 per-device,
+and treat syncing as its own small investigation. The annoyance is mild; an unplanned schema
+identifier is not.*
