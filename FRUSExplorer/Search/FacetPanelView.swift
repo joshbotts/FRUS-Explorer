@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import TipKit
 
 // MARK: - FacetNarrowing
 
@@ -304,6 +305,11 @@ struct FacetPanelView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal)
+        // #597 Phase 1, and the one SHARED anchor in the set — this file carries no `#if os` gate
+        // and is hosted by both SearchView and SearchSheet, so one modifier reaches every platform.
+        // On the preamble, not the rows: attaching to the row Button would mint one popover per
+        // facet row, dozens per section.
+        .popoverTip(FacetNarrowTip())
     }
 
     private var checklistNote: some View {
@@ -442,7 +448,11 @@ struct FacetPanelView: View {
         .contentShape(Rectangle())
 
         if let narrowing {
-            Button { onNarrow(narrowing) } label: { content }
+            Button {
+                // The user learned that rows are filters — retire the tip.
+                FacetNarrowTip().invalidate(reason: .actionPerformed)
+                onNarrow(narrowing)
+            } label: { content }
                 .buttonStyle(.plain)
                 .help(String(localized: "facets.row.help",
                              defaultValue: "Narrow the search to \(bucket.label)"))

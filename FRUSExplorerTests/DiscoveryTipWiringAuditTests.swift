@@ -167,7 +167,8 @@ struct DiscoveryTipWiringAuditTests {
     @Test("Registered type names are pinned")
     func typeNamesArePinned() {
         #expect(Set(DiscoveryTipRegistry.entries.map(\.typeName))
-                == ["GraphReferenceListTip", "TimelineLayoutTip"],
+                == ["ResearchRailTip", "EdgeTapNavigationTip", "ExamineResultsTip",
+                    "FacetNarrowTip", "GraphReferenceListTip", "TimelineLayoutTip"],
                 """
                 A registered tip's type name changed. TipKit keys its datastore on the type, so a \
                 rename re-fires the tip for every existing user and burns the old id. If that is \
@@ -288,5 +289,9 @@ struct DiscoveryTipWiringAuditTests {
                 "showAllTipsForTesting forces display regardless of rules — never ship it")
         #expect(app.contains("FRUS_UI_TEST_MODE"),
                 "the suppression must be gated on the UI-test flag, not applied unconditionally")
+        // The one deliberate escape hatch, so `UIObstructionTests` can put a real popover on
+        // screen and prove it clears the navigation bar.
+        #expect(app.contains("FRUS_UI_TEST_SHOW_TIPS"),
+                "the opt-in that lets an obstruction scenario test a tip has gone")
     }
 }

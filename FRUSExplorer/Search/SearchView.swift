@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import TipKit
 import SwiftData
 
 // MARK: - ResultReading
@@ -754,6 +755,10 @@ struct SearchView: View {
         } label: {
             Image(systemName: activeReading == .list ? "binoculars" : "binoculars.fill")
         }
+        // #597 Phase 1. Anchored on the menu LABEL: `.popoverTip` cannot attach to a Button inside
+        // a Menu's content, because a menu row is not a popover host — which is also why the tip's
+        // copy names all four readings rather than pointing at one.
+        .popoverTip(ExamineResultsTip())
         .controlHelp(
             String(localized: "search.mode.a11y", defaultValue: "Examine these results"),
             detail: String(localized: "search.mode.help",

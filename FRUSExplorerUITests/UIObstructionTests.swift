@@ -1055,6 +1055,23 @@ final class UIObstructionTests: XCTestCase {
         )
     }
 
+    // MARK: - Scenario 7 · a discovery-tip popover — ATTEMPTED AND WITHDRAWN (#597 Phase 1)
+    //
+    // A TipKit popover over the navigation bar is the #486 shape, so a scenario for it belongs
+    // here. It was written, and it does not work: reaching the anchor means opening a document,
+    // and every XCUI query made while the document reader is on screen dies with
+    // "Failed to get matching snapshots: Timed out while evaluating UI query" after ~180 s.
+    // The reader hosts a WKWebView whose accessibility tree is large enough to defeat the query
+    // engine — `app.popovers.firstMatch`, the cheapest first-class accessor, times out too. The
+    // navigation itself succeeds; it is the assertion that cannot run.
+    //
+    // That is a harness limitation, not an app defect, and a test that fails for harness reasons
+    // is worse than none — it trains a reader to ignore red. So the property is verified by eye
+    // instead, and `FRUS_UI_TEST_SHOW_TIPS=1` is kept as the seam that makes that cheap: it forces
+    // tips on in a build that otherwise suppresses them.
+    //
+    // Do not re-add this without first confirming a query can complete over the document reader.
+
     /// Asserts the "Working on:" banner's frame lies entirely below `bar`'s frame.
     ///
     /// The primary #486 oracle, and the only one measured to discriminate the bug: against the
