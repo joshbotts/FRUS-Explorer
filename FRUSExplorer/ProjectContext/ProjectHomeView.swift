@@ -156,6 +156,13 @@ struct ProjectHomeView: View {
             if let project { draftWeights = ProjectLeadsService.effectiveWeights(for: project) }
             scheduleRecompute(immediate: true)   // no chatter to debounce on open / project switch
         }
+        // Keyed on the LEAD KEYS, not the project (#553). A recompute replaces the lead set without
+        // changing `projectId`, so a project-keyed task would leave the old snippets on screen —
+        // attached to rows that are gone, under headers they do not describe. Sorted so a reorder
+        // of the same leads is not a refetch.
+        .task(id: leadSnippetIdentity) {
+            await loadLeadSnippets()
+        }
         // Recompute leads when the project's collections (or their documents) change — the
         // discovery feedback loop (#377 Phase 3). Debounced inside `scheduleRecompute`.
         .onChange(of: seedSignature) { _, _ in scheduleRecompute() }
@@ -410,6 +417,17 @@ struct ProjectHomeView: View {
         allLeads.filter { $0.projectId == projectId && !$0.dismissed }
     }
 
+    /// Leading document text for the leads on screen, keyed by `"volumeId/documentId"` (#553).
+    ///
+    /// `ProjectLeadEntry` stores no body text, and `ProjectLeadsService` deliberately ranks with
+    /// `includeSnippets: false` because that extraction would run up to `seedCap` times per
+    /// recompute over candidates that are mostly never shown. So the text is fetched here instead —
+    /// once, for the ≤ `leadLimit` leads actually rendered.
+    ///
+    /// Missing keys are normal, not an error: a lead whose volume is not indexed on this device has
+    /// no `document_cache` row, and its row simply renders as it did before.
+    @State private var leadSnippets: [String: String] = [:]
+
     @ViewBuilder
     private var leadsSection: some View {
         let leads = projectLeads
@@ -503,6 +521,17 @@ struct ProjectHomeView: View {
                     Text(leadContext(lead))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    // #553: the reported complaint is that a lead row carries too little to judge
+                    // the document by. `documentSnippets` prefers the stored summary over the body,
+                    // so this is "the summary if there is one, otherwise the opening text" — which
+                    // is what the copy below the row has to allow for.
+                    if let snippet = leadSnippets[lead.documentKey], !snippet.isEmpty {
+                        Text(snippet)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -518,6 +547,32 @@ struct ProjectHomeView: View {
             .help(String(localized: "project.home.leads.dismiss.help", defaultValue: "Dismiss this lead"))
         }
         .padding(.vertical, 3)
+    }
+
+    /// The identity of the currently-displayed lead set, for the snippet fetch's `.task(id:)`.
+    ///
+    /// Sorted rather than in display order: re-ranking the same leads changes nothing about which
+    /// text is needed, and refetching on every weight-slider drag would be pure churn.
+    private var leadSnippetIdentity: [String] {
+        projectLeads.map(\.documentKey).sorted()
+    }
+
+    /// Fetches the leading text for the displayed leads — one chunked point-lookup by primary key,
+    /// never a scan (#553).
+    ///
+    /// Bounded by `ProjectLeadsService.leadLimit` (24), so this is a single chunk in practice. It
+    /// is the same call `RelatedDocumentsEngine` already makes for its shown rows, and deliberately
+    /// NOT `includeSnippets: true` on the ranking pass, which would extract for up to 40 seeds'
+    /// worth of candidates that are never rendered.
+    private func loadLeadSnippets() async {
+        let keys = projectLeads.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        guard !keys.isEmpty, let pipeline = appState.indexingPipeline else {
+            leadSnippets = [:]
+            return
+        }
+        // A read failure degrades to no snippets, which is the same as an unindexed volume and
+        // renders as the pre-#553 row. There is nothing here worth surfacing an error for.
+        leadSnippets = (try? await pipeline.documentSnippets(forKeys: keys)) ?? [:]
     }
 
     /// "Related to N of your documents" (+ an editorial-note marker).
