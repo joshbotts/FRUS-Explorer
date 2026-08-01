@@ -109,24 +109,7 @@ enum SummarizationPromptSeeder {
             insertCount += 1
         }
 
-        // Deduplication pass: group standard prompts by name; for each group with
-        // more than one entry, delete all but the oldest (smallest createdAt).
-        let allStandard = (try? context.fetch(descriptor)) ?? existing
-        var byName: [String: [SummarizationPrompt]] = [:]
-        for prompt in allStandard {
-            byName[prompt.name, default: []].append(prompt)
-        }
-        var deleteCount = 0
-        for (_, group) in byName where group.count > 1 {
-            // Sort ascending by createdAt (nil sorts last so oldest non-nil wins).
-            let sorted = group.sorted {
-                ($0.createdAt ?? .distantFuture) < ($1.createdAt ?? .distantFuture)
-            }
-            for duplicate in sorted.dropFirst() {
-                context.delete(duplicate)
-                deleteCount += 1
-            }
-        }
+        let deleteCount = collapseDuplicates(context: context)
 
         guard insertCount > 0 || deleteCount > 0 else {
             #if DEBUG
@@ -141,14 +124,124 @@ enum SummarizationPromptSeeder {
             if insertCount > 0 {
                 print("[SummarizationPromptSeeder] Seeded \(insertCount) standard prompt(s)")
             }
-            if deleteCount > 0 {
-                print("[SummarizationPromptSeeder] Removed \(deleteCount) duplicate standard prompt(s)")
-            }
             #endif
         } catch {
             #if DEBUG
             print("[SummarizationPromptSeeder] Save failed: \(error)")
             #endif
+        }
+    }
+
+    // MARK: - Duplicate collapse (#561)
+
+    /// Collapses standard prompts that share a name, keeping one and re-pointing everything that
+    /// referenced the others.
+    ///
+    /// ## Why this is separate from seeding, and why it runs again after import
+    /// Seeding runs once per process, inside boot. **SwiftData's CloudKit initial import lands
+    /// after that.** So on a second device the order is: boot → store empty → seed 8 → import
+    /// delivers the first device's 8 → the user sees 16, and the pass that would have collapsed
+    /// them already ran. Before this change the duplicates stayed visible for the whole session,
+    /// collapsing only at the next cold launch — on macOS, potentially days.
+    ///
+    /// So the collapse is callable on its own, and `FRUSExplorerApp` invokes it from the debounced
+    /// post-import block that already exists for exactly this class of problem (alongside
+    /// `DuplicateRecordCleanup` and `OrphanedTagRepair`): a few seconds after imports go quiet,
+    /// against a settled store rather than a partial one mid-sync.
+    ///
+    /// ## Why not `DuplicateRecordCleanup`
+    /// That type collapses records that **are** the same record — same `id`, delivered twice. These
+    /// are different records that *mean* the same thing: independently seeded on each device with
+    /// different ids, identified only by name. Folding a name-keyed rule into an id-keyed type
+    /// would blur what "duplicate" means there. The rule lives with the seeder that mints them.
+    ///
+    /// Labelled `context:` rather than `in:` to match `DuplicateRecordCleanup.run(context:)` and
+    /// `OrphanedTagRepair.run(context:)`, which it is called beside.
+    ///
+    /// Saves when it deleted something, matching the contract its two neighbours already have —
+    /// both `DuplicateRecordCleanup.run` and `OrphanedTagRepair.run` persist their own work. The
+    /// debounced call site does not save, so a collapse that did not save here would be discarded
+    /// and the duplicates would still be on screen.
+    ///
+    /// - Parameter context: the context to collapse in.
+    /// - Returns: how many duplicates were deleted.
+    @MainActor
+    @discardableResult
+    static func collapseDuplicates(context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<SummarizationPrompt>(
+            predicate: #Predicate { $0.isStandard == true }
+        )
+        guard let allStandard = try? context.fetch(descriptor) else { return 0 }
+
+        var byName: [String: [SummarizationPrompt]] = [:]
+        for prompt in allStandard { byName[prompt.name, default: []].append(prompt) }
+
+        // id → the keeper it should point at, for every prompt about to be deleted.
+        var remap: [UUID: UUID] = [:]
+        var doomed: [SummarizationPrompt] = []
+        for (_, group) in byName where group.count > 1 {
+            let keeper = stableKeeper(group)
+            for duplicate in group where duplicate.id != keeper.id {
+                remap[duplicate.id] = keeper.id
+                doomed.append(duplicate)
+            }
+        }
+        guard !doomed.isEmpty else { return 0 }
+
+        repointReferences(remap, in: context)
+        for duplicate in doomed { context.delete(duplicate) }
+
+        do {
+            try context.save()
+        } catch {
+            // A failed save leaves the duplicates in place — visible, which is the right failure
+            // for a cosmetic repair. The next import's debounce, or the next cold boot, retries.
+            print("[SummarizationPromptSeeder] Collapse save failed: \(error)")
+            return 0
+        }
+        // Deliberately NOT `#if DEBUG`: these are CloudKit-synced deletions that propagate to every
+        // device, so the one line saying it happened should exist in a shipping build's log too.
+        print("[SummarizationPromptSeeder] Collapsed \(doomed.count) duplicate standard prompt(s)")
+        return doomed.count
+    }
+
+    /// The keeper for a duplicate group: earliest `createdAt`, tie-broken by id.
+    ///
+    /// The tiebreak is load-bearing rather than tidiness. Two devices run this independently, and
+    /// if they ever chose *different* keepers they would delete each other's survivor and the
+    /// prompt would vanish everywhere. `createdAt` alone does not decide it — a `nil` on both sides
+    /// (legacy rows) leaves the comparison equal in both directions and the result depends on fetch
+    /// order, which two devices need not share. Mirrors `DuplicateRecordCleanup.stableKeeper`.
+    private static func stableKeeper(_ group: [SummarizationPrompt]) -> SummarizationPrompt {
+        group.min { lhs, rhs in
+            let l = lhs.createdAt ?? .distantFuture
+            let r = rhs.createdAt ?? .distantFuture
+            if l != r { return l < r }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }!
+    }
+
+    /// Re-points everything that stores a prompt id at the keeper, before the duplicates go.
+    ///
+    /// **Three referrers, not one.** A summary remembers which prompt produced it; a collection
+    /// stores a default prompt for its generated blocks; an entry can override that per row.
+    /// Deleting a duplicate without re-pointing all three leaves a dangling id — a summary whose
+    /// provenance no longer resolves, or a collection whose default silently falls back.
+    private static func repointReferences(_ remap: [UUID: UUID], in context: ModelContext) {
+        guard !remap.isEmpty else { return }
+
+        for summary in (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? [] {
+            if let keeper = remap[summary.promptId] { summary.promptId = keeper }
+        }
+        for collection in (try? context.fetch(FetchDescriptor<Collection>())) ?? [] {
+            if let current = collection.summaryPromptId, let keeper = remap[current] {
+                collection.summaryPromptId = keeper
+            }
+        }
+        for entry in (try? context.fetch(FetchDescriptor<CollectionEntry>())) ?? [] {
+            if let current = entry.summaryPromptIdOverride, let keeper = remap[current] {
+                entry.summaryPromptIdOverride = keeper
+            }
         }
     }
 
