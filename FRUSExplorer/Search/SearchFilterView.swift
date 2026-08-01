@@ -139,12 +139,18 @@ struct SearchFilterView: View {
             Form {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
-                if showVolumeScopeSections          { customScopeSection }
+                // Working corpora ABOVE volume scopes: it is the section users could not find,
+                // and with only the project picker and a collapsed date row above it, its header
+                // clears the fold in every configuration. Person ABOVE document type because it
+                // is the sole editor of its filter on macOS (the Type chip in the search bar is
+                // not), and because it holds this Form's ONLY TextField — keeping it high limits
+                // how far an initial first responder can scroll the panel.
                 if showVolumeScopeSections          { workingCorpusSection }
+                if showVolumeScopeSections          { customScopeSection }
                 if showVolumeScopeSections          { subjectFacetSection }
                 if showVolumeScopeSections          { volumeScopeSectionMac }
-                documentTypeSection
                 personSection
+                documentTypeSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
                 resultPreviewSection
@@ -185,12 +191,18 @@ struct SearchFilterView: View {
             Form {
                 if showProjectScopeSection          { projectScopeSection }
                 dateRangeSection
-                if showVolumeScopeSections          { customScopeSection }
+                // Working corpora ABOVE volume scopes: it is the section users could not find,
+                // and with only the project picker and a collapsed date row above it, its header
+                // clears the fold in every configuration. Person ABOVE document type because it
+                // is the sole editor of its filter on macOS (the Type chip in the search bar is
+                // not), and because it holds this Form's ONLY TextField — keeping it high limits
+                // how far an initial first responder can scroll the panel.
                 if showVolumeScopeSections          { workingCorpusSection }
+                if showVolumeScopeSections          { customScopeSection }
                 if showVolumeScopeSections          { subjectFacetSection }
                 if showVolumeScopeSections          { volumeScopeSectioniOS }
-                documentTypeSection
                 personSection
+                documentTypeSection
                 if !vm.availableUserTags.isEmpty    { userTagsSection }
                 scopeSection
                 resultPreviewSection
@@ -532,7 +544,15 @@ struct SearchFilterView: View {
     // MARK: - User Tags
 
     private var userTagsSection: some View {
-        Section {
+        collapsibleSection(
+            .userTags,
+            title: String(localized: "search.section.usertags", defaultValue: "My Tags"),
+            summary: selectionSummary(vm.selectedUserTagIds.count),
+            footer: vm.hasUserTagCounts
+                ? Text(String(localized: "search.usertags.countFooter",
+                              defaultValue: "Counts are documents in your current results carrying that tag."))
+                : Text("")
+        ) {
             ForEach(vm.availableUserTags) { tag in
                 Toggle(
                     isOn: Binding(
@@ -550,14 +570,6 @@ struct SearchFilterView: View {
                     }
                 }
                 .accessibilityLabel(tagAccessibilityLabel(for: tag))
-            }
-        } header: {
-            Text(String(localized: "search.section.usertags",
-                        defaultValue: "My Tags"))
-        } footer: {
-            if vm.hasUserTagCounts {
-                Text(String(localized: "search.usertags.countFooter",
-                            defaultValue: "Counts are documents in your current results carrying that tag."))
             }
         }
         // On demand, when the sheet opens — never eagerly. One SQL pass over the match set,
@@ -602,22 +614,126 @@ struct SearchFilterView: View {
     /// The `IndexedResolution` invariant is enforced here: a scope with no indexed
     /// members shows a warning and seeds NOTHING — it must never fall through to an
     /// unscoped (whole-corpus) search under the scope's label.
+    // MARK: - Collapsible groups
+
+    /// Which of the collapsible groups the user has opened this session.
+    ///
+    /// View state only — never persisted. A filter panel that remembered its disclosure state
+    /// across launches would open differently for the same collection of filters depending on
+    /// history, which is the opposite of the predictability this change is for.
+    @State private var expandedGroups: Set<FilterGroup> = []
+
+    /// The groups that collapse. Deliberately a closed set: the panel's cheap sections
+    /// (date, type, person, the field toggles) stay open, because collapsing a one-row section
+    /// costs a click and saves nothing.
+    private enum FilterGroup: Hashable {
+        case workingCorpus, customScope, subjectFacet, userTags
+    }
+
+    /// A binding that is `true` whenever the group is open **or** must be.
+    ///
+    /// The force term is what makes collapsing safe here. `customScopeSection` hosts
+    /// `scopeWarningName` and `subjectFacetSection` is its fallback host, so a warning inside a
+    /// collapsed group would be a silent no-op — precisely the failure this file already fixed
+    /// once (see the fallback comment in `subjectFacetSection`). A group holding a refusal, or an
+    /// applied corpus whose coverage is partial, opens itself and cannot be shut while that
+    /// remains true.
+    private func groupExpansion(_ group: FilterGroup, forced: Bool) -> Binding<Bool> {
+        Binding(
+            get: { forced || expandedGroups.contains(group) },
+            set: { open in
+                if open { expandedGroups.insert(group) } else { expandedGroups.remove(group) }
+            }
+        )
+    }
+
+    /// A section whose rows collapse behind a disclosure carrying the group's own summary.
+    ///
+    /// The summary is the whole point. A collapsed group that showed only its title would trade
+    /// "scroll to find it" for "click to find out", which is not an improvement; a collapsed group
+    /// that says *Inside "planning" · 7,500 of 67,034 matches* answers the question without the
+    /// click. `Section` keeps the footer, so the explanatory prose still sits under the group.
+    private func collapsibleSection<Content: View>(
+        _ group: FilterGroup,
+        title: String,
+        summary: String?,
+        forced: Bool = false,
+        footer: Text,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        // `content()` is evaluated eagerly rather than passed through as a closure: the parameter
+        // is non-escaping, and `DisclosureGroup`'s content builder escapes. Eager evaluation is
+        // also what SwiftUI does with a Section's body anyway — the disclosure controls
+        // visibility, not construction.
+        let rows = content()
+        return Section {
+            DisclosureGroup(isExpanded: groupExpansion(group, forced: forced)) {
+                rows
+            } label: {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title)
+                    Spacer()
+                    if let summary, !summary.isEmpty {
+                        Text(summary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+            }
+        } footer: {
+            footer
+        }
+    }
+
+    /// What the collapsed working-corpus group says without being opened.
+    ///
+    /// Carries the applied corpus's name **and** its capture provenance, because
+    /// `workingCorpusRow`'s own comment states this is the moment the truncation has to be
+    /// legible — so the collapsed form has to carry that fact too, not just a count.
+    private var workingCorpusSummary: String {
+        guard let name = vm.appliedWorkingCorpusName else {
+            return selectionSummary(0)
+        }
+        let applied = String(localized: "search.corpus.summary.applied %@",
+                             defaultValue: "Inside “\(name)”")
+        guard let corpus = workingCorpora.first(where: { $0.name == name }),
+              let source = corpus.sourceDescription, !source.isEmpty else { return applied }
+        return "\(applied) · \(source)"
+    }
+
+    /// `true` when the working-corpus group holds something the user must not have to click for:
+    /// a refusal warning, or an applied corpus this device can only partly reach.
+    private var workingCorpusNeedsAttention: Bool {
+        if corpusWarningName != nil { return true }
+        guard let name = vm.appliedWorkingCorpusName,
+              let corpus = workingCorpora.first(where: { $0.name == name }) else { return false }
+        let resolution = WorkingCorpusResolver(
+            indexedVolumeIds: Set(vm.availableVolumes.map(\.volumeId))).resolve(corpus)
+        return !resolution.isComplete
+    }
+
     @ViewBuilder
     private var customScopeSection: some View {
         if !customScopes.isEmpty {
-            Section {
+            // Forced open by a refusal: this section is `scopeWarningName`'s primary host, and a
+            // warning nobody can see is the same bug as no warning at all.
+            collapsibleSection(
+                .customScope,
+                title: String(localized: "search.section.customScopes",
+                              defaultValue: "My Volume Scopes"),
+                summary: selectionSummary(customScopes.count),
+                forced: scopeWarningName != nil,
+                footer: Text(String(localized: "search.scope.custom.footer",
+                                    defaultValue: "Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings."))
+            ) {
                 ForEach(customScopes) { scope in
                     customScopeRow(scope)
                 }
                 if let warning = scopeWarningName {
                     noneIndexedWarning(warning)
                 }
-            } header: {
-                Text(String(localized: "search.section.customScopes",
-                            defaultValue: "My Volume Scopes"))
-            } footer: {
-                Text(String(localized: "search.scope.custom.footer",
-                            defaultValue: "Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings."))
             }
             // The stale-clear onChange handlers moved to the Form (both bodies): attached here
             // they only ran when the user HAD custom scopes, so a no-scopes user's facet state
@@ -633,7 +749,15 @@ struct SearchFilterView: View {
     @ViewBuilder
     private var workingCorpusSection: some View {
         if !workingCorpora.isEmpty {
-            Section {
+            collapsibleSection(
+                .workingCorpus,
+                title: String(localized: "search.section.workingCorpora",
+                              defaultValue: "My Working Corpora"),
+                summary: workingCorpusSummary,
+                forced: workingCorpusNeedsAttention,
+                footer: Text(String(localized: "search.corpus.footer",
+                                    defaultValue: "A working corpus is a fixed set of documents. Applying one searches only inside it. Manage them in Settings."))
+            ) {
                 ForEach(workingCorpora) { corpus in
                     workingCorpusRow(corpus)
                 }
@@ -646,12 +770,6 @@ struct SearchFilterView: View {
                               systemImage: "xmark.circle")
                     }
                 }
-            } header: {
-                Text(String(localized: "search.section.workingCorpora",
-                            defaultValue: "My Working Corpora"))
-            } footer: {
-                Text(String(localized: "search.corpus.footer",
-                            defaultValue: "A working corpus is a fixed set of documents. Applying one searches only inside it. Manage them in Settings."))
             }
         }
     }
@@ -789,7 +907,17 @@ struct SearchFilterView: View {
     @ViewBuilder
     private var subjectFacetSection: some View {
         if VolumeSubjectProfilesStore.shared != nil {
-            Section {
+            // Forced open when it is hosting the refusal warning — which happens exactly when the
+            // user has no custom scopes, so the primary host does not render.
+            collapsibleSection(
+                .subjectFacet,
+                title: String(localized: "search.section.subject",
+                              defaultValue: "By Subject · Detected Topics"),
+                summary: subjectFacetLabel ?? selectionSummary(0),
+                forced: customScopes.isEmpty && scopeWarningName != nil,
+                footer: Text(String(localized: "search.subject.facet.footer",
+                                    defaultValue: "Experimental. These are automatically detected topics, not editorial subject headings, and may include mistags. Filters to volumes where a category is among their most characteristic detected topics, filling the volume picker with the indexed matches."))
+            ) {
                 Button {
                     showSubjectFacet = true
                 } label: {
@@ -813,12 +941,6 @@ struct SearchFilterView: View {
                 if customScopes.isEmpty, let warning = scopeWarningName {
                     noneIndexedWarning(warning)
                 }
-            } header: {
-                Text(String(localized: "search.section.subject",
-                            defaultValue: "By Subject · Detected Topics"))
-            } footer: {
-                Text(String(localized: "search.subject.facet.footer",
-                            defaultValue: "Experimental. These are automatically detected topics, not editorial subject headings, and may include mistags. Filters to volumes where a category is among their most characteristic detected topics, filling the volume picker with the indexed matches."))
             }
         }
     }
