@@ -1,53 +1,178 @@
 # Document-Level Lexical Similarity Neighbors — Feasibility & Value Assessment
 
-**Version**: 1.0
-**Date**: 2026-07-27
-**Status**: Assessment — recommended: a precision-first, budget-capped bundled neighbor index
-(CloudVectorsGenerator sibling) consumed as a third *generator* axis; a full-corpus k-NN
-artifact is rejected on size.
+**Version**: 2.0 (revised 2026-08-01)
+**Date**: 2026-07-27, revised after the Q&CA wave closed
+**Status**: **Phase A NOT recommended as specified.** The v1.0 verdict — "feasible, and valuable,
+in a precision-first shape" — is withdrawn on an argument v1.0 never made. Two smaller pieces
+survive; see §1a.
 
 ---
 
-## 1. The question, and the verdict
+## 1a. Revised verdict (2026-08-01)
 
-Can we generate a bundled index of document-level lexical-similarity neighbors — the same way
-Workstream O produced `cloud-vectors-core.json` / `cloud-vectors-volumes.json` — and surface it
-as another axis in Related Documents and/or Project Leads? Is it worth doing?
+This revision was prompted by two questions: does the plan change now that D-1 has been demoted
+(PR #624), and does the shipped Q&CA wave open anything to fold in?
 
-**Verdict: feasible, and valuable — but only in a precision-first shape.**
+**D-1's demotion changes essentially nothing here.** The string "D-1" appears zero times in the
+v1.0 text, and the artifact lands on the *safe* side of the stem↔lemma divide by construction —
+its vector basis is `WordCloudMultiLensTokenizer`, which enumerates `scheme: .lemma`
+(`WordCloudKit/WordCloudMultiLensTokenizer.swift:143,153,157-161`), the same space as
+`keyness-baseline.json` and the opposite space from the `porter unicode61` FTS5 index
+(`FTS5Store/FTS5Types.swift:113,126`). No surface hands a neighbor-derived term back to search.
+The **one** place it bites is §9's back-pocket alternative, *"extract the anchor's top TF-IDF
+terms (`fts5vocab` gives df)"* (:305-306), which straddles both spaces — lemma terms, stem-keyed
+`df`. That is exactly the cross-source join `BundledKeynessBaseline.swift:22-27` refuses on
+record. Fixable by running the whole fallback in stem space, but it is a different build than the
+sentence implies.
 
-- **Feasible.** Every piece of offline scaffolding the generator needs already exists and is
-  parity-tested: `VolumeCorpusEnumerator`, `TEIBodyTextExtractor` (per-document body text),
-  `WordCloudMultiLensTokenizer` (one `NLTagger` pass, injected stopwords/lexicons), the
-  determinism idioms, and the `BundledCloudVectors` loader pattern. The measured O-1 baseline —
-  **552 volumes, 314,479 documents, 3.34 GB TEI, 18m53s** for a full single-threaded
-  tokenization pass — bounds the new generator's dominant I/O cost. Exactly one genuinely new
-  algorithmic component is required: all-pairs similarity search (APSS) over ~314k sparse
-  TF-IDF vectors, a well-understood problem at this scale (§5.3).
-- **The decisive constraint is artifact size, and it forces the design.** A conventional
-  "top-10 neighbors for every document" index is **~40–45 MB** of JSON (§4) — 35× the largest
-  cloud-vectors file, 4× the entire current 11.1 MB bundled-JSON footprint, and far outside the
-  house `Data(contentsOf:) + JSONDecoder` pattern. A **thresholded strong-pairs index
-  (~100–150k pairs, ~2–3.5 MB)** fits inside existing precedent (`central-files-index.json` is
-  3.5 MB) and concentrates exactly where the value is: high-confidence topical cousins,
-  weighted toward cross-volume pairs no existing axis can find.
-- **Valuable because it fills the one gap the #308 axis model documents about itself.** The
-  Related Documents candidate universe is the union of the *two* generators only — archival
-  provenance and explicit editorial cross-references. Nothing today says "these two documents
-  are about the same thing": the shared-subjects axis has been inert since #261/#308 (document-
-  grain subject data was too noisy to ship; `DocumentSubjectStore.shared` is hard-coded `nil`),
-  and persons/date/subseries only re-rank candidates the two generators already produced. A
-  lexical-neighbor index is a *generator*-shaped axis — a bounded keyed lookup — and the
-  plumbing was built expecting it: `ProjectLeadsService.effectiveWeights` explicitly back-fills
-  "a future semantic-proximity axis" with its default weight rather than an implicit 0
-  (`ProjectLeadsService.swift:46-47`).
+### What actually withdraws the verdict
 
-Recommended shape: **Phase A** — generator + bundled index + `SimilarityAxis.lexicalSimilarity`
-(indexed-candidates-only, zero schema impact, ~2–3 sessions). **Phase B (optional follow-on)** —
-the off-index tier: "strong matches in volumes you haven't downloaded" as a separate leads
-section with a download affordance (~1–2 sessions). §6 details both.
+**The plan's own ship gate, multiplied by a fence the plan already concedes.**
+
+§4 sets the bar: *"under ~15% document coverage at ship threshold … means the thresholding is not
+working — a finding, not a tolerance to widen."* That is stated against 314,479 corpus documents.
+But every Related Documents path drops a candidate with no `document_cache` display row
+(`RelatedDocumentsEngine.rank`: `guard let record = records[key] else { continue }`), and §6.2
+concedes the consequence itself — *"The index knows neighbors in all 552 volumes; the library
+usually holds a handful."*
+
+Combine that with §3's mandated **≥80% cross-volume** reservation and the arithmetic is forced. At
+a 40-volume library a cross-volume neighbor survives with probability ≈ 40/552, times ~1.7 if the
+library is topically curated (measured: Berlin-family vs random control at τ=0.50, 4.593e-6 vs
+2.702e-6 per pair). A document therefore retains ~30% of its neighbors → **7.5–13% effective
+coverage — below the plan's own floor, by construction.**
+
+The measurement that would catch this is scheduled for L-2, on the one 552-volume index in
+existence, where it passes. And the only structural fix — Phase B — is explicitly scoped **out**
+by decision 6.
+
+Compare what already ships, measured read-only against the live index: **195,534 of 316,839
+documents (61.7%)** have an archival-provenance companion *inside their own volume*, and
+**133,052 of 185,549 (71.7%)** cross-reference edges are intra-volume. Both existing generators
+degrade *gracefully* to a one-volume library. A cross-volume-reserved lexical axis degrades
+*catastrophically* — and both weight UIs iterate `SimilarityAxis.allCases` unconditionally
+(`RelatedDocumentsView.swift:235`, `ProjectHomeView.swift:621`), so it becomes a permanent seventh
+slider that is empty for nine documents in ten, beside the sixth that has been empty since #261.
+
+**One defect the plan is silent about, and a sparse axis is the first thing to weaponise it.**
+Generator axes are normalised *by their own max* (`RelatedDocumentsEngine`, step 2). An axis
+returning a single candidate hands it a normalised **1.0**; at the proposed default weight 0.7
+that totals 0.70. A genuine single-citation cross-reference partner, against an anchor whose top
+citer is `logDampedMultiplicity(121) ≈ 5.796` (`SimilarityModel.swift:269-274`), totals 0.173.
+**A thin lexical neighbor outranks it 4×, and the effect worsens as coverage thins.**
+
+### What survives
+
+1. **A reprint / "also printed as…" index.** §3 treats score ≥95 pairs as noise control; it is the
+   better feature. Cross-volume by nature, precision ~1.0, verifiable by eye, small — and uniquely
+   **useful with the other volume not downloaded**, because *"also printed as Doc 412 in vol.
+   VIII"* is itself the deliverable. FRUS genuinely reprints. Effort S. Render it as a
+   document-view affordance, **not** an axis, so it never touches the normalisation defect and
+   adds no slider.
+2. **Volume-grain leads (the old Phase B)** as the only axis-adjacent surface, if ever built. It
+   is the half immune to the fence, because the payload is the recommendation, not the landing.
+
+Park both behind the N-1…N-6 lane, which carries measured yields.
+
+### If the owner overrides: the first session is L-0, not L-1
+
+Half a day, pure measurement, no artifact and no app code. Run Pass 1 + Pass 2 on one subseries
+slice; emit the cosine histogram and, for each τ ∈ {0.30, 0.40, 0.50, 0.60}, the
+same-volume / same-subseries / cross-subseries split **and** the retained-neighbor share simulated
+at library sizes L ∈ {10, 40, 100, 552}.
+
+> **Acceptance:** at **L = 40** with the ≥80% cross-volume reservation applied, effective document
+> coverage ≥ 15%. If it does not clear 15% at L = 40 — *not* at L = 552 — stop; the artifact is not
+> built.
+
+That single check is what v1.0 was missing. It costs a fraction of L-1, and it is the honest
+version of the acceptance bar §4 already promised.
 
 ---
+
+## 1b. Corrections to v1.0
+
+Everything below was measured against code, the local corpus, or the live index read-only. The
+body of this document (§2 onward) is retained as reference and is **superseded in detail** by this
+table.
+
+| § | v1.0 claim | Status | Correction |
+|---|---|---|---|
+| §1, §4 | "11.1 MB bundled-JSON footprint"; full k-NN is "4×" it | **Now false** | 17 files, **12.32 MB**. The delta is exactly `keyness-baseline.json` (1,254,148 B), shipped by S-1 after this doc was written. Full k-NN is ~3.6×. Correct on 2026-07-27. |
+| §1, §5.3 | "measured … **18m53s**"; "the dominant **I/O** cost" | **Uncorroborated + mischaracterised** | 18m53s appears nowhere in the repo but this doc and its own DEVELOPMENT-PLAN echo; the generator has no wall-clock instrumentation. The authoritative record is **CLAUDE.md: "~50-60 minutes."** And it is CPU-bound, not I/O — reading and scanning all 3.34 GB takes 19–28 s warm. That matters: a CPU-bound pass *is* parallelizable, which the I/O framing argued against. |
+| §4 | acceptance bar "under ~15% document coverage" | **Wrong denominator** | Stated against 314,479 TEI divs; every related-docs path joins `document_cache`, which holds **316,839 rows** because `promotableQuasiDocumentKinds` promotes chapters/prefaces (`FRUSDocumentParser.swift:763-769`). 2,360 displayable documents can never carry a neighbor under the `[v1,d1,v2,d2]` encoding — state that as a designed exclusion. |
+| §3 vs §4 vs §10 | shared-term evidence "+8–12 B/pair (~1–1.5 MB at 120k)" alongside a ≤3.5 MB bar | **Cannot all hold** | Measured with this repo's own encoder conventions: base 5-int record = **20.25 B/pair**; +3 vocabulary indices = **+11.0 B best case, +17.4 B typical** (the `topics` lens has 219,952 distinct terms, not the ~300 that would make 8–12 B true). At 120k pairs: **3.9–4.6 MB**, before an unbudgeted reprints tier. The plan trips its own no-ship gate on day one. Decision 3 must be resolved as *either* evidence *or* the bar. |
+| §5.1 | "314k docs × top-96 terms × ~6 B ≈ 200 MB working set" | **Now false** | `WordCloudMultiLensTokenizer.accumulate` returns **String-keyed** dictionaries (`:140`), and §5.1's whole change is retaining one per document. Measured mean 213.5 distinct non-stopword terms/doc → **~1.5–2 GB**. Intern to `Int32` during tokenization — design it in, don't discover it. |
+| §5.2 | "Drop terms with df > ceiling (~5k; kills residual boilerplate)" | **Now false as stated** | Measured df: **berlin 16,271** (dropped), nato 11,306, alliance 7,433, soviet 54,657, treaty 42,971. §3's own worked example — *"shares: Berlin, airlift, sector"* — cannot occur. The real boilerplate is already gone via the diplomatic stopword layer. Re-pose the ceiling as a quality trade, not hygiene. |
+| §5.3 | APSS is "the main schedule risk — rate it medium"; "minutes-to-low-hours" | **Now false** | Measured under the plan's own prune parameters: 4.55e9 candidate pairs at T=64 → **~30 s to 3 min single-threaded**. Pass 3 is ~2–5% of the run. Re-rate **LOW**; drop prefix filtering and parallel-merge. The genuine risk is determinism, which is a test problem. |
+| §5 (implied), §9 | that `keyness-baseline.json` could supply IDF | **Cannot** | It carries `cutoffCount / distinctTerms / terms / totalTokens` per lens — corpus **term** frequency, no **document** frequency — and `topics` retains 20,086 of 219,952 terms, so the whole high-IDF tail is unpriced. §5.2's df pass must be built. |
+| §6.1 | "a 2–3.5 MB decode is inside the `CentralFilesIndexStore` precedent" | **Wrong precedent** | That is the synchronous `static let shared = load()` pattern (`CentralFilesIndex.swift:415`) which `BundledCloudVectors` was written to **avoid** — *"first touch would be a view body"* (`BundledCloudVectors.swift:35-37`). It is a **size** precedent only. |
+| §5.4, §9, §10 | "the corpus is not on this machine"; four items "could not verify" | **Now false** | `/Users/jbotts/Development/frus/volumes` holds all 552 manifest volumes. Three of the four are now measured (below). |
+| §5.4, §8 | non-`"dN"` xml:id share unknown | **Now measured** | **948–949 of ~314,48x document divs = 0.30%**, ~944 distinct forms (`appA`, `d76a`, `d1190a/b`); **zero** divs lack an `xml:id`; max ordinal 1,916. `idExceptions` ≈ 18 KB. Retire the §8 risk row and the L-1 sub-task. |
+| §4 | "Top-5 … ~21–23 MB" | **Understated** | Re-derived over the real per-volume distribution: top-10 ≈ **43.7 MB**, top-5 ≈ **23.9 MB** (the doc omits ~4.0 MB of per-document keying). The rejection is sound. |
+| §4 | "11.7 B per compact int-pair entry" | **Right number, wrong instrument** | 110,400 entries verified exactly, but 11.7 divides the *whole file*; the `entries` arrays alone are 10.01 B/entry. Use the measured shapes: 12.63 / 20.25 / 31.25–37.60 B. |
+| §5 (implied) | per-volume document counts readable from the manifest | **Now false** | All 552 manifest entries carry `"documentCount": 0`. Counts must come from `TEIBodyTextExtractor.documents(in:)` and be recorded in the generator's own provenance. |
+| §1 | "Nothing today says 'these two documents are about the same thing'" | **True, but reads as overtaken** | Tighten to *"nothing computes document-to-document proximity from text."* S-1 keyness is term-level (`Keyness.swift:106-112`), S-2 collocation term-to-term (`Collocation.swift:39-67`); no cosine / more-like-this anywhere. But a four-tap path now exists (research rail → Word Cloud on `.document` → keyness → "Search for this term") that a reader will point at. |
+| §2.3 | `ReferenceListPanel.swift:373-469` | **Stale ref** | Now `:447-489`. |
+| §1 | `ProjectLeadsService.swift:46-47` | **Path nit** | `FRUSExplorer/ProjectContext/ProjectLeadsService.swift`; the quoted comment is on `:47`. |
+| §4 | mean degree 0.6–1.0, 20–35% coverage | **Still true** | 100–150k × 2 / 314,479 = 0.64–0.95. The one §4 number that survives unchanged. |
+| §2.1, §2.2 | axis table, two generators, pool floor 120, `sharedSubjects` inert | **Still true** | Weights 1.0/1.0/0.5/0.3/0.7/0.0 (`SimilarityModel.swift:86-95`); exactly `ArchivalProvenanceGenerator()` + `CrossReferenceGenerator()`; `candidatePoolFloor = 120`; `DocumentSubjectStore.shared = nil` (`:74`). **The Q&CA wave shipped nothing into this pipeline.** |
+| §1 | `effectiveWeights` back-fills a future semantic axis with its default | **Still true** | Exact at the cited lines. Adding an axis really is four switch arms plus a generator. |
+
+**Not in v1.0 at all, and load-bearing:** the by-own-max normalisation defect described in §1a.
+
+---
+
+## 1c. Fold-ins from the Q&CA wave
+
+Ranked by value. Each verified against code.
+
+1. **Invert the phase order, or don't ship.** Decision 6 puts Phase B out of scope; that is
+   backwards, for the reason in §1a. Phase B is the half immune to the `document_cache` fence.
+   *Effort M. Owner decision required.*
+2. **Promote the reprints tier to a first-class section** with its own acceptance bar. *Phase A,
+   Effort S.*
+3. **Typed unavailability for the axis.** Related Documents has one generic empty state
+   (`RelatedDocumentsView.swift:204-214`), so "no neighbor above threshold" and "artifact hasn't
+   decoded" would be indistinguishable. S-2 shipped the right shape —
+   `CollocationAnalysis.Unavailable` enumerates seven cases (`Collocation.swift:203-224`). A sparse
+   axis needs this more than a dense one. *Phase A, Effort S.*
+4. **Working corpora as a SEED — not as a scope.** `WorkingCorpus.documentKeys` is the identical
+   `"volumeId/documentId"` string `ProjectLeadsService` already feeds `DocumentKey(compositeString:)`,
+   and `ProjectLeadsAggregator.aggregate` takes a bare seed set. "Find documents like this set" is
+   `recompute` with a different seed source and **no new enum case**, so it does not touch closed
+   decision 1. Restricting neighbor *output* to corpus members would — use an optional
+   `documentKeyFilter: Set<String>?` rather than a `NeighborScope` case. Note the cap mismatch: a
+   corpus holds up to 7,500 keys against `seedCap = 40`. *Separate issue, Effort M, needs a decision.*
+   **Free now regardless:** neither `RelatedDocuments/` nor `ProjectLeadsService` mentions
+   `WorkingCorpus` (grep: zero hits), so a researcher with a corpus applied sees neighbors from
+   outside it. §6.1 should say so in one sentence rather than let it arrive as a bug report.
+5. **Use the batch download bar.** §6.2 cites the single-volume row;
+   `CollectionPreviewView.missingVolumesBar` (`:307-347`) is the actual model — N volumes, one
+   button through `DownloadManager`, a distinct "not available" caption. *Phase B, Effort S.*
+6. **`documentBodyTextsByKey(forKeys:)`** — shipped after v1.0, keyed body text chunked 400 at a
+   time (`IndexingPipeline.swift:5652-5670`). If shared-term evidence is computed at runtime rather
+   than shipped, this is the fetch, and `CollocationConfiguration` (`CollocationService.swift:19-55`)
+   is the discipline to copy verbatim. *Phase A, Effort S.*
+7. **`AnalyticsProvenance` is the export shape** — caveats emitted *unconditionally* with explicit
+   "not applied" phrasing, because *"an absent line in a methods block reads as 'not applicable'
+   when it often means 'still true, just not shown'"* (`AnalyticsProvenance.swift:28-51`). A
+   neighbor list exported without `minScoreShipped` and coverage repeats that omission.
+8. **M-2's method appendix — NOT REAL as written.** `QueryMethodAppendix.Row` is query-shaped and
+   its one rule is never to print a number whose basis it cannot name; a neighbor has none of its
+   fields. But `SaveWorkingCorpusSheet` already writes provenance prose into `sourceDescription`
+   at zero schema cost (`:162-171`) — "Lexical neighbors of frus1958-60v08/d42" fits that slot. A
+   *persisted* "found via" line is a Wave R-7 schema deploy; cost it honestly, separate issue.
+9. **REJECTED — the `terms` table as a normalisation signal.** Measured: 66,095 rows / 10,632
+   distinct terms over **312** of 552 volumes; **41%** of terms carry >1 distinct definition across
+   volumes; 9,457 rows are 1–2 characters. It is an abbreviation glossary (`A → airgram`).
+   Asymmetric coverage would bias exactly the cross-volume pairs §3 reserves 80% of its budget for.
+   Recorded here so it is not re-proposed.
+
+
+---
+
+*The sections below are v1.0, retained as reference. Read them against §1b.*
 
 ## 2. What exists today (and where the gap is)
 

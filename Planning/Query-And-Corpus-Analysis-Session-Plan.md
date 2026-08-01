@@ -897,16 +897,30 @@ made: whether `SearchParameters` supports *appending* rather than replacing.
 
 ---
 
-## D-2 — re-scoped: **drop as specified**
+## D-2 — re-scoped: **deferred, pending a triage model**
 
-Not deferred. Deferring implies sequencing is the blocker; it is not.
+> **Corrected 2026-08-01, one day after this section was written.** It originally read *"drop as
+> specified"*, and its first and most decisive argument was that the demand evidence was against
+> it. That argument was wrong, and the owner supplied the facts that break it:
+>
+> - He **intends** extensive tag use, once he pivots from building the app to using it for his own
+>   research.
+> - Colleagues currently testing the app **already make heavy use of tags.**
+>
+> The measurement below is accurate and stays. The *inference* from it was not: 68 tagged documents
+> was a fact about one store during a build phase, and it was read as a fact about demand. Colleague
+> usage was data this analysis had no way to see and did not think to ask for.
+>
+> The remaining three arguments stand on their own, so the recommendation is **defer, not drop** —
+> and the thing it is deferred behind is now nameable: there is no triage model. Build that, or
+> establish the workflow through (b) below, and D-2 becomes a real question again rather than a
+> speculative one.
 
-**1 · The demand evidence is against it.** Measured on the live store: **68 of 316,839 documents
-carry a user tag** — 0.02%. The app already ships a complete manual coding apparatus (`UserTag` +
-`DocumentTagAssignment`, CloudKit-synced, FTS5-searchable, per-match counted on both platforms) and
-it is essentially unused. D-2's stated payoff is a distribution — *"the resulting 22-vs-52
-distribution is itself the argument"* — which requires a coding practice that measurably has not
-started. Building a model to accelerate a workflow nobody has begun is the wrong order.
+**1 · The demand evidence — CORRECTED, see the note above.** Measured on the owner's live store:
+**68 of 316,839 documents carry a user tag** — 0.02%. The app already ships a complete manual
+coding apparatus (`UserTag` + `DocumentTagAssignment`, CloudKit-synced, FTS5-searchable, per-match
+counted on both platforms). The number is real; it reflects a build phase, not disinterest, and
+testers' usage runs the other way. **This argument no longer carries weight against D-2.**
 
 **2 · The premise it was scoped on does not exist.** There is no triage model to hold labels, and
 Effort L does not include inventing the persistence layer *and* deciding what a triage unit is.
@@ -940,6 +954,11 @@ coding a bag of partial label objects, with a silent truncation at the degenerat
   provenance. This gives the D-2 workflow through the already-attributed path for a call-site
   change — and lets the owner find out empirically whether he wants machine labels before paying
   for them.
+- **(c) Tag counts over a working corpus.** Raised in weight by the correction above. The
+  distribution D-2 wants already exists as `userTagCounts` on the filter sheet, both platforms; what
+  is missing is that same count over a **working corpus** rather than the live match. *Effort S/M,
+  no new stored property.* With colleagues already tagging heavily, this is the piece most likely to
+  be wanted first.
 - **(d) Only if (b) shows he wants them:** a **transient, unstored** proposal in the document view,
   where applying it creates an ordinary `DocumentTagAssignment` he owns. Nothing machine-authored
   persists, so nothing machine-authored can enter a count, an export, or a sync — *"proposal, never
@@ -955,10 +974,12 @@ coding a bag of partial label objects, with a silent truncation at the degenerat
 2. **Is a lexicon-derived variants map acceptable, given it approximates the index rather than
    reading it?** *Lean: yes, with copy that says "include", not "are".* A claim that is true *of the
    index* is a much more expensive feature.
-3. **Drop D-2 entirely?** *Lean: yes, revisit only if (b) shows you run coding passes.*
-4. **The 68-tag fact — is manual coding something you intend to do and haven't, or something you
-   don't want?** *Lean: answer this before any coding-assist work at all.* Every version of D-2 is
-   worthless if it is the second.
+3. **Defer D-2 behind a triage model?** *Lean: yes.* The blocker is no longer demand — it is that
+   checklist marks are ephemeral, so there is nothing to attach a label to that survives retyping
+   the query.
+4. ~~**The 68-tag fact — intend-to-and-haven't, or don't-want?**~~ **ANSWERED 2026-08-01:**
+   intend-to-and-haven't, plus colleagues already using tags heavily. Recorded here because it is
+   the fact that reopened D-2.
 
 ---
 
@@ -1020,7 +1041,7 @@ M-3   (independent — drop in anywhere)
 D-1a  (independent — needs only the bundled keyness artifact)
 D-1b ─┐
 D-1c ─┴► optional follow-ons                (Milestone 5, re-scoped)
-D-2   DROPPED — see the re-scope above
+D-2   DEFERRED behind a triage model — see the re-scope above
 ```
 
 **If you only do three sessions: Q-1, Q-2, R-1.** NEAR plus a legible query plus faceted
