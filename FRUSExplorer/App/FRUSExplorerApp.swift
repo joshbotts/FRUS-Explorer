@@ -277,12 +277,29 @@ struct FRUSExplorerApp: App {
     /// One-time TipKit bootstrap shared by both platform inits. Drives the
     /// curated discovery tips in `DiscoveryTips.swift`. Failure is non-fatal —
     /// the tips simply never appear.
+    ///
+    /// ## `.hourly`, not `.immediate` (#597 Phase 0)
+    /// `.immediate` was set when there were three tips and two display sites, and never revisited.
+    /// It is the app-wide anti-pile-on lever, and Phase 1 starts adding anchors to surfaces a new
+    /// user meets in their first minutes — with `.immediate` they would collect several popovers in
+    /// one sitting, which reads as an interruption rather than a hint. `.hourly` gives one per
+    /// sitting; a user exploring across a week still meets all of them. `.daily` would stretch a
+    /// four-tip set over four days.
+    ///
+    /// ## Tips are suppressed under UI test
+    /// A popover intercepts `app.buttons[…].tap()`, and the symptom is "the tap did nothing" —
+    /// the exact misdiagnosis `UIObstructionTests` records having cost three investigations. This
+    /// is `hideAllTipsForTesting()`, never `showAllTipsForTesting()`: the latter forces display
+    /// regardless of rules, which is the opposite of what a deterministic suite wants.
     private static func configureTipKit() {
         do {
             try Tips.configure([
-                .displayFrequency(.immediate),
+                .displayFrequency(.hourly),
                 .datastoreLocation(.applicationDefault),
             ])
+            if ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1" {
+                Tips.hideAllTipsForTesting()
+            }
         } catch {
             #if DEBUG
             print("[FRUSExplorerApp] TipKit configuration failed: \(error)")
