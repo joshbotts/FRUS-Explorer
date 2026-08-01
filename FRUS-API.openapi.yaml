@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: FRUS API
-  version: 0.3.0-draft
+  version: 0.4.0-draft
   description: |
     # FRUS API — Draft Specification
 
@@ -18,6 +18,7 @@ info:
     | 0.1.0-draft | 11–28 | Initial endpoints: volumes, documents, search, subjects |
     | 0.2.0-draft | 28–39 | Cross-reference graph, page ranges, citation lookup, person-ref search param |
     | 0.3.0-draft | 40–150 | `dateISO` on `DocumentBrowserEntry` and `SearchResult`; new `/persons`, `/terms`, `/html`, and `/source-notes` endpoints; `DocumentHighlight` schema; `StructuredSourceNote` schema; `PersonEntry` and `GlossEntry` schemas |
+    | 0.4.0-draft | Query & Corpus Analysis wave (PRs #582–#634) | Corpus-scale analysis endpoints the wave could not afford on device: `/corpus/vocabulary`, `/corpus/term-statistics`, `/analysis/term-ranking`, `/analysis/collocates`, `/analysis/term-distribution`, `/search/concordance`, `/documents/{id}/similar`, `/documents/{id}/reprints`; `facets` on `/search` |
 
     ## Purpose
 
@@ -47,6 +48,65 @@ info:
     | `GET /volumes/{id}/terms` | `TermsParserDelegate` + `terms` SQLite table | Full volume XML download + SAX parse |
     | `GET /volumes/{id}/documents/{id}/html` | `FRUSRenderNodeHTMLSerializer` + `HTMLTemplate` | XML download + AST conversion + HTML serialization |
     | `GET /volumes/{id}/source-notes` | `SourcesParserDelegate` + `SourceNoteParser` + `document_sources` table | XML download + provenance parsing |
+
+    ## Capabilities Priced Out On Device (v0.4.0)
+
+    The Query & Corpus Analysis wave (PRs #582–#634) shipped six analysis
+    surfaces — result-set facets, a KWIC concordance, keyness, collocation,
+    per-period occurrence measures, and working corpora. Every one of them is
+    bounded on device by the same two constraints, and both are constraints
+    only the publisher can lift.
+
+    **1. The library fence.** Every local measure runs against the volumes the
+    researcher has actually downloaded and indexed — in practice a handful of
+    the 552 in the manifest. The statistic is not wrong, but it is not a
+    statement about FRUS, and five PRs in this wave (#604, #605, #608, #611,
+    #616) went to labelling which set each number describes. The endpoints
+    below compute over the published corpus, so the answer means what a
+    researcher assumes it means.
+
+    **2. The bundled-reference ceiling.** Where a measure needs corpus-wide
+    reference data, the app ships a precomputed artifact. That works, and it
+    has a fixed price: the bundled JSON footprint is 12.32 MB;
+    `keyness-baseline.json` retains only the top 20,000 terms per lens (the
+    `allTerms` cut falls at a corpus count of 110, `topics` at 65), so rarer
+    terms are reported as *unpriced* rather than scored; the cloud vectors keep
+    the top 50 terms per scope; and a full `CloudVectorsGenerator` run takes
+    50–60 minutes, which is why the reference is pinned to one tokenisation and
+    `BundledKeynessBaseline` withholds keyness entirely
+    (`.unavailable(.configurationMismatch)`) when the researcher changes a
+    tokenisation setting the artifact was not built under.
+
+    | Endpoint | What it unblocks | Priced out on device because |
+    |----------|------------------|------------------------------|
+    | `GET /corpus/vocabulary` | D-1a/D-1b — showing which real words a stemmed index term stands for | `fts5vocab` has no index behind `doc`/`cnt`, so any ranked browse is a full scan of 274,927 stems; the shipped fallback derives variants from the app's English lexicon and must therefore say "words with this root **include**…", never "are" |
+    | `POST /corpus/term-statistics` | The reference side of keyness and collocation, untruncated and under the caller's own tokenisation | `keyness-baseline.json` is a 20,000-term-per-lens head fixed at `WordCloudTuning.standard`; below the cut a term is unpriced, and a settings change makes the whole measure unavailable |
+    | `POST /analysis/term-ranking` | S-1 keyness and the word cloud over any scope, including scopes the library does not hold | Scope vectors are bundled at top-50 per scope, and a date-range cloud silently keeps only the earliest 5,000 documents (`WordCloudScopeResolver.dateRangeKeyLimit`) |
+    | `POST /analysis/collocates` | S-2 collocation over a whole result set rather than a retained page of it | The scan is capped at 200,000 window tokens (~2.5 s of `NLTagger` work at the measured 80,124 tokens/sec) over a result set itself retained at 1,000 (iOS) / 7,500 (macOS); the plan's own scope note concedes "the whole corpus is not" affordable |
+    | `GET /analysis/term-distribution` | R-2 occurrence, dispersion and normalised time series | Instance-mode counting is honest for a single-word query only (`OccurrenceAvailability`): exact-word is impossible from a stemmed index, and phrase/prefix/`NEAR`/boolean shapes have no single honest total. A `the`-class term costs 2.03 s and returns 314,609 rows, and the iPhone case was never measured |
+    | `GET /search/concordance` | R-3b KWIC reading across the whole match, sorted on left or right context | `SearchService.concordance` deliberately takes *the displayed page*: the retained macOS set would be a 37 MB body-text fetch for a view showing twenty lines. Local alignment also uses the Swift `PorterStemmer` where the index used SQLite's, so some matched documents contribute no line at all |
+    | `GET /volumes/{id}/documents/{id}/similar` | The lexical-neighbour axis withdrawn on 2026-08-01 | An all-pairs pass over ~314k documents is not an on-device computation, a top-10-per-document index is ~40–45 MB of JSON, and the thresholded alternative measured 3.9–4.6 MB against a 3.5 MB bar. The fatal objection was coverage, not size: neighbours are reserved ≥80% cross-volume, every local path drops a candidate with no `document_cache` row, and at a 40-volume library that leaves 7.5–13% effective document coverage |
+    | `GET /volumes/{id}/documents/{id}/reprints` | The piece of that assessment that survived: "also printed as Doc 412 in vol. VIII" | Same all-pairs cost, and the payoff is precisely the case the device cannot reach — the citation is the deliverable *because* the other volume is not downloaded |
+    | `facets` on `GET /search` | R-1 facets over the whole match, and #586's reachability of a slice | Facet counts are computed over the whole local match while the result list is capped at 1,000/7,500 — a difference surfaces must state rather than smooth over — and reordering buckets means fetching every bucket and sorting client-side |
+
+    Three properties are worth stating once, because every endpoint in the
+    group depends on them:
+
+    - **Both key spaces, always.** The local FTS5 index is `porter unicode61`
+      **stems**; the keyness reference is `NLTagger` **lemmas**. `alliance`,
+      `security`, `defense` and `treaty` are all present as lemmas while
+      `allianc`, `secur`, `defens`, `treati` are all absent, which is why
+      `BundledKeynessBaseline` refuses the join outright. Responses that carry
+      terms therefore name the space they are in, and `/corpus/vocabulary`
+      returns the bridge between them.
+    - **A bound that bit is data, not a footnote.** Where the app reports
+      `wasBounded`, `omittedAnchorCount`, `documentsWithoutLines` or
+      `undatedCount`, the equivalent response field is required, so a server
+      that does truncate cannot look like one that did not.
+    - **Unavailable carries a reason.** The app's rule — never a zero, never a
+      blank cell, where the honest answer is "this query shape has no single
+      count" — is mirrored in `OccurrenceAvailability` on the response rather
+      than left to the client to infer.
 
     ## Relationship to the Current App
 
@@ -164,6 +224,21 @@ tags:
       rendered via the CSS Custom Highlight API (Sessions 143–145).
   - name: Search
     description: Full-text search across indexed FRUS documents
+  - name: CorpusAnalysis
+    description: |
+      Corpus-scale vocabulary and distribution statistics computed over the
+      published corpus rather than over the volumes a client happens to hold.
+      Added in v0.4.0 for the Query & Corpus Analysis wave (PRs #582–#634),
+      whose local implementations are bounded by the downloaded library and by
+      the size of the bundled reference artifacts.
+  - name: RelatedDocuments
+    description: |
+      Document-to-document relationships that require an all-pairs pass over the
+      whole corpus: lexical neighbours and reprints. `RelatedDocumentsEngine`
+      ranks candidates on device, but its candidate universe is the two
+      generators (archival provenance and editorial cross-references) — nothing
+      local says "these two documents are about the same thing". Added in
+      v0.4.0 after the on-device lexical-neighbour index was withdrawn.
   - name: CitationLookup
     description: Page-number-to-document resolution (Session 30)
 
@@ -981,6 +1056,36 @@ paths:
             If provided, restrict results to documents mentioning this person ref
             (the `ref` attribute value from `<persName ref="...">` elements, e.g. `"p_kissinger"`).
             Applied as a post-processing filter after FTS5 matching. Added in Session 39.
+        - name: facets
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [years, volumes, people, documentType, provenance]
+          style: form
+          explode: true
+          description: |
+            Facet sections to compute over the **whole match** and return in the
+            `facets` property of the response. Omit for no facets.
+
+            **Current implementation:** `ResultSetFacets` (R-1a) aggregates these
+            five sections in SQL over the local match, deliberately not over the
+            fetched page and not over the checklist-filtered subset — decision
+            R-1-2, "otherwise the denominator shifts under the researcher as they
+            triage". Two limits are the reason to want them served: the counts
+            describe the whole local match while the result list is separately
+            capped at 1,000 (iOS) / 7,500 (macOS), and the match itself covers
+            only downloaded volumes.
+
+            Every bucket in a requested section is returned, sorted descending by
+            count; a server that must bound a section says so in `bounds` rather
+            than truncating silently. #586 asks for facet rows to be reorderable
+            so a researcher can reach the slice they want (facet rows are already
+            tappable to narrow, `FacetPanelView.swift:445`); serving complete
+            buckets is what makes an alternative ordering a display decision
+            rather than a second query.
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
       responses:
@@ -1026,7 +1131,7 @@ paths:
         a download.
       operationId: lookupCitation
       tags:
-        - Citation
+        - CitationLookup
       parameters:
         - name: subseries
           in: query
@@ -1072,6 +1177,808 @@ paths:
           $ref: "#/components/responses/400BadRequest"
         "401":
           $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  # ── Corpus analysis (v0.4.0) ───────────────────────────────────────────────
+  # Statistics over the published corpus rather than over a client's downloaded
+  # library. See "Capabilities Priced Out On Device" in the info description.
+
+  /corpus/vocabulary:
+    get:
+      summary: Corpus vocabulary, with the words behind each index term
+      description: |
+        Returns index vocabulary entries, each carrying **both** key spaces: the
+        Porter stem an FTS5-style index stores, the surface forms actually
+        attested in the corpus, and the lemmas the same text produces under
+        `NLTagger`. Browsable by prefix and rankable by document frequency or
+        occurrences.
+
+        **Current implementation:** `FTS5Connection` creates a persistent
+        `fts5vocab('…','row')` companion, `frus_documents_vocab`, at store open
+        (Q-3). The shipped API over it is point lookup only —
+        `FTS5Vocabulary.vocabularyEntry(stem:)` and `termProfile(for:)`. There is
+        no ranked query and no prefix scan, because an `fts5vocab` row table has
+        no index behind `doc` or `cnt`: ranking 274,927 stems is a full scan that
+        does not warm up. `WHERE term >= ? AND term < ?` is the only cheap local
+        access path, which is what D-1b would ship.
+
+        **What the client cannot do locally, at any cost.** An index term is a
+        stem, and a stem is not a word. `QueryInspectorView` warns the researcher
+        that their query was stemmed, and D-1a fills that warning by running the
+        bundled keyness baseline's `allTerms` keys back through the tokenizer —
+        an approximation of the index derived from the app's English lexicon, so
+        the copy is required to say "words with this root **include**…" and to
+        fall back to a count when the stem is uncovered. A publisher-side
+        vocabulary is derived from the corpus, so it can say *are*.
+
+        The two spaces are not interchangeable and the mismatch is measured:
+        `alliance` (15,937), `security` (177,061), `defense` (141,745) and
+        `treaty` (204,741) are present as lemmas while the stems `allianc`,
+        `secur`, `defens` and `treati` are all absent — which is why
+        `BundledKeynessBaseline` refuses to unify the two term lists on record.
+        `surfaceForms` plus `lemmas` on one entry is the join the client cannot
+        make for itself.
+      operationId: getCorpusVocabulary
+      tags:
+        - CorpusAnalysis
+      parameters:
+        - name: prefix
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Return only entries whose stem begins with this prefix. Case-folded.
+        - name: stem
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Return the single entry for this exact index term. Mutually exclusive
+            with `prefix` and `word`.
+        - name: word
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Return the entry for whichever index term this word stems to. The
+            server applies the same stemmer that built the index, which is the
+            point: the client's Swift `PorterStemmer` and SQLite's are separate
+            implementations, and Porter is not idempotent, so a client-side
+            round-trip can name a term the index never wrote.
+        - name: orderBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [documentFrequency, occurrences, term]
+            default: documentFrequency
+          description: Ranking applied before pagination.
+        - name: minimumDocumentFrequency
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: |
+            Drop entries appearing in fewer than this many documents. A frequency
+            ranking with no floor returns function words: the corpus's own top
+            stems are `the of to and in that a be on for it is state with by as
+            thi not s i`, and the app's stopword list cannot filter them because
+            it is lemma-shaped.
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Paginated vocabulary entries.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VocabularyEntryList"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /corpus/term-statistics:
+    post:
+      summary: Corpus reference counts for a term list, untruncated
+      description: |
+        Returns corpus occurrence and document-frequency counts for the supplied
+        terms under the caller's own tokenisation, together with the lens's true
+        total token count. This is the **reference side** of every keyness
+        measure in the app; the scope side stays local when the client wants it
+        to, which makes this the smallest possible substitution for the bundled
+        artifact.
+
+        `POST` rather than `GET` because the term list is the request: a
+        collocation ranking counts its own tokens and truncates nothing, so the
+        list routinely runs to thousands of terms. The operation is read-only and
+        has no side effects.
+
+        **Current implementation:** `BundledKeynessBaseline` reads
+        `keyness-baseline.json`, produced by `CloudVectorsGenerator` (S-1 part 2).
+        It ships ~1 MB inside a 12.32 MB bundled-JSON footprint, and three of its
+        properties are what this endpoint exists to remove:
+
+        1. **It is a head, not a vocabulary.** The top 20,000 terms per lens are
+           retained; the cut is a frequency rather than a rank, extended through
+           the whole tied band, and each lens reports its `cutoffCount` so a
+           caller can say "occurs fewer than N times corpus-wide" instead of
+           confusing *unpriced* with *absent*. Measured on the shipped artifact
+           the `allTerms` head cuts at 110 and prices 98.1% of token mass;
+           `topics` cuts at 65. The remaining 2% is where a period term lives.
+           `Keyness.score` turns a missing key into a real zero — which its own
+           documentation calls "a word unique to the scope" — so an unpriced term
+           floats to the *top* of a ranking unless the UI intervenes, and both
+           `WordCloudView` and `CollocationView` carry ranking and copy whose
+           only job is that intervention.
+        2. **It is pinned to one tokenisation.** The artifact records the tuning,
+           the diplomatic-stopword flag and the SHA-256 of both payloads it was
+           built under. The app's tokenizer follows live user settings, and
+           `excludeBoilerplate` is one tap away in the word cloud's own overflow
+           menu — so a legitimate settings change yields
+           `.unavailable(.configurationMismatch)` and keyness disappears rather
+           than reporting a wrong number. A server counts under whatever
+           tokenisation the caller states, so the measure stays available.
+        3. **It is expensive to refresh.** A full `CloudVectorsGenerator` run over
+           552 volumes is 50–60 minutes, so the reference is only as current as
+           the last build shipped to the App Store.
+
+        The three entity lenses (`people`, `places`, `organizations`) are
+        unpriced by the generator because `WordCloudMultiLensTokenizer` refuses
+        them; a server may price them, and reports `pricedLenses` so a client can
+        offer only what it can score.
+      operationId: getCorpusTermStatistics
+      tags:
+        - CorpusAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermStatisticsRequest"
+      responses:
+        "200":
+          description: Corpus counts for the requested terms.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermStatisticsResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /analysis/term-ranking:
+    post:
+      summary: What a scope is about, by frequency or by keyness
+      description: |
+        Ranks the vocabulary of an arbitrary scope — the corpus, a subseries, a
+        volume list, a date range, a query's whole match, or an explicit document
+        list — either by raw frequency or by keyness against the corpus.
+
+        **Current implementation:** the word cloud. `WordCloudScopeResolver`
+        resolves the scope, `WordCloudMultiLensTokenizer` counts it in one
+        `NLTagger` pass, and `KeynessCloud` re-ranks against
+        `BundledKeynessBaseline` for the "Distinctive" mode (S-1 part 3). With no
+        volumes downloaded the cloud still renders, from `cloud-vectors-core.json`
+        and `cloud-vectors-volumes.json`.
+
+        Three limits are structural, and all three are properties of shipping the
+        answer in the bundle rather than computing it:
+
+        - **Top 50 per scope.** The bundled vectors keep 50 terms per scope per
+          lens. Aggregation happens before truncation, so subseries totals are
+          right, but nothing below the cut can ever be shown.
+        - **5,000 documents per date range.** `WordCloudScopeResolver` caps a
+          date-range scope at `dateRangeKeyLimit = 5000` documents, taken
+          **ascending**, so a "1950s" cloud can describe 1950–51 and label itself
+          1950–59. This is the surface that best answers "what words did people
+          use for this, then", and it is quietly date-biased.
+        - **Thin scopes are marked, not hidden.** A scope with too little text is
+          returned flagged `belowSignalThreshold` rather than silently replaced by
+          a wider one (decision O-4-2): a fallback would show the era's vocabulary
+          and let the researcher attribute it to the volume. Responses here keep
+          that contract.
+
+        A document-key scope is how a **working corpus** (M-1) is analysed. The
+        client sends `documentKeys` in the `"volumeId/documentId"` form
+        `WorkingCorpus.documentKeys` already stores, and gets a ranking over the
+        researcher's own set — including its documents in volumes that are not
+        downloaded, which is exactly the part the device cannot do.
+      operationId: rankScopeTerms
+      tags:
+        - CorpusAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermRankingRequest"
+      responses:
+        "200":
+          description: Ranked terms for the scope, with the bounds that applied.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermRankingResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /analysis/collocates:
+    post:
+      summary: What appears near a query, ranked by how distinctive that company is
+      description: |
+        Collects the words within ±N of every match of a query across a scope and
+        ranks them against the corpus reference — the inverse of a proximity
+        search, and the question `NEAR` cannot answer.
+
+        **Current implementation:** `SearchService.collocation` (S-2 part 1) scans
+        `document_cache.body_text` in chunks of 400 documents, fans the per-
+        document scan out across a task group, and ranks through
+        `CollocationAnalysis.rank`. It is careful, measured work, and it is bounded
+        in three places at once:
+
+        - **The match budget.** `collocationTokenBudget = 200_000` surviving
+          window tokens, about 2.5 s of tagging at the measured 80,124 tokens/sec.
+          The bound is on matches rather than bytes because the `NLTagger` pass is
+          the cost: a dense query over a full macOS result set is 6.4 s of tagging
+          against 4.2 s of everything else.
+        - **The set it can even see.** It takes the *retained* result set — 1,000
+          results on iOS, 7,500 on macOS — not the whole match, and the whole match
+          covers only downloaded volumes.
+        - **200 matches per document.** `CollocationWindow.maxAnchorsPerDocument`,
+          with the dropped count reported as `omittedAnchorCount` rather than
+          absorbed.
+
+        The plan's own scope note is explicit that the corpus is out of reach:
+        "a few thousand documents × ~10 KB of body text is tens of MB of scanning
+        — fine on-device; the whole corpus is not."
+
+        **Contract preserved from the local implementation.** `documentsScanned`
+        and `documentsOffered` are separate fields for a reason: conflating them
+        made a complete scan report itself as truncated whenever a document was
+        missing from the cache. `bounded` is keyed on what the scan was *offered*,
+        never on what had text. A collocate the reference cannot price is returned
+        with `unpriced: true`, because a naive sort by effect size otherwise
+        returns the unpriced tail and nothing else, every row advertising a
+        multiple that the same row's label calls an upper bound.
+      operationId: getCollocates
+      tags:
+        - CorpusAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollocationRequest"
+      responses:
+        "200":
+          description: Ranked collocates, with the scan's coverage stated.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollocationResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /analysis/term-distribution:
+    get:
+      summary: A term's distribution over time, volumes or subseries
+      description: |
+        Returns a term's distribution across periods or corpus divisions, in
+        documents or occurrences, with the corpus denominator for each bucket so
+        a share can be computed without a second call, and with dispersion
+        alongside frequency.
+
+        **Current implementation:** `CorpusAnalyticsService.termFrequencyByYear` /
+        `documentTotalsByYear` behind `AnalyticsView`, normalised per CA-4 and
+        extended by R-2 (PR-C dispersion, PR-D occurrences).
+
+        **Why occurrences are the expensive half.** R-2 PR-D measured the real
+        6.3 GB index: 274,927 distinct stems, 234,155,358 postings, 316,839
+        documents. An instance-mode `fts5vocab` companion attaches in 6 ms and
+        scans at 7–8M postings/s, but joining it to `document_cache` in SQL costs
+        8.99 s for `govern` and 12.91 s for `state`, because cost tracks document
+        count rather than postings — ~300k random rowid lookups into a table whose
+        rows average 5.7 KB. The shipped design reads the posting list and buckets
+        in Swift instead, 40–90× faster; the ceiling a researcher can type by
+        accident is `the` at 2.03 s returning 314,609 rows, and the plan records
+        that the iPhone case was never measured.
+
+        **Why some shapes have no local answer at all.** `OccurrenceAvailability`
+        classifies the query before counting, and its unavailable cases are
+        properties of a stemmed FTS5 index: an exact-word query cannot be counted
+        from stems at any cost; prefix, phrase and `NEAR` match several index
+        terms and instance mode is per-term; a boolean has no single honest total.
+        The app deliberately shows documents and states the reason rather than
+        printing a number that means something different per shape.
+
+        A publisher-side index need not inherit all of those. A server holding a
+        positional index — and, if it chooses, an unstemmed one, which the app
+        ruled out rather than double its own index size — can count phrase and
+        proximity occurrences honestly. The response therefore carries its own
+        `occurrenceAvailability` object instead of assuming the client's rules,
+        and a composite query still resolves to per-operand series rather than one
+        meaningless total.
+
+        **Dispersion is not decoration.** Measured in the same pass: Article 43
+        occurrences rise 1948→1949 (77→92) while its documents fall (34→11),
+        because one document, `frus1949v01/d102`, carries 54 of the 92. "Article 43
+        collapsing" is a document-count claim, and the occurrence data says the
+        topic concentrated rather than faded.
+      operationId: getTermDistribution
+      tags:
+        - CorpusAnalysis
+      parameters:
+        - name: term
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            The term or query to plot, in the same inline syntax `/search`
+            accepts. A composite query yields one series per positive operand.
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [year, decade, volume, subseries, administration]
+            default: year
+          description: |
+            Bucketing. `administration` keys documents to who was in office on the
+            document's own date, matching the offline
+            `AdministrationProfilesIndexGenerator` attribution (coverage, not
+            production; Nixon and Ford distinct; the two Cleveland and Trump terms
+            separate).
+        - name: measure
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [documents, occurrences, dispersion]
+            default: documents
+          description: |
+            `documents` counts matching documents; `occurrences` counts instances;
+            `dispersion` reports both plus occurrences-per-document, the statistic
+            `FTS5Vocabulary.occurrencesPerDocument` defines locally and no app
+            surface currently calls.
+        - name: volumeIds
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: |
+            Restrict to these volumes. Omit for the whole corpus — which is the
+            default the local implementation cannot offer, since its corpus is
+            whatever has been downloaded.
+        - name: documentType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, documentsOnly, editorialNotesOnly]
+            default: all
+          description: |
+            Applied identically to numerator and denominator. The local
+            normalisation is trustworthy precisely because
+            `termFrequencyByYear` and `documentTotalsByYear` apply byte-identical
+            rules over key spaces that coincide by construction; a server that
+            filtered one side only would reintroduce the shares above 100% CA-4
+            fixed.
+        - name: undatedPolicy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [volumeStartYear, separateBucket, exclude]
+            default: volumeStartYear
+          description: |
+            How documents with no date are bucketed. `volumeStartYear` mirrors the
+            app's fallback, applied to **both** sides — the mirror-image bug is an
+            undated document's occurrences vanishing while its document remains.
+            `separateBucket` returns them in `undatedCount` instead, which is what
+            a person-mention numerator needs, since that numerator is dated-only
+            and borrowing a fallback-bearing denominator makes its shares too
+            small.
+      responses:
+        "200":
+          description: One or more series, with corpus denominators per bucket.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermDistributionResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /search/concordance:
+    get:
+      summary: Keyword-in-context lines across a whole match
+      description: |
+        Returns one line per **occurrence** — left context, the matched text as it
+        appears, right context — across the whole match rather than a page of it,
+        sortable on the columns a concordance is read down.
+
+        **Current implementation:** `KWICBuilder` + `KWICLine` (R-3b part 1),
+        surfaced on both search surfaces by R-3b part 2.
+        `SearchService.concordance` takes **the displayed page** and says why:
+        passing the whole retained set "would fetch body text for up to 7,500
+        documents — 37 MB on macOS, for a view showing twenty lines", and
+        `SearchResult` deliberately carries no `bodyText` because 1,000 (iOS) or
+        7,500 (macOS) retained results each holding a body is a permanent memory
+        cost paid by every search for a mode most searches never open. R-3a's
+        two-phase fetch — rank narrow, hydrate the window — is the same economy
+        applied to the result list.
+
+        So the local concordance is honest about what it covers, and what it
+        covers is a page. Served by the publisher, the same view describes the
+        match.
+
+        **One defect disappears with it.** Local alignment re-derives stems with
+        the Swift `PorterStemmer` while the match came from SQLite's, so a matched
+        document can produce no aligned occurrence at all; the shipped result
+        counts them in `documentsWithoutLines` rather than dropping them silently.
+        A server that matched and aligned with one tokenizer has no such
+        divergence — but the field is kept in the response, required, so a client
+        cannot tell the two situations apart by accident.
+
+        `sortBy: leftContext` orders on the left context **reversed by
+        character**, which groups lines by the word immediately before the match.
+        That is where a formula announces itself, and it is the sort that turns a
+        list of hits into the observation that a phrase is boilerplate in one
+        bureau and argument in another.
+      operationId: getConcordance
+      tags:
+        - Search
+      parameters:
+        - name: keywords
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Same query semantics as `GET /search`.
+        - name: phrase
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact phrase that must appear in order.
+        - name: booleanMode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [and, or]
+            default: and
+          description: How multiple keywords are combined.
+        - name: prefixWildcard
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Prefix for a wildcard search.
+        - name: volumeIds
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Restrict to these volumes. Omit for the whole corpus.
+        - name: dateRangeEarliest
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Only concordance documents on or after this ISO 8601 date.
+        - name: dateRangeLatest
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Only concordance documents on or before this ISO 8601 date.
+        - name: documentKeys
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: |
+            Concordance exactly these documents, in `"volumeId/documentId"` form —
+            a working corpus (M-1), or a collection. Mutually exclusive with the
+            query parameters above.
+        - name: contextCharacters
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 20
+            maximum: 400
+            default: 60
+          description: |
+            Characters either side of the match. Matches the local `radius`
+            default of 60.
+        - name: maxLinesPerDocument
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 200
+          description: |
+            Per-document bound. Occurrences beyond it are counted in
+            `omittedCount`, never silently dropped.
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [document, date, leftContext, rightContext]
+            default: document
+          description: |
+            Concordance ordering. `leftContext` sorts on the reversed left
+            context; `rightContext` on the right context as written.
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Paginated concordance lines, one per occurrence.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConcordanceLineList"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /volumes/{volumeId}/documents/{documentId}/similar:
+    get:
+      summary: Documents about the same thing, corpus-wide
+      description: |
+        Returns the documents most lexically similar to this one across the whole
+        corpus, with the shared vocabulary that produced each match.
+
+        **This endpoint exists because the on-device version was withdrawn.** The
+        assessment (v2.0, 2026-08-01) rejected the bundled lexical-neighbour index
+        on two grounds, and only the first is about size:
+
+        - **Size.** A conventional top-10-neighbours-per-document index over
+          ~314k documents is ~40–45 MB of JSON, far outside the house
+          `Data(contentsOf:) + JSONDecoder` pattern; the thresholded strong-pairs
+          alternative measured 3.9–4.6 MB at 120k pairs against a ≤3.5 MB bar. The
+          all-pairs similarity pass itself is a corpus-scale computation the app
+          has no way to run.
+        - **Coverage, which is fatal and which size cannot fix.** Every local
+          related-documents path drops a candidate with no `document_cache` row —
+          `RelatedDocumentsEngine.rank` guards on exactly that — and the design
+          reserved ≥80% of neighbours for cross-volume pairs. At a 40-volume
+          library that retains roughly 30% of a document's neighbours, i.e. 7.5–13%
+          effective coverage, below the plan's own 15% floor **by construction**.
+          For contrast, measured on the live index: 61.7% of documents have an
+          archival-provenance companion inside their own volume and 71.7% of
+          cross-reference edges are intra-volume, so both shipped axes degrade
+          gracefully to a one-volume library where a cross-volume lexical axis
+          degrades catastrophically.
+
+        A publisher-side endpoint inverts both objections: the computation happens
+        once where the whole corpus already is, and a neighbour in a volume the
+        researcher has never downloaded is returned as a citation they can act on.
+
+        **Do not consume this as a sixth similarity axis without weighting care.**
+        `RelatedDocumentsEngine` normalises each axis by its own maximum, so an
+        axis returning a single candidate hands it 1.0; at the proposed default
+        weight of 0.7 that outranks a genuine single-citation cross-reference
+        partner (0.173) by 4×. Whatever the served coverage, the client should
+        rank served neighbours against each other, not against a locally-derived
+        maximum.
+      operationId: getSimilarDocuments
+      tags:
+        - RelatedDocuments
+      parameters:
+        - $ref: "#/components/parameters/VolumeId"
+        - $ref: "#/components/parameters/DocumentId"
+        - name: minimumScore
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+            default: 0.4
+          description: |
+            Cosine-similarity floor. The assessment's measurement pass used
+            τ ∈ {0.30, 0.40, 0.50, 0.60}.
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [corpus, crossVolume, sameVolume]
+            default: corpus
+          description: |
+            `crossVolume` excludes neighbours inside the anchor's own volume —
+            the pairs no local axis can find. `sameVolume` is the cheap case the
+            device can already approximate.
+        - name: includeSharedTerms
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+          description: |
+            Whether to return the terms that produced each match. They are the
+            only way a researcher can check a similarity claim, and a similarity
+            score with nothing behind it is not evidence.
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Neighbours, most similar first. May be empty.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimilarDocumentList"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "429":
+          $ref: "#/components/responses/429TooManyRequests"
+        "500":
+          $ref: "#/components/responses/500ServerError"
+
+  /volumes/{volumeId}/documents/{documentId}/reprints:
+    get:
+      summary: Where else this document is printed in FRUS
+      description: |
+        Returns other printings of the same document elsewhere in the series —
+        "also printed as Document 412 in *Foreign Relations*, 1952–1954, vol.
+        VIII" — with a formatted citation for each.
+
+        **The one piece of the lexical-neighbour assessment that survived it.**
+        The v1.0 design treated near-identical pairs (score ≥95) as noise to be
+        filtered out of a topical-similarity index; the v2.0 revision concluded
+        they are the better feature. FRUS genuinely reprints documents, precision
+        is ~1.0, the result is verifiable by eye, and — the decisive property —
+        it is *most* useful when the other volume is **not** downloaded, because
+        the citation itself is the deliverable.
+
+        It is deliberately a separate endpoint rather than a filter on `/similar`:
+        the assessment's recommendation is that reprints render as a document-view
+        affordance and never as a similarity axis, so they never touch the
+        per-axis normalisation defect and add no weight slider to a UI that
+        already iterates `SimilarityAxis.allCases` unconditionally.
+
+        `citation` is pre-formatted in the style `CitationFormatter` produces, so
+        a client can display and export a reprint reference for a volume it has
+        never downloaded and cannot format from local metadata.
+      operationId: getDocumentReprints
+      tags:
+        - RelatedDocuments
+      parameters:
+        - $ref: "#/components/parameters/VolumeId"
+        - $ref: "#/components/parameters/DocumentId"
+      responses:
+        "200":
+          description: Other printings of this document. Usually empty.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/X-RateLimit-Limit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/X-RateLimit-Remaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/X-RateLimit-Reset"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReprintMatch"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
         "429":
           $ref: "#/components/responses/429TooManyRequests"
         "500":
@@ -1298,6 +2205,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SearchResult"
+        facets:
+          $ref: "#/components/schemas/SearchFacets"
+          description: |
+            Present only when the `facets` query parameter was supplied. Computed
+            over the whole match, never over this page.
 
     SubjectTagList:
       type: object
@@ -2238,4 +3150,999 @@ components:
           description: "`true` when the matched volume is not in the local corpus."
         volumeManifestEntry:
           $ref: "#/components/schemas/VolumeManifestEntry"
-          description: Populated for `requiresDownload: true` results.
+          description: "Populated for `requiresDownload: true` results."
+
+    # ── Corpus analysis (v0.4.0) ─────────────────────────────────────────────
+
+    WordCloudLens:
+      type: string
+      enum:
+        - allTerms
+        - concepts
+        - topics
+        - actions
+        - descriptors
+        - sentiment
+        - people
+        - places
+        - organizations
+      description: |
+        Vocabulary lens, matching `WordCloudLens` in `WordCloudKit`. The first six
+        are lexical; the last three are entity lenses, which
+        `WordCloudMultiLensTokenizer` refuses and `CloudVectorsGenerator`
+        therefore leaves unpriced. `allTerms` is the app's default and must be
+        priced by any server offering keyness, because `WordCloudView`'s picker
+        offers every case and a lens with no reference makes the measure silently
+        unavailable on a lens the researcher can select.
+
+    TokenizationOptions:
+      type: object
+      description: |
+        The tokenisation a caller is counting under, so scope-side and
+        reference-side counts are comparable.
+
+        This object is why a served reference does not need the artifact's
+        configuration pinning. `keyness-baseline.json` records the tuning and the
+        SHA-256 of both bundled payloads it was built under, and
+        `BundledKeynessBaseline` returns `.unavailable(.configurationMismatch)`
+        rather than a wrong number when the live settings differ — asymmetrically,
+        since a longer `minimumLength` only shrinks the scope and is allowed,
+        while a shorter one or a `foldPlurals` flip admits terms the reference
+        never counted. A server counts on request, so a legitimate settings change
+        costs a recount rather than the whole measure.
+      properties:
+        minimumLength:
+          type: integer
+          minimum: 1
+          default: 3
+          description: Shortest term counted. `WordCloudTuning.minimumLength`.
+        minimumCount:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Smallest scope count retained. `WordCloudTuning.minimumCount`.
+        foldPlurals:
+          type: boolean
+          default: true
+          description: Whether plural forms fold into their singular.
+        filterMarkings:
+          type: boolean
+          default: true
+          description: |
+            Whether classification and handling markings (`SECRET`, `NODIS`,
+            `EYES ONLY`) are excluded.
+        excludeBoilerplate:
+          type: boolean
+          default: true
+          description: |
+            Whether the diplomatic stopword layer is applied. This is the setting
+            most likely to diverge in practice: it is one tap away in the word
+            cloud's own overflow menu, and turning it off fills a scope with
+            `department`, `telegram`, `washington` against a reference count of
+            zero — which keyness would rank as the corpus's most distinctive
+            vocabulary.
+
+    AnalysisScope:
+      type: object
+      description: |
+        The document set a statistic is computed over, mirroring `WordCloudScope`
+        and `ResultSetScope` in the app. Exactly one selector is honoured, in the
+        order `documentKeys`, `query`, `volumeIds`, `subseriesId`, `dateRange`,
+        `corpus`.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [corpus, volumes, subseries, dateRange, query, documents]
+          description: Which selector applies.
+        volumeIds:
+          type: array
+          items:
+            type: string
+          description: "Volume identifiers, for `type: volumes`."
+        subseriesId:
+          type: string
+          description: "Subseries identifier, for `type: subseries`."
+        startDate:
+          type: string
+          format: date
+          description: "Inclusive lower bound, for `type: dateRange`."
+        endDate:
+          type: string
+          format: date
+          description: "Inclusive upper bound, for `type: dateRange`."
+        query:
+          type: string
+          description: |
+            A query in the inline syntax `/search` accepts, for `type: query`. The
+            scope is its **whole match**, which is the part a client cannot
+            reproduce: its own result set is retained at 1,000 (iOS) or 7,500
+            (macOS) rows.
+        documentKeys:
+          type: array
+          items:
+            type: string
+          description: |
+            Explicit `"volumeId/documentId"` keys, for `type: documents`. This is
+            the shape `WorkingCorpus.documentKeys` and
+            `SummarizationScope.savedSearch(documentKeys:)` already store, so a
+            researcher's working corpus (M-1) can be analysed as it stands —
+            including the documents in it whose volumes are not downloaded.
+        documentType:
+          type: string
+          enum: [all, documentsOnly, editorialNotesOnly]
+          default: all
+          description: Whether editorial notes are included.
+
+    VocabularyEntryList:
+      type: object
+      description: Paginated response wrapping corpus vocabulary entries.
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          description: Exact count of entries matching the filter.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VocabularyEntry"
+
+    VocabularyEntry:
+      type: object
+      description: |
+        One index term, with the words it stands for. `stem` and `lemmas` are
+        deliberately both present: they are different key spaces, they disagree
+        systematically, and no client can join them from what it holds.
+      required:
+        - stem
+        - documentFrequency
+        - occurrences
+        - surfaceForms
+      properties:
+        stem:
+          type: string
+          description: |
+            The index term, as a `porter unicode61` tokenizer produces it —
+            what a stemmed full-text query actually matches on.
+          example: allianc
+        documentFrequency:
+          type: integer
+          description: |
+            Documents containing the term. The `doc` column of an `fts5vocab`
+            row-mode companion.
+          example: 8160
+        occurrences:
+          type: integer
+          description: |
+            Total instances across the corpus. The `cnt` column. Instance-mode and
+            row-mode counts agree exactly — verified across terms in the R-2 PR-D
+            measurement pass — so either can check the other.
+          example: 16253
+        surfaceForms:
+          type: array
+          description: |
+            The words actually printed in FRUS that produce this stem, most
+            frequent first. This is the list D-1a can only approximate locally,
+            because the local map is derived from the app's English lexicon rather
+            than read out of the corpus and can under-report a variant.
+          items:
+            type: object
+            required:
+              - form
+              - occurrences
+            properties:
+              form:
+                type: string
+                example: alliances
+              occurrences:
+                type: integer
+                example: 4102
+              documentFrequency:
+                type: integer
+        lemmas:
+          type: array
+          items:
+            type: string
+          description: |
+            The `NLTagger` lemmas the same surface forms produce — the key space
+            `keyness-baseline.json` uses. Non-trivial rather than cosmetic: the
+            verb `contain` (55,794) and the noun `containment` (569) are separate
+            lemma keys, while the single index stem `contain` covers both, so a
+            client pairing a stem with one lemma's count gets a confident wrong
+            denominator.
+        isStopword:
+          type: boolean
+          description: |
+            Whether the term is filtered by the published stopword layer. Useful
+            because a frequency-ranked vocabulary is otherwise topped by function
+            words the app's lemma-shaped stopword list cannot remove — 47% of the
+            corpus's top stems do not match it.
+
+    TermStatisticsRequest:
+      type: object
+      description: A term list to price against the corpus.
+      required:
+        - lens
+        - terms
+      properties:
+        lens:
+          $ref: "#/components/schemas/WordCloudLens"
+        terms:
+          type: array
+          maxItems: 50000
+          items:
+            type: string
+          description: |
+            Terms to price, in the lens's own key space (lemmas for the lexical
+            lenses). No cap below `maxItems`: a collocation ranking counts its own
+            tokens and truncates nothing, so the list is routinely thousands long.
+        tokenization:
+          $ref: "#/components/schemas/TokenizationOptions"
+
+    TermStatisticsResponse:
+      type: object
+      description: |
+        Corpus counts for the requested terms, plus the denominator every keyness
+        measure divides by.
+      required:
+        - lens
+        - totalTokens
+        - cutoffCount
+        - terms
+      properties:
+        lens:
+          $ref: "#/components/schemas/WordCloudLens"
+        totalTokens:
+          type: integer
+          description: |
+            The lens's **true** total token count across every term in the corpus,
+            not the sum of the terms returned here. The distinction is the whole
+            point of the field: a relative frequency divided by a truncated sum is
+            inflated for every term, and inflated unevenly against the scope side.
+          example: 71204118
+        cutoffCount:
+          type: integer
+          description: |
+            The smallest corpus count this response prices. `1` when every term is
+            priced, which a server computing on request can guarantee. Retained so
+            a client can keep one code path for "occurs fewer than N times
+            corpus-wide (unpriced)" — the bundled artifact's `allTerms` cutoff is
+            110 and its `topics` cutoff is 65.
+        distinctTerms:
+          type: integer
+          description: |
+            Distinct terms in the corpus for this lens, for a coverage line.
+            Measured at 254,027 for `allTerms` on the shipped artifact, of which
+            the bundled head prices 20,000.
+        generated:
+          type: string
+          format: date-time
+          description: |
+            When the underlying counts were computed. Replaces the bundled
+            artifact's `generated` stamp in provenance lines.
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/CorpusTermStatistic"
+
+    CorpusTermStatistic:
+      type: object
+      description: One term's corpus counts.
+      required:
+        - term
+        - occurrences
+        - documentFrequency
+      properties:
+        term:
+          type: string
+        occurrences:
+          type: integer
+          description: Instances across the corpus.
+        documentFrequency:
+          type: integer
+          description: Documents containing the term.
+
+    TermRankingRequest:
+      type: object
+      description: A scope to rank, and how.
+      required:
+        - scope
+        - lens
+      properties:
+        scope:
+          $ref: "#/components/schemas/AnalysisScope"
+        lens:
+          $ref: "#/components/schemas/WordCloudLens"
+        measure:
+          type: string
+          enum: [frequency, keyness]
+          default: keyness
+          description: |
+            `frequency` ranks on raw scope counts — the word cloud's default mode.
+            `keyness` ranks on log-likelihood against the corpus, the S-1 measure,
+            which is the corpus-linguistics standard and comparable to published
+            keyness figures.
+        tokenization:
+          $ref: "#/components/schemas/TokenizationOptions"
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+          description: |
+            Terms returned. No bundled equivalent exists above 50, which is where
+            the shipped cloud vectors truncate.
+        minimumScopeCount:
+          type: integer
+          minimum: 1
+          default: 3
+          description: |
+            Floor on scope occurrences before a term can be ranked, so a term
+            appearing twice cannot top a keyness list.
+
+    TermRankingResponse:
+      type: object
+      description: |
+        A scope's ranked vocabulary, with everything needed to state what the
+        ranking covers.
+      required:
+        - measure
+        - lens
+        - documentsInScope
+        - documentsCounted
+        - scopeTokenCount
+        - terms
+      properties:
+        measure:
+          type: string
+          enum: [frequency, keyness]
+        lens:
+          $ref: "#/components/schemas/WordCloudLens"
+        scopeTitle:
+          type: string
+          description: |
+            Human-readable name for the scope, in the form
+            `WordCloudScope.dateRangeTitle` and its siblings produce.
+        documentsInScope:
+          type: integer
+          description: Documents the scope resolves to.
+        documentsCounted:
+          type: integer
+          description: |
+            Documents whose text was counted. Equal to `documentsInScope` unless a
+            bound applied — never smoothed over. The local date-range path caps at
+            5,000 documents taken ascending, with no notice, so a "1950s" cloud
+            can describe 1950–51 and label itself 1950–59.
+        scopeTokenCount:
+          type: integer
+          description: |
+            Surviving tokens in the scope — the denominator the relative
+            frequencies divide by.
+        referenceTotalTokens:
+          type: integer
+          description: Corpus total for the lens. Present when `measure` is `keyness`.
+        cutoffCount:
+          type: integer
+          description: |
+            Smallest priced corpus count. `1` when every term is priced.
+        belowSignalThreshold:
+          type: boolean
+          description: |
+            Whether the scope holds too little text for this lens to be
+            meaningful. Reported rather than silently widened to a larger scope
+            (decision O-4-2): a fallback would show the era's vocabulary and let
+            the researcher attribute it to the volume.
+        generated:
+          type: string
+          format: date-time
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankedTerm"
+
+    RankedTerm:
+      type: object
+      description: |
+        One term in a ranking, carrying both raw counts so a client can display
+        the evidence beside the score. G² grows with the amount of text, so two
+        scopes of different sizes are compared on `effectRatio`, not on
+        `logLikelihood`.
+      required:
+        - term
+        - scopeCount
+        - unpriced
+      properties:
+        term:
+          type: string
+        scopeCount:
+          type: integer
+          description: Occurrences inside the scope.
+        corpusCount:
+          type: integer
+          description: |
+            Occurrences across the corpus. Present when `measure` is `keyness`.
+        logLikelihood:
+          type: number
+          format: double
+          description: |
+            G², the strength of the evidence that the difference is real. The
+            ranking key for `keyness`.
+        effectRatio:
+          type: number
+          format: double
+          description: |
+            How much more often the term is used here than across the corpus, per
+            word of text — the effect size, and the figure to compare across
+            scopes.
+        unpriced:
+          type: boolean
+          description: |
+            Whether the reference could not price this term, making `effectRatio`
+            an upper bound. Always `false` from a server that prices every term;
+            required so a client that also reads the bundled artifact keeps one
+            code path, and so a truncating server cannot pass for one that does
+            not. A missing reference count must never be shown as a real zero:
+            `Keyness.score` treats that as "a word unique to the scope", which
+            floats an unpriced term to the top of the ranking.
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+          description: |
+            Present for the `sentiment` lens, which colours its terms by valence.
+
+    CollocationRequest:
+      type: object
+      description: A query whose neighbourhood is to be collected and ranked.
+      required:
+        - query
+        - scope
+      properties:
+        query:
+          type: string
+          description: |
+            The query whose matches anchor the windows, in the inline syntax
+            `/search` accepts. For a `NEAR(a b, N)` query **both** operands anchor,
+            so the collocates are of the pair — which is the right reading of
+            "what appears near this query", and worth stating on screen.
+        scope:
+          $ref: "#/components/schemas/AnalysisScope"
+        windowSize:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: |
+            Words either side of each match. Shares its control vocabulary with
+            the `NEAR` distance, because it is the same concept.
+        tokenization:
+          $ref: "#/components/schemas/TokenizationOptions"
+        minimumCount:
+          type: integer
+          minimum: 1
+          default: 3
+          description: Floor a neighbour must clear to be ranked.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 50
+
+    CollocationResponse:
+      type: object
+      description: |
+        Ranked collocates, with the scan's coverage stated in the same terms
+        `CollocationResult` uses, so a client can reuse its existing copy.
+      required:
+        - windowSize
+        - documentsInScope
+        - documentsOffered
+        - documentsScanned
+        - anchorCount
+        - omittedAnchorCount
+        - windowTokenCount
+        - bounded
+        - collocates
+      properties:
+        windowSize:
+          type: integer
+        documentsInScope:
+          type: integer
+          description: Documents the scope resolves to.
+        documentsOffered:
+          type: integer
+          description: |
+            Documents the scan reached before any budget stopped it. Distinct from
+            `documentsScanned` on purpose: conflating the two made a complete scan
+            report itself as truncated whenever a document had no cached text.
+        documentsScanned:
+          type: integer
+          description: Documents whose text was actually read.
+        anchorCount:
+          type: integer
+          description: Matches whose neighbourhood was collected.
+        omittedAnchorCount:
+          type: integer
+          description: |
+            Matches dropped by a per-document bound. The local scan bounds at 200
+            per document.
+        windowTokenCount:
+          type: integer
+          description: Surviving tokens inside the merged windows — the denominator.
+        bounded:
+          type: boolean
+          description: |
+            Whether a budget stopped the scan short of the whole scope. Keyed on
+            what the scan was *offered*, never on what had text.
+        minimumCount:
+          type: integer
+        cutoffCount:
+          type: integer
+          description: Smallest priced corpus count. `1` when every term is priced.
+        generated:
+          type: string
+          format: date-time
+        collocates:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankedTerm"
+
+    TermDistributionResponse:
+      type: object
+      description: |
+        One or more series over the requested buckets. A composite query returns
+        one series per positive operand rather than a single total, because
+        adding up occurrences of each would count two different things as one.
+      required:
+        - groupBy
+        - measure
+        - series
+      properties:
+        groupBy:
+          type: string
+          enum: [year, decade, volume, subseries, administration]
+        measure:
+          type: string
+          enum: [documents, occurrences, dispersion]
+        occurrenceAvailability:
+          $ref: "#/components/schemas/OccurrenceAvailability"
+        series:
+          type: array
+          items:
+            type: object
+            required:
+              - term
+              - buckets
+            properties:
+              term:
+                type: string
+                description: The operand this series counts.
+              indexTerm:
+                type: string
+                description: |
+                  The index term it resolved to, when one exists. Resolved by the
+                  tokenizer that built the index rather than by a second
+                  implementation, which could name a term the index never wrote.
+              matchedDocumentCount:
+                type: integer
+                description: Documents matching across all buckets.
+              occurrences:
+                type: integer
+                description: |
+                  Instances across all buckets, when countable.
+                  `SearchService.corpusTermProfile` gives the app the same pair
+                  for one stem, but corpus-wide and unfiltered — over "the whole
+                  local index, ignoring scope, date range and every other filter",
+                  which is a different question from this one and which any
+                  surface showing it has to say out loud.
+              occurrencesPerDocument:
+                type: number
+                format: double
+                description: |
+                  Dispersion. A term concentrated in three documents and one spread
+                  across 150 are different findings.
+              undatedCount:
+                type: integer
+                description: |
+                  Matching documents carrying no date, when `undatedPolicy` is
+                  `separateBucket`. Reported rather than dropped: a histogram whose
+                  bars sum to less than the match is otherwise unexplained.
+              buckets:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TermDistributionBucket"
+
+    TermDistributionBucket:
+      type: object
+      description: |
+        One period or division, with its own denominator attached. The denominator
+        travels with the numerator so a share can never be computed from two
+        differently-filtered populations — the defect CA-4 fixed, and the reason
+        the app's numerator and denominator apply byte-identical date rules.
+      required:
+        - key
+        - matchedDocumentCount
+        - corpusDocumentCount
+      properties:
+        key:
+          type: string
+          description: Bucket identifier — `1949`, `1940s`, `frus1949v01`, `truman`.
+        label:
+          type: string
+          description: Display label.
+        matchedDocumentCount:
+          type: integer
+          description: Matching documents in this bucket.
+        occurrences:
+          type: integer
+          description: |
+            Instances in this bucket. Absent when `occurrenceAvailability` says the
+            query shape has no honest occurrence count — absent, never zero.
+        corpusDocumentCount:
+          type: integer
+          description: |
+            All corpus documents in this bucket, filtered identically. "182 hits in
+            1949" means something different if 1949 has three times the documents.
+        normalizedValue:
+          type: number
+          format: double
+          description: |
+            `matchedDocumentCount ÷ corpusDocumentCount`, or the occurrence
+            equivalent when occurrences are the measure.
+
+    OccurrenceAvailability:
+      type: object
+      description: |
+        Whether a query's occurrences can be counted honestly, and if not, why —
+        mirroring the `OccurrenceAvailability` enum, whose rule is that a count
+        meaning something different per query shape is worse than no count. The
+        client shows documents and states the reason; it never shows a zero or a
+        blank cell.
+
+        Which shapes are unavailable is a property of the **index**, not of the
+        question. `exactWord` is impossible from a stemmed index at any cost, and
+        `multiTermOperand` reflects instance-mode counting being per-term. A
+        server holding a positional index, and if it chooses an unstemmed one, can
+        report `available: true` for shapes the local implementation cannot —
+        which is the substantive difference this endpoint offers. `compositeQuery`
+        remains unavailable as a single total by construction: the honest answer
+        is the per-operand series, which the response already carries.
+      required:
+        - available
+      properties:
+        available:
+          type: boolean
+        indexTerm:
+          type: string
+          description: The term being counted, when available.
+        reason:
+          type: string
+          enum:
+            - exactWord
+            - multiTermOperand
+            - compositeQuery
+            - notASingleToken
+            - noPositiveTerm
+          description: |
+            Why not, when unavailable. Matches `OccurrenceAvailability.Reason`
+            case-for-case so a client can reuse its existing explanatory strings.
+        explanation:
+          type: string
+          description: |
+            One sentence for the researcher, stating what is true rather than what
+            might change.
+
+    ConcordanceLineList:
+      type: object
+      description: |
+        Paginated concordance lines. `total` is the occurrence count across the
+        whole match, which is the number a concordance is read against — not the
+        document count, and not the size of this page.
+      required:
+        - total
+        - documentsWithLines
+        - documentsWithoutLines
+        - omittedCount
+        - items
+      properties:
+        total:
+          type: integer
+          description: Occurrences across the whole match.
+        documentsWithLines:
+          type: integer
+        documentsWithoutLines:
+          type: integer
+          description: |
+            Matched documents that produced no line. Locally this is a real
+            possibility because alignment uses the Swift `PorterStemmer` while the
+            match came from SQLite's; a server that matched and aligned with one
+            tokenizer should report `0`, and the field is required so a client
+            cannot mistake one situation for the other.
+        omittedCount:
+          type: integer
+          description: Occurrences dropped by `maxLinesPerDocument`.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConcordanceLine"
+
+    ConcordanceLine:
+      type: object
+      description: |
+        One occurrence, with the text either side of it — a keyword-in-context
+        line. One row per occurrence, not per document (decision R-3-1): a
+        document that uses a phrase nine times *is* the finding, and collapsing it
+        to one row hides what a concordance is for.
+      required:
+        - volumeId
+        - documentId
+        - left
+        - keyword
+        - right
+        - characterOffset
+      properties:
+        volumeId:
+          type: string
+        documentId:
+          type: string
+        header:
+          type: string
+          description: Display header for the source document.
+        dateISO:
+          type:
+            - string
+            - "null"
+          format: date
+          description: Document date, for the date sort and for display.
+        left:
+          type: string
+          description: Text before the match, trimmed to the context window.
+        keyword:
+          type: string
+          description: |
+            The matched text exactly as it appears in the document — not the stem,
+            and not the query.
+        right:
+          type: string
+          description: Text after the match.
+        characterOffset:
+          type: integer
+          description: |
+            Character offset of the match in the document body, which makes each
+            line unique within a document and gives it a stable identity across
+            re-sorts. Comparable to `DocumentHighlight.startOffset` when the
+            document's rendering version is unchanged.
+        page:
+          type:
+            - string
+            - "null"
+          description: Printed page the occurrence falls on, where known.
+
+    SearchFacets:
+      type: object
+      description: |
+        A result set broken down five ways, with every bound and coverage gap
+        stated — the served form of `ResultSetFacets` (R-1a).
+      required:
+        - matchCount
+        - undatedCount
+      properties:
+        matchCount:
+          type: integer
+          description: |
+            Documents in the whole match — the denominator for every count here,
+            supplied so no surface has to reach elsewhere for it.
+        undatedCount:
+          type: integer
+          description: |
+            Matched documents carrying no date, and so appearing in no year bucket.
+        years:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetBucket"
+          description: Year of the document's start date, descending by year.
+        volumes:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetBucket"
+        people:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetBucket"
+          description: |
+            Resolved through the cross-corpus rollup, so one person is not split
+            across name variants.
+        documentTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetBucket"
+          description: Primary document vs editorial note.
+        provenance:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetBucket"
+          description: Archival-provenance era, from the parsed source notes.
+        provenanceCoverage:
+          type: object
+          description: |
+            How much of the match the provenance facet can actually speak for —
+            **two** denominators, not one. *Parsed at all* and *named a record
+            group* are different numbers: measured on the real store, 163,875 of
+            195,613 matches had a parsed source note and only 141,718 of those
+            named a record group. A panel reporting one figure for both overstates
+            its own coverage.
+          required:
+            - parsed
+            - withRecordGroup
+          properties:
+            parsed:
+              type: integer
+              description: Matched documents with a parsed source note of any kind.
+            withRecordGroup:
+              type: integer
+              description: Matched documents whose source note named a record group.
+        bounds:
+          type: object
+          description: |
+            Per-section display bounds, keyed by section name. A section absent
+            from this map was not truncated — the house rule is no silent
+            truncation, and it matters at corpus scale: one common-term match
+            spans 552 volumes and 14,615 person rollups, so a templated "of 47"
+            would be wrong by two orders of magnitude.
+          additionalProperties:
+            type: object
+            required:
+              - shown
+              - total
+            properties:
+              shown:
+                type: integer
+                description: Rows returned for this section.
+              total:
+                type: integer
+                description: Distinct values the match actually contains.
+
+    FacetBucket:
+      type: object
+      description: One facet value and its count over the whole match.
+      required:
+        - key
+        - count
+      properties:
+        key:
+          type: string
+          description: |
+            Value to narrow on. Written straight into the corresponding search
+            filter field, since a facet row is a narrowing action as well as a
+            description.
+        label:
+          type: string
+          description: Display label.
+        count:
+          type: integer
+          description: Matched documents carrying this value.
+
+    # ── Related documents (v0.4.0) ───────────────────────────────────────────
+
+    SimilarDocumentList:
+      type: object
+      description: |
+        Lexical neighbours of an anchor document. `coverage` states what the
+        result is a sample of, because the whole reason this is served rather than
+        bundled is that a local index cannot say.
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          description: Neighbours above the score floor.
+        minimumScore:
+          type: number
+          format: float
+          description: The floor applied.
+        crossVolumeShare:
+          type: number
+          format: float
+          description: |
+            Proportion of returned neighbours in volumes other than the anchor's.
+            Diagnostic rather than decorative: the withdrawn on-device design
+            reserved ≥80% cross-volume and that reservation is exactly what made
+            it collapse against a small library.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimilarDocument"
+
+    SimilarDocument:
+      type: object
+      description: One lexically similar document.
+      required:
+        - volumeId
+        - documentId
+        - score
+      properties:
+        volumeId:
+          type: string
+        documentId:
+          type: string
+        header:
+          type: string
+          description: Display header for the neighbour.
+        dateISO:
+          type:
+            - string
+            - "null"
+          format: date
+        score:
+          type: number
+          format: float
+          description: |
+            Cosine similarity in the lemma space, 0–1. Absolute, not normalised
+            against the returned set: `RelatedDocumentsEngine` normalises each axis
+            by its own maximum, so a sparse axis hands its single candidate a 1.0
+            and outranks a genuine cross-reference partner 4× at the default
+            weight. A raw score lets the client avoid inheriting that.
+        sameVolume:
+          type: boolean
+          description: Whether the neighbour is inside the anchor's own volume.
+        sharedTerms:
+          type: array
+          items:
+            type: string
+          description: |
+            The terms that produced the match, most contributive first. The only
+            way a researcher can check a similarity claim.
+        citation:
+          type: string
+          description: |
+            Formatted citation, so a neighbour in an undownloaded volume is
+            immediately usable.
+        volumeTitle:
+          type: string
+          description: Volume title, for a neighbour the client holds no manifest for.
+
+    ReprintMatch:
+      type: object
+      description: |
+        Another printing of the same document elsewhere in the series. Precision
+        is the point: this is the ≥95-score band the similarity design treated as
+        noise, isolated because it is verifiable by eye and useful precisely when
+        the other volume is not downloaded.
+      required:
+        - volumeId
+        - documentId
+        - score
+        - citation
+      properties:
+        volumeId:
+          type: string
+        documentId:
+          type: string
+        header:
+          type: string
+        dateISO:
+          type:
+            - string
+            - "null"
+          format: date
+        score:
+          type: number
+          format: float
+          description: Similarity, 0–1. Reprints sit at the top of the range.
+        matchBasis:
+          type: string
+          enum: [identicalText, nearIdenticalText, editorialStatement]
+          description: |
+            How the reprint was established. `editorialStatement` means FRUS itself
+            says so in a source note or editorial note, which is the strongest
+            basis and needs no similarity threshold at all.
+        citation:
+          type: string
+          description: |
+            Formatted citation in the style `CitationFormatter` produces — the
+            deliverable, not a pointer to one.
+        volumeTitle:
+          type: string
