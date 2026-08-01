@@ -709,6 +709,20 @@ Once exported, the system share sheet appears so you can save the file, print it
 
 ---
 
+
+**Before a collection exports, every stored excerpt is checked against the document it cites.** An
+excerpt is a frozen quotation, captured whenever you captured it, and volumes get reindexed,
+removed and re-downloaded in between.
+
+The check is a deterministic comparison, not a judgement. It forgives everything about
+presentation — line breaks, curly versus straight quotes, soft hyphens, capitalisation, and
+elisions marked with an ellipsis, whose fragments must still appear in order — and forgives
+nothing about wording. A paraphrase does not pass.
+
+It warns; it never blocks. A quotation from a volume you have since removed cannot be checked at
+all, and the export says so rather than calling it wrong: being unable to verify something is not
+the same as finding it false.
+
 ## 11. AI Summarization
 
 FRUS Explorer can generate concise summaries of long documents entirely **on-device**, using Apple's on-device AI (Apple Intelligence) — no document text ever leaves your device for this purpose.
@@ -1090,6 +1104,27 @@ appears only when iCloud sync is running on this device.
 `[SCREENSHOT: Settings → System → Data & Recovery — the Contents counts, the export rows, and the Recovery ladder with its three labelled rungs]`
 
 ---
+
+
+**Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than
+as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one
+search with the scope it ran under, how many volumes were indexed at the time, and what it
+returned.
+
+The reason to keep it is the zeros. *"I searched for this and found nothing"* is an assertion; the
+same sentence with a date, a scope and a denominator is evidence, and it is the only form of it a
+reader can check.
+
+Counts that hit the app's row ceiling are written as **"at least 7,500"**, never as 7,500 — a
+ceiling-capped fetch is a floor, not a total. The CSV carries a `count_basis` column saying which
+each row is, because a spreadsheet will otherwise sum a column of floors into a number nobody
+measured. Searches recorded before the app kept this detail are printed and marked *"as reported"*
+rather than quietly dropped.
+
+A collection can carry the same appendix, narrowed to the project it was exported under — the
+**Append the query log** option in the collection's Title Page & Introduction settings. It is off
+by default, because the appendix contains the text of every search you ran under that project,
+which is exactly the thing not to attach to a shared PDF by accident.
 
 ## 17. iPad-Specific Features
 

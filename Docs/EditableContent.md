@@ -8,6 +8,12 @@ directly. When you are done, hand the file back and the changes will be written 
 **Regenerated from source: 2026-07-26 (build 36).** Every block below reflects the code as
 of this date; earlier hand edits have been reconciled into source or superseded.
 
+**Amended 2026-08-01 (#597 PR 2):** seven new Research Guide sections covering the Query &
+Corpus Analysis wave were added by hand to §3 — `query-inspector`, `result-facets`,
+`working-corpora` (page 5), `reading-results`, `keyness` (page 6), `quotation-check` and
+`method-appendix` (page 7). The surrounding line-number annotations for those three pages are
+now approximate; everything else is untouched.
+
 **How annotations work:** Each editable block is preceded by an HTML comment that
 identifies the exact source location. Do not remove or alter the annotation comments —
 they are how your revisions get mapped back to code. You can edit anything between
@@ -426,6 +432,31 @@ Open the advanced filters to narrow by date range, document type, a person menti
 
 Find it on the Search tab (iOS) or the search window, ⌘F (Mac).
 
+<!-- section-id: query-inspector -->
+
+**What Your Query Actually Searched For**
+
+Search rewrites what you type before it runs — stemming, implicit AND between words, the operators above. The Query Inspector shows the expression it compiled, so a search that returns something surprising can be read rather than guessed at.
+
+It also warns where stemming widens a search past what you meant: type “containment” and the panel tells you it was searched as “contain,” which also matches “contains” and “container.” Prefix the word with = to search it literally. This matters most when you are about to report a count: an unexpectedly large number is usually a stem, not a finding.
+<!-- section-id: result-facets -->
+
+**The Shape of a Result Set**
+
+Facets break a result set down by year, volume, person, document type and archival provenance, so you can see at a glance whether a term clusters in one administration, one country file, or one editor’s volumes.
+
+Read the denominator carefully, because it is deliberately not the list you are looking at: facets describe the whole match, before any narrowing you apply below them. That is what makes them comparable to each other — a breakdown that shifted every time you filtered would tell you about your filtering rather than about the corpus.
+
+Facet rows are also controls. Tapping one narrows the search to that year, volume, or person, and the narrowing appears as a chip you can clear.
+<!-- section-id: working-corpora -->
+
+**Working Corpora**
+
+A working corpus is a fixed set of documents — the results of one search, frozen. Save one with “Save as Working Corpus…” and apply it from the advanced filters under My Working Corpora; every later search then runs only inside it.
+
+This is different from a volume scope. A scope narrows to whole volumes; a corpus narrows to the particular documents you captured, which is what you want when the set you care about is “the 240 documents that matched, minus the eleven I decided were irrelevant.”
+
+Each corpus records how it was made, and the app repeats it back where you apply one. If the search that produced it was capped, the corpus says so — “the highest-scoring 7,500 of 67,034 matches” — because a set that was truncated at capture is not the same evidence as a set that was complete, and you should not have to remember which was which.
 <!-- section-id: volume-scopes -->
 
 **Custom Volume Scopes**
@@ -520,6 +551,22 @@ Analytics runs entirely on your local index; no network connection is required.
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac).
 
+<!-- section-id: reading-results -->
+
+**Four Ways to Read a Result Set**
+
+The binoculars button above your results offers four readings of the same search. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.
+
+They do not all count the same thing, and the menu says which is which. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search. When you are about to quote a number, that distinction is the number.
+
+Collocates is the one that changes what you search next: the words a term travels with are usually the period vocabulary you did not know to look for.
+<!-- section-id: keyness -->
+
+**Distinctive Words, Not Just Frequent Ones**
+
+The Word Cloud can size words two ways. By frequency, the biggest words in almost any FRUS scope are the ones that are big everywhere — government, department, president. Switch “Size words by” to distinctiveness and the cloud instead ranks words by how much more they appear here than in the corpus as a whole, which is what makes one volume, decade or working corpus look different from every other.
+
+The comparison is made against a reference built from the whole series and shipped with the app, so it works with no volumes downloaded. It is also honest about when it cannot run: change the tokenizing settings in a way the reference was not built for, or ask for a scope with too little text, and the app says the ranking is unavailable rather than showing you a number it cannot stand behind.
 <!-- section-id: person-analytics -->
 
 **Person Analytics**
@@ -630,6 +677,26 @@ Export is simply how you share it. Render the collection — section headings an
 
 Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac).
 
+<!-- section-id: quotation-check -->
+
+**Checking Your Quotations**
+
+An excerpt in a collection is a frozen quotation, captured whenever you captured it. Volumes get reindexed, removed and re-downloaded, so before a collection exports, the app checks every stored excerpt against the text of the document it cites.
+
+The check is a deterministic comparison, not a judgement. It forgives everything about presentation — line breaks, curly versus straight quotes, soft hyphens, capitalisation, and elisions marked with an ellipsis, whose fragments must still appear in order — and forgives nothing about wording. A paraphrase does not pass.
+
+It warns; it never blocks. A quotation from a volume you have since removed cannot be checked at all, and the app says that rather than calling it wrong — being unable to verify something is not the same as finding it false.
+<!-- section-id: method-appendix -->
+
+**The Query Log as a Method Appendix**
+
+The app records the searches you run, and exports them as a methods statement: every query with the scope it ran under, how many volumes were indexed at the time, and what it returned. Find it in Settings → Data & Recovery, as a Markdown table and a CSV.
+
+The reason to keep it is the zeros. “I searched for this and found nothing” is an assertion; the same sentence with a date, a scope and a denominator is evidence, and it is the only form of it a reader can check.
+
+A count that hit the app’s row ceiling is written as “at least 7,500,” never as 7,500 — it is a floor, and the CSV carries a column saying so, because a spreadsheet will otherwise happily sum a column of floors into a total that was never measured. Searches recorded before the app kept this detail are printed and marked, not quietly dropped.
+
+A collection can carry the same appendix, narrowed to the project it was exported under. That is off by default: it contains the text of every search you ran, which is exactly the thing not to attach to a shared PDF by accident.
 <!-- section-id: citations -->
 
 **Citations & Bibliographic Export**
