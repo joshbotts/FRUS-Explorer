@@ -108,22 +108,37 @@ enum BatchRunReceipt {
         case .idle:
             return String(localized: "settings.summarization.lastRun.none",
                           defaultValue: "No runs this session")
-        case .running(let processed, let total, _):
-            if total > 0 {
+        case .running(let tally, _):
+            if tally.attemptable > 0 {
                 return String(format: String(localized: "settings.summarization.lastRun.running %lld %lld",
                                              defaultValue: "Running · %lld of %lld"),
-                              Int64(processed), Int64(total))
+                              Int64(tally.finished), Int64(tally.attemptable))
             }
             return String(localized: "settings.summarization.lastRun.enumerating",
                           defaultValue: "Running · enumerating")
-        case .completed(let processed):
-            let docs = processed == 1
+        case .completed(let tally):
+            if tally.isEntirelySkipped {
+                return String(localized: "settings.summarization.lastRun.allSkipped",
+                              defaultValue: "Nothing to do · all already summarized")
+            }
+            let docs = tally.succeeded == 1
                 ? String(localized: "settings.summarization.lastRun.doc.one", defaultValue: "1 document")
                 : String(format: String(localized: "settings.summarization.lastRun.doc.many %lld",
-                                        defaultValue: "%lld documents"), Int64(processed))
+                                        defaultValue: "%lld documents"), Int64(tally.succeeded))
+            // A run with failures is not "Completed" — the word is the whole point of #560.
+            if tally.failed > 0 {
+                return String(format: String(localized: "settings.summarization.lastRun.partial %lld %lld",
+                                             defaultValue: "Finished · %lld summarized, %lld failed"),
+                              Int64(tally.succeeded), Int64(tally.failed))
+            }
             return String(localized: "settings.summarization.lastRun.completed",
                           defaultValue: "Completed · \(docs)")
-        case .cancelled:
+        case .cancelled(let tally):
+            if tally.succeeded > 0 {
+                return String(format: String(localized: "settings.summarization.lastRun.cancelled.partial %lld",
+                                             defaultValue: "Stopped · %lld summarized"),
+                              Int64(tally.succeeded))
+            }
             return String(localized: "settings.summarization.lastRun.cancelled",
                           defaultValue: "Cancelled")
         case .failed(let description):
@@ -135,6 +150,9 @@ enum BatchRunReceipt {
     /// model stays free of SwiftUI so it can be tested without one.
     static func isFailure(_ state: BackgroundSummarizationState) -> Bool {
         if case .failed = state { return true }
+        // A finished run that lost documents is not a success either. Before #560 this could not
+        // happen — the counter advanced on failure, so a wholly-failed run rendered as `.ok`.
+        if case .completed(let tally) = state, tally.failed > 0 { return true }
         return false
     }
 

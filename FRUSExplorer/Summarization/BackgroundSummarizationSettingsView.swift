@@ -443,29 +443,52 @@ struct BackgroundSummarizationSettingsView: View {
         switch state {
         case .idle:
             EmptyView()
-        case .running(let processed, let total, let docId):
+        case .running(let tally, let docId):
             VStack(alignment: .leading, spacing: 6) {
-                if total > 0 {
-                    ProgressView(value: Double(processed), total: Double(total))
+                if tally.attemptable > 0 {
+                    ProgressView(value: Double(tally.finished), total: Double(tally.attemptable))
                 } else {
                     ProgressView()
                 }
-                Text(progressLabel(processed: processed, total: total, currentId: docId))
+                Text(progressLabel(tally: tally, currentId: docId))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .padding(.vertical, 4)
-        case .completed(let processed):
+        case .completed(let tally):
+            if tally.isEntirelySkipped {
+                Label(
+                    String(localized: "bg.summarizer.progress.allSkipped",
+                           defaultValue: "Nothing to summarize — every document already has a summary for this prompt"),
+                    systemImage: "checkmark.circle"
+                )
+                .foregroundStyle(.secondary)
+                .font(.callout)
+            } else if tally.failed > 0 {
+                // Not green, and not the word "Completed". A run that lost documents used to render
+                // identically to one that lost none.
+                Label(
+                    String(localized: "bg.summarizer.progress.partial",
+                           defaultValue: "Finished — \(tally.succeeded) summarized, \(tally.failed) failed"),
+                    systemImage: "exclamationmark.circle"
+                )
+                .foregroundStyle(.orange)
+                .font(.callout)
+            } else {
+                Label(
+                    String(localized: "bg.summarizer.progress.completed",
+                           defaultValue: "Completed — \(tally.succeeded) document\(tally.succeeded == 1 ? "" : "s") summarized"),
+                    systemImage: "checkmark.circle"
+                )
+                .foregroundStyle(.green)
+                .font(.callout)
+            }
+        case .cancelled(let tally):
             Label(
-                String(localized: "bg.summarizer.progress.completed",
-                       defaultValue: "Completed — \(processed) document\(processed == 1 ? "" : "s") summarized"),
-                systemImage: "checkmark.circle"
-            )
-            .foregroundStyle(.green)
-            .font(.callout)
-        case .cancelled:
-            Label(
-                String(localized: "bg.summarizer.progress.cancelled", defaultValue: "Cancelled"),
+                tally.succeeded > 0
+                    ? String(localized: "bg.summarizer.progress.cancelled.partial",
+                             defaultValue: "Stopped — \(tally.succeeded) summarized before you stopped")
+                    : String(localized: "bg.summarizer.progress.cancelled", defaultValue: "Cancelled"),
                 systemImage: "xmark.circle"
             )
             .foregroundStyle(.secondary)
@@ -526,14 +549,26 @@ struct BackgroundSummarizationSettingsView: View {
 
     private var canStart: Bool { readiness.canStart }
 
-    private func progressLabel(processed: Int, total: Int, currentId: String?) -> String {
-        if total == 0 {
+    /// The line under the bar. Names failures and prior work rather than folding everything into a
+    /// single number, which is what let a wholly-failed run read as a success (#560).
+    private func progressLabel(tally: BatchRunTally, currentId: String?) -> String {
+        if tally.attemptable == 0 {
             return String(localized: "bg.summarizer.progress.enumerating",
                           defaultValue: "Enumerating documents…")
         }
-        let base = "\(processed) / \(total)"
+        var base = String(format: String(localized: "bg.summarizer.progress.count %lld %lld",
+                                         defaultValue: "%lld of %lld summarized"),
+                          Int64(tally.succeeded), Int64(tally.attemptable))
+        if tally.failed > 0 {
+            base += String(format: String(localized: "bg.summarizer.progress.failedSuffix %lld",
+                                          defaultValue: " · %lld failed"), Int64(tally.failed))
+        }
+        if tally.skipped > 0 {
+            base += String(format: String(localized: "bg.summarizer.progress.skippedSuffix %lld",
+                                          defaultValue: " · %lld already had one"), Int64(tally.skipped))
+        }
         if let id = currentId {
-            return "\(base) — \(id)"
+            return "\(base)\n\(id)"
         }
         return base
     }

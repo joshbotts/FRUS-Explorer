@@ -98,14 +98,42 @@ struct BatchRunReceiptTests {
 
     @Test("A completed run reports how many documents it did, in agreement")
     func completed() {
-        #expect(BatchRunReceipt.text(for: .completed(processed: 1)) == "Completed · 1 document")
-        #expect(BatchRunReceipt.text(for: .completed(processed: 3)) == "Completed · 3 documents")
-        #expect(BatchRunReceipt.text(for: .completed(processed: 0)) == "Completed · 0 documents")
+        #expect(BatchRunReceipt.text(for: .completed(tally: .init(succeeded: 1, attemptable: 1)))
+                == "Completed · 1 document")
+        #expect(BatchRunReceipt.text(for: .completed(tally: .init(succeeded: 3, attemptable: 3)))
+                == "Completed · 3 documents")
+        #expect(BatchRunReceipt.text(for: .completed(tally: .init(succeeded: 0, attemptable: 0)))
+                == "Completed · 0 documents")
+    }
+
+    /// The #560 defect, in the surface where it was least visible: a run that summarized nothing
+    /// and lost everything used to render as "Completed · 1400 documents" with an `.ok` glyph.
+    @Test("A run that lost documents does not read as completed")
+    func partialFailureIsNotCompletion() {
+        let tally = BatchRunTally(succeeded: 497, failed: 3, attemptable: 500)
+        let text = BatchRunReceipt.text(for: .completed(tally: tally))
+        #expect(text.contains("497"))
+        #expect(text.contains("3"))
+        #expect(text.lowercased().contains("failed"))
+        #expect(!text.lowercased().contains("completed"),
+                "\"Completed\" is a claim about the outcome, not about having stopped")
+        #expect(BatchRunReceipt.isFailure(.completed(tally: tally)),
+                "the row must not render with the success glyph")
+    }
+
+    /// A re-run over a scope that is already done. Under the old accounting this was byte-identical
+    /// to total failure: "Completed · 0 documents".
+    @Test("A scope that was already summarized says so, not zero")
+    func allSkipped() {
+        let text = BatchRunReceipt.text(for: .completed(tally: .init(skipped: 1_400, attemptable: 0)))
+        #expect(text.lowercased().contains("already"))
+        #expect(!text.contains("0 document"))
     }
 
     @Test("A running batch reports its position")
     func running() {
-        let text = BatchRunReceipt.text(for: .running(processed: 2, total: 7, currentDocumentId: "d1"))
+        let text = BatchRunReceipt.text(
+            for: .running(tally: .init(succeeded: 2, attemptable: 7), currentDocumentId: "d1"))
         #expect(text.contains("2"))
         #expect(text.contains("7"))
     }
@@ -113,9 +141,20 @@ struct BatchRunReceiptTests {
     /// Before a run knows its size it has no position to report, and "0 of 0" would read as failure.
     @Test("A run still enumerating says so rather than reporting 0 of 0")
     func enumerating() {
-        let text = BatchRunReceipt.text(for: .running(processed: 0, total: 0, currentDocumentId: nil))
+        let text = BatchRunReceipt.text(for: .running(tally: .zero, currentDocumentId: nil))
         #expect(!text.contains("0 of 0"))
         #expect(text.lowercased().contains("enumerating"))
+    }
+
+    /// The denominator is what the run will attempt, so a scope that is mostly already done still
+    /// reaches 100%. Before #560, `total` counted skipped documents and the bar could not finish.
+    @Test("Skipped documents are outside the denominator")
+    func skippedAreNotInTheDenominator() {
+        let text = BatchRunReceipt.text(
+            for: .running(tally: .init(succeeded: 500, skipped: 900, attemptable: 500),
+                          currentDocumentId: nil))
+        #expect(text.contains("500 of 500"), "got \(text)")
+        #expect(!text.contains("1400"), "the 900 already-done documents must not inflate the total")
     }
 
     @Test("A failure surfaces its own message")
@@ -126,9 +165,9 @@ struct BatchRunReceiptTests {
     @Test("Only a failure reads as an error, only a cancellation as a warning")
     func stateMapping() {
         #expect(BatchRunReceipt.isFailure(.failed(errorDescription: "x")))
-        #expect(!BatchRunReceipt.isFailure(.cancelled))
-        #expect(!BatchRunReceipt.isFailure(.completed(processed: 1)))
-        #expect(BatchRunReceipt.isCancelled(.cancelled))
+        #expect(!BatchRunReceipt.isFailure(.cancelled(tally: .zero)))
+        #expect(!BatchRunReceipt.isFailure(.completed(tally: .init(succeeded: 1, attemptable: 1))))
+        #expect(BatchRunReceipt.isCancelled(.cancelled(tally: .zero)))
         #expect(!BatchRunReceipt.isCancelled(.idle))
     }
 
@@ -137,10 +176,13 @@ struct BatchRunReceiptTests {
     func everyStateSpeaks() {
         let states: [BackgroundSummarizationState] = [
             .idle,
-            .running(processed: 1, total: 2, currentDocumentId: nil),
-            .running(processed: 0, total: 0, currentDocumentId: nil),
-            .completed(processed: 4),
-            .cancelled,
+            .running(tally: .init(succeeded: 1, attemptable: 2), currentDocumentId: nil),
+            .running(tally: .zero, currentDocumentId: nil),
+            .completed(tally: .init(succeeded: 4, attemptable: 4)),
+            .completed(tally: .init(succeeded: 4, failed: 1, attemptable: 5)),
+            .completed(tally: .init(skipped: 9, attemptable: 0)),
+            .cancelled(tally: .zero),
+            .cancelled(tally: .init(succeeded: 3, attemptable: 10)),
             .failed(errorDescription: "boom"),
         ]
         for state in states {
