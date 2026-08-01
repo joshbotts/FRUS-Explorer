@@ -153,6 +153,19 @@ struct WorkingCorpusSurfaceAuditTests {
                 "the apply row is the moment the truncation has to be legible")
     }
 
+    /// Both platforms, because #606 shipped this on one and the omission was invisible until the
+    /// owner went looking for a banner the Mac never had.
+    @Test("macOS names the corpus too, from the same shared string")
+    func macOSBannerExists() throws {
+        let sheet = try Self.source("FRUSExplorer/App/SearchSheet.swift")
+        #expect(sheet.contains("private var workingCorpusBanner"))
+        // Mounted, not merely declared.
+        #expect(sheet.contains("WorkingOnBanner()\n            workingCorpusBanner"),
+                "the banner must be mounted above the results, beside its sibling")
+        // The same localized key iOS uses — two spellings of one fact would drift.
+        #expect(sheet.contains("search.corpusScope.label %@"))
+    }
+
     @Test("The results screen names the corpus it is searching inside")
     func bannerExists() throws {
         let view = try Self.source("FRUSExplorer/Search/SearchView.swift")

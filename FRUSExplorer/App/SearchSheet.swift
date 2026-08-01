@@ -194,6 +194,7 @@ struct MacSearchWindowView: View {
 
             // #377 Phase 5: the ambient "Working on: <question>" lens (self-padded; zero height when inactive).
             WorkingOnBanner()
+            workingCorpusBanner
 
             Divider()
 
@@ -1263,6 +1264,52 @@ struct MacSearchWindowView: View {
         }
         // Matches SearchView's overlay. macOS had none, so a rebuild simply looked frozen.
         .overlay { if isLoadingConcordance { ProgressView() } }
+    }
+
+    /// The applied working corpus, named on the window it governs.
+    ///
+    /// The macOS half of iOS's `workingCorpusBanner`, which #606 added on one platform only. Until
+    /// now the Mac named the corpus nowhere: `activeFilterSummary` contributes the bare token
+    /// "corpus" among other filter names, so the only positive signal that a document-grain scope
+    /// was in force was the result count changing when it was removed.
+    ///
+    /// Placed with `WorkingOnBanner` rather than in the filter row, because it is a statement
+    /// about what the window is showing rather than a control — the same reasoning that put it
+    /// above the results on iOS.
+    @ViewBuilder
+    private var workingCorpusBanner: some View {
+        if let name = searchVM.filterVM?.appliedWorkingCorpusName {
+            HStack(spacing: 6) {
+                Image(systemName: "tray.full.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(String(format: String(localized: "search.corpusScope.label %@",
+                                           defaultValue: "Inside “%@”"), name))
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Button {
+                    searchVM.filterVM?.clearWorkingCorpus()
+                    searchVM.applyAdvancedFilters()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "search.corpusScope.clear.help",
+                             defaultValue: "Leave this working corpus and search the full scope again"))
+                .accessibilityLabel(String(localized: "search.corpusScope.clear.a11y",
+                                           defaultValue: "Leave this working corpus"))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .overlay(alignment: .bottom) { Divider() }
+        }
     }
 
     private var resultSetScope: ResultSetScope {
