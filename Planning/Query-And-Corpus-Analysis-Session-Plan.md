@@ -804,60 +804,204 @@ smart-quote variant, and a paraphrase; confirm the first three pass and the four
 
 # Milestone 5 — Discovery
 
-*Two sessions. Lowest confidence, highest ceiling.*
+*Re-scoped 2026-08-01, after milestones 1–4 shipped (#602–#623). The original text is preserved
+in git history; it is replaced rather than annotated because five of its premises are false and
+an annotated version would still read as a plan.*
 
-## D-1 — Vocabulary explorer and query-by-example *(Effort M)*
+## Why this was re-scoped
 
-**Goal.** A researcher will not guess *mobilization base*, *juridical guarantee*, or
-*primary responsibility for military security*. Both reports turn on finding period
-vocabulary; nothing in the app helps.
+Every premise below was checked against shipped code, and several against the live 6.3 GB store
+read-only. Five turned out to be false. The pattern is the one this programme has hit repeatedly:
+the plan was written before milestones 2–4 existed and describes gaps those milestones filled,
+prerequisites that shipped differently, and a model that was never built.
 
-**Deliverables.**
-- **Vocabulary explorer** over Q-3's `fts5vocab`: browse/filter the corpus term dictionary by
-  frequency, click to add to a query. Cheap, because the dictionary already exists in the
-  index.
-- **Stem → surface forms map** (deferred from Q-3-1): a cached scan of `document_cache` that
-  turns "*contain* — 12,431 documents" into the actual variant list with per-variant counts.
-  Build once, cache, invalidate on reindex.
-- **Query-by-example**: given a seed document the researcher already knows matters, rank its
-  distinctive vocabulary by keyness (S-1) against the corpus and propose query terms.
-  `RelatedDocumentsEngine` does document→document; this is document→*query*.
+### Premise audit
 
-**Data & migration:** a cached derived table for the surface-forms map; must invalidate with
-the existing index-version mechanism.
-**Prereq:** Q-3, S-1.
-**Needs xcodegen:** yes.
+| Plan claim | Verdict | What is actually true |
+|---|---|---|
+| D-1 goal: *"nothing in the app helps"* find period vocabulary | **FALSE** | Six shipped surfaces help. The date-range word cloud with the keyness measure answers *"what words did people use for this in 1950"* directly; collocation answers *"what appears near X"*; the concordance shows usage in context. |
+| D-1 ①: a vocabulary browse is *"cheap, because the dictionary already exists in the index"* | **PARTLY TRUE** | `frus_documents_vocab` is a persistent `fts5vocab('…','row')` companion created at store open (`FTS5Connection.swift:128-163`). But the entire shipped API is **point lookup** — `vocabularyEntry(stem:)`, `termProfile(for:)`. There is no ranked query, no prefix scan, no `ORDER BY` anywhere over it. The browse query has to be written, and an `fts5vocab` row table has no index behind `doc`/`cnt`, so ranking is a full vocabulary scan. |
+| D-1 ②: stem→surface-forms map is unbuilt and deferred here | **CONFIRMED** | The deferral is recorded in shipped code, not just the plan: `FTS5Vocabulary.swift:60-67` and `QueryInspection.swift:142-152` both name D-1 as owner. Its consumer already ships **unqualified** at `QueryInspectorView.swift:174-180`. |
+| D-1 ③: *"`RelatedDocumentsEngine` does document→document; this is document→query"* | **PARTLY TRUE, useless as substrate** | True as description. But its six axes are archival provenance, cross-reference, date proximity, subseries, shared persons, shared subjects (`RelatedDocuments/SimilarityModel.swift:26-39`) — **no lexical axis**, and it never tokenises document text. |
+| D-2: *"label storage on the existing triage model"* | **FALSE** | There is no triage model. Checklist state is view-model-only and session-scoped — `markedReviewedKeys` is *"a lightweight in-memory set"* (`SearchViewModel.swift:376-379`), cleared on every new query (`:576-583`). A mark evaporates when the researcher retypes. |
+| D-2: extend *"R-1/checklist triage"* as one surface | **FALSE** | Decision R-1-2 explicitly decoupled them: facets describe the whole match, *"not the checklist-filtered subset… otherwise the denominator shifts under the researcher as they triage"* (`ResultSetFacets.swift:105-109`). |
+| D-2-1 lean: **distinct fields** for machine vs human labels | **FALSE as a break from convention** | The codebase precedent is one field with a three-valued flag: `GeneratedSummary.authorship` over `{aiGenerated, aiEdited, userWritten}` (`GeneratedSummary.swift:110`, `:175-183`). Distinct fields still need an `aiEdited` equivalent, because an edited machine label is neither. |
+| D-2: cited line numbers | **CONFIRMED** | `contextWindowTokenLimit = 3_072` at `AppleIntelligenceProvider.swift:47`, exact. `buildGenerationSchema` at `:99-120` (the plan's `:100-120` is off by one). |
+| D-2: *"structured output is already built here"* | **PARTLY TRUE** | JSON mode is built; **closed vocabularies are not**. Every field is `DynamicGenerationSchema(type: String.self)` (`:111`); the `anyOf` overload appears nowhere. Closed labels need a new code path plus an allowed-values array on the CloudKit-synced `SummarizationPrompt.schema`. |
 
-**Decision point (D-1-1).** Where the surface-forms scan runs: during indexing (adds time to
-every volume index, always fresh) vs. on demand with caching (no indexing cost, first use is
-slow). Lean on-demand with a progress indicator — indexing time is already the app's most
-complained-about cost.
+### The organising constraint: the stem ↔ lemma mismatch is real
 
-## D-2 — On-device coding assist *(Effort L, experimental)*
+The FTS5 index is `porter unicode61` **stems** (`FTS5Types.swift:113`, `:126`). The keyness
+baseline is NLTagger **lemmas** (`WordCloudTokenizer.swift:114-158`). Measured against the shipped
+artifact: `alliance` 15,937, `security` 177,061, `defense` 141,745, `treaty` 204,741 — while the
+stems `allianc`, `secur`, `defens`, `treati` are all **absent**.
 
-**Goal.** Use `FoundationModels` for the one task shape it genuinely fits: classifying
-documents against a user-defined schema, one document at a time.
+Two failure modes, and the second is worse:
 
-**Deliverables.**
-- Extend R-1/checklist triage with model-proposed labels against a user-defined scheme —
-  the reports classify 191 passages into mechanism / reluctance / rationale / assumption, and
-  the resulting 22-vs-52 distribution is itself the argument.
-- Reuses `AppleIntelligenceProvider`'s dynamic `GenerationSchema` construction
-  (`AppleIntelligenceProvider.swift:100-120`) — structured output is already built here.
-- **Hard constraint:** ~3,072-token budget per call (`AppleIntelligenceProvider.swift:47`),
-  so one document (or one chunk) per call, using the existing chunking in
-  `SummarizationService`. No cross-document reasoning.
-- **Every model label is a proposal, never a finding.** Labels are editable, visibly marked
-  as machine-proposed, and excluded from the evidentiary path — the verification that caught
-  the fabricated quotations was a substring check, and that separation must hold.
+1. `Keyness.score` turns a missing key into a real zero, which its own doc calls *"a word unique to
+   the scope"* — so an unpriceable stem floats to the **top** of the list.
+2. `contain` (the verb, 55,794) and `containment` (569) sit side by side as separate lemma keys, so
+   the index stem `contain` — which covers *containment* — gets a confident **wrong** denominator.
 
-**Data & migration:** label storage on the existing triage model.
-**Prereq:** R-1, M-2. **Needs xcodegen:** yes.
+This is why the repo already refused to unify the two term lists (`BundledKeynessBaseline.swift:24`).
+It means: any list of index stems shown to a researcher is unreadable without variants, and any
+index stem piped into keyness is wrong. **Deliverable ② is therefore a precondition for ①, not a
+follow-on** — and a stem→variants map whose right-hand side is the baseline's own key space is
+simultaneously the fix for both.
 
-**Decision point (D-2-1).** Whether machine labels are stored distinctly from human labels
-or in one field with a provenance flag. Lean: distinct fields — a researcher must be able to
-report inter-rater agreement between themselves and the model, which a merged field makes
-impossible.
+---
+
+## D-1 — re-scoped
+
+### Build, in priority order
+
+**D-1a — Stem variants in the Query Inspector.** *Effort S. Real prerequisite: none beyond the
+bundle.*
+
+Derive `[stem: [surfaceForm]]` by running the already-decoded `allTerms` keys of
+`keyness-baseline.json` through the store's own tokenizer, in memory, once per launch, off-main.
+Wire it into the existing orange warning at `QueryInspectorView.swift:174-180`.
+
+The copy must say **"words with this root include…"**, never "the complete list": the map is
+derived from the app's English lexicon rather than read out of the index, so it can under-report a
+corpus variant outside the 20,041-term head or one filtered as a diplomatic stopword. Where the
+stem is uncovered, fall back verbatim to today's count-only text.
+
+**D-1b — Prefix lookup in the vocabulary.** *Effort S. Optional. Prerequisite: Q-3 (shipped).*
+
+`WHERE term >= ? AND term < ?` is the only cheap access path. *"Type a word: here is its stem, its
+document frequency, and every index term sharing that prefix."* The researcher supplies a real
+word, so the output is never a stopword list.
+
+**D-1c — Multi-term add-to-query.** *Effort M. Prerequisite: S-1 and S-2 (both shipped).*
+
+The genuinely missing affordance. Today's only hand-off is single-term and **destructive** —
+`search(for:)` replaces the query and dismisses the cloud (`WordCloudView.swift:1552-1570`), and
+collocation rows offer only Copy (`CollocationView.swift:168-180`). Needs one check the plan never
+made: whether `SearchParameters` supports *appending* rather than replacing.
+
+### Drop
+
+- **① as written** (frequency-ranked vocabulary browse). Its top is `the of to and in that a be on
+  for it is state with by as thi not s i` — the app's stopwords cannot clean it, because they are
+  lemma-shaped and 47% of the top stems do not match them. Ranked queries are a full scan that does
+  not warm up, and a measurable fraction of entries route to a *different* term when clicked. If any
+  browse is wanted, it is D-1b.
+- **③ as a new measure.** It already ships: document-scope cloud → "Distinctive", from the Research
+  rail, both platforms. Keep only D-1c.
+- **The `document_cache`-scanning derived table and its invalidation hook.** Unnecessary — the map
+  comes out of the bundle. The only precedent invalidates on a *row count*
+  (`WordCloudDiskCache.swift:12-21`), which a same-size reindex will not trip: acceptable for a
+  cloud, wrong for a map presented as a fact about the index.
+- **Decision point D-1-1** (indexing-time vs on-demand scan). Moot: there is no scan.
+
+---
+
+## D-2 — re-scoped: **drop as specified**
+
+Not deferred. Deferring implies sequencing is the blocker; it is not.
+
+**1 · The demand evidence is against it.** Measured on the live store: **68 of 316,839 documents
+carry a user tag** — 0.02%. The app already ships a complete manual coding apparatus (`UserTag` +
+`DocumentTagAssignment`, CloudKit-synced, FTS5-searchable, per-match counted on both platforms) and
+it is essentially unused. D-2's stated payoff is a distribution — *"the resulting 22-vs-52
+distribution is itself the argument"* — which requires a coding practice that measurably has not
+started. Building a model to accelerate a workflow nobody has begun is the wrong order.
+
+**2 · The premise it was scoped on does not exist.** There is no triage model to hold labels, and
+Effort L does not include inventing the persistence layer *and* deciding what a triage unit is.
+
+**3 · The schema cost is an owner round-trip, and this repo knows what that costs.** The schema is
+clean: 233 identifiers, digest pinned, `identifiersAwaitingDeploy` empty. A `@Model DocumentLabel`
+with ~10 stored properties is **11 new identifiers**. The most recent promotion was *a single
+boolean* and took three PRs, because the toggle shipped on one of three parallel settings surfaces
+and CloudKit creates a field only when a record carrying it is first written — so the owner could
+not seed a field he could not reach. That price, for data the plan itself says is *"excluded from
+the evidentiary path"*.
+
+**4 · Two structural problems time does not fix.** Machine content *syncs* but the ability to
+produce it does not, so a coding method half-executed across devices is a worse artifact than none.
+And the multi-chunk path is map-**reduce**: `synthesize` re-applies the same prompt to concatenated
+chunk *outputs* (`SummarizationService.swift:375-418`), which for a classification prompt means
+coding a bag of partial label objects, with a silent truncation at the degenerate level (`:407-409`)
+— defensible for a summary, not for a code.
+
+### What to do instead
+
+- **(a) Close the provenance leak.** *Effort S, no schema gate.* `GeneratedSummaryExport` has ten
+  fields and `authorship` is not among them (`ResearchDataExporter.swift:278-290`); the collection
+  exporters got it right (`CollectionExporter.swift:952-965`), so the discipline is achievable and
+  silently failed on the next surface built. **This is a live machine/human separation failure in
+  the shipped app** and the empirical argument for not giving machine content more surface area.
+- **(b) Run background summarization over a working corpus.** *Effort S, no schema gate.*
+  `WorkingCorpus.documentKeys` is already the `"volumeId/documentId"` shape
+  `SummarizationScope.savedSearch(documentKeys:)` takes. A *structured* prompt already runs across a
+  document set, one document per call, persisting a `GeneratedSummary` each with `authorship`
+  provenance. This gives the D-2 workflow through the already-attributed path for a call-site
+  change — and lets the owner find out empirically whether he wants machine labels before paying
+  for them.
+- **(d) Only if (b) shows he wants them:** a **transient, unstored** proposal in the document view,
+  where applying it creates an ordinary `DocumentTagAssignment` he owns. Nothing machine-authored
+  persists, so nothing machine-authored can enter a count, an export, or a sync — *"proposal, never
+  a finding"* enforced by the storage layer rather than by a chip.
+
+---
+
+## Decision points for the owner
+
+1. **Drop the frequency-ranked vocabulary browse?** *Lean: yes.* Its top 25 terms are function
+   words, the app's stopwords cannot filter them, and some entries search for a different word than
+   the one clicked.
+2. **Is a lexicon-derived variants map acceptable, given it approximates the index rather than
+   reading it?** *Lean: yes, with copy that says "include", not "are".* A claim that is true *of the
+   index* is a much more expensive feature.
+3. **Drop D-2 entirely?** *Lean: yes, revisit only if (b) shows you run coding passes.*
+4. **The 68-tag fact — is manual coding something you intend to do and haven't, or something you
+   don't want?** *Lean: answer this before any coding-assist work at all.* Every version of D-2 is
+   worthless if it is the second.
+
+---
+
+## Found in passing — issues, not sessions
+
+- **`GeneratedSummaryExport` drops `authorship`** — a live provenance leak in the JSON export.
+- **The date-range word cloud silently keeps the *earliest* 5,000 documents**
+  (`WordCloudScopeResolver.swift:163-178`) with no cap notice, so a "1950s" cloud can describe
+  1950–51 and label itself 1950–59. This is the surface that best answers the period-vocabulary
+  question, and it is quietly date-biased.
+- **iOS has no date-range scope picker in the word cloud** — the block is `#if os(macOS)`.
+- **`user_content_vocab` does not exist** (`IndexingPipeline.swift:4855` creates the table with no
+  matching vocab DDL), so no vocabulary surface can honestly claim to cover summaries and notes.
+- **Porter non-idempotence** affects any surface that hands an index term back to the stemmer;
+  undocumented anywhere in the repo.
+- **A 10,632-term human-authored period glossary already sits in the `terms` table** (66,095 rows
+  across 312 volumes, written by the indexer, read back per-volume only). Existing data, existing
+  writer, no cross-volume surface. Overwhelmingly abbreviations, so verify usefulness before
+  building.
+
+---
+
+## What to do first
+
+**One session: D-1a — stem variants in the Query Inspector. Effort S, one PR.** No browse UI, no
+keyness wiring, no scan, no index-version bump, no CloudKit field.
+
+Acceptance check, macOS Search window with the Query Inspector open:
+
+| type | expect |
+|---|---|
+| `containment` | *"…is searched as **contain** — other words with that root include contain, container, containment"* |
+| `defense` | variants defense, defensible, defensive, non-defense |
+| `the` | warning renders **count-only**, exactly as today — not an empty variant list |
+| `U.S.S.R.` | unchanged (multi-token; `indexStem` returns nil) |
+
+Plus a unit test pinning that an uncovered stem falls back to the pre-existing string, and one
+asserting the map never returns an empty non-nil variant list.
+
+It is first because the consumer is **already on screen and already unqualified**, two shipped doc
+comments name D-1 as the owner of the fix, the input is already in the bundle, and the same map is
+the stem↔lemma bridge that any future keyness-over-index-terms work would otherwise get
+confidently wrong.
 
 ---
 
@@ -873,7 +1017,10 @@ Q-3 ──────────┘      └──► R-3
 R-1 ──► M-1 ──► M-2                 (Milestone 4 stop point)
 M-3   (independent — drop in anywhere)
 
-Q-3 + S-1 ──► D-1 ──► D-2           (Milestone 5)
+D-1a  (independent — needs only the bundled keyness artifact)
+D-1b ─┐
+D-1c ─┴► optional follow-ons                (Milestone 5, re-scoped)
+D-2   DROPPED — see the re-scope above
 ```
 
 **If you only do three sessions: Q-1, Q-2, R-1.** NEAR plus a legible query plus faceted
