@@ -208,7 +208,10 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
                                         "history", "privacy", "recording", "trail", "activity",
                                         "delete history", "clear history", "what is recorded",
                                         "reading history", "search history", "recents"]
-        case .display:         return ["text size", "font", "citations", "reading mode", "chart colors", "appearance"]
+        case .display:         return ["text size", "font", "citations", "reading mode", "chart colors", "appearance",
+                                       // #597: "Show Tips Again" lives here, and nobody looking
+                                       // for it would guess "Display".
+                                       "tips", "hints", "discovery"]
         case .search:          return ["scope", "snippet", "editorial notes", "defaults", "filters"]
         case .sync:            return ["icloud", "cloudkit", "devices"]
         case .connections:     return ["national archives", "catalog", "api key", "source explorer",
