@@ -227,6 +227,12 @@ struct AnalyticsView: View {
     // MARK: - State
 
     @State private var termInput: String = ""
+
+    /// Whether the term field holds first responder. Written **only** to `false`
+    /// (``addTerm()``) — see ``termField`` for why that restriction is what makes a single
+    /// binding safe across the two `ViewThatFits` instantiations.
+    @FocusState private var isTermFieldFocused: Bool
+
     /// The committed comparison terms, in chip order — the source of both iteration order and the
     /// per-term color index (D1). Phase 1 keeps this at 0 or 1 element (a Search press replaces it);
     /// a later phase lets the user add up to five. The single-term `committedTerm` shim below feeds
@@ -565,6 +571,17 @@ struct AnalyticsView: View {
         }
         committedTerms.append(term)
         termInput = ""
+        #if os(iOS)
+        // #559: the term is committed, so the field's work is done — give the screen back. Left up,
+        // the keyboard covers the chart it was typed to produce, and in landscape it covers
+        // essentially all of it, with no way down: this view has no Done bar and nothing else here
+        // resigns first responder.
+        //
+        // iOS only. On macOS the Return key committing a term and *keeping* focus is what lets a
+        // second term be typed without reaching for the mouse, so resigning there would be a
+        // regression rather than a fix.
+        isTermFieldFocused = false
+        #endif
         // A categorical axis can't compare (owner decision A) — fall back to By-Year on the 2nd term.
         if isComparing && chartAxis.isCategorical { chartAxis = .byYear }
         reloadData()
@@ -923,6 +940,10 @@ struct AnalyticsView: View {
                 if appState.analyticsService == nil {
                     unavailablePlaceholder
                 } else {
+                    // #559, the other half: committing a term resigns focus, but a user who
+                    // typed and then changed their mind needs a way down too. Dragging the chart
+                    // area dismisses interactively. Available on macOS since 13 and inert there,
+                    // so no `#if` — a Mac has no software keyboard to dismiss.
                     VStack(spacing: 0) {
                         // D1: the comparison-term chips sit above the consolidated filter row.
                         termChipsRow
@@ -952,6 +973,7 @@ struct AnalyticsView: View {
                         contentArea
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                 }
             }
             // iOS omits the nav title so the full nav-bar width goes to the trailing analytics
@@ -1241,9 +1263,23 @@ struct AnalyticsView: View {
 
     /// The term entry field. D1: an "Add a term…" field that appends on Return (each committed term
     /// becomes a chip); the placeholder reads "Term…" for the first, then "Add a term…".
+    ///
+    /// ## Why one `@FocusState` is safe here despite two instantiations
+    /// `filterRow` puts this field inside a `ViewThatFits`, so it is built **twice** — once in the
+    /// one-row candidate and once in the stacked one. Two views sharing a focus binding is normally
+    /// a shape to avoid, because *setting* the binding to `true` leaves it ambiguous which of them
+    /// receives focus.
+    ///
+    /// This code never sets it to `true`. The only write is `false`, in ``addTerm()``, and "no view
+    /// is focused" is unambiguous no matter how many claim the binding. That is what makes the
+    /// small fix legitimate instead of forcing `filterRow` to be restructured — and restructuring
+    /// it would cost the one-row layout on macOS and the iPad sheet, which is the whole reason
+    /// `ViewThatFits` is here.
     private var termField: some View {
         TextField(termFieldPlaceholder, text: $termInput)
             .textFieldStyle(.roundedBorder)
+            .focused($isTermFieldFocused)
+            .submitLabel(.search)
             .onSubmit { addTerm() }
             .disabled(atCompareCap)
     }

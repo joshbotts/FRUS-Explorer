@@ -97,7 +97,8 @@ final class AnalyticsRotationTests: XCTestCase {
         field.tap()
         // Return commits via the field's own `.onSubmit { addTerm() }`. Tapping the "Search" button
         // is ambiguous — the Search TAB carries the same label — and Return is also what the owner
-        // does, which matters because it leaves the keyboard up (see testKeyboardPersistsAcrossTerms).
+        // does. It used to leave the keyboard up, which is what #559 fixed; `addTerm()` now resigns
+        // focus on iOS, so this path exercises the dismissal as a side effect.
         field.typeText("Berlin\n")
 
         XCTAssertTrue(app.staticTexts["Berlin"].waitForExistence(timeout: 10),
