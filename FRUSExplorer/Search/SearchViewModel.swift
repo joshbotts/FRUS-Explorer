@@ -696,6 +696,24 @@ final class SearchViewModel {
         #if DEBUG
         print("[SearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(recorded) exact=\(totalMatchCount != nil)")
         #endif
+        #if DEBUG
+        // Seeding diagnostic. CloudKit learns a field only from a record that CARRIES a value:
+        // a nil optional is simply absent from the pushed `CKRecord`, so a Development schema
+        // gains the column only once one record has it non-nil. Naming the nils here is what
+        // makes a seeding run checkable without reading the Dashboard and guessing.
+        let missing = [
+            record.loadedCount == nil ? "loadedCount" : nil,
+            record.matchCount == nil ? "matchCount" : nil,
+            record.fetchLimit == nil ? "fetchLimit" : nil,
+            record.indexedVolumeCount == nil ? "indexedVolumeCount" : nil,
+            record.scopeSignature == nil ? "scopeSignature" : nil,
+            record.appliedCorpusId == nil ? "appliedCorpusId" : nil,
+            record.renderedExpression == nil ? "renderedExpression" : nil,
+        ].compactMap { $0 }
+        print(missing.isEmpty
+              ? "[\(Self.self)] SearchHistoryEntry: all 7 M-2 fields non-nil — this row can seed the schema"
+              : "[\(Self.self)] SearchHistoryEntry: NOT seedable — nil: \(missing.joined(separator: ", "))")
+        #endif
     }
 
     func clearFilters() {
