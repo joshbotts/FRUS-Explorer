@@ -415,7 +415,7 @@ A cross-reference tells you what a document *cites*; **Related Documents** tells
 | **Archival provenance** | Documents drawn from the same lot file, decimal file, or archival collection |
 | **Cross-references** | Documents this one cites, and documents that cite it |
 | **Close in date** | Documents written around the same time |
-| **Same volume or subseries** | Documents from the same volume or publication era |
+| **Corpus proximity** | How closely the FRUS editors placed the two documents: in the same chapter or compilation, printed side by side, or — across volumes — in the same publication era |
 | **Shared people** | Documents mentioning the same people |
 
 Each row shows the document's header, volume, and dateline, plus small **"why related" icon chips** naming the signals that contributed to its ranking, strongest first. Tap a row to open the document.
