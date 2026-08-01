@@ -45,6 +45,11 @@ import SwiftData
 ///          indexed-volume denominator, scope signature, applied corpus, compiled expression). All
 ///          optional, so a version-3 file still decodes; the bump is what lets a reader tell "this
 ///          file predates capture provenance" from "these searches recorded none"
+///   5.0 — `GeneratedSummaryExport.authorship` — who wrote each summary. Optional so a version-4
+///          file still decodes; a file this build writes always carries it, so `nil` on read means
+///          only "predates the field". Until now the one export offered as a COMPLETE copy of the
+///          researcher's data was the single surface where machine and human text arrived
+///          indistinguishable, while every other export path labelled it
 struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataExporter.currentFormatVersion`.
@@ -286,6 +291,26 @@ struct GeneratedSummaryExport: Codable, Equatable, Sendable {
     var projectId: UUID?
     var createdAt: Date?
     var lastModified: Date?
+
+    /// Who wrote this text — machine, machine-then-edited, or the researcher.
+    ///
+    /// ## Why this is not optional in practice
+    /// The app labels AI-generated content wherever it is displayed or exported: the collection
+    /// exporters branch on exactly this value to decide whether an artifact carries an AI
+    /// attribution line, and `.userWritten` deliberately carries none. This file shipped without
+    /// it, so the one export a researcher is told is their **complete** data — the exit ramp —
+    /// was the single surface where machine and human text arrived indistinguishable.
+    ///
+    /// Declared `Optional` **only** so a version-4-or-earlier file still decodes: Swift's
+    /// synthesized `Decodable` ignores a property's default, so a non-optional field here would
+    /// make the key mandatory and break every existing export. A file this build *writes* always
+    /// carries a value, so `nil` on read means exactly one thing — the file predates this field.
+    ///
+    /// The model's own property is optional for an unrelated reason (a legacy CloudKit NULL would
+    /// trap a non-optional enum getter), and every read site in the app coerces that `nil` to
+    /// `.aiGenerated`. The mapping below does the same, so an exported file never has to be
+    /// decoded through a rule the reader cannot see.
+    var authorship: SummaryAuthorship?
 }
 
 // MARK: - ReadingHistoryEntryExport
@@ -422,8 +447,11 @@ enum ResearchDataExporter {
     /// the trail" from "this user's trail was empty", which a purely additive change would
     /// otherwise make indistinguishable. The bump to 4 carries the same argument for M-2's
     /// capture-provenance fields: an all-`nil` v4 row means the searches were recorded without it,
-    /// while a v3 file means the format could not carry it.)
-    static let currentFormatVersion = 4
+    /// while a v3 file means the format could not carry it. The bump to 5 is the same argument once
+    /// more, and a sharper one: summary `authorship` is never `nil` in a file this build writes, so
+    /// the version is the *only* thing that distinguishes an unattributed old export from a new
+    /// one.)
+    static let currentFormatVersion = 5
 
     /// Builds an envelope from the current contents of `modelContext`.
     ///
@@ -577,7 +605,12 @@ enum ResearchDataExporter {
                     wasChunked: summary.wasChunked,
                     projectId: summary.projectId,
                     createdAt: summary.createdAt,
-                    lastModified: summary.lastModified
+                    lastModified: summary.lastModified,
+                    // Coerced, not passed through: a legacy NULL *means* `.aiGenerated` everywhere
+                    // else in the app, and exporting `null` would tell a reader the provenance was
+                    // unknown when the app treats it as known. Never write an ambiguity the reader
+                    // has to resolve with a rule they do not have.
+                    authorship: summary.authorship ?? .aiGenerated
                 )
             },
             readingHistory: readingHistory.map { visit in
