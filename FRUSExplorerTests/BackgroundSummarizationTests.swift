@@ -263,8 +263,9 @@ struct BackgroundSummarizationTests {
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
 
         let state = await progress.state
-        if case .completed(let processed) = state {
-            #expect(processed == 0)
+        if case .completed(let tally) = state {
+            #expect(tally.succeeded == 0)
+            #expect(tally.attemptable == 0)
         } else {
             Issue.record("Expected .completed, got \(state)")
         }

@@ -450,16 +450,20 @@ struct StatusBarView: View {
             )
         }
 
-        if case .running(let processed, let total, let docId) =
+        if case .running(let tally, let docId) =
             appState.backgroundSummarizationProgress.state {
-            let progress: Double? = total > 0
-                ? Double(processed) / Double(total)
+            let progress: Double? = tally.attemptable > 0
+                ? Double(tally.finished) / Double(tally.attemptable)
                 : nil
             let label: String = {
-                if total == 0 {
-                    return "Summarizing…"
+                // Before the total is known the run is parsing volumes, not summarizing — saying
+                // "Summarizing…" during a phase that can take a minute is part of why a run reads
+                // as stalled.
+                if tally.attemptable == 0 {
+                    return String(localized: "activetask.summarizing.preparing",
+                                  defaultValue: "Preparing to summarize…")
                 }
-                let base = "Summarizing \(processed)/\(total)"
+                let base = "Summarizing \(tally.finished)/\(tally.attemptable)"
                 if let id = docId { return "\(base) — \(id)" }
                 return base
             }()

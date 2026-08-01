@@ -2,8 +2,8 @@
 
 **Date**: 2026-08-01
 **Issues**: #559, #597, #561, #553, #586, #562, #560, #626
-**Status**: revised again 2026-08-01 — items 1–7 shipped (#559, #597 Phases 0–1 + guide + recall,
-#553, #561, #562); #586 and #626 held by the owner; #560 remains
+**Status**: revised again 2026-08-01 — items 1–7 shipped plus #560 PR A; #560 PR B (sub-document
+progress + settings copy) is specified and unbuilt; #586 and #626 held by the owner
 
 Every effort estimate below was checked against code, and three claims were re-verified by hand
 before this was written. Four issues turned out to be a different size than their titles suggest,
@@ -461,42 +461,78 @@ to today's flat 1.0 and nobody notices.
 
 </details>
 
-### 9 · #560 — bulk summarization (mid M)
+### 9 · #560 — bulk summarization (mid M) — **PR A SHIPPED**
 
-**The premise is dead, and that is the most valuable result here.** Measured: Apple's on-device model
-serialises inference system-wide — 6 concurrent calls 11.50 s vs 6 serial 11.88 s (1.03×); reversing
-the order to kill warm-up bias gave 1.39×. The four "concurrent" calls completed evenly staggered
-~2.3 s apart: a queue, not parallelism. **The concurrency setting is not the lever**, and raising it
-makes the run *look* more stalled. A ~1,400-document run is ~1,600 serialised calls and is honestly
-1.5–4 hours. Nothing is stalled.
+**The run was reconstructed from the owner's own store, and neither this section nor the issue
+described what actually happened.** `ZGENERATEDSUMMARY` timestamps identify the run exactly: 1,364
+documents, 5 volumes, 313.6 minutes, starting 2026-06-03 15:26.
 
-1. **Count successes, not attempts.** `counter.increment()` sits **outside** the `do/catch`
-   (verified at `BackgroundSummarizationService.swift:487`), so a document that failed all five
-   retries still advances the bar — a run where every document fails still reports "1400 documents
-   summarized". `processBackgroundBatch` gets this right; the two paths disagree. **This is the single
-   most important line in the issue.**
-2. **Classify retryable vs terminal errors.** `withRetry` retries everything non-cancellation:
-   2+4+8+16 = 30 s of sleep per permanently-failing document. If Apple Intelligence drops mid-run,
-   1,400 documents each burn 30 s with permits held — ~2 h of pure sleeping — while the counter
-   marches to "Completed".
-3. **Enumeration progress.** `run()` parses every in-scope volume before it knows `total`, publishing
-   `.running(0, 0)` — rendered as a bare spinner. A 1,400-result search spans ~157 volumes. Tick per
-   volume; better, stream the group as volumes complete, which also stops `jobs` holding every
-   document's full text at once.
-4. **Stop promising parallelism.** The Stepper hint says "Higher values summarize faster but may
-   exceed the model's rate limit." There is no rate limit and 6 is not faster.
-5. **`@AppStorage` the concurrency setting** — it is `@State` and silently resets every sheet open.
+**It was not uniformly slow, and it was not stalled.** Only **60.8 minutes** of that run sit in gaps
+of 60 s or less. **252.8 minutes — 81% — sit inside just 43 gaps longer than a minute.** Per volume
+the rate collapses as the documents grow:
 
-**Cut the generation-controls work** (`instructions:`, `prewarm`, `maximumResponseTokens`). It is a
-behaviour change dressed as a performance change: it alters how the model weights a user-authored
-prompt, a token cap can truncate structured JSON mid-object, and it needs a 30-document quality A/B.
+| volume | documents | minutes | s/document |
+|---|---|---|---|
+| frus1872p1 | 502 | 15.9 | 1.9 |
+| frus1872p2v1 | 512 | 48.8 | 5.7 |
+| frus1872p2v2 | 272 | 133.9 | 29.5 |
+| frus1872p2v3 | 40 | 71.6 | 107.3 |
+| frus1872p2v4 | 38 | 43.6 | 68.8 |
 
-**Biggest risk — expectation.** None of this makes the run fast. The honest outcome is that it still
-takes hours and the UI finally says so.
+The stalls are **clusters of adjacent enormous documents saturating every concurrency permit** —
+`frus1872p2v4` holds `d39` at **1,282,843 characters**, `d38` at 375,632, `d35` at 172,340. They are
+not proportional to the document that ends them: a 194-character document sits behind a 905 s stall.
+And during a stall `run()` published `currentDocumentId: nil`, so the app showed a frozen count
+**with no document name and no other signal**. The owner quit fourteen documents from the end of a
+run that was working.
 
-*Caveat: the benchmark ran as a command-line tool, not the entitled foreground app, so absolute
-latencies may be optimistic. The serial-vs-concurrent ratio is measured under identical conditions on
-both sides and is what the diagnosis rests on. Re-confirm in-app.*
+**The issue's own premise is false.** "M1 Max should have much better multithread performance" does
+not apply: generation runs in a shared system daemon and serialises. Cores are not the resource.
+
+**What shipped (PR A — truthful accounting).**
+
+1. **Count successes, not attempts.** `counter.increment()` sat outside the `do/catch`, whose catch
+   was one `#if DEBUG print`. A run in which every document failed rendered as a green
+   "Completed — 1400 documents summarized" with a matching push notification, and zero rows written.
+   `BatchRunTally` now separates succeeded / failed / skipped / attemptable.
+2. **Skipped documents leave the denominator.** `total` was fixed before the skip check, which then
+   `continue`d without counting. A re-run over an already-summarized scope sat at 0 of 1,400 for its
+   whole duration and reported "0 of 1400 documents summarized" — a no-op in the exact vocabulary of
+   total failure. The skip is now resolved during enumeration, in one fetch.
+3. **`.failed` became reachable.** It was declared, rendered in three places, pinned by three tests —
+   and *never assigned anywhere in the app*. It now fires on mid-run model loss and on
+   zero-successes-with-failures.
+4. **Progress is monotonic.** Two publish sites raced; one read the counter *before* its work. There
+   is now exactly one publisher, polling one consistent snapshot at 2 Hz — which also turns ~4,200
+   main-actor hops into ~600.
+5. **Terminal errors stop retrying.** `withRetry` retried everything non-cancellation at 30 s of
+   sleep per document **holding a concurrency permit**. `SummarizationRetryPolicy` is a *blocklist*,
+   so an unrecognised error keeps today's behaviour.
+
+**Premises in this section that were false.**
+
+- *"1,400 documents each burn 30 s while the counter marches to Completed"* — the structural hazard
+  is real, but it did **not** happen in this run. The four longest `p2v4` documents were **in flight
+  and cancelled**, not failed after retries: five retry passes would need ~1,095 model calls in a
+  2,616 s window, i.e. 2.3 s/call, when the same volume was observably running at 4.33 s/document.
+- *"Enumeration progress. A 1,400-result search spans ~157 volumes."* — this run spanned **five**.
+  Enumeration cost ~1.4 s of 313 minutes, 0.007%. The real argument for changing the text source is
+  peak memory, which is a different issue.
+- *"`@AppStorage` the concurrency setting"* and the Stepper copy — still true, still worth doing, but
+  they are PR B, not the fix.
+- *"The concurrency setting is not the lever."* Too strong. Generation does serialise (mean
+  inter-completion gap is invariant at ~2.2–2.6 s from C=3 to C=12), but on a **contended** machine
+  concurrency hides per-call turnaround: 1.42× at C=2 rising to 1.84× at C=6. Background
+  summarization is by definition the contended case. **Keep the Stepper at 1...6.**
+
+**Still true, and the honest headline:** none of this makes the run faster. 60.8 minutes were real
+work and 252.8 minutes were stalls; both remain. What changed is that the app stops claiming success
+it did not achieve.
+
+**PR B (not yet built).** Sub-document progress — thread a step callback out of `SummarizationService`
+so a 131-chunk document reports "part 12 of 131" instead of a frozen count; persist the concurrency
+limit; replace the false Stepper hint ("may exceed the model's rate limit" — there is no rate limit
+and no rate-limit handling anywhere in the app); one honest sentence at the point of commitment.
 
 ### 10 · #626 — editable summaries on document surfaces (large M)
 
