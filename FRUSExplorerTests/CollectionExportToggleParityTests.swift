@@ -21,16 +21,21 @@ import Testing
 /// Every per-collection export toggle must be reachable on **every** platform.
 ///
 /// ## The bug this exists to stop happening a fourth time
-/// A collection's export options live in two parallel implementations:
+/// A collection's export options live in **three** parallel implementations:
 ///
 /// - `CollectionEditorView.frontMatterRows` — the iPhone drill-in, the iPad ⚙ sheet, and the
 ///   macOS **Edit Collection** sheet.
 /// - `MacCollectionManagerView.macCollectionSettingsForm` — the macOS **Collections window**
 ///   (⌘⇧K), which is the surface a Mac user actually reaches.
+/// - `CollectionAttributesRows` — the iOS/iPad **document inspector**'s Collection section.
+///   (macOS suppresses it there deliberately, passing `showsCollectionSettings: false`, because
+///   the ⚙ popover owns those settings on that platform.)
 ///
-/// #617 added `includeMethodAppendix` to the first and not the second, so on the Mac the setting
-/// existed, synced, and drove the exporters — with no control anywhere in the window the owner
-/// uses. It was found by the owner going looking for it, which is the expensive way.
+/// #617 added `includeMethodAppendix` to the first only. #620 caught the second — the owner went
+/// looking for the control to seed the CloudKit schema and could not find it. **The first version
+/// of this suite then asserted parity over those two files and passed, while the third was still
+/// missing it**, which is the lesson: a parity test is only as good as its list of surfaces, so
+/// `listCoversTheModel` below now guards the surface list from the model side.
 ///
 /// That is the same shape as `project_dual_settings_views` (iOS `SettingsView` vs macOS
 /// `FRUSSettingsView`) and as #606/#616 (an iOS-only working-corpus banner). A source audit is the
@@ -57,10 +62,16 @@ struct CollectionExportToggleParityTests {
         "includeMethodAppendix"
     ]
 
-    /// The two files that must each offer every toggle.
-    private static let surfaces = [
-        "FRUSExplorer/Collections/CollectionEditorView.swift",
-        "FRUSExplorer/Collections/MacCollectionManagerView.swift"
+    /// The files that must each offer every toggle, and how each binds its controls.
+    ///
+    /// Two binding styles are in use and both are legitimate, so the assertions below branch on
+    /// this rather than demanding one shape. A `@State` mirror must be separately seeded from the
+    /// model and written back on save; a direct `$collection.x` binding is inherently both, and
+    /// requiring a `collection.x = x` line from it would be asserting a bug.
+    private static let surfaces: [(path: String, mirrorsState: Bool)] = [
+        ("FRUSExplorer/Collections/CollectionEditorView.swift", true),
+        ("FRUSExplorer/Collections/MacCollectionManagerView.swift", true),
+        ("FRUSExplorer/Collections/CollectionCompositionRows.swift", false)
     ]
 
     private static func source(_ path: String) throws -> String {
@@ -73,14 +84,14 @@ struct CollectionExportToggleParityTests {
 
     @Test("Every export toggle has a control on every collection-settings surface")
     func everyToggleIsReachable() throws {
-        for path in Self.surfaces {
+        for (path, _) in Self.surfaces {
             let text = try Self.source(path)
             for toggle in Self.toggles {
-                // A `$`-bound control, not merely a mention: `isOn: $includeColophon` or
-                // `Toggle(isOn: $includeMethodAppendix)`. A doc comment naming the property would
-                // otherwise satisfy a bare substring search — which is exactly how a missing
-                // control could keep passing.
-                #expect(text.contains("$\(toggle)"),
+                // A `$`-bound control, not merely a mention: `isOn: $includeColophon` on a
+                // state-mirroring surface, or `isOn: $collection.includeColophon` on a directly
+                // bound one. A doc comment naming the property would otherwise satisfy a bare
+                // substring search — which is exactly how a missing control could keep passing.
+                #expect(text.contains("$\(toggle)") || text.contains("$collection.\(toggle)"),
                         """
                         \(path) has no control bound to `\(toggle)`. Every per-collection export \
                         option must be reachable on every platform; #617 shipped one that was not, \
@@ -91,9 +102,9 @@ struct CollectionExportToggleParityTests {
     }
 
     /// A control that never writes back is worse than no control: it moves, and nothing happens.
-    @Test("Every toggle is written back to the model on both surfaces")
+    @Test("Every toggle is written back to the model on every state-mirroring surface")
     func everyToggleIsPersisted() throws {
-        for path in Self.surfaces {
+        for (path, mirrorsState) in Self.surfaces where mirrorsState {
             let text = try Self.source(path)
             for toggle in Self.toggles {
                 #expect(text.contains("collection.\(toggle) = \(toggle)"),
@@ -102,12 +113,25 @@ struct CollectionExportToggleParityTests {
         }
     }
 
+    /// A directly-bound surface must bind the MODEL, not a local copy — `$collection.x`, not `$x`.
+    /// A stray `@State` there would edit a value nothing ever reads back.
+    @Test("Directly-bound surfaces bind the model itself")
+    func directSurfacesBindTheModel() throws {
+        for (path, mirrorsState) in Self.surfaces where !mirrorsState {
+            let text = try Self.source(path)
+            for toggle in Self.toggles {
+                #expect(text.contains("$collection.\(toggle)"),
+                        "\(path) must bind `$collection.\(toggle)` directly")
+            }
+        }
+    }
+
     /// And seeded from the model when the surface opens, or the control shows `false` for a
     /// collection that has the option on — and the first edit to any other field silently turns it
     /// off again.
-    @Test("Every toggle is seeded from the model on both surfaces")
+    @Test("Every toggle is seeded from the model on every state-mirroring surface")
     func everyToggleIsSeeded() throws {
-        for path in Self.surfaces {
+        for (path, mirrorsState) in Self.surfaces where mirrorsState {
             let text = try Self.source(path)
             for toggle in Self.toggles {
                 #expect(text.contains("State(initialValue: collection.\(toggle))")
