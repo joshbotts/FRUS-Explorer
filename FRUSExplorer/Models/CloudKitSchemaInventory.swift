@@ -82,6 +82,7 @@ enum CloudKitSchemaInventory {
         "CD_Collection.CD_id",
         "CD_Collection.CD_includeColophon",
         "CD_Collection.CD_includeFootnotes",
+        "CD_Collection.CD_includeMethodAppendix",
         "CD_Collection.CD_includeNotes",
         "CD_Collection.CD_includeProjectProvenance",
         "CD_Collection.CD_includeSourceNote",
@@ -358,7 +359,15 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build. `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
+        // M-2. `CD_Collection.CD_includeMethodAppendix` gates whether a collection export appends
+        // the project's query log. Seeding it needs a *real* save with the flag ON — CloudKit
+        // creates a field only when a record carrying it is first written, and a `false` Bool is
+        // still a written value, so toggling it on once in the collection editor with iCloud
+        // signed in is enough. It does NOT block `ResearchTrailMigration`: that interlock matches
+        // on record-type prefix and the pass writes only `CD_SearchHistoryEntry` and
+        // `CD_ExportHistoryEntry`.
+        "CD_Collection.CD_includeMethodAppendix",
+        // Previously: `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
         // `CD_WorkingCorpus.CD_totalMatchCountAtCapture` were seeded by saving a real TRUNCATED
         // capture with a known total — both fields non-nil, since CloudKit creates a field only
         // when a record carrying it is first written — and promoted on 2026-07-31. `CD_WorkingCorpus` and its nine fields were seeded

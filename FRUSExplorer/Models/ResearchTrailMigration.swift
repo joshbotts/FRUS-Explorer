@@ -43,7 +43,7 @@ import SwiftData
 ///
 /// - `AppState.logEvent(.searchSubmit)` fired on **every** execution of `SearchViewModel.search()`.
 /// - `SearchViewModel.recordSearchHistory` wrote a `SearchHistoryEntry` only when the query differed
-///   from `lastRecordedHistoryQuery` — the last query it had recorded. Consecutive identical
+///   from the writer's anchor — the last query it had recorded. Consecutive identical
 ///   queries collapsed to one row **regardless of the gap between them**.
 ///
 /// iOS re-ran `search()` for the same keywords from two documented sites: `clearVolumeScope()` and
@@ -59,7 +59,7 @@ import SwiftData
 /// 1. Existing ``SearchHistoryEntry`` rows and legacy `.searchSubmit` events are merged into one
 ///    stream, ordered by time (ties broken deterministically — entries first, then id).
 /// 2. The stream is cut into maximal **runs of consecutive items carrying the same query text**.
-///    That is precisely what `lastRecordedHistoryQuery` computed live.
+///    That is precisely what the writer's anchor computed live.
 /// 3. A run that already contains a real `SearchHistoryEntry` writes nothing — the app recorded
 ///    that search at the time, and the events beside it are the re-runs the producer suppressed.
 /// 4. A run with no entry writes exactly **one** row, from its first event.
@@ -505,7 +505,7 @@ enum ResearchTrailMigration {
     /// `.whitespacesAndNewlines` — so a query the user pasted with a trailing newline would not
     /// match itself byte for byte. Case is **not** folded: the recorded text is the user's own
     /// wording, and two searches differing only in case are two searches — which is also what the
-    /// live `lastRecordedHistoryQuery` comparison did.
+    /// live anchor comparison did.
     private static func normalized(_ query: String) -> String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }

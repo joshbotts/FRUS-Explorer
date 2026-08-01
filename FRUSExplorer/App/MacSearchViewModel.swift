@@ -351,7 +351,7 @@ final class MacSearchViewModel {
     /// The trimmed submitted query the checklist is currently anchored to. `performSearch` re-runs
     /// on every filter/scope change (not only on a new query, unlike iOS's `search()`), so the
     /// re-anchor is gated on this changing — otherwise a filter edit mid-session would wipe the
-    /// user's reviewed marks. Mirrors `lastRecordedHistoryQuery`'s "one action per distinct query"
+    /// user's reviewed marks. Mirrors ``SearchHistoryWriter/Anchor``'s "one row per distinct query"
     /// pattern.
     private var lastChecklistAnchorQuery: String?
 
@@ -805,7 +805,7 @@ final class MacSearchViewModel {
         // `performSearch` also re-runs on every filter/scope change (those bump
         // `parametersVersion`, part of `searchTrigger`), so an unconditional re-anchor would
         // silently wipe the user's reviewed marks whenever they touched a filter mid-session.
-        // Gating on the query (mirrors `lastRecordedHistoryQuery`) keeps marks across filter
+        // Gating on the query (mirrors `historyAnchor`) keeps marks across filter
         // re-runs of the same query while still clearing them for a genuine new query. Reviewed
         // identity is document identity, which recurs across searches, so a stale mark must not
         // leak into an unrelated query.
@@ -861,89 +861,52 @@ final class MacSearchViewModel {
 
     // MARK: - Search History
 
-    /// The most recently recorded search-history query text.
+    /// What this window last wrote to the trail — see ``SearchHistoryWriter/Anchor``.
     ///
-    /// Filter and scope changes bump `parametersVersion`, which re-runs
-    /// `performSearch` for the **same** `submittedQuery` — that should not
-    /// produce a new "search executed" history entry. Tracking the last
-    /// recorded query lets `recordSearchHistory` insert one entry per
-    /// distinct submitted query rather than one per re-run.
-    private var lastRecordedHistoryQuery: String?
+    /// Filter and scope changes bump `parametersVersion`, which re-runs `performSearch` for the
+    /// **same** `submittedQuery`. Those are not separate searches the researcher ran, so they
+    /// refresh the anchored row rather than minting a second one — but the row's scope and counts
+    /// become the ones it finally ran under, which is the M-2 fix.
+    private var historyAnchor: SearchHistoryWriter.Anchor?
 
-    /// Inserts a `SearchHistoryEntry` into the SwiftData context for the most
-    /// recently executed search.
+    /// Records the most recently executed search — the macOS half of the trail's search producer.
     ///
-    /// Call once after `performSearch` completes. No-ops when the query is
-    /// empty, the search produced an error, or the query text matches the
-    /// last-recorded entry (a filter/scope-only re-run of the same query —
-    /// see `lastRecordedHistoryQuery`). Mirrors `DocumentViewModel
-    /// .recordReadingHistory`.
-    ///
-    /// **Honours the research-logging preference.** Until Wave R-1 this writer had no gate,
-    /// so a Mac recorded the user's raw query text into a CloudKit-mirrored store — read by
-    /// the History window and Project Home — no matter how "Log Research Sessions" was set.
-    /// The gate is checked **before** `lastRecordedHistoryQuery` is updated, so turning the
-    /// switch back on mid-session does not silently skip the query that was suppressed.
+    /// Call once after `performSearch` completes. All the rules — the research-logging gate, the
+    /// empty-query and error skips, and the insert-or-refresh decision — live in
+    /// ``SearchHistoryWriter``, shared with iOS.
     ///
     /// - Parameters:
-    ///   - projectId: The active project, stamped onto the entry; `nil` when none is active.
-    ///   - context: The context the entry is inserted into.
-    ///   - defaults: The store the research-logging gate is read from. Defaults to
-    ///     `.standard`; overridden only by tests.
+    ///   - projectId: the project active at execution, or `nil` in global context.
+    ///   - indexedVolumeCount: how many volumes this device has indexed — the denominator.
+    ///   - context: the context to write to.
+    ///   - defaults: where the research-logging switch is read from.
     func recordSearchHistory(projectId: UUID?,
                              indexedVolumeCount: Int? = nil,
                              in context: ModelContext,
                              defaults: UserDefaults = .standard) {
-        guard AppState.isResearchLoggingEnabled(in: defaults) else {
-            #if DEBUG
-            print("[MacSearchViewModel] SearchHistoryEntry suppressed (research logging off)")
-            #endif
-            return
-        }
-        let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
-        lastRecordedHistoryQuery = query
-
-        // The research trail gets the true total when there is one, and the fetched count
-        // otherwise. Before Q-M2 an unavailable count was written as exactly the fetch cap,
-        // so a trail entry could record "7,500" for a query matching 195,519 — a number a
-        // researcher may later cite. `resultCount` cannot express "unknown" (widening it is
-        // Decision E / M-2 territory), so the honest fallback is what was actually seen.
-        let recorded = resultCountForDisplay
-        let executed = submittedSearchParameters
-        let record = SearchHistoryEntry(
-            queryText: query,
-            resultCount: recorded,
-            projectId: projectId,
-            loadedCount: results.count,
-            matchCount: totalMatchCount,
-            fetchLimit: Self.searchHardLimit,
-            indexedVolumeCount: indexedVolumeCount,
-            scopeSignature: SearchScopeSignature.signature(for: executed),
-            appliedCorpusId: filterVM?.appliedWorkingCorpusId,
-            renderedExpression: lastRenderedExpression
-        )
-        context.insert(record)
+        let outcome = SearchHistoryWriter.record(
+            SearchHistoryWriter.Reading(
+                queryText: submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines),
+                // The true total when there is one, the fetched count otherwise. Before Q-M2 an
+                // unavailable count was written as exactly the fetch cap, so a trail entry could
+                // record "7,500" for a query matching 195,519 — a number a researcher may cite.
+                resultCount: resultCountForDisplay,
+                loadedCount: results.count,
+                matchCount: totalMatchCount,
+                fetchLimit: Self.searchHardLimit,
+                indexedVolumeCount: indexedVolumeCount,
+                parameters: submittedSearchParameters,
+                appliedCorpusId: filterVM?.appliedWorkingCorpusId,
+                renderedExpression: lastRenderedExpression,
+                projectId: projectId,
+                hasError: searchError != nil),
+            anchor: &historyAnchor,
+            in: context,
+            defaults: defaults)
         #if DEBUG
-        print("[MacSearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(recorded) exact=\(isTotalCountAvailable)")
-        #endif
-        #if DEBUG
-        // Seeding diagnostic. CloudKit learns a field only from a record that CARRIES a value:
-        // a nil optional is simply absent from the pushed `CKRecord`, so a Development schema
-        // gains the column only once one record has it non-nil. Naming the nils here is what
-        // makes a seeding run checkable without reading the Dashboard and guessing.
-        let missing = [
-            record.loadedCount == nil ? "loadedCount" : nil,
-            record.matchCount == nil ? "matchCount" : nil,
-            record.fetchLimit == nil ? "fetchLimit" : nil,
-            record.indexedVolumeCount == nil ? "indexedVolumeCount" : nil,
-            record.scopeSignature == nil ? "scopeSignature" : nil,
-            record.appliedCorpusId == nil ? "appliedCorpusId" : nil,
-            record.renderedExpression == nil ? "renderedExpression" : nil,
-        ].compactMap { $0 }
-        print(missing.isEmpty
-              ? "[\(Self.self)] SearchHistoryEntry: all 7 M-2 fields non-nil — this row can seed the schema"
-              : "[\(Self.self)] SearchHistoryEntry: NOT seedable — nil: \(missing.joined(separator: ", "))")
+        print("[MacSearchViewModel] SearchHistoryEntry \(outcome): \"\(submittedQuery)\"")
+        #else
+        _ = outcome
         #endif
     }
 }

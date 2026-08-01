@@ -548,6 +548,23 @@ struct CollectionItemHTMLRenderer {
             body += itemHTML(item)
         }
 
+        // Method appendix (M-2) — the project's query log, opt-in only. Placed before the
+        // colophon: the colophon says how the artifact was produced, and this says how the
+        // research inside it was done, which belongs with the content rather than after the
+        // production note.
+        if !metadata.methodAppendixLines.isEmpty {
+            body += "<section class=\"method-appendix\">\n"
+            for (index, line) in metadata.methodAppendixLines.enumerated() {
+                if line.isEmpty { continue }
+                if index == 0 {
+                    body += "  <h2>\(escaped(line))</h2>\n"
+                } else {
+                    body += "  <p>\(escaped(line))</p>\n"
+                }
+            }
+            body += "</section>\n\n"
+        }
+
         // Colophon footer (Authoring Phase 4) — opt-in only, so collections that never
         // enable it keep their pre-Phase-4 bytes.
         if metadata.includeColophon {
@@ -599,13 +616,15 @@ struct CollectionItemHTMLRenderer {
     }
 
     /// `true` when the page uses any Phase 4 publication-frame feature — a set subtitle or
-    /// author line, the colophon opt-in, or a heading nested deeper than level 1. Gates
+    /// author line, the colophon opt-in, the M-2 method appendix, or a heading nested deeper
+    /// than level 1. Gates
     /// `frameCSS` so a collection using no new feature emits the exact pre-Phase-4 bytes.
     static func usesFrameFeatures(metadata: CollectionExportMetadata,
                                   items: [CollectionExportItem]) -> Bool {
         if let subtitle = metadata.subtitle, !subtitle.isEmpty { return true }
         if let author = metadata.authorLine, !author.isEmpty { return true }
         if metadata.includeColophon { return true }
+        if !metadata.methodAppendixLines.isEmpty { return true }
         return items.contains {
             if case .heading(_, let level) = $0 { return level > 1 }
             return false
@@ -850,6 +869,15 @@ struct CollectionItemHTMLRenderer {
       font-size: 0.8rem;
       color: #777;
     }
+    section.method-appendix {
+      margin-top: 3rem;
+      border-top: 1px solid #ddd;
+      padding-top: 1rem;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    section.method-appendix h2 { font-size: 1rem; color: #333; }
+    section.method-appendix p { margin: 0.35rem 0; }
     """
 
     /// Headnote styles (v1.4, Authoring Phase 5) — the labeled italic abstract above a

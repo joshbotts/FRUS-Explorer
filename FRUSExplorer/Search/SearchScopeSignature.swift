@@ -43,6 +43,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — M-2: initial implementation
+///   1.1 — M-2 commit 3: `describe(_:)` — the decoder this type's overview promised, so the
+///          method appendix can print a scope as prose without the trail comparing prose
 enum SearchScopeSignature {
 
     /// The signature for `parameters`.
@@ -109,6 +111,120 @@ enum SearchScopeSignature {
         let joined = ids.sorted().joined(separator: "\n")
         let hash = SHA256.hash(data: Data(joined.utf8))
         return hash.compactMap { String(format: "%02x", $0) }.joined().prefix(12).description
+    }
+
+    // MARK: - Decoding
+
+    /// Renders a recorded signature as readable prose for the method appendix.
+    ///
+    /// The inverse direction of the trade-off in this type's overview: the key exists so the trail
+    /// can *compare* scopes, and this exists so the appendix can *show* one. It is deliberately
+    /// lossy — the volume digest names a count, never the twelve volume ids — because the appendix
+    /// states the method, and the signature itself is printed beside it for anyone who needs to
+    /// check that two rows really did run under the same scope.
+    ///
+    /// - Parameter signature: a string produced by ``signature(for:)``.
+    /// - Returns: the phrases describing the scope, or `nil` if `signature` does not parse. `nil`
+    ///   is the caller's cue to print the raw key: an appendix that guessed would be describing a
+    ///   scope the search did not run under, which is worse than an ugly line.
+    static func describe(_ signature: String) -> [String]? {
+        var pairs: [String: String] = [:]
+        for part in signature.split(separator: ";") {
+            guard let split = part.firstIndex(of: "=") else { return nil }
+            pairs[String(part[part.startIndex..<split])] = String(part[part.index(after: split)...])
+        }
+        // Every signature this type writes carries `mode`. Its absence means the string came from
+        // somewhere else — or from a future version — and must not be paraphrased.
+        guard pairs["mode"] != nil else { return nil }
+
+        var phrases: [String] = []
+
+        // Fields searched: stated always, because *which* text was searched is method, not a
+        // narrowing. A reader cannot infer it from the query.
+        let fields = [
+            (pairs["text"], String(localized: "appendix.scope.field.text", defaultValue: "document text")),
+            (pairs["summ"], String(localized: "appendix.scope.field.summaries", defaultValue: "summaries")),
+            (pairs["notes"], String(localized: "appendix.scope.field.notes", defaultValue: "notes")),
+            (pairs["front"], String(localized: "appendix.scope.field.frontMatter", defaultValue: "front matter"))
+        ].compactMap { $0.0 == "1" ? $0.1 : nil }
+        if fields.isEmpty {
+            phrases.append(String(localized: "appendix.scope.fields.none",
+                                  defaultValue: "no fields searched"))
+        } else {
+            phrases.append(String(localized: "appendix.scope.fields %@",
+                                  defaultValue: "searched \(fields.formatted(.list(type: .and)))"))
+        }
+
+        if pairs["mode"] == "or" {
+            phrases.append(String(localized: "appendix.scope.mode.or", defaultValue: "any term matches"))
+        }
+        if let dates = pairs["dates"], dates != "none" {
+            phrases.append(String(localized: "appendix.scope.dates %@", defaultValue: "dated \(dates)"))
+        }
+        phrases += countPhrase(pairs["vols"],
+                               some: { String(localized: "appendix.scope.volumes %lld",
+                                              defaultValue: "\($0) volumes") },
+                               empty: String(localized: "appendix.scope.volumes.empty",
+                                             defaultValue: "no volumes selected"))
+        phrases += countPhrase(pairs["docs"],
+                               some: { String(localized: "appendix.scope.documents %lld",
+                                              defaultValue: "\($0) documents") },
+                               empty: String(localized: "appendix.scope.documents.empty",
+                                             defaultValue: "no documents selected"))
+        phrases += countPhrase(pairs["exdocs"],
+                               some: { String(localized: "appendix.scope.excludedDocuments %lld",
+                                              defaultValue: "\($0) documents excluded") },
+                               empty: nil)
+        phrases += countPhrase(pairs["stags"],
+                               some: { String(localized: "appendix.scope.subjectTags %lld",
+                                              defaultValue: "\($0) subject tags") },
+                               empty: nil)
+        phrases += countPhrase(pairs["utags"],
+                               some: { String(localized: "appendix.scope.userTags %lld",
+                                              defaultValue: "\($0) of your tags") },
+                               empty: nil)
+
+        switch pairs["type"] {
+        case "documents":
+            phrases.append(String(localized: "appendix.scope.type.documents", defaultValue: "documents only"))
+        case "editorial":
+            phrases.append(String(localized: "appendix.scope.type.editorial",
+                                  defaultValue: "editorial notes only"))
+        default: break
+        }
+        if let person = pairs["person"], person != "none" {
+            phrases.append(person.hasPrefix("rollup:")
+                           ? String(localized: "appendix.scope.person.rollup",
+                                    defaultValue: "filtered to one person")
+                           : String(localized: "appendix.scope.person.ref",
+                                    defaultValue: "filtered to one person, by a single volume's spelling"))
+        }
+        if pairs["phrase"] == "1" {
+            phrases.append(String(localized: "appendix.scope.phrase", defaultValue: "phrase search"))
+        }
+        if pairs["prefix"] == "1" {
+            phrases.append(String(localized: "appendix.scope.prefix", defaultValue: "prefix wildcard"))
+        }
+        if pairs["excl"] == "1" {
+            phrases.append(String(localized: "appendix.scope.excluded", defaultValue: "with excluded terms"))
+        }
+        if pairs["proj"] != nil, pairs["proj"] != "none" {
+            phrases.append(String(localized: "appendix.scope.project", defaultValue: "gated to a project"))
+        }
+        return phrases
+    }
+
+    /// Renders a `count/digest`, `empty` or `none` component. `none` is no constraint and yields
+    /// nothing; `empty` is a real — and pathological — scope, so it gets a phrase where one is
+    /// supplied. A malformed count yields nothing rather than a `0`, which would read as a fact.
+    private static func countPhrase(_ component: String?,
+                                    some: (Int) -> String,
+                                    empty: String?) -> [String] {
+        guard let component, component != "none" else { return [] }
+        if component == "empty" { return empty.map { [$0] } ?? [] }
+        guard let slash = component.firstIndex(of: "/"),
+              let count = Int(component[component.startIndex..<slash]) else { return [] }
+        return [some(count)]
     }
 }
 
