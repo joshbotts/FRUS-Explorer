@@ -147,7 +147,7 @@ struct ResearchTrailMigrationTests {
     /// `SearchViewModel.search()` fired `.searchSubmit` on *every* execution, and iOS re-ran it for
     /// the same keywords from two documented sites — `clearVolumeScope()` and the result-row tag
     /// chip. So one submitted query plus two filter toggles is three events. The live producer's
-    /// `lastRecordedHistoryQuery` wrote **one** row for that; the first draft of this pass, which
+    /// The live writer's anchor wrote **one** row for that; the first draft of this pass, which
     /// paired on a ±2s window, wrote three, because the gap between a submit and a tap is a human
     /// one.
     ///
@@ -197,7 +197,7 @@ struct ResearchTrailMigrationTests {
     }
 
     /// The collapsing has an outside, and it is the one the live writer had: a **different** query
-    /// in between resets `lastRecordedHistoryQuery`, so coming back to the first is a second
+    /// in between resets the writer's anchor, so coming back to the first is a second
     /// search and a second row. `A A B A` is three searches, not one and not four.
     @Test("A repeat with another query in between is migrated, not swallowed")
     func aRepeatWithAnotherQueryInBetweenIsMigrated() throws {
@@ -289,7 +289,7 @@ struct ResearchTrailMigrationTests {
     }
 
     /// Case is not folded: two searches differing only in case are two searches, the recorded text
-    /// is the user's own wording, and the live `lastRecordedHistoryQuery` comparison was
+    /// is the user's own wording, and the live anchor comparison was
     /// case-sensitive too.
     @Test("Grouping is case-sensitive")
     func pairingIsCaseSensitive() throws {

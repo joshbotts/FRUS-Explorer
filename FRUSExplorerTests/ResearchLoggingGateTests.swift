@@ -397,7 +397,7 @@ struct ResearchLoggingGateTests {
     }
 
     /// The de-duplication, which is the whole reason `submittedQuery` is frozen and
-    /// `lastRecordedHistoryQuery` exists. `SearchView` re-runs `search()` for the **same** query
+    /// `SearchHistoryWriter.Anchor` exists. `SearchView` re-runs `search()` for the **same** query
     /// whenever a filter moves — clearing the volume scope, tapping a tag chip on a result row —
     /// and each of those must not read as another search the user ran.
     @Test("A scope-only re-run of the same iOS query does not duplicate the row")
@@ -429,6 +429,71 @@ struct ResearchLoggingGateTests {
         await vm.search()
         vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
         #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 1)
+    }
+
+    /// The other half of that rule, and the M-2 fix (commit 5).
+    ///
+    /// Staying at one row is only half right. Since #613 the row also carries the **scope** it ran
+    /// under, and the old writer skipped a re-run outright — which froze the scope at whatever the
+    /// first run used. A researcher who searched, then narrowed to twelve volumes, then read the
+    /// method appendix would find a corpus-wide scope printed against a search that ran over
+    /// twelve. The appendix would be stating a method that was not used, which is the precise
+    /// defect M-2 exists to remove.
+    @Test("A scope-only re-run refreshes the row rather than freezing its scope")
+    func scopeOnlyRerunRefreshesTheRow() async throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let harness = try await SearchHarness.make()
+        defer { harness.destroy() }
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let vm = harness.viewModel
+
+        vm.keywords = "détente"
+        await vm.search()
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+        let wide = try #require(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).first)
+        let wideSignature = try #require(wide.scopeSignature)
+        let wideRunAt = try #require(wide.executedAt)
+
+        vm.selectedVolumeIds = ["frus1969-76v01"]
+        await vm.search()
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+
+        let rows = try context.fetch(FetchDescriptor<SearchHistoryEntry>())
+        #expect(rows.count == 1, "still one row — a filter tap is not a search the researcher ran")
+        let narrowed = try #require(rows.first)
+        #expect(narrowed.id == wide.id, "it must be the SAME row, brought up to date")
+        #expect(narrowed.scopeSignature != wideSignature,
+                "the row still claims the scope of a run it no longer describes")
+        #expect(try #require(narrowed.executedAt) >= wideRunAt,
+                "a refreshed row is dated by the run it describes")
+    }
+
+    /// A genuine later re-run — after other queries in between — is a new row. Only *consecutive*
+    /// re-runs collapse, because only those are the same search being adjusted.
+    @Test("The same query after another query is a new row")
+    func returningToAQueryStartsANewRow() async throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let harness = try await SearchHarness.make()
+        defer { harness.destroy() }
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let vm = harness.viewModel
+
+        for query in ["détente", "telegram", "détente"] {
+            vm.keywords = query
+            await vm.search()
+            vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
+        }
+        #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 3)
     }
 
     /// The skip conditions inherited from the macOS writer. An empty keyword box records nothing
@@ -466,30 +531,44 @@ struct ResearchLoggingGateTests {
 
     /// The macOS search writer, checked by reading its source: the gate must appear **between**
     /// the function signature and the `context.insert`, which pins both its presence and its
-    /// position. Placement matters — the function mutates `lastRecordedHistoryQuery` on the way
+    /// position. Placement matters — the function mutates the caller's anchor on the way
     /// through, and a gate placed after that mutation would silently swallow the first query the
     /// user runs after switching logging back on.
     ///
-    /// A source test rather than a behavioural one because `MacSearchViewModel` is `#if os(macOS)`
-    /// and this bundle builds for iOS; see the suite doc comment.
-    @Test("MacSearchViewModel.recordSearchHistory checks the gate before inserting")
-    func macSearchWriterChecksTheGateBeforeInserting() throws {
-        let url = Self.sourceRoot.appendingPathComponent("App/MacSearchViewModel.swift")
+    /// Now one writer for both platforms (M-2). The audit moved with it, and gained a second
+    /// assertion the two-copy version could not make: that neither view model can still reach the
+    /// initialiser on its own, which is how the gate would come back apart.
+    @Test("The shared history writer checks the gate before writing")
+    func sharedWriterChecksTheGateBeforeWriting() throws {
+        let url = Self.sourceRoot.appendingPathComponent("Search/SearchHistoryWriter.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
 
-        let signature = "func recordSearchHistory("
+        let signature = "static func record("
         let insert = "context.insert(record)"
         let signatureRange = try #require(source.range(of: signature),
-                                          "recordSearchHistory has been renamed or removed")
+                                          "SearchHistoryWriter.record has been renamed or removed")
         let insertRange = try #require(source.range(of: insert, range: signatureRange.upperBound..<source.endIndex),
-                                       "recordSearchHistory no longer inserts a record")
+                                       "SearchHistoryWriter.record no longer inserts a record")
 
         let body = source[signatureRange.upperBound..<insertRange.lowerBound]
         #expect(body.contains("AppState.isResearchLoggingEnabled(in: defaults)"),
                 """
-                MacSearchViewModel.recordSearchHistory must consult the research-logging gate \
-                before inserting a SearchHistoryEntry (Wave R-1)
+                SearchHistoryWriter.record must consult the research-logging gate before \
+                writing a SearchHistoryEntry (Wave R-1)
                 """)
+        // The gate is checked before the ANCHOR moves, too: a gate placed after that mutation
+        // would silently swallow the first query the user runs after switching logging back on.
+        let anchorRange = try #require(source.range(of: "anchor = Anchor(",
+                                                    range: signatureRange.upperBound..<source.endIndex))
+        #expect(source[signatureRange.upperBound..<anchorRange.lowerBound]
+            .contains("AppState.isResearchLoggingEnabled(in: defaults)"))
+
+        // And a refresh is gated too — it is a write, and it moves `executedAt`.
+        let refreshRange = try #require(source.range(of: "row.scopeSignature = signature",
+                                                     range: signatureRange.upperBound..<source.endIndex))
+        #expect(source[signatureRange.upperBound..<refreshRange.lowerBound]
+            .contains("AppState.isResearchLoggingEnabled(in: defaults)"),
+                "the refresh path must be behind the same gate as the insert")
     }
 
     /// No further writer has appeared without a gate.
@@ -507,8 +586,10 @@ struct ResearchLoggingGateTests {
     func noUngatedHistoryWriterExists() throws {
         let expected: Set<String> = [
             "DocumentViewModel.swift",   // ReadingHistoryEntry — gated
-            "MacSearchViewModel.swift",  // SearchHistoryEntry  — gated (macOS)
-            "SearchViewModel.swift",     // SearchHistoryEntry  — gated (iOS, Wave R-4)
+            // SearchHistoryEntry — one gated writer for BOTH platforms since M-2. It used to be
+            // two (`MacSearchViewModel` and `SearchViewModel`), which is how #612 shipped a synced
+            // trail whose platforms recorded different counts for the same query.
+            "SearchHistoryWriter.swift",
             // ExportHistoryEntry — gated inside `ExportHistoryRecorder` (Wave R-2a). The four
             // `ExportSheetView` call sites route through that recorder precisely so the gate is
             // written once rather than copied four times into a view.
@@ -579,20 +660,17 @@ struct ResearchLoggingGateTests {
         #expect(follows.contains("recordSearchHistory("),
                 "the vm.search() call in SearchView must be followed by vm.recordSearchHistory(…)")
 
-        // And the gate is the view model's, checked before the insert — the same shape the macOS
-        // writer is held to above.
+        // And the view model delegates to the shared writer, which is where the gate now lives
+        // (see `sharedWriterChecksTheGateBeforeWriting`). Asserting delegation rather than a local
+        // gate is the point: a second gate here would be a second thing to get wrong.
         let vmURL = Self.sourceRoot.appendingPathComponent("Search/SearchViewModel.swift")
         let vmSource = try String(contentsOf: vmURL, encoding: .utf8)
         let signatureRange = try #require(vmSource.range(of: "func recordSearchHistory("),
                                           "SearchViewModel.recordSearchHistory is missing")
-        let insertRange = try #require(
-            vmSource.range(of: "context.insert(record)",
-                           range: signatureRange.upperBound..<vmSource.endIndex),
-            "SearchViewModel.recordSearchHistory no longer inserts a record")
-        #expect(vmSource[signatureRange.upperBound..<insertRange.lowerBound]
-            .contains("AppState.isResearchLoggingEnabled(in: defaults)"),
+        #expect(vmSource[signatureRange.upperBound...].prefix(2_000)
+            .contains("SearchHistoryWriter.record("),
                 """
-                SearchViewModel.recordSearchHistory must consult the research-logging gate \
+                SearchViewModel.recordSearchHistory must delegate to SearchHistoryWriter \
                 before inserting a SearchHistoryEntry (Wave R-1 / R-4)
                 """)
     }
@@ -663,8 +741,13 @@ struct TrailCountParityTests {
         #expect(recorded(total: 412, fetched: 412) == 412)
     }
 
-    /// Source parity: both writers must apply the same rule, or the trail disagrees with itself.
-    @Test("Both platforms record the total when they have one")
+    /// Source parity: both platforms must apply the same rule, or the trail disagrees with itself.
+    ///
+    /// The guarantee got stronger in M-2 commit 5. It used to be textual — two writers asserted to
+    /// spell the same thing — and now there is one writer, so what is checked is that both view
+    /// models still feed it and neither has grown a second path to the initialiser. That is what
+    /// `noUngatedHistoryWriterExists` enforces from the other side.
+    @Test("Both platforms record the total when they have one, through one writer")
     func bothWritersAgree() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
@@ -672,13 +755,19 @@ struct TrailCountParityTests {
                              encoding: .utf8)
         let mac = try String(contentsOf: root.appending(path: "FRUSExplorer/App/MacSearchViewModel.swift"),
                              encoding: .utf8)
-        #expect(iOS.contains("let recorded = totalMatchCount ?? results.count"))
+        #expect(iOS.contains("resultCount: totalMatchCount ?? results.count"))
         // macOS reaches the same value through `resultCountForDisplay`, which is defined as
         // `totalMatchCount ?? results.count`.
-        #expect(mac.contains("let recorded = resultCountForDisplay"))
+        #expect(mac.contains("resultCount: resultCountForDisplay"))
         #expect(mac.contains("var resultCountForDisplay: Int { totalMatchCount ?? results.count }"))
-        // Neither may go back to logging the raw fetch.
-        #expect(!iOS.contains("resultCount: results.count"),
-                "iOS must not record the capped fetch as the hit count")
+        // Both go through the shared writer, and neither constructs an entry itself.
+        for (name, source) in [("iOS", iOS), ("macOS", mac)] {
+            #expect(source.contains("SearchHistoryWriter.record("), "\(name) stopped delegating")
+            #expect(!source.contains("SearchHistoryEntry("),
+                    "\(name) grew a second path to the initialiser, which is how the two drift")
+        }
+        // Neither may go back to logging the raw fetch as the hit count.
+        #expect(!iOS.contains("resultCount: results.count"))
+        #expect(!mac.contains("resultCount: results.count"))
     }
 }

@@ -609,110 +609,57 @@ final class SearchViewModel {
 
     // MARK: - Search History
 
-    /// The most recently recorded search-history query text.
+    /// What this screen last wrote to the trail — see ``SearchHistoryWriter/Anchor``.
     ///
     /// Several of `SearchView`'s entry points re-run `search()` for the **same** query with a
-    /// changed filter — clearing the volume scope, tapping a tag chip on a result row — and
-    /// those must not each mint a "search executed" row. Tracking the last recorded query
-    /// yields one entry per distinct submitted query rather than one per execution. Exactly
-    /// `MacSearchViewModel.lastRecordedHistoryQuery`, whose re-runs come from
-    /// `parametersVersion` instead.
-    private var lastRecordedHistoryQuery: String?
+    /// changed filter — clearing the volume scope, tapping a tag chip on a result row. Those are
+    /// not separate searches the researcher ran, so they refresh the anchored row rather than
+    /// minting a second one. Held here rather than derived from the table, which is shared across
+    /// windows, devices and projects.
+    private var historyAnchor: SearchHistoryWriter.Anchor?
 
-    /// Inserts a `SearchHistoryEntry` into the SwiftData context for the most recently
-    /// executed search — the iOS half of the trail's search producer.
+    /// Records the most recently executed search — the iOS half of the trail's search producer.
     ///
-    /// Call once after `search()` completes; `SearchView.runSearch()` is the single site that
-    /// does so, which is why every search entry point in that view routes through it. No-ops
-    /// when the query is empty (a person-only "find all mentions" hand-off, say), the search
-    /// errored, or the query text matches the last recorded entry (see
-    /// `lastRecordedHistoryQuery`).
-    ///
-    /// **Honours the research-logging preference**, and did so from its first commit — Wave R-1
-    /// closed the gate before this writer existed precisely so that adding it could not start
-    /// collecting search text on a platform that was not collecting it. As on macOS the gate is
-    /// checked **before** `lastRecordedHistoryQuery` is updated, so switching logging back on
-    /// mid-session does not silently swallow the query that was suppressed.
-    ///
-    /// ## One difference from the macOS writer
-    /// `resultCount` is `results.count`, the fetched count — capped at `searchHardLimit`
-    /// (1,000). `MacSearchViewModel` records `totalMatchCount`, the true uncapped total, because
-    /// its `performSearch` already runs `SearchService.searchCount` in parallel for its
-    /// truncation banner. This view model now runs the same count concurrently — see
-    /// ``totalMatchCount`` for the measurements that overturned the argument against it — but
-    /// **`resultCount` is still the fetched, checklist-filtered count**, and history records that
-    /// rather than the total. A history entry describes what the user was looking at.
+    /// Call once after `search()` completes; `SearchView.runSearch()` is the single site that does
+    /// so, which is why every search entry point in that view routes through it. All the rules —
+    /// the research-logging gate, the empty-query and error skips, and the insert-or-refresh
+    /// decision — live in ``SearchHistoryWriter``, shared with macOS, because two copies of them
+    /// is how #612 shipped a trail whose two platforms disagreed about the same query's count.
     ///
     /// - Parameters:
-    ///   - projectId: The active project, stamped onto the entry; `nil` when none is active.
-    ///   - context: The context the entry is inserted into.
-    ///   - defaults: The store the research-logging gate is read from. Defaults to
-    ///     `.standard`; overridden only by tests.
+    ///   - projectId: the project active at execution, or `nil` in global context.
+    ///   - indexedVolumeCount: how many volumes this device has indexed — the denominator.
+    ///   - context: the context to write to.
+    ///   - defaults: where the research-logging switch is read from.
     func recordSearchHistory(projectId: UUID?,
                              indexedVolumeCount: Int? = nil,
                              in context: ModelContext,
                              defaults: UserDefaults = .standard) {
-        guard AppState.isResearchLoggingEnabled(in: defaults) else {
-            #if DEBUG
-            print("[SearchViewModel] SearchHistoryEntry suppressed (research logging off)")
-            #endif
-            return
-        }
-        let query = submittedQuery
-        guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
-        lastRecordedHistoryQuery = query
-
-        // The true total when there is one, the fetched count otherwise — converging on what
-        // `MacSearchViewModel.recordSearchHistory` has recorded since Q-M2, whose comment names
-        // this catch-up as M-2's.
-        //
-        // Until #605 iOS held no whole-query count, so this wrote `results.count`: the FETCHED
-        // set, capped at `searchHardLimit`. A query matching 195,519 documents was logged as
-        // "1,000" — and the trail syncs, so one project's log carried an iPhone's capped number
-        // beside a Mac's true one for the same query. A research trail exists to make a count
-        // citable; two platforms disagreeing inside it is the worst version of that.
-        //
-        // `resultCount` still cannot express "unknown" — widening it is the schema half of M-2 —
-        // so when the count is unavailable the honest fallback stays what was actually seen.
-        let recorded = totalMatchCount ?? results.count
-        // The executed parameters, not the live filter state — those may have moved since.
-        let executed = submittedSearchParameters
-        // The expression comes from `search()`, where it was rendered against these parameters.
-        // Deliberately NOT the Query Inspector, which is debounced view state keyed on the live
-        // text and may describe the field rather than what ran.
-        let record = SearchHistoryEntry(
-            queryText: query,
-            resultCount: recorded,
-            projectId: projectId,
-            loadedCount: results.count,
-            matchCount: totalMatchCount,
-            fetchLimit: Self.searchHardLimit,
-            indexedVolumeCount: indexedVolumeCount,
-            scopeSignature: SearchScopeSignature.signature(for: executed),
-            appliedCorpusId: appliedWorkingCorpusId,
-            renderedExpression: lastRenderedExpression
-        )
-        context.insert(record)
+        let outcome = SearchHistoryWriter.record(
+            SearchHistoryWriter.Reading(
+                queryText: submittedQuery,
+                // The true total when there is one, the fetched count otherwise. `resultCount`
+                // cannot express "unknown", so the honest fallback is what was actually seen.
+                resultCount: totalMatchCount ?? results.count,
+                loadedCount: results.count,
+                matchCount: totalMatchCount,
+                fetchLimit: Self.searchHardLimit,
+                indexedVolumeCount: indexedVolumeCount,
+                // The executed parameters, not the live filter state — those may have moved.
+                parameters: submittedSearchParameters,
+                appliedCorpusId: appliedWorkingCorpusId,
+                // Rendered in `search()` against these parameters. Deliberately NOT the Query
+                // Inspector, which is debounced view state keyed on the live text.
+                renderedExpression: lastRenderedExpression,
+                projectId: projectId,
+                hasError: searchError != nil),
+            anchor: &historyAnchor,
+            in: context,
+            defaults: defaults)
         #if DEBUG
-        print("[SearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(recorded) exact=\(totalMatchCount != nil)")
-        #endif
-        #if DEBUG
-        // Seeding diagnostic. CloudKit learns a field only from a record that CARRIES a value:
-        // a nil optional is simply absent from the pushed `CKRecord`, so a Development schema
-        // gains the column only once one record has it non-nil. Naming the nils here is what
-        // makes a seeding run checkable without reading the Dashboard and guessing.
-        let missing = [
-            record.loadedCount == nil ? "loadedCount" : nil,
-            record.matchCount == nil ? "matchCount" : nil,
-            record.fetchLimit == nil ? "fetchLimit" : nil,
-            record.indexedVolumeCount == nil ? "indexedVolumeCount" : nil,
-            record.scopeSignature == nil ? "scopeSignature" : nil,
-            record.appliedCorpusId == nil ? "appliedCorpusId" : nil,
-            record.renderedExpression == nil ? "renderedExpression" : nil,
-        ].compactMap { $0 }
-        print(missing.isEmpty
-              ? "[\(Self.self)] SearchHistoryEntry: all 7 M-2 fields non-nil — this row can seed the schema"
-              : "[\(Self.self)] SearchHistoryEntry: NOT seedable — nil: \(missing.joined(separator: ", "))")
+        print("[SearchViewModel] SearchHistoryEntry \(outcome): \"\(submittedQuery)\"")
+        #else
+        _ = outcome
         #endif
     }
 
