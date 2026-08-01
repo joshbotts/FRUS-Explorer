@@ -368,5 +368,21 @@ struct CollectionAttributesRows: View {
         Toggle(String(localized: "collection.attributes.projectProvenance",
                       defaultValue: "Stamp active project on export"),
                isOn: $collection.includeProjectProvenance)
+
+        // M-2. The third surface. #617 added this toggle to `CollectionEditorView` only and #620
+        // added it to `MacCollectionManagerView`; this view is the iOS/iPad document inspector's
+        // copy, and it had the other two export toggles and not this one. Two `Text`s because it
+        // is the only export option that puts the text of the researcher's own searches into a
+        // document they may be about to publish.
+        Toggle(isOn: $collection.includeMethodAppendix) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "collection.attributes.methodAppendix",
+                            defaultValue: "Append the query log"))
+                Text(String(localized: "collection.frontmatter.methodAppendix.subtitle",
+                            defaultValue: "Every search you ran under the active project, with its scope and result count."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }
