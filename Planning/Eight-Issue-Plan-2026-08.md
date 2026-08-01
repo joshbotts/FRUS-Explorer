@@ -2,7 +2,8 @@
 
 **Date**: 2026-08-01
 **Issues**: #559, #597, #561, #553, #586, #562, #560, #626
-**Status**: revised 2026-08-01 after owner decisions on #553, #597 and #586 (§0)
+**Status**: revised again 2026-08-01 — items 1–6 shipped; #586 and #626 held by the owner; one
+item added (§0b)
 
 Every effort estimate below was checked against code, and three claims were re-verified by hand
 before this was written. Four issues turned out to be a different size than their titles suggest,
@@ -50,20 +51,83 @@ descriptive one.
 
 ---
 
+## 0b. Second revision, 2026-08-01 — one added, two held
+
+### Added: #597 recall — "Show Tips Again"
+
+Scoped during the Phase-1 mechanics work and not built, because Phase 1 was the anchors. It is now
+the next item.
+
+One button in `DisplaySettingsView`, iterating `DiscoveryTipRegistry` and calling
+`Tip.resetEligibility()` on each. That view has been **shared since S-5b**, so this is one edit for
+both platforms — the only item in the whole plan with no parallel-implementation hazard. It already
+owns `edgeTapNavigationEnabled`, the preference behind one of the Phase-1 tips, which is the right
+neighbourhood.
+
+Not `Tips.resetDatastore()`: it throws once the datastore is configured, so it would at best become
+a next-launch reset. App-wide rather than per-area — per-area done honestly means listing every tip
+by name in Settings, which is a feature tour inside Settings and exactly what the what-vs-where rule
+rules out.
+
+**It also removes a real friction the owner has hit twice**: every visual review of a tip so far has
+needed a fresh simulator or Erase Everything, because there was no way to see a tip a second time.
+
+### Held: #586 facet sort — the scope is expanding
+
+The owner is widening this beyond sort and reachability to include **multi-select** (several years
+or volumes at once) and **exclusion** (narrow to *not* this).
+
+That is a materially bigger change than the one planned, and in a different place. Sorting and
+truncation are display concerns in one view; multi-select and exclusion change what a narrowing
+*is* — today `onNarrow` applies one value and surfaces one clearable chip, writing single-valued
+`SearchSQLFilters` fields. Supporting sets and negation means the filter model, the chip vocabulary,
+and the SQL all move, and the facet panel becomes a query builder rather than a breakdown that
+happens to be tappable.
+
+**Re-estimate when the shape is decided; the old "S (large)" no longer applies.** The reachability
+half — raise the bucket limit, sort locally, display cap — is still worth having and is still
+Effort S; it can ship first and independently if the larger design takes time, and the
+**non-lazy `ScrollView { VStack { ForEach } }`** hazard applies to it either way: the display cap
+must land in the same PR as the raised limit.
+
+### Held: #626 editable summaries — collision with research notes
+
+The owner wants to think about how a user-written summary relates to a research note before this
+proceeds. That is the right question to stop on, and it is a design question rather than an
+implementation one:
+
+Both are prose the user writes about one document. A note is already free-form, already tagged,
+already searchable, already exportable, and already appears in the research rail. A user-written
+"summary" would be all of those things too — so what distinguishes them is not obvious, and if the
+answer is "nothing much", the feature is a second inbox for the same content.
+
+Possible distinctions worth weighing, recorded rather than resolved: a summary occupies a fixed
+slot the document view renders in a known place while notes are a list; a summary is *about the
+document as a whole* where a note is often about a passage; a summary carries `authorship`
+provenance and participates in the AI-attribution rules while a note never does; and collection
+exports treat the two completely differently.
+
+The implementation findings stand and do not expire — zero schema cost (`authorship` already
+exists), the `CollectionAIAttribution.label()` call being unconditional in three exporters, and the
+`document_cache.summary_text` last-push-wins hazard. Re-read §2 item 10 when it resumes.
+
+---
+
 ## 1. The sequence
 
-| # | Item | Scope as planned (not as reported) | Effort | Schema | Platforms |
-|---|---|---|---|---|---|
-| 1 | **#559** keyboard never dismisses | `@FocusState` + resign-on-submit (iOS-gated) + `.scrollDismissesKeyboard` | **XS** | none | iOS behaviour, shared file |
-| 2 | **#597 Phase 0** — repair + guard | **Delete** the dead tip, suppress tips under UI test, `.hourly` frequency, tip registry, audit test | **XS** | none | both, shared |
-| 3 | **#553** Project Home leads | **Step 1 only**: snippets on lead rows (~20 lines). Peek stays deferred | **S** | none | both, one file |
-| 4 | **#561** duplicate prompts | Split seeder into seed / collapse; run the collapse from the existing post-import debounce | **S** | none | both, shared |
-| 5 | **#597 PR 2** — Research Guide | ~6 sections for the Q&CA wave + the `Docs/` mirror. Prose in one file | **S** | none | both, shared |
-| 6 | **#597 Phase 1** — first-contact tips | 4 tips · 4 anchors · 8 strings · **zero** double-authoring | **S** (large) | none | 3 iOS-only, 1 shared |
-| 7 | **#586** facet sort / reachability | Fetch all buckets, sort locally, display cap + "Show top N / All" | **S** (large) | none | both, one file |
-| 8 | **#562** corpus proximity axis | Depth-normalised in-volume gradient off the already-indexed `volume_structures` | **M** (small) | none | both, shared |
-| 9 | **#560** bulk summarization | Truth + counting + retry classification + enumeration progress | **M** (mid) | none | both, shared engine |
-| 10 | **#626** editable summaries | Edit + provenance chip on both document summary views + FTS5 push + export attribution | **M** (large) | none | both, **two platform-private views** |
+| # | Item | Status | Effort | Schema |
+|---|---|---|---|---|
+| 1 | **#559** keyboard never dismisses | **shipped** (#629) | XS | none |
+| 2 | **#597 Phase 0** — repair + guard | **shipped** (#630) | XS | none |
+| 3 | **#553** Project Home leads, Step 1 | **shipped** (#631) | S | none |
+| 4 | **#561** duplicate prompts | **shipped** (#632) | S | none |
+| 5 | **#597 PR 2** — Research Guide | **shipped** (#633) | S | none |
+| 6 | **#597 Phase 1** — first-contact tips | **shipped** (#634) | S | none |
+| 7 | **#597 recall** — "Show Tips Again" | **next** | **S** (small) | none |
+| 8 | **#562** corpus proximity axis | ready | M (small) | none |
+| 9 | **#560** bulk summarization | ready | M (mid) | none |
+| — | **#586** facet sort | **HELD** — scope expanding, see §0b | was S (large) | none |
+| — | **#626** editable summaries | **HELD** — design question open, see §0b | was M (large) | none |
 
 *(#597 is three items because its parts are genuinely different sizes and ship separately. Later
 tip phases 2–4 are sized in §2 but deliberately not scheduled.)*
