@@ -307,6 +307,14 @@ final class SearchViewModel {
     /// since it becomes the denominator stored on a working corpus.
     var totalMatchCount: Int?
 
+    /// The FTS5 expression the last completed search executed, captured during `search()`.
+    ///
+    /// Recorded there rather than re-derived in `recordSearchHistory` for two reasons: the
+    /// renderer lives on the `SearchService` actor and cannot be reached from the synchronous
+    /// recorder, and a later re-derivation would describe whatever the parameters are THEN. An
+    /// appendix entry has to carry the expression that produced its count.
+    var lastRenderedExpression: String?
+
     var isSearching: Bool = false
     var searchError: String? = nil
     var hasSearched: Bool = false
@@ -552,6 +560,8 @@ final class SearchViewModel {
             }()
             results = try await fetched
             totalMatchCount = await counted
+            // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
+            lastRenderedExpression = try? await searchService.matchExpressions(for: params).corpus
             // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
             // promises is what consumers actually observe. It used to be bumped in the
             // synchronous prefix, five lines and one actor hop earlier: SwiftUI re-evaluated the
@@ -580,6 +590,7 @@ final class SearchViewModel {
             // Cleared with the results, at every site that clears them: a total left over from
             // the previous query is a denominator for a set that no longer exists.
             totalMatchCount = nil
+            lastRenderedExpression = nil
             // Bumped here too: a failed search is a completed one for every consumer keyed on the
             // version, and leaving it unchanged would strand them on the previous query's answer.
             executedSearchVersion &+= 1
@@ -638,6 +649,7 @@ final class SearchViewModel {
     ///   - defaults: The store the research-logging gate is read from. Defaults to
     ///     `.standard`; overridden only by tests.
     func recordSearchHistory(projectId: UUID?,
+                             indexedVolumeCount: Int? = nil,
                              in context: ModelContext,
                              defaults: UserDefaults = .standard) {
         guard AppState.isResearchLoggingEnabled(in: defaults) else {
@@ -663,10 +675,22 @@ final class SearchViewModel {
         // `resultCount` still cannot express "unknown" — widening it is the schema half of M-2 —
         // so when the count is unavailable the honest fallback stays what was actually seen.
         let recorded = totalMatchCount ?? results.count
+        // The executed parameters, not the live filter state — those may have moved since.
+        let executed = submittedSearchParameters
+        // The expression comes from `search()`, where it was rendered against these parameters.
+        // Deliberately NOT the Query Inspector, which is debounced view state keyed on the live
+        // text and may describe the field rather than what ran.
         let record = SearchHistoryEntry(
             queryText: query,
             resultCount: recorded,
-            projectId: projectId
+            projectId: projectId,
+            loadedCount: results.count,
+            matchCount: totalMatchCount,
+            fetchLimit: Self.searchHardLimit,
+            indexedVolumeCount: indexedVolumeCount,
+            scopeSignature: SearchScopeSignature.signature(for: executed),
+            appliedCorpusId: appliedWorkingCorpusId,
+            renderedExpression: lastRenderedExpression
         )
         context.insert(record)
         #if DEBUG
@@ -706,6 +730,7 @@ final class SearchViewModel {
         clearFilters()
         results = []
         totalMatchCount = nil
+        lastRenderedExpression = nil
         hasSearched = false
         searchError = nil
     }
@@ -738,6 +763,11 @@ final class SearchViewModel {
     /// The corpus's name, for the applied-scope chip. Cleared with the keys.
     var appliedWorkingCorpusName: String?
 
+    /// The applied corpus's id, recorded so a trail entry can resolve its truncation later.
+    /// Names are deliberately not unique, so an entry keyed on the name could resolve the wrong
+    /// corpus's capture and mislabel its own count as partial or complete.
+    var appliedWorkingCorpusId: UUID?
+
     /// What is known about the applied corpus's own truncation, captured at the moment it is
     /// applied because that is the only place the `WorkingCorpus` object is in hand.
     ///
@@ -750,6 +780,7 @@ final class SearchViewModel {
     func clearWorkingCorpus() {
         appliedWorkingCorpusKeys = nil
         appliedWorkingCorpusName = nil
+        appliedWorkingCorpusId = nil
         appliedWorkingCorpusTruncation = nil
     }
 

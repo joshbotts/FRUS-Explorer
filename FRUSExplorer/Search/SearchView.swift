@@ -551,7 +551,9 @@ struct SearchView: View {
     /// every execution is correct — the last two entry points above are re-runs by nature.
     private func runSearch() async {
         await vm.search()
-        vm.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
+        vm.recordSearchHistory(projectId: appState.activeProjectId,
+                               indexedVolumeCount: appState.indexedVolumeIds.count,
+                               in: modelContext)
     }
 
     /// Loads the active project's search context into the view model: date defaults,
