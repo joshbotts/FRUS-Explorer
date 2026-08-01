@@ -39,6 +39,146 @@ import TipKit
 // and for which platforms, and `DiscoveryTipWiringAuditTests` fails the suite when a declaration
 // and its display site drift apart.
 
+// MARK: - ResearchRailTip
+
+/// Points at the Research-rail toggle in the document toolbar — the single unlabelled glyph that
+/// gates every document-scoped research tool on iOS (#597 Phase 1).
+///
+/// **This is the replacement for the retired `ExploreCrossReferencesTip`, under a new name.** That
+/// tip's id is burned: an orphaned `.invalidate` ran on every document open for months, so TipKit
+/// has it recorded as invalidated for every existing user and would never display it again. Do not
+/// reuse the old name to "restore" it.
+///
+/// Carries `IgnoresDisplayFrequency` — alone among the tips — because it gates roughly ten
+/// capabilities the others assume the user has already met. Waiting an hour to reveal the door
+/// would put the rest of the set behind it.
+struct ResearchRailTip: Tip {
+    /// Tip headline.
+    var title: Text {
+        Text(String(localized: "tip.researchRail.title",
+                    defaultValue: "Your Research Tools Live Here"))
+    }
+
+    /// What is behind the toggle. Named concretely — the point is to reveal a door, so the copy
+    /// has to say what is on the other side of it.
+    var message: Text? {
+        Text(String(localized: "tip.researchRail.message",
+                    defaultValue: "Citations, the word cloud, archival sources, the cross-reference graph, related documents, and your notes, tags and collections for this document."))
+    }
+
+    /// Matches the toolbar button's icon.
+    var image: Image? {
+        Image(systemName: "doc.text.magnifyingglass")
+    }
+
+    /// Shown regardless of how recently another tip appeared, and retired the first time the rail
+    /// is opened.
+    var options: [any TipOption] {
+        [Tips.MaxDisplayCount(3), Tips.IgnoresDisplayFrequency(true)]
+    }
+}
+
+// MARK: - EdgeTapNavigationTip
+
+/// Points at the invisible edge zones that turn the page (#597 Phase 1).
+///
+/// The most literally undiscoverable control in the app: two `Color.clear` strips with no glyph,
+/// no border and no hover state — a `#if DEBUG` flag exists purely so developers can see them —
+/// and on iOS they are the *only* way to reach the previous or next document in a volume.
+///
+/// It needs no `Tip.Rule`. Its anchor renders only when the capability is live (Read mode, the
+/// setting on, no sheet up) and the zone itself is empty at a volume boundary, so **the anchor is
+/// the rule**.
+struct EdgeTapNavigationTip: Tip {
+    /// Tip headline.
+    var title: Text {
+        Text(String(localized: "tip.edgeTap.title", defaultValue: "Tap the Edges to Turn the Page"))
+    }
+
+    /// What the zones do, and where the sequence comes from.
+    var message: Text? {
+        Text(String(localized: "tip.edgeTap.message",
+                    defaultValue: "In Read mode, tapping the left or right edge moves to the previous or next document in this volume — the order the editors arranged them in."))
+    }
+
+    /// The direction the gesture implies.
+    var image: Image? {
+        Image(systemName: "chevron.left.chevron.right")
+    }
+
+    /// Stop showing after three impressions even if never acted on.
+    var options: [any TipOption] {
+        [Tips.MaxDisplayCount(3)]
+    }
+}
+
+// MARK: - ExamineResultsTip
+
+/// Points at the binoculars menu above search results (#597 Phase 1).
+///
+/// Four readings of one result set behind a single glyph that is deliberately *not* the glyph of
+/// any of them — the icon was renamed off `chart.bar` precisely because no symbol depicts the set,
+/// which also means it cannot be reverse-engineered by looking at it.
+///
+/// Anchored on the menu's label rather than its items: `.popoverTip` cannot attach to a `Button`
+/// inside a `Menu`'s content, because a menu row is not a popover host.
+struct ExamineResultsTip: Tip {
+    /// Tip headline.
+    var title: Text {
+        Text(String(localized: "tip.examine.title", defaultValue: "Four Ways to Read These Results"))
+    }
+
+    /// Names all four, since the anchor is the menu label and the items are not visible yet.
+    var message: Text? {
+        Text(String(localized: "tip.examine.message",
+                    defaultValue: "Place them on a timeline, line every occurrence up on your search term, rank the words that keep company with it, or break the whole match down by year, volume and person."))
+    }
+
+    /// Matches the menu's glyph.
+    var image: Image? {
+        Image(systemName: "binoculars")
+    }
+
+    /// Stop showing after three impressions even if never acted on.
+    var options: [any TipOption] {
+        [Tips.MaxDisplayCount(3)]
+    }
+}
+
+// MARK: - FacetNarrowTip
+
+/// Points at the facet panel's preamble — the one shared anchor in Phase 1 (#597).
+///
+/// A narrowable facet row renders identically to a descriptive one: label, count, no chevron, no
+/// accent, no trailing affordance. The only existing signal is a `.help` tooltip, which is
+/// macOS-hover-only. And the archival-provenance section deliberately has *no* button, so a user
+/// who probes that section first learns the wrong lesson about the whole panel.
+///
+/// Anchored on the preamble, not the rows — attaching to the row `Button` would mint one popover
+/// per facet row, dozens per section.
+struct FacetNarrowTip: Tip {
+    /// Tip headline.
+    var title: Text {
+        Text(String(localized: "tip.facetNarrow.title", defaultValue: "Facet Rows Are Filters"))
+    }
+
+    /// What a tap does, and the denominator caveat that makes the panel readable.
+    var message: Text? {
+        Text(String(localized: "tip.facetNarrow.message",
+                    defaultValue: "Tap any year, volume or person to narrow your search to it — it becomes a chip you can clear. The counts themselves always describe the whole match, before any narrowing."))
+    }
+
+    /// Matches the facet panel's own glyph.
+    var image: Image? {
+        Image(systemName: "square.grid.3x3")
+    }
+
+    /// Stop showing after three impressions even if never acted on.
+    var options: [any TipOption] {
+        [Tips.MaxDisplayCount(3)]
+    }
+}
+
 // MARK: - GraphReferenceListTip
 
 /// Points at the reference-list toggle in the cross-reference graph toolbar
@@ -150,6 +290,27 @@ enum DiscoveryTipRegistry {
     /// Both current entries are anchored in `CrossReferenceGraphView`, which carries no `#if os`
     /// gate — so one anchor each covers both platforms.
     static let entries: [Entry] = [
+        // Phase 1 — first contact. Three iOS-only, one shared.
+        //
+        // Only the iPhone rail toggle needs a tip: iPad and macOS default the rail VISIBLE
+        // (`panelVisible = true`), so their near-identical toggles in `MainWindowView` and
+        // `MacDocumentView` are deliberately left unanchored. Anchoring all three would ship a
+        // "your tools are here" popover to platforms already showing the tools.
+        Entry(typeName: "ResearchRailTip",
+              anchors: [Anchor(file: "FRUSExplorer/DocumentView/DocumentView.swift",
+                               platforms: [.iOS])]),
+        Entry(typeName: "EdgeTapNavigationTip",
+              anchors: [Anchor(file: "FRUSExplorer/DocumentView/DocumentView.swift",
+                               platforms: [.iOS])]),
+        // No macOS twin is owed: the binoculars menu has no macOS counterpart at all —
+        // `SearchSheet` offers the readings differently.
+        Entry(typeName: "ExamineResultsTip",
+              anchors: [Anchor(file: "FRUSExplorer/Search/SearchView.swift", platforms: [.iOS])]),
+        // The one shared anchor: `FacetPanelView` carries no `#if os` gate and is hosted by both
+        // `SearchView` and `SearchSheet`, so one modifier reaches iPhone, iPad and macOS.
+        Entry(typeName: "FacetNarrowTip",
+              anchors: [.shared("FRUSExplorer/Search/FacetPanelView.swift")]),
+
         Entry(typeName: "GraphReferenceListTip",
               anchors: [.shared("FRUSExplorer/CrossReference/CrossReferenceGraphView.swift")]),
         Entry(typeName: "TimelineLayoutTip",

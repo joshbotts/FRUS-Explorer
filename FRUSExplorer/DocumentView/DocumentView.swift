@@ -1005,6 +1005,9 @@ struct DocumentView: View {
             )
             .accessibilityAddTraits(railToggleActive ? [.isSelected] : [])
             .accessibilityIdentifier("researchRailToggle")
+            // #597 Phase 1. On iPhone the rail is forced closed on every open (#404), so this one
+            // unlabelled glyph is the only door to every document-scoped tool.
+            .popoverTip(ResearchRailTip())
         }
     }
 
@@ -1024,6 +1027,8 @@ struct DocumentView: View {
     /// iPhone presents/dismisses the `.researchRail` sheet — dismissing writes `panelVisible = false`
     /// (via the `activeSheet` onChange) so Research mode and the edge-tap gate stay coherent (D2).
     private func toggleRail() {
+        // The user found the door — retire the tip that pointed at it.
+        ResearchRailTip().invalidate(reason: .actionPerformed)
         if isPhone {
             if activeSheet?.id == "researchRail" {
                 activeSheet = nil
@@ -1393,6 +1398,8 @@ struct DocumentView: View {
     @ViewBuilder
     private func documentEdgeNavigationOverlay(vm: DocumentViewModel) -> some View {
         if !panelVisible && edgeTapNavigationEnabled && activeSheet == nil {
+            // #597 Phase 1: the tip needs no `Tip.Rule` — this `if` IS the rule. The overlay only
+            // exists when the capability is live, so the anchor cannot appear while it is not.
             HStack(spacing: 0) {
                 documentEdgeTapZone(
                     adjacentEntry: vm.previousEntry,
@@ -1416,6 +1423,10 @@ struct DocumentView: View {
             // Let the zones themselves opt into hit-testing; the HStack/Spacer must
             // not swallow taps meant for the web view's central reading column.
             .allowsHitTesting(true)
+            // #597 Phase 1: anchored on the overlay rather than one zone, so the popover is
+            // centred over the reading area instead of pinned to whichever edge happens to
+            // have an adjacent document — at a volume boundary one zone renders nothing.
+            .popoverTip(EdgeTapNavigationTip())
         }
     }
 
@@ -1433,6 +1444,8 @@ struct DocumentView: View {
                 .contentShape(Rectangle())
                 .frame(width: FRUSTheme.documentEdgeTapZoneWidth)
                 .onTapGesture {
+                    // The gesture was found — retire the tip that revealed it.
+                    EdgeTapNavigationTip().invalidate(reason: .actionPerformed)
                     navigateToAdjacentDocument(adjacentEntry)
                 }
                 .accessibilityElement()

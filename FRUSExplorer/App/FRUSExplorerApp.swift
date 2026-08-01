@@ -297,7 +297,13 @@ struct FRUSExplorerApp: App {
                 .displayFrequency(.hourly),
                 .datastoreLocation(.applicationDefault),
             ])
-            if ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1" {
+            // Suppressed under UI test — EXCEPT when `FRUS_UI_TEST_SHOW_TIPS` forces them on.
+            // That seam exists for MANUAL verification: a tip popover over the navigation bar is
+            // the #486 shape and wants checking, but every XCUI query made while the document
+            // reader is on screen times out against its WKWebView, so it cannot be automated
+            // (see the withdrawn scenario 7 in `UIObstructionTests`).
+            if ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1",
+               ProcessInfo.processInfo.environment["FRUS_UI_TEST_SHOW_TIPS"] != "1" {
                 Tips.hideAllTipsForTesting()
             }
         } catch {
