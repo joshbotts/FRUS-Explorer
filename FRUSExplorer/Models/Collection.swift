@@ -88,6 +88,20 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    /// When `true`, exports append the **method appendix** — the queries run under the active
+    /// project, with the scope each ran under and how its count must be read (M-2).
+    ///
+    /// Off by default, and for a stronger reason than its two siblings: the appendix carries the
+    /// *text of every search* the researcher ran on this project. That is the point of it — Wave R
+    /// decision D5 keeps the trail precisely so a claim of absence can be checked — but it is also
+    /// exactly the kind of thing that must never appear on a shared artifact by accident.
+    ///
+    /// Narrowed to the active project at export time, never the whole trail. See
+    /// ``QueryMethodAppendix/scoped(toProject:)``.
+    var includeMethodAppendix: Bool = false {
+        didSet { lastModified = .now }
+    }
+
     // MARK: - Project Tags
 
     /// IDs of `Project` records this collection is visible in.

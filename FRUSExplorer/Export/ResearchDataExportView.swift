@@ -16,13 +16,15 @@ import SwiftData
 /// there is no separate macOS pane; the `SettingsDataPane` this comment used to name was folded
 /// into `DataRecoveryView` by S-4b).
 ///
-/// Offers two exports built from `ResearchDataExporter`:
+/// Offers three exports built from `ResearchDataExporter`:
 /// - A single versioned JSON file containing notes, tags, highlights, collections, user-created
 ///   prompts, projects and the research trail (optionally including AI-generated summaries).
 /// - One Markdown file per research note, with YAML front matter linking back
 ///   to the source document, for use with Obsidian-style tools.
+/// - The query log as a **method appendix** (M-2) — a Markdown table and a CSV, each carrying the
+///   scope every search ran under and the caveats a reader needs to weigh the counts.
 ///
-/// Both exports are written to a temporary directory and shared via `ShareLink`.
+/// All three exports are written to a temporary directory and shared via `ShareLink`.
 ///
 /// ## Why the trail counts are not `@Query`
 /// Every other row here is backed by a `@Query`, which is fine for notes and collections and
@@ -45,6 +47,8 @@ import SwiftData
 ///          ShareLinks re-serialized from the bundled broken-refs index.
 ///   1.2 — Wave R-5: the inventory accounts for the research trail, which it had been silent
 ///          about, and the JSON footer says so under a new key
+///   1.3 — M-2: the "Method Appendix" section — the query log as Markdown + CSV, which is the
+///          half of Wave R decision D5 that the JSON export alone never delivered
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -67,6 +71,7 @@ struct DataExportSections: View {
     @State private var jsonExportURL: URL?
     @State private var jsonExportError: String?
     @State private var markdownExportURLs: [URL] = []
+    @State private var appendixExportURLs: [URL] = []
     @State private var isPreparingMarkdown = true
 
     private var userPromptCount: Int {
@@ -128,9 +133,19 @@ struct DataExportSections: View {
                 ))
             }
 
+            Section {
+                appendixExportRow
+            } footer: {
+                Text(String(
+                    localized: "settings.export.appendix.footer",
+                    defaultValue: "Every search you ran, with the scope it ran under and how many volumes were indexed at the time — as a Markdown table and a CSV. Counts that hit the app's row ceiling are shown as \"at least N\", so a partial result is never printed as a total."
+                ))
+            }
+
         }
         .task(id: includeGeneratedSummaries) {
             prepareJSONExport()
+            prepareAppendixExport()
         }
         .task {
             await prepareMarkdownExports()
@@ -181,7 +196,60 @@ struct DataExportSections: View {
     }
 
 
+    // MARK: - Method Appendix Row
+
+    /// The query log as a methods statement (M-2). Two files rather than one because they answer
+    /// different questions: the Markdown is pasted into a paper, the CSV is re-derived from.
+    @ViewBuilder
+    private var appendixExportRow: some View {
+        if appendixExportURLs.isEmpty {
+            Text(String(localized: "settings.export.appendix.empty",
+                        defaultValue: "No searches recorded yet."))
+                .foregroundStyle(.secondary)
+        } else {
+            ShareLink(items: appendixExportURLs) {
+                Label(
+                    String(localized: "settings.export.appendix.action",
+                           defaultValue: "Export Query Log as a Method Appendix"),
+                    systemImage: "list.bullet.rectangle.portrait"
+                )
+            }
+        }
+    }
+
     // MARK: - Export Preparation
+
+    /// Renders the appendix to a Markdown and a CSV file for `ShareLink`.
+    ///
+    /// Runs from the same `.task` as the JSON export so both files describe one read of a trail
+    /// that is still growing while this screen is open.
+    private func prepareAppendixExport() {
+        let appendix = ResearchDataExporter.methodAppendix(
+            modelContext: modelContext,
+            activeProjectId: appState.activeProjectId
+        )
+        guard !appendix.rows.isEmpty else {
+            appendixExportURLs = []
+            return
+        }
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSQueryLog-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        var urls: [URL] = []
+        for (name, content) in [("frus-query-log.md", appendix.markdown),
+                                ("frus-query-log.csv", appendix.csv)] {
+            let url = directory.appendingPathComponent(name)
+            if (try? content.write(to: url, atomically: true, encoding: .utf8)) != nil {
+                urls.append(url)
+            }
+        }
+        appendixExportURLs = urls
+
+        #if DEBUG
+        print("[DataExportSections] Appendix prepared: \(appendix.rows.count) row(s), \(urls.count) file(s)")
+        #endif
+    }
 
     /// Builds the JSON envelope and writes it to a temporary file for `ShareLink`, and refreshes
     /// the trail counts shown in **Contents** from the same read.

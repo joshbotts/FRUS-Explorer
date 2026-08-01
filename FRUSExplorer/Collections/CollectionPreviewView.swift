@@ -454,6 +454,10 @@ struct CollectionPreviewView: View {
                 enabled: collection.includeProjectProvenance,
                 projectName: activeProject?.name,
                 researchQuestion: activeProject?.researchQuestion)
+            let appendixLines = ResearchDataExporter.collectionMethodAppendixLines(
+                enabled: collection.includeMethodAppendix,
+                modelContext: modelContext,
+                activeProject: activeProject)
             let metadata = CollectionExportMetadata(
                 name: collection.name.isEmpty
                     ? String(localized: "collection.editor.untitled",
@@ -464,7 +468,8 @@ struct CollectionPreviewView: View {
                 authorLine: collection.authorLine,
                 projectName: provenance.name,
                 projectResearchQuestion: provenance.question,
-                includeColophon: collection.includeColophon)
+                includeColophon: collection.includeColophon,
+                methodAppendixLines: appendixLines)
             let page = renderer.pageHTML(metadata: metadata, items: items)
             if Task.isCancelled { return }
             missingVolumeIds = missing

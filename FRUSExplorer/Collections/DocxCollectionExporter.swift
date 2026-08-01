@@ -505,6 +505,13 @@ final class DocxCollectionExporter: CollectionExporter {
             }
         }
 
+        // Method appendix (M-2) — one paragraph per line, opt-in only. Reuses the Colophon
+        // style rather than adding one: both are small, grey, end-of-document apparatus, and a
+        // second near-identical style is a thing that drifts.
+        for line in collection.methodAppendixLines where !line.isEmpty {
+            body += styledPara(escaped(line), styleId: "Colophon")
+        }
+
         // Trailing colophon paragraph (Authoring Phase 4) — opt-in only.
         if collection.includeColophon {
             body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")

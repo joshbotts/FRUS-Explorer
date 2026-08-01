@@ -41,6 +41,10 @@ import SwiftData
 ///   3.0 — Wave R-5: `readingHistory` / `searchHistory` / `exportHistory` — the three typed
 ///          research-trail tables. A custom `init(from:)` (see the extension below) defaults all
 ///          three to empty, so version-1 and version-2 files still decode
+///   4.0 — M-2: seven capture-provenance fields on `SearchHistoryEntryExport` (loaded/match/limit,
+///          indexed-volume denominator, scope signature, applied corpus, compiled expression). All
+///          optional, so a version-3 file still decodes; the bump is what lets a reader tell "this
+///          file predates capture provenance" from "these searches recorded none"
 struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataExporter.currentFormatVersion`.
@@ -316,13 +320,40 @@ struct SearchHistoryEntryExport: Codable, Equatable, Sendable {
     /// The submitted query text, trimmed.
     var queryText: String
 
-    /// Matches at execution time, not now. The two producers derive it differently and the
-    /// difference shows only on very broad queries — macOS records the true uncapped total, iOS
-    /// the result count capped at its 1,000-row hard limit. See `SearchHistoryEntry.resultCount`.
+    /// The headline number both platforms display, at execution time — not now.
+    ///
+    /// On its own this cannot be read safely: a macOS row of 7,500 may be a total or a floor. The
+    /// M-2 fields below are what tell those apart, and `QueryMethodAppendix` is where they are
+    /// rendered as a statement a reader can check. Kept unchanged so version-3 files still decode.
     var resultCount: Int
 
     var projectId: UUID?
     var executedAt: Date?
+
+    // MARK: - Capture provenance (format version 4, M-2)
+
+    /// What the fetch returned, capped at ``fetchLimit`` — the Q wave's **loaded**.
+    var loadedCount: Int?
+
+    /// Every document matching the query — the Q wave's **match**. `nil` where the count was
+    /// unavailable *or* the row predates M-2; ``fetchLimit`` tells those apart.
+    var matchCount: Int?
+
+    /// The fetch ceiling in force (1,000 on iOS, 7,500 on macOS), and the legacy discriminator:
+    /// `nil` if and only if the row was written before M-2.
+    var fetchLimit: Int?
+
+    /// How many volumes the device had indexed when the search ran — the denominator.
+    var indexedVolumeCount: Int?
+
+    /// The canonical, non-localized scope key. See `SearchScopeSignature`.
+    var scopeSignature: String?
+
+    /// The working corpus the search ran inside, by id.
+    var appliedCorpusId: UUID?
+
+    /// The FTS5 expression the query compiled to.
+    var renderedExpression: String?
 }
 
 // MARK: - ExportHistoryEntryExport
@@ -389,8 +420,10 @@ enum ResearchDataExporter {
     /// v1 or v2 file still decodes here — and a v3 file read by something that ignores the three
     /// new keys is unaffected. The bump to 3 is what lets such a reader tell "this file predates
     /// the trail" from "this user's trail was empty", which a purely additive change would
-    /// otherwise make indistinguishable.)
-    static let currentFormatVersion = 3
+    /// otherwise make indistinguishable. The bump to 4 carries the same argument for M-2's
+    /// capture-provenance fields: an all-`nil` v4 row means the searches were recorded without it,
+    /// while a v3 file means the format could not carry it.)
+    static let currentFormatVersion = 4
 
     /// Builds an envelope from the current contents of `modelContext`.
     ///
@@ -563,7 +596,14 @@ enum ResearchDataExporter {
                     queryText: search.queryText,
                     resultCount: search.resultCount,
                     projectId: search.projectId,
-                    executedAt: search.executedAt
+                    executedAt: search.executedAt,
+                    loadedCount: search.loadedCount,
+                    matchCount: search.matchCount,
+                    fetchLimit: search.fetchLimit,
+                    indexedVolumeCount: search.indexedVolumeCount,
+                    scopeSignature: search.scopeSignature,
+                    appliedCorpusId: search.appliedCorpusId,
+                    renderedExpression: search.renderedExpression
                 )
             },
             exportHistory: exportHistory.map { export in
@@ -595,6 +635,60 @@ enum ResearchDataExporter {
             (try? modelContext.fetchCount(FetchDescriptor<SearchHistoryEntry>())) ?? 0,
             (try? modelContext.fetchCount(FetchDescriptor<ExportHistoryEntry>())) ?? 0
         )
+    }
+
+    /// Builds the query-log method appendix from the stored trail (M-2).
+    ///
+    /// Fetched here rather than through a `@Query` for the reason `DataExportSections` gives about
+    /// the trail counts: the table grows without bound by design, so it is read in the same pass
+    /// that writes the file and not held on a Settings screen.
+    ///
+    /// - Parameters:
+    ///   - modelContext: the context to read from.
+    ///   - activeProjectId: the project heading the appendix, or `nil` in global context.
+    ///   - generatedAt: the export timestamp.
+    /// - Returns: the appendix, or one with no rows if the fetch fails — an empty appendix says
+    ///   "no searches recorded", which is a true statement about a trail nothing could be read from.
+    static func methodAppendix(modelContext: ModelContext,
+                               activeProjectId: UUID?,
+                               generatedAt: Date = Date()) -> QueryMethodAppendix {
+        let searches = (try? modelContext.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? []
+        let corpora = (try? modelContext.fetch(FetchDescriptor<WorkingCorpus>())) ?? []
+        let project = activeProjectId.flatMap { id in
+            (try? modelContext.fetch(FetchDescriptor<Project>()))?.first { $0.id == id }
+        }
+        return QueryMethodAppendix.make(
+            searches: searches,
+            corpusNames: Dictionary(corpora.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first }),
+            projectName: project?.name,
+            researchQuestion: project?.researchQuestion,
+            generatedAt: generatedAt
+        )
+    }
+
+    /// The method-appendix lines for a collection export, or `[]` (M-2).
+    ///
+    /// One helper rather than the same six lines at each construction site: the export sheet and
+    /// the live preview must agree, or the researcher approves a preview that is not what ships.
+    ///
+    /// Returns early when the collection has not opted in, so a collection that never enables the
+    /// appendix pays no fetch — the trail table grows without bound and this runs on every preview
+    /// keystroke.
+    ///
+    /// - Parameters:
+    ///   - enabled: `Collection.includeMethodAppendix`.
+    ///   - modelContext: the context to read the trail from.
+    ///   - activeProject: the project the export is generated under. `nil` narrows to nothing —
+    ///     see ``QueryMethodAppendix/scoped(toProject:)``.
+    @MainActor
+    static func collectionMethodAppendixLines(enabled: Bool,
+                                              modelContext: ModelContext,
+                                              activeProject: Project?) -> [String] {
+        guard enabled else { return [] }
+        let appendix = methodAppendix(modelContext: modelContext,
+                                      activeProjectId: activeProject?.id)
+            .scoped(toProject: activeProject?.id)
+        return CollectionExportMetadata.methodAppendix(enabled: true, appendix: appendix)
     }
 
     /// Serializes an envelope as pretty-printed, key-sorted JSON with ISO-8601 dates.

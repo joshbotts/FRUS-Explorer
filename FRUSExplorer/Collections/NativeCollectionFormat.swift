@@ -117,6 +117,9 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// Whether exports stamp the active project's provenance on the title page (#377 Phase 4).
     /// Emitted only when `true`; `nil` means `false`.
     var includeProjectProvenance: Bool?
+    /// Whether exports append the M-2 method appendix — the project's query log. Emitted only
+    /// when `true`; `nil` means `false`, so a file written before M-2 round-trips to "off".
+    var includeMethodAppendix: Bool?
     /// The persisted composition settings (what an export of this collection contains).
     var composition: Composition
     /// The ordered structural entries. Array order *is* the collection order.
@@ -530,6 +533,7 @@ enum NativeCollectionSerializer {
             || introductionRichText != nil
             || collection.includeColophon
             || collection.includeProjectProvenance
+            || collection.includeMethodAppendix
             || entries.contains { $0.level != nil }
             || composition.includeFootnotes != nil
             || composition.includeSourceNote != nil
@@ -576,6 +580,7 @@ enum NativeCollectionSerializer {
             introductionRichText: introductionRichText,
             includeColophon: collection.includeColophon ? true : nil,
             includeProjectProvenance: collection.includeProjectProvenance ? true : nil,
+            includeMethodAppendix: collection.includeMethodAppendix ? true : nil,
             composition: composition,
             entries: entries
         )
@@ -613,6 +618,7 @@ enum NativeCollectionSerializer {
         collection.introductionRichText = file.introductionRichText
         collection.includeColophon = file.includeColophon ?? false
         collection.includeProjectProvenance = file.includeProjectProvenance ?? false
+        collection.includeMethodAppendix = file.includeMethodAppendix ?? false
         context.insert(collection)
 
         for (index, dto) in file.entries.enumerated() {

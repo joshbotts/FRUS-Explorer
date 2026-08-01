@@ -800,6 +800,8 @@ struct CollectionExportDocument: Sendable {
 ///          every existing construction site and no-frame collection is unchanged)
 ///   1.2 — #377 Phase 4: `projectName`, `projectResearchQuestion` (the active project's
 ///          provenance, opt-in per `Collection.includeProjectProvenance`; defaulted `nil`)
+///   1.3 — M-2: `methodAppendixLines` (the project's query log, opt-in per
+///          `Collection.includeMethodAppendix`; defaulted empty, which every renderer skips)
 struct CollectionExportMetadata: Sendable {
     /// The collection's display name — the export title.
     let name: String
@@ -823,11 +825,21 @@ struct CollectionExportMetadata: Sendable {
     /// Defaults to `false`, so collections that never opt in export exactly as today.
     let includeColophon: Bool
 
+    /// The method appendix as flat lines, or empty (M-2).
+    ///
+    /// Pre-rendered rather than carried as a `QueryMethodAppendix`, because the gating and the
+    /// project narrowing both happen at the call site where the SwiftData fetch lives, and a
+    /// renderer that received the whole appendix could render an un-narrowed one by mistake.
+    /// Empty is the "feature unused" state and every renderer emits nothing for it, so a
+    /// collection that never opts in exports byte-identically to before.
+    let methodAppendixLines: [String]
+
     /// Creates a metadata snapshot. The Phase 4 parameters default to "feature unused"
     /// so pre-Phase-4 call sites compile — and render — unchanged.
     init(name: String, note: String?, subtitle: String? = nil,
          authorLine: String? = nil, projectName: String? = nil,
-         projectResearchQuestion: String? = nil, includeColophon: Bool = false) {
+         projectResearchQuestion: String? = nil, includeColophon: Bool = false,
+         methodAppendixLines: [String] = []) {
         self.name = name
         self.note = note
         self.subtitle = subtitle
@@ -835,12 +847,28 @@ struct CollectionExportMetadata: Sendable {
         self.projectName = projectName
         self.projectResearchQuestion = projectResearchQuestion
         self.includeColophon = includeColophon
+        self.methodAppendixLines = methodAppendixLines
     }
 
     /// Resolves the export's project provenance from the toggle + the active project's fields —
     /// pure, so the gating is unit-testable without the SwiftData `@Query` lookup at the call site.
     /// Returns `(nil, nil)` when disabled or when there's no active project with a non-empty name;
     /// the research question is dropped when blank. The name is the anchor: no name → no provenance.
+    /// Resolves the method-appendix lines from the toggle + the appendix — pure, so the gating is
+    /// unit-testable without the SwiftData fetch at the call site.
+    ///
+    /// Returns `[]` when disabled or when the narrowed appendix has no rows. An appendix with a
+    /// heading and caveats but no searches would be a methods section asserting a method that was
+    /// never used, which is worse than omitting it.
+    ///
+    /// - Parameters:
+    ///   - enabled: `Collection.includeMethodAppendix`.
+    ///   - appendix: the appendix, **already narrowed** to the export's project.
+    static func methodAppendix(enabled: Bool, appendix: QueryMethodAppendix?) -> [String] {
+        guard enabled, let appendix, !appendix.rows.isEmpty else { return [] }
+        return appendix.plainTextLines
+    }
+
     static func projectProvenance(enabled: Bool, projectName: String?, researchQuestion: String?)
         -> (name: String?, question: String?) {
         guard enabled,
