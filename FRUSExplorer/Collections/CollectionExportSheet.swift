@@ -52,6 +52,9 @@ struct ExportSheetView: View {
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
+
+    /// The pre-export quotation check (M-3). `nil` until the check has run.
+    @State private var verification: ExcerptVerificationReport?
     /// D9a privacy default: research notes are excluded from a shared `.fruscollection`
     /// file unless the user opts in here. Independent of the collection's `includeNotes`
     /// composition setting (which governs rendered exports, not shared source files).
@@ -154,11 +157,19 @@ struct ExportSheetView: View {
     }
 
     var body: some View {
-        #if os(macOS)
-        macExportBody
-        #else
-        iOSExportBody
-        #endif
+        // One `Group` with exactly ONE child, so the modifier below applies once. (`Group`
+        // applies a presentation modifier per child — harmless here, and the reason the platform
+        // bodies are not siblings.) Mounted here rather than on each platform body so the
+        // quotation check cannot ship on one platform and not the other, which is how #606's
+        // macOS banner went missing.
+        Group {
+            #if os(macOS)
+            macExportBody
+            #else
+            iOSExportBody
+            #endif
+        }
+        .task { await verifyExcerpts() }
     }
 
     // MARK: - macOS body
@@ -217,6 +228,15 @@ struct ExportSheetView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
+
+            // Quotation check (M-3) — above the error banner, because it is a statement about
+            // the work rather than about this attempt to export it.
+            if let summary = verification?.summary {
+                Divider()
+                verificationLabel(summary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+            }
 
             // Inline error — shown above the button bar when present
             if let error = exportError {
@@ -349,6 +369,12 @@ struct ExportSheetView: View {
                     }
                 }
 
+                if let summary = verification?.summary {
+                    Section {
+                        verificationLabel(summary)
+                    }
+                }
+
                 if let error = exportError {
                     Section {
                         Label(error, systemImage: "exclamationmark.triangle")
@@ -434,6 +460,61 @@ struct ExportSheetView: View {
     /// - Parameters:
     ///   - format: `ExportFormat.rawValue`, or `"zotero-api"` for the Web-API send.
     ///   - documentCount: How many documents went out.
+    /// The quotation-check line, styled by what it is saying.
+    ///
+    /// Orange rather than red: a quotation that cannot be found is a thing to look at, not a
+    /// failure of this export. Red is the export error's, and one screen with two red messages
+    /// meaning different things teaches the researcher to read neither.
+    @ViewBuilder
+    private func verificationLabel(_ summary: String) -> some View {
+        Label(summary, systemImage: verification?.hasFailures == true
+              ? "exclamationmark.triangle" : "info.circle")
+            .foregroundStyle(verification?.hasFailures == true ? Color.orange : Color.secondary)
+            .font(.callout)
+    }
+
+    /// Checks every stored quotation in this collection against the indexed text (M-3).
+    ///
+    /// Runs when the sheet opens rather than on the Export button, so the researcher sees it
+    /// while they still have the collection in mind — and, per decision M-3-1, it never blocks:
+    /// a volume freed from disk would otherwise make an export impossible with no way through.
+    private func verifyExcerpts() async {
+        let requests = entries.compactMap { entry -> ExcerptVerifier.Request? in
+            guard entry.entryKind == .excerpt,
+                  let text = entry.text, !text.isEmpty,
+                  !entry.volumeId.isEmpty, !entry.documentId.isEmpty
+            else { return nil }
+            return ExcerptVerifier.Request(volumeId: entry.volumeId,
+                                           documentId: entry.documentId,
+                                           text: text)
+        }
+        guard !requests.isEmpty else {
+            verification = nil
+            return
+        }
+        let keys = Set(requests.map { WordCloudDocumentKey(volumeId: $0.volumeId,
+                                                           documentId: $0.documentId) })
+        // A read failure is not a verdict. Treating it as "not found" would accuse the researcher's
+        // quotations of being wrong because a query failed, so an empty map degrades every request
+        // to `.documentNotIndexed`, which reports as a limit on the check.
+        guard let pipeline = appState.indexingPipeline else {
+            // No pipeline means nothing is indexed on this device yet. Every quotation reports as
+            // uncheckable rather than as wrong.
+            verification = ExcerptVerificationReport(
+                outcomes: Dictionary(uniqueKeysWithValues:
+                    requests.map { ($0, ExcerptVerifier.Outcome.documentNotIndexed) }))
+            return
+        }
+        let bodies = (try? await pipeline.documentBodyTextsByKey(forKeys: Array(keys))) ?? [:]
+        verification = ExcerptVerificationReport(
+            outcomes: ExcerptVerifier.verify(requests, bodyTexts: bodies))
+
+        #if DEBUG
+        print("[CollectionExportSheet] Verified \(requests.count) excerpt(s): "
+              + "\(verification?.verifiedCount ?? 0) ok, \(verification?.failures.count ?? 0) not found")
+        #endif
+    }
+
     private func recordExport(format: String, documentCount: Int) {
         ExportHistoryRecorder.record(format: format,
                                      documentCount: documentCount,
