@@ -505,7 +505,7 @@ Click the **Related** tile in the Research rail (⌘⇧R) to open the **Related 
 - **Archival provenance** — drawn from the same lot file, central file, or archival collection (the same keys Archival Neighbors uses, Section 12.1.2).
 - **Cross-references** — documents this one cites, and documents that cite it.
 - **Close in date** — written near the same time.
-- **Same volume or subseries** — editorial proximity in the series.
+- **Corpus proximity** — where the editors placed the two documents relative to each other. Highest for documents printed side by side or gathered into the same small chapter, easing off as the shared container widens to a whole compilation and then the whole volume; a different volume in the same subseries scores lower still. A same-volume pair therefore reads somewhere between 60% and 100% rather than a flat 100%.
 - **Shared people** — the same reconciled identities mentioned in both.
 
 Each row shows the document's header, volume, and dateline, plus small **"why related" icon chips** marking the signals that contributed to its rank, strongest first — the same icons and names the weights panel uses, so a chip is easy to decode. Clicking a row opens the document in the main window while the Related Documents window **stays open beside it** — it's a work list you step through, exactly like an Archival Neighbors window — and open windows are restored across relaunch, with their tuning intact.

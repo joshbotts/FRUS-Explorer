@@ -23,6 +23,8 @@ import Foundation
 /// Version history:
 ///   1.0 — #308 Phase 2: initial six-axis model (the shared-subjects scorer is inert until the
 ///          Phase 3 document-grain data drop; the cross-reference generator landed in Phase 2b)
+///   1.1 — #562: `ProximityMath.narrowing` / `.printAdjacency` and `VolumeArrangement` added for the
+///          corpus-proximity axis; `.subseries` renamed in display only (its rawValue is persisted)
 enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifiable {
     /// Same original archival provenance — lot file, central decimal file, record-group series,
     /// or presidential-library collection (`IndexingPipeline.archivalNeighbors`). A generator.
@@ -31,7 +33,15 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     case crossReference
     /// Nearness of editorial coverage dates (`|Δyear|` decay). A scorer.
     case dateProximity
-    /// Same volume or same subseries (`VolumeManifestEntry.subseries`). A scorer.
+    /// Where the editors placed the two documents relative to each other: how narrowly the volume's
+    /// own arrangement contains them both, whether they were printed side by side, and failing both,
+    /// whether they share a subseries (`VolumeManifestEntry.subseries`). A scorer.
+    ///
+    /// **The rawValue is a persistence token — do not rename this case.** It is the key in the
+    /// UserDefaults axis-weight string, in the CloudKit-mirrored `Project.leadAxisWeights`, and in
+    /// the `Hashable` identity of every find-related window. `AxisWeights.init?(rawValue:)` skips
+    /// tokens it does not recognise and no read path merges defaults, so a rename ships as a silent
+    /// weight of 0 for every user who has ever moved the slider — and compiles clean.
     case subseries
     /// Overlap of the mentioned people, resolved through the cross-corpus person rollup. A scorer.
     case sharedPersons
@@ -59,7 +69,10 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .dateProximity:
             return String(localized: "related.axis.date", defaultValue: "Close in date")
         case .subseries:
-            return String(localized: "related.axis.subseries", defaultValue: "Same volume or subseries")
+            // Renamed from "Same volume or subseries" in #562: the axis now grades placement inside
+            // a volume, so a same-volume row reads 60–100% rather than a flat 100%, and the old
+            // name made a 73% look like a bug. The `case` keeps its rawValue — see above.
+            return String(localized: "related.axis.corpusProximity", defaultValue: "Corpus proximity")
         case .sharedPersons:
             return String(localized: "related.axis.persons", defaultValue: "Shared people")
         case .sharedSubjects:
@@ -273,5 +286,178 @@ enum ProximityMath {
     /// `count ≤ 0` clamps to `1.0`.
     static func logDampedMultiplicity(_ count: Int) -> Double {
         1 + log(Double(max(count, 1)))
+    }
+
+    /// How much of a volume the smallest shared editorial container **excludes**, on a log scale
+    /// (#562). `1` when the container holds just the two things being compared; `0` when it is the
+    /// whole volume — which says nothing beyond "same volume".
+    ///
+    /// The measure is *volume-relative*, not depth-based, and that is the whole point. Nesting
+    /// practice varies across the series — an early volume's single tier of country compilations
+    /// does the work a later volume splits across compilations and chapters — so counting levels
+    /// compares incomparable things. Asking "how much did the editors narrow the field?" does not
+    /// care how many levels the narrowing took. A single-child wrapper (a compilation holding one
+    /// chapter and nothing else) is nearly invisible here; under a depth ratio it is a whole level.
+    ///
+    /// Units are **sections plus documents**, never documents alone. `frus1919Parisv13` is the
+    /// volume that forces this: it has 2 TEI document elements and 176 sections against 170 indexed
+    /// documents, so a document-only denominator is 2 and every ratio collapses to a flat 1.0.
+    ///
+    /// The `ln(n / 2)` denominator (rather than `ln(n)`) is what lets a 2-unit container reach
+    /// exactly 1 — a container cannot hold fewer than two distinct things, so dividing by `ln(n)`
+    /// caps the measure around 0.89 and wastes the top of the range.
+    ///
+    /// - Parameters:
+    ///   - totalUnits: Every section and document in the volume. Returns 0 below 3 — there is no
+    ///     room to narrow, and `ln(n / 2)` is 0 at `n == 2`.
+    ///   - containerUnits: The shared container's own unit count, clamped into `2...totalUnits`.
+    /// - Returns: `[0, 1]`, decreasing as the container widens.
+    static func narrowing(totalUnits: Int, containerUnits: Int) -> Double {
+        guard totalUnits >= 3 else { return 0 }
+        let n = Double(totalUnits)
+        let units = Double(min(max(containerUnits, 2), totalUnits))
+        return min(1, max(0, log(n / units) / log(n / 2)))
+    }
+
+    /// Print adjacency over a volume's reading order: a gap of 1 → `1.0`, 2 → `2/3`, 3 → `1/3`,
+    /// anything else → `0` (#562).
+    ///
+    /// Deliberately narrow. Ordinal distance and date distance correlate strongly inside a large
+    /// section, and `dateProximity` already ships at a higher default weight — a long ordinal tail
+    /// would mostly re-state that axis under a different name. Three positions is enough to say
+    /// "printed side by side" and no more.
+    ///
+    /// - Parameter ordinalGap: Signed difference of two reading-order positions; the sign is ignored.
+    static func printAdjacency(ordinalGap: Int) -> Double {
+        let distance = abs(ordinalGap)
+        guard distance >= 1, distance <= 3 else { return 0 }
+        return Double(4 - distance) / 3
+    }
+}
+
+// MARK: - VolumeArrangement
+
+/// A volume's editorial arrangement, flattened once into the lookups the corpus-proximity axis
+/// needs: which section holds a given document, how much of the volume that section spans, and
+/// where the document falls in the volume's reading order (#562).
+///
+/// Built from the `VolumeStructure` already stored in `volume_structures` at index time, so this
+/// reads existing data and needs no re-parse, no `currentDateIndexVersion` bump, and no schema
+/// change.
+///
+/// ## What it deliberately does not read
+/// Only `sectionId`, `documentIds`, and `subsections`. **Never `divType`, never `title`.** The live
+/// corpus carries 47 distinct `divType` values, and `VolumeSection.frontMatterKinds` contains
+/// `"section"`, which is also a body div type in nine volumes — so any kind-keyed filter
+/// misclassifies real content. There is no front/back-matter exclusion and no era rule: the
+/// synthetic `front` / `back` wrappers are just sections, counted like any other.
+///
+/// ## Documents that are really sections
+/// 2,356 rows in `document_cache` (0.74%) are container quasi-documents whose id is a *section*
+/// id — whole prose sections the app presents as readable documents. Mapping section ids into the
+/// same table alongside document ids lifts placement coverage from 99.26% to 99.9987%, leaving
+/// exactly four unplaceable documents corpus-wide. Those quasi-documents get a containment score
+/// but no reading-order position, since they are containers rather than entries in the sequence.
+///
+/// ## Reading order
+/// A depth-first walk: a section's own documents, then its subsections, each in stored order. 267
+/// sections (1.06%, across 73 volumes) hold both documents and subsections, and in 23 of them the
+/// documents are not a strict prefix — so for those the walk is a close approximation of the
+/// printed order rather than an exact reproduction. `VolumeSection` stores documents and
+/// subsections as two separate arrays, which is what loses the interleaving; recovering it exactly
+/// would mean changing parse output, and that is a full-corpus re-parse for every user to correct
+/// the ordering of 23 sections.
+///
+/// Version history:
+///   1.0 — #562: initial implementation
+struct VolumeArrangement {
+
+    /// Section index → parent section index; `-1` for a top-level section.
+    private let parents: [Int]
+    /// Section index → nesting depth; `0` for a top-level section.
+    private let depths: [Int]
+    /// Section index → unit count: itself, plus its direct documents, plus its subsections' units.
+    private let units: [Int]
+    /// Document id **or** section id → the section index that holds it.
+    private let holders: [String: Int]
+    /// Document id → reading-order position. Sections are absent by design.
+    private let ordinals: [String: Int]
+
+    /// Every section and document in the volume. The denominator for ``ProximityMath/narrowing(totalUnits:containerUnits:)``.
+    let totalUnits: Int
+
+    /// Flattens a stored volume structure. One depth-first pass; `O(units)`.
+    init(_ structure: VolumeStructure) {
+        var parents: [Int] = []
+        var depths: [Int] = []
+        var units: [Int] = []
+        var holders: [String: Int] = [:]
+        var ordinals: [String: Int] = [:]
+        var nextOrdinal = 0
+
+        /// Walks `section`, returning its unit count.
+        func walk(_ section: VolumeSection, parent: Int, depth: Int) -> Int {
+            let index = parents.count
+            parents.append(parent)
+            depths.append(depth)
+            units.append(0)
+
+            // Sections are registered first and only when the id is free, so a document of the same
+            // name wins the mapping below. No such collision exists in the corpus today; the order
+            // is here so that if one ever appears it degrades toward the real document.
+            if !section.sectionId.isEmpty, holders[section.sectionId] == nil {
+                holders[section.sectionId] = index
+            }
+            for documentId in section.documentIds {
+                holders[documentId] = index
+                ordinals[documentId] = nextOrdinal
+                nextOrdinal += 1
+            }
+
+            var total = 1 + section.documentIds.count
+            for subsection in section.subsections {
+                total += walk(subsection, parent: index, depth: depth + 1)
+            }
+            units[index] = total
+            return total
+        }
+
+        var total = 0
+        for section in structure.sections {
+            total += walk(section, parent: -1, depth: 0)
+        }
+
+        self.parents = parents
+        self.depths = depths
+        self.units = units
+        self.holders = holders
+        self.ordinals = ordinals
+        self.totalUnits = total
+    }
+
+    /// The section holding `id` — a document id or a container quasi-document's section id — or
+    /// `nil` when the volume's structure does not place it.
+    func section(holding id: String) -> Int? { holders[id] }
+
+    /// `id`'s position in the volume's reading order, or `nil` for a container quasi-document.
+    func ordinal(of id: String) -> Int? { ordinals[id] }
+
+    /// The unit count of the lowest section containing both, or ``totalUnits`` when they share no
+    /// section below the volume itself.
+    ///
+    /// Climbs the deeper side to the shallower, then climbs together. At most eight steps — the
+    /// deepest body nesting measured in the corpus is seven, plus the synthetic wrapper.
+    func containerUnits(_ lhs: Int, _ rhs: Int) -> Int {
+        var left = lhs
+        var right = rhs
+        guard parents.indices.contains(left), parents.indices.contains(right) else { return totalUnits }
+        while depths[left] > depths[right] { left = parents[left] }
+        while depths[right] > depths[left] { right = parents[right] }
+        while left != right {
+            left = parents[left]
+            right = parents[right]
+            guard left >= 0, right >= 0 else { return totalUnits }
+        }
+        return units[left]
     }
 }

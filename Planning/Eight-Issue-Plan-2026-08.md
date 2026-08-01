@@ -2,8 +2,8 @@
 
 **Date**: 2026-08-01
 **Issues**: #559, #597, #561, #553, #586, #562, #560, #626
-**Status**: revised again 2026-08-01 — items 1–6 shipped; #586 and #626 held by the owner; one
-item added (§0b)
+**Status**: revised again 2026-08-01 — items 1–7 shipped (#559, #597 Phases 0–1 + guide + recall,
+#553, #561, #562); #586 and #626 held by the owner; #560 remains
 
 Every effort estimate below was checked against code, and three claims were re-verified by hand
 before this was written. Four issues turned out to be a different size than their titles suggest,
@@ -370,7 +370,81 @@ previous match survives into a new one — and it makes a value's position depen
 has to remember. If living with sort + All shows a real need to work a long list in fixed chunks,
 add it then; it is additive and nothing here forecloses it.
 
-### 8 · #562 — corpus proximity axis (small M)
+### 8 · #562 — corpus proximity axis (small M) — **SHIPPED**
+
+**Built, and the design changed under measurement.** The curve below is what was in this plan; what
+shipped is different, because four of this section's premises turned out to be false. Recorded here
+rather than overwritten, since the shape of the error is the useful part.
+
+**What shipped.** Same volume → `0.60 + 0.40 × max(containment, print-adjacency)`; same subseries →
+`0.50` unchanged; else absent.
+
+- **containment** = `ln(N / u) / ln(N / 2)`, where `u` is the unit count of the smallest section
+  holding both documents and `N` is the volume's total. Units are **sections plus documents**. It
+  measures *how much of the volume the shared container excludes* — not how deep it is.
+- **print adjacency** = 1.0 / ⅔ / ⅓ at a reading-order gap of 1 / 2 / 3, else 0, over whole-volume
+  order.
+
+Composed by `max`, so the axis reports the single strongest placement statement the editors made and
+cannot exceed 1 without a clamp.
+
+**Why volume-relative rather than depth-based.** This is the answer to "nesting practice varies", and
+it is a better one than the depth ratio below: a single-child wrapper — a compilation holding one
+chapter and nothing else, which 13–14% of corpus documents sit under (39.8% in 1950s volumes) — is
+one unit here and a whole level under a depth ratio. Measured on 91,780 real same-volume candidate
+pairs the shipped curve gives mean 0.756, sd 0.134, **4,650 distinct values**; the curve below puts
+**57.96% of that same pool into one 0.9 bucket** and emits 13 distinct values. It was a two-value
+function on the data it would actually see.
+
+**Premises in this section that were false.**
+
+1. **"Never build the global-ordinal version — it forces `currentDateIndexVersion` up and a corpus
+   reindex."** False. Whole-volume reading order was rebuilt for all 552 volumes directly from the
+   *stored* `structure_json`. No parse change, no reindex. The prohibition rested on a cost that
+   does not exist, and cross-section adjacency shipped.
+2. **"…to buy adjacency for 2.2% of documents."** Does not reproduce. On the real candidate pool it
+   is 280 of 14,080 adjacent pairs (1.99% of adjacent pairs, 0.31% of the pool); corpus-wide the
+   successor-crosses-a-boundary rate is 4.99%. The term is worth keeping because it is free, not
+   because it is large.
+3. **"160 volumes are flat, 449 one deep, 167 two deep."** Sums to 776 against a 552-volume manifest.
+   They are non-exclusive membership counts, not a partition. The real argument is different and
+   stronger: 211 of 552 volumes hang documents at more than one level *inside the same volume*, so
+   depth is not even constant within a volume.
+4. **"Sections holding both documents and subsections are ~0."** 267 sections (1.06%) across 73
+   volumes. Harmless — 244 of the 267 have the documents as a strict prefix, so depth-first order is
+   still right — but the ordering for the other 23 is an approximation, and the doc comment says so.
+
+**One premise that held, and one doubt that was wrong.** `AxisWeights` *does* conform to
+`RawRepresentable`; the conformance lives in `RelatedDocumentsView.swift`, not beside the type, which
+is why it is easy to miss. `init?(rawValue:)` skips unknown tokens and no read path merges defaults,
+so renaming `case subseries` would ship as a silent weight-0 for every user who has moved the slider,
+and would compile clean. Only `displayName` changed — to **"Corpus proximity"**, the owner's own name
+from the issue title.
+
+**The unbuilt design that is worth not rediscovering.** Folding the two terms into one measure —
+`min(lcaSpan, |Δposition| + 1)` over a single sequence — is mathematically inert. Both documents
+always lie inside their container's positional range, so the interval wins 100% of the time and the
+editorial-container term never fires at all. The symmetric `2d+1` variant only partly fixes it: the
+container still binds just 9.44% of the time, and the axis becomes an ordinal-distance measure that
+largely restates `dateProximity`.
+
+**Degradation.** A same-volume candidate that cannot be placed scores exactly `0.60` — never `1.0`
+(a silent revert to the old flat behaviour, indistinguishable from success) and never `0` (which
+would strip the row's chip and drop it below the subseries tier). `0.60` is also what a genuinely
+unarranged volume earns, so the degraded value states the truth rather than inventing refinement.
+Coverage is currently 552/552 with the set difference empty both ways, but `storeIndexData` is
+deliberately non-transactional with the structure write last, so the population is empty rather than
+impossible.
+
+**Cost.** One `cachedVolumeStructure` fetch per `rank()`, anchor volume only. No reindex, no
+index-version bump, no schema change, no CloudKit deploy. Net cost may be negative: the per-call
+552-entry `subseriesByVolume` map is gone, and the stale comment defending it (`entry(forVolumeId:)`
+has been an O(1) dictionary hit for some time) went with it.
+
+---
+
+<details>
+<summary>The original plan for this issue, superseded by the above</summary>
 
 `SubseriesScorer` is a two-branch step: same volume → 1.0, same subseries → 0.5. **The enabling
 finding: the full per-volume hierarchy is already indexed and queryable** — `volume_structures` is
@@ -380,23 +454,12 @@ within-section order. **No reindex, no index-version bump.**
 
 Curve: adjacent in the same leaf section → 1.0; same leaf → 0.9; same volume otherwise →
 0.6 + 0.4 × (common-ancestor depth ÷ **the anchor's own path depth**); different volume, same
-subseries → 0.5 unchanged. Normalising by the anchor's own depth is the answer to "nesting practice
-varies" — 160 volumes are flat, 449 one deep, 167 two deep, so an absolute chapter ladder cannot be
-right. Same-volume stays in [0.6, 1.0], strictly above the subseries tier, so this only adds
-discrimination *inside* a volume and cannot reorder anything across volumes.
-
-**Do not rename `case subseries`.** Its rawValue is the persistence format in three places, and
-`AxisWeights(rawValue:)` **silently skips unknown axes** while the `@AppStorage` readers do no
-default-merge — every user who has ever dragged that slider would get the axis at weight 0. Change
-`displayName` only.
+subseries → 0.5 unchanged.
 
 **Biggest risk.** Silent degradation: if `cachedVolumeStructure` returns nil the axis quietly reverts
-to today's flat 1.0 and nobody notices. Put a `#if DEBUG` print on the nil path and run acceptance on
-a volume you *know* is chaptered.
+to today's flat 1.0 and nobody notices.
 
-**Never build the global-ordinal version.** True cross-section adjacency needs `VolumeSection`'s
-shape to change, which is a parse-output change and therefore forces `currentDateIndexVersion` up and
-a corpus reindex — the app's most-complained-about cost — to buy adjacency for 2.2% of documents.
+</details>
 
 ### 9 · #560 — bulk summarization (mid M)
 
@@ -520,7 +583,9 @@ a day the owner cannot reach the CloudKit Dashboard.**
    settle the navigation complaint.
 5. **#586's explicit paging** — re-examined against the owner's justification in §2 and still cut,
    with the condition under which to add it.
-6. **#562's global-ordinal version** — forces a corpus reindex to buy adjacency for 2.2% of documents.
+6. ~~**#562's global-ordinal version** — forces a corpus reindex to buy adjacency for 2.2% of
+   documents.~~ **Both halves false, and it shipped.** Whole-volume reading order is recoverable
+   from the already-stored structure with no reindex; see §8.
 
 ---
 
@@ -534,9 +599,12 @@ discovery layer; #586 sorting is first-class). What remains:
 outright is the most honest and least code, but retracting a shipped setting is a bigger statement
 than the finding warrants.*
 
-**Q2 — #562: normalise by the anchor's own path depth, and leave subseries at 0.5?** *Lean: yes to
-both. Keeping subseries at 0.5 makes the change monotone-safe — nothing that outranks something
-today drops below it.*
+**Q2 — #562: normalise by the anchor's own path depth, and leave subseries at 0.5?** **ANSWERED by
+measurement.** Subseries stayed at 0.5, and the monotone-safety argument held — better than expected,
+since the branch *predicates* are untouched, so the set of candidates scoring above 0 is provably
+identical and no row enters or leaves a result list. Anchor-relative depth was rejected: it is
+asymmetric, which is incoherent when Project Leads sums the axis across many anchors, and depth
+itself proved to be the wrong quantity.
 
 **Q3 — #626: edit in place, or mint a second summary?** Both are zero-schema; storing the original
 *on the row* is not. *Lean: mint a second. It costs one carousel entry and it is the only option that
