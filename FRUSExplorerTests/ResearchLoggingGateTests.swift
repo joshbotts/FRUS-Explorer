@@ -624,3 +624,61 @@ struct ResearchLoggingGateTests {
                 """)
     }
 }
+
+// MARK: - TrailCountParityTests
+
+/// What the two platforms write into the one synced trail.
+///
+/// `SearchHistoryEntry.resultCount` is a number a researcher may later cite, and the trail syncs —
+/// so a project's log holds whatever every device wrote. macOS has recorded
+/// `totalMatchCount ?? results.count` since Q-M2, naming this iOS catch-up as M-2's; iOS recorded
+/// the FETCHED count, capped at `searchHardLimit`. A query matching 195,519 documents was logged
+/// as "1,000" on iPhone and 195,519 on Mac, in the same trail, for the same query.
+///
+/// Version history:
+///   1.0 — M-2 commit 1: initial implementation
+@Suite("Trail count parity")
+struct TrailCountParityTests {
+
+    /// The rule both platforms now apply, extracted so it can be checked without a search service.
+    /// Mirrors `resultCountForDisplay` on macOS and the expression in `recordSearchHistory` on iOS.
+    private func recorded(total: Int?, fetched: Int) -> Int { total ?? fetched }
+
+    @Test("A known total is what gets recorded, not the capped fetch")
+    func totalWins() {
+        // The iPhone case that motivated this: 1,000 fetched of 195,519 matching.
+        #expect(recorded(total: 195_519, fetched: 1_000) == 195_519)
+    }
+
+    @Test("Without a total, the honest fallback is what was actually seen")
+    func fallbackIsTheFetch() {
+        // NOT the fetch cap. Before Q-M2 macOS wrote exactly the cap here, which reads as a
+        // measured figure rather than a floor.
+        #expect(recorded(total: nil, fetched: 412) == 412)
+        #expect(recorded(total: nil, fetched: 1_000) == 1_000)
+    }
+
+    @Test("A complete small search is unaffected")
+    func smallSearchUnchanged() {
+        #expect(recorded(total: 412, fetched: 412) == 412)
+    }
+
+    /// Source parity: both writers must apply the same rule, or the trail disagrees with itself.
+    @Test("Both platforms record the total when they have one")
+    func bothWritersAgree() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let iOS = try String(contentsOf: root.appending(path: "FRUSExplorer/Search/SearchViewModel.swift"),
+                             encoding: .utf8)
+        let mac = try String(contentsOf: root.appending(path: "FRUSExplorer/App/MacSearchViewModel.swift"),
+                             encoding: .utf8)
+        #expect(iOS.contains("let recorded = totalMatchCount ?? results.count"))
+        // macOS reaches the same value through `resultCountForDisplay`, which is defined as
+        // `totalMatchCount ?? results.count`.
+        #expect(mac.contains("let recorded = resultCountForDisplay"))
+        #expect(mac.contains("var resultCountForDisplay: Int { totalMatchCount ?? results.count }"))
+        // Neither may go back to logging the raw fetch.
+        #expect(!iOS.contains("resultCount: results.count"),
+                "iOS must not record the capped fetch as the hit count")
+    }
+}

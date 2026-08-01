@@ -650,14 +650,27 @@ final class SearchViewModel {
         guard !query.isEmpty, searchError == nil, query != lastRecordedHistoryQuery else { return }
         lastRecordedHistoryQuery = query
 
+        // The true total when there is one, the fetched count otherwise — converging on what
+        // `MacSearchViewModel.recordSearchHistory` has recorded since Q-M2, whose comment names
+        // this catch-up as M-2's.
+        //
+        // Until #605 iOS held no whole-query count, so this wrote `results.count`: the FETCHED
+        // set, capped at `searchHardLimit`. A query matching 195,519 documents was logged as
+        // "1,000" — and the trail syncs, so one project's log carried an iPhone's capped number
+        // beside a Mac's true one for the same query. A research trail exists to make a count
+        // citable; two platforms disagreeing inside it is the worst version of that.
+        //
+        // `resultCount` still cannot express "unknown" — widening it is the schema half of M-2 —
+        // so when the count is unavailable the honest fallback stays what was actually seen.
+        let recorded = totalMatchCount ?? results.count
         let record = SearchHistoryEntry(
             queryText: query,
-            resultCount: results.count,
+            resultCount: recorded,
             projectId: projectId
         )
         context.insert(record)
         #if DEBUG
-        print("[SearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(results.count)")
+        print("[SearchViewModel] SearchHistoryEntry recorded: \"\(query)\" results=\(recorded) exact=\(totalMatchCount != nil)")
         #endif
     }
 
