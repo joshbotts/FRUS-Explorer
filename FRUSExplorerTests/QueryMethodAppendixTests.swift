@@ -278,3 +278,191 @@ struct SearchScopeSignatureDecodingTests {
         #expect(describe(parameters).contains { $0.contains("no fields searched") })
     }
 }
+
+// MARK: - CollectionMethodAppendixTests
+
+/// The collection-export route: opt-in, narrowed to the project, and inert when off.
+///
+/// The risk this route carries and the Settings route does not: a collection export is an artifact
+/// the researcher may publish, and the appendix contains the text of every search they ran.
+///
+/// Version history:
+///   1.0 — M-2 commit 4: initial implementation
+@Suite("Collection method appendix")
+struct CollectionMethodAppendixTests {
+
+    private let projectA = UUID()
+    private let projectB = UUID()
+
+    private func appendix() -> QueryMethodAppendix {
+        QueryMethodAppendix.make(
+            searches: [
+                SearchHistoryEntry(queryText: "in-project", resultCount: 4, projectId: projectA,
+                                   executedAt: Date(timeIntervalSince1970: 10),
+                                   loadedCount: 4, matchCount: 4, fetchLimit: 7_500),
+                SearchHistoryEntry(queryText: "other-project", resultCount: 9, projectId: projectB,
+                                   executedAt: Date(timeIntervalSince1970: 20),
+                                   loadedCount: 9, matchCount: 9, fetchLimit: 7_500),
+                SearchHistoryEntry(queryText: "global-context", resultCount: 2,
+                                   executedAt: Date(timeIntervalSince1970: 30),
+                                   loadedCount: 2, matchCount: 2, fetchLimit: 7_500)
+            ],
+            corpusNames: [:], projectName: "Suez", researchQuestion: nil,
+            generatedAt: Date(timeIntervalSince1970: 100))
+    }
+
+    @Test("Narrowing keeps only the export's project")
+    func narrowsToProject() {
+        let scoped = appendix().scoped(toProject: projectA)
+        #expect(scoped.rows.map(\.queryText) == ["in-project"])
+    }
+
+    /// In global context there is no project whose method this would be stating. Falling back to
+    /// the whole trail would put every search the researcher has ever run — across every project —
+    /// into a document they are about to share.
+    @Test("Global context narrows to nothing, never to everything")
+    func globalContextYieldsNothing() {
+        #expect(appendix().scoped(toProject: nil).rows.isEmpty)
+    }
+
+    @Test("The caveat counts describe the narrowed rows")
+    func caveatsFollowTheNarrowing() {
+        let capped = SearchHistoryEntry(queryText: "wide", resultCount: 7_500, projectId: projectB,
+                                        loadedCount: 7_500, fetchLimit: 7_500)
+        let built = QueryMethodAppendix.make(searches: [capped], corpusNames: [:],
+                                             projectName: nil, researchQuestion: nil,
+                                             generatedAt: Date(timeIntervalSince1970: 100))
+        #expect(built.floorRowCount == 1)
+        // Narrowed away, so the appendix must not still claim a floor it is not showing.
+        #expect(built.scoped(toProject: projectA).floorRowCount == 0)
+    }
+
+    // MARK: - The gate
+
+    @Test("Off means no lines at all")
+    func disabledEmitsNothing() {
+        let scoped = appendix().scoped(toProject: projectA)
+        #expect(CollectionExportMetadata.methodAppendix(enabled: false, appendix: scoped).isEmpty)
+        #expect(!CollectionExportMetadata.methodAppendix(enabled: true, appendix: scoped).isEmpty)
+    }
+
+    /// A heading and four caveats about zero searches is a methods section describing a method
+    /// nobody used. Better to emit nothing than a section that says nothing.
+    @Test("On with no rows also means no lines")
+    func enabledButEmptyEmitsNothing() {
+        let empty = appendix().scoped(toProject: UUID())
+        #expect(CollectionExportMetadata.methodAppendix(enabled: true, appendix: empty).isEmpty)
+        #expect(CollectionExportMetadata.methodAppendix(enabled: true, appendix: nil).isEmpty)
+    }
+
+    // MARK: - What the renderers receive
+
+    @Test("Each line carries the query, how to read its count, and the scope")
+    func lineShape() {
+        let capped = SearchHistoryEntry(queryText: "petroleum", resultCount: 7_500,
+                                        projectId: projectA, executedAt: Date(timeIntervalSince1970: 10),
+                                        loadedCount: 7_500, fetchLimit: 7_500, indexedVolumeCount: 552,
+                                        scopeSignature: SearchScopeSignature.signature(
+                                            for: SearchParameters(keywords: "petroleum")))
+        let lines = QueryMethodAppendix.make(searches: [capped], corpusNames: [:],
+                                             projectName: nil, researchQuestion: nil,
+                                             generatedAt: Date(timeIntervalSince1970: 100))
+            .scoped(toProject: projectA).plainTextLines
+        let searchLine = try? #require(lines.last)
+        #expect(searchLine?.contains("petroleum") == true)
+        #expect(searchLine?.contains("at least \(7_500.formatted())") == true,
+                "the floor rule holds in the collection route too: \(searchLine ?? "none")")
+        #expect(searchLine?.contains("552") == true, "the denominator travels with the count")
+        #expect(searchLine?.contains("document text") == true)
+    }
+}
+
+// MARK: - MethodAppendixRenderingTests
+
+/// The three collection renderers actually emit the lines they are handed.
+///
+/// HTML is rendered for real — `pageHTML` is pure. PDF and DOCX draw into a graphics context and a
+/// zip archive, so those two are source audits: the alternative is a feature that is wired
+/// everywhere except the place it is read, which is the exact shape of the bug #606 shipped.
+///
+/// Version history:
+///   1.0 — M-2 commit 4: initial implementation
+@Suite("Method appendix rendering")
+struct MethodAppendixRenderingTests {
+
+    private func metadata(lines: [String]) -> CollectionExportMetadata {
+        CollectionExportMetadata(name: "Suez", note: nil, methodAppendixLines: lines)
+    }
+
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
+        return text
+    }
+
+    @Test("HTML emits a section, with the heading as a heading")
+    func htmlRenders() {
+        let html = CollectionItemHTMLRenderer().pageHTML(
+            metadata: metadata(lines: ["Query log — method appendix", "", "“oil” · 4 results"]),
+            items: [])
+        #expect(html.contains("<section class=\"method-appendix\">"))
+        #expect(html.contains("<h2>Query log — method appendix</h2>"))
+        #expect(html.contains("<p>“oil” · 4 results</p>"))
+        // The stylesheet has to come with it, or the section renders unstyled.
+        #expect(html.contains("section.method-appendix {"))
+    }
+
+    /// The other half of the contract: a collection that never opts in must export the same bytes
+    /// it did before M-2 — including the stylesheet, which is gated separately.
+    @Test("An empty appendix changes nothing about the page")
+    func htmlUnchangedWhenEmpty() {
+        let with = CollectionItemHTMLRenderer().pageHTML(metadata: metadata(lines: []), items: [])
+        let without = CollectionItemHTMLRenderer().pageHTML(
+            metadata: CollectionExportMetadata(name: "Suez", note: nil), items: [])
+        #expect(with == without)
+        #expect(!with.contains("method-appendix"))
+    }
+
+    @Test("A blank spacer line is skipped rather than emitted as an empty paragraph")
+    func htmlSkipsBlanks() {
+        let html = CollectionItemHTMLRenderer().pageHTML(
+            metadata: metadata(lines: ["Heading", "", "line"]), items: [])
+        #expect(!html.contains("<p></p>"))
+    }
+
+    @Test("PDF and DOCX read the lines too")
+    func otherRenderersReadTheLines() throws {
+        let pdf = try Self.source("FRUSExplorer/Collections/PDFCollectionExporter.swift")
+        #expect(pdf.contains("collection.methodAppendixLines"),
+                "the PDF exporter never read the field")
+        let docx = try Self.source("FRUSExplorer/Collections/DocxCollectionExporter.swift")
+        #expect(docx.contains("collection.methodAppendixLines"),
+                "the DOCX exporter never read the field")
+    }
+
+    /// Both surfaces that build metadata must agree, or the researcher approves a preview that is
+    /// not what ships.
+    @Test("The preview and the export build the appendix the same way")
+    func previewAndExportAgree() throws {
+        for path in ["FRUSExplorer/Collections/CollectionExportSheet.swift",
+                     "FRUSExplorer/Collections/CollectionPreviewView.swift"] {
+            let text = try Self.source(path)
+            #expect(text.contains("ResearchDataExporter.collectionMethodAppendixLines"),
+                    "\(path) builds its own metadata and would silently disagree")
+            #expect(text.contains("methodAppendixLines: appendixLines"),
+                    "\(path) computed the lines and did not pass them")
+        }
+    }
+
+    /// A `.frusco` file that loses the flag would silently turn the appendix off on re-import.
+    @Test("The native format round-trips the flag")
+    func nativeFormatRoundTrips() throws {
+        let native = try Self.source("FRUSExplorer/Collections/NativeCollectionFormat.swift")
+        #expect(native.contains("includeMethodAppendix: collection.includeMethodAppendix ? true : nil"))
+        #expect(native.contains("collection.includeMethodAppendix = file.includeMethodAppendix ?? false"))
+        // v2-only, like its two siblings — a v1 reader must not see a field it cannot represent.
+        #expect(native.contains("|| collection.includeMethodAppendix"))
+    }
+}

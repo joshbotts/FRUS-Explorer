@@ -167,6 +167,7 @@ struct CollectionEditorView: View {
     @State private var includeColophon: Bool
     /// Front matter: whether exports stamp the active project on the title page (#377 Phase 4, default off).
     @State private var includeProjectProvenance: Bool
+    @State private var includeMethodAppendix: Bool
     /// Headings whose sections are currently collapsed in the outline — VIEW STATE only
     /// (Phase 4): never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
@@ -250,6 +251,7 @@ struct CollectionEditorView: View {
             _collectionAuthorLine = State(initialValue: c.authorLine ?? "")
             _includeColophon = State(initialValue: c.includeColophon)
             _includeProjectProvenance = State(initialValue: c.includeProjectProvenance)
+            _includeMethodAppendix = State(initialValue: c.includeMethodAppendix)
             isNewCollection = false
         } else {
             let c = Collection(name: "")
@@ -262,6 +264,7 @@ struct CollectionEditorView: View {
             _collectionAuthorLine = State(initialValue: "")
             _includeColophon = State(initialValue: false)
             _includeProjectProvenance = State(initialValue: false)
+            _includeMethodAppendix = State(initialValue: false)
             isNewCollection = true
         }
     }
@@ -292,6 +295,7 @@ struct CollectionEditorView: View {
         .onChange(of: collectionAuthorLine) { _, _ in saveLive() }
         .onChange(of: includeColophon) { _, _ in saveLive() }
         .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
+        .onChange(of: includeMethodAppendix) { _, _ in saveLive() }
         // Follow the model when a heading row's "Section defaults" inspector (`CollectionAttributesRows`)
         // toggles these front-matter flags directly on `$collection`, a second writer besides this
         // view's one-time `@State` snapshots. Without this resync the next `saveLive()` would clobber
@@ -301,6 +305,7 @@ struct CollectionEditorView: View {
         .modifier(FrontMatterModelSync(
             includeColophon: $includeColophon,
             includeProjectProvenance: $includeProjectProvenance,
+            includeMethodAppendix: $includeMethodAppendix,
             collection: collection))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
@@ -311,7 +316,7 @@ struct CollectionEditorView: View {
                 && sortedEntries.isEmpty && collection.savedSearchId == nil
                 && collection.subtitle == nil && collection.authorLine == nil
                 && collection.introductionText == nil && !collection.includeColophon
-                && !collection.includeProjectProvenance
+                && !collection.includeProjectProvenance && !collection.includeMethodAppendix
             if untouched {
                 modelContext.delete(collection)
             } else if collection.name.isEmpty {
@@ -1062,6 +1067,22 @@ struct CollectionEditorView: View {
         Toggle(isOn: $includeProjectProvenance) {
             Text(String(localized: "collection.frontmatter.projectProvenance.toggle",
                         defaultValue: "Stamp active project on export"))
+        }
+        #if os(macOS)
+        .toggleStyle(.checkbox)
+        #endif
+        // M-2. The subtitle is not decoration: this is the one export toggle that puts the text
+        // of the researcher's searches into a document they may be about to publish, and the
+        // consequence has to be legible at the moment of the tap rather than in a manual.
+        Toggle(isOn: $includeMethodAppendix) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "collection.frontmatter.methodAppendix.toggle",
+                            defaultValue: "Append the query log"))
+                Text(String(localized: "collection.frontmatter.methodAppendix.subtitle",
+                            defaultValue: "Every search you ran under the active project, with its scope and result count."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         #if os(macOS)
         .toggleStyle(.checkbox)
@@ -1865,6 +1886,7 @@ struct CollectionEditorView: View {
         collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
         collection.includeColophon = includeColophon
         collection.includeProjectProvenance = includeProjectProvenance
+        collection.includeMethodAppendix = includeMethodAppendix
         if let projectId = appState.activeProjectId, !collection.projectIds.contains(projectId) {
             collection.projectIds.append(projectId)
         }
@@ -1883,12 +1905,16 @@ struct CollectionEditorView: View {
 private struct FrontMatterModelSync: ViewModifier {
     @Binding var includeColophon: Bool
     @Binding var includeProjectProvenance: Bool
+    @Binding var includeMethodAppendix: Bool
     let collection: Collection
 
     func body(content: Content) -> some View {
         content
             .onChange(of: collection.includeColophon) { _, newValue in
                 if newValue != includeColophon { includeColophon = newValue }
+            }
+            .onChange(of: collection.includeMethodAppendix) { _, newValue in
+                if newValue != includeMethodAppendix { includeMethodAppendix = newValue }
             }
             .onChange(of: collection.includeProjectProvenance) { _, newValue in
                 if newValue != includeProjectProvenance { includeProjectProvenance = newValue }

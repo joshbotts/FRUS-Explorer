@@ -666,6 +666,31 @@ enum ResearchDataExporter {
         )
     }
 
+    /// The method-appendix lines for a collection export, or `[]` (M-2).
+    ///
+    /// One helper rather than the same six lines at each construction site: the export sheet and
+    /// the live preview must agree, or the researcher approves a preview that is not what ships.
+    ///
+    /// Returns early when the collection has not opted in, so a collection that never enables the
+    /// appendix pays no fetch — the trail table grows without bound and this runs on every preview
+    /// keystroke.
+    ///
+    /// - Parameters:
+    ///   - enabled: `Collection.includeMethodAppendix`.
+    ///   - modelContext: the context to read the trail from.
+    ///   - activeProject: the project the export is generated under. `nil` narrows to nothing —
+    ///     see ``QueryMethodAppendix/scoped(toProject:)``.
+    @MainActor
+    static func collectionMethodAppendixLines(enabled: Bool,
+                                              modelContext: ModelContext,
+                                              activeProject: Project?) -> [String] {
+        guard enabled else { return [] }
+        let appendix = methodAppendix(modelContext: modelContext,
+                                      activeProjectId: activeProject?.id)
+            .scoped(toProject: activeProject?.id)
+        return CollectionExportMetadata.methodAppendix(enabled: true, appendix: appendix)
+    }
+
     /// Serializes an envelope as pretty-printed, key-sorted JSON with ISO-8601 dates.
     static func exportJSONData(_ envelope: ResearchDataEnvelope) throws -> Data {
         let encoder = JSONEncoder()

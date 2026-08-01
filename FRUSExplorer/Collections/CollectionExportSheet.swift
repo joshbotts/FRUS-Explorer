@@ -408,11 +408,16 @@ struct ExportSheetView: View {
                 enabled: collection.includeProjectProvenance,
                 projectName: activeProject?.name,
                 researchQuestion: activeProject?.researchQuestion)
+            let appendixLines = ResearchDataExporter.collectionMethodAppendixLines(
+                enabled: collection.includeMethodAppendix,
+                modelContext: modelContext,
+                activeProject: activeProject)
             let metadata = CollectionExportMetadata(
                 name: collection.name, note: collection.note,
                 subtitle: collection.subtitle, authorLine: collection.authorLine,
                 projectName: provenance.name, projectResearchQuestion: provenance.question,
-                includeColophon: collection.includeColophon)
+                includeColophon: collection.includeColophon,
+                methodAppendixLines: appendixLines)
             guard let exporter = selectedFormat.makeExporter() else { return }
             let url = try await exporter.export(
                 metadata: metadata, items: items, options: buildExportOptions())

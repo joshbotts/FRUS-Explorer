@@ -432,6 +432,30 @@ final class PDFCollectionExporter: CollectionExporter {
         }
         endFlow()
 
+        // Method-appendix page (M-2) — opt-in only. Its own page rather than a trailing
+        // paragraph, because it is a section a reader is meant to consult, not a footnote.
+        if !collection.methodAppendixLines.isEmpty {
+            ctx.beginPDFPage(nil)
+            var y = M
+            for line in collection.methodAppendixLines where !line.isEmpty {
+                let attr = noteAttributedString(line, fontSize: 9, gray: 0.35)
+                let h = measureHeight(attr, width: cw)
+                // A long log runs past one page; start another rather than drawing off the edge.
+                if y + h > H - M {
+                    drawPageNumber(ctx: ctx, number: pageNumber)
+                    ctx.endPDFPage()
+                    pageNumber += 1
+                    ctx.beginPDFPage(nil)
+                    y = M
+                }
+                draw(attr, in: ctx, rect: CGRect(x: M, y: y, width: cw, height: h))
+                y += h + 4
+            }
+            drawPageNumber(ctx: ctx, number: pageNumber)
+            ctx.endPDFPage()
+            pageNumber += 1
+        }
+
         // Colophon page (Authoring Phase 4) — opt-in only, so collections that never
         // enable it produce exactly the prior page sequence.
         if collection.includeColophon {

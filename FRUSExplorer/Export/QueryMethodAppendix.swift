@@ -130,6 +130,27 @@ struct QueryMethodAppendix: Sendable, Equatable {
             })
     }
 
+    /// The same appendix, narrowed to the searches run under one project.
+    ///
+    /// A collection export is a shareable artifact, and the whole trail is not. `includeColophon`'s
+    /// sibling `includeProjectProvenance` is off by default so a research question is never
+    /// disclosed on a published PDF unless the researcher opts in; the query log is the same
+    /// argument with more surface, so the collection route both opts in *and* narrows to the
+    /// project the export was generated under.
+    ///
+    /// The counts in the caveats are recomputed from the narrowed rows, because they are derived —
+    /// an appendix claiming "3 searches returned nothing" about rows it is not showing would be
+    /// describing a different document.
+    ///
+    /// - Parameter projectId: the project to keep. `nil` keeps nothing: in global context there is
+    ///   no project whose method this would be stating, so an export cannot silently fall back to
+    ///   the whole trail.
+    func scoped(toProject projectId: UUID?) -> QueryMethodAppendix {
+        var scoped = self
+        scoped.rows = projectId.map { id in rows.filter { $0.projectId == id } } ?? []
+        return scoped
+    }
+
     // MARK: - Derived facts
 
     /// Rows written before M-2, which carry a headline number and no capture detail.
@@ -195,6 +216,36 @@ struct QueryMethodAppendix: Sendable, Equatable {
         lines.append("")
         lines.append(Self.corpusAttribution)
         return lines.joined(separator: "\n").appending("\n")
+    }
+
+    // MARK: - Plain text
+
+    /// The appendix as a flat list of lines, for renderers that cannot lay out a table.
+    ///
+    /// The collection exporters draw into PDF pages, Word paragraphs and HTML sections. Giving each
+    /// of them a table to lay out would mean three implementations of column widths that could
+    /// disagree, in three formats, over a document whose entire point is that it can be checked. A
+    /// line per search says the same things — the date, the query, how the count must be read, the
+    /// denominator, the scope — and every renderer can already draw a paragraph.
+    ///
+    /// Prefixes distinguish structure without any renderer needing to know the schema: a heading
+    /// stands alone, caveats start with `—`, and search lines start with a date.
+    var plainTextLines: [String] {
+        var lines = [String(localized: "appendix.title", defaultValue: "Query log — method appendix")]
+        for caveat in caveats { lines.append("— \(caveat)") }
+        lines.append("")
+        for row in rows {
+            var parts = [row.executedAt.map(Self.tableDate) ?? "—", "“\(row.queryText)”"]
+            parts.append(String(localized: "appendix.line.results %@",
+                                defaultValue: "\(row.count.appendixDescription) results"))
+            if let indexed = row.indexedVolumeCount {
+                parts.append(String(localized: "appendix.line.indexed %lld",
+                                    defaultValue: "\(indexed) volumes indexed"))
+            }
+            parts.append(row.scopeProse)
+            lines.append(parts.joined(separator: " · "))
+        }
+        return lines
     }
 
     // MARK: - CSV
