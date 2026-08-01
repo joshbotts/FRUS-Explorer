@@ -21,35 +21,23 @@ import TipKit
 // Each tip is invalidated with `.actionPerformed` the first time the user uses
 // the control it points at, and otherwise gives up after three displays.
 // `Tips.configure` runs once at app launch in `FRUSExplorerApp`.
-
-// MARK: - ExploreCrossReferencesTip
-
-/// Points at the Cross-References button in the document toolbar — the entry
-/// point to the graph, and the feature users are least likely to discover from
-/// its icon alone.
-struct ExploreCrossReferencesTip: Tip {
-    /// Tip headline.
-    var title: Text {
-        Text(String(localized: "tip.crossRef.title",
-                    defaultValue: "Explore Cross-References"))
-    }
-
-    /// One-sentence pitch for the graph.
-    var message: Text? {
-        Text(String(localized: "tip.crossRef.message",
-                    defaultValue: "See every document this one cites — and every document that cites it — arranged on a timeline."))
-    }
-
-    /// Matches the toolbar button's icon.
-    var image: Image? {
-        Image(systemName: "arrow.triangle.branch")
-    }
-
-    /// Stop showing after three impressions even if never acted on.
-    var options: [any TipOption] {
-        [Tips.MaxDisplayCount(3)]
-    }
-}
+//
+// ## A tip can lose its anchor silently — #597 Phase 0
+// `ExploreCrossReferencesTip` lived here for months with **no display site**. It pointed at a
+// Cross-References button in the document toolbar; the Research Rail redesign deleted that button,
+// and the `.popoverTip` went with it. The declaration still compiled, `import TipKit` was still
+// required (the orphaned `.invalidate` call kept it alive), and the diff showed only a removed
+// modifier. Nothing was red, and the tip could never appear again.
+//
+// It was **deleted rather than re-anchored**, because its id was already burned: the orphaned
+// `.invalidate` had been running on every document open, so for every existing user that id is
+// recorded as invalidated and TipKit would never display it again. Re-anchoring would have shipped
+// something dead on arrival for exactly the people who already have the app. Its replacement
+// arrives in Phase 1 under a new type and a new id — **never reuse the old name.**
+//
+// ``DiscoveryTipRegistry`` below is the mechanical guard: every tip declares where it is anchored
+// and for which platforms, and `DiscoveryTipWiringAuditTests` fails the suite when a declaration
+// and its display site drift apart.
 
 // MARK: - GraphReferenceListTip
 
@@ -107,4 +95,80 @@ struct TimelineLayoutTip: Tip {
     var options: [any TipOption] {
         [Tips.MaxDisplayCount(3)]
     }
+}
+
+// MARK: - DiscoveryTipRegistry
+
+/// Every discovery tip, with the display site it is anchored to.
+///
+/// ## Why a registry exists at all
+/// A `.popoverTip` modifier registers nothing queryable, and a tip's declaration has no
+/// compile-time relationship to its display site. That is how `ExploreCrossReferencesTip` shipped
+/// dead (see this file's overview). This table restores the relationship as *data*, so
+/// `DiscoveryTipWiringAuditTests` can check it — and so the Settings "Show Tips Again" control
+/// (Phase 1) has one list to iterate rather than a hand-maintained duplicate.
+///
+/// **Adding a tip means adding a row here.** The audit fails on a declared `Tip` that is missing.
+///
+/// Version history:
+///   1.0 — #597 Phase 0: initial implementation
+enum DiscoveryTipRegistry {
+
+    /// The platforms a given anchor actually compiles for.
+    ///
+    /// Declared per anchor rather than per tip, because a tip may reach one platform through a
+    /// shared file and another through a platform-private one. Asserting coverage as
+    /// `(file, platform)` pairs is what stops the #617-shaped defect where a control exists in a
+    /// `#if os(macOS)` block and is reported as covered for iOS.
+    struct Anchor: Sendable {
+        /// Repo-relative path of the file holding the `.popoverTip` modifier.
+        let file: String
+        /// The platforms this anchor is compiled for.
+        let platforms: Set<Platform>
+
+        /// A platform a tip can be shown on.
+        enum Platform: String, Sendable, CaseIterable {
+            case iOS, macOS
+        }
+
+        /// An anchor in a file with no `#if os` gate at all.
+        static func shared(_ file: String) -> Anchor {
+            Anchor(file: file, platforms: Set(Platform.allCases))
+        }
+    }
+
+    /// One registered tip.
+    struct Entry: Sendable {
+        /// The Swift type name, exactly as declared.
+        let typeName: String
+        /// Every place this tip is displayed from.
+        let anchors: [Anchor]
+    }
+
+    /// The registered tips.
+    ///
+    /// Both current entries are anchored in `CrossReferenceGraphView`, which carries no `#if os`
+    /// gate — so one anchor each covers both platforms.
+    static let entries: [Entry] = [
+        Entry(typeName: "GraphReferenceListTip",
+              anchors: [.shared("FRUSExplorer/CrossReference/CrossReferenceGraphView.swift")]),
+        Entry(typeName: "TimelineLayoutTip",
+              anchors: [.shared("FRUSExplorer/CrossReference/CrossReferenceGraphView.swift")])
+    ]
+
+    /// Files a tip may **never** be anchored in, with the reason.
+    ///
+    /// Each of these renders in no shipping build, so a `.popoverTip` placed there would satisfy a
+    /// naive "does the file contain the modifier?" check while displaying to nobody — reproducing
+    /// exactly how `ExploreCrossReferencesTip` died. The audit refuses them by name.
+    static let forbiddenAnchors: [String: String] = [
+        "FRUSExplorer/ProjectContext/GlobalContextView.swift":
+            "unpresented dead code — the view constructs a collection editor but is never shown "
+            + "(see its own doc comment)",
+        "FRUSExplorer/Browser/BrowserView.swift":
+            "contains `splitLayout`, unreferenced since #238 Fix B routed every size class through "
+            + "`stackLayout`; its ProjectPickerMenu sits ~52 lines above the live copy and looks "
+            + "identical. If a tip ever belongs in this file, anchor it in `stackLayout` and "
+            + "narrow this entry rather than deleting it"
+    ]
 }

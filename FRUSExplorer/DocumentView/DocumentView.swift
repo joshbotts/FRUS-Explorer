@@ -775,8 +775,12 @@ struct DocumentView: View {
     /// survives a background/relaunch); otherwise it presents the in-place sheet so the graph
     /// is reachable on every device.
     private func openCrossReferenceGraph() {
-        // The user found the feature — retire its discovery tip.
-        ExploreCrossReferencesTip().invalidate(reason: .actionPerformed)
+        // #597 Phase 0: the `ExploreCrossReferencesTip().invalidate(…)` that used to sit here was
+        // an orphan. Its `.popoverTip` was attached to a Cross-References toolbar button the
+        // Research Rail redesign removed, so the tip could never display — while this call kept
+        // marking it invalidated on every document open, burning the id for every existing user.
+        // That is why the tip was deleted rather than re-anchored. Phase 1 adds its replacement
+        // under a new type; when it lands, its `.invalidate` belongs here.
         if supportsMultipleWindows {
             appState.openAuxWindow(GraphWindowRequest(entry: entry), from: sceneID, using: openWindow)
         } else {
