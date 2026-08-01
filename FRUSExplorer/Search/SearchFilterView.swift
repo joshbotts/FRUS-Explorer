@@ -673,6 +673,7 @@ struct SearchFilterView: View {
             }
             vm.appliedWorkingCorpusKeys = resolution.indexedKeys
             vm.appliedWorkingCorpusName = corpus.name
+            vm.appliedWorkingCorpusId = corpus.id
             vm.appliedWorkingCorpusTruncation = corpus.truncationAtCapture
             corpusWarningName = nil
         } label: {

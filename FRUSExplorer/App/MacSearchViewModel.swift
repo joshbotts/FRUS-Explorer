@@ -234,6 +234,11 @@ final class MacSearchViewModel {
     /// number that may not exist.
     var totalMatchCount: Int?
 
+    /// The FTS5 expression the last completed search executed. Mirrors the iOS field; see
+    /// `SearchViewModel.lastRenderedExpression` for why it is captured at execution rather than
+    /// re-derived by the recorder.
+    var lastRenderedExpression: String?
+
     /// Whether the displayed `results` are a truncated subset of the real match set.
     ///
     /// Keyed on the fetch hitting its own cap, which is knowable without the count. When
@@ -772,6 +777,7 @@ final class MacSearchViewModel {
         guard (!query.isEmpty || hasPersonFilter), let service else {
             results = []
             totalMatchCount = nil
+            lastRenderedExpression = nil
             return
         }
 
@@ -784,6 +790,7 @@ final class MacSearchViewModel {
         guard params.includeDocumentText || params.includeSummaries || params.includeNotes else {
             results = []
             totalMatchCount = nil
+            lastRenderedExpression = nil
             searchError = MacSearchError.emptyScope
             return
         }
@@ -818,9 +825,11 @@ final class MacSearchViewModel {
         async let resultsTask  = service.search(parameters: frozenParams,
                                                 limit: Self.searchHardLimit)
         async let countTask    = service.searchCount(parameters: frozenParams)
+        async let expressionTask = try? service.matchExpressions(for: frozenParams).corpus
         do {
             let fetched = try await resultsTask
             results = fetched
+            lastRenderedExpression = await expressionTask
             executedSearchVersion &+= 1
             // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
             // equal to what happened to be fetched — see `totalMatchCount`.
@@ -843,6 +852,7 @@ final class MacSearchViewModel {
             searchError = error
             results = []
             totalMatchCount = nil
+            lastRenderedExpression = nil
             #if DEBUG
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
@@ -881,6 +891,7 @@ final class MacSearchViewModel {
     ///   - defaults: The store the research-logging gate is read from. Defaults to
     ///     `.standard`; overridden only by tests.
     func recordSearchHistory(projectId: UUID?,
+                             indexedVolumeCount: Int? = nil,
                              in context: ModelContext,
                              defaults: UserDefaults = .standard) {
         guard AppState.isResearchLoggingEnabled(in: defaults) else {
@@ -899,10 +910,18 @@ final class MacSearchViewModel {
         // researcher may later cite. `resultCount` cannot express "unknown" (widening it is
         // Decision E / M-2 territory), so the honest fallback is what was actually seen.
         let recorded = resultCountForDisplay
+        let executed = submittedSearchParameters
         let record = SearchHistoryEntry(
             queryText: query,
             resultCount: recorded,
-            projectId: projectId
+            projectId: projectId,
+            loadedCount: results.count,
+            matchCount: totalMatchCount,
+            fetchLimit: Self.searchHardLimit,
+            indexedVolumeCount: indexedVolumeCount,
+            scopeSignature: SearchScopeSignature.signature(for: executed),
+            appliedCorpusId: filterVM?.appliedWorkingCorpusId,
+            renderedExpression: lastRenderedExpression
         )
         context.insert(record)
         #if DEBUG

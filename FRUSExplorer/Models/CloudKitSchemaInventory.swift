@@ -243,11 +243,18 @@ enum CloudKitSchemaInventory {
         "CD_SavedSearch.CD_sortOrder",
         "CD_SavedSearch.CD_subjectTagIdsCSV",
         "CD_SearchHistoryEntry",
+        "CD_SearchHistoryEntry.CD_appliedCorpusId",
         "CD_SearchHistoryEntry.CD_executedAt",
+        "CD_SearchHistoryEntry.CD_fetchLimit",
         "CD_SearchHistoryEntry.CD_id",
+        "CD_SearchHistoryEntry.CD_indexedVolumeCount",
+        "CD_SearchHistoryEntry.CD_loadedCount",
+        "CD_SearchHistoryEntry.CD_matchCount",
         "CD_SearchHistoryEntry.CD_projectId",
         "CD_SearchHistoryEntry.CD_queryText",
+        "CD_SearchHistoryEntry.CD_renderedExpression",
         "CD_SearchHistoryEntry.CD_resultCount",
+        "CD_SearchHistoryEntry.CD_scopeSignature",
         "CD_SessionEvent",
         "CD_SessionEvent.CD_createdAt",
         "CD_SessionEvent.CD_eventType",
@@ -348,7 +355,30 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build. `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
+        // M-2's seven trail fields, pending a Production deploy.
+        //
+        // They are what make a recorded search reproducible: the resolved FTS5 expression, the
+        // scope it ran under, the indexed-volume denominator, and a count that can distinguish an
+        // exact total from a floor. Until they deploy, a trail entry still cannot say whether its
+        // number is the answer or a fetch ceiling.
+        //
+        // SEEDING (the #488 mechanism): CloudKit creates a field only when a record carrying it is
+        // first SAVED, so the Development build must run a search that writes ALL SEVEN non-nil —
+        // which means running it INSIDE AN APPLIED WORKING CORPUS, or `appliedCorpusId` stays nil
+        // and that column never reaches Production.
+        //
+        // `ResearchTrailMigration` is INERT for this window: `writtenRecordTypes` contains
+        // `CD_SearchHistoryEntry` and `blockingIdentifiers` matches on the record-type prefix, so
+        // a pending FIELD blocks the whole pass. Correct — the pass deletes its sources in the
+        // same call — but step 4 must re-verify the migration actually ran after clearing this.
+        "CD_SearchHistoryEntry.CD_appliedCorpusId",
+        "CD_SearchHistoryEntry.CD_fetchLimit",
+        "CD_SearchHistoryEntry.CD_indexedVolumeCount",
+        "CD_SearchHistoryEntry.CD_loadedCount",
+        "CD_SearchHistoryEntry.CD_matchCount",
+        "CD_SearchHistoryEntry.CD_renderedExpression",
+        "CD_SearchHistoryEntry.CD_scopeSignature",
+        // Was empty: Production matched this build. `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
         // `CD_WorkingCorpus.CD_totalMatchCountAtCapture` were seeded by saving a real TRUNCATED
         // capture with a known total — both fields non-nil, since CloudKit creates a field only
         // when a record carrying it is first written — and promoted on 2026-07-31. `CD_WorkingCorpus` and its nine fields were seeded

@@ -347,7 +347,9 @@ struct MacSearchWindowView: View {
         }
         .task(id: searchVM.searchTrigger) {
             await searchVM.performSearch(service: appState.searchService)
-            searchVM.recordSearchHistory(projectId: appState.activeProjectId, in: modelContext)
+            searchVM.recordSearchHistory(projectId: appState.activeProjectId,
+                                         indexedVolumeCount: appState.indexedVolumeIds.count,
+                                         in: modelContext)
             // A new result set invalidates every computed section. Keyed on the same trigger
             // the search itself uses, so a facet can never describe a previous match.
             facetController.invalidate(signature: searchVM.searchTrigger)
