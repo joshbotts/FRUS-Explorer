@@ -450,7 +450,7 @@ struct StatusBarView: View {
             )
         }
 
-        if case .running(let tally, let docId) =
+        if case .running(let tally, let docId, let step) =
             appState.backgroundSummarizationProgress.state {
             let progress: Double? = tally.attemptable > 0
                 ? Double(tally.finished) / Double(tally.attemptable)
@@ -464,8 +464,11 @@ struct StatusBarView: View {
                                   defaultValue: "Preparing to summarize…")
                 }
                 let base = "Summarizing \(tally.finished)/\(tally.attemptable)"
-                if let id = docId { return "\(base) — \(id)" }
-                return base
+                guard let id = docId else { return base }
+                if let detail = SummarizationStepLabel.detail(for: step) {
+                    return "\(base) — \(id), \(detail)"
+                }
+                return "\(base) — \(id)"
             }()
             return ActiveTask(
                 label: label,

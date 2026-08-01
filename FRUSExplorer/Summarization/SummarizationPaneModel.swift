@@ -108,7 +108,7 @@ enum BatchRunReceipt {
         case .idle:
             return String(localized: "settings.summarization.lastRun.none",
                           defaultValue: "No runs this session")
-        case .running(let tally, _):
+        case .running(let tally, _, _):
             if tally.attemptable > 0 {
                 return String(format: String(localized: "settings.summarization.lastRun.running %lld %lld",
                                              defaultValue: "Running · %lld of %lld"),
