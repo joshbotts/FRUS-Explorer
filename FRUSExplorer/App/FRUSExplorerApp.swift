@@ -1873,6 +1873,14 @@ struct FRUSExplorerApp: App {
                                 guard !Task.isCancelled else { return }
                                 DuplicateRecordCleanup.run(context: modelContainer.mainContext)
                                 OrphanedTagRepair.run(context: modelContainer.mainContext)
+                                // #561: standard prompts are seeded per device with fresh ids and
+                                // collapsed by NAME, and that collapse runs inside boot — before
+                                // this import existed. A second device therefore shows 16 prompts
+                                // for the rest of the session, collapsing only at the next cold
+                                // launch. Same debounce, same reason as its two neighbours: a
+                                // settled store, not a partial one mid-sync.
+                                SummarizationPromptSeeder.collapseDuplicates(
+                                    context: modelContainer.mainContext)
                                 // Wave R-2a: same debounce, same reason. Running the trail
                                 // migration only after imports go quiet means a second device
                                 // that has already migrated will usually have delivered its rows
