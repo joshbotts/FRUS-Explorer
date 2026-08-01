@@ -331,13 +331,13 @@ enum CloudKitSchemaInventory {
     /// How many identifiers the Production schema is attested to carry. Pinned by the test
     /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
     /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 232
+    static let deployedIdentifierCount = 233
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "355b29c8863e58065bb532d78f7aaa10c1d94dedc69a6ccf091bb402fbb7e6fd"
+        "2575e2a2992d980eedc13b678c47290d636510af662c3cce89f257a4ea339bfa"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -359,21 +359,25 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // M-2. `CD_Collection.CD_includeMethodAppendix` gates whether a collection export appends
-        // the project's query log. Seeding it needs a *real* save with the flag ON — CloudKit
-        // creates a field only when a record carrying it is first written, and a `false` Bool is
-        // still a written value, so toggling it on once in the collection editor with iCloud
-        // signed in is enough. It does NOT block `ResearchTrailMigration`: that interlock matches
-        // on record-type prefix and the pass writes only `CD_SearchHistoryEntry` and
-        // `CD_ExportHistoryEntry`.
-        "CD_Collection.CD_includeMethodAppendix",
-        // Previously: `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
-        // `CD_WorkingCorpus.CD_totalMatchCountAtCapture` were seeded by saving a real TRUNCATED
-        // capture with a known total — both fields non-nil, since CloudKit creates a field only
-        // when a record carrying it is first written — and promoted on 2026-07-31. `CD_WorkingCorpus` and its nine fields were seeded
-        // into the Development schema by saving a real working corpus (CloudKit creates a record
-        // type only when a record of it is first saved — the trap behind #488) and promoted on
-        // 2026-07-31.
+        // Empty: Production matches this build.
+        //
+        // Promoted 2026-08-01 (UTC), the SIXTH promotion:
+        //   `CD_Collection.CD_includeMethodAppendix` — the per-collection opt-in for appending the
+        //   project's query log to an export (M-2). Seeded by toggling it ON in the Collections
+        //   window with iCloud signed in, because CloudKit creates a field only when a record
+        //   carrying a value for it is first written; a `false` would have done as well, but only
+        //   a real save of any kind creates the column.
+        //
+        //   The seeding path is itself worth recording: the toggle first shipped (#617) on only
+        //   one of the THREE parallel collection-settings surfaces, and not the macOS Collections
+        //   window, so the deploy was blocked until #620 and #621 put a control on all of them.
+        //   `CollectionExportToggleParityTests` now fails if a future export option repeats that.
+        //
+        // Previously promoted 2026-08-01: `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
+        // `CD_WorkingCorpus.CD_totalMatchCountAtCapture`, seeded by saving a real TRUNCATED capture
+        // with a known total. Before that, `CD_WorkingCorpus` and its nine fields, seeded by saving
+        // a real working corpus — CloudKit creates a record TYPE only when a record of it is first
+        // saved, which is the trap behind #488.
     ]
 
     // MARK: - Derived state
