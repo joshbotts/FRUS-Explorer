@@ -252,6 +252,7 @@ struct TimelineLayoutTip: Tip {
 ///
 /// Version history:
 ///   1.0 — #597 Phase 0: initial implementation
+///   1.1 — #597 recall: `resetAll()` + `allTips`, behind Settings ▸ Display ▸ Show Tips Again
 enum DiscoveryTipRegistry {
 
     /// The platforms a given anchor actually compiles for.
@@ -315,6 +316,43 @@ enum DiscoveryTipRegistry {
               anchors: [.shared("FRUSExplorer/CrossReference/CrossReferenceGraphView.swift")]),
         Entry(typeName: "TimelineLayoutTip",
               anchors: [.shared("FRUSExplorer/CrossReference/CrossReferenceGraphView.swift")])
+    ]
+
+    /// Re-arms every registered tip, so a user who dismissed them can meet them again.
+    ///
+    /// Iterates the registry rather than a second hand-written list — a "show tips again" that
+    /// silently missed a tip would be its own quiet bug, and the registry is already the one place
+    /// that has to be complete (`DiscoveryTipWiringAuditTests` enforces that).
+    ///
+    /// `resetEligibility()` per tip, **not** `Tips.resetDatastore()`: that throws once the
+    /// datastore is configured — which it always is by the time Settings can be reached — so it
+    /// would at best become a next-launch reset, and at worst do nothing while appearing to work.
+    /// This takes effect immediately, mid-session.
+    ///
+    /// A tip re-armed here still obeys its display frequency and its `MaxDisplayCount`, so this
+    /// restores eligibility rather than forcing a burst of popovers.
+    @MainActor
+    static func resetAll() async {
+        for tip in allTips {
+            await tip.resetEligibility()
+        }
+        #if DEBUG
+        print("[DiscoveryTipRegistry] Re-armed \(allTips.count) discovery tip(s)")
+        #endif
+    }
+
+    /// Live instances of every registered tip.
+    ///
+    /// The registry stores type *names* because its other consumer is a source audit that has only
+    /// strings to work with. Resetting needs real values, so the two are kept side by side here and
+    /// `registryAndInstancesAgree` pins that neither can grow without the other.
+    static let allTips: [any Tip] = [
+        ResearchRailTip(),
+        EdgeTapNavigationTip(),
+        ExamineResultsTip(),
+        FacetNarrowTip(),
+        GraphReferenceListTip(),
+        TimelineLayoutTip()
     ]
 
     /// Files a tip may **never** be anchored in, with the reason.

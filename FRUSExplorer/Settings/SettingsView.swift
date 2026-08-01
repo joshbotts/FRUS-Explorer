@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import TipKit
 import SwiftData
 import UniformTypeIdentifiers
 
@@ -1550,6 +1551,19 @@ struct DisplaySettingsView: View {
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     #endif
 
+    /// Set once the reset has run, so the button reads as having done something.
+    ///
+    /// Deliberately view state and not persisted: it acknowledges *this* tap. A tip that has been
+    /// re-armed and not yet re-seen is not a state Settings should keep describing on the next
+    /// visit, and the honest confirmation is the tip itself reappearing.
+    @State private var didResetTips = false
+
+    /// Re-arms every discovery tip. See ``DiscoveryTipRegistry/resetAll()``.
+    private func resetDiscoveryTips() {
+        didResetTips = true
+        Task { await DiscoveryTipRegistry.resetAll() }
+    }
+
     /// Whether this is an iPhone. The "Open Documents In" default is offered only where passive
     /// Research mode is usable — the iPad/Mac side panel. On iPhone the rail is a user-triggered
     /// bottom sheet (#404), so a "Research" default would have nothing to act on; the picker is
@@ -1671,6 +1685,31 @@ struct DisplaySettingsView: View {
                     Text(String(localized: "settings.display.reading.footer",
                                 defaultValue: "\"Remember Last\" reopens documents in whichever mode — Read or Research — you last used. Research mode shows the Research rail in a side panel beside the document; Read mode hides it for distraction-free reading. The in-document rail toggle always overrides for the current document."))
                 }
+            }
+
+            Section {
+                Button {
+                    resetDiscoveryTips()
+                } label: {
+                    Label(String(localized: "settings.display.tips.reset",
+                                 defaultValue: "Show Tips Again"),
+                          systemImage: "lightbulb")
+                }
+                .disabled(didResetTips)
+                #if os(macOS)
+                .buttonStyle(.link)
+                #endif
+                if didResetTips {
+                    Text(String(localized: "settings.display.tips.reset.done",
+                                defaultValue: "Tips will appear again as you reach the controls they point at."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text(String(localized: "settings.display.tips.header", defaultValue: "Discovery Tips"))
+            } footer: {
+                Text(String(localized: "settings.display.tips.footer",
+                            defaultValue: "Tips point out controls that are easy to miss — the Research button, the page-turn edges, the ways to read a result set. Each retires once you use the control it describes. This brings them all back."))
             }
         }
         #if os(macOS)

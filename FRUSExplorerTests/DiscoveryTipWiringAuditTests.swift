@@ -44,6 +44,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — #597 Phase 0: initial implementation
+///   1.1 — #597 recall: registry/instance agreement + the reset control audit
 @Suite("Discovery tip wiring")
 struct DiscoveryTipWiringAuditTests {
 
@@ -273,6 +274,55 @@ struct DiscoveryTipWiringAuditTests {
             #expect(FileManager.default.fileExists(atPath: url.path),
                     "denylisted \(path) no longer exists — drop the entry (reason was: \(reason))")
         }
+    }
+
+    // MARK: - Recall (#597)
+
+    /// The registry stores type *names* for the source audit and live *instances* for the reset.
+    /// Two lists of the same thing drift; this is what stops one growing without the other and
+    /// leaving a tip that can never be re-armed.
+    @Test("Every registered tip has an instance the reset can re-arm")
+    @MainActor
+    func registryAndInstancesAgree() {
+        let registered = Set(DiscoveryTipRegistry.entries.map(\.typeName))
+        let instantiated = Set(DiscoveryTipRegistry.allTips.map { String(describing: type(of: $0)) })
+        #expect(registered == instantiated,
+                """
+                DiscoveryTipRegistry.entries and .allTips disagree.
+                Registered but not instantiated: \(registered.subtracting(instantiated).sorted())
+                Instantiated but not registered: \(instantiated.subtracting(registered).sorted())
+                A tip missing from `allTips` is one "Show Tips Again" would silently skip.
+                """)
+    }
+
+    /// The control lives in `DisplaySettingsView`, which has been shared since S-5b — so this is
+    /// the rare settings addition with no parallel-implementation hazard, and the test pins that
+    /// it stayed in the shared file rather than being copied per platform.
+    @Test("The reset control is in the shared settings view and iterates the registry")
+    func resetControlIsWired() throws {
+        let settings = try Self.source("FRUSExplorer/Settings/SettingsView.swift")
+        #expect(settings.contains("DiscoveryTipRegistry.resetAll()"),
+                "the button must go through the registry, not a second hand-written list")
+        #expect(settings.contains("settings.display.tips.reset"))
+
+        // `resetDatastore` throws once TipKit is configured — which it always is by the time
+        // Settings is reachable — so it would at best become a next-launch reset.
+        let registry = try Self.source("FRUSExplorer/App/DiscoveryTips.swift")
+        #expect(registry.contains("resetEligibility()"))
+        // On a non-comment line only: the doc comment beside `resetAll()` names
+        // `Tips.resetDatastore()` precisely to explain why it is NOT used, and a bare `contains`
+        // would fail on the explanation rather than on a call.
+        let callsResetDatastore = registry
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .contains { !$0.hasPrefix("//") && !$0.hasPrefix("///") && !$0.hasPrefix("*")
+                        && $0.contains("Tips.resetDatastore()") }
+        #expect(!callsResetDatastore,
+                "resetDatastore throws post-configure; it would appear to work and do nothing")
+
+        // Findable: nobody looking for tips would guess the pane is called "Display".
+        let panes = try Self.source("FRUSExplorer/Settings/SettingsPaneModel.swift")
+        #expect(panes.contains("\"tips\""), "Settings search cannot find the control")
     }
 
     // MARK: - The launch configuration
