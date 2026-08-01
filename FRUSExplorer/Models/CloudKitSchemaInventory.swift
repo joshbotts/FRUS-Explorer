@@ -309,7 +309,7 @@ enum CloudKitSchemaInventory {
 
     /// The build at which the Production CloudKit schema was last promoted.
     ///
-    /// Build 36. Four promotions are recorded here. Issue #488's closing comment — *"Resolved by
+    /// Build 37. Five promotions are recorded here. Issue #488's closing comment — *"Resolved by
     /// deploying the missing CloudKit schema"* (2026-07-26) — brought Production level with the
     /// build-35 additions. The second, the same day, promoted `CD_ExportHistoryEntry` and its six
     /// fields for Wave R-2a. The third (2026-07-31) promoted `CD_WorkingCorpus` and its nine fields
@@ -318,22 +318,25 @@ enum CloudKitSchemaInventory {
     /// (also 2026-07-31) promoted `CD_WorkingCorpus`'s two typed capture-truncation fields, which
     /// are what let four corpus-scoped sentences stop asserting completeness they could not know —
     /// a `String` cannot be tested in a `guard`, and parsing one to recover a boolean fails open.
-    static let deployedThroughBuild = "36"
+    /// The fifth (2026-08-01, build 37) promoted M-2's seven `CD_SearchHistoryEntry` fields, which
+    /// are what let a recorded search be reproduced: the expression it executed, the scope it ran
+    /// under, the indexed-volume denominator, and a count that distinguishes a total from a floor.
+    static let deployedThroughBuild = "37"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-07-31"
+    static let deployedOn = "2026-08-01"
 
     /// How many identifiers the Production schema is attested to carry. Pinned by the test
     /// against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the baseline
     /// cannot drift from the inventory unnoticed.
-    static let deployedIdentifierCount = 225
+    static let deployedIdentifierCount = 232
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "a862a1593762a19359d598247803ed7270c4ffb2b4ae2977d8195b4be5b6195e"
+        "355b29c8863e58065bb532d78f7aaa10c1d94dedc69a6ccf091bb402fbb7e6fd"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -355,30 +358,7 @@ enum CloudKitSchemaInventory {
     /// `ResearchSession`/`SessionEvent` types are *not* listed: they are still in the model set
     /// and still in Production, and removing them is R-2b's, not this release's.
     static let identifiersAwaitingDeploy: [String] = [
-        // M-2's seven trail fields, pending a Production deploy.
-        //
-        // They are what make a recorded search reproducible: the resolved FTS5 expression, the
-        // scope it ran under, the indexed-volume denominator, and a count that can distinguish an
-        // exact total from a floor. Until they deploy, a trail entry still cannot say whether its
-        // number is the answer or a fetch ceiling.
-        //
-        // SEEDING (the #488 mechanism): CloudKit creates a field only when a record carrying it is
-        // first SAVED, so the Development build must run a search that writes ALL SEVEN non-nil —
-        // which means running it INSIDE AN APPLIED WORKING CORPUS, or `appliedCorpusId` stays nil
-        // and that column never reaches Production.
-        //
-        // `ResearchTrailMigration` is INERT for this window: `writtenRecordTypes` contains
-        // `CD_SearchHistoryEntry` and `blockingIdentifiers` matches on the record-type prefix, so
-        // a pending FIELD blocks the whole pass. Correct — the pass deletes its sources in the
-        // same call — but step 4 must re-verify the migration actually ran after clearing this.
-        "CD_SearchHistoryEntry.CD_appliedCorpusId",
-        "CD_SearchHistoryEntry.CD_fetchLimit",
-        "CD_SearchHistoryEntry.CD_indexedVolumeCount",
-        "CD_SearchHistoryEntry.CD_loadedCount",
-        "CD_SearchHistoryEntry.CD_matchCount",
-        "CD_SearchHistoryEntry.CD_renderedExpression",
-        "CD_SearchHistoryEntry.CD_scopeSignature",
-        // Was empty: Production matched this build. `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
+        // Empty: Production matches this build. `CD_WorkingCorpus.CD_wasTruncatedAtCapture` and
         // `CD_WorkingCorpus.CD_totalMatchCountAtCapture` were seeded by saving a real TRUNCATED
         // capture with a known total — both fields non-nil, since CloudKit creates a field only
         // when a record carrying it is first written — and promoted on 2026-07-31. `CD_WorkingCorpus` and its nine fields were seeded
