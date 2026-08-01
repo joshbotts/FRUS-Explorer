@@ -615,6 +615,12 @@ private struct CollectionDetailPane: View {
     @State private var includeColophon: Bool
     /// Front matter: whether exports stamp the active project on the title page (#377 Phase 4, default off).
     @State private var includeProjectProvenance: Bool
+    /// Front matter: whether exports append the project's query log as a method appendix
+    /// (M-2, default off). This pane is a **parallel** implementation of
+    /// `CollectionEditorView.frontMatterRows`; #617 added the toggle there and not here, so the
+    /// macOS Collections window — the surface a Mac user actually reaches at ⌘⇧K — had no way to
+    /// turn it on. `CollectionExportToggleParityTests` now fails if the two lists diverge again.
+    @State private var includeMethodAppendix: Bool
     /// Headings whose sections are collapsed in the outline — VIEW STATE only (Phase 4):
     /// never persisted, never synced; keyed by entry id so it survives moves.
     @State private var collapsedHeadingIds: Set<UUID> = []
@@ -670,6 +676,7 @@ private struct CollectionDetailPane: View {
         _authorLine = State(initialValue: collection.authorLine ?? "")
         _includeColophon = State(initialValue: collection.includeColophon)
         _includeProjectProvenance = State(initialValue: collection.includeProjectProvenance)
+        _includeMethodAppendix = State(initialValue: collection.includeMethodAppendix)
         _sortedEntries = State(initialValue:
             (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
     }
@@ -704,6 +711,7 @@ private struct CollectionDetailPane: View {
         .onChange(of: authorLine) { _, _ in saveMetadata() }
         .onChange(of: includeColophon) { _, _ in saveMetadata() }
         .onChange(of: includeProjectProvenance) { _, _ in saveMetadata() }
+        .onChange(of: includeMethodAppendix) { _, _ in saveMetadata() }
         // Composer v2 (§B): the Manage Collections sheet renames the model directly
         // (`$collection.name`), a second writer of `collection.name` besides this pane's one-time
         // `@State name` snapshot. Follow that external rename so the title / settings-popover field
@@ -909,6 +917,19 @@ private struct CollectionDetailPane: View {
                               defaultValue: "Include colophon"), isOn: $includeColophon)
                 Toggle(String(localized: "collection.frontmatter.projectProvenance.toggle",
                               defaultValue: "Stamp active project on export"), isOn: $includeProjectProvenance)
+                // M-2. Two `Text`s rather than one, because this is the only export toggle that
+                // puts the text of the researcher's own searches into a document they may be
+                // about to publish, and that has to be legible at the moment of the click.
+                Toggle(isOn: $includeMethodAppendix) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(localized: "collection.frontmatter.methodAppendix.toggle",
+                                    defaultValue: "Append the query log"))
+                        Text(String(localized: "collection.frontmatter.methodAppendix.subtitle",
+                                    defaultValue: "Every search you ran under the active project, with its scope and result count."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             } header: {
                 Text(String(localized: "collection.frontmatter.titlePage",
                             defaultValue: "Title Page & Introduction"))
@@ -1485,6 +1506,7 @@ private struct CollectionDetailPane: View {
         collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
         collection.includeColophon = includeColophon
         collection.includeProjectProvenance = includeProjectProvenance
+        collection.includeMethodAppendix = includeMethodAppendix
     }
 }
 
