@@ -866,6 +866,35 @@ private extension EducationPage {
                 ]
             ),
             EducationSection(
+                id: "query-inspector",
+                heading: "What Your Query Actually Searched For",
+                systemImage: "eye.trianglebadge.exclamationmark",
+                paragraphs: [
+                    "Search rewrites what you type before it runs — stemming, implicit AND between words, the operators above. The Query Inspector shows the expression it compiled, so a search that returns something surprising can be read rather than guessed at.",
+                    "It also warns where stemming widens a search past what you meant: type \u{201C}containment\u{201D} and the panel tells you it was searched as \u{201C}contain,\u{201D} which also matches \u{201C}contains\u{201D} and \u{201C}container.\u{201D} Prefix the word with = to search it literally. This matters most when you are about to report a count: an unexpectedly large number is usually a stem, not a finding."
+                ]
+            ),
+            EducationSection(
+                id: "result-facets",
+                heading: "The Shape of a Result Set",
+                systemImage: "square.grid.3x3",
+                paragraphs: [
+                    "Facets break a result set down by year, volume, person, document type and archival provenance, so you can see at a glance whether a term clusters in one administration, one country file, or one editor\u{2019}s volumes.",
+                    "Read the denominator carefully, because it is deliberately not the list you are looking at: facets describe the whole match, before any narrowing you apply below them. That is what makes them comparable to each other — a breakdown that shifted every time you filtered would tell you about your filtering rather than about the corpus.",
+                    "Facet rows are also controls. Tapping one narrows the search to that year, volume, or person, and the narrowing appears as a chip you can clear."
+                ]
+            ),
+            EducationSection(
+                id: "working-corpora",
+                heading: "Working Corpora",
+                systemImage: "tray.full",
+                paragraphs: [
+                    "A working corpus is a fixed set of documents \u{2014} the results of one search, frozen. Save one with \u{201C}Save as Working Corpus\u{2026}\u{201D} and apply it from the advanced filters under My Working Corpora; every later search then runs only inside it.",
+                    "This is different from a volume scope. A scope narrows to whole volumes; a corpus narrows to the particular documents you captured, which is what you want when the set you care about is \u{201C}the 240 documents that matched, minus the eleven I decided were irrelevant.\u{201D}",
+                    "Each corpus records how it was made, and the app repeats it back where you apply one. If the search that produced it was capped, the corpus says so \u{2014} \u{201C}the highest-scoring 7,500 of 67,034 matches\u{201D} \u{2014} because a set that was truncated at capture is not the same evidence as a set that was complete, and you should not have to remember which was which."
+                ]
+            ),
+            EducationSection(
                 id: "volume-scopes",
                 heading: "Custom Volume Scopes",
                 systemImage: "square.stack.3d.up",
@@ -955,6 +984,25 @@ private extension EducationPage {
                     "An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.",
                     "Analytics runs entirely on your local index; no network connection is required.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "reading-results",
+                heading: "Four Ways to Read a Result Set",
+                systemImage: "binoculars",
+                paragraphs: [
+                    "The binoculars button above your results offers four readings of the same search. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.",
+                    "They do not all count the same thing, and the menu says which is which. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search. When you are about to quote a number, that distinction is the number.",
+                    "Collocates is the one that changes what you search next: the words a term travels with are usually the period vocabulary you did not know to look for."
+                ]
+            ),
+            EducationSection(
+                id: "keyness",
+                heading: "Distinctive Words, Not Just Frequent Ones",
+                systemImage: "textformat.size",
+                paragraphs: [
+                    "The Word Cloud can size words two ways. By frequency, the biggest words in almost any FRUS scope are the ones that are big everywhere \u{2014} government, department, president. Switch \u{201C}Size words by\u{201D} to distinctiveness and the cloud instead ranks words by how much more they appear here than in the corpus as a whole, which is what makes one volume, decade or working corpus look different from every other.",
+                    "The comparison is made against a reference built from the whole series and shipped with the app, so it works with no volumes downloaded. It is also honest about when it cannot run: change the tokenizing settings in a way the reference was not built for, or ask for a scope with too little text, and the app says the ranking is unavailable rather than showing you a number it cannot stand behind."
                 ]
             ),
             EducationSection(
@@ -1065,6 +1113,27 @@ private extension EducationPage {
                     "Collections are curated sets you assemble for a purpose — a teaching reader, a briefing packet, a source dossier. The manager is where you shape the content: add documents from any volume, interleave your own section headings and rich-text prose (bold, italic, underline, colour), attach notes to a document, and inspect a document's notes, highlights, tags, summary, and archival source in place. Add Documents gathers documents without leaving the editor — search the index, browse a volume, paste citations or history.state.gov links (each line resolves to its document), or pull in everything carrying one of your tags. The composition lives on the collection itself — default body depth (full text, an AI summary, or a compact index), footnotes, table-of-contents style, and whether to include highlights, notes, or a word cloud — and any single document or whole section can override the body depth. Four one-tap presets — teaching reader, briefing packet, source dossier, scholarly edition — set the whole composition at once as a starting point, adding any apparatus they call for without disturbing what you have already placed. Sections nest up to three levels — indent or outdent a heading from its context menu, drag a heading to move its whole section as a block, and give the collection a subtitle, author line, rich-text introduction, and colophon for a true title page. Excerpt quotations freeze a highlighted or selected passage into the collection as a styled block quote with its citation, and each document's inspector is a per-document control surface — an editable \u{201C}key takeaway\u{201D} headnote above the body (seeded by on-device AI, or written in your own words, with a small chip noting which), per-document overrides for highlights, notes, source note, footnotes, and summary prompt, and a \u{201C}See also\u{201D} line citing cross-referenced documents inside the collection. Generated apparatus blocks — a bibliography, a chronology, a sources-and-archives list, a persons index, and a thematic index — are computed from the collection\u{2019}s documents at every export and in the preview, placeable anywhere like any other row. Sort by Date puts the documents in chronological order either across the whole collection in one sweep, or within each section only \u{2014} so documents stay under their own heading rather than crossing into a neighboring section. A live preview shows the collection exactly as its HTML export while you compose — side-by-side on iPad and Mac, a Preview toggle on iPhone.",
                     "Export is simply how you share it. Render the collection — section headings and prose included — as a PDF, HTML file, or Word document; produce a BibTeX or RIS file for a reference manager; or save a native \u{201C}.fruscollection\u{201D} file: an editable copy a colleague opens right back into their own FRUS Explorer, where the documents travel as references they can download. Import one with Import Collection or by opening the file. A smart collection driven by a saved search can be frozen into an editable copy with Create Static Snapshot.",
                     "Find it on the Collections tab (iOS) or the Collections window, ⇧⌘K (Mac)."
+                ]
+            ),
+            EducationSection(
+                id: "quotation-check",
+                heading: "Checking Your Quotations",
+                systemImage: "checkmark.seal",
+                paragraphs: [
+                    "An excerpt in a collection is a frozen quotation, captured whenever you captured it. Volumes get reindexed, removed and re-downloaded, so before a collection exports, the app checks every stored excerpt against the text of the document it cites.",
+                    "The check is a deterministic comparison, not a judgement. It forgives everything about presentation \u{2014} line breaks, curly versus straight quotes, soft hyphens, capitalisation, and elisions marked with an ellipsis, whose fragments must still appear in order \u{2014} and forgives nothing about wording. A paraphrase does not pass.",
+                    "It warns; it never blocks. A quotation from a volume you have since removed cannot be checked at all, and the app says that rather than calling it wrong \u{2014} being unable to verify something is not the same as finding it false."
+                ]
+            ),
+            EducationSection(
+                id: "method-appendix",
+                heading: "The Query Log as a Method Appendix",
+                systemImage: "list.bullet.rectangle.portrait",
+                paragraphs: [
+                    "The app records the searches you run, and exports them as a methods statement: every query with the scope it ran under, how many volumes were indexed at the time, and what it returned. Find it in Settings \u{2192} Data & Recovery, as a Markdown table and a CSV.",
+                    "The reason to keep it is the zeros. \u{201C}I searched for this and found nothing\u{201D} is an assertion; the same sentence with a date, a scope and a denominator is evidence, and it is the only form of it a reader can check.",
+                    "A count that hit the app\u{2019}s row ceiling is written as \u{201C}at least 7,500,\u{201D} never as 7,500 \u{2014} it is a floor, and the CSV carries a column saying so, because a spreadsheet will otherwise happily sum a column of floors into a total that was never measured. Searches recorded before the app kept this detail are printed and marked, not quietly dropped.",
+                    "A collection can carry the same appendix, narrowed to the project it was exported under. That is off by default: it contains the text of every search you ran, which is exactly the thing not to attach to a shared PDF by accident."
                 ]
             ),
             EducationSection(
