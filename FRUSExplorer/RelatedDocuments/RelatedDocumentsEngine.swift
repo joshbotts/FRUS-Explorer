@@ -170,6 +170,7 @@ enum RelatedDocumentsEngine {
         // Generators → per-axis raw strengths + a shared display-record cache.
         var generatorStrengths: [SimilarityAxis: [DocumentKey: Double]] = [:]
         var generatorEvidence: [SimilarityAxis: [DocumentKey: Int]] = [:]
+        var generatorEvidenceLabel: [SimilarityAxis: [DocumentKey: String]] = [:]
         var records: [DocumentKey: CandidateRecord] = [:]
         for generator in generators {
             let produced = (try? await generator.candidates(
@@ -177,6 +178,7 @@ enum RelatedDocumentsEngine {
                 scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? []
             var strengths: [DocumentKey: Double] = [:]
             var evidence: [DocumentKey: Int] = [:]
+            var evidenceLabel: [DocumentKey: String] = [:]
             for candidate in produced where candidate.key != anchor {
                 strengths[candidate.key] = max(strengths[candidate.key] ?? 0, candidate.strength)
                 // Merged with `max`, exactly as the strength is, so the two cannot disagree about
@@ -184,10 +186,14 @@ enum RelatedDocumentsEngine {
                 if let count = candidate.evidenceCount {
                     evidence[candidate.key] = max(evidence[candidate.key] ?? 0, count)
                 }
+                if let label = candidate.evidenceLabel, evidenceLabel[candidate.key] == nil {
+                    evidenceLabel[candidate.key] = label
+                }
                 if records[candidate.key] == nil { records[candidate.key] = candidate.record }
             }
             generatorStrengths[generator.axis] = strengths
             generatorEvidence[generator.axis] = evidence
+            generatorEvidenceLabel[generator.axis] = evidenceLabel
         }
 
         let candidateKeys = Array(Set(generatorStrengths.values.flatMap(\.keys)).subtracting([anchor]))
@@ -220,10 +226,13 @@ enum RelatedDocumentsEngine {
         var rows = ranked.rows
         for index in rows.indices {
             var evidence: [SimilarityAxis: Int] = [:]
+            var labels: [SimilarityAxis: String] = [:]
             for axis in rows[index].axisScores.keys {
                 if let count = generatorEvidence[axis]?[rows[index].key] { evidence[axis] = count }
+                if let label = generatorEvidenceLabel[axis]?[rows[index].key] { labels[axis] = label }
             }
             rows[index].axisEvidence = evidence
+            rows[index].axisEvidenceLabel = labels
         }
 
         if includeSnippets, let pipeline = appState.indexingPipeline, !rows.isEmpty {
