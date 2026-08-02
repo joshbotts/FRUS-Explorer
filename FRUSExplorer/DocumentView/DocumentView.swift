@@ -1007,7 +1007,17 @@ struct DocumentView: View {
             .accessibilityIdentifier("researchRailToggle")
             // #597 Phase 1. On iPhone the rail is forced closed on every open (#404), so this one
             // unlabelled glyph is the only door to every document-scoped tool.
-            .popoverTip(ResearchRailTip())
+            //
+            // iPHONE ONLY, and the gate is load-bearing. `DocumentView` is also the iPad reader,
+            // where `panelVisible = !isPhone` means the rail is already open — the tip would point
+            // at tools the user can see. Worse, it presented a UIPopover in the SAME main-thread
+            // pass that reflows the split view for the `.inspector` and inserts the WKWebView,
+            // which drove a view-graph update loop: 90s of CPU in 101s (89%), the main thread never
+            // returning to the run loop, the spinner still animating off the render server, no
+            // touch ever handled, and a `scene-update` watchdog kill at 10s. The doc comment above
+            // and #634's PR body both asserted this was already iPhone-only. It never was — there
+            // was no gate. `popoverTip` takes an optional, so `nil` is the entire fix.
+            .popoverTip(isPhone ? ResearchRailTip() : nil)
         }
     }
 
@@ -1407,7 +1417,11 @@ struct DocumentView: View {
                     label: String(localized: "document.nav.previous.a11y",
                                   defaultValue: "Previous document"),
                     hint: String(localized: "document.nav.previous.hint",
-                                 defaultValue: "Opens the previous document in this volume")
+                                 defaultValue: "Opens the previous document in this volume"),
+                    // Exactly one zone carries the tip: the leading one when it renders, else
+                    // the trailing one. At a volume boundary the empty zone shows nothing, so
+                    // the anchor follows whichever strip actually exists.
+                    showsTip: vm.previousEntry != nil
                 )
                 Spacer(minLength: 0)
                 documentEdgeTapZone(
@@ -1416,17 +1430,22 @@ struct DocumentView: View {
                     label: String(localized: "document.nav.next.a11y",
                                   defaultValue: "Next document"),
                     hint: String(localized: "document.nav.next.hint",
-                                 defaultValue: "Opens the next document in this volume")
+                                 defaultValue: "Opens the next document in this volume"),
+                    showsTip: vm.previousEntry == nil
                 )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Let the zones themselves opt into hit-testing; the HStack/Spacer must
             // not swallow taps meant for the web view's central reading column.
             .allowsHitTesting(true)
-            // #597 Phase 1: anchored on the overlay rather than one zone, so the popover is
-            // centred over the reading area instead of pinned to whichever edge happens to
-            // have an adjacent document — at a volume boundary one zone renders nothing.
-            .popoverTip(EdgeTapNavigationTip())
+            // NO `.popoverTip` HERE. #597 Phase 1 anchored the tip on this HStack "so the popover
+            // is centred over the reading area" — but `.popoverTip` presents with
+            // `attachmentAnchor: .rect(.bounds)`, and these bounds ARE the reading area. While a
+            // popover is up, `UIPopoverPresentationController` installs a full-window blocker with
+            // `passthroughViews == nil`: a TAP dismisses it, a PAN is simply swallowed. So the
+            // document would not scroll, and because scrolling never dismissed the tip it never
+            // recorded an impression, so `MaxDisplayCount(3)` never counted down and the block was
+            // permanent. The tip now hangs off one 56pt zone (below), which is what it points at.
         }
     }
 
@@ -1437,7 +1456,8 @@ struct DocumentView: View {
         adjacentEntry: DocumentBrowserEntry?,
         systemImage: String,
         label: String,
-        hint: String
+        hint: String,
+        showsTip: Bool = false
     ) -> some View {
         if let adjacentEntry {
             Color.clear
@@ -1448,6 +1468,9 @@ struct DocumentView: View {
                     EdgeTapNavigationTip().invalidate(reason: .actionPerformed)
                     navigateToAdjacentDocument(adjacentEntry)
                 }
+                // A 56pt anchor, not the whole reading area — see the note on the overlay above.
+                // `popoverTip` takes an optional, so the non-tip zone passes `nil`.
+                .popoverTip(showsTip ? EdgeTapNavigationTip() : nil)
                 .accessibilityElement()
                 .accessibilityLabel(label)
                 .accessibilityHint(hint)
