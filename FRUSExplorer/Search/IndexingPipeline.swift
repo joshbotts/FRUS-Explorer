@@ -2066,14 +2066,24 @@ public actor IndexingPipeline {
             // TWO-PHASE FETCH (R-3a). Rank narrow, then hydrate only the window that survives.
             //
             // The single-phase shape above joins `document_cache` and then sorts, so every matched
-            // row is materialised before the sorter runs — 195,613 rows for a common term, at ~5 KB
-            // of `body_text` each. `body_text` lives on overflow pages, and SQLite follows those
+            // row is materialised before the sorter runs — 195,519 rows for a common term, at ~5 KB
+            // of `body_text` each (mean 5,355 bytes; 1.05 GB in total for `"government"`). `body_text` lives on overflow pages, and SQLite follows those
             // chains only for columns a statement actually selects; phase one selects none of them,
             // so the ranking pass reads b-tree pages instead of megabytes of prose.
             //
-            // Measured on the real 6.3 GB store, `"government"`, byte-identical output either way
-            // (42,569,775 bytes of body text): a 7,500-row fetch 10.46 s -> 0.606 s, and the first
-            // page 8.61 s -> 0.006 s.
+            // Measured on the real 6.3 GB store, `"government"`, byte-identical output either way.
+            // The honest statement is about SHAPE, not a ratio: the ranking pass still has to score
+            // and sort every matched row and costs a few tenths of a second whatever happens
+            // (0.32–0.43 s measured, 195,519 rows); what became free is hydrating the window. A
+            // single before/after ratio would be a claim about the page cache rather than about the
+            // query — the same statement measured 4.70 s cold and 0.25 s warm on this machine.
+            //
+            // **The speed-up does not hold for `=exact`.** `SearchService.exactColumns(for:)`
+            // includes `body_text` whenever `includeDocumentText` is true, which is the default, so
+            // an `=exact` query emits `frus_exact_word(dc.body_text, ?)` into the phase-one WHERE
+            // clause and forces the ranking pass to read the very column this split exists to
+            // avoid. No ratio is quoted for that either: three measurements of the same effect gave
+            // 15x, 2.2x and 2.0x purely on cache state.
             //
             // Phase one keeps the SAME joins and the SAME `whereClause`. That is not redundancy —
             // filters reference `dc.` (volume scope, front-matter, editorial-note, user tags,
@@ -2091,7 +2101,10 @@ public actor IndexingPipeline {
             // documents that provably share a single bm25 score. So no test in this repo can
             // falsify the ordinal, and it is kept because it makes phase two's order phase one's
             // order BY CONSTRUCTION rather than by an observed coincidence of the current planner.
-            // The cost is a window function over an already-LIMITed set.
+            // Its cost is not "a window function over an already-LIMITed set" — SQL evaluates window
+            // functions before the same query block's ORDER BY and LIMIT, so that model is
+            // backwards. The ordinal reuses the sort the ORDER BY already needs, which is why the
+            // A/B measured no difference.
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             // The joins in phase one are CONDITIONAL, and that is the whole optimisation.
             //
@@ -2300,10 +2313,12 @@ public actor IndexingPipeline {
         corpusMatch: String?,
         userContentMatch: String?,
         filters: SearchSQLFilters,
-        request: FacetRequest
+        request: FacetRequest,
+        joinedMaterializationForParity: Bool = false
     ) throws -> ResultSetFacets {
         let matchCount = try materializeMatchSet(
-            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            joinedMaterializationForParity: joinedMaterializationForParity)
         defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
         guard matchCount > 0 else { return .empty() }
 
@@ -2487,11 +2502,13 @@ public actor IndexingPipeline {
         corpusMatch: String?,
         userContentMatch: String?,
         filters: SearchSQLFilters,
-        tagIds: [String]
+        tagIds: [String],
+        joinedMaterializationForParity: Bool = false
     ) throws -> [String: Int] {
         guard !tagIds.isEmpty else { return [:] }
         let matchCount = try materializeMatchSet(
-            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            joinedMaterializationForParity: joinedMaterializationForParity)
         defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
         guard matchCount > 0 else { return [:] }
 
@@ -2544,11 +2561,35 @@ public actor IndexingPipeline {
     /// back to `document_cache` is a rowid seek. `temp_store=MEMORY` is already set
     /// (`setupDatabase`), so this never touches disk.
     private func materializeMatchSet(
-        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters,
+        joinedMaterializationForParity: Bool = false
     ) throws -> Int {
         try auxExec("DROP TABLE IF EXISTS temp.facet_mset")
         try auxExec("CREATE TEMP TABLE facet_mset (docrowid INTEGER PRIMARY KEY)")
 
+        guard let (sql, binds) = try Self.materializeMatchSetSQL(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            joinedMaterializationForParity: joinedMaterializationForParity)
+        else { return 0 }
+
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, bind) in binds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard try auxStep(stmt) || true else { return 0 }
+        return try scalar("SELECT COUNT(*) FROM temp.facet_mset")
+    }
+
+    /// The statement `materializeMatchSet` runs, split out so a test can explain the real one
+    /// rather than a hand-written approximation of it.
+    ///
+    /// Returns `nil` for the one case that runs no statement at all: a filter-only search with no
+    /// filters, which would be the whole corpus rather than a result set.
+    private static func materializeMatchSetSQL(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters,
+        joinedMaterializationForParity: Bool
+    ) throws -> (sql: String, binds: [String])? {
         let (whereClause, filterBinds) = Self.filterConditions(filters)
         let sql: String
         let binds: [String]
@@ -2556,7 +2597,7 @@ public actor IndexingPipeline {
             // Filter-only search (a person filter with no terms). Mirrors
             // `searchDocuments`' filter-only path; an unfiltered filter-only query would be
             // the whole corpus, which is not a result set.
-            guard !whereClause.isEmpty else { return 0 }
+            guard !whereClause.isEmpty else { return nil }
             sql = """
                 INSERT INTO temp.facet_mset(docrowid)
                 SELECT dc.rowid
@@ -2566,11 +2607,49 @@ public actor IndexingPipeline {
                 \(whereClause)
                 """
             binds = filterBinds
+        } else if whereClause.isEmpty, !joinedMaterializationForParity {
+            // UNFILTERED MATCH — the joins are pure cost, so drop them.
+            //
+            // `dc.rowid` in the joined shape below is `m.docrowid` by construction, and with no
+            // WHERE clause neither join can influence which rows land in the match set. Both joins
+            // therefore contribute nothing but work:
+            //
+            //  - The INNER JOIN cannot drop a row. Both FTS tables are `content='document_cache',
+            //    content_rowid='rowid'` with the full trigger set, so an FTS rowid with no content
+            //    row cannot exist. Measured on the owner's index: document_cache 316,839,
+            //    frus_documents_docsize 316,839, and zero FTS rowids without a content row.
+            //  - The LEFT JOIN cannot fan out. `document_dates` is `PRIMARY KEY (volume_id,
+            //    document_id)` with zero duplicate keys measured — and dropping it removes the
+            //    possibility entirely rather than relying on it.
+            //
+            // The cost is stated as a property rather than a ratio, because a ratio here is a
+            // statement about the page cache rather than about the query: the joined shape performs
+            // one rowid seek into a 6.3 GB table for every matched row, so it is cache-dependent and
+            // unbounded — measured on the same machine and statement at 4.70 s cold and 0.25 s warm
+            // for 195,519 rows. The joinless shape reads only the FTS postings and measured 0.05 s
+            // every round, of which ~0.03 s is process start. This matters most where the cache is
+            // least likely to hold those pages, which is iOS.
+            //
+            // This is the DEFAULT path, not a corner: an unfiltered search over the whole corpus is
+            // what the facet panel and the tag counts see before the researcher narrows anything.
+            let (matchCTE, matchBinds) = try Self.matchCTE(
+                corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            sql = """
+                \(matchCTE)
+                INSERT INTO temp.facet_mset(docrowid)
+                SELECT m.docrowid FROM merged m
+                """
+            binds = matchBinds
         } else {
             let (matchCTE, matchBinds) = try Self.matchCTE(
                 corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             // The filters live here, in phase one, exactly as in `searchDocuments` — a facet
             // must describe the set the researcher is actually looking at.
+            //
+            // Every one of the 13 conditions `filterConditions` can emit references `dc.` or `dd.`
+            // and every one changes which rows match, so none may be deferred to a later pass.
+            // A filter applied after the match set is built would describe a different set than the
+            // researcher is looking at, silently.
             sql = """
                 \(matchCTE)
                 INSERT INTO temp.facet_mset(docrowid)
@@ -2583,14 +2662,7 @@ public actor IndexingPipeline {
                 """
             binds = matchBinds + filterBinds
         }
-
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        for (i, bind) in binds.enumerated() {
-            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
-        }
-        guard try auxStep(stmt) || true else { return 0 }
-        return try scalar("SELECT COUNT(*) FROM temp.facet_mset")
+        return (sql, binds)
     }
 
     /// Runs a facet aggregate, returning at most `limit` buckets.
@@ -2697,6 +2769,59 @@ public actor IndexingPipeline {
     /// same" is a claim about SQLite's join and ordering behaviour that deserves an equivalence
     /// test rather than a reviewer's eye — particularly for ties, where the two shapes could
     /// legitimately disagree if the rewrite did not carry an explicit ordinal.
+    /// The query plan of the statement `materializeMatchSet` really runs.
+    ///
+    /// Not used by the app. Output parity cannot detect the dropped joins being re-added — the
+    /// answer is identical either way — so the plan is the only mechanical guard on the
+    /// optimisation itself.
+    func materializeMatchSetPlanForTesting(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters,
+        joinedMaterializationForParity: Bool = false
+    ) throws -> String {
+        guard let (sql, _) = try Self.materializeMatchSetSQL(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            joinedMaterializationForParity: joinedMaterializationForParity)
+        else { return "" }
+        // The statement is an INSERT into the temp table, so the table has to exist for SQLite to
+        // parse it — creating it here keeps the explained SQL byte-identical to the one that runs.
+        try auxExec("DROP TABLE IF EXISTS temp.facet_mset")
+        try auxExec("CREATE TEMP TABLE facet_mset (docrowid INTEGER PRIMARY KEY)")
+        defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
+        return try queryPlanForTesting(sql)
+    }
+
+    /// The pre-optimisation facet materialisation, kept solely so a test can assert the optimised
+    /// one produces identical facets.
+    ///
+    /// Not used by the app. "Dropping these joins cannot change the answer" is a claim about
+    /// SQLite's external-content invariants, and a claim like that is worth asserting against the
+    /// real emitter rather than against a reviewer's reading. Do not delete as dead code.
+    func resultSetFacetsJoinedMaterializationForTesting(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        request: FacetRequest
+    ) throws -> ResultSetFacets {
+        try resultSetFacets(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                            filters: filters, request: request,
+                            joinedMaterializationForParity: true)
+    }
+
+    /// The pre-optimisation shape behind the filter sheet's My Tags counts. See
+    /// ``resultSetFacetsJoinedMaterializationForTesting(corpusMatch:userContentMatch:filters:request:)``
+    /// — this is the second production caller of the same materialisation, and it is here so the
+    /// optimisation is not half-tested.
+    func userTagCountsJoinedMaterializationForTesting(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        tagIds: [String]
+    ) throws -> [String: Int] {
+        try userTagCounts(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                          filters: filters, tagIds: tagIds,
+                          joinedMaterializationForParity: true)
+    }
+
     func searchDocumentsSinglePhaseForTesting(
         corpusMatch: String?,
         userContentMatch: String?,
