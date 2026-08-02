@@ -460,3 +460,99 @@ struct SettingsNavRow: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+// MARK: - IndexCompaction
+
+/// Whether to offer compacting the search index, and what to say about it.
+///
+/// SQLite does not return deleted pages to the filesystem — they go on a freelist and wait to be
+/// reused — so the index file can be substantially larger than the data in it. Reindexing is the
+/// main producer: it deletes and reinserts every row for a volume, and nothing on that path
+/// compacts afterwards. Measured on the author's 552-volume store: **6.29 GiB on disk, 2.75 GiB
+/// live, 3.53 GiB reclaimable.**
+///
+/// The decision lives here, in one shared place, rather than in either platform's storage hub.
+/// This app has a documented history of a control shipping to one platform and not the other
+/// (#617 hid a collection toggle from every Mac user), and a hub-local `if` would be exactly that
+/// shape again.
+///
+/// Pure value logic with no SwiftUI, so every branch — including the two that decline — is
+/// unit-testable without a store, a device, or a gigabyte of disk.
+///
+/// Version history:
+///   1.0 — build 37: initial implementation
+enum IndexCompaction {
+
+    /// Below this, compacting is not worth a progress sheet and an exclusive write lock.
+    ///
+    /// A freelist of a few megabytes is ordinary SQLite behaviour, not a problem to solve, and an
+    /// offer that appears permanently teaches the reader to ignore it.
+    static let minimumWorthwhileBytes = 200 * 1024 * 1024
+
+    /// Headroom above the live size before compaction is offered.
+    ///
+    /// `VACUUM` writes a fully-packed copy of the database **before** replacing the original, so
+    /// it transiently needs free space of roughly the live size. The margin covers the WAL and the
+    /// fact that free space measured a moment ago is not free space now.
+    static let freeSpaceSafetyMargin = 1.15
+
+    /// What the storage hub should do about compaction right now.
+    enum Availability: Equatable {
+
+        /// Nothing worth reclaiming — do not show the control at all.
+        case notWorthwhile
+
+        /// Worth reclaiming, but there is not enough room to do it safely.
+        ///
+        /// Shown rather than hidden: a reader whose index is half wasted space should learn that,
+        /// and learn what would let them fix it, instead of being shown nothing.
+        case insufficientSpace(reclaimable: Int, required: Int, available: Int)
+
+        /// Offer it.
+        case available(reclaimable: Int, fraction: Double)
+    }
+
+    /// Decides whether to offer compaction.
+    ///
+    /// - Parameters:
+    ///   - statistics: From `IndexingPipeline.indexPageStatistics()`. `nil` (the pragmas could not
+    ///     be read) declines rather than guessing — an offer that fails is worse than no offer.
+    ///   - availableBytes: Free space on the volume holding the index; `nil` also declines.
+    static func availability(statistics: IndexPageStatistics?, availableBytes: Int?) -> Availability {
+        guard let statistics, statistics.reclaimableBytes >= minimumWorthwhileBytes else {
+            return .notWorthwhile
+        }
+        let required = Int(Double(statistics.liveBytes) * freeSpaceSafetyMargin)
+        guard let availableBytes, availableBytes >= required else {
+            return .insufficientSpace(reclaimable: statistics.reclaimableBytes,
+                                      required: required,
+                                      available: availableBytes ?? 0)
+        }
+        return .available(reclaimable: statistics.reclaimableBytes,
+                          fraction: statistics.reclaimableFraction)
+    }
+
+    /// The line under the index size, or `nil` when there is nothing to say.
+    ///
+    /// Deliberately states the reclaimable figure even when the space to act on it is missing —
+    /// that is the case where the number explains the most.
+    static func subtitle(for availability: Availability) -> String? {
+        switch availability {
+        case .notWorthwhile:
+            return nil
+        case .insufficientSpace(let reclaimable, let required, _):
+            return String(format: String(localized: "settings.storage.compact.blocked %@ %@",
+                                         defaultValue: "%@ could be reclaimed, but compacting needs about %@ of free space first."),
+                          formatted(reclaimable), formatted(required))
+        case .available(let reclaimable, let fraction):
+            return String(format: String(localized: "settings.storage.compact.available %@ %lld",
+                                         defaultValue: "%@ of this is free space left by reindexing — %lld%% of the file."),
+                          formatted(reclaimable), Int64((fraction * 100).rounded()))
+        }
+    }
+
+    /// Byte formatting matching the rest of the storage hub.
+    private static func formatted(_ bytes: Int) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+}

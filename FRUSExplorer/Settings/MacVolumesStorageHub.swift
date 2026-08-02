@@ -88,6 +88,18 @@ struct MacVolumesStorageHub: View {
     @State private var indexedVolumeIds: Set<String> = []
     /// The storage measurement; `nil` until the first `loadReport()` completes.
     @State private var storageReport: StorageReport? = nil
+    /// The live-versus-reclaimable split of the index file, refreshed with the storage report.
+    @State private var indexPages: IndexPageStatistics? = nil
+    /// Free space on the volume holding the index, for the compaction precondition.
+    @State private var availableBytes: Int? = nil
+    /// Set while VACUUM holds its exclusive write lock.
+    @State private var isCompacting = false
+    /// A failed compaction's message. The Mac hub has no shared error surface, so this mirrors
+    /// `spotlightRebuildError` rather than inventing one.
+    @State private var compactionError: String? = nil
+    /// What the last compaction reclaimed, so the row can confirm it did something.
+    @State private var compactedBytes: Int? = nil
+
 
     // MARK: - Indexing state
 
@@ -228,6 +240,7 @@ struct MacVolumesStorageHub: View {
                     VStack(alignment: .leading, spacing: 6) {
                         SettingsUsageBar(breakdown: usageBreakdown)
                         SettingsUsageLegend(breakdown: usageBreakdown)
+                        compactionRow
                     }
                 },
                 action: { EmptyView() }
@@ -820,9 +833,107 @@ struct MacVolumesStorageHub: View {
     /// `indexDirectory:` is not optional in practice — without it the parameter defaults to `nil`
     /// and `totalIndexBytes` comes back 0, which silently reports the largest thing on disk as
     /// weighing nothing.
+    /// The compaction offer, under the usage bar.
+    ///
+    /// Renders nothing when there is little to reclaim, states the figure when there is but the
+    /// disk cannot take it, and offers the action when it can. The shared `IndexCompaction` rule
+    /// decides which — both platforms render the same three cases from the same decision, which is
+    /// the point of putting it in one place.
+    @ViewBuilder
+    private var compactionRow: some View {
+        if let subtitle = IndexCompaction.subtitle(for: compactionAvailability) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if case .available = compactionAvailability {
+                    HStack(spacing: 8) {
+                        Button {
+                            Task { await compactIndex() }
+                        } label: {
+                            Label(String(localized: "settings.storage.compact.action",
+                                         defaultValue: "Compact Database"),
+                                  systemImage: "arrow.down.right.and.arrow.up.left")
+                        }
+                        .disabled(isCompacting)
+                        #if os(macOS)
+                        .buttonStyle(.link)
+                        #endif
+                        if isCompacting { ProgressView().controlSize(.small) }
+                    }
+                    Text(String(localized: "settings.storage.compact.caveat",
+                                defaultValue: "Rewrites the index to give the free space back. Searching is unavailable while it runs — usually a few seconds, longer on a large library. Nothing you have written is affected."))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.top, 4)
+        }
+        if let compactedBytes {
+            Text(String(format: String(localized: "settings.storage.compact.done %@",
+                                       defaultValue: "Reclaimed %@."),
+                        ByteCountFormatter.string(fromByteCount: Int64(compactedBytes), countStyle: .file)))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Whether to offer compacting the index, decided by the shared `IndexCompaction` rule.
+    private var compactionAvailability: IndexCompaction.Availability {
+        IndexCompaction.availability(statistics: indexPages, availableBytes: availableBytes)
+    }
+
+    /// Reads the page split and the free space behind the compaction offer.
+    ///
+    /// Both are cheap: three pragmas and one `URLResourceValues` read. Refreshed with the storage
+    /// report so the offer cannot describe a file that has since changed.
+    private func refreshIndexPages() async {
+        guard let pipeline = appState.indexingPipeline else {
+            indexPages = nil
+            return
+        }
+        indexPages = try? await pipeline.indexPageStatistics()
+        // `volumeAvailableCapacityForImportantUsage` is the figure that accounts for purgeable
+        // space, which is what a large write can actually claim.
+        if let directory = appState.indexDirectory,
+           let values = try? directory.resourceValues(
+               forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
+           let capacity = values.volumeAvailableCapacityForImportantUsage {
+            availableBytes = Int(capacity)
+        } else {
+            availableBytes = nil
+        }
+    }
+
+    /// Compacts the index, then rebuilds what the compaction invalidated.
+    ///
+    /// The `refreshReadOnlyStores()` call is not optional and not cosmetic: VACUUM replaces the
+    /// database file underneath the boot-once cross-reference / person-mention / page-range
+    /// connections, and without recreating them they read empty for the rest of the session
+    /// (#275). The bulk-removal path already does this; this one must too.
+    private func compactIndex() async {
+        guard let pipeline = appState.indexingPipeline, !isCompacting else { return }
+        let before = indexPages?.fileBytes
+        isCompacting = true
+        defer { isCompacting = false }
+        do {
+            try await pipeline.vacuumIndex()
+        } catch {
+            compactionError = error.localizedDescription
+            return
+        }
+        appState.refreshReadOnlyStores()
+        await refreshIndexPages()
+        if let before, let after = indexPages?.fileBytes, before > after {
+            compactedBytes = before - after
+        }
+        await loadReport()
+    }
+
     private func loadReport() async {
         guard let dm = appState.downloadManager else { return }
         storageReport = try? await dm.storageReport(indexDirectory: appState.indexDirectory)
+        await refreshIndexPages()
         refreshSnapshots()
     }
 

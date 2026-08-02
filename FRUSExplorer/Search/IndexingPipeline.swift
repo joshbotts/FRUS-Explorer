@@ -1481,6 +1481,31 @@ public actor IndexingPipeline {
         ))
     }
 
+    /// How much of the index file is live data and how much is reclaimable free space.
+    ///
+    /// SQLite never returns pages to the filesystem on its own: deleted rows go on an internal
+    /// freelist and are reused by later inserts, so the file never shrinks. `auto_vacuum` is off
+    /// (the default), which is the right choice here — it would add a page-move cost to every
+    /// delete — but it means the file size reported by the filesystem is not the size of the data.
+    ///
+    /// The gap is not small in practice. Reindexing deletes and reinserts every row for a volume,
+    /// and nothing on that path compacts afterwards; a store that has been reindexed a few times
+    /// can be more than half freelist. Measured on the author's 552-volume store, 2026-08-02:
+    /// 6.29 GiB on disk, 2.75 GiB live, **3.53 GiB (56.2%) reclaimable**.
+    ///
+    /// - Returns: `nil` when the pragmas cannot be read; otherwise the three figures, where
+    ///   `fileBytes == liveBytes + reclaimableBytes`.
+    public func indexPageStatistics() throws -> IndexPageStatistics? {
+        guard let pageSize = try? scalar("PRAGMA page_size"),
+              let pageCount = try? scalar("PRAGMA page_count"),
+              let freeCount = try? scalar("PRAGMA freelist_count"),
+              pageSize > 0, pageCount > 0
+        else { return nil }
+        return IndexPageStatistics(
+            fileBytes: pageCount * pageSize,
+            reclaimableBytes: max(0, min(freeCount, pageCount)) * pageSize)
+    }
+
     /// Runs `VACUUM` on the auxiliary SQLite database to reclaim pages freed by
     /// `removeVolume()` calls and shrink the `frus.db` file on disk.
     ///
@@ -1491,6 +1516,20 @@ public actor IndexingPipeline {
     /// The FTS5 store (`frus.db`) stores both the FTS5 tables and the auxiliary tables
     /// (cross_references, page_ranges, etc.) in the same file. A single VACUUM call
     /// on `auxDb` covers the entire file.
+    ///
+    /// ## Two things a caller must handle
+    /// **Free space.** VACUUM writes a fully-packed copy of the database *before* replacing the
+    /// original, so it transiently needs free space of roughly the live size — 2.75 GiB on a
+    /// full-corpus store. Check before offering it; failing part-way is a worse experience than
+    /// declining up front.
+    ///
+    /// **Open read-only connections.** VACUUM replaces the file underneath them, so the
+    /// boot-once cross-reference / person-mention / page-range stores must be recreated
+    /// afterwards (`AppState.refreshReadOnlyStores`) or they read empty for the rest of the
+    /// session — the #275 trap. The bulk-removal path already does this; any new caller must too.
+    ///
+    /// Cost, measured on an FTS5 database of the same page size: **0.38 GiB of live data per
+    /// second** on an M-series Mac, so about 7 s for a full-corpus store. Slower on device.
     public func vacuumIndex() async throws {
         let stmt = try auxPrepare("VACUUM")
         defer { sqlite3_finalize(stmt) }
@@ -7477,6 +7516,37 @@ public struct IndexedSearchRow: Sendable {
 
 /// Structured filters applied inside the SQL of
 /// `IndexingPipeline.searchDocuments` / `searchDocumentsCount`.
+/// The live-versus-reclaimable split of the search index file.
+///
+/// Produced by ``IndexingPipeline/indexPageStatistics()``. The distinction matters because the
+/// filesystem reports the *file*, which after a few reindexes can be substantially larger than the
+/// data inside it — see that method for the measured example.
+///
+/// Version history:
+///   1.0 — build 37: initial implementation
+public struct IndexPageStatistics: Sendable, Equatable {
+
+    /// The whole index file, as the filesystem sees it.
+    public let fileBytes: Int
+
+    /// Pages on SQLite's freelist — space a compaction would return to the filesystem.
+    public let reclaimableBytes: Int
+
+    /// Pages holding actual data.
+    public var liveBytes: Int { max(0, fileBytes - reclaimableBytes) }
+
+    /// Reclaimable space as a fraction of the file, `0...1`. Zero when the file is empty.
+    public var reclaimableFraction: Double {
+        fileBytes > 0 ? Double(reclaimableBytes) / Double(fileBytes) : 0
+    }
+
+    /// Creates the split.
+    public init(fileBytes: Int, reclaimableBytes: Int) {
+        self.fileBytes = fileBytes
+        self.reclaimableBytes = min(max(0, reclaimableBytes), max(0, fileBytes))
+    }
+}
+
 public struct SearchSQLFilters: Sendable {
     /// Restrict results to these volume IDs. `nil` (or empty) = all volumes.
     public var volumeIds: [String]?

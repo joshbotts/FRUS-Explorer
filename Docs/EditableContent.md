@@ -2639,3 +2639,51 @@ targets must build and the full test suite must pass before a change lands. Upda
 `FRUS-API.openapi.yaml` when you touch a stored or queryable data surface — that one is
 mechanically enforced.
 <!-- END SOURCE: repo.readme -->
+
+---
+
+### 7.11 Compacting the search index
+
+*Source: `FRUSExplorer/Settings/SettingsComponents.swift` (the shared `IndexCompaction` rule),
+rendered identically by both storage hubs.*
+
+*SQLite never returns deleted pages to the filesystem — they go on a freelist and wait to be reused —
+so the index file can be much larger than the data in it. Reindexing is the main producer. Measured
+on the author's 552-volume store: 6.29 GiB on disk, 2.75 GiB live, 3.53 GiB reclaimable.*
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | key: settings.storage.compact.available -->
+
+*Interpolated with the reclaimable size and its percentage of the file.*
+
+%@ of this is free space left by reindexing — %lld%% of the file.
+
+<!-- END SOURCE: settings.storage.compact.available -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | key: settings.storage.compact.blocked -->
+
+*Shown when there is something worth reclaiming but not enough free disk to do it safely. Stated
+rather than hidden: this is the case where the number explains the most.*
+
+%@ could be reclaimed, but compacting needs about %@ of free space first.
+
+<!-- END SOURCE: settings.storage.compact.blocked -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
+
+Compact Database
+
+<!-- END SOURCE: settings.storage.compact.action -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
+
+Rewrites the index to give the free space back. Searching is unavailable while it runs — usually a few seconds, longer on a large library. Nothing you have written is affected.
+
+<!-- END SOURCE: settings.storage.compact.caveat -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | key: settings.storage.compact.done -->
+
+*Interpolated with the reclaimed size.*
+
+Reclaimed %@.
+
+<!-- END SOURCE: settings.storage.compact.done -->

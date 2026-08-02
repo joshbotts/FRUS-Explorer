@@ -1295,6 +1295,17 @@ and index, and a line saying how many volumes you have and whether anything need
   re-parses the whole index. None of the three affects notes, highlights or tags.
 - **Advanced** — index health and an on-demand **Check Integrity**, and the Spotlight index.
 
+**Compacting the index.** The search index does not shrink on its own. When volumes are reindexed the
+old rows are freed inside the database file but the file keeps its size, so after a few reindexes a
+large part of it can be empty space. Where that is worth reclaiming, the usage bar says so — *"3.5 GB
+of this is free space left by reindexing"* — and offers **Compact Database**.
+
+Compacting rewrites the index to give the space back. Searching is unavailable while it runs — usually
+a few seconds, longer on a large library — and nothing you have written is touched. The offer appears
+only when there is enough free space to do it safely, because the rewrite needs room for a second copy
+before it can replace the first; where there is not, the pane says how much would be needed rather than
+hiding the number.
+
 `[SCREENSHOT: Settings → Volumes & Storage — the storage bar, Downloaded Volumes, Keeping Current, and Storage & Index]`
 
 ### 16.2 Connections
