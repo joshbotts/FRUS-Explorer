@@ -1,14 +1,213 @@
 # Document-Level Lexical Similarity Neighbors — Feasibility & Value Assessment
 
-**Version**: 2.0 (revised 2026-08-01)
-**Date**: 2026-07-27, revised after the Q&CA wave closed
-**Status**: **Phase A NOT recommended as specified.** The v1.0 verdict — "feasible, and valuable,
-in a precision-first shape" — is withdrawn on an argument v1.0 never made. Two smaller pieces
-survive; see §1a.
+**Version**: 3.0 (revised 2026-08-02 — **measured**)
+**Date**: 2026-07-27; v2.0 after the Q&CA wave; v3.0 after the L-0 measurement was finally run
+**Status**: **Withdrawn as an artifact, approved as a query.** The feature is worth building. It is
+not worth bundling. See §0.
 
 ---
 
-## 1a. Revised verdict (2026-08-01)
+## 0. Verdict after measurement (2026-08-02)
+
+**v1.0 said build a bundled index. v2.0 withdrew it on a small-library argument. Both were reasoning
+about a curve nobody had measured. It has now been measured, over the whole corpus, and it says
+something neither anticipated: the artifact is dominated by a free query.**
+
+### 0.1 What was measured, and how
+
+Not a slice — the **entire population**. 316,839 documents of `document_cache.body_text` from the
+owner's live index (read-only, no `immutable=1`), 552 volumes, 107 subseries, tokenised with the
+app's own `WordCloudKit.WordCloudMultiLensTokenizer` under `WordCloudTuning.standard` — the same
+configuration `CloudVectorsRunner` ships. 1,005 s wall on 10 workers; 222,031 distinct topic terms;
+28,678,012 postings. Then the pipeline this document specifies in §5: df → `(1+ln tf)·ln(N/df)` →
+per-document top-T → L2 normalise → inverted index → **exact** cosine on every candidate pair.
+
+Two independent accumulators agreed exactly, and `cos(d,d)` over every non-empty document landed in
+`[0.99999875, 1.0000023]`.
+
+### 0.2 The curve
+
+| τ | pairs | coverage | MB (raw) | cross-volume |
+|---|---|---|---|---|
+| 0.30 | 10,818,415 | 96.0% | 209.26 | 76.8% |
+| 0.40 | 3,604,793 | 83.0% | 69.73 | 70.5% |
+| **0.50** | **1,302,450** | **61.2%** | **25.19** | **65.8%** |
+| 0.60 | 486,838 | 38.2% | 9.42 | 62.5% |
+| 0.70 | 181,774 | 20.8% | 3.52 | 61.0% |
+| 0.90 | 23,512 | 4.0% | 0.45 | 67.0% |
+
+With the per-document cap this document specifies (`k ≤ 5`), the best point inside its own ≤3.5 MB
+bar is **τ = 0.50, k = 1 — 151,342 edges, 2.93 MiB raw, ~0.90 MB compressed, 61.2% coverage.**
+
+**So the artifact this document budgeted does clear its own gate, by 4×.** It is not killed by its
+size. It is killed by what it is competing with.
+
+### 0.3 Three structural findings that reshape the question
+
+1. **Coverage is a pure function of τ. `k` buys depth, not reach** — 61.2043% at every `k` from 1 to
+   20, because a document is covered iff its single best neighbour clears τ. "Optimal size" is a
+   **(τ, k) pair**; quoting one number conflates the feature's reach with its depth.
+2. **The df ceiling is the real control, and it runs backwards.** Tightening 5,000 → 2,000 nearly
+   *doubles* retained pairs (1,302,450 → 2,337,842 at τ=0.50), because shorter vectors inflate
+   cosine. It also swings cross-volume share across 73.7% / 65.8% / 50.5% at ceilings 2,000 / 5,000 /
+   20,000. **Any quoted size is meaningless without its ceiling**, and this document treats the
+   ceiling as hygiene.
+3. **Per-document top-T is inert.** T = 32 / 64 / 128 move the artifact by 0.8%, because the mean
+   pruned vector is **23.4 terms** and the cap never binds. §5.2's tuning discussion is wasted effort.
+
+### 0.4 §3's ≥80% cross-volume reservation is unachievable
+
+The raw distribution never reaches it: **76.8% at τ=0.30, 65.8% at 0.50, 61.0% at 0.70.** A design
+constraint this document treats as a dial is not attainable from the data — and per finding 2 above,
+the one parameter that *does* move it is the df ceiling, which nobody flagged as load-bearing.
+
+### 0.5 The L-0 gate in §1a was unrunnable as specified
+
+It said: run Pass 1 + Pass 2 **on one subseries slice**, then read the same-volume / same-subseries /
+cross-subseries split. A single-subseries population **cannot contain a cross-subseries pair** — that
+column reads 0.0000% by construction, and cross-subseries pairs are 60.0% of all retained pairs
+corpus-wide. The gate would have measured zero on its most important column and been read as a
+finding.
+
+### 0.6 Why no bundle: it is dominated, not too large
+
+| | bundled artifact (τ=0.50, k=1) | on demand from FTS5 |
+|---|---|---|
+| bundle cost | ~0.90 MB, paid by **every** user | **0 bytes** |
+| neighbours | **one**, for 61.2% of documents | full 121-candidate pool, essentially every document |
+| latency | decode | p50 **0.039 s**, p90 0.079 s, max 0.199 s (49 anchors, macOS) |
+| staleness | frozen at ship | none — FTS rows follow the volume |
+| small library | thin below ~40 volumes | **identical at 5 volumes and 552** |
+
+The retrieval set *is* the library, so the majority/minority trade dissolves entirely — there is no
+minority to subsidise. And the comparison that matters for a full-corpus user was never the 12 MB
+bundle: they are already carrying **3.11 GiB of volumes and a 6.29 GiB index**. Bundle megabytes were
+the wrong denominator throughout.
+
+**There is no τ at which the artifact wins.**
+
+### 0.7 The value is real, and concentrated where the quality is worst
+
+**46,234 documents — 14.6% of the corpus — have no source note *and* no cross-reference candidate**
+(re-derived independently against the live DB). On a fully indexed 552-volume library they get an
+**empty** Related Documents list today. Novelty is 100% for them by construction and 87% for anchors
+with 1–5 existing candidates. This axis is not a re-finder; its yield is inversely correlated with
+what already ships.
+
+But pre-1900 is **98.2% zero-candidate** — the strongest coverage argument — and it is the era of
+formulaic despatches. Four hand-inspected pre-1900 anchors, mitigations applied:
+
+- `frus1861/d1` "Schedule A" — **garbage**. A payroll table; retrieved the Pious Fund arbitration and
+  a 1945 Winant telegram. **It passed both proposed admission gates**: plentiful high-IDF terms, strong
+  score. This is a document-*type* failure, not a thin-vector one.
+- `frus1861/d248` — moderate.
+- `frus1862/d105` — good, but 4 of 6 rows are "X to Mr. Seward".
+- `frus1862/d193` — **genuinely good**: retrieved the Confederate commerce-raider thread and three
+  Harvey-from-Lisbon despatches about raiders in Portuguese waters. A real connection no archival or
+  citation axis can reach.
+
+1 garbage / 1 moderate / 2 good, with same-correspondent clustering visible **after** mitigation.
+**Precision is unproven and must be gated before any UI.**
+
+### 0.8 The reprint tier — §1a's surviving recommendation — fails inspection
+
+v2.0 said the score ≥95 pairs were "the better feature". Measured: **13,855 pairs score exactly 1.00**,
+dominated by short telegrams sharing a correspondent's surname across decades, Ed2 re-issues, and
+duplicated front matter. Score also correlates **inversely with document length** (mean `body_text`
+falls 9,417 B → 1,756 B as best-neighbour score rises 0.25 → 1.00) — the classic cosine artifact.
+
+If an "also printed as…" pointer is wanted, it is a **shingle / text-identity index with a length
+floor**, not a cosine threshold. §1a's recommendation to keep it is withdrawn.
+
+### 0.9 Corrections to earlier reasoning in this document
+
+- **v2.0's withdrawal was right in conclusion, wrong in reasoning.** Its arithmetic — the display-row
+  fence × 40/552 — does not hold: at full corpus the fence binds on **0** documents. Dropping the
+  unachievable ≥80% reservation lifts a 40-volume user above the 15% floor. The small-library
+  argument does not kill this feature; being dominated by a free query does.
+- **"A seventh axis would compete for the 120-candidate pool" is false.** `RelatedDocumentsEngine`
+  passes the same `candidateFetchLimit` to *each* generator and unions the outputs; the pool grows to
+  N × 120. The real costs are display rows, scorer batch size, and `ProjectLeadsService`'s
+  `seedCap = 40`.
+- **`logDampedMultiplicity(121)` does not exist.** The corpus maximum is **48**, and 92.63% of pairs
+  are 1×; the shipped `CrossReferenceGenerator` doc comment has said so since 2026-08-02. Correct
+  121 → 48 wherever this document reasons from it.
+
+### 0.10 Sequencing: two incumbent fixes come first
+
+Both are cheaper than the axis, both shrink the population that justifies it, and until they land any
+novelty measurement is partly measuring a broken incumbent.
+
+1. **#645 at all seven sites** — `IndexingPipeline.swift` 6558, 6611, 6660, 6750, 6852, 6890 **and
+   7103**. (Verified: seven, not the six both designs listed. A fix that patches six leaves one path
+   still truncating alphabetically and no test would notice.) **60,252 documents** sit in a
+   `decimal_class` group larger than the 120-slot pool, plus 6,841 in lot groups — ~21% of the corpus
+   has its archival pool chosen by alphabetical accident.
+2. **Four missing route arms** at the switch around `IndexingPipeline.swift:5998-6026`: RG-59-without-lot
+   is excluded by `where rg != "59"`, the entire pre-1910 "File No. NNNN" numerical file by
+   `where fileId.contains(".")`, there is no `.cfpfFile` arm at all, and `default:` returns empty.
+   Reaches ~26k documents for a switch-arm change. **Two of the hand-verified "lexical wins" land in
+   exactly these buckets** — the axis would otherwise be credited for a routing gap.
+
+Then **re-measure the zero-candidate population.** The 46,234 hard floor is what no routing fix can
+touch; the remainder is what steps 1–2 shrink. *That* number, not any figure in this document, is the
+axis's addressable market.
+
+### 0.11 Kill criteria
+
+- **Precision, era-stratified, blind, 100 rows, pre-1900 as its own bucket.** Kill the UI if overall
+  <60% are judged "a historian would want this", **or if pre-1900 alone fails while the rest passes** —
+  that is the population the feature exists for.
+- **Structural documents.** Measure what share of the zero-candidate population is tables, schedules,
+  indexes and front matter. The "Schedule A" case passed both proposed gates; hard-exclude by type if
+  that share exceeds ~20%.
+- **On-device latency.** Every timing here is macOS, 32 GB, warm cache; the app runs at
+  `cache_size -8000` and `mmap_size 128 MB`. If p95 on the oldest supported iPhone at full corpus
+  exceeds ~1 s, **the bundle question genuinely reopens** — this is the one measurement that changes
+  the verdict.
+- **Same-volume collapse.** The 121-deep pool is 76.4% cross-volume, but the unfiltered lexical
+  **top-5** is 61.1% same-volume, and the top-5 is what a reader sees.
+- **A negative that must NOT kill it:** "the lexical row rarely wins rank 1" (0 of 292 simulated
+  anchors at weight 0.7). That is the archival axis's constant 1.0 (#644), not weakness of the signal.
+  Where the axis matters most, its rows are the *entire* list. Do not respond by raising the weight.
+
+### 0.12 If built: shape
+
+A **scorer**, not a generator — scorer scores are used raw, so the axis never touches the
+max-normalisation defect (#643) and never enters the generator union. Add `isSelfNormalising` to
+`SimilarityAxis` and one branch in the ranker; a `bm25(candidate)/bm25(anchor-vs-self)` ratio is
+already absolute in `[0,1]`, and normalising it destroys the information the query paid for. Both
+shipped axes stay byte-identical.
+
+Chip: `case sharedTerms([String])`, obeying the rule #643 established — generator axes state
+evidence, scorer axes state a score. It is the only chip that makes the axis self-diagnosing: a
+reader who sees *shares: schuyler* knows instantly the row is a letterhead match. Recover display
+forms from the anchor's own `body_text`; **do not ship stems** (`subjug`, `rebelli`, `kearsarg`).
+This chip is free on demand — the terms *are* the query — and would have cost +54–86% on an artifact.
+
+Four traps to write into the code: column-restrict the MATCH to `body_text` (the FTS table indexes
+`header`, `dateline`, `source_note` **and** `body_text`, so an open MATCH partly re-derives the
+archival axis — do it for correctness, **not** speed: measured 0.0506 s restricted vs 0.0490 s
+unrestricted); never push `scopeVolumeIds` into SQL (`volume_id` is unindexed there); a df ceiling is
+a **correctness** requirement, not a knob (a pathological anchor costs 2.899 s without one); and
+exclude the anchor, which ranks in its own top-11 every time.
+
+### 0.13 Unrelated finding, larger than anything above
+
+**3.53 GiB of the owner's 6.29 GiB `frus.db` is freelist** left by reindexes — 56.2%, more than the
+entire 3.11 GiB volumes directory. Verified directly:
+`pragma_freelist_count() × pragma_page_size()`. Volumes & Storage reports file size, not live pages.
+Offering a VACUUM is a bigger, cheaper storage win than any artifact discussed in this document, and
+it belongs to a different workstream.
+
+---
+
+## 1a. Revised verdict (2026-08-01) — *historical; see §0*
+
+> **Retained for the record, not for action.** Its conclusion (do not build the artifact) survives;
+> its reasoning does not. The display-row fence it rests on binds on **0** documents at full corpus,
+> and the reprint index it recommends keeping failed inspection (§0.8). Read §0 instead.
+
 
 This revision was prompted by two questions: does the plan change now that D-1 has been demoted
 (PR #624), and does the shipped Q&CA wave open anything to fold in?
@@ -230,6 +429,11 @@ into the axis model because they are a true generator.
 
 ## 3. The proposed artifact
 
+> **Superseded by §0** (2026-08-02). The ≥80% cross-volume reservation
+> specified here is unachievable — the raw distribution peaks at 76.8%. Read this section as the
+> design that was measured, not as the design to build.
+
+
 **Grain**: unordered document pairs `(docA, docB, score)`, mirrored into per-document adjacency
 at load. **Not** top-k-for-everyone: only pairs above a quality threshold τ, per-document cap
 k = 5, with the pair budget (~100–150k pairs) as the binding constraint and τ emergent.
@@ -271,6 +475,11 @@ pairs both protects the k slots and creates an optional future "also printed as�
 
 ## 4. The size model (why full k-NN dies and thresholded pairs live)
 
+> **Superseded by §0.2** (2026-08-02). The estimates below were sound — the measured curve puts the
+> budgeted artifact at 2.93 MiB / 61.2% coverage, inside this section's own bar. The artifact is not
+> rejected on size. See §0.6 for why it is rejected anyway.
+
+
 Calibration: `cloud-vectors-volumes.json` = 1,291,267 B for 110,400 `[termIndex, count]`
 entries ≈ **11.7 B per compact int-pair entry**. A neighbor entry (`[volIdx, docOrd, score]`,
 docOrd up to 4 digits, score 2 digits) is ~13–15 B; a five-int pair record ~20–24 B.
@@ -297,6 +506,12 @@ finding, not a tolerance to widen.
 ---
 
 ## 5. Generation pipeline
+
+> **Measured, and partly superseded** (2026-08-02). The pipeline described here was implemented and
+> run over all 316,839 documents; §0.1 records the result. Two of its parameters behave differently
+> from what this section assumes — see §0.3: top-T is inert, and the df ceiling runs backwards and is
+> the real control.
+
 
 New SPM trio `LexicalNeighborsGeneratorCore` / `LexicalNeighborsGenerator` / tests, mirroring
 the CloudVectors layout. Env: `VOLUMES_DIR`, `MANIFEST`, `STOPWORDS`, `LEXICONS`, `OUTPUT`,
