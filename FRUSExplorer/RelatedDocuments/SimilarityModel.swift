@@ -136,6 +136,33 @@ struct AxisWeights: Codable, Hashable, Sendable {
     }
 }
 
+// MARK: - WhyRelatedChip
+
+/// What one "why related" chip says.
+///
+/// A percentage is the right thing to show for a **scorer** axis, whose score is an absolute
+/// `[0, 1]` measure. It is misleading for a **generator** axis, whose score is normalised by that
+/// anchor's own strongest candidate — so identical evidence reads differently depending on the
+/// company it keeps, and a lone candidate always reads 100%.
+///
+/// Measured on the owner's index: `archivalProvenance` emits a constant strength, so its chip has
+/// read exactly "100%" on every row it has ever rendered — it carries no information at all.
+/// `crossReference` reads 100% for the 54.98% of anchors that have one candidate, while an
+/// identical single citation reads as low as 21% beside a 48×-cited neighbour.
+///
+/// So generator axes state their evidence and scorer axes state their score.
+///
+/// Version history:
+///   1.0 — cross-reference chip honesty: initial implementation
+enum WhyRelatedChip: Hashable, Sendable {
+    /// A cross-reference axis, stating the citation multiplicity it actually found.
+    case citations(Int)
+    /// A generator axis whose evidence is binary — the chip states presence, not a degree.
+    case presence
+    /// A scorer axis, whose `[0, 1]` score is an absolute measure and rounds to a percent.
+    case percent(Int)
+}
+
 // MARK: - Candidate + result value types
 
 /// The display fields for one related-document row, carried alongside the key so the list
@@ -169,11 +196,21 @@ struct GeneratedCandidate: Sendable {
     /// The generator's raw strength for this candidate (`≥ 0`), normalised per axis by the engine.
     let strength: Double
 
+    /// The countable evidence behind this candidate, when the axis has one worth stating — the
+    /// citation multiplicity for cross-references. `nil` where the evidence is binary (archival
+    /// adjacency) or where there is nothing countable to report.
+    ///
+    /// Carried separately from ``strength`` because strength is damped and then normalised, so by
+    /// the time the ranker is done the original count is unrecoverable — and the count is the thing
+    /// worth showing a researcher.
+    let evidenceCount: Int?
+
     /// Creates a generated candidate.
-    init(key: DocumentKey, record: CandidateRecord, strength: Double) {
+    init(key: DocumentKey, record: CandidateRecord, strength: Double, evidenceCount: Int? = nil) {
         self.key = key
         self.record = record
         self.strength = strength
+        self.evidenceCount = evidenceCount
     }
 }
 
@@ -186,8 +223,11 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     let record: CandidateRecord
     /// The weighted total proximity `Σ weight[axis] × axisScore[axis]`.
     let totalScore: Double
-    /// The nonzero per-axis contributions (post-weight `axisScore`, not the weighted product),
-    /// for the "why related" chips.
+    /// The nonzero per-axis contributions — the **pre-weight** `axisScore`, not the weighted
+    /// product — for the "why related" chips.
+    ///
+    /// A researcher who sets an axis to weight 0.1 still sees its chip at up to 100%: the chip
+    /// states how strong the signal is, not how much it influenced the ranking.
     let axisScores: [SimilarityAxis: Double]
     /// A short context snippet (on-device summary or a leading body excerpt), filled by the engine
     /// for the shown rows so a researcher can judge relevance (#362); `nil` when the document has no
@@ -195,11 +235,51 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     /// engine fills it post-rank.
     var snippet: String? = nil
 
+    /// Countable evidence per generator axis, filled by the engine after ranking — the same
+    /// non-designated-`var` shape as ``snippet``, and for the same reason: it keeps
+    /// `RelatedDocumentsRanker.rank` a pure function of its inputs, so the ranking itself is
+    /// provably unchanged by this being here.
+    var axisEvidence: [SimilarityAxis: Int] = [:]
+
     var id: DocumentKey { key }
     /// The related document's volume.
     var volumeId: String { key.volumeId }
     /// The related document's id.
     var documentId: String { key.documentId }
+
+    /// The "why related" chips, strongest first, in a **total** order.
+    ///
+    /// The tie-break is load-bearing rather than tidy. `axisScores` is a `Dictionary`, whose
+    /// iteration order is per-process hash-seeded, and `sorted(by:)` carries no stability
+    /// guarantee — so ties render in an order that can differ between launches. Ties are the common
+    /// case, not an edge case: archival is exactly 1.0 whenever it fires, the top cross-reference
+    /// candidate is exactly 1.0 for 88.38% of firing anchors, and date proximity is exactly 1.0 at
+    /// Δyear = 0. Falling back to the `allCases` index makes the order reproducible.
+    var whyRelatedChips: [(axis: SimilarityAxis, chip: WhyRelatedChip)] {
+        let order = SimilarityAxis.allCases
+        return axisScores
+            .sorted {
+                $0.value != $1.value
+                    ? $0.value > $1.value
+                    : (order.firstIndex(of: $0.key) ?? 0) < (order.firstIndex(of: $1.key) ?? 0)
+            }
+            .map { axis, score in
+                switch axis {
+                case .crossReference:
+                    // Falling back to a percent here would silently restore exactly the misleading
+                    // chip this exists to replace, so the absence is made loud in debug builds.
+                    if let count = axisEvidence[axis] { return (axis, .citations(count)) }
+                    #if DEBUG
+                    print("[RelatedDocumentRow] \(key.compositeString) scored on .crossReference with no evidence count")
+                    #endif
+                    return (axis, .percent(Int((score * 100).rounded())))
+                case .archivalProvenance:
+                    return (axis, .presence)
+                default:
+                    return (axis, .percent(Int((score * 100).rounded())))
+                }
+            }
+    }
 
     /// Creates a ranked row.
     init(key: DocumentKey, record: CandidateRecord, totalScore: Double,
@@ -279,11 +359,27 @@ enum ProximityMath {
         return Double(lhs.intersection(rhs).count) / Double(unionCount)
     }
 
-    /// Log damping for a citation multiplicity: `1 + ln(max(count, 1))` (#356). Maps `1×` → `1.0`
-    /// (so a single direct citation never drops below the floor) while compressing the heavy tail
-    /// (measured up to 121× → ~5.8), so one outlier can't crush an anchor's genuine single-citation
-    /// partners toward 0 once `RelatedDocumentsRanker` normalises the cross-reference axis by its max.
+    /// Log damping for a citation multiplicity: `1 + ln(max(count, 1))` (#356). Maps `1×` → `1.0`;
     /// `count ≤ 0` clamps to `1.0`.
+    ///
+    /// ## What it actually buys, measured
+    /// On the owner's 552-volume / 316,839-document index (2026-08-02; population = anchors that are
+    /// themselves indexed documents, 88,940 of them, over 180,504 distinct pairs) the largest pair
+    /// multiplicity is **48** and **92.63%** of pairs are 1×.
+    ///
+    /// At that 48× worst case the damping lifts a 1×-cited partner from `1/48 = 0.0208` to
+    /// `1/(1 + ln 48) = 0.2053` — a 9.85× rescue that *softens* the compression without removing it.
+    /// At the modal compressed case, one partner cited twice, every other partner is still cut 40.9%
+    /// to `1/(1 + ln 2) = 0.5906`.
+    ///
+    /// The compression is also rarer than the mechanism suggests: **88.38%** of cross-referenced
+    /// anchors have a divisor of exactly 1.0, so no damping happens at all for them.
+    ///
+    /// The previous version of this comment claimed a maximum of 121× and concluded that a lone
+    /// citation therefore "stays visible above the flat archival-provenance bulk". Neither survived
+    /// measurement: 121 is not the corpus maximum, and since `ArchivalProvenanceGenerator` emits a
+    /// constant 1.0 at the same default weight, a damped cross-reference value can at best **tie**
+    /// the archival bulk — never exceed it.
     static func logDampedMultiplicity(_ count: Int) -> Double {
         1 + log(Double(max(count, 1)))
     }

@@ -19,6 +19,13 @@ import Foundation
 /// archival adjacency is binary (a document either shares the archival key or doesn't), so the axis
 /// contributes uniformly and the *other* axes discriminate among the archival neighbours.
 ///
+/// **Engine-level consequence, worth stating because it is invisible from here.** Because every
+/// candidate's strength is the same constant, the ranker's per-axis max-normalisation
+/// (`RelatedDocumentsRanker.rank`, step 2) is the *identity map* on this axis: every archival
+/// candidate contributes a full `weight × 1.0` and the axis cannot discriminate among its own
+/// candidates at all. That is why the "why related" chip states presence rather than a percentage —
+/// a percentage here would have exactly one possible value.
+///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
 struct ArchivalProvenanceGenerator: SimilarityGenerator {
@@ -62,13 +69,18 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
 /// Wraps the bounded `CrossReferenceStore.relatedByCitation` ego query (document-target-filtered,
 /// both directions, indexed candidates only) — `O(ego edges)`, never a corpus scan (design §6.2).
 /// Strength is the citation multiplicity **log-damped** (`1 + ln(count)`, #356), so a document the
-/// anchor cites repeatedly still ranks above one it cites once, but a heavy-tailed outlier (measured
-/// up to 121× — usually an editorial note reproducing many telegrams) no longer compresses the
-/// anchor's genuine single-citation partners toward ~0 when the engine normalises the axis to
-/// `[0, 1]` by its max. `1 + ln` keeps a 1× citation at exactly 1.0 (never below the floor) while
-/// pulling the outlier from 121 down to ~5.8, so a lone direct citation stays visible above the
-/// flat archival-provenance bulk. Decision recorded in #356; the design owner chose log over √
-/// (gentler) and saturation (near-binary).
+/// anchor cites repeatedly still ranks above one it cites once, while a heavy-tailed outlier
+/// compresses the anchor's single-citation partners less than a raw count would. Decision recorded
+/// in #356; the design owner chose log over √ (gentler) and saturation (near-binary).
+///
+/// Measured on the owner's index (2026-08-02, over anchors that are themselves indexed documents):
+/// the largest pair multiplicity is **48**, not the 121 this comment previously claimed, and 92.63%
+/// of pairs are 1×. The worst pair is `frus1864p1/comp2` ↔ `frus1864p1/d147` — and `comp2` is
+/// headed "Index." with `is_editorial_note = 0`, so the old gloss "usually an editorial note
+/// reproducing many telegrams" was wrong too; it survives the target predicate only because its id
+/// is `comp2` rather than `in5`.
+///
+/// See ``ProximityMath/logDampedMultiplicity(_:)`` for what the damping is and is not worth.
 ///
 /// Co-citation (documents citing the same sources as the anchor) is a deliberate fast-follow — it
 /// needs a landmark cap so a heavily-cited shared target doesn't blow the bound — and is not included
@@ -106,7 +118,8 @@ struct CrossReferenceGenerator: SimilarityGenerator {
                     isEditorialNote: candidate.isEditorialNote),
                 // #356: log-damp the raw multiplicity so one outlier can't bury the anchor's real
                 // single-citation partners (see ProximityMath.logDampedMultiplicity).
-                strength: ProximityMath.logDampedMultiplicity(candidate.citationCount))
+                strength: ProximityMath.logDampedMultiplicity(candidate.citationCount),
+                evidenceCount: candidate.citationCount)
         }
     }
 }
