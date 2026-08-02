@@ -123,7 +123,20 @@ struct DiscoveryTipWiringAuditTests {
                 let text = try Self.source(anchor.file)
                 // The PAIR, not either half: `.popoverTip(` alone would be satisfied by a different
                 // tip in the same file, and the bare type name by a doc comment mentioning it.
-                #expect(text.contains(".popoverTip(\(entry.typeName)("),
+                //
+                // Matched per LINE rather than as the literal `.popoverTip(TipName(`, because a
+                // tip may legitimately be GATED — `popoverTip` takes an optional, so the shipped
+                // form can be `.popoverTip(isPhone ? ResearchRailTip() : nil)`. Build 38 needed
+                // exactly that: `DocumentView` is both the iPhone and the iPad reader, and the
+                // ungated rail tip hung the iPad. Requiring the adjacent literal would have made
+                // the audit forbid its own fix. Comment lines are excluded so a doc comment
+                // naming a tip beside a real `.popoverTip` cannot satisfy this.
+                let displays = text.split(separator: "\n").contains { line in
+                    let trimmed = line.trimmingCharacters(in: .whitespaces)
+                    guard !trimmed.hasPrefix("//") else { return false }
+                    return trimmed.contains(".popoverTip(") && trimmed.contains("\(entry.typeName)(")
+                }
+                #expect(displays,
                         """
                         \(anchor.file) does not display `\(entry.typeName)`. A tip with no live \
                         `.popoverTip` can never appear — that is exactly how \
@@ -138,16 +151,29 @@ struct DiscoveryTipWiringAuditTests {
     @Test("Every .popoverTip in the tree names a registered tip")
     func everyDisplaySiteIsRegistered() throws {
         let registered = Set(DiscoveryTipRegistry.entries.map(\.typeName))
-        let pattern = try NSRegularExpression(pattern: #"\.popoverTip\(\s*(\w+)\s*\("#)
+        // Scanned per LINE: every `Something()` construction on a line that calls `.popoverTip(`.
+        // The previous pattern anchored the type name immediately inside the parenthesis, which
+        // stopped matching the moment a tip was GATED — `.popoverTip(isPhone ? Tip() : nil)` — and
+        // the whole assertion would then have passed over zero sites. Only the anti-vacuity floor
+        // below caught that, which is precisely why it is there.
+        let pattern = try NSRegularExpression(pattern: #"(\w+)\(\)"#)
         var found = 0
         for (path, text) in try Self.appSources() {
-            let range = NSRange(text.startIndex..., in: text)
-            for match in pattern.matches(in: text, range: range) {
-                guard let r = Range(match.range(at: 1), in: text) else { continue }
-                let name = String(text[r])
-                found += 1
-                #expect(registered.contains(name),
-                        "\(path) displays `\(name)`, which is not in DiscoveryTipRegistry")
+            for rawLine in text.split(separator: "\n") {
+                let line = rawLine.trimmingCharacters(in: .whitespaces)
+                guard line.contains(".popoverTip("), !line.hasPrefix("//") else { continue }
+                let range = NSRange(line.startIndex..., in: line)
+                for match in pattern.matches(in: line, range: range) {
+                    guard let r = Range(match.range(at: 1), in: line) else { continue }
+                    let name = String(line[r])
+                    // A gated site also constructs nothing else on the line, but be strict: only
+                    // count identifiers that look like a tip, so `foo()` helpers cannot inflate
+                    // `found` and mask a broken scan.
+                    guard name.hasSuffix("Tip") else { continue }
+                    found += 1
+                    #expect(registered.contains(name),
+                            "\(path) displays `\(name)`, which is not in DiscoveryTipRegistry")
+                }
             }
         }
         // Anti-vacuity: if the regex ever stops matching, every assertion above passes silently.
@@ -343,5 +369,66 @@ struct DiscoveryTipWiringAuditTests {
         // screen and prove it clears the navigation bar.
         #expect(app.contains("FRUS_UI_TEST_SHOW_TIPS"),
                 "the opt-in that lets an obstruction scenario test a tip has gone")
+    }
+
+    // MARK: - Where a reader tip may anchor (build 38)
+
+    /// A tip in the document reader may not anchor on a view that spans the reading area, and the
+    /// rail tip may not ship to iPad. Both rules exist because #634 broke both, on both platforms,
+    /// and neither failure was visible in a diff.
+    ///
+    /// `.popoverTip` presents with `attachmentAnchor: .rect(.bounds)`. Anchor it on a full-bleed
+    /// overlay and the popover's source rect is the whole document: while it is up,
+    /// `UIPopoverPresentationController` installs a full-window blocker with `passthroughViews ==
+    /// nil`, which **dismisses on a tap but silently swallows a pan** — so the reader would not
+    /// scroll, and since scrolling never dismissed the tip it never recorded an impression and
+    /// `MaxDisplayCount` never counted down. On iPad the rail tip additionally presented in the
+    /// same main-thread pass that reflows the split view for the `.inspector` and inserts the
+    /// WKWebView, driving a view-graph update loop: 90s of CPU in 101s and a `scene-update`
+    /// watchdog kill, with the spinner still animating off the render server.
+    ///
+    /// Version history:
+    ///   1.0 — build 38: the #634 reader-tip regression
+    @Test("Reader tips anchor on a control, and the rail tip is iPhone-only")
+    func readerTipsAnchorNarrowly() throws {
+        let view = try Self.source("FRUSExplorer/DocumentView/DocumentView.swift")
+
+        // The rail tip must be gated. `DocumentView` is ALSO the iPad reader — the comment beside
+        // this line claimed iPhone-only for a week while no gate existed.
+        #expect(view.contains("popoverTip(isPhone ? ResearchRailTip() : nil)"),
+                """
+                ResearchRailTip is no longer gated to iPhone. On iPad the rail is already open \
+                (`panelVisible = !isPhone`), and presenting this popover during the inspector \
+                reflow hung the main thread until the watchdog killed the app.
+                """)
+
+        // No tip may hang off the full-bleed edge overlay. Scan the overlay function in FULL,
+        // from its `func` to the start of the next declaration — a fixed-length prefix is not
+        // enough and silently was not: at 2,000 characters the window stopped short of the
+        // modifier chain, and a mutation that re-attached the tip there passed this test.
+        let start = try #require(view.range(of: "func documentEdgeNavigationOverlay")).lowerBound
+        let after = view.index(start, offsetBy: 40)
+        let end = view.range(of: "\n    private func ", range: after..<view.endIndex)?.lowerBound
+            ?? view.endIndex
+        let overlay = view[start..<end]
+        #expect(overlay.contains(".allowsHitTesting"),
+                "the overlay slice is truncated — it must reach the modifier chain to mean anything")
+
+        let anchored = overlay.split(separator: "\n").first { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return trimmed.contains(".popoverTip(") && !trimmed.hasPrefix("//")
+        }
+        #expect(anchored == nil,
+                """
+                A `.popoverTip` is attached inside documentEdgeNavigationOverlay, whose HStack is \
+                `.frame(maxWidth: .infinity, maxHeight: .infinity)` over the web view. Its popover \
+                blocker swallows every pan and the document stops scrolling. Anchor it on a zone. \
+                Offending line: \(anchored.map(String.init) ?? "")
+                """)
+
+        // ...and the zone that replaced it still carries one, or the tip reaches nobody.
+        let zone = try #require(view.range(of: "func documentEdgeTapZone")).lowerBound
+        #expect(view[zone...].prefix(1_600).contains("popoverTip(showsTip ? EdgeTapNavigationTip() : nil)"),
+                "the edge tip lost its zone anchor — it now points at nothing")
     }
 }
