@@ -135,18 +135,107 @@ struct ArchivalPoolWiringTests {
         return text
     }
 
-    /// Exactly one caller asks for a stratified pool: the anchored document-to-document path.
-    /// Any other `.stratified` is a finding aid that has quietly stopped being alphabetical.
-    @Test("Only the anchored path requests stratification")
+    /// One function's whole declaration — signature **and** body — brace-matched from `func`.
+    ///
+    /// The wiring assertions below are about **where** something appears, not how many times it
+    /// appears in the file, so they need a declaration rather than a whole-file `contains`. The
+    /// signature is included deliberately: whether a parameter is defaulted is half of what these
+    /// tests check, and it lives above the opening brace.
+    ///
+    /// Balancing braces is enough on the functions this is used for, because none of them embeds
+    /// a brace inside a string literal (the SQL-building helpers, which do, are checked by prefix
+    /// elsewhere). If that ever stops being true the scan runs off the end of the file and records
+    /// an issue, rather than silently returning a truncated declaration that assertions would pass
+    /// against.
+    private static func functionSource(named name: String, in source: String) throws -> Substring {
+        let signature = try #require(source.range(of: "func \(name)("),
+                                     "\(name) is gone from IndexingPipeline")
+        let declaration = source[signature.lowerBound...]
+        let open = try #require(declaration.firstIndex(of: "{"), "\(name) has no body")
+        var depth = 0
+        var index = open
+        while index < declaration.endIndex {
+            if declaration[index] == "{" { depth += 1 }
+            if declaration[index] == "}" {
+                depth -= 1
+                if depth == 0 { return declaration[declaration.startIndex...index] }
+            }
+            index = declaration.index(after: index)
+        }
+        Issue.record("\(name)'s body never closes — brace matching ran off the end of the file")
+        return declaration
+    }
+
+    /// Stratification is requested only from inside the anchored entry point — an **allowlist by
+    /// location**, not a count.
+    ///
+    /// This assertion used to read `requests == 1`, which was wrong in a way worth recording,
+    /// because it was wrong in the direction that looks right. The anchored entry point reaches
+    /// the axis by two routes: the direct keys, and — when every direct key misses — the
+    /// collection-authority alias fallback. Only the first was stratified, so the anchors that
+    /// depend *entirely* on the fallback still got the alphabetical head of their container. And
+    /// a bare count of one meant that **fixing it would fail this test**: the assertion written to
+    /// stop a finding aid silently changing order was also holding the remaining half of the bug
+    /// in place. A test that pins a gap shut is worse than no test, because it reads as coverage.
+    ///
+    /// Scoping to `archivalNeighborsWithCohort`'s body keeps the real guarantee — no anchorless
+    /// finding aid quietly stops being alphabetical — without also freezing the number of routes
+    /// the anchored path is allowed to have.
+    @Test("Stratification is requested only from inside the anchored entry point")
     func onlyTheAnchoredPathOptsIn() throws {
         let source = try Self.pipelineSource()
-        let requests = source.components(separatedBy: "ordering: .stratified").count - 1
-        #expect(requests == 1,
+        let anchored = try Self.functionSource(named: "archivalNeighborsWithCohort", in: source)
+
+        let inside = anchored.components(separatedBy: "ordering: .stratified").count - 1
+        #expect(inside == 2,
                 """
-                Expected exactly one `.stratified` request — archivalNeighbors(forVolumeId:), the \
-                only path with an anchor. Found \(requests). A finding-aid list has nothing to be \
-                relevant to, so an alphabetical cut is correct there, not a bug.
+                The anchored path must stratify BOTH of its routes — the direct keys and the \
+                collection-authority alias fallback. Found \(inside). An anchor whose direct keys \
+                all miss reaches its neighbours only through the fallback, so an alphabetical \
+                fallback reproduces #645 in full for exactly those documents.
                 """)
+
+        let total = source.components(separatedBy: "ordering: .stratified").count - 1
+        #expect(total == inside,
+                """
+                A `.stratified` request exists outside archivalNeighborsWithCohort \
+                (\(total) total, \(inside) inside). Every other caller is a finding aid keyed on a \
+                container: the list IS the collection, there is nothing for it to be relevant to, \
+                and an alphabetical cut is the honest presentation rather than a bug.
+                """)
+    }
+
+    /// `aliasNeighbors` serves both kinds of caller and takes no parameter that tells them apart,
+    /// so a defaulted `ordering` is how the anchored caller silently inherited `.alphabetical`.
+    /// Requiring it makes the omission a compile error instead of a wrong answer, and forwarding
+    /// it is what makes stating it mean anything.
+    @Test("aliasNeighbors requires an ordering and forwards it to every helper it calls")
+    func aliasFallbackForwardsOrdering() throws {
+        let source = try Self.pipelineSource()
+        let declaration = try Self.functionSource(named: "aliasNeighbors", in: source)
+
+        #expect(!declaration.contains("ordering: RelatedPoolOrdering = "),
+                """
+                aliasNeighbors' `ordering` has a default again. It is reachable from the anchored \
+                axis AND from the anchorless key lookup, so a default silently gives one of them \
+                the other's behaviour — which is how the second half of #645 survived the fix.
+                """)
+        #expect(declaration.contains("ordering: RelatedPoolOrdering,"),
+                "aliasNeighbors must take an undefaulted `ordering`")
+
+        // Every neighbour query it can dispatch to, not just the one an alias usually takes.
+        for helper in ["relatedByLotFile", "relatedByPresidentialLibrary",
+                       "relatedByCollection", "relatedBySeriesName"] {
+            let call = try #require(declaration.range(of: "\(helper)("),
+                                    "aliasNeighbors no longer calls \(helper)")
+            let arguments = declaration[call.lowerBound...].prefix(260)
+            #expect(arguments.contains("ordering: ordering"),
+                    """
+                    aliasNeighbors calls \(helper) without forwarding `ordering`, so that route \
+                    falls back to the `.alphabetical` default and the anchor gets the container's \
+                    alphabetical head.
+                    """)
+        }
     }
 
     /// The default must stay alphabetical, or every anchorless caller silently changes behaviour

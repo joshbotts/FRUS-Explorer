@@ -6146,11 +6146,12 @@ public actor IndexingPipeline {
         // re-slice; the widening decision keys on the unscoped total, so scope is
         // applied once, last (#217).
         let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
-        // THE ONE CALLER THAT ASKS FOR A STRATIFIED POOL (#645). This is the anchored path — the
-        // document-to-document similarity axis — where the pool exists so the scorers can promote
-        // a candidate the generator ranked low, and an alphabetical cut makes most of the
-        // container unreachable to them. Every other caller of `relatedDocuments(for:)` and of the
-        // per-container helpers is a finding aid with no anchor, and keeps the default.
+        // THE ANCHORED PATH ASKS FOR A STRATIFIED POOL (#645) — here and, below, on the alias
+        // fallback, which is the same anchor reaching the same axis by another route. The pool
+        // exists so the scorers can promote a candidate the generator ranked low, and an
+        // alphabetical cut makes most of the container unreachable to them. Every caller of
+        // `relatedDocuments(for:)` and of the per-container helpers OUTSIDE this function is a
+        // finding aid with no anchor, and keeps the default.
         var result = try relatedDocuments(
             for: parsed, limit: fetchLimit, documentYear: documentYear,
             excludingVolumeId: volumeId, excludingDocumentId: documentId,
@@ -6166,11 +6167,15 @@ public actor IndexingPipeline {
            let record = CollectionAuthorityStore.shared?.record(forParsed: parsed, note: raw) {
             let fallback = IndexingPipeline.CollectionAliasFallback(record: record)
             let keys = Self.directKeys(for: parsed)
+            // `.stratified` for the same reason the direct paths above are (#645): this is
+            // still the anchored axis. The fallback fires precisely when the direct keys all
+            // missed, so it is the ONLY pool these anchors ever see — leaving it alphabetical
+            // reproduced the whole defect for them.
             if let viaAuthority = try aliasNeighbors(
                 fallback: fallback,
                 directLotFile: keys.lotFile, recordGroup: keys.recordGroup,
                 series: keys.series, repository: keys.repository,
-                limit: fetchLimit, excluding: exclude) {
+                limit: fetchLimit, ordering: .stratified, excluding: exclude) {
                 result = (viaAuthority.documents, viaAuthority.totalCount)
                 basis = viaAuthority.basis
             }
@@ -6253,9 +6258,13 @@ public actor IndexingPipeline {
             repository: repository, decimalClass: decimalClass, limit: fetchLimit)
         if direct.totalCount > 0 { return scoped(direct) }
         guard let aliasFallback else { return scoped(direct) }
+        // `.alphabetical`, stated rather than defaulted: this entry point is keyed on a
+        // container, not anchored on a document. The list IS the collection, so there is
+        // nothing for it to be relevant to and an alphabetical cut is the honest one.
         if let viaAuthority = try aliasNeighbors(
             fallback: aliasFallback, directLotFile: lotFile, recordGroup: recordGroup,
-            series: series, repository: repository, limit: fetchLimit) {
+            series: series, repository: repository, limit: fetchLimit,
+            ordering: .alphabetical) {
             return scoped(viaAuthority)
         }
         return scoped(direct)
@@ -6313,6 +6322,16 @@ public actor IndexingPipeline {
     /// documented order): the authority's lot key first, then each merged name/alias
     /// form through the entry's series-scoped path. Returns `nil` when no fallback
     /// form matched anything.
+    ///
+    /// ## Why `ordering` has no default (#645)
+    /// This is the one helper on the archival path reachable from **both** kinds of caller —
+    /// the anchored document-to-document axis and the anchorless key lookup a finding aid
+    /// runs — and it takes no parameter that distinguishes them. When `ordering` defaulted,
+    /// the anchored caller silently inherited `.alphabetical`, so a document whose direct
+    /// keys all missed and which reached its neighbours through the collection authority got
+    /// the alphabetical head of the container after all: the exact defect #645 reports,
+    /// surviving inside the fix for it. Requiring every caller to state its ordering makes
+    /// that class of omission a compile error rather than a silent wrong answer.
     private func aliasNeighbors(
         fallback: CollectionAliasFallback,
         directLotFile: String?,
@@ -6320,13 +6339,15 @@ public actor IndexingPipeline {
         series: String?,
         repository: String?,
         limit: Int,
+        ordering: RelatedPoolOrdering,
         excluding: (String?, String?) = (nil, nil)
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?)? {
         // 1. The authority's canonical lot key (unless the direct path already was it).
         if let lotNorm = fallback.lotFileNorm, !lotNorm.isEmpty {
             let directNorm = directLotFile.map { SourceNoteParser.lotFileNorm($0) }
             if directNorm != lotNorm {
-                let r = try relatedByLotFile(lotNorm, limit: limit, excluding: excluding)
+                let r = try relatedByLotFile(lotNorm, limit: limit, excluding: excluding,
+                                             ordering: ordering)
                 if r.totalCount > 0 {
                     return (r.documents, r.totalCount,
                             String(localized: "archivalNeighbors.basis.lot",
@@ -6347,12 +6368,13 @@ public actor IndexingPipeline {
             if let libraryRepo {
                 r = try relatedByPresidentialLibrary(library: libraryRepo,
                                                      collection: name, limit: limit,
-                                                     excluding: excluding)
+                                                     excluding: excluding, ordering: ordering)
             } else if let rg = bareRG, !rg.isEmpty {
                 r = try relatedByCollection(recordGroup: rg, series: name, limit: limit,
-                                            excluding: excluding)
+                                            excluding: excluding, ordering: ordering)
             } else {
-                r = try relatedBySeriesName(name, limit: limit, excluding: excluding)
+                r = try relatedBySeriesName(name, limit: limit, excluding: excluding,
+                                            ordering: ordering)
             }
             if r.totalCount > 0 {
                 return (r.documents, r.totalCount,
