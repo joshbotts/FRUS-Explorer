@@ -644,15 +644,14 @@ private extension EducationPage {
                 id: "ooh",
                 heading: "Prepared by the Department of State's Office of the Historian",
                 paragraphs: [
-                    "FRUS volumes are compiled and edited by professional historians in the Office of the Historian at the Department of State. Historians in the compilation and review team identify the most important documents, provide context through editorial notes and introductions, and review draft volume manuscripts to ensure they provide \"thorough, accurate, and reliable\" coverage of the assigned topic(s). Historians in the declassification, publishing, and digital initiatives team coordinate the complex and thorough interagency declassification review required before release and then the detailed preparation of the manuscript required for publication. An Advisory Committee on Historical Diplomatic Documentation comprised of representatives of major scholarly organizations and experts chosen by the Department of State oversee this production process to validate the historical objectivity of the series."
+                    "FRUS volumes are compiled and edited by professional historians in the Office of the Historian at the Department of State. Historians in the compilation and review team identify the most important documents, provide context through editorial notes and annotations, and review draft volume manuscripts to ensure they provide \"thorough, accurate, and reliable\" coverage of the assigned topic(s). Historians in the declassification, publishing, and digital initiatives team coordinate the complex and thorough interagency declassification review required before release and then the detailed preparation of the manuscript required for publication."
                 ]
             ),
             EducationSection(
                 id: "sources",
                 heading: "Breadth of Sources",
                 paragraphs: [
-                    "FRUS historians draw on records from the White House and National Security Council at Presidential Libraries as well as records from the Departments of State and Defense, the CIA, and other agencies, both at the National Archives and directly at those agencies. When needed, they also seek access to the private papers of key policymakers.",
-                    "Deletions required for national security must be acknowledged in the published text; major facts leading to policy decisions cannot be omitted."
+                    "FRUS historians draw on still-classified records from the White House and National Security Council at Presidential Libraries as well as records from the Departments of State and Defense, the CIA, and other agencies, both at the National Archives and directly at those agencies. When needed, they also seek access to the private papers of key policymakers."
                 ]
             ),
             EducationSection(
@@ -678,43 +677,42 @@ private extension EducationPage {
                 id: "origins",
                 heading: "Origins: Diplomatic Correspondence (1861–1920s)",
                 paragraphs: [
-                    "The series began during the Civil War as a compilation of official diplomatic correspondence — despatches from diplomatic posts, instructions to U.S. ministers overseas, and notes to and from foreign governments. The volumes documented the operations of the State Department. Coverage was often contemporaneous: volumes sometimes appeared within a year of events, prioritizing currency over comprehensiveness. Because the volumes were produced by the same clerks who administered the Department's day-to-day business, principles of selection and editing standards were inconsistent and reflected operational rather than historical purposes."
+                    "At its birth, FRUS was an instrument of public affairs and congressional relations. The series began during the Civil War as a compilation of official diplomatic correspondence — despatches from diplomatic posts, instructions to U.S. ministers overseas, and notes to and from foreign governments. The volumes documented the operations of the State Department. Coverage was often contemporaneous: volumes sometimes appeared within a year of events, prioritizing currency over comprehensiveness. Because the volumes were produced by the same clerks who administered the Department's day-to-day business, principles of selection and editing standards reflected operational rather than historical purposes. By the early 20th century, the series had evolved to became a valuable knowledge management tool by providing ready access to key policy and precedent references for officials within the Department and its overseas posts and growing stakeholder constituencies in civil society."
                 ]
             ),
             EducationSection(
                 id: "professionalization",
                 heading: "Professionalization in the Interwar Era (1924-1945)",
                 paragraphs: [
-                    "In the 1920s, the Department of State began recruiting professionally-trained historians to undertake the increasingly complex editorial work of producing FRUS. Because budget constraints and operational considerations involved in waging World War I had imposed delays in publication during the previous two decades, those historians had an opportunity to select and edit the historical record of U.S. foreign policy with greater perspective and depth than their predecessors. They established formal editorial principles for FRUS that endured."
+                    "In the 1920s, the Department of State began recruiting professionally-trained historians to undertake the increasingly complex editorial work of producing FRUS. Because budget constraints in the early 1900s and operational considerations during World War I delayed publication throughout the previous two decades, those historians had an opportunity to select and edit the historical record of U.S. foreign policy with greater perspective and depth than their predecessors. They established formal editorial principles for FRUS that endured."
                 ]
             ),
             EducationSection(
                 id: "national-security",
                 heading: "The National Security Turn (1945–1970s)",
                 paragraphs: [
-                    "The Cold War transformed FRUS. As more and more decision-makers outside the Department of State left their imprint on foreign policy and diplomacy, FRUS historians increasingly needed to complement State Department records with documents drawn from other agencies' files. As the United States became more engaged in more places around the world, the perceived stakes of disclosure grew. Volumes in this period often reflect what could be declassified rather than what historians judged most important. In the 1957, the Department established a Historical Advisory Committee of outside academic experts to provide editorial advice about how to balance timeliness and comprehensiveness and to vouch for the integrity of published volumes."
+                    "The Cold War transformed FRUS. As more decision-makers outside the Department of State left their imprint on foreign policy and diplomacy, FRUS historians increasingly needed to complement State Department records with documents drawn from other agencies' files - especially presidential records. At the same time, United States expanded and intensified its engagement around the world. The perceived stakes of disclosure in FRUS grew. In the 1957, the Department established a Historical Advisory Committee of outside academic experts to provide editorial advice about how to balance timeliness and comprehensiveness and to vouch for the integrity of published volumes. Over the following decades, FRUS historians and advisory committee experts maintained that balance and the series served as the Department of State's transparency engine. "
                 ]
             ),
             EducationSection(
                 id: "crisis",
                 heading: "Crisis and Reform (1978–1991)",
                 paragraphs: [
-                    "By the 1980s, the gap between what FRUS had always claimed to be and what it could actually deliver grew painfully apparent. Historians inside the Office of the Historian fought — sometimes bitterly — for genuine access to CIA, NSC, and White House records. Academic historians appointed to the Department-chartered Historical Advisory Committee struggled against increasingly restrictive security restrictions to understand whether declassification decisions across the government withheld information essential to the integrity of the historical record from publishable volumes. In 1989 and 1990, criticism of omissions of any hint of a major historical covert action from a volume documenting U.S. policy toward Iran in the early 1950s coupled with the fallout from the Department's deteriorating relationship with the Historical Advisory Committee to create a crisis for the series.",
-                    "In 1991, Congress intervened by establishing statutory mandates for the mission of the series, the obligations of U.S. Government agencies to provide access to their historical records to the historians producing FRUS, and an advisory committee of academic historians to provide oversight to validate the historical integrity of the series."
+                    "By the 1980s, the gap between what FRUS had always claimed to be and what it could actually deliver grew painfully apparent. Historians inside the Office of the Historian struggled to achieve direct access to key CIA records. Academic historians appointed to the Department-chartered Historical Advisory Committee faced tightening security restrictions that made it harder to judge whether information withheld during the declassification process was marginal or essential to the historical integrity of publishable volumes. In 1989 and 1990, academic criticism of a volume documenting U.S. policy toward Iran in the early 1950s without any references to widely-known covert action attracted congressional scrutiny of the State Department's management of the series and its relationship with the advisory committee. In 1991, Congress intervened by establishing statutory mandates for long-standing norms: the mission of the series, the obligations of U.S. Government agencies to provide access to their historical records to the historians producing FRUS, and an advisory committee of academic historians to provide oversight to validate the historical integrity of the series."
                 ]
             ),
             EducationSection(
                 id: "contemporary",
                 heading: "The Contemporary Series (1991–Present)",
                 paragraphs: [
-                    "Post-1991 volumes reflect a substantially different editorial philosophy: broader sourcing, fuller coverage of intelligence activities, and more detailed acknowledgment of omissions. Even as some volumes are delayed by interagency declassification disagreements, the 30-year rule creates a rolling horizon; volumes covering the Reagan administration are now publishing, with the Bush 41 and Clinton eras in active production."
+                    "Post-1991 volumes reflect the statute's empowerment of FRUS historians with broader sourcing, fuller coverage of intelligence activities, and more detailed acknowledgment of omissions. Even as some volumes are delayed by interagency declassification disagreements, the 30-year rule creates a rolling horizon; volumes covering the Reagan administration are now publishing, with the Bush 41 and Clinton eras in active production."
                 ]
             ),
             EducationSection(
                 id: "digital",
                 heading: "The Digital Transition",
                 paragraphs: [
-                    "The shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All 552 volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed."
+                    "The Office of the Historian's shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All 552 volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed."
                 ]
             ),
             EducationSection(
@@ -738,15 +736,15 @@ private extension EducationPage {
             EducationSection(
                 id: "two-registers",
                 paragraphs: [
-                    "Every FRUS document is an edited representation of the original record in an archive somewhere. Understanding editorial annotation will help you make full use of FRUS."
+                    "Every FRUS document is a transcribed and edited representation of an original, archival record. Understanding editorial annotation will help you make full use of FRUS."
                 ]
             ),
             EducationSection(
                 id: "types",
                 heading: "Primary Documents, Editorial Notes, and Front Matter",
                 paragraphs: [
-                    "FRUS is a documentary history, which means it primarily tells the story of U.S. foreign policy directly through actual historical documents. However, the historians who compiled the volumes also provided editorial annotation to convey more information from the archives.",
-                    "Primary documents are the actual historical records — cables, memoranda, meeting notes, intelligence assessments, letters. These are reproduced (sometimes with excisions) from government files. Each document has a source note that identifies where the original was found. Many documents also contain footnotes providing information about the surrounding historical context or even specific archival citations to other referenced documents, meetings, or events.",
+                    "FRUS is a documentary history, which means it uses actual historical documents to tell the story of U.S. foreign policy. The historians who compile the volumes carefully select records that best document past decisions, diplomacy, and events. They also provide editorial annotation that adds more context and information from the archives than the documents themselves contain.",
+                    "Primary documents are the actual historical records that were produced contemporaneously with the events they describe — cables, memoranda, meeting notes, intelligence assessments, letters. These are reproduced in FRUS (sometimes with excisions) from government files. Starting in the early 20th century, each document was published with a source note identifying its provenance, or where the original was found. Many documents also contain footnotes providing information about the historical context around the document or even offering specific archival citations to other documents, meetings, or events that are referenced in the printed document.",
                     "Many volumes also contain editorial notes written by Office of the Historian historians. They appear as numbered entries in the document sequence and serve several purposes: summarizing developments the editors judged too voluminous or sensitive to reproduce in full, explaining gaps in the record, providing context for surrounding documents, and noting where fuller documentation exists. An editorial note that says \"On [date], the NSC met to discuss…\" is telling you something happened that isn't fully reproduced here. Editorial notes provide additional archival citations to unpublished documents.",
                     "Volume front matter has evolved over time. Recent volumes include valuable information about the editor's research methodology and a listing the archival sources they consulted as they selected documents for inclusion. They also contain annotated lists of people who generated, received, or were mentioned in the documents and terms and abbreviations used in the documents."
                 ]
@@ -954,7 +952,7 @@ private extension EducationPage {
                 systemImage: "text.magnifyingglass",
                 paragraphs: [
                     "Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app helps you look for the right document — no manual hunting through volumes and document numbers.",
-                    "Find it in the Search screen's overflow (More) menu."
+                    "Find it in the Search screen's overflow (More) menu (iOS) or under Find \u{25B8} Citation Lookup, \u{21E7}\u{2318}F (Mac)."
                 ]
             ),
             EducationSection(
@@ -985,21 +983,18 @@ private extension EducationPage {
                 paragraphs: [
                     "Chart how often a term or phrase appears across the indexed corpus, broken down by decade, year, month, day, subseries, or individual volume. Use it to see when a topic first enters FRUS, how coverage of a country or issue shifts over time, and which volumes are richest for a keyword. The By-Subseries and By-Volume views are interactive: tap a bar to open those exact documents in Search, with the counts shown so you know what to expect.",
                     "A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The \u{201C}% of documents\u{201D} toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count \u{2014} the percentage of that period\u{2019}s documents that contain it \u{2014} so a term doesn\u{2019}t look like it is surging simply because the series published more in later decades.",
-                    "On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into \u{201C}Other.\u{201D}",
-                    "The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.",
-                    "An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.",
+                    "An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three; on By Subseries and By Volume the figure items are dimmed and only the CSV is available.",
                     "Analytics runs entirely on your local index; no network connection is required.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Corpus Analytics window (Mac)."
                 ]
             ),
             EducationSection(
                 id: "reading-results",
-                heading: "Four Ways to Read a Result Set",
+                heading: "Four Ways to Read a Search Result Set",
                 systemImage: "binoculars",
                 paragraphs: [
-                    "The binoculars button above your results offers four readings of the same search. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.",
-                    "They do not all count the same thing, and the menu says which is which. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search. When you are about to quote a number, that distinction is the number.",
-                    "Collocates is the one that changes what you search next: the words a term travels with are usually the period vocabulary you did not know to look for."
+                    "Above your search results, four readings of the same search are available. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.",
+                    "They do not all count the same thing, and each panel names the set it used. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search. Use Collocates for ideas for follow-on searches: the words your query travels with can help you reconstruct period-specific vocabulary you did not know to look for."
                 ]
             ),
             EducationSection(
@@ -1018,7 +1013,6 @@ private extension EducationPage {
                 paragraphs: [
                     "Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people that were tagged by Office of the Historian editors during production appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period\u{2019}s dated documents), and \u{2014} when exactly two people are selected \u{2014} draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.",
                     "Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record \u{2014} read these as who the published documents foreground, not a full census of who mattered.",
-                    "Each chart in Trends carries its own Export button — chart data as CSV, or the chart itself as a PNG or PDF figure — and comparing exactly two people adds a relationship CSV. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Person Analytics window (Mac)."
                 ]
             ),
@@ -1050,9 +1044,6 @@ private extension EducationPage {
                 paragraphs: [
                     "Where the graph traces one document\u{2019}s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network\u{2019}s shape \u{2014} a few heavily-cited landmarks and a long tail \u{2014} a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of \u{201C}landmark\u{201D} documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.",
                     "These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.",
-                    "Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.",
-                    "An Administration menu sets the document-year range to a president\u{2019}s term in one tap; the same presets appear in Corpus Analytics.",
-                    "Each of the four charts carries its own Export button — chart data as CSV, or the chart as a PNG or PDF figure; the landmark ranking is a table, so it exports as CSV only. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.",
                     "Find it from the Browse tab\u{2019}s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac)."
                 ]
             ),
