@@ -343,21 +343,38 @@ struct RelatedDocumentsContent: View {
         .padding(.vertical, 2)
     }
 
-    /// Small chips naming the axes that contributed to this row, strongest first, each with its
-    /// normalised 0–100 signal score — the "why related" affordance (#362).
+    /// Small chips naming the axes that contributed to this row, strongest first — the "why
+    /// related" affordance (#362).
+    ///
+    /// Generator axes state their **evidence** and scorer axes state their **score**, because a
+    /// generator score is normalised by that anchor's own strongest candidate and so is not a
+    /// quantity worth printing: archival provenance emits a constant, so its chip read exactly
+    /// "100%" on every row it ever rendered, and an identical single citation read "100%" beside a
+    /// lone partner but as little as "21%" beside a 48×-cited one. See ``WhyRelatedChip``.
     @ViewBuilder
     private func whyRelated(_ row: RelatedDocumentRow) -> some View {
-        let axes = row.axisScores.sorted { $0.value > $1.value }
-        if !axes.isEmpty {
+        let chips = row.whyRelatedChips
+        if !chips.isEmpty {
             HStack(spacing: 8) {
-                ForEach(axes, id: \.key) { axis, score in
-                    // One rounded percent drives both the visible chip and the a11y label (so they
-                    // never disagree); a real but sub-1% contribution reads as "<1%", never "0%".
-                    let pct = Int((score * 100).rounded())
-                    let display = pct == 0
-                        ? String(localized: "related.why.subOnePercent", defaultValue: "<1%")
-                        : String(format: String(localized: "related.why.percent %lld",
-                                                defaultValue: "%lld%%"), Int64(pct))
+                ForEach(chips, id: \.axis) { axis, chip in
+                    // One computed string drives both the visible chip and the a11y label, so they
+                    // can never disagree.
+                    let display: String = {
+                        switch chip {
+                        case .citations(let count):
+                            return String(format: String(localized: "related.why.cited %lld",
+                                                         defaultValue: "cited %lld×"), Int64(count))
+                        case .presence:
+                            return String(localized: "related.why.sameProvenance",
+                                          defaultValue: "same provenance")
+                        case .percent(let pct):
+                            // A real but sub-1% contribution reads as "<1%", never "0%".
+                            return pct == 0
+                                ? String(localized: "related.why.subOnePercent", defaultValue: "<1%")
+                                : String(format: String(localized: "related.why.percent %lld",
+                                                        defaultValue: "%lld%%"), Int64(pct))
+                        }
+                    }()
                     HStack(spacing: 2) {
                         Image(systemName: axis.systemImage)
                         Text(display).monospacedDigit()

@@ -27,6 +27,15 @@ enum RelatedDocumentsRanker {
     ///   - generatorStrengths: Per generator axis, its produced candidates' **raw** strengths.
     ///     Normalised to `[0, 1]` per axis (by the axis's own max) before scoring, so one axis's
     ///     scale never dominates another's.
+    ///
+    ///     The normalisation is **per query and anchor-relative**: a generator axis score means
+    ///     "fraction of the strongest evidence *this anchor* has on this axis", and is deliberately
+    ///     not comparable across anchors. The corollary is worth stating plainly, because it is the
+    ///     axis's most surprising behaviour: an axis producing exactly one candidate always reads
+    ///     1.0, however weak that evidence is. Measured on the owner's index, 48,901 of 88,940
+    ///     cross-referenced anchors (**54.98%**) have exactly one candidate.
+    ///
+    ///     Scorer axes are already absolute `[0, 1]` and are used raw.
     ///   - scorerScores: Per scorer axis, its already-`[0, 1]` scores over the candidate universe.
     ///   - records: Display record per candidate; a candidate without one is dropped (it can't render).
     ///   - weights: The user's per-axis weights. Axes at weight 0 contribute nothing.
@@ -160,17 +169,25 @@ enum RelatedDocumentsEngine {
 
         // Generators → per-axis raw strengths + a shared display-record cache.
         var generatorStrengths: [SimilarityAxis: [DocumentKey: Double]] = [:]
+        var generatorEvidence: [SimilarityAxis: [DocumentKey: Int]] = [:]
         var records: [DocumentKey: CandidateRecord] = [:]
         for generator in generators {
             let produced = (try? await generator.candidates(
                 for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
                 scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? []
             var strengths: [DocumentKey: Double] = [:]
+            var evidence: [DocumentKey: Int] = [:]
             for candidate in produced where candidate.key != anchor {
                 strengths[candidate.key] = max(strengths[candidate.key] ?? 0, candidate.strength)
+                // Merged with `max`, exactly as the strength is, so the two cannot disagree about
+                // which of two duplicate candidates won.
+                if let count = candidate.evidenceCount {
+                    evidence[candidate.key] = max(evidence[candidate.key] ?? 0, count)
+                }
                 if records[candidate.key] == nil { records[candidate.key] = candidate.record }
             }
             generatorStrengths[generator.axis] = strengths
+            generatorEvidence[generator.axis] = evidence
         }
 
         let candidateKeys = Array(Set(generatorStrengths.values.flatMap(\.keys)).subtracting([anchor]))
@@ -197,7 +214,18 @@ enum RelatedDocumentsEngine {
         // Background callers that never read `.snippet` (e.g. the Project Leads aggregator, #377
         // Phase 3, which runs this up to `seedCap` times per recompute) pass `includeSnippets: false`
         // to skip the batched extraction entirely.
+        // Evidence counts are attached AFTER ranking, in the same place and for the same reason as
+        // the snippet fill below: `RelatedDocumentsRanker.rank` stays a pure function of its
+        // inputs, so nothing here can move a row.
         var rows = ranked.rows
+        for index in rows.indices {
+            var evidence: [SimilarityAxis: Int] = [:]
+            for axis in rows[index].axisScores.keys {
+                if let count = generatorEvidence[axis]?[rows[index].key] { evidence[axis] = count }
+            }
+            rows[index].axisEvidence = evidence
+        }
+
         if includeSnippets, let pipeline = appState.indexingPipeline, !rows.isEmpty {
             let keys = rows.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
             if let snippets = try? await pipeline.documentSnippets(forKeys: keys) {
