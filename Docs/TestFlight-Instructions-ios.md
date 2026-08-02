@@ -1,43 +1,36 @@
-# What's New in Build 36 (iOS)
+# What's New in Build 37 (iOS)
 
-Settings rebuilt, a new first run, a moving word cloud behind the waits, and search that is much faster on common words. Also fixes the Corpus Analytics rotation freeze. No re-index needed.
+Search grew four ways to read a result set, a strip that shows the query you actually ran, and a facet panel that describes the whole match. Related Documents stopped printing percentages that meant nothing. Bulk summarization stopped claiming successes it did not have. No re-index needed.
 
-**Read first:** *Log Research Sessions* now governs **everything** the app remembers about your work, not just the session log. Turn it off and History and a project's Recents will thin out and empty. That is the switch finally doing what its description says — not a fault.
+## Read a result set four ways
+The **binoculars** button in the search actions bar now offers **List**, **Timeline**, **Concordance** and **Collocates**, plus **Facets**. The concordance lines every occurrence of your term up on the term itself, so a screen of hits reads as usage rather than as a list. Collocates ranks the words that keep company with it.
 
-## Settings, rebuilt
-Seventeen destinations became thirteen rows in four groups — Library, Research, Reading & Search, System — identical on iPhone and Mac. **Volumes & Storage** is one destination for downloads, storage, index health and sideload; **Free Up Space** is new on iOS. **Connections** holds your NARA key and Zotero. **Data & Recovery** offers a three-rung ladder that says what each rung costs. **Notes** and **Research Sessions** are new panes. Search at the top of Settings finds panes by what they do — "stop words" finds Word Cloud.
+**They do not all count the same thing, and the menu says which is which** — the concordance shows this page, timeline and collocates cover the results retained for this search, and Facets reads the whole match. When you are about to quote a number, that distinction *is* the number.
 
-## A new first run
-Delete and reinstall to see it: three steps docked in glass over a drifting word cloud, working before you have downloaded anything. No white flash at launch.
+## The Query Inspector
+Under the search field is the **FTS5 expression your query actually became** — the string that went to the database, not a paraphrase. Expand it for each term's index form (with a warning when it is broader than what you typed — `containment` is searched as `contain`), its corpus-wide count, and on request its exact count inside your filters.
 
-## The word cloud moves
-Words drift as if suspended at different distances. You will see it while volumes index, and while a search runs — but only when there is nothing else to read there, and only if the wait is long enough to be worth filling. The words are the general vocabulary of whatever you scoped to. **They are not your search results**, which do not exist yet while you wait. Reduce Motion stops the drift; the cloud still changes lens.
+## Facets
+**Facets** breaks the whole result set down by year, volume, person, document type and archival provenance. Rows are also filters: tap one to narrow, and it becomes a clearable chip. The counts describe the whole match, not the page — the list is capped and the counts are not, and the panel says so. Archival provenance is descriptive only, and states how much of the match it can speak for.
 
-## Indexing reports the queue, not each volume
-The banner used to flash in and out once per volume. It now appears once and stays until everything is ready — "Volume 3 of 27", then "27 volumes ready to search". *Learn about FRUS while you wait* is reachable throughout.
+## Two search operators
+`NEAR("military guarantee" Europe, 30)` matches only where those ideas appear *together*. `=containment` switches stemming off for one word, so you stop getting *container*.
 
-## Search is much faster on common words
-Searching *government*, *soviet* or *policy* left the app unresponsive for seconds **after** the results were already found, while it built previews. That is now a fraction of a second.
+## Discovery tips
+Small tips now point out the app's least visible controls the first few times you reach them — the Research-rail glyph, the invisible page-turn edges, the binoculars menu, and the fact that facet rows are filters. Each retires once you use the control. **Settings → Reading & Search → Display → Show Tips Again** brings them back.
 
-**Caveat:** the database query itself is unchanged — a genuinely common word still takes a few seconds to look up. What is gone is the second, avoidable wait that came after.
+## Related Documents tells the truth
+Archival provenance emitted a constant, so its chip read "100%" on every row it ever rendered. An identical single citation read "100%" beside one neighbour and "21%" beside another. Chips now say **cited 3×** and **same provenance**; date, corpus proximity and shared people keep a percentage, which for them is real.
 
-## Fixes
-- Backgrounding mid-download stopped indexing; the queue now continues.
-- The multi-volume indexing banner never appeared when downloads outpaced indexing — the normal case.
-- Onboarding words sat underneath the panel at large accessibility text sizes.
-- Corpus Analytics froze the app on iPhone rotation; Person Analytics had the same defect.
-- The "Working on:" banner covered the navigation bar at every level of Browse.
-- Browse rows only responded to taps on the text, not the whole row.
-- "Index Required" on a fully indexed volume, with an Index Now button that did nothing.
-- Two ways to lose work without being asked: Free Up Space (Mac) and Volume Scope swipe-delete (iOS) both ask now.
-- The Research rail no longer auto-opens on every document.
-- Source Explorer no longer shows "No Document Selected" for the first document opened.
+**Corpus proximity** — formerly "Same volume or subseries" — now reads the editors' arrangement: documents printed side by side or gathered into the same short chapter rank highest, easing off as the shared container widens.
+
+## Bulk summarization
+The progress count was attempts, not summaries: a run where every document failed reported "1400 of 1400 documents summarized" with nothing written. It now counts successes, reports failures, says when a scope was already done, and — during a very long document — shows **"d39 — part 12 of 131"** instead of a frozen number. It is still honestly hours; the app now says so before you start.
 
 ## What to test
-1. Delete and reinstall. Does the first run make sense before you have downloaded anything?
-2. Download a subseries and watch the banner start to finish — it should appear once and stay.
-3. Search a common word, then a rare one.
-4. The cloud: too busy, too slow, too distracting while you read progress? It is tunable.
-5. Reduce Motion, if you use it — the drift should stop completely.
+1. Run a broad search, then step through all four readings. Do the counts say what they cover?
+2. Open Facets and tap a year or volume row — does the chip appear and the count hold?
+3. Open Related Documents on a document with a rich archival neighbourhood. Do the chips read sensibly?
+4. Start a bulk run over a scope you have already summarized — it should say so rather than showing zero.
 
 Include device + iOS version, what you tapped, what you expected, what happened. Thanks for testing!

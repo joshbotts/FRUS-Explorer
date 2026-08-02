@@ -176,7 +176,15 @@ The status bar at the bottom of the main window provides at-a-glance information
 
 `[SCREENSHOT: Status bar detail showing indexing progress indicator]`
 
-### 3.5 Separate Window Scenes
+The word cloud also fills two waits outside search: the first launch after installing, and a launch where iCloud is still pulling your research down, both show it full-window behind the wordmark rather than an empty window. It clears when the wait ends rather than after a fixed interval, and indexing work in progress always takes the screen ahead of it.
+
+### 3.5 Discovery Tips
+
+A few of the app's most useful controls are also its least visible. The first few times you reach one, a small tip appears beside it saying what it does: the binoculars menu's four readings of a result set, the fact that facet rows are filters, the cross-reference graph's reference list, and its Timeline/Network layout picker. Each tip retires the moment you use the control it points at, and none of them block what you were doing.
+
+If you dismissed them and want them back, use **Show Tips Again** in **Settings → Reading & Search → Display**.
+
+### 3.6 Separate Window Scenes
 
 FRUS Explorer opens specialized tools in their own windows so you can keep a document open in the main window while working elsewhere. Windows are persistent — closing and reopening them restores their previous size and position. Launching a tool whose window is already open brings that window to the front rather than opening a duplicate or leaving it buried behind other windows — including word-cloud windows relaunched from Settings.
 
@@ -293,7 +301,7 @@ FRUS Explorer searches across:
 
 **While a search runs**, the sort bar shows "Searching…" and the previous results stay on screen so you can keep reading them. On the *first* search in a window — when there are no previous results, and the list would otherwise be blank — the drifting word cloud (Section 3.4) fades in behind it after a moment, showing the common vocabulary of whatever you scoped the search to. Quick searches never show it. The words are the *scope's* ambient vocabulary, not your results; the cloud never paints over a list you're reading.
 
-Each result shows a highlighted snippet of the matching text. You can control how much context that snippet shows — anywhere from **1 to 10 lines** — from the **Result Preview** control in the Filters panel (Section 5.3). The length starts from a global default set in **Settings → Search** (Section 16); the main Search window and the Collections *Add Documents* sheet (Section 10.2a) each keep their own override of that default.
+Each result shows a highlighted snippet of the matching text. You can control how much context that snippet shows — anywhere from **1 to 10 lines** — from the **Result Preview** control in the Filters panel (Section 5.6). The length starts from a global default set in **Settings → Search** (Section 16); the main Search window and the Collections *Add Documents* sheet (Section 10.2a) each keep their own override of that default.
 
 ### 5.2 Query Syntax
 
@@ -390,7 +398,29 @@ denominator is stated, because "0 results" means "0 in the volumes indexed on th
 
 > **Note:** Suffix wildcards (e.g., `*tion`) are not supported. Use prefix wildcards only.
 
-### 5.3 Advanced Filters
+### 5.3 The Query Inspector
+
+Under the search field is a strip showing the **FTS5 expression your query actually became** — the string that went to the database, not a paraphrase of it. Click the chevron to expand it and see, for each term: the **index form** it was reduced to, with a warning when that is broader than what you typed (`containment` is searched as `contain`); how many documents contain it **across everything you have indexed**; and, on request, the **exact count within your current filters**, which runs a real query per term and so sits behind a button.
+
+Both counts are shown because the gap between them is information: a term common in the corpus but rare in your scope is telling you something about your scope. If you publish method appendices, this is the line to quote.
+
+### 5.4 Four Ways to Read a Result Set
+
+The **binoculars** button in the search actions bar offers four readings of the same search, plus the facet sheet. **List** is the ordinary ranked list. **Timeline** places the matches by date (Section 5.7). **Concordance** lines every occurrence of your term up on the term itself, so a screen of hits reads as usage rather than as a list. **Collocates** ranks the words that keep company with your term. The button fills in whenever a reading other than List is active.
+
+They do not all count the same thing, and the menu says which is which: the concordance shows **this page**; the timeline and collocates cover the results retained for this search; **Facets** reads the whole match, before any narrowing. When you are about to quote a number, that distinction *is* the number.
+
+### 5.5 Facets
+
+Choose **Facets** from the binoculars menu to open a panel describing your whole result set rather than one row at a time — by year, volume, person, document type, and archival provenance. Sections compute when you open them, not when you search, so the panel never slows down a query you were not going to inspect.
+
+Facet rows are also controls. Clicking a year, volume, person, or document-type row **narrows the search**, and the narrowing appears as a clearable chip above the results. Three things the panel is careful about:
+
+- The counts describe the **whole match**, not the page on screen. The result list is capped while these counts are not, and the panel says so.
+- **Archival provenance is descriptive only.** It tells you how the match is sourced; it is not a filter, and the panel states how much of the match it can speak for.
+- A truncated section reports that it was truncated. A shown total is never a partial one wearing a complete label.
+
+### 5.6 Advanced Filters
 
 Click **Filters** in the Search window to expand additional filter controls.
 
@@ -399,7 +429,7 @@ Click **Filters** in the Search window to expand additional filter controls.
 | Filter | Description |
 |--------|-------------|
 | **Volume / Subseries scope** | Restrict the search to one or more specific volumes or an entire subseries. The corpus browser can also hand a scope directly to Search via **Search this volume**, so you arrive pre-scoped |
-| **My Volume Scopes** | Your named, reusable volume sets (Section 5.8). Applying a scope fills the volume picker with its **indexed** members and shows an honest "N of M volumes indexed" count; a scope with no indexed members shows a warning and applies nothing — it never silently falls through to a whole-corpus search |
+| **My Volume Scopes** | Your named, reusable volume sets (Section 5.11). Applying a scope fills the volume picker with its **indexed** members and shows an honest "N of M volumes indexed" count; a scope with no indexed members shows a warning and applies nothing — it never silently falls through to a whole-corpus search |
 | **By Subject · Detected Topics** | *Experimental.* **Filter by detected topic…** opens a two-level picker (category → sub-category) over automatically detected topics — not editorial subject headings, so they may include mistags. Picking a topic fills the volume picker with the indexed volumes where that topic is among the volume's most characteristic subjects, through the same indexed-members guard as volume scopes |
 | **Date Range** | Restrict results to documents dated within a range |
 | **My Tags** | Restrict to documents you have tagged yourself. The tag list refreshes **live** (188-D parity with iOS): create, rename, or delete a tag anywhere in the app — or receive one synced from another device — and the **Advanced…** filter reflects it the next time you open it, with no relaunch. Selecting a tag applies immediately and lights the **Tagged** chip above the results |
@@ -411,7 +441,9 @@ Click **Filters** in the Search window to expand additional filter controls.
 
 All active filters are shown as chips at the top of the results list; click any chip to remove that filter. The same volume/subseries scope is shared with **Corpus Analytics** (Section 13), so a query can be charted and read against the identical corpus subset.
 
-### 5.4 Timeline View
+The four open-ended groups — **My Working Corpora**, **My Volume Scopes**, **By Subject · Detected Topics**, and **User tags** — start collapsed so the panel opens at its top rather than mid-scroll. Two things a disclosure is never allowed to hide: a group opens itself while a warning stands (applying a scope or topic with no indexed volumes), and the working-corpus group opens itself, naming the corpus and how it was captured on its own collapsed label, whenever this Mac can reach only part of the corpus you applied.
+
+### 5.7 Timeline View
 
 Toggle **Timeline** in the Search window to display results on a chronological axis rather than a ranked list. This view is useful for understanding the temporal distribution of documents matching a query.
 
@@ -419,7 +451,7 @@ Toggle **Timeline** in the Search window to display results on a chronological a
 
 Pinch or use the scroll wheel to zoom the timeline; drag to pan.
 
-### 5.5 Saving Searches
+### 5.8 Saving Searches
 
 Click **Save Search** to bookmark the current query and all active filters. Saved searches appear in a sidebar in the Search window for instant re-running.
 
@@ -427,13 +459,13 @@ Click **Save Search** to bookmark the current query and all active filters. Save
 
 Saved searches can also be linked to Collections to create *smart collections* that auto-populate at export time (see Section 10.4).
 
-### 5.6 Visualizing a Search in Corpus Analytics
+### 5.9 Visualizing a Search in Corpus Analytics
 
 Any search that returns results offers a **Visualize in Corpus Analytics** banner. Clicking it opens the Analytics window (Section 13) pre-seeded with your search terms and any active date-range filter, so you can chart the term's distribution across the corpus and narrow the date range before returning to a more focused search. When a query returns more results than the Search window can display in full, the banner additionally shows the existing guidance about narrowing the range.
 
 `[SCREENSHOT: Search results banner offering "Visualize in Corpus Analytics" above a capped result list]`
 
-### 5.7 Checklist Review Mode
+### 5.10 Checklist Review Mode
 
 When you're working systematically through a long result set — deciding which of a few hundred matches to read — **Checklist Mode** turns the list into a shrinking to-do list. Click the labeled **Checklist** button in the sort bar (next to the timeline toggle; it's enabled once a search has results, and highlights while the mode is on) to turn it on.
 
@@ -443,11 +475,11 @@ Checklist Mode is a per-session working aid: it isn't saved, it resets when you 
 
 `[SCREENSHOT: The macOS Search window in Checklist Mode — the "N reviewed hidden" banner above a partially-reviewed results list, with the checklist button highlighted in the sort bar]`
 
-### 5.8 Custom Volume Scopes
+### 5.11 Custom Volume Scopes
 
 **Working corpora.** A **working corpus** is a fixed set of documents you define once and then work inside. Run a search, then **Save as Working Corpus** to capture those results as a named set; apply it from the search filters to search only within it. The set is fixed at capture, which is what makes counts taken inside it reproducible — re-running the query later may find different documents, but the corpus will not change. It syncs whole to your other devices, and every screen that shows one states how much of it is indexed here ("142 of 267 documents indexed on this device"), so a corpus means the same thing everywhere even where fewer of its volumes are downloaded. Manage them in Settings → Working Corpora.
 
-A **volume scope** is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration — that you define once and apply anywhere the app scopes an analysis: the Search filters (the **My Volume Scopes** section, Section 5.3), the Corpus, Person, and Cross-Reference Analytics scope menus (Section 13), the Word Cloud scope picker (Section 13.4), and the About the Series dashboards (Section 17.3a). Scopes sync to your other devices via iCloud.
+A **volume scope** is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration — that you define once and apply anywhere the app scopes an analysis: the Search filters (the **My Volume Scopes** section, Section 5.6), the Corpus, Person, and Cross-Reference Analytics scope menus (Section 13), the Word Cloud scope picker (Section 13.4), and the About the Series dashboards (Section 17.3a). Scopes sync to your other devices via iCloud.
 
 Manage scopes in **Settings → Research → Volume Scopes** (Section 16):
 
@@ -508,7 +540,7 @@ Click the **Related** tile in the Research rail (⌘⇧R) to open the **Related 
 - **Corpus proximity** — where the editors placed the two documents relative to each other. Highest for documents printed side by side or gathered into the same small chapter, easing off as the shared container widens to a whole compilation and then the whole volume; a different volume in the same subseries scores lower still. A same-volume pair therefore reads somewhere between 60% and 100% rather than a flat 100%.
 - **Shared people** — the same reconciled identities mentioned in both.
 
-Each row shows the document's header, volume, and dateline, plus small **"why related" icon chips** marking the signals that contributed to its rank, strongest first — the same icons and names the weights panel uses, so a chip is easy to decode. Clicking a row opens the document in the main window while the Related Documents window **stays open beside it** — it's a work list you step through, exactly like an Archival Neighbors window — and open windows are restored across relaunch, with their tuning intact.
+Each row shows the document's header, volume, and dateline, plus small **"why related" icon chips** marking the signals that contributed to its rank, strongest first — the same icons and names the weights panel uses, so a chip is easy to decode. Each chip states what its signal can honestly report: **cited 3×** for cross-references and **same provenance** for archival provenance, because those two *find* candidates rather than scoring them and a percentage there would mean nothing; date, corpus proximity, and shared people report a percentage, which for them is a real measure. Clicking a row opens the document in the main window while the Related Documents window **stays open beside it** — it's a work list you step through, exactly like an Archival Neighbors window — and open windows are restored across relaunch, with their tuning intact.
 
 - **Scope** — a segmented picker narrows the candidate pool to **This volume**, **This subseries**, or **All volumes** (the default: cross-corpus reach is the point). A scoped list that comes up empty invites you to widen back out.
 - **Adjust weights** — a disclosure panel with a slider per signal (0–1). Drag a slider and the list re-ranks when you release it; your tuning **persists** and seeds every Related Documents window you open afterward. A sixth signal, **Shared topics**, is visible but disabled — "Available when detected-topic data ships (experimental)."
@@ -1198,6 +1230,8 @@ In **Settings → Research → Projects**, click the ellipsis (…) button next 
 
 When you read a document that has notes from a different project, a disclosure indicator appears at the bottom of the note area. Expand it to read those notes. Click **Add to This Project** on any note to make it visible under both projects.
 
+**Leads.** Project Home suggests documents related to the ones you have already gathered under this project, ranked by the same signals as Related Documents (Section 6.4). Each row shows the document's header, how many of your project's documents it is related to, and a few lines of what it actually says — its summary if it has one, otherwise its opening text — so you can judge a lead without opening it. A lead whose volume is not indexed on this Mac shows the header alone.
+
 ### 15.2 User Tags
 
 User tags are global (not project-scoped). They complement projects by letting you mark documents with thematic labels that cut across multiple research initiatives.
@@ -1229,12 +1263,13 @@ its own.
 | **Library** | **Volumes & Storage** | The whole corpus on this Mac behind one door. See Section 16.1. |
 | **Research** | **Projects** | The active-project picker and Project Home, then the list where you rename, merge and delete projects. |
 | | **Tags** | Rename, merge and delete user tags; each row carries what is attached to it. |
-| | **Volume Scopes** | Create, edit and delete your named volume sets (Section 5.8). **New Scope…** opens the editor with its subseries-grouped volume picker and **Add Volumes By…** facets; each row shows live indexed coverage and a Word Cloud button. Scopes sync via iCloud. |
+| | **Working Corpora** | Your saved working corpora — fixed document sets captured from a search. Each row states how much of the set this Mac can reach and how the set was captured, including whether the originating search hit its ceiling. Corpora sync whole via iCloud. |
+| | **Volume Scopes** | Create, edit and delete your named volume sets (Section 5.11). **New Scope…** opens the editor with its subseries-grouped volume picker and **Add Volumes By…** facets; each row shows live indexed coverage and a Word Cloud button. Scopes sync via iCloud. |
 | | **Summarization** | Apple Intelligence availability, your standard and custom prompts, and **New Batch Run…**, which opens the run sheet. |
 | | **Word Cloud** | Filtering criteria (minimum word length and occurrences, plural-merging, classification-marking and diplomatic-boilerplate filters), a live **Sample** of what your settings keep with a "Keeps N of M terms" line, one hidden-words editor scoped to every cloud or to a single lens, and an **Appearance** section setting the cloud's font and density — device-local, not synced (Section 13.4). |
 | | **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag and text filters. Identical to the iOS pane. |
 | | **Research Sessions** | The **Log Research Sessions** switch and a plain statement of what it records; the **Session Log**, expandable to what you did in each session; and **Delete Recorded Sessions…**. Despite its name the switch governs the whole research trail — the documents you open, the text of the searches you run, and the collections you export. There is one record of each, shared by the **History** menu and Complete History window (Section 17), a project's **Recents**, and the Session Log, which is not stored but worked out from those records' times with a gap of 30 minutes starting a new session. Turn the switch off and those surfaces thin out and eventually empty; that is the switch working. **Delete Recorded Sessions…** now clears the whole trail — every document opened, search run and collection exported — leaving notes, highlights, tags and collections untouched. |
-| **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and the default document mode. |
+| **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and the default document mode. **Discovery Tips → Show Tips Again** brings back the tips that point out easy-to-miss controls. |
 | | **Search** | Default search scope, default document type, and **Result Preview** — how many lines of matched context a result shows (1–10). Honoured by the Search window (Section 5.1) and the Collections **Add Documents** previews (Section 10.2a), each of which can override it locally. |
 | **System** | **iCloud Sync** | The **Sync Settings Across Devices** toggle, which mirrors your word-cloud filters and stop lists, citation style, default document mode and research-logging preference to your other devices that have it enabled. Off by default. Live sync status is in the main window's status bar, not here. |
 | | **Connections** | The NARA Catalog and Zotero (Section 16.2). |
@@ -1295,7 +1330,9 @@ optional, and that is deliberate — a search that returned nothing is evidence,
 dropped it could not stand as a record of how you worked. Each entry carries the project that was
 active when it was recorded, so a file exported mid-project can be read back as the method behind
 it. **Export Notes as Markdown** writes one file per note, Obsidian-compatible. Generated AI
-summaries are excluded by default and can be included with a toggle.
+summaries are excluded by default and can be included with a toggle. Each included summary records
+who wrote it — the model, the model then edited by you, or you — so the file you hand to another
+tool never presents machine text and your own writing as the same thing.
 
 Because the JSON file contains the text of every search you ran, look before you share it — the
 same reason the Contents list shows you the size of the trail first. To empty the trail rather

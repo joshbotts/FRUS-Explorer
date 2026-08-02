@@ -155,6 +155,8 @@ When the whole queue finishes, the banner becomes a brief summary card — "*27 
 
 `[SCREENSHOT: Indexing summary card with "Search this volume" action]`
 
+The same word cloud fills two other waits. On the first launch after installing, and on a launch where iCloud is still pulling your research down, it appears full-screen behind the wordmark instead of a blank window — and it clears when the wait actually ends, not on a timer. It never appears over onboarding, and never over a list you are reading.
+
 ### 3.2 Live Activity (iPhone 14 Pro and later)
 
 On iPhones with a Dynamic Island, starting a download presents a **Live Activity** — a persistent, glanceable progress indicator that stays visible from the Lock Screen, the Dynamic Island, and other apps, so you can track indexing progress without returning to FRUS Explorer.
@@ -195,6 +197,12 @@ Showing the rail is **Research mode**; hiding it is a distraction-free **Read mo
 `[SCREENSHOT: Document view with the Research rail open — the RESEARCH header, the 3×2 tile grid, and the Summary/Notes/Tags/Collections accordions]`
 
 ---
+
+### 3.4 Discovery Tips
+
+A few of the app's most useful controls are also its least visible — the Research-rail button is a single unlabelled glyph, and the page-turn edges are invisible by design. The first few times you reach one, a small tip appears beside it saying what it does: the Research button and what is behind it, the edge zones, the binoculars menu's four readings of a result set, and the fact that facet rows are filters. Each tip retires the moment you use the control it points at, and none of them block what you were doing.
+
+If you dismissed them and want them back, use **Show Tips Again** in **Settings → Reading & Search → Display**.
 
 ## 4. Browsing the Corpus
 
@@ -294,9 +302,9 @@ The **Search** tab provides full-text search across every volume you've download
 
 Type a word or phrase into the search field and results appear as you type, each showing a highlighted snippet of matching text, the document's citation, and its date. Tap a result to open the document, scrolled to the matching passage.
 
-You can control how much context each snippet shows — anywhere from **1 to 10 lines**. Set the app-wide default in **Settings → Reading & Search → Search → Result Preview**, and override it for just this list from the **Result Preview** section of the filter panel (Section 5.3). The length you choose here is remembered separately from the one used in the Collections *Add Documents* sheet (Section 10.1), so each surface keeps its own preferred snippet length.
+You can control how much context each snippet shows — anywhere from **1 to 10 lines**. Set the app-wide default in **Settings → Reading & Search → Search → Result Preview**, and override it for just this list from the **Result Preview** section of the filter panel (Section 5.6). The length you choose here is remembered separately from the one used in the Collections *Add Documents* sheet (Section 10.1), so each surface keeps its own preferred snippet length.
 
-Results are shown a page at a time — 25 per page, with **‹ Page X of Y ›** controls in the results header — so a large result set stays fast to scroll. Up to 1,000 matches are loaded; if a query matches more, the header says so, and you can narrow your terms or use **Visualize in Corpus Analytics** (Section 5.5) to chart and tighten the result set.
+Results are shown a page at a time — 25 per page, with **‹ Page X of Y ›** controls in the results header — so a large result set stays fast to scroll. Up to 1,000 matches are loaded; if a query matches more, the header says so, and you can narrow your terms or use **Visualize in Corpus Analytics** (Section 5.8) to chart and tighten the result set.
 
 **While a search runs**, the results area shows a spinner — and if the wait lasts longer than a moment, the drifting word cloud (Section 3.1) fades in behind it, showing the common vocabulary of whatever you scoped the search to. Quick searches never show it; only a search long enough to notice grows a backdrop. The words are the *scope's* ambient vocabulary, not your results — those don't exist yet — which is why the cloud only ever appears on an empty waiting screen and never behind a list you're reading.
 
@@ -312,10 +320,38 @@ The search field supports a small query syntax for more precise results:
 | `"exact phrase"` | Matches the exact phrase |
 | `word1 OR word2` | Matches documents containing either word |
 | `-word` | Excludes documents containing that word |
+| `NEAR("military guarantee" Europe, 30)` | Both terms within 30 words of each other |
+| `=containment` | The literal word only — not *contain*, *containing*, *container* |
+
+**Proximity search (`NEAR`).** Two words appearing in the same document tells you very little — a long volume can mention almost anything twice. `NEAR` asks the sharper question: did these ideas appear *together*? `NEAR("military guarantee" Europe, 30)` matches only documents where that exact phrase falls within thirty words of *Europe*. Operands may be words, exact phrases, or prefixes (`NEAR(militar* europ*, 20)`), and the distance is optional — it defaults to 10.
+
+**Exact-word search (`=`).** Search is stemmed, which is usually what you want: *negotiate* also finds *negotiated*. But it means a search for **containment** is really a search for *contain*, and returns *container* and *containing* alongside it. Prefix a word with `=` to switch that off for that word only.
 
 `[SCREENSHOT: Search field showing a phrase query in quotes with matching results]`
 
-### 5.3 Filters
+### 5.3 The Query Inspector
+
+Under the search field is a strip showing the **FTS5 expression your query actually became** — the string that went to the database, not a paraphrase of it. Tap the chevron to expand it and see, for each term: the **index form** it was reduced to, with a warning when that is broader than what you typed (`containment` is searched as `contain`); how many documents contain it **across everything you have indexed**, which is free to compute; and, on request, the **exact count within your current filters**, which runs a real query per term and so sits behind a button.
+
+Both counts are shown because the gap between them is information: a term that is common in the corpus but rare in your scope is telling you something about your scope.
+
+### 5.4 Four Ways to Read a Result Set
+
+The **binoculars** button in the search actions bar offers four readings of the same search, plus the facet sheet. **List** is the ordinary ranked list. **Timeline** places the matches by date (Section 5.7). **Concordance** lines every occurrence of your term up on the term itself, so a page of hits reads as usage rather than as a list. **Collocates** ranks the words that keep company with your term (Section 13.4). The button fills in whenever a reading other than List is active, so you can always see which control changed the screen.
+
+They do not all count the same thing, and the menu says which is which: the concordance shows **this page**; the timeline and collocates cover the results retained for this search; **Facets** reads the whole match, before any narrowing. When you are about to quote a number, that distinction *is* the number.
+
+### 5.5 Facets
+
+Choose **Facets** from the binoculars menu to open a sheet that describes your whole result set rather than one row at a time — by year, volume, person, document type, and archival provenance. Sections compute when you open them, not when you search, so the panel never slows down a query you were not going to inspect.
+
+Facet rows are also controls. Tapping a year, volume, person, or document-type row **narrows the search**, and the narrowing appears as a clearable chip above the results. Three things the panel is careful about:
+
+- The counts describe the **whole match**, not the page you are looking at. The result list is capped while these counts are not, and the panel says so.
+- **Archival provenance is descriptive only.** It tells you how the match is sourced; it is not a filter, and the panel states how much of the match it can speak for rather than implying it covers all of it.
+- A truncated section reports that it was truncated. A shown total is never a partial one wearing a complete label.
+
+### 5.6 Filters
 
 Tap the filter control to narrow your search by:
 
@@ -329,35 +365,37 @@ Two further sections scope a search by *sets* of volumes:
 - **My Volume Scopes** — your named, reusable volume sets (see Section 16.1). Each row shows an honest "N of M volumes indexed" count; applying a scope fills the volume picker with its currently **indexed** members. A scope with no indexed members warns — *"No volumes of '\<name\>' are indexed yet — download and index its volumes first"* — and applies nothing, so a scope's label never silently means "the whole corpus."
 - **By Subject · Detected Topics** *(experimental)* — tap **Filter by detected topic…** for a two-level picker: categories that expand into sub-categories, each with an "in N vols" reach count (the first entry, **All of \<category\>**, applies the whole broad category). Applying one fills the volume picker with the indexed volumes where that topic is among the volume's most *characteristic* detected topics — not merely mentioned. As the picker itself says, these are automatically detected topics, not editorial subject headings, and may include mistags.
 
+The four open-ended sections — **My Working Corpora**, **My Volume Scopes**, **By Subject · Detected Topics**, and **User tags** — start collapsed, so the panel opens at the top rather than mid-scroll. Two things a disclosure is never allowed to hide: a section opens itself while a warning stands (applying a scope or topic with no indexed volumes), and the working-corpus section opens itself, naming the corpus and how it was captured on its own collapsed label, whenever this device can reach only part of the corpus you applied.
+
 The filter panel also carries a **Result Preview** control that sets how many lines of context this results list shows for each match (see Section 5.1).
 
 `[SCREENSHOT: Search filter sheet showing the My Volume Scopes section with "N of M volumes indexed" rows and the By Subject · Detected Topics section, above the volume, date range, person, and user-tag filters]`
 
-### 5.4 Timeline View
+### 5.7 Timeline View
 
 Toggle **Timeline** from the actions bar below the search field to see your search results arranged chronologically along a timeline rather than as a ranked list — useful for tracing how a topic developed over a span of years.
 
 `[SCREENSHOT: Search results in Timeline view, documents arranged along a date axis]`
 
-### 5.5 Visualizing a Search in Corpus Analytics
+### 5.8 Visualizing a Search in Corpus Analytics
 
 Whenever a search returns results, FRUS Explorer offers to **Visualize in Corpus Analytics** — tapping this hands your search terms and any active date-range filter to the Analytics tab, pre-seeded so you can immediately chart the term's distribution across the corpus (see Section 13.3). When a search returns more results than can be displayed in full, the same handoff also carries the existing guidance about narrowing your date range before returning to search with a tighter result set.
 
 `[SCREENSHOT: Search results banner offering "Visualize in Corpus Analytics"]`
 
-### 5.6 Saving Searches
+### 5.9 Saving Searches
 
 Tap the save icon to store your current query and filters for quick reuse later. Saved searches appear in a dedicated list accessible from the Search tab and sync across your devices via iCloud.
 
 `[SCREENSHOT: Saved searches list]`
 
-### 5.7 Finding a Document by Citation
+### 5.10 Finding a Document by Citation
 
 Tap the citation-lookup button (a magnifying glass over quotation marks) in the Search toolbar to open **Citation Lookup** — paste or type a citation string (e.g., `FRUS 1969–1976, Volume I, Document 42`) and FRUS Explorer parses it and jumps directly to that document, even in a volume you haven't browsed to before. See Section 9 for more on citations.
 
 `[SCREENSHOT: Citation Lookup sheet with a pasted citation string and a "Go" button]`
 
-### 5.8 Checklist Review Mode
+### 5.11 Checklist Review Mode
 
 When you're working systematically through a long result set — deciding which of a few hundred matches to read — **Checklist Mode** turns the list into a shrinking to-do list. Tap the **Checklist** button (the ☑︎ checklist icon) in the search actions bar, just right of the timeline button; it's enabled once a search has results, and highlights while the mode is on.
 
@@ -418,7 +456,7 @@ A cross-reference tells you what a document *cites*; **Related Documents** tells
 | **Corpus proximity** | How closely the FRUS editors placed the two documents: in the same chapter or compilation, printed side by side, or — across volumes — in the same publication era |
 | **Shared people** | Documents mentioning the same people |
 
-Each row shows the document's header, volume, and dateline, plus small **"why related" icon chips** naming the signals that contributed to its ranking, strongest first. Tap a row to open the document.
+Each row shows the document's header, volume, and dateline, plus small **"why related" icon chips** naming the signals that contributed to its ranking, strongest first. A chip states whatever its signal can honestly report: **cited 3×** for cross-references and **same provenance** for archival provenance, because those two *find* candidates rather than scoring them and a percentage there would mean nothing; date, corpus proximity, and shared people report a percentage, which for them is a real measure. Tap a row to open the document.
 
 - **Scope.** A segmented control at the top narrows the candidate pool — **This volume**, **This subseries**, or **All volumes**. A scoped list that comes up empty invites switching back to All volumes.
 - **Adjust weights.** Expand **Adjust weights** for a slider per signal. Release a slider and the list re-ranks immediately; your tuning is remembered and becomes the starting point the next time you open Related Documents. A sixth slider, **Shared topics**, is visible but disabled for now — as its caption says, it becomes available when detected-topic document data ships (experimental).
@@ -801,6 +839,8 @@ Open Analytics from the chart-icon button in the Browse tab toolbar (Section 4.4
 
 Enter one or more terms and an optional date range, then tap to chart their frequency across the indexed corpus. Choose a **dimension** — Decade, Year, Month, Day, **Subseries**, or **By Volume**: the time dimensions chart frequency over time, while Subseries and By Volume break the same query down by where in the corpus it appears (omitting any subseries or volume where the term never occurs). The **Subseries** grouping uses the same publication-era buckets as the Corpus Browser, so early annual, conference, and supplement volumes bucket consistently between the two. On a Subseries or By Volume chart, tapping a bar drills into a Search scoped to that subseries or volume. The **By Year** and **By Decade** charts colour-code each bar by the volumes contributing the matches — the most-represented source volumes each get a colour, the rest fold into a grey "Other", and a legend below names each volume with its count — so you can see at a glance *which* part of the corpus is driving a term in any period (the same encoding the Chronology graph uses). These two charts also offer a **normalization** toggle — **Raw count** or **% of documents** — that reads a term as a *share of the corpus* in each period rather than a raw tally: dividing each period's matches by the number of documents FRUS actually published in that year or decade, so a spike is corrected for periods that simply contain more documents. (The toggle is offered only on By Year and By Decade, the axes that have a meaningful per-period corpus total.) Those same two charts offer a **Measure** picker — **Documents** or **Occurrences**. Documents counts each matching document once however many times your term appears in it; Occurrences counts every mention, by word stem (so `containment` counts `container` too, as the axis label notes). The two can move in opposite directions: searching `"Article 43"`, documents fall from 34 in 1948 to 11 in 1949 while occurrences *rise* 77 to 92, because one 1949 document discusses it 54 times — a topic concentrating rather than disappearing. The picker is disabled **with a stated reason** where no honest count exists: exact-word (`=word`) searches, phrases, wildcards, proximity searches, and queries with more than one term (including a comparison). Occurrences and **% of documents** are mutually exclusive, since occurrences divided by documents is a rate rather than a share. The number of distinctly coloured volumes before the "Other" fold is **configurable** (6–12, default 8): a **Chart colors** menu in the Analytics toolbar sets it for this view, and a global **Chart Colors** default lives in **Settings → Reading & Search → Display** (see Section 6.4). A **Scope** bar and a **year-range** bar above the chart let you narrow every figure to a subseries or volume (the same scope Search uses, so a chart and your searches can cover the identical corpus subset) and to a span of years, without re-entering your term; an **Administration** preset menu sets the year range to a president's term in one tap. The Scope menu also lists **My Volume Scopes** — your named volume sets (Section 16.1), each with an honest "N of M indexed" count and disabled with "none indexed yet" when no member is indexed, since analytics can only chart indexed volumes — and a **By Detected Topic** submenu (experimental) that scopes the analysis to the indexed volumes where a detected-topic category or sub-category is characteristic, with the same honest counts. The identical scope bar serves Person Analytics (13.6) and Cross-Reference Analytics (8.1). An **info** button (ⓘ) in the toolbar opens a popover explaining what the chart shows and how to read it. On iPhone, the secondary toolbar controls — **Group by** (dimension), **Measure** (documents vs. occurrences), **Values** (raw count vs. %), **Fit line**, and **Chart colors** — are folded into a single **Options (•••)** menu so they don't crowd the narrow toolbar (the chart/table view picker stays inline); on iPad they remain inline.
 
+Committing a term puts the keyboard away, so the chart you just asked for is the thing on screen; you can also dismiss the keyboard by dragging the chart area.
+
 ### 13.2 From a Chart to a Search
 
 Tap a point or segment on the chart to **View in Search** — this opens the Search tab with that term and the corresponding year range pre-filled as a date filter, letting you read the actual documents driving that data point.
@@ -809,7 +849,7 @@ Tap a point or segment on the chart to **View in Search** — this opens the Sea
 
 ### 13.3 From a Search to a Chart
 
-The relationship runs both ways: whenever a search returns results, Search offers **Visualize in Corpus Analytics** (Section 5.5) — tapping it opens Analytics pre-seeded with your search terms and date filter, so you can chart the term's distribution. When a search returns more matches than can be shown in full, the handoff additionally guides you to narrow your date range before returning to a more focused search.
+The relationship runs both ways: whenever a search returns results, Search offers **Visualize in Corpus Analytics** (Section 5.8) — tapping it opens Analytics pre-seeded with your search terms and date filter, so you can chart the term's distribution. When a search returns more matches than can be shown in full, the handoff additionally guides you to narrow your date range before returning to a more focused search.
 
 ### 13.4 Word Cloud
 
@@ -925,6 +965,10 @@ In the **Research** tab, you can filter your notes, tags, and highlights to show
 
 ---
 
+### 15.4 Leads
+
+Project Home suggests documents related to the ones you have already gathered under this project, ranked by the same signals as Related Documents (Section 6.5). Each row shows the document's header, how many of your project's documents it is related to, and a few lines of what it actually says — its summary if it has one, otherwise its opening text — so you can judge a lead without opening it. A lead whose volume is not indexed on this device shows the header alone.
+
 ## 16. Settings
 
 The **Settings** tab gathers every app-wide preference. It opens with your iCloud sync status, a
@@ -950,11 +994,12 @@ preferences stay local either way: **Show Indexing Live Activity**, and the Word
 | **Research** | **Projects** | Your research projects — the active-project picker, Project Home, and the list where you rename, merge and delete them (Section 15). |
 | | **Tags** | Create, rename, merge and delete your custom tags. Each row shows what is attached, so the cost of a delete is visible before you choose it. |
 | | **Volume Scopes** | Named, reusable volume sets (Section 16.2). |
+| | **Working Corpora** | Your saved working corpora — fixed document sets captured from a search. Each row shows how much of the set is indexed on this device and how it was captured, including whether the search that produced it was capped. |
 | | **Summarization** | Apple Intelligence availability, your standard and custom prompts, and **New Batch Run…**, which opens the run sheet. |
 | | **Word Cloud** | Filtering criteria, a live sample of what your settings keep, the "Keeps N of M terms" line, and one hidden-words editor scoped either to every cloud or to a single lens (Section 13.4). |
 | | **Notes** | Your five most recent research notes, with **All Notes** opening the full list with project, tag and text filters. |
 | | **Research Sessions** | What the app records about your reading, whether to record it, and how to delete it (Section 16.4). |
-| **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and reading defaults including **Edge-Tap Page Turn**. |
+| **Reading & Search** | **Display** | Document text size, the **Chart Colors** default (6–12, default 8) for the Chronology and Corpus Analytics charts, citation style, and reading defaults including **Edge-Tap Page Turn**. **Discovery Tips → Show Tips Again** brings back the tips that point out easy-to-miss controls (Section 3.4). |
 | | **Search** | Default search scope, default document type, and how many lines of context each result shows. |
 | **System** | **Connections** | The two outside services — the NARA Catalog and Zotero (Section 16.3). |
 | | **Data & Recovery** | Getting your work out, finding out what the app thinks is wrong, and putting it back together (Section 16.5). |
@@ -988,7 +1033,7 @@ Below that, in the order you are likely to need them:
 
 ### 16.2 Volume Scopes
 
-A **volume scope** is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration — that you define once and then apply anywhere the app scopes a search or an analysis: the Search filters (Section 5.3), the Corpus, Person, and Cross-Reference Analytics scope menus (Section 13.1), a Word Cloud launched straight from the scope's row (Section 13.4), and — at manifest grain, downloaded or not — the About the Series dashboards (Section 19.1). Scopes sync to your other devices via iCloud.
+A **volume scope** is a named, reusable set of volumes — every volume covering a crisis, a region, or an administration — that you define once and then apply anywhere the app scopes a search or an analysis: the Search filters (Section 5.6), the Corpus, Person, and Cross-Reference Analytics scope menus (Section 13.1), a Word Cloud launched straight from the scope's row (Section 13.4), and — at manifest grain, downloaded or not — the About the Series dashboards (Section 19.1). Scopes sync to your other devices via iCloud.
 
 Manage them in **Settings → Research → Volume Scopes**. Tap **New Scope…** to open the editor:
 
@@ -1064,7 +1109,9 @@ evidence, and an export that dropped it could not stand as a record of how you w
 carries the project that was active when it was recorded, so a file exported mid-project can be
 read back as the method behind it. **Export Notes as Markdown** writes one file per note,
 Obsidian-compatible. Generated AI summaries are excluded by default and can be included with a
-toggle, since that output can be large.
+toggle, since that output can be large. Each included summary records who wrote it — the model, the
+model then edited by you, or you — so the file you hand to another tool never presents machine text
+and your own writing as the same thing.
 
 Because the JSON file contains the text of every search you ran, look before you share it — the
 same reason the Contents list shows you the size of the trail first. To empty the trail rather
