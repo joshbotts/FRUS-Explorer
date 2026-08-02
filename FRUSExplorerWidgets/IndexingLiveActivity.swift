@@ -39,7 +39,10 @@ private extension IndexingActivityAttributes.ContentState {
         case .indexing:
             return String(localized: "liveactivity.parsing", defaultValue: "Parsing…")
         case .summarizing:
-            return String(localized: "liveactivity.summarizing", defaultValue: "Summarizing…")
+            // Indeterminate means the run has no total yet, which is the enumeration phase — it is
+            // parsing volumes, not summarizing (#560).
+            return String(localized: "liveactivity.summarizing.preparing",
+                          defaultValue: "Preparing to summarize…")
         }
     }
 }

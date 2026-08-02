@@ -133,7 +133,7 @@ struct BatchRunReceiptTests {
     @Test("A running batch reports its position")
     func running() {
         let text = BatchRunReceipt.text(
-            for: .running(tally: .init(succeeded: 2, attemptable: 7), currentDocumentId: "d1"))
+            for: .running(tally: .init(succeeded: 2, attemptable: 7), currentDocumentId: "d1", step: nil))
         #expect(text.contains("2"))
         #expect(text.contains("7"))
     }
@@ -141,7 +141,7 @@ struct BatchRunReceiptTests {
     /// Before a run knows its size it has no position to report, and "0 of 0" would read as failure.
     @Test("A run still enumerating says so rather than reporting 0 of 0")
     func enumerating() {
-        let text = BatchRunReceipt.text(for: .running(tally: .zero, currentDocumentId: nil))
+        let text = BatchRunReceipt.text(for: .running(tally: .zero, currentDocumentId: nil, step: nil))
         #expect(!text.contains("0 of 0"))
         #expect(text.lowercased().contains("enumerating"))
     }
@@ -152,7 +152,7 @@ struct BatchRunReceiptTests {
     func skippedAreNotInTheDenominator() {
         let text = BatchRunReceipt.text(
             for: .running(tally: .init(succeeded: 500, skipped: 900, attemptable: 500),
-                          currentDocumentId: nil))
+                          currentDocumentId: nil, step: nil))
         #expect(text.contains("500 of 500"), "got \(text)")
         #expect(!text.contains("1400"), "the 900 already-done documents must not inflate the total")
     }
@@ -176,8 +176,8 @@ struct BatchRunReceiptTests {
     func everyStateSpeaks() {
         let states: [BackgroundSummarizationState] = [
             .idle,
-            .running(tally: .init(succeeded: 1, attemptable: 2), currentDocumentId: nil),
-            .running(tally: .zero, currentDocumentId: nil),
+            .running(tally: .init(succeeded: 1, attemptable: 2), currentDocumentId: nil, step: nil),
+            .running(tally: .zero, currentDocumentId: nil, step: nil),
             .completed(tally: .init(succeeded: 4, attemptable: 4)),
             .completed(tally: .init(succeeded: 4, failed: 1, attemptable: 5)),
             .completed(tally: .init(skipped: 9, attemptable: 0)),

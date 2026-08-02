@@ -888,10 +888,16 @@ Documents that are too long for a single model call are automatically chunked (a
 To summarize many documents at once, use the **Background Summarizer** in **Settings → Research → Summarization → New Batch Run…**.
 
 1. Choose a scope: an entire subseries, a single volume, a user tag, a saved search, a date range, or one of your saved volume scopes (**My Volume Scopes** — Section 5.8; the picker shows how many of the scope's volumes are downloaded, and Run stays disabled until at least one member volume is downloaded).
-2. Set the concurrency limit (how many documents are summarized in parallel).
+2. Set the concurrency limit (how many documents are summarized at once). Apple Intelligence generates one summary at a time internally, so a higher number does not make the model faster — it helps when your Mac is busy with other work, and it makes the first summary take longer to appear. Your choice is remembered.
 3. Click **Run**.
 
 Progress is shown non-intrusively in the Settings window. The main window and all other tools remain fully responsive while summarization runs.
+
+**How long it takes, honestly.** A large scope takes hours, not minutes. Document length varies enormously across the series — a treaty text can run to a million characters — and a document that long is summarized in parts and recombined, which can take many minutes on its own. While that happens the progress line names the document and the part it is on (*"d39 — part 12 of 131"*), so you can tell a long document from a stuck one.
+
+**What the numbers mean.** The count is summaries actually written, not documents attempted. If some documents fail, the run finishes as *"Finished — 497 summarized, 3 failed"* rather than claiming completion. Documents that already have a summary for the chosen prompt are skipped and are reported separately, so a re-run over a finished scope says *"Nothing to summarize"* rather than showing zero.
+
+Quitting FRUS Explorer stops a run. Summaries already written are kept, and starting the same scope again picks up where it left off.
 
 `[SCREENSHOT: Background Summarizer settings pane showing scope picker, concurrency slider, and progress indicator]`
 

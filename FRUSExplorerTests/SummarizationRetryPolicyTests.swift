@@ -130,3 +130,99 @@ struct BatchRunTallyTests {
         #expect(tally.finished <= tally.attemptable)
     }
 }
+
+// MARK: - SummarizationStepLabelTests
+
+/// Sub-document progress (#560 PR B) — the only thing that moves while a long document is working.
+///
+/// `frus1872p2v4/d39` is 1,282,843 characters and chunks into 131 parts. During it the run's own
+/// counter cannot advance at all, which is what made a working run read as frozen.
+@Suite("Summarization step label")
+struct SummarizationStepLabelTests {
+
+    /// Most documents fit one model call. "part 1 of 1" on every ordinary document would be noise,
+    /// and would make a healthy run look like it was struggling.
+    @Test("A document that fits one call reports nothing")
+    func singleCallIsSilent() {
+        #expect(SummarizationStepLabel.detail(for: nil) == nil)
+        #expect(SummarizationStepLabel.detail(for: .singleCall) == nil)
+    }
+
+    @Test("A chunked document reports its position")
+    func chunkPosition() {
+        let detail = SummarizationStepLabel.detail(for: .chunk(index: 12, of: 131))
+        #expect(detail == "part 12 of 131")
+    }
+
+    @Test("The reduce pass says what it is doing")
+    func synthesizing() {
+        let detail = SummarizationStepLabel.detail(for: .synthesizing(parts: 131))
+        #expect(detail?.contains("131") == true)
+        #expect(detail?.contains("combining") == true)
+        // Distinguishable from the map pass, or the two phases look like one stalled counter.
+        #expect(detail != SummarizationStepLabel.detail(for: .chunk(index: 131, of: 131)))
+    }
+
+    /// The chunk indices are 1-based on the wire, because they are shown to a person. An off-by-one
+    /// here reads as "part 0 of 131" on the first chunk of every long document.
+    @Test("Chunk indices are 1-based at the boundary")
+    func oneBased() {
+        #expect(SummarizationStepLabel.detail(for: .chunk(index: 1, of: 131)) == "part 1 of 131")
+        #expect(SummarizationStepLabel.detail(for: .chunk(index: 131, of: 131)) == "part 131 of 131")
+    }
+}
+
+// MARK: - SummarizationSettingsPersistenceTests
+
+/// The two settings defects in #560 PR B, both of which are only visible by reading the source:
+/// a `@State` that silently discards the user's choice, and a hint that promised something the
+/// system does not do.
+@Suite("Bulk summarization settings")
+struct SummarizationSettingsPersistenceTests {
+
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
+        return text
+    }
+
+    /// It was `@State`, so SwiftUI discarded it on every sheet dismissal and every run silently
+    /// restarted at 2. No runtime test in this bundle can open the sheet twice.
+    @Test("The concurrency limit is persisted, under its own key")
+    func concurrencyIsPersisted() throws {
+        let view = try Self.source("FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift")
+        #expect(view.contains("@AppStorage(SettingsKeys.summarizationConcurrencyLimit) private var concurrencyLimit"),
+                "the user's choice must survive the sheet closing")
+        #expect(!view.contains("@State private var concurrencyLimit"))
+
+        // Its own key. Reusing the downloads key would make one slider move the other.
+        let settings = try Self.source("FRUSExplorer/Settings/SettingsView.swift")
+        #expect(settings.contains(#"static let summarizationConcurrencyLimit = "frus.summarization.concurrencyLimit""#))
+        #expect(settings.contains(#"static let concurrentDownloadLimit = "frus.concurrentDownloadLimit""#),
+                "the downloads key must still be distinct")
+    }
+
+    /// "Higher values summarize faster but may exceed the model's rate limit" was wrong twice over:
+    /// on-device generation serialises, and the app pattern-matches no rate-limit error anywhere.
+    @Test("The concurrency hint no longer promises a rate limit")
+    func hintIsHonest() throws {
+        let view = try Self.source("FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift")
+        #expect(!view.contains("may exceed the model's rate limit"))
+        #expect(!view.contains(#""bg.summarizer.concurrency.hint""#),
+                "the old key must go with the old text, or a translation could resurrect it")
+        #expect(view.contains("one summary at a time"))
+    }
+
+    /// The run is honestly hours. Saying so at the point of commitment is what separates a long
+    /// wait from a wait that reads as a hang.
+    @Test("The start control admits how long a large run takes")
+    func durationIsStated() throws {
+        let view = try Self.source("FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift")
+        #expect(view.contains("several hours"))
+        // But no estimate: per-document time varies by two orders of magnitude with length.
+        #expect(!view.contains("estimatedMinutes"))
+        #expect(!view.contains("timeRemaining"))
+    }
+}

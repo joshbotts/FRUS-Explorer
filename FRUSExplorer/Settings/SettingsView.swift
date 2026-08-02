@@ -1869,6 +1869,10 @@ enum SettingsKeys {
     /// Written by the Downloads settings (both platforms), read at boot by
     /// `FRUSExplorerApp` and applied live via `DownloadManager.setConcurrencyLimit`.
     static let concurrentDownloadLimit = "frus.concurrentDownloadLimit"
+    /// How many documents a bulk-summarization run works on at once (#560). Distinct from
+    /// ``concurrentDownloadLimit``, which is downloads — reusing that key would make one slider
+    /// silently move the other.
+    static let summarizationConcurrencyLimit = "frus.summarization.concurrencyLimit"
 
     /// UserDefaults key for the persisted citation style (history.state.gov /
     /// Chicago / Turabian). Read via `CitationStyle.current`; drives

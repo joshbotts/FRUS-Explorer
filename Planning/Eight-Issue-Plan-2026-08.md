@@ -2,8 +2,8 @@
 
 **Date**: 2026-08-01
 **Issues**: #559, #597, #561, #553, #586, #562, #560, #626
-**Status**: revised again 2026-08-01 — items 1–7 shipped plus #560 PR A; #560 PR B (sub-document
-progress + settings copy) is specified and unbuilt; #586 and #626 held by the owner
+**Status**: revised again 2026-08-01 — items 1–8 shipped (#559, #597, #553, #561, #562, #560 A+B);
+#586 and #626 held by the owner. Every ready item in the plan is done.
 
 Every effort estimate below was checked against code, and three claims were re-verified by hand
 before this was written. Four issues turned out to be a different size than their titles suggest,
@@ -461,7 +461,7 @@ to today's flat 1.0 and nobody notices.
 
 </details>
 
-### 9 · #560 — bulk summarization (mid M) — **PR A SHIPPED**
+### 9 · #560 — bulk summarization (mid M) — **SHIPPED (PR A + PR B)**
 
 **The run was reconstructed from the owner's own store, and neither this section nor the issue
 described what actually happened.** `ZGENERATEDSUMMARY` timestamps identify the run exactly: 1,364
@@ -529,10 +529,22 @@ not apply: generation runs in a shared system daemon and serialises. Cores are n
 work and 252.8 minutes were stalls; both remain. What changed is that the app stops claiming success
 it did not achieve.
 
-**PR B (not yet built).** Sub-document progress — thread a step callback out of `SummarizationService`
-so a 131-chunk document reports "part 12 of 131" instead of a frozen count; persist the concurrency
-limit; replace the false Stepper hint ("may exceed the model's rate limit" — there is no rate limit
-and no rate-limit handling anywhere in the app); one honest sentence at the point of commitment.
+**PR B — SHIPPED.** `SummarizationStep` (`singleCall` / `chunk(index:of:)` / `synthesizing(parts:)`)
+threads out of `SummarizationService` on an optional `@Sendable` callback, so `d39` reports
+"part 12 of 131" while it works. The callback fires once per model call — 131 times for the corpus's
+longest document — and only writes to the `RunLedger`; the 2 Hz publisher from PR A owns every UI
+update, so the emission rate cannot reach the main actor. Also: the concurrency limit is now
+`@AppStorage` (it was `@State`, so every run silently restarted at 2); the Stepper hint is replaced
+(*"may exceed the model's rate limit"* was false in both clauses — generation serialises, and the app
+pattern-matches no rate-limit error anywhere); and Start carries one honest sentence about hours,
+with no estimate, because per-document time varies by two orders of magnitude with length.
+
+**One test lesson worth keeping.** The first version of the sub-document coverage tested
+`SummarizationStepLabel` — which is handed an index — so emitting `i` instead of `i + 1` from
+`summarizeChunks` passed the whole suite and would have shipped "part 0 of 131" as the first thing a
+user saw on every long document. The fix was a runtime test driving `generateSummaryText` through a
+stub provider and asserting the emitted sequence. Same shape as #562's mirrored-helper failure: a
+test that reimplements what it checks, checks nothing.
 
 ### 10 · #626 — editable summaries on document surfaces (large M)
 

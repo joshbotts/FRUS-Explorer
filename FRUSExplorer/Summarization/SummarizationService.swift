@@ -9,6 +9,29 @@
 import Foundation
 import SwiftData
 
+// MARK: - SummarizationStep
+
+/// Where a single document's summarization has got to (#560).
+///
+/// A document long enough to be chunked is the case where a bulk run looks frozen: the run's own
+/// counter cannot move until the whole document finishes, and `frus1872p2v4/d39` — 1,282,843
+/// characters, 131 chunks — takes many minutes during which nothing above it changes. Reporting the
+/// step turns that silence into visible movement without pretending the work is faster.
+///
+/// Emitted once per model call, so a caller must expect these at whatever rate the model returns
+/// and coalesce before touching the UI.
+///
+/// Version history:
+///   1.0 — #560 PR B: initial implementation
+public enum SummarizationStep: Sendable, Equatable {
+    /// The document fits one call; there is no sub-document progress to report.
+    case singleCall
+    /// The map pass: chunk `index` of `total`, both 1-based.
+    case chunk(index: Int, of: Int)
+    /// The reduce pass, combining `parts` partial summaries.
+    case synthesizing(parts: Int)
+}
+
 // MARK: - SummarizationService
 
 /// Orchestrates the full summarization lifecycle:
@@ -79,7 +102,8 @@ actor SummarizationService {
         documentText: String,
         prompt: SummarizationPromptSnapshot,
         provider: any SummarizationProvider,
-        activeProjectId: UUID?
+        activeProjectId: UUID?,
+        onStep: (@Sendable (SummarizationStep) -> Void)? = nil
     ) async throws -> GeneratedSummary {
         #if DEBUG
         print("[SummarizationService] Starting summarization for \(volumeId)/\(documentId)")
@@ -90,7 +114,8 @@ actor SummarizationService {
             prompt: prompt,
             provider: provider,
             documentId: documentId,
-            volumeId: volumeId
+            volumeId: volumeId,
+            onStep: onStep
         )
 
         let summary = GeneratedSummary(
@@ -140,7 +165,8 @@ actor SummarizationService {
         prompt: SummarizationPromptSnapshot,
         provider: any SummarizationProvider,
         documentId: String,
-        volumeId: String
+        volumeId: String,
+        onStep: (@Sendable (SummarizationStep) -> Void)? = nil
     ) async throws -> (text: String, wasChunked: Bool) {
         guard !documentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw SummarizationError.emptyDocumentText
@@ -163,6 +189,7 @@ actor SummarizationService {
                 chunks: [documentText],
                 isSynthesisPass: false
             )
+            onStep?(.singleCall)
             let result = try await provider.summarize(request: req, prompt: prompt)
             return (result.text, false)
         } else {
@@ -175,7 +202,8 @@ actor SummarizationService {
                 documentId: documentId,
                 volumeId: volumeId,
                 prompt: prompt,
-                provider: provider
+                provider: provider,
+                onStep: onStep
             )
             let resultText = try await synthesize(
                 partialSummaries: partials,
@@ -183,7 +211,8 @@ actor SummarizationService {
                 provider: provider,
                 documentId: documentId,
                 volumeId: volumeId,
-                budget: budget
+                budget: budget,
+                onStep: onStep
             )
             return (resultText, true)
         }
@@ -325,7 +354,8 @@ actor SummarizationService {
         documentText: String,
         prompt: SummarizationPromptSnapshot,
         provider: any SummarizationProvider,
-        activeProjectId: UUID?
+        activeProjectId: UUID?,
+        onStep: (@Sendable (SummarizationStep) -> Void)? = nil
     ) async throws {
         _ = try await summarize(
             documentId: documentId,
@@ -333,7 +363,8 @@ actor SummarizationService {
             documentText: documentText,
             prompt: prompt,
             provider: provider,
-            activeProjectId: activeProjectId
+            activeProjectId: activeProjectId,
+            onStep: onStep
         )
     }
 
@@ -344,13 +375,15 @@ actor SummarizationService {
         documentId: String,
         volumeId: String,
         prompt: SummarizationPromptSnapshot,
-        provider: any SummarizationProvider
+        provider: any SummarizationProvider,
+        onStep: (@Sendable (SummarizationStep) -> Void)? = nil
     ) async throws -> [String] {
         var partials: [String] = []
         for (i, chunkText) in chunks.enumerated() {
             #if DEBUG
             print("[SummarizationService] Summarizing chunk \(i + 1)/\(chunks.count)")
             #endif
+            onStep?(.chunk(index: i + 1, of: chunks.count))
             let req = SummarizationRequest(
                 documentId: documentId,
                 volumeId: volumeId,
@@ -378,9 +411,13 @@ actor SummarizationService {
         provider: any SummarizationProvider,
         documentId: String,
         volumeId: String,
-        budget: Int
+        budget: Int,
+        onStep: (@Sendable (SummarizationStep) -> Void)? = nil
     ) async throws -> String {
         do {
+            // Reported once, at the top: the reduce pass is a single logical phase from the
+            // reader's point of view, and its own level-by-level detail would flicker.
+            onStep?(.synthesizing(parts: partialSummaries.count))
             var level = partialSummaries
             // Reduce level-by-level until everything fits one synthesis call.
             while level.count > 1,
@@ -442,5 +479,37 @@ actor SummarizationService {
         }
         if !current.isEmpty { batches.append(current) }
         return batches.isEmpty ? [summaries] : batches
+    }
+}
+
+// MARK: - SummarizationStepLabel
+
+/// Renders a ``SummarizationStep`` as the phrase shown beside the document being summarized (#560).
+///
+/// Shared rather than duplicated because two surfaces show it — the batch sheet and the global
+/// active-task chip — and this repo has a documented history of parallel implementations drifting
+/// apart (`project_dual_settings_views`, and #617's Mac-unreachable toggle).
+///
+/// Returns `nil` for a document that fits one model call. Most documents do, and "part 1 of 1" is
+/// noise that would make a normal run look like it was struggling.
+///
+/// Version history:
+///   1.0 — #560 PR B: initial implementation
+enum SummarizationStepLabel {
+
+    /// The phrase for `step`, or `nil` when there is nothing worth saying.
+    static func detail(for step: SummarizationStep?) -> String? {
+        switch step {
+        case nil, .singleCall:
+            return nil
+        case .chunk(let index, let total):
+            return String(format: String(localized: "bg.summarizer.step.chunk %lld %lld",
+                                         defaultValue: "part %lld of %lld"),
+                          Int64(index), Int64(total))
+        case .synthesizing(let parts):
+            return String(format: String(localized: "bg.summarizer.step.synthesizing %lld",
+                                         defaultValue: "combining %lld parts"),
+                          Int64(parts))
+        }
     }
 }

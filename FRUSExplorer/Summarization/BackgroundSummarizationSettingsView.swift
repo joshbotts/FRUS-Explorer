@@ -59,7 +59,9 @@ struct BackgroundSummarizationSettingsView: View {
 
     // MARK: - Concurrency
 
-    @State private var concurrencyLimit: Int = 2
+    /// Persisted (#560): this was `@State`, so SwiftUI discarded the user's choice every time the
+    /// sheet was dismissed and every run silently started at 2 again.
+    @AppStorage(SettingsKeys.summarizationConcurrencyLimit) private var concurrencyLimit: Int = 2
 
     /// iOS only: keep summarizing in the background (BGProcessingTask) after the app
     /// is suspended. Opt-in. Mirrors the key read by `BackgroundSummarizationRequestStore`.
@@ -381,10 +383,22 @@ struct BackgroundSummarizationSettingsView: View {
                 value: $concurrencyLimit,
                 in: 1...6
             )
-            Text(String(localized: "bg.summarizer.concurrency.hint",
-                        defaultValue: "Higher values summarize faster but may exceed the model's rate limit."))
+            // The previous hint read "Higher values summarize faster but may exceed the model's
+            // rate limit." Both clauses were false: on-device generation serialises, so a higher
+            // number does not make generation faster, and the app pattern-matches no rate-limit
+            // error anywhere because none was ever observed. What a higher number *does* do is
+            // hide per-call turnaround when the machine is busy — which is the case a background
+            // run is by definition in.
+            Text(String(localized: "bg.summarizer.concurrency.hint.v2",
+                        defaultValue: "Apple Intelligence generates one summary at a time, so a higher number does not speed up the model itself. It helps when your Mac is busy with other work, and it makes the first summary take longer to appear."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            #if os(iOS)
+            Text(String(localized: "bg.summarizer.concurrency.hint.background",
+                        defaultValue: "Once a run continues in the background, iOS processes documents one at a time regardless of this setting."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            #endif
         }
     }
 
@@ -422,6 +436,21 @@ struct BackgroundSummarizationSettingsView: View {
                 Label(blocker.reason, systemImage: "exclamationmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } else if !isRunning {
+                // #560: the run really does take hours on a large scope, and saying so here — at
+                // the moment of commitment — is the difference between a long wait and a wait that
+                // reads as a hang. Deliberately no estimate: per-document time varies by two orders
+                // of magnitude with document length, so any number shown would be wrong.
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "bg.summarizer.start.duration",
+                                defaultValue: "Summarizing a large scope can take several hours. You can keep working while it runs."))
+                    #if os(macOS)
+                    Text(String(localized: "bg.summarizer.start.quitting",
+                                defaultValue: "Quitting FRUS Explorer stops the run. Summaries already written are kept."))
+                    #endif
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
     }
@@ -443,14 +472,14 @@ struct BackgroundSummarizationSettingsView: View {
         switch state {
         case .idle:
             EmptyView()
-        case .running(let tally, let docId):
+        case .running(let tally, let docId, let step):
             VStack(alignment: .leading, spacing: 6) {
                 if tally.attemptable > 0 {
                     ProgressView(value: Double(tally.finished), total: Double(tally.attemptable))
                 } else {
                     ProgressView()
                 }
-                Text(progressLabel(tally: tally, currentId: docId))
+                Text(progressLabel(tally: tally, currentId: docId, step: step))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -551,7 +580,8 @@ struct BackgroundSummarizationSettingsView: View {
 
     /// The line under the bar. Names failures and prior work rather than folding everything into a
     /// single number, which is what let a wholly-failed run read as a success (#560).
-    private func progressLabel(tally: BatchRunTally, currentId: String?) -> String {
+    private func progressLabel(tally: BatchRunTally, currentId: String?,
+                               step: SummarizationStep?) -> String {
         if tally.attemptable == 0 {
             return String(localized: "bg.summarizer.progress.enumerating",
                           defaultValue: "Enumerating documents…")
@@ -567,13 +597,18 @@ struct BackgroundSummarizationSettingsView: View {
             base += String(format: String(localized: "bg.summarizer.progress.skippedSuffix %lld",
                                           defaultValue: " · %lld already had one"), Int64(tally.skipped))
         }
-        if let id = currentId {
-            return "\(base)\n\(id)"
+        guard let id = currentId else { return base }
+        if let detail = SummarizationStepLabel.detail(for: step) {
+            return "\(base)\n\(id) — \(detail)"
         }
-        return base
+        return "\(base)\n\(id)"
     }
 
     private func startSummarization() {
+        // Independent of the render-time availability read that dims the button: whether
+        // SwiftUI observes `SystemLanguageModel.isAvailable` is not determinable from its
+        // interface, so the gate cannot rest on the button having been correctly disabled.
+        guard readiness.canStart else { return }
         guard let service = appState.backgroundSummarizationService,
               let promptId = selectedPromptId,
               let prompt = allPrompts.first(where: { $0.id == promptId }),

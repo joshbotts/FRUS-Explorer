@@ -1485,7 +1485,7 @@ final class AppState {
         let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
 
         switch backgroundSummarizationProgress.state {
-        case let .running(tally, _):
+        case let .running(tally, _, _):
             guard liveActivityEnabled else { endSummarizationLiveActivity(); return }
             let processed = tally.finished
             let total = tally.attemptable

@@ -53,6 +53,29 @@ private actor MockSummarizationProvider: SummarizationProvider {
     }
 }
 
+// MARK: - StepRecorder
+
+/// Collects the `SummarizationStep`s a run emits.
+///
+/// The callback is `@Sendable` and fires from whatever context the service is on, so the storage is
+/// lock-guarded rather than a bare array.
+private final class StepRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [SummarizationStep] = []
+
+    /// Records one step.
+    func record(_ step: SummarizationStep) {
+        lock.lock(); defer { lock.unlock() }
+        storage.append(step)
+    }
+
+    /// Every step recorded so far, in order.
+    var steps: [SummarizationStep] {
+        lock.lock(); defer { lock.unlock() }
+        return storage
+    }
+}
+
 // MARK: - Fixture Helpers
 
 /// Returns document text whose token estimate (`⌈chars/4⌉`) exceeds `tokenLimit`.
@@ -80,6 +103,96 @@ private func makePromptSnapshot(
 // MARK: - SummarizationServiceTests
 
 struct SummarizationServiceTests {
+
+    // MARK: - Sub-document progress (#560 PR B)
+
+    /// Drives the **real** emitter, not the label.
+    ///
+    /// An earlier version of this coverage only exercised `SummarizationStepLabel`, which takes an
+    /// index it is handed — so emitting `i` instead of `i + 1` from `summarizeChunks` passed the
+    /// whole suite and would have shipped "part 0 of 131" as the first thing a user saw on every
+    /// long document.
+    @Test("A chunked document reports 1-based parts, in order, then the synthesis")
+    func chunkedDocumentEmitsSteps() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        let provider = MockSummarizationProvider(tokenLimit: 512, responseText: "Partial.")
+        let prompt = makePromptSnapshot()
+
+        let recorder = StepRecorder()
+        _ = try await service.generateSummaryText(
+            documentText: makeOversizedText(tokenLimit: 512),
+            prompt: prompt,
+            provider: provider,
+            documentId: "d39",
+            volumeId: "frus1872p2v4",
+            onStep: { step in recorder.record(step) }
+        )
+
+        let steps = recorder.steps
+        let chunks = steps.compactMap { step -> (Int, Int)? in
+            if case .chunk(let index, let total) = step { return (index, total) }
+            return nil
+        }
+        // `try #require` rather than `#expect`: `Array(1...0)` traps, so an implementation that
+        // emits no steps at all would crash the test host instead of failing this test — which
+        // reads as the simulator wedge rather than as a bug.
+        try #require(chunks.count > 1, "the fixture must actually chunk, or this asserts nothing")
+
+        // 1-based, contiguous, ascending — the properties a reader depends on.
+        #expect(chunks.first?.0 == 1, "the first part must be 1, not 0")
+        #expect(chunks.map(\.0) == Array(1...chunks.count))
+        #expect(chunks.allSatisfy { $0.1 == chunks.count }, "every step must report the same total")
+        #expect(chunks.last?.0 == chunks.last?.1, "the last part must equal the total")
+
+        // And the reduce pass is reported, after the map pass.
+        let synthesisIndex = steps.firstIndex { if case .synthesizing = $0 { return true }; return false }
+        #expect(synthesisIndex != nil, "the synthesis pass is minutes of silence if unreported")
+        if let synthesisIndex {
+            let lastChunkIndex = steps.lastIndex { if case .chunk = $0 { return true }; return false }
+            #expect(lastChunkIndex != nil && lastChunkIndex! < synthesisIndex)
+        }
+    }
+
+    /// A document that fits one call must not emit chunk steps — "part 1 of 1" on every ordinary
+    /// document would make a healthy run look like it was struggling.
+    @Test("A short document emits only the single-call step")
+    func shortDocumentEmitsNoParts() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        let provider = MockSummarizationProvider(tokenLimit: 3_072)
+        let recorder = StepRecorder()
+
+        _ = try await service.generateSummaryText(
+            documentText: "Short enough.",
+            prompt: makePromptSnapshot(),
+            provider: provider,
+            documentId: "d1",
+            volumeId: "vol1",
+            onStep: { step in recorder.record(step) }
+        )
+
+        #expect(recorder.steps == [.singleCall])
+        #expect(SummarizationStepLabel.detail(for: .singleCall) == nil)
+    }
+
+    /// The callback is optional and defaults to nil, so every existing caller — notably the
+    /// single-document path in `DocumentViewModel` — is untouched.
+    @Test("Summarizing without a callback still works")
+    func callbackIsOptional() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let service = SummarizationService(modelContainer: container)
+        let provider = MockSummarizationProvider(tokenLimit: 512)
+        let (text, wasChunked) = try await service.generateSummaryText(
+            documentText: makeOversizedText(tokenLimit: 512),
+            prompt: makePromptSnapshot(),
+            provider: provider,
+            documentId: "d1",
+            volumeId: "vol1"
+        )
+        #expect(!text.isEmpty)
+        #expect(wasChunked)
+    }
 
     // MARK: - ProviderAvailabilityTest
 

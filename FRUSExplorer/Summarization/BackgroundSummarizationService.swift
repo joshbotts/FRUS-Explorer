@@ -102,7 +102,11 @@ public enum BackgroundSummarizationState: Sendable, Equatable {
     /// for as long as that document is working — a long document is the case where the user most
     /// needs to see something, and the previous implementation published `nil` after every
     /// completion, so the display went blank exactly when a run looked frozen.
-    case running(tally: BatchRunTally, currentDocumentId: String?)
+    ///
+    /// `step` is where that document has got to internally. It is the only thing that moves while a
+    /// 131-chunk document is being summarized, so it is what distinguishes a slow run from a
+    /// hung one.
+    case running(tally: BatchRunTally, currentDocumentId: String?, step: SummarizationStep?)
     case completed(tally: BatchRunTally)
     case cancelled(tally: BatchRunTally)
     case failed(errorDescription: String)
@@ -431,7 +435,7 @@ public actor BackgroundSummarizationService {
         guard !Task.isCancelled else { return }
 
         let p = progress
-        await MainActor.run { p.state = .running(tally: .zero, currentDocumentId: nil) }
+        await MainActor.run { p.state = .running(tally: .zero, currentDocumentId: nil, step: nil) }
 
         #if DEBUG
         print("[BackgroundSummarizer] Run started scope=\(scope)")
@@ -513,7 +517,7 @@ public actor BackgroundSummarizationService {
 
         let total = jobs.count
         let startingTally = await ledger.snapshot().tally
-        await MainActor.run { p.state = .running(tally: startingTally, currentDocumentId: nil) }
+        await MainActor.run { p.state = .running(tally: startingTally, currentDocumentId: nil, step: nil) }
 
         #if DEBUG
         print("[BackgroundSummarizer] Processing \(total) documents with concurrency=\(concurrencyLimit) (\(skippedCount) already summarized)")
@@ -532,8 +536,10 @@ public actor BackgroundSummarizationService {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 500_000_000)
                 guard self != nil, !Task.isCancelled else { return }
-                let (tally, docId) = await ledger.snapshot()
-                await MainActor.run { p.state = .running(tally: tally, currentDocumentId: docId) }
+                let (tally, docId, step) = await ledger.snapshot()
+                await MainActor.run {
+                    p.state = .running(tally: tally, currentDocumentId: docId, step: step)
+                }
             }
         }
 
@@ -571,7 +577,13 @@ public actor BackgroundSummarizationService {
                                 documentText: text,
                                 prompt: snapshot,
                                 provider: provider,
-                                activeProjectId: activeProjectId
+                                activeProjectId: activeProjectId,
+                                // Fires once per model call — 131 times for the corpus's longest
+                                // document. It only writes to the ledger; the 2 Hz publisher owns
+                                // every UI update, so the rate here cannot reach the main actor.
+                                onStep: { step in
+                                    Task { await ledger.note(step, for: did) }
+                                }
                             )
                         }
                         // Inside the `do`: a document counts as succeeded only when
@@ -594,7 +606,7 @@ public actor BackgroundSummarizationService {
         }
 
         publisher.cancel()
-        let (tally, _) = await ledger.snapshot()
+        let (tally, _, _) = await ledger.snapshot()
 
         guard !Task.isCancelled else {
             await MainActor.run { p.state = .cancelled(tally: tally) }
@@ -797,6 +809,7 @@ private actor RunLedger {
     private var tally = BatchRunTally.zero
     private(set) var failures: [(volumeId: String, documentId: String, reason: String)] = []
     private var currentDocumentId: String?
+    private var currentStep: SummarizationStep?
 
     /// Records the post-skip job count — the denominator for everything the user sees.
     func setAttemptable(_ count: Int) { tally.attemptable = count }
@@ -804,8 +817,18 @@ private actor RunLedger {
     /// Records how many documents already had a summary and will never be attempted.
     func setSkipped(_ count: Int) { tally.skipped = count }
 
-    /// Marks `documentId` as the document now being worked on.
-    func begin(_ documentId: String) { currentDocumentId = documentId }
+    /// Marks `documentId` as the document now being worked on, clearing any previous step.
+    func begin(_ documentId: String) {
+        currentDocumentId = documentId
+        currentStep = nil
+    }
+
+    /// Records how far `documentId` has got. Ignored once another document has taken over, so a
+    /// straggling callback from a finished document cannot overwrite the live one's step.
+    func note(_ step: SummarizationStep, for documentId: String) {
+        guard currentDocumentId == documentId else { return }
+        currentStep = step
+    }
 
     /// Records a written summary.
     func recordSuccess() { tally.succeeded += 1 }
@@ -818,8 +841,8 @@ private actor RunLedger {
         }
     }
 
-    /// The current tally and the document in flight, read as one consistent pair.
-    func snapshot() -> (tally: BatchRunTally, currentDocumentId: String?) {
-        (tally, currentDocumentId)
+    /// The current tally, the document in flight, and its step, read as one consistent triple.
+    func snapshot() -> (tally: BatchRunTally, currentDocumentId: String?, step: SummarizationStep?) {
+        (tally, currentDocumentId, currentStep)
     }
 }
