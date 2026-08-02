@@ -5,14 +5,31 @@ the onboarding welcome, the in-app FRUS Research Guide, the Series-analytics das
 analytics info popovers and captions, and the explanatory footers in Settings. Edit the text
 directly. When you are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-07-26 (build 36).** Every block below reflects the code as
-of this date; earlier hand edits have been reconciled into source or superseded.
+**Regenerated from source: 2026-07-26 (build 36).** Blocks in §1–§6 reflect the code as of that
+date unless a later amendment is noted below.
 
 **Amended 2026-08-01 (#597 PR 2):** seven new Research Guide sections covering the Query &
 Corpus Analysis wave were added by hand to §3 — `query-inspector`, `result-facets`,
-`working-corpora` (page 5), `reading-results`, `keyness` (page 6), `quotation-check` and
-`method-appendix` (page 7). The surrounding line-number annotations for those three pages are
-now approximate; everything else is untouched.
+`working-corpora` (page 5), `reading-results`, `keyness` (page 7) and `method-appendix` (page 7).
+
+**Amended 2026-08-02 (build 37 docs pass):** three additions and three corrections.
+ - **New §7** carries the search and result-set copy from the Query & Corpus Analysis wave — the
+   query inspector, facets, concordance, collocation, working corpora, the ceiling notices and the
+   method appendix. That material is not "analytics captions" and not "settings", which is why it
+   has its own section rather than being folded into §5 or §6.
+ - **§6's Discovery Tips block is rewritten.** It carried one tip that no longer exists and was
+   missing four that do. All six tips now appear with **both** their title and their message.
+ - **New §8** carries the repository README, which is public-facing prose and was not previously
+   round-trippable here.
+ - Three stale blocks corrected: the Research Guide's `related-documents` text (the fourth signal
+   is now *corpus proximity*, and chips no longer show a percentage for two of the five), the
+   `citations` text (**Settings → Connections**, not the retired Settings → Connections), and the `ai`
+   text (bulk summarization now states its real duration and reports parts).
+
+**A note on the `lines:` field.** It is advisory and it rots — a third of the annotations had
+drifted within five weeks of the last regeneration, some by several hundred lines. **`key:` is the
+real address.** If a `lines:` range and a `key:` disagree, the key wins; do not use the line numbers
+to navigate.
 
 **How annotations work:** Each editable block is preceded by an HTML comment that
 identifies the exact source location. Do not remove or alter the annotation comments —
@@ -515,7 +532,9 @@ Find it in the Search screen's overflow (More) menu.
 
 **Related Documents**
 
-From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, the same volume or subseries, and shared people. Small icon chips on each result show why it matched.
+From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, corpus proximity, and shared people. Small icon chips on each result show why it matched, and each chip says only what its signal can support: a count of citations, or simply "same provenance", where a percentage would mean nothing.
+
+Corpus proximity reads the FRUS editors' own arrangement. Two documents printed side by side, or gathered into the same short chapter, score highest; the signal eases off as the container they share widens to a whole compilation and then the whole volume, and lower again for a different volume in the same subseries. It is a way of asking what the editors thought belonged together.
 
 A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until experimental detected-topic document data is ready to include in the app.
 
@@ -703,7 +722,7 @@ A collection can carry the same appendix, narrowed to the project it was exporte
 
 Every document carries a correctly formatted citation in the history.state.gov style, ready to copy. You can also export citations — individually or for a whole collection — as BibTeX or RIS for your reference manager (RIS imports into Zotero on the desktop via File → Import).
 
-Sending to Zotero is one action: connect a Zotero account (Settings → Zotero) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import.
+Sending to Zotero is one action: connect a Zotero account (Settings → Connections) and Send to Zotero Library pushes a document — or an entire collection — straight into your library over the web, carrying your tags and research notes; without an account it falls back to an RIS file for desktop import.
 
 <!-- section-id: ai -->
 
@@ -1838,26 +1857,125 @@ When on, summarization resumes opportunistically while the device is idle, a few
 
 ### Discovery Tips (TipKit)
 
-#### Tip — Explore Cross-References
-<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ExploreCrossReferencesTip.message | lines: 39–40 | key: tip.crossRef.message | shared: iOS+macOS (single edit point) -->
+*Small popovers that appear beside easy-to-miss controls the first few times you reach them. Each
+retires once the control is used. Every tip has a **title** and a **message**; both are editable.
+The set is re-armable from Settings ▸ Display ▸ **Show Tips Again**.*
 
-See every document this one cites — and every document that cites it — arranged on a timeline.
+#### Tip — Your Research Tools Live Here
+*iPhone / iPad only. Appears on the Research-rail toggle in the document toolbar.*
 
-<!-- END SOURCE: tip.crossRef.message -->
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ResearchRailTip.title | key: tip.researchRail.title | shared: iOS only -->
+
+Your Research Tools Live Here
+
+<!-- END SOURCE: tip.researchRail.title -->
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ResearchRailTip.message | key: tip.researchRail.message | shared: iOS only -->
+
+Citations, the word cloud, archival sources, the cross-reference graph, related documents, and your notes, tags and collections for this document.
+
+<!-- END SOURCE: tip.researchRail.message -->
+
+#### Tip — Tap the Edges to Turn the Page
+*iOS only. Appears over the document reading area.*
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | EdgeTapNavigationTip.title | key: tip.edgeTap.title | shared: iOS only -->
+
+Tap the Edges to Turn the Page
+
+<!-- END SOURCE: tip.edgeTap.title -->
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | EdgeTapNavigationTip.message | key: tip.edgeTap.message | shared: iOS only -->
+
+In Read mode, tapping the left or right edge moves to the previous or next document in this volume — the order the editors arranged them in.
+
+<!-- END SOURCE: tip.edgeTap.message -->
+
+#### Tip — Four Ways to Read These Results
+*iOS only. Appears on the binoculars menu above search results.*
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ExamineResultsTip.title | key: tip.examineResults.title | shared: iOS only -->
+
+Four Ways to Read These Results
+
+<!-- END SOURCE: tip.examineResults.title -->
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ExamineResultsTip.message | key: tip.examineResults.message | shared: iOS only -->
+
+Place them on a timeline, line every occurrence up on your search term, rank the words that keep company with it, or break the whole match down by year, volume, person and provenance.
+
+<!-- END SOURCE: tip.examineResults.message -->
+
+#### Tip — Facet Rows Are Filters
+*iPhone, iPad and macOS — the one tip with a shared anchor. Appears on the facet panel.*
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | FacetNarrowTip.title | key: tip.facetNarrow.title | shared: iOS+macOS (single edit point) -->
+
+Facet Rows Are Filters
+
+<!-- END SOURCE: tip.facetNarrow.title -->
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | FacetNarrowTip.message | key: tip.facetNarrow.message | shared: iOS+macOS (single edit point) -->
+
+Tap any year, volume or person to narrow your search to it — it becomes a chip you can clear. The counts themselves always describe the whole match, before any narrowing.
+
+<!-- END SOURCE: tip.facetNarrow.message -->
 
 #### Tip — Browse References as a List
-<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | GraphReferenceListTip.message | lines: 68–69 | key: tip.graphList.message | shared: iOS+macOS (single edit point) -->
+*iOS and macOS. Appears on the reference-list toggle in the cross-reference graph.*
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | GraphReferenceListTip.title | key: tip.graphList.title | shared: iOS+macOS (single edit point) -->
+
+Browse References as a List
+
+<!-- END SOURCE: tip.graphList.title -->
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | GraphReferenceListTip.message | key: tip.graphList.message | shared: iOS+macOS (single edit point) -->
 
 Open a side panel listing every reference with its date, volume, and the footnote that linked it.
 
 <!-- END SOURCE: tip.graphList.message -->
 
 #### Tip — Timeline or Network
-<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | TimelineLayoutTip.message | lines: 97–98 | key: tip.timeline.message | shared: iOS+macOS (single edit point) -->
+*iOS and macOS. Appears on the layout picker in the cross-reference graph.*
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | TimelineLayoutTip.title | key: tip.timeline.title | shared: iOS+macOS (single edit point) -->
+
+Timeline or Network
+
+<!-- END SOURCE: tip.timeline.title -->
+
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | TimelineLayoutTip.message | key: tip.timeline.message | shared: iOS+macOS (single edit point) -->
 
 Timeline places each document at its date — earlier sources left, later responses right. Network shows the citation web instead.
 
 <!-- END SOURCE: tip.timeline.message -->
+
+#### The tip-recall control (Settings ▸ Display)
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | key: settings.display.tips.header | shared: iOS+macOS (single edit point) -->
+
+Discovery Tips
+
+<!-- END SOURCE: settings.display.tips.header -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | key: settings.display.tips.reset | shared: iOS+macOS (single edit point) -->
+
+Show Tips Again
+
+<!-- END SOURCE: settings.display.tips.reset -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | key: settings.display.tips.reset.done | shared: iOS+macOS (single edit point) -->
+
+Tips will appear again as you reach the controls they point at.
+
+<!-- END SOURCE: settings.display.tips.reset.done -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | key: settings.display.tips.footer | shared: iOS+macOS (single edit point) -->
+
+Tips point out controls that are easy to miss — the Research button, the page-turn edges, the ways to read a result set. Each retires once you use the control it describes. This brings them all back.
+
+<!-- END SOURCE: settings.display.tips.footer -->
 
 ---
 
@@ -1887,3 +2005,637 @@ duplicate to hunt for.*
 and the Word Cloud popover (§5) overlap the Research Guide's search and word-cloud pages
 (§3.5–§3.6) — align wording, and add the Guide's "finding aid, not evidence" caveat to the
 Word Cloud popover so the two surfaces don't drift.*
+
+---
+
+## 7. Search & Result-Set Copy
+*The Query & Corpus Analysis wave (#602–#623) and the eight-issue wave (#629–#641). This material
+is neither an analytics caption nor a settings footer — it is the prose that tells a researcher
+what a number covers — so it has its own section. Almost all of it exists because a count that does
+not say what it counted is worse than no count.*
+
+---
+
+### 7.1 The Query Inspector
+
+*Source: `FRUSExplorer/Search/QueryInspectorView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.expressionsDiffer -->
+
+Documents and your own summaries/notes are searched with different expressions, because only some of them are in scope.
+
+<!-- END SOURCE: search.inspector.expressionsDiffer -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.stemWarning -->
+
+*Interpolated: `\(term) is searched as \(stem) — other words with that root match too`. Keep both placeholders.*
+
+%@ is searched as %@ — other words with that root match too
+
+<!-- END SOURCE: search.inspector.stemWarning -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.denominator -->
+
+*Interpolated with the indexed-volume count.*
+
+Counts are over the %lld volumes indexed on this device — not the whole published series.
+
+<!-- END SOURCE: search.inspector.denominator -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.combination -->
+
+Each of your terms matches something on its own — it is the combination that appears in no single document.
+
+<!-- END SOURCE: search.empty.combination -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.oneEmpty -->
+
+*Interpolated with the term that matched nothing.*
+
+%@ matches no document in your current scope. The rest of your query is not the problem.
+
+<!-- END SOURCE: search.empty.oneEmpty -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.denominator -->
+
+*Interpolated with the indexed-volume count.*
+
+0 here means 0 in what you have indexed — %lld volumes on this device.
+
+<!-- END SOURCE: search.empty.denominator -->
+
+---
+
+### 7.2 Reading a Result Set — the four modes
+
+*Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | key: search.mode.help -->
+
+Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, type and provenance.
+
+<!-- END SOURCE: search.mode.help -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | key: search.facets.on.help.v2 -->
+
+Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply
+
+<!-- END SOURCE: search.facets.on.help.v2 -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | key: search.kwic.show.help.v2 -->
+
+Show every occurrence of your term on its own line, aligned — for the documents on this page
+
+<!-- END SOURCE: search.kwic.show.help.v2 -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | key: search.cap.tooltip -->
+
+*Interpolated with the loaded and total counts.*
+
+Showing %lld of %lld matches. Narrow your search with a date range, volume filter, or more specific terms to see every result.
+
+<!-- END SOURCE: search.cap.tooltip -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | key: search.cap.tooltip.unknownTotal -->
+
+*Interpolated with the loaded count.*
+
+Showing the first %lld matches. The total could not be counted, so there may be many more — narrow your search with a date range, volume filter, or more specific terms.
+
+<!-- END SOURCE: search.cap.tooltip.unknownTotal -->
+
+---
+
+### 7.3 Facets
+
+*Source: `FRUSExplorer/Search/FacetPanelView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.preamble.detail -->
+
+Facets read the whole match, before any narrowing you apply below.
+
+<!-- END SOURCE: facets.preamble.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.checklistNote -->
+
+*Interpolated with the shown count.*
+
+Checklist mode is hiding reviewed results. These facets still describe the whole match, not the %lld shown.
+
+<!-- END SOURCE: facets.checklistNote -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.undated -->
+
+*Interpolated with the undated count.*
+
+%lld matched documents carry no date and appear in no year above.
+
+<!-- END SOURCE: facets.undated -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.provenance.coverage -->
+
+*Interpolated with three counts. This is the two-denominator caveat — parsed at all vs. named a record group — and both numbers matter.*
+
+Source notes parsed for %lld of %lld matches; %lld name a record group.
+
+<!-- END SOURCE: facets.provenance.coverage -->
+
+---
+
+### 7.4 Concordance (keyword in context)
+
+*Source: `FRUSExplorer/Search/ConcordanceView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Search/ConcordanceView.swift | key: search.kwic.empty.detail -->
+
+These results matched, but none of their text could be aligned on your search term. Phrase, wildcard and proximity searches match in ways a concordance cannot centre on a single word.
+
+<!-- END SOURCE: search.kwic.empty.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/ConcordanceView.swift | key: search.kwic.omitted -->
+
+*Interpolated with the omitted count and the per-document line cap.*
+
+%lld further occurrences aren't shown — each document contributes at most %lld lines.
+
+<!-- END SOURCE: search.kwic.omitted -->
+
+<!-- SOURCE: FRUSExplorer/Search/ConcordanceView.swift | key: search.kwic.unaligned -->
+
+*Interpolated with a document count.*
+
+%lld matching documents contributed no line — their match isn't a whole word this view can centre on.
+
+<!-- END SOURCE: search.kwic.unaligned -->
+
+---
+
+### 7.5 Collocation — the words near your term
+
+*Source: `FRUSExplorer/Search/CollocationView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.noArtifact -->
+
+The bundled corpus reference could not be loaded, so there is nothing to measure these neighbourhoods against.
+
+<!-- END SOURCE: search.collocation.unavailable.noArtifact -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.mismatch -->
+
+*Interpolated with the setting that differs.*
+
+Your Word Cloud settings count words differently from the bundled corpus reference, so the two can't be compared: %@. Restore that setting to rank these neighbours.
+
+<!-- END SOURCE: search.collocation.unavailable.mismatch -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.noMatches -->
+
+None of these results contains a whole word this measure can centre on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.
+
+<!-- END SOURCE: search.collocation.unavailable.noMatches -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.floor -->
+
+*Interpolated with the minimum-count floor.*
+
+No word appears at least %lld times near your matches. A word occurring once or twice can top a ranking without saying anything about the documents, so nothing is ranked. Widening the window, or a broader search, will give it more to work with.
+
+<!-- END SOURCE: search.collocation.unavailable.floor -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.nothingDistinctive -->
+
+Nothing near your matches is used more here than across the corpus. That is a real result, not an error: this query sits in ordinary FRUS prose.
+
+<!-- END SOURCE: search.collocation.unavailable.nothingDistinctive -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.caveat.bounded.v2 -->
+
+*Interpolated with the scanned and total counts.*
+
+The scan stopped at %lld of your %lld results, so this ranking covers part of them, not all.
+
+<!-- END SOURCE: search.collocation.caveat.bounded.v2 -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.caveat.unpriced -->
+
+*Interpolated with the reference cutoff.*
+
+Words occurring fewer than %lld times corpus-wide are unpriced and score as if new.
+
+<!-- END SOURCE: search.collocation.caveat.unpriced -->
+
+---
+
+### 7.6 What a reading actually covers
+
+*Source: `FRUSExplorer/Search/ResultSetScope.swift`*
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.collocation.caveat.scope.loaded.capped -->
+
+Measured over every result this search loaded, not the page on screen — those are the highest-scoring matches, not a sample of all of them.
+
+<!-- END SOURCE: search.collocation.caveat.scope.loaded.capped -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.collocation.caveat.scope.loaded.complete -->
+
+Measured over every result this search loaded, which is every matching document.
+
+<!-- END SOURCE: search.collocation.caveat.scope.loaded.complete -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.timeline.bias -->
+
+These are the highest-scoring matches, not a sample across time — this shape is theirs, not the whole match's.
+
+<!-- END SOURCE: search.timeline.bias -->
+
+---
+
+### 7.7 Working corpora
+
+*Source: `FRUSExplorer/Settings/WorkingCorporaView.swift, SaveWorkingCorpusSheet.swift, SearchFilterView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: corpora.footer -->
+
+A working corpus is a fixed set of documents, captured once. It syncs to your other devices whole, so a count taken inside it means the same thing everywhere — even where fewer of its volumes are indexed.
+
+<!-- END SOURCE: corpora.footer -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: corpora.empty.detail -->
+
+Run a search, then choose "Save as Working Corpus" to fix those results as a named set you can search inside later.
+
+<!-- END SOURCE: corpora.empty.detail -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: corpus.save.footer -->
+
+The set is fixed at capture. Re-running the query later may find different documents; this corpus will not change, which is what makes counts taken inside it reproducible.
+
+<!-- END SOURCE: corpus.save.footer -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: corpus.save.truncated.total -->
+
+*Interpolated with the captured and total counts.*
+
+These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts taken inside this corpus are counts inside that subset.
+
+<!-- END SOURCE: corpus.save.truncated.total -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: corpus.save.truncated.unknown -->
+
+*Interpolated with the captured count.*
+
+These %@ documents are the highest-scoring of a larger match, not all of it. Counts taken inside this corpus are counts inside that subset.
+
+<!-- END SOURCE: corpus.save.truncated.unknown -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: corpus.save.checklistHiding -->
+
+*Interpolated with the hidden count.*
+
+Checklist mode is hiding %@ reviewed documents. They will not be in this corpus.
+
+<!-- END SOURCE: corpus.save.checklistHiding -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: search.corpus.footer -->
+
+A working corpus is a fixed set of documents. Applying one searches only inside it. Manage them in Settings.
+
+<!-- END SOURCE: search.corpus.footer -->
+
+<!-- SOURCE: FRUSExplorer/Settings/WorkingCorporaView.swift | key: search.corpus.noneIndexed -->
+
+*Interpolated with the corpus name.*
+
+None of "%@" is indexed on this device yet — download and index its volumes first.
+
+<!-- END SOURCE: search.corpus.noneIndexed -->
+
+---
+
+### 7.8 The method appendix
+
+*Source: `FRUSExplorer/Export/QueryMethodAppendix.swift, ResearchDataExportView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.snapshot -->
+
+Each count is what the search returned when it ran, over the volumes downloaded to that device at that moment. It is not re-run, and it will not match a search run today against a larger index.
+
+<!-- END SOURCE: appendix.caveat.snapshot -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.zero.one -->
+
+One of these searches returned nothing. A zero is a finding: it means the term is absent from the volumes indexed at the time, not that it is absent from the FRUS series.
+
+<!-- END SOURCE: appendix.caveat.zero.one -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.zero.many -->
+
+*Interpolated with a count. Kept separate from the singular above because there is no String Catalog to inflect it.*
+
+%lld of these searches returned nothing. A zero is a finding: it means the term is absent from the volumes indexed at the time, not that it is absent from the FRUS series.
+
+<!-- END SOURCE: appendix.caveat.zero.many -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.floor.one -->
+
+One search hit the app's row ceiling. Its count is shown as "at least N" and is a floor, not a total — do not sum it with the others.
+
+<!-- END SOURCE: appendix.caveat.floor.one -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.floor.many -->
+
+*Interpolated with a count.*
+
+%lld searches hit the app's row ceiling. Those counts are shown as "at least N" and are floors, not totals — do not sum them.
+
+<!-- END SOURCE: appendix.caveat.floor.many -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.unrecorded.one -->
+
+One search predates this app version and recorded only a result count, with no record of the scope, the ceiling, or how many volumes were indexed. It is marked "as reported" and cannot be checked against the others.
+
+<!-- END SOURCE: appendix.caveat.unrecorded.one -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.caveat.unrecorded.many -->
+
+*Interpolated with a count.*
+
+%lld searches predate this app version and recorded only a result count, with no record of the scope, the ceiling, or how many volumes were indexed. They are marked "as reported" and cannot be checked against the others.
+
+<!-- END SOURCE: appendix.caveat.unrecorded.many -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.attribution -->
+
+Text from Foreign Relations of the United States, Office of the Historian, U.S. Department of State (public domain).
+
+<!-- END SOURCE: appendix.attribution -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: settings.export.appendix.footer -->
+
+Every search you ran, with the scope it ran under and how many volumes were indexed at the time — as a Markdown table and a CSV. Counts that hit the app's row ceiling are shown as "at least N", so a partial result is never presented as a total.
+
+<!-- END SOURCE: settings.export.appendix.footer -->
+
+---
+
+### 7.9 Occurrence counts — when they are refused, and why
+
+*Source: `FRUSExplorer/Analytics/OccurrenceAvailability.swift, AnalyticsView.swift`*
+
+<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.measure.help -->
+
+Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions.
+
+<!-- END SOURCE: analytics.measure.help -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.exact -->
+
+Occurrence counts aren't available for exact-word searches: the index stores word stems, so it cannot tell one exact spelling's occurrences from another's.
+
+<!-- END SOURCE: analytics.occurrences.unavailable.exact -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.multiTerm -->
+
+Occurrence counts aren't available for phrases, wildcards or proximity searches — those match several index terms, which have no single occurrence count.
+
+<!-- END SOURCE: analytics.occurrences.unavailable.multiTerm -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.composite -->
+
+Occurrence counts aren't available for queries with more than one term: adding up occurrences of each would count two different things as one.
+
+<!-- END SOURCE: analytics.occurrences.unavailable.composite -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.notSingleToken -->
+
+This term indexes as several separate words, so it has no single occurrence count.
+
+<!-- END SOURCE: analytics.occurrences.unavailable.notSingleToken -->
+
+---
+
+### 7.10 Bulk summarization
+
+*Source: `FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift, BackgroundSummarizationService.swift`*
+
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | key: bg.summarizer.concurrency.hint.v2 -->
+
+Apple Intelligence generates one summary at a time, so a higher number does not speed up the model itself. It helps when your Mac is busy with other work, and it makes the first summary take longer to appear.
+
+<!-- END SOURCE: bg.summarizer.concurrency.hint.v2 -->
+
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | key: bg.summarizer.concurrency.hint.background -->
+
+*iOS only.*
+
+Once a run continues in the background, iOS processes documents one at a time regardless of this setting.
+
+<!-- END SOURCE: bg.summarizer.concurrency.hint.background -->
+
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | key: bg.summarizer.start.duration -->
+
+Summarizing a large scope can take several hours. You can keep working while it runs.
+
+<!-- END SOURCE: bg.summarizer.start.duration -->
+
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | key: bg.summarizer.start.quitting -->
+
+*macOS only.*
+
+Quitting FRUS Explorer stops the run. Summaries already written are kept.
+
+<!-- END SOURCE: bg.summarizer.start.quitting -->
+
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | key: bg.summarizer.failed.unavailable -->
+
+*Interpolated with the succeeded and attemptable counts.*
+
+Apple Intelligence became unavailable. Stopped after %lld of %lld documents.
+
+<!-- END SOURCE: bg.summarizer.failed.unavailable -->
+
+
+---
+
+## 8. Repository README
+
+*The public-facing description of the project at `README.md` — the first thing anyone sees on the
+repository. It is prose you may want to rewrite, so it round-trips here like everything else.*
+
+*Unlike every other block in this file, this one is the **whole file**, not a string inside Swift
+source. Edit it freely; the whole thing is written back to `README.md`.*
+
+*Condensed 2026-08-02 (build 37) from 385 lines to 162. The review that drove it found eleven false
+or stale claims — a search cap that had doubled, a ⌘F shortcut that had moved to ⌘S, a window-scene
+table missing eleven scenes and naming one that no longer exists, a "600+ tests" count that
+understated by four times, and a pbxproj UUID convention that does not exist. The rule that keeps it
+short: **build, test and generator commands live in `CLAUDE.md`, and features live in the user
+manuals.** The README points at both rather than restating either, so there is only one copy of each
+to keep correct.*
+
+<!-- SOURCE: README.md | key: repo.readme | whole-file -->
+
+# FRUS Explorer
+
+A macOS, iPadOS, and iOS application providing tools to help researchers use the
+[Foreign Relations of the United States (FRUS)](https://history.state.gov/historicaldocuments)
+series more effectively.
+
+FRUS is the official documentary record of U.S. foreign policy since 1861. The app's bundled
+manifest covers 552 volumes; a full local index holds roughly 317,000 documents. FRUS Explorer
+downloads the Office of the Historian's TEI editions, indexes them on your device, and adds the
+reading, searching, sourcing and analysis tools a corpus that size needs — all of it working
+offline once volumes are downloaded.
+
+It is an independent project, developed with [Claude Code](https://claude.ai/code), and is **not**
+an official product of the Office of the Historian or the U.S. Department of State. Current build:
+**37** (version 0.2).
+
+## Screenshots
+
+| Search (macOS) | Cross-reference graph (macOS) | Reading (iPhone) |
+|---|---|---|
+| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Document view](Docs/screenshots/ios/document-view.png) |
+
+More in [`Docs/screenshots/`](Docs/screenshots).
+
+## What it does
+
+- **Read** — TEI documents rendered with footnotes, page breaks, and live cross-references, plus
+  highlights, notes, and a per-document Research rail.
+- **Search** — full-text FTS5/BM25 search with stemming, phrases, `NEAR(...)` proximity,
+  `=exact` word matching, saved scopes, and working corpora captured from a result set.
+- **Read a result set four ways** — ranked list, timeline, concordance (every hit lined up on the
+  search term), and collocates (the words that keep company with it).
+- **Inspect the query** — the Query Inspector shows the FTS5 expression your search actually became,
+  each term's index form, and its corpus-wide versus in-scope counts.
+- **Facet** — break a result set down by year, volume, person, document type, and archival
+  provenance; tap a row to narrow.
+- **Analyse** — corpus, series, person, and cross-reference dashboards; a chronology view; and a
+  word cloud with keyness and collocation.
+- **Trace sources** — Source Explorer resolves FRUS source notes to NARA record groups, lot files,
+  and collections, with archival neighbours and cross-volume provenance, from bundled indexes.
+- **Organise** — projects, collections, exports (PDF, HTML, Word, BibTeX, RIS), Zotero, a research
+  trail, and iCloud sync of your own work.
+- **Summarize** — on-device Apple Intelligence summaries, one document at a time or as unattended
+  bulk runs, with authorship recorded on every summary.
+
+For anything beyond this list, read the user manuals — they are the feature documentation.
+
+## Stated coverage, stated limits
+
+The app is built on the premise that a research tool must not round its own uncertainty away.
+
+Cross-references validated as dead render as muted, explained text rather than posing as working
+links. Source Explorer distinguishes "no documents in your indexed volumes cite this" — an explicit
+zero — from a note it could not parse. Analytics surfaces state their indexed coverage
+("142 of 267") rather than silently resolving to a smaller set. The word cloud's keyness measure
+refuses to compare at all when live tokenisation settings diverge from its bundled reference. The
+four result readings each say which set they counted, because when you are about to quote a number
+that distinction *is* the number. "Why related" chips report only what their signal can support —
+a count of citations, or simply *same provenance*, where a percentage would be meaningless. The
+JSON research export records whether each summary was written by the model, edited by you, or
+written by you.
+
+## Requirements
+
+**To run**
+
+- iPhone or iPad on iOS/iPadOS 26, or a Mac on macOS 26.
+- An iCloud account is optional; with one, your notes, tags, collections, and projects sync via
+  CloudKit and the iCloud key-value store.
+- On-device summarization requires an Apple Intelligence–capable device.
+- A NARA Catalog API key is optional. The bundled archival indexes resolve with no network and no
+  key; a key adds live catalog lookups.
+
+**To build**
+
+- Xcode 26 or later, Swift 6.
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) — `project.yml` is the
+  source of truth for the Xcode project.
+- An Apple Developer account for signing, with iCloud/CloudKit, Keychain Sharing, and Background
+  Modes capabilities.
+
+## Getting the app
+
+Test builds are distributed through TestFlight:
+
+- [TestFlight instructions — iPhone and iPad](Docs/TestFlight-Instructions-ios.md)
+- [TestFlight instructions — Mac](Docs/TestFlight-Instructions-mac.md)
+
+## Documentation
+
+- [iOS / iPadOS User Manual](Docs/iOS-User-Manual.md) — the full feature documentation.
+- [macOS User Manual](Docs/macOS-User-Manual.md) — the same, for the Mac app.
+- [`Planning/FRUS-Explorer-Specification.md`](Planning/FRUS-Explorer-Specification.md) — the design
+  specification.
+- [`CLAUDE.md`](CLAUDE.md) — build, test, and data-generator commands; coding standards; release
+  gates. This is the maintainer's reference and the canonical copy of every command.
+
+## How it works
+
+Volumes are TEI XML files published by the Office of the Historian. The app downloads them per
+volume, parses each into an abstract syntax tree, and serializes that to HTML rendered in a web
+view — so footnotes, page breaks, and internal references keep their editorial structure rather
+than being flattened into plain text.
+
+Search is SQLite FTS5 with BM25 ranking and English stemming, built on device as volumes finish
+downloading. Everything you write — notes, tags, highlights, collections, projects, prompts — lives
+in SwiftData and syncs through CloudKit; nothing you write leaves your devices for a server we run.
+Summarization uses Apple's on-device `FoundationModels` framework, so document text is never sent
+off the device.
+
+The archival layer is bundled and offline. Indexes built ahead of time from the NARA Catalog and
+from the volumes' own front-matter source sections — central files, lot files, collection authority,
+per-volume provenance — ship inside the app and resolve without a network call or an API key. The
+tools that generate them live in `Package.swift` as SPM targets; their invocations and environment
+variables are documented in `CLAUDE.md`.
+
+## Building
+
+`project.yml` is the source of truth for the Xcode project; regenerate with XcodeGen after changing
+it. **`xcodegen generate` deletes `FRUSExplorer.xcodeproj/xcshareddata/xcschemes/` and regenerates
+the schemes with incorrect values — always restore them afterwards with
+`git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.** Build and version bumps must not
+go through XcodeGen at all; see `CLAUDE.md` for that procedure.
+
+Two shared schemes: `FRUSExplorer` (iOS/iPadOS) and `FRUSExplorerMac`. Test, generator, and release
+commands all live in [`CLAUDE.md`](CLAUDE.md) — they are not repeated here so there is only one copy
+to keep correct.
+
+macOS Direct Distribution builds are archived, notarized, stapled, and packaged as a DMG by
+[`Scripts/notarize.sh`](Scripts/notarize.sh). Run it with `--dry-run` first; the script's header
+documents its prerequisites and options.
+
+## Data and credits
+
+- The **FRUS series** is published by the [Office of the Historian](https://history.state.gov),
+  U.S. Department of State, and is in the public domain. TEI editions come from the
+  [HistoryAtState](https://github.com/HistoryAtState) repositories.
+- The bundled person-authority crosswalk derives from the Office of the Historian's public-domain
+  (CC0) `HistoryAtState/people` registry; volume subject profiles derive from its public-domain
+  `frus-subjects` document–subject mappings.
+- Archival records come from the
+  [National Archives Catalog](https://www.archives.gov/research/catalog/help/api). FRUS Explorer is
+  not affiliated with, endorsed by, or sponsored by NARA, and catalog data is subject to NARA's
+  terms of use.
+- TEI rendering approaches were informed by the [TEI Publisher](https://teipublisher.com) project
+  (Apache 2.0).
+
+Commentary, advice, and guidance about the FRUS series contained in the application reflect personal
+views and not necessarily those of the Department of State or the U.S. Government.
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE) for the full license text.
+
+All source files carry the Apache 2.0 license header.
+
+## Contributing
+
+Read [`CLAUDE.md`](CLAUDE.md) for the architecture, build commands, and coding standards, and
+[`Planning/DEVELOPMENT-PLAN.md`](Planning/DEVELOPMENT-PLAN.md) for the session sequence. Both app
+targets must build and the full test suite must pass before a change lands. Update
+`FRUS-API.openapi.yaml` when you touch a stored or queryable data surface — that one is
+mechanically enforced.
+<!-- END SOURCE: repo.readme -->

@@ -102,6 +102,12 @@ import SwiftUI
 ///          and Cross-Reference Analytics, method travels in the CSV); Word Cloud
 ///          copy names the Options menu and the CSV's ranked terms, shares, and
 ///          hidden-word disclosure
+///   1.19 — Docs pass (build 37): the Related Documents section now states that a "why related"
+///          chip reports only what its signal can support (#643), and the citation section names
+///          Settings → Connections rather than the retired Settings → Zotero.
+///   1.18 — #597 PR 2 / #641: seven Query & Corpus Analysis sections (query inspector, result
+///          facets, working corpora, reading results, keyness, quotation check, method appendix)
+///          and the bulk-summarization honesty paragraph.
 ///   1.17 — Owner content revision (build 35): new "Your Data Stays Private" section on
 ///          page 7; page 4 intro frames the strategies as print-and-online practice the
 ///          app builds on; subject data and the shared-topics signal described as
@@ -956,7 +962,7 @@ private extension EducationPage {
                 heading: "Related Documents",
                 systemImage: "doc.on.doc",
                 paragraphs: [
-                    "From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, corpus proximity, and shared people. Small icon chips on each result show why it matched.\n\nCorpus proximity reads the FRUS editors' own arrangement. Two documents printed side by side, or gathered into the same short chapter, score highest; the signal eases off as the container they share widens to a whole compilation and then the whole volume, and lower again for a different volume in the same subseries. It is a way of asking what the editors thought belonged together.",
+                    "From any document, Related Documents ranks the indexed documents most connected to the one you are reading, blending five signals: archival provenance (drawn from the same file or collection), cross-references (cites or is cited by), closeness in date, corpus proximity, and shared people. Small icon chips on each result show why it matched, and each chip says only what its signal can support: a count of citations, or simply \"same provenance\", where a percentage would mean nothing.\n\nCorpus proximity reads the FRUS editors' own arrangement. Two documents printed side by side, or gathered into the same short chapter, score highest; the signal eases off as the container they share widens to a whole compilation and then the whole volume, and lower again for a different volume in the same subseries. It is a way of asking what the editors thought belonged together.",
                     "A scope control limits the list to This volume, This subseries, or All volumes, and Adjust weights opens a slider per signal so you can tune the blend — favor provenance for archival work, dates for reconstructing a week — and your tuning is remembered. A sixth signal, shared topics, is visible but stays disabled until experimental detected-topic document data is ready to include in the app.",
                     "Find it in the Research rail's Related tile. On the Mac — and on iPad with Stage Manager — it opens as its own window that stays open while you jump between results."
                 ]
