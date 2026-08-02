@@ -522,7 +522,7 @@ Find it in the Corpus Browser's People section.
 
 Have a FRUS citation from a footnote, a syllabus, or another book? Paste it into Find by Citation and the app helps you look for the right document — no manual hunting through volumes and document numbers.
 
-Find it in the Search screen's overflow (More) menu.
+Find it in the Search screen's overflow (More) menu (iOS) or under Find ▸ Citation Lookup, ⇧⌘F (Mac).
 
 <!-- section-id: related-documents -->
 
@@ -556,11 +556,7 @@ Chart how often a term or phrase appears across the indexed corpus, broken down 
 
 A caution: FRUS volumes are selective and evolving proxies for the underlying archival record — treat term-frequency trends as a finding aid, not as direct evidence of what policymakers were discussing. The “% of documents” toggle on the By-Year and By-Decade charts reads a term as a share of the corpus rather than a raw count — the percentage of that period’s documents that contain it — so a term doesn’t look like it is surging simply because the series published more in later decades.
 
-On those same two charts, the top source volumes are color-coded; you can choose how many volumes get a distinct colour (per chart, or as a default in Display settings) before the rest fold into “Other.”
-
-The scope menu can also narrow a chart to one of your custom volume scopes (My Volume Scopes) or to a detected topic (By Detected Topic), each entry showing how many of its volumes are indexed; Person Analytics and Cross-Reference Analytics offer the same menus.
-
-An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three, By Subseries and By Volume are CSV only. Every export records how the numbers were made; the CSV carries the full method and caveats, so if you are publishing a figure, save the CSV alongside it.
+An Export menu saves a chart as a figure (PNG or PDF) or as the data behind it (CSV) — the time-based charts offer all three; on By Subseries and By Volume the figure items are dimmed and only the CSV is available.
 
 Analytics runs entirely on your local index; no network connection is required.
 
@@ -568,13 +564,11 @@ Find it from the Browse tab’s Analysis Tools menu (iOS) or the Corpus Analytic
 
 <!-- section-id: reading-results -->
 
-**Four Ways to Read a Result Set**
+**Four Ways to Read a Search Result Set**
 
-The binoculars button above your results offers four readings of the same search. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.
+Above your search results, four readings of the same search are available. Timeline places the matches by date. Concordance lines every occurrence up on your search term, so a page of hits can be read as usage rather than as a list. Collocates ranks the words that keep company with your term. Facets breaks the match down by year, volume, person and provenance.
 
-They do not all count the same thing, and the menu says which is which. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search. When you are about to quote a number, that distinction is the number.
-
-Collocates is the one that changes what you search next: the words a term travels with are usually the period vocabulary you did not know to look for.
+They do not all count the same thing, and each panel names the set it used. The concordance shows the page you are on; facets read the whole match; the timeline and collocates cover the results retained for this search. Use Collocates for ideas for follow-on searches: the words your query travels with can help you reconstruct period-specific vocabulary you did not know to look for.
 <!-- section-id: keyness -->
 
 **Distinctive Words, Not Just Frequent Ones**
@@ -589,8 +583,6 @@ The comparison is made against a reference built from the whole series and shipp
 Where the Person Index is an alphabetical directory for looking someone up, Person Analytics charts how people that were tagged by Office of the Historian editors during production appear across the record over time. Trends mode ranks the most-mentioned people for a chosen era, lets you add up to five people and compare how often each is mentioned year by year (as raw counts or as a share of that period’s dated documents), and — when exactly two people are selected — draws a relationship chart of how often the pair is mentioned together over time. Network mode centres a co-mention graph on one focus person, radiating out to the people most often named alongside them.
 
 Mentions come only from more recent volumes produced when person tagging was part of the editorial workflow and then only for documents the app can place on a date. On top of that, remember that FRUS itself is a selective record — read these as who the published documents foreground, not a full census of who mattered.
-
-Each chart in Trends carries its own Export button — chart data as CSV, or the chart itself as a PNG or PDF figure — and comparing exactly two people adds a relationship CSV. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Person Analytics window (Mac).
 
@@ -623,12 +615,6 @@ Find it from the Research rail's Graph tile (it opens in its own window on Mac a
 Where the graph traces one document’s neighborhood, Cross-Reference Analytics steps back and treats the whole citation web as a statistical object. It surfaces the most-referenced documents (those the editors cite most often, by inbound-citation count), a degree-distribution histogram that shows the network’s shape — a few heavily-cited landmarks and a long tail — a volume-to-volume heat matrix of which volumes cite which among the most-connected volumes, and a list of “landmark” documents ranked by an offline PageRank influence score. Every row is tappable to open the document or volume.
 
 These are structural measures of how the editors linked documents, not a claim about historical importance. Note also that FRUS editorial practice toward cross-references has changed over time. In more recent volumes, editors were not required to exhaustively annotate previously cross-referenced documents within a volume. Analytics trends over time may reflect evolving editorial practices alongside changes in the archival record. Comparisons within subseries scopes are more likely to carry a historical signal than those that cross editorial eras.
-
-Cross-reference analytics count only resolved citations in your indexed volumes. References that a corpus-wide validation found unresolvable are excluded, and the caption discloses how many fell in the current scope.
-
-An Administration menu sets the document-year range to a president’s term in one tap; the same presets appear in Corpus Analytics.
-
-Each of the four charts carries its own Export button — chart data as CSV, or the chart as a PNG or PDF figure; the landmark ranking is a table, so it exports as CSV only. As in Corpus Analytics, the CSV carries the method and caveats behind the numbers.
 
 Find it from the Browse tab’s Analysis Tools menu (iOS) or the Cross-Reference Analytics window (Mac).
 

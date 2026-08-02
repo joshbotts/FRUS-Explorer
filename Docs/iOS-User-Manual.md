@@ -335,11 +335,11 @@ Under the search field is a strip showing the **FTS5 expression your query actua
 
 Both counts are shown because the gap between them is information: a term that is common in the corpus but rare in your scope is telling you something about your scope.
 
-### 5.4 Four Ways to Read a Result Set
+### 5.4 Four Ways to Read a Search Result Set
 
 The **binoculars** button in the search actions bar offers four readings of the same search, plus the facet sheet. **List** is the ordinary ranked list. **Timeline** places the matches by date (Section 5.7). **Concordance** lines every occurrence of your term up on the term itself, so a page of hits reads as usage rather than as a list. **Collocates** ranks the words that keep company with your term (Section 13.4). The button fills in whenever a reading other than List is active, so you can always see which control changed the screen.
 
-They do not all count the same thing, and the menu says which is which: the concordance shows **this page**; the timeline and collocates cover the results retained for this search; **Facets** reads the whole match, before any narrowing. When you are about to quote a number, that distinction *is* the number.
+They do not all count the same thing, and each panel names the set it used: the concordance shows **this page**; the timeline and collocates cover the results retained for this search; **Facets** reads the whole match, before any narrowing. When you are about to quote a number, that distinction *is* the number.
 
 ### 5.5 Facets
 
