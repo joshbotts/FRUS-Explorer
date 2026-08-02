@@ -1032,6 +1032,105 @@ struct ArchivalNeighborsTests {
     }
 }
 
+// MARK: - ArchivalPoolStratificationEndToEndTests (#645)
+
+/// The stratified candidate pool, driven through a real index rather than asserted about.
+///
+/// `ArchivalPoolOrderingTests` covers `stratifyByVolume` as a pure function over synthetic arrays
+/// and greps the source for the wiring. Neither shows that a **query** comes back interleaved —
+/// a refactor that kept the `.stratified` literal and dropped its effect would pass both. These
+/// two tests seed three volumes sharing one lot file, index them, and read what the public entry
+/// points actually return.
+///
+/// They are a pair on purpose. The stratified one would pass on its own if stratification were
+/// applied everywhere; the alphabetical one is what proves the finding-aid contract survived.
+///
+/// Version history:
+///   1.0 — #645 follow-up: the end-to-end half the original PR did not have
+@Suite("IndexingPipeline — archival pool stratification (end to end)")
+struct ArchivalPoolStratificationEndToEndTests {
+
+    private static let lotNote = "<note type=\"source\">SPA Files: Lot 61-D 146, Box 4581</note>"
+
+    /// Three volumes, deliberately lopsided: the first alone overfills the pool, so an
+    /// alphabetical cut can never reach the other two. Ids are zero-padded so SQLite's
+    /// `ORDER BY document_id` and a human reading of the fixture agree.
+    private func indexLopsidedLot(dir: URL) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        func documents(_ count: Int) -> [(id: String, xml: String)] {
+            (1...count).map { index in
+                (String(format: "d%02d", index),
+                 "<head>\(index). Memo</head>\(Self.lotNote)<p>Body \(index).</p>")
+            }
+        }
+        try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                           volumeId: "frus1969-76v01", documents: documents(10))
+        try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+                           volumeId: "frus1969-76v02", documents: documents(10))
+        try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v03.xml"),
+                           volumeId: "frus1969-76v03", documents: documents(4))
+        for volume in ["frus1969-76v01", "frus1969-76v02", "frus1969-76v03"] {
+            try await pipeline.indexVolume(volume)
+        }
+        return pipeline
+    }
+
+    /// The defect, and the fix, at the grain a user sees: an anchor in the first volume must be
+    /// able to reach the other two.
+    @Test("The anchored pool spans every volume in the lot, not the alphabetical head")
+    func anchoredPoolIsStratified() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await self.indexLopsidedLot(dir: dir)
+
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d01", limit: 6)
+
+            #expect(result.totalCount == 23,
+                    "9 remaining in v01 + 10 + 4, with the anchor excluded; got \(result.totalCount)")
+            #expect(result.documents.count == 6, "the display limit still holds")
+            // The pair, not the id: every volume in this fixture has a `d01`, and the two in the
+            // other volumes are legitimate neighbours. An id-only check fails here for the right
+            // reason and would pass in production for the wrong one.
+            #expect(!result.documents.contains {
+                        $0.volumeId == "frus1969-76v01" && $0.documentId == "d01"
+                    },
+                    "the anchor is excluded from its own neighbours")
+
+            let volumes = Set(result.documents.map(\.volumeId))
+            #expect(volumes.count == 3,
+                    """
+                    The pool reached \(volumes.sorted()) — stratification is not happening. \
+                    An alphabetical cut of 6 lands entirely inside frus1969-76v01, which is the \
+                    whole of #645: the 14 documents in the other two volumes are unreachable to \
+                    every scorer, for every anchor.
+                    """)
+        }
+    }
+
+    /// The other half of the contract. This entry point is keyed on the lot, not anchored on a
+    /// document: the list IS the collection, so it must still read in shelf order. #649 changed
+    /// a shared helper, and this is the assertion that would have caught it changing both.
+    @Test("The anchorless lot lookup still returns the alphabetical head")
+    func findingAidStaysAlphabetical() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await self.indexLopsidedLot(dir: dir)
+
+            let result = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil, limit: 6)
+
+            #expect(result.totalCount == 24, "no anchor to exclude here; got \(result.totalCount)")
+            #expect(result.documents.map(\.volumeId) == Array(repeating: "frus1969-76v01", count: 6),
+                    """
+                    A finding aid has nothing to be relevant to, so it must list in shelf order. \
+                    Got \(result.documents.map { "\($0.volumeId)/\($0.documentId)" }).
+                    """)
+            #expect(result.documents.map(\.documentId)
+                    == ["d01", "d02", "d03", "d04", "d05", "d06"])
+        }
+    }
+}
+
 // MARK: - ArchivalNeighborsScopeTests (#217)
 
 /// Verifies the #217 neighbor-scope layer: the `scopeVolumeIds` filter (This volume /
