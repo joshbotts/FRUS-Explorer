@@ -6027,7 +6027,8 @@ public actor IndexingPipeline {
         documentYear: Int? = nil,
         excludingVolumeId: String? = nil,
         excludingDocumentId: String? = nil,
-        scopeVolumeIds: Set<String>? = nil
+        scopeVolumeIds: Set<String>? = nil,
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let exclude = (excludingVolumeId, excludingDocumentId)
         // With a volume / subseries scope active, fetch the whole match set (not the
@@ -6037,28 +6038,31 @@ public actor IndexingPipeline {
         switch parsed {
 
         case .lotFile(_, let lotNumber, _):
-            raw = try relatedByLotFile(lotNumber, limit: fetchLimit, excluding: exclude)
+            raw = try relatedByLotFile(lotNumber, limit: fetchLimit, excluding: exclude, ordering: ordering)
 
         case .naraCollection(_, _, let lot?, _):
-            raw = try relatedByLotFile(lot, limit: fetchLimit, excluding: exclude)
+            raw = try relatedByLotFile(lot, limit: fetchLimit, excluding: exclude, ordering: ordering)
 
         // Non-RG-59 collection (e.g. RG 84, RG 306) with no lot: same (RG, series).
         case .naraCollection(let rg, let series?, nil, _) where rg != "59" && rg != "RG-59":
             raw = try relatedByCollection(recordGroup: rg, series: series,
-                                          limit: fetchLimit, excluding: exclude)
+                                          limit: fetchLimit, excluding: exclude,
+                                          ordering: ordering)
 
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             // Only attempt decimal matching when the identifier contains a period
             // (distinguishes "862S.01/10-1646" from bare File No. values like "3767/5").
             raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
-                                       limit: fetchLimit, excluding: exclude)
+                                       limit: fetchLimit, excluding: exclude,
+                                       ordering: ordering)
 
         case .presidentialLibrary(let library, let collection, _):
             // Excludes the anchor uniformly (#217): a presidential-library document
             // previously listed itself among its own neighbors.
             raw = try relatedByPresidentialLibrary(library: library,
                                                    collection: collection,
-                                                   limit: fetchLimit, excluding: exclude)
+                                                   limit: fetchLimit, excluding: exclude,
+                                                   ordering: ordering)
 
         default:
             raw = ([], 0)
@@ -6114,9 +6118,15 @@ public actor IndexingPipeline {
         // re-slice; the widening decision keys on the unscoped total, so scope is
         // applied once, last (#217).
         let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
+        // THE ONE CALLER THAT ASKS FOR A STRATIFIED POOL (#645). This is the anchored path — the
+        // document-to-document similarity axis — where the pool exists so the scorers can promote
+        // a candidate the generator ranked low, and an alphabetical cut makes most of the
+        // container unreachable to them. Every other caller of `relatedDocuments(for:)` and of the
+        // per-container helpers is a finding aid with no anchor, and keeps the default.
         var result = try relatedDocuments(
             for: parsed, limit: fetchLimit, documentYear: documentYear,
-            excludingVolumeId: volumeId, excludingDocumentId: documentId
+            excludingVolumeId: volumeId, excludingDocumentId: documentId,
+            ordering: .stratified
         )
         var basis = parsed.archivalNeighborKey
         // #217 reconciliation — widen the document path to the same Phase-4 collection-
@@ -6573,7 +6583,8 @@ public actor IndexingPipeline {
     private func relatedByLotFile(
         _ rawLot: String,
         limit: Int,
-        excluding: (String?, String?) = (nil, nil)
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         // Defensive: volume-source entries store the bare number, but accept a
         // "Lot "-prefixed form from any caller (the retired variant helper did too).
@@ -6600,7 +6611,7 @@ public actor IndexingPipeline {
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
             countParams: params, selectParams: params,
-            limit: limit
+            limit: limit, ordering: ordering
         )
     }
 
@@ -6630,7 +6641,8 @@ public actor IndexingPipeline {
         recordGroup: String,
         series: String,
         limit: Int,
-        excluding: (String?, String?) = (nil, nil)
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         guard let match = Self.rgSeriesClause(recordGroup: recordGroup, series: series) else {
             return ([], 0)
@@ -6653,7 +6665,7 @@ public actor IndexingPipeline {
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
             countParams: params, selectParams: params,
-            limit: limit
+            limit: limit, ordering: ordering
         )
     }
 
@@ -6677,7 +6689,8 @@ public actor IndexingPipeline {
         ref: String,
         currentYear: Int?,
         limit: Int,
-        excluding: (String?, String?) = (nil, nil)
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let location = DecimalFileSegment.location(from: ref)
         guard !location.isEmpty else { return ([], 0) }
@@ -6705,7 +6718,19 @@ public actor IndexingPipeline {
         for (i, p) in params.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
         }
-        sqlite3_bind_int64(stmt, Int32(params.count + 1), Int64(max(1000, limit)))
+        // NO PRE-CUT. The segment filter below runs in Swift, on the rows this statement returns,
+        // so any LIMIT here truncates the set the filter is allowed to see — and it truncates it
+        // by `volume_id`, which sorts chronologically, while a decimal segment IS chronological.
+        // The old `max(1000, limit)` therefore kept the EARLIEST volumes and then discarded them
+        // all for any later-era anchor. Measured on the owner's index: `893.00` spans 55 volumes
+        // and the first 1,000 rows reach 18 of them; `861.00` spans 31 and reaches 5; `812.00`
+        // spans 24 and reaches 4. Four thousand anchors got an empty list while the index held
+        // their neighbours.
+        //
+        // The whole match set is bounded and small — the largest decimal location is 4,482 rows —
+        // and `runRelatedQuery`'s own COUNT(*) already scans it, so this is not a new class of
+        // work. Measured cost of reading it all rather than 120 rows: +19 ms warm, worst case.
+        sqlite3_bind_int64(stmt, Int32(params.count + 1), Int64(Int32.max))
 
         var matched: [RelatedDocument] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
@@ -6728,7 +6753,11 @@ public actor IndexingPipeline {
                 isEditorialNote: sqlite3_column_int(stmt, 5) != 0
             ))
         }
-        return (Array(matched.prefix(limit)), matched.count)
+        // This path has its own step loop rather than `runRelatedQuery`, so it stratifies here.
+        let cut = ordering == .stratified
+            ? Self.stratifyByVolume(matched, limit: limit)
+            : Array(matched.prefix(limit))
+        return (cut, matched.count)
     }
 
     /// Returns documents citing a decimal / subject-numeric **class** from a
@@ -6872,7 +6901,8 @@ public actor IndexingPipeline {
         library: String,
         collection: String,
         limit: Int,
-        excluding: (String?, String?) = (nil, nil)
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         guard let match = Self.libraryMatchClause(library: library, collection: collection) else {
             return ([], 0)
@@ -6895,7 +6925,7 @@ public actor IndexingPipeline {
             countSQL: countSQL, selectSQL: selectSQL,
             countParams: params,
             selectParams: params,
-            limit: limit
+            limit: limit, ordering: ordering
         )
     }
 
@@ -6909,7 +6939,8 @@ public actor IndexingPipeline {
     private func relatedBySeriesName(
         _ series: String,
         limit: Int,
-        excluding: (String?, String?) = (nil, nil)
+        excluding: (String?, String?) = (nil, nil),
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let s = series.trimmingCharacters(in: .whitespaces)
         guard s.count >= 4 else { return ([], 0) }
@@ -6932,7 +6963,7 @@ public actor IndexingPipeline {
         return try runRelatedQuery(
             countSQL: countSQL, selectSQL: selectSQL,
             countParams: params, selectParams: params,
-            limit: limit
+            limit: limit, ordering: ordering
         )
     }
 
@@ -7156,12 +7187,48 @@ public actor IndexingPipeline {
     }
 
     /// Shared executor for COUNT + SELECT related-document queries.
+    /// Re-cuts a fetched pool to `limit` by taking one document from each volume in turn.
+    ///
+    /// Order within a volume is preserved, so the result is deterministic — the queries already
+    /// sort by `(volume_id, document_id)` and this only interleaves them. A container that spans
+    /// one volume comes back unchanged.
+    ///
+    /// Done in Swift rather than as a SQL window function on purpose. Measured on the owner's
+    /// index, full-fetch-plus-Swift versus `ROW_NUMBER()`: decimal 893.00 **25.4 ms vs 258.3 ms**
+    /// cold, lot 54D270 1.9 vs 3.3, NSC Files 52.6 vs 52.5 — equal or better everywhere. It also
+    /// forces no new sort: `relatedByPresidentialLibrary` today plans as a bare index scan with no
+    /// sort step, and a window function would add a co-routine and a temp b-tree.
+    static func stratifyByVolume(_ documents: [RelatedDocument], limit: Int) -> [RelatedDocument] {
+        guard limit > 0, documents.count > limit else { return Array(documents.prefix(max(0, limit))) }
+        var byVolume: [String: [RelatedDocument]] = [:]
+        var volumeOrder: [String] = []
+        for document in documents {
+            if byVolume[document.volumeId] == nil { volumeOrder.append(document.volumeId) }
+            byVolume[document.volumeId, default: []].append(document)
+        }
+        var result: [RelatedDocument] = []
+        result.reserveCapacity(limit)
+        var round = 0
+        while result.count < limit {
+            var placedAny = false
+            for volume in volumeOrder where result.count < limit {
+                guard let rows = byVolume[volume], round < rows.count else { continue }
+                result.append(rows[round])
+                placedAny = true
+            }
+            guard placedAny else { break }
+            round += 1
+        }
+        return result
+    }
+
     private func runRelatedQuery(
         countSQL: String,
         selectSQL: String,
         countParams: [String],
         selectParams: [String],
-        limit: Int
+        limit: Int,
+        ordering: RelatedPoolOrdering = .alphabetical
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         // 1. Count
         let totalCount: Int
@@ -7184,7 +7251,10 @@ public actor IndexingPipeline {
         for (i, p) in selectParams.enumerated() {
             sqlite3_bind_text(selectStmt, Int32(i + 1), p, -1, SQLITE_TRANSIENT_IP)
         }
-        sqlite3_bind_int64(selectStmt, Int32(selectParams.count + 1), Int64(limit))
+        // A stratified cut has to see the whole container before it can sample it. The set is
+        // bounded (the largest is 7,056 rows) and the COUNT(*) above already scanned it.
+        let fetchLimit = ordering == .stratified ? Int(Int32.max) : limit
+        sqlite3_bind_int64(selectStmt, Int32(selectParams.count + 1), Int64(fetchLimit))
         while sqlite3_step(selectStmt) == SQLITE_ROW {
             let vid   = auxColumnString(selectStmt, 0) ?? ""
             let did   = auxColumnString(selectStmt, 1) ?? ""
@@ -7199,6 +7269,7 @@ public actor IndexingPipeline {
                 documentNumber: docNo, isEditorialNote: isEd
             ))
         }
+        if ordering == .stratified { docs = Self.stratifyByVolume(docs, limit: limit) }
         return (docs, totalCount)
     }
 
@@ -7524,6 +7595,36 @@ public struct IndexedSearchRow: Sendable {
 ///
 /// Version history:
 ///   1.0 — build 37: initial implementation
+/// How an archival candidate pool is cut down to its limit (#645).
+///
+/// The archival queries `ORDER BY (volume_id, document_id)` and then `LIMIT`, which for a container
+/// larger than the pool keeps whichever documents sort first — an alphabetical accident. That is
+/// **correct** for a finding aid, where the list is the collection and there is nothing to be
+/// relevant *to*, and wrong for the similarity axis, where the pool exists so the scorers can
+/// promote a document the generator ranked low. A scorer can only promote a document that is in
+/// the pool.
+///
+/// Measured on the owner's index: Nixon's NSC Files hold 7,056 documents across 67 volumes, and the
+/// first 120 reach **five** of them. Lot 54 D 270 holds 1,063 across 5 volumes, and the first 120
+/// are distributed 1 / 24 / 95 / 0 / 0 — the 434 documents in `frus1946v10` are unreachable by any
+/// scorer, for any anchor, ever.
+///
+/// Version history:
+///   1.0 — #645: initial implementation
+public enum RelatedPoolOrdering: Sendable {
+
+    /// Keep the query's own `(volume_id, document_id)` order. The default, and the right answer
+    /// for every anchorless finding-aid caller.
+    case alphabetical
+
+    /// Round-robin across volumes, so the pool is a *representative* slice of the container rather
+    /// than its alphabetical head.
+    ///
+    /// Only `archivalNeighbors(forVolumeId:documentId:)` asks for this — the one path with an
+    /// anchor to be relevant to.
+    case stratified
+}
+
 public struct IndexPageStatistics: Sendable, Equatable {
 
     /// The whole index file, as the filesystem sees it.
