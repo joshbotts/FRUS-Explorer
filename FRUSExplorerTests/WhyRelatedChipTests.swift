@@ -33,7 +33,8 @@ struct WhyRelatedChipTests {
 
     private func row(
         axisScores: [SimilarityAxis: Double],
-        evidence: [SimilarityAxis: Int] = [:]
+        evidence: [SimilarityAxis: Int] = [:],
+        labels: [SimilarityAxis: String] = [:]
     ) -> RelatedDocumentRow {
         var row = RelatedDocumentRow(
             key: DocumentKey(volumeId: "frus1864p1", documentId: "d147"),
@@ -42,19 +43,47 @@ struct WhyRelatedChipTests {
             totalScore: 1.0,
             axisScores: axisScores)
         row.axisEvidence = evidence
+        row.axisEvidenceLabel = labels
         return row
     }
 
     // MARK: - What each axis says
 
-    /// The chip that carried no information at all. Archival strength is a hardcoded constant, so
-    /// a percentage there has exactly one possible value.
-    @Test("Archival provenance states presence, never a percentage")
-    func archivalStatesPresence() {
-        let chips = row(axisScores: [.archivalProvenance: 1.0]).whyRelatedChips
+    /// The chip that carried no information at all, now carrying the only thing that varies (#644).
+    ///
+    /// Archival strength is a constant and correctly so — every candidate in a pool shares one
+    /// container, so there is nothing to grade *within* a pool. What was missing is legibility
+    /// *across* anchors: "same provenance" read identically for a lot holding two documents and
+    /// for Nixon's NSC Files holding 7,056.
+    @Test("Archival provenance names its container and its size")
+    func archivalStatesCohort() {
+        let chips = row(axisScores: [.archivalProvenance: 1.0],
+                        evidence: [.archivalProvenance: 1_063],
+                        labels: [.archivalProvenance: "Lot 54 D 270"]).whyRelatedChips
         #expect(chips.count == 1)
-        #expect(chips[0].chip == .presence)
-        // Even if the score somehow were not 1.0, presence is still the only honest reading.
+        #expect(chips[0].chip == .cohort(container: "Lot 54 D 270", size: 1_063))
+
+        // A tiny container and a huge one must be distinguishable — that is the entire point.
+        let small = row(axisScores: [.archivalProvenance: 1.0],
+                        evidence: [.archivalProvenance: 2],
+                        labels: [.archivalProvenance: "Lot 60 D 627"]).whyRelatedChips
+        #expect(small[0].chip != chips[0].chip)
+    }
+
+    /// A match path that produced no readable container name falls back to presence — never to a
+    /// percentage, for the reason #643 established.
+    @Test("An unnamed container still refuses a percentage")
+    func archivalWithoutLabel() {
+        #expect(row(axisScores: [.archivalProvenance: 1.0]).whyRelatedChips[0].chip == .presence)
+        // A label with no count is not a cohort either — "1 of 0" would be nonsense.
+        let countless = row(axisScores: [.archivalProvenance: 1.0],
+                            labels: [.archivalProvenance: "Lot 54 D 270"]).whyRelatedChips
+        #expect(countless[0].chip == .presence)
+        let zero = row(axisScores: [.archivalProvenance: 1.0],
+                       evidence: [.archivalProvenance: 0],
+                       labels: [.archivalProvenance: "Lot 54 D 270"]).whyRelatedChips
+        #expect(zero[0].chip == .presence)
+        // And never a percentage, whatever the score.
         let odd = row(axisScores: [.archivalProvenance: 0.42]).whyRelatedChips
         #expect(odd[0].chip == .presence)
     }
@@ -109,7 +138,8 @@ struct WhyRelatedChipTests {
 
         // Many independently-built dictionaries: a single instance could agree by luck.
         for _ in 0..<50 {
-            let chips = row(axisScores: tied, evidence: [.crossReference: 2]).whyRelatedChips
+            let chips = row(axisScores: tied, evidence: [.crossReference: 2, .archivalProvenance: 9],
+                            labels: [.archivalProvenance: "Lot 1"]).whyRelatedChips
             #expect(chips.map(\.axis) == expected,
                     "tied chips must fall back to the declaration order, got \(chips.map(\.axis))")
         }
@@ -153,6 +183,22 @@ struct WhyRelatedChipTests {
         }
 
         let generators = try source("FRUSExplorer/RelatedDocuments/SimilarityGenerators.swift")
+        #expect(generators.contains("evidenceLabel: result.basis"),
+                "the archival generator must name the container, or the chip cannot say which")
+        #expect(generators.contains("archivalNeighborsWithCohort"),
+                "the archival generator must use the cohort-aware entry point")
+
+        // The cohort is captured BEFORE applyScope and includes the anchor. Getting either wrong
+        // makes the number quietly mean something else: a scoped cohort would read "1 of 12" and
+        // "1 of 7,056" on two screens showing the same pair, and forgetting the +1 understates
+        // every container by one.
+        let pipeline = try source("FRUSExplorer/Search/IndexingPipeline.swift")
+        let cohortLine = try #require(pipeline.range(of: "let cohortCount = "))
+        let scopeLine = try #require(pipeline.range(of: "let scoped = Self.applyScope(result"))
+        #expect(cohortLine.lowerBound < scopeLine.lowerBound,
+                "the cohort must be taken before the scope narrows the count")
+        #expect(pipeline.contains("result.totalCount + 1"),
+                "every match path excludes the anchor from its own count")
         #expect(generators.contains("evidenceCount: candidate.citationCount"),
                 """
                 CrossReferenceGenerator must pass the raw citation count. Without it every                 cross-reference chip silently falls back to the normalised percentage this work                 exists to replace — and no assertion over a hand-built row can see that.

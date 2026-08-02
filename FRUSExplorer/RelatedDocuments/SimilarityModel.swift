@@ -157,7 +157,18 @@ struct AxisWeights: Codable, Hashable, Sendable {
 enum WhyRelatedChip: Hashable, Sendable {
     /// A cross-reference axis, stating the citation multiplicity it actually found.
     case citations(Int)
-    /// A generator axis whose evidence is binary — the chip states presence, not a degree.
+    /// An archival axis: the container the two documents share, and how many documents are in it.
+    ///
+    /// Replaces a bare "same provenance" (#644). That phrase rendered identically for a lot file
+    /// holding two documents and for Nixon's NSC Files holding 7,056 — and the difference is
+    /// exactly what tells a researcher whether sharing it is a finding or a filing-cabinet
+    /// coincidence. The strength stays constant, correctly: every candidate in a pool shares one
+    /// container, so there is nothing to grade *within* a pool. What was missing was legibility
+    /// *across* anchors.
+    case cohort(container: String, size: Int)
+
+    /// A generator axis whose evidence is binary and unnamed — the chip states presence only.
+    /// The fallback when a match path produced no human-readable container name.
     case presence
     /// A scorer axis, whose `[0, 1]` score is an absolute measure and rounds to a percent.
     case percent(Int)
@@ -205,12 +216,18 @@ struct GeneratedCandidate: Sendable {
     /// worth showing a researcher.
     let evidenceCount: Int?
 
+    /// The human-readable name of whatever the count counts — "Lot 54 D 270", "NSC Files",
+    /// "893.51 Manchuria". `nil` where the axis has no container to name.
+    let evidenceLabel: String?
+
     /// Creates a generated candidate.
-    init(key: DocumentKey, record: CandidateRecord, strength: Double, evidenceCount: Int? = nil) {
+    init(key: DocumentKey, record: CandidateRecord, strength: Double,
+         evidenceCount: Int? = nil, evidenceLabel: String? = nil) {
         self.key = key
         self.record = record
         self.strength = strength
         self.evidenceCount = evidenceCount
+        self.evidenceLabel = evidenceLabel
     }
 }
 
@@ -240,6 +257,10 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     /// `RelatedDocumentsRanker.rank` a pure function of its inputs, so the ranking itself is
     /// provably unchanged by this being here.
     var axisEvidence: [SimilarityAxis: Int] = [:]
+
+    /// The container name behind ``axisEvidence``, per axis. Filled by the engine after ranking,
+    /// for the same reason and in the same place.
+    var axisEvidenceLabel: [SimilarityAxis: String] = [:]
 
     var id: DocumentKey { key }
     /// The related document's volume.
@@ -274,6 +295,12 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
                     #endif
                     return (axis, .percent(Int((score * 100).rounded())))
                 case .archivalProvenance:
+                    if let container = axisEvidenceLabel[axis], let size = axisEvidence[axis],
+                       size > 0 {
+                        return (axis, .cohort(container: container, size: size))
+                    }
+                    // No recognised container name — presence is still the honest reading, and is
+                    // never a percentage for the reason #643 established.
                     return (axis, .presence)
                 default:
                     return (axis, .percent(Int((score * 100).rounded())))

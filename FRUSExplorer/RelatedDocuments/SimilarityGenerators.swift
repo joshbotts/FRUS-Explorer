@@ -43,7 +43,10 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
         appState: AppState
     ) async throws -> [GeneratedCandidate] {
         guard let pipeline = appState.indexingPipeline else { return [] }
-        let result = try await pipeline.archivalNeighbors(
+        // The cohort-aware entry point: the same query, plus how many documents share this
+        // anchor's container corpus-wide. That number is the chip (#644); it never touches the
+        // strength, which stays constant because every candidate here shares one container.
+        let result = try await pipeline.archivalNeighborsWithCohort(
             forVolumeId: anchor.volumeId,
             documentId: anchor.documentId,
             documentYear: anchorYear,
@@ -57,7 +60,9 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
                     dateline: document.dateline,
                     documentNumber: document.documentNumber,
                     isEditorialNote: document.isEditorialNote),
-                strength: 1.0)
+                strength: 1.0,
+                evidenceCount: result.cohortCount,
+                evidenceLabel: result.basis)
         }
     }
 }

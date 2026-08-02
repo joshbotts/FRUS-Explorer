@@ -6099,19 +6099,47 @@ public actor IndexingPipeline {
         limit: Int = 30,
         scopeVolumeIds: Set<String>? = nil
     ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?) {
+        let full = try archivalNeighborsWithCohort(
+            forVolumeId: volumeId, documentId: documentId, documentYear: documentYear,
+            limit: limit, scopeVolumeIds: scopeVolumeIds)
+        return (full.documents, full.totalCount, full.basis)
+    }
+
+    /// As ``archivalNeighbors(forVolumeId:documentId:documentYear:limit:scopeVolumeIds:)``, plus the
+    /// **cohort size** — how many documents share this anchor's archival container in the whole
+    /// index (#644).
+    ///
+    /// The similarity axis needs this and nothing else does, which is why it is a second entry
+    /// point rather than a wider tuple on the first: seventeen call sites destructure the three-tuple
+    /// and none of them wants a fourth element.
+    ///
+    /// Two properties the number has to have, both easy to get wrong:
+    ///  - It is taken **before** `applyScope`. The scoped total is what the finding-aid surfaces
+    ///    want, but a cohort that shrank under a volume scope would make the same pair read
+    ///    "1 of 12" here and "1 of 7,056" there, which is exactly the confusion the chip exists to
+    ///    remove.
+    ///  - It **includes the anchor**. Every match path excludes the anchor from its own count, so
+    ///    the cohort is `totalCount + 1` — "1 of 1,063" means a container of 1,063, not 1,064.
+    public func archivalNeighborsWithCohort(
+        forVolumeId volumeId: String,
+        documentId: String,
+        documentYear: Int? = nil,
+        limit: Int = 30,
+        scopeVolumeIds: Set<String>? = nil
+    ) throws -> (documents: [RelatedDocument], totalCount: Int, basis: String?, cohortCount: Int) {
         let sql = "SELECT raw_text FROM document_sources WHERE volume_id = ? AND document_id = ? LIMIT 1"
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil) == SQLITE_OK, let s = stmt else {
-            return ([], 0, nil)
+            return ([], 0, nil, 0)
         }
         defer { sqlite3_finalize(s) }
         sqlite3_bind_text(s, 1, volumeId,   -1, SQLITE_TRANSIENT_IP)
         sqlite3_bind_text(s, 2, documentId, -1, SQLITE_TRANSIENT_IP)
         guard sqlite3_step(s) == SQLITE_ROW, let cStr = sqlite3_column_text(s, 0) else {
-            return ([], 0, nil)
+            return ([], 0, nil, 0)
         }
         let raw = String(cString: cStr)
-        guard !raw.isEmpty else { return ([], 0, nil) }
+        guard !raw.isEmpty else { return ([], 0, nil, 0) }
         let parsed = SourceNoteParser().parse(raw)
         let exclude: (String?, String?) = (volumeId, documentId)
         // Fetch the whole match set when scoped so `applyScope` (below) can filter and
@@ -6147,8 +6175,12 @@ public actor IndexingPipeline {
                 basis = viaAuthority.basis
             }
         }
+        // Captured BEFORE applyScope, and +1 for the anchor every match path excludes from its
+        // own count. See the doc comment: a cohort that changed under a volume scope would make
+        // the chip mean something different on two screens showing the same pair.
+        let cohortCount = result.totalCount > 0 ? result.totalCount + 1 : 0
         let scoped = Self.applyScope(result, scopeVolumeIds: scopeVolumeIds, limit: limit)
-        return (scoped.documents, scoped.totalCount, basis)
+        return (scoped.documents, scoped.totalCount, basis, cohortCount)
     }
 
     /// Returns archival neighbors for a **volume-level source entry** (a row in a

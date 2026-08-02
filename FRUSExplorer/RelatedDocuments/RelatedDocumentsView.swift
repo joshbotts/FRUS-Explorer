@@ -364,6 +364,13 @@ struct RelatedDocumentsContent: View {
                         case .citations(let count):
                             return String(format: String(localized: "related.why.cited %lld",
                                                          defaultValue: "cited %lld×"), Int64(count))
+                        case .cohort(let container, let size):
+                            // Names the container and how big it is: sharing a 6-document lot is
+                            // a finding, sharing one of 7,056 is a filing-cabinet coincidence, and
+                            // "same provenance" said the same thing for both (#644).
+                            return String(format: String(localized: "related.why.cohort %@ %lld",
+                                                         defaultValue: "%@ · 1 of %lld"),
+                                          container, Int64(size))
                         case .presence:
                             return String(localized: "related.why.sameProvenance",
                                           defaultValue: "same provenance")

@@ -2687,3 +2687,14 @@ Rewrites the index to give the free space back. Searching is unavailable while i
 Reclaimed %@.
 
 <!-- END SOURCE: settings.storage.compact.done -->
+
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | key: related.why.cohort -->
+
+*The archival "why related" chip (#644). Interpolated with the container name and its size.
+Replaces a bare "same provenance", which read identically for a lot file holding two documents and
+for Nixon's NSC Files holding 7,056 — and that difference is what tells a researcher whether sharing
+the container is a finding or a filing-cabinet coincidence.*
+
+%@ · 1 of %lld
+
+<!-- END SOURCE: related.why.cohort -->
