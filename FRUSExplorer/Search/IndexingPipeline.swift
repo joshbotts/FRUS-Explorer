@@ -2066,14 +2066,24 @@ public actor IndexingPipeline {
             // TWO-PHASE FETCH (R-3a). Rank narrow, then hydrate only the window that survives.
             //
             // The single-phase shape above joins `document_cache` and then sorts, so every matched
-            // row is materialised before the sorter runs — 195,613 rows for a common term, at ~5 KB
-            // of `body_text` each. `body_text` lives on overflow pages, and SQLite follows those
+            // row is materialised before the sorter runs — 195,519 rows for a common term, at ~5 KB
+            // of `body_text` each (mean 5,355 bytes; 1.05 GB in total for `"government"`). `body_text` lives on overflow pages, and SQLite follows those
             // chains only for columns a statement actually selects; phase one selects none of them,
             // so the ranking pass reads b-tree pages instead of megabytes of prose.
             //
-            // Measured on the real 6.3 GB store, `"government"`, byte-identical output either way
-            // (42,569,775 bytes of body text): a 7,500-row fetch 10.46 s -> 0.606 s, and the first
-            // page 8.61 s -> 0.006 s.
+            // Measured on the real 6.3 GB store, `"government"`, byte-identical output either way.
+            // The honest statement is about SHAPE, not a ratio: the ranking pass still has to score
+            // and sort every matched row and costs a few tenths of a second whatever happens
+            // (0.32–0.43 s measured, 195,519 rows); what became free is hydrating the window. A
+            // single before/after ratio would be a claim about the page cache rather than about the
+            // query — the same statement measured 4.70 s cold and 0.25 s warm on this machine.
+            //
+            // **The speed-up does not hold for `=exact`.** `SearchService.exactColumns(for:)`
+            // includes `body_text` whenever `includeDocumentText` is true, which is the default, so
+            // an `=exact` query emits `frus_exact_word(dc.body_text, ?)` into the phase-one WHERE
+            // clause and forces the ranking pass to read the very column this split exists to
+            // avoid. No ratio is quoted for that either: three measurements of the same effect gave
+            // 15x, 2.2x and 2.0x purely on cache state.
             //
             // Phase one keeps the SAME joins and the SAME `whereClause`. That is not redundancy —
             // filters reference `dc.` (volume scope, front-matter, editorial-note, user tags,
@@ -2091,7 +2101,10 @@ public actor IndexingPipeline {
             // documents that provably share a single bm25 score. So no test in this repo can
             // falsify the ordinal, and it is kept because it makes phase two's order phase one's
             // order BY CONSTRUCTION rather than by an observed coincidence of the current planner.
-            // The cost is a window function over an already-LIMITed set.
+            // Its cost is not "a window function over an already-LIMITed set" — SQL evaluates window
+            // functions before the same query block's ORDER BY and LIMIT, so that model is
+            // backwards. The ordinal reuses the sort the ORDER BY already needs, which is why the
+            // A/B measured no difference.
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             // The joins in phase one are CONDITIONAL, and that is the whole optimisation.
             //

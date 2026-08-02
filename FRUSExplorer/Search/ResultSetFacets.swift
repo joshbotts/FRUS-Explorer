@@ -80,9 +80,15 @@ struct FacetBound: Sendable, Equatable {
 ///
 /// Two denominators, not one. The design's caveat — "source notes parsed for 361 of 412
 /// results" — conflates *parsed at all* with *named a record group*, and those are
-/// different numbers: measured on the real store, 163,875 of 195,613 matches had a parsed
-/// source note and only 141,718 of those named a record group. A facet panel that reports
+/// different numbers: measured for `"government"` on the owner's 552-volume index
+/// (2026-08-02, using this type's own aggregate), **163,821 of 195,519** matches had a parsed
+/// source note and only **141,694** of those named a record group. A facet panel that reports
 /// one number for both overstates its own coverage.
+///
+/// The three figures are a dated snapshot, not an invariant — they were 163,875 / 195,613 /
+/// 141,718 when this was written and drifted purely from re-indexing. They are here to show
+/// that the two denominators differ by ~22,000 documents, which is the point; do not treat a
+/// small change in them as a regression.
 ///
 /// Version history:
 ///   1.0 — R-1a: initial implementation
