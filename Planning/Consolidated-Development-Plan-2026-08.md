@@ -1,6 +1,7 @@
 # Consolidated Development Plan — August 2026
 
-**Date:** 2026-07-25 (revised 2026-07-28 — see *Status*) · **Inputs:** (1) the Settings
+**Date:** 2026-07-25 (revised 2026-07-28, and 2026-08-02 for the whole NARA workstream —
+see *Status* and the N-wave header) · **Inputs:** (1) the Settings
 North Star design handoff (`design_handoff_settings_northstar/`, dated 2026-07-24, all 10
 panes settled); (2) `Planning/Query-And-Corpus-Analysis-Session-Plan.md` (13 sessions, 5
 milestones, dated 2026-07-24); (3) the seven open NARA Catalog issues (#235, #354, #355,
@@ -398,6 +399,67 @@ that a mismatch is a finding.
 Tiered by who executes and what unblocks what. The keyed runs are minutes of owner time
 each; the engineering sessions are normal PRs.
 
+### [2026-08-02] The full harvest was measured against every N item. Three routes are dead; one new one is the biggest thing in the workstream.
+
+The owner supplied the complete 22-record-group harvest (4.5 GB, **751,880 records** =
+20,188 series + 731,692 file units). Every N item was measured against it *and* against
+the owner's live index, then each measurement was adversarially re-derived. The results
+change the shape of this workstream more than any single session would have.
+
+**The harvest's contribution to the planned work is small.** Item by item, in documents:
+
+| item | planned population | harvest yield |
+|---|---|---|
+| N-1 / #353 parser | ~1,850 + 939 | **11** |
+| N-2 / #354 (a) namedFileSeries offline route | 4,986 | **0** |
+| N-2 / #354 (b) CFPF deep links | 1,361 | **0** |
+| N-2 / #354 (c) RG 256 Paris Peace | 1,547 | **~1,300–1,500** |
+| N-2 / #354 (d)/(e) | ~1,836 | 0 (structural) |
+| N-3 / #375 lot curation | 6,366 | **~101 clean + 48 ambiguous** |
+| N-4 / #355 presidential libraries | 20,451 | **0** (structural) |
+| N-5 / #372 lot-map consolidation | 15,340 | **7–20** (the 728 needs no harvest) |
+
+**But the harvest carries a capability nobody planned for.** 17,985 records hold
+`digitalObjects` arrays — **10,115,572 individual objects**, each with a live
+`catalog.archives.gov` URL. That is a categorically better outcome than a NAID: a PDF of
+the microfilm roll rather than a note about which box to visit. New issue **#663**;
+measured reach is **~7,000–9,000 decimal-cited documents** plus RG 256's 1,547, against
+the 8,974 the entire bundled lot index resolves today. It is now the highest-value item
+in the workstream.
+
+**Three findings that change what gets built:**
+
+1. **The `namedFileSeries` offline title-match route returns literally zero** and must be
+   dropped, not merely re-estimated. `select count(*), count(record_group),
+   count(distinct series_name) from document_sources where citation_era='named_series'`
+   → `4986 | 0 | 232`. FRUS series names are Department bureau designators; NARA titles
+   are cataloguer prose. There is no shared vocabulary to match on. This was the largest
+   single population in #354.
+2. **The CFPF file units are not digitised** — all 69 under naId 654098 have zero digital
+   objects (verified by streaming all 240,929 RG 59 records). A year-grain NAID lands on
+   an empty stub, against an app that already ships the AAD link and the FAQ PDF. Route
+   dead.
+3. **A harvest creator gazetteer is a trap.** It scores 562 documents on 8 hits, 492 of
+   them "National Security Council" — and every one is wrong, because the 22 groups are
+   the *foreign-affairs* groups, so an agency's own records usually live outside them and
+   a creator-name match inside is a correspondent or a custodial accident. Recorded here
+   because it is exactly what a plausible harvest session would build.
+
+**What the Catalog API demonstrated.** Three conclusions worth keeping: (i) the v2 API is
+**field-complete** against the bulk export and cheap — the whole 22-group series layer is
+~62 calls, minutes, a few MB, versus streaming 22 GB; (ii) `variantControlNumber_is` was
+never the limitation — **only 5,466 of 20,188 series (27.1%) carry a lot-type control
+number at all**, and 2,900 of RG 59's 4,449 (65.2%), so the gap is NARA's cataloguing,
+not our querying; (iii) resolution collapses upward — 199,108 records resolve to NAID 388
+(the RG 59 node itself), which is why "search the catalog" so often returns the record
+group rather than the series. Full detail in
+`Planning/nara-record-group-catalog-runbook.md`.
+
+**Net effect on sequencing:** N-1 loses its harvest dependency entirely (it was always
+grammar work). N-2 sheds two of its five items and keeps one, promoted. N-5's first half
+detaches from the harvest and can ship immediately. **N-7 (#663) is new and should be
+scheduled behind N-2's RG 256 parser, which it inherits.**
+
 **N-0 — Keyed data runs (owner-executed, ~10 min total, any time):**
 - **#376** — keyed `VolumeSourcesIndexGenerator` regen: drops the 9 remaining fileUnit
   lot entries (58D528 … 92D252), reads the warm `.cache/volume-sources/rgs` cache (0 new
@@ -407,6 +469,13 @@ each; the engineering sessions are normal PRs.
   resolved 2 of 573 — that route is closed; see N-3).
 
 **N-1 — #353 SourceNoteParser session** *(Effort L; the biggest coverage lever)*
+**[2026-08-02] No harvest dependency. Do not budget a harvest-lexicon sub-session.** The
+939-document steal fix and the ~1,758 recoverable unrecognized notes reproduce exactly and
+land identically with the harvest deleted from disk. The harvest's honest contribution is
+**11 documents** (FRC accession → RG), and its own footprint contains 4 it must refuse:
+the native key is RG-prefixed (`059-71A6682`), so stripping to `71A6682` aliases across
+groups — 50 of 1,349 keys map to >1 RG, and 3 of the 19 covered keys are among them. Move
+that item to N-2/N-5 where the harvest is already on disk, and give it an RG-scoped key.
 ~1,850 recoveries across **six** verified rule families + the three strategy-steal fixes
 (§3.2 library-keyword-anywhere, §3.3 mSupp abstract prefixes, §3.5 secondary-clause lot
 steal) + the 36,063-record decimalClass derived-field fix **[2026-07-28: the plan said
@@ -416,7 +485,41 @@ same sentence already counts separately, so it was being paid for twice]**. Ever
 `SourceExplorerExportGenerator` and adopt the new baseline. **Sequenced before N-2** so
 the routing work tests against post-parser classifications once, not twice.
 
-**N-2 — #354 Source Explorer routing pack** *(Effort M–L)*
+**N-2 — #354 Source Explorer routing pack** *(Effort M–L → S–M)*
+
+**[2026-08-02] Rescoped from five items to three. Item (a)'s offline route and item (b)
+are cut; item (c) is promoted to the head and is bigger than the issue thought.**
+
+- **(c) RG 256 is the session.** 537 of the 538 Paris Peace file units are **digitised** —
+  450,105 objects, M820 microfilm-roll PDFs — so a correct resolution hands the researcher
+  a downloadable ~700-image roll, not a catalog label. Today those 1,547 documents get only
+  the `centralFilesPanel` label plus generic prose (`load()`'s switch, :1171–1189, has no
+  `.centralFiles` case). **Three caveats belong in the acceptance criteria**, not in a
+  footnote: (i) it is a **hand-curated** file, not a generated one — only 303 of 537
+  consecutive range titles chain by serial+1, 14 pairs overlap, 16 have high-bound
+  inversions, 10 carry literal transcription noise (`185.002-185.00?`, `!84.lMch-Myer`,
+  `8670.00/6-86?n.00/25`…), and a *name*-range family (`184.1/Ba-Bernv`) swallows the
+  numeric space above 184.1 under any naive dash-split; three independent implementations
+  of the same idea resolved 533 / 1,036 / 1,294; (ii) **~10% of documents ride an
+  unadjudicable tiebreak** — narrowest-vs-widest flips 144 of 1,438, NARA's own ranges
+  overlap, and **0 of 538 carry a scope note or holdings measurement** to settle it, so the
+  uncertainty goes in the UI; (iii) the issue's own framing — "one bundled record resolves
+  all 1,547 offline" — is a **two-line constant** needing no harvest at all. That premise
+  is otherwise correct: RG 256 really is absent from `volume-sources-index.json`'s 31
+  `recordGroups` and from every bundled `Resources` JSON (both verified).
+- **(d)** manuscript repositories (~1,502) — unchanged, static guidance, no harvest input
+  possible (non-federal repositories are outside every record group by construction).
+- **(e)** numerical-format gate (334) — unchanged; gate **both** copies (see the
+  2026-07-28 note below).
+- **CUT — (a) offline title match.** Returns 0 of 4,986; see the finding above. Keep its
+  live-route and personal-papers-repository halves, which never depended on the harvest.
+  The 45 SWNCC documents still gain RG 353, and 802 JCS/Defense/Army documents gain an RG
+  node from bundles the app **already ships**.
+- **CUT — (b) CFPF deep links.** 0 of 1,361; the file units are not digitised, and the
+  issue's actual ask is a per-document link the harvest has no item level to supply.
+
+The pre-2026-08-02 item text is retained below for the record.
+
 Five independent items; split into two PRs if needed:
 (a) namedFileSeries: catalog keyword live route + personal-papers repository table +
 static seriesName→RG map (~939 records offline through already-bundled RG NAIDs) +
@@ -441,6 +544,53 @@ produced the 334-record figure, which stops being reproducible. Gate both]**.
 **N-3 — #375 curated lot NAIDs (owner + Claude)** *(Effort S)*
 The control-number route is closed (2 of 573).
 
+**[2026-08-02] Confirmed definitively against the complete harvest, and one seed is worth
+curating first.** Every control number in all 22 groups was extracted — 62,349
+occurrences, 51,531 distinct under `SourceNoteParser.lotFileNorm` — and matched against
+the live index. The harvest resolves **~25 of the 605 unresolved lots / ~149 documents
+(2.3%)**; the extraction is sound (968 of the 971 bundled lots reproduce from the harvest's
+own control numbers, 99.7%, with **0 NAID disagreements**), so 2.3% is a real ceiling, not
+a parsing artefact. `54 D 270` (1,063 documents) returns **zero** raw byte hits anywhere in
+the 3.3 GB `rg_59.json`. Manual curation is the only route, exactly as this issue says.
+
+**Two corrections to the "free win" framing:** (i) **13 of the 24 newly-resolvable lots /
+84 documents resolve into a *different* record group than the citation names** and fail
+`CatalogRecord.isAcceptableLotResolution` (`NARACatalogHarvestClient.swift:138`) — the
+#352 rule installed *because* #335 found wrong-collection resolutions. The history looks
+right, but admitting them means relaxing the guard, which is an owner decision about the
+app's uncertainty policy. Keeping it leaves ~11 lots / ~70 documents. (ii) `57D284`
+carries 48 of the 149 documents and is a **one-of-two pick** (naId 1422076 Torquay 1950 vs
+1422086 Special Session 1951), not a clean hit.
+
+**Curate `Conference Files → naId 602875` first: ~1,425 documents, 22% of the gap, one
+row.** 17 unresolved lot norms (59D95, 60D627, 60D629, 62D181, 63D123, 64D559, 64D560,
+65D366, 65D533 + 8 OCR variants) are one continuing series. The proof needs **no harvest**:
+`central-files-index.json` already maps nine other Conference Files lots to 602875, each
+titled "Conference Files", and every note reads "Conference Files: Lot NN D NNN, CF NNNN".
+The harvest merely corroborates (RG 59, 1949–1972, Executive Secretariat, entry A1 3051B).
+Raw count is 1,572; **147 (9.4%) cite the lot only as a secondary "ibid." reference** while
+the document sits elsewhere, so ~1,425 is the honest figure. That 12.6%-baseline
+secondary-reference rate already applies to the 661 resolved lots, so it is not new harm.
+
+**Do NOT automate sibling inheritance.** The general rule — "an unindexed lot is a sibling
+accession of an indexed one" — leave-one-out tested against the 971 bundled ground-truth
+resolutions gives **63 predictions, 33 correct, 30 wrong: 52.4% precision**. The FRUS
+prefix is a *bureau* designator, not a series name ("NEA Files" spans 18 distinct NARA
+series, "SPA Files" 6, "FE Files" 8); **79 of 92 testable name-groups (85.9%) span more
+than one series**. Today an unresolved lot produces a visible, honest absence
+(`SourceExplorerView.swift:832` → "No matching record found" + a manual `search-within/388`
+link); an automated override would replace that with a confident wrong link about half the
+time. Use the harvest to emit a **ranked candidate list for hand-verification** — this
+issue's own option 1. Useful corollary: **508 of the 971 bundled lots (52.3%) already share
+a naId with another lot**, so the shipped bundle is a better source of candidate groupings
+than the harvest's 28.3% multi-lot rate.
+
+**Implementation anchor.** The override must be read at `CentralFilesIndex.swift:81
+lotFile(forRawLot:)`, consumed by **both** `SourceExplorerView.swift:832` **and**
+`MacSourceExplorerView.swift:274`. `BundledLotResolver` exists only in
+`VolumeSourcesIndexGeneratorCore/` and is enrolled in no app target — wiring it there
+changes the export generator, not what a user sees.
+
 **Re-baseline the export first — done 2026-07-29, and the figures below are now measured
 rather than projected.** The 573-lot figure predated N-0's keyed regen. After it: the gap
 is **581 lots / 6,230 records**, and **60D627 (455 records) — one of the nine dropped
@@ -461,6 +611,23 @@ curation) and re-baselines. Cheap, high-yield, no API dependency.
 presidentialLibrary bucket; ~20 entries reach ~81% **[2026-07-28: the plan previously
 attributed ~66% to ~20 entries]**.
 
+**[2026-08-02] Zero harvest contribution, and it is structural — remove the dependency and
+schedule this on its own.** An ancestor census over all 751,880 records returns
+`{recordGroup: 751,880, series: 731,692}` and **zero collection-level records**:
+presidential libraries sit outside every record group, so a record-group-filtered harvest
+excludes them by construction. No re-harvest, no additional groups, and no API key changes
+that. Sizing re-measured on the live index — **20,451 documents over 1,363 distinct
+(repository, collection) pairs** (excluding the Library of Congress): 6 entries → 13,358
+(65.3%), 10 → 72.5%, 20 → 16,133 (78.9%), 46 → 84.9%, 100 → 89.7%. The curve is flat past
+~50; **stop at 20**. Confirmed: all **438 library-repository clusters in
+`collection-authority.json` carry `naId: null`** — nothing to inherit.
+
+**The gate below is still the right gate, and half of it is still open.** `domainFiltered`
+(:270) and the #373 front-matter extension (:291–297) block **presidentialLibrary → `lot:`**
+— both shipped and tested. But the bridge *this* issue would weaponise is **library A →
+library B**, and step 4 `uniqueRecord(forAliasNorm:)` (:306) remains repository-blind over
+one global `byAlias` map. Conditions (i) and (ii) stand exactly as written.
+
 **Gate answered 2026-07-28 — §3.7 is HALF delivered, and the missing half is the one this
 session depends on.** #351 (PR #370) shipped the cross-domain *refusal*
 (`CollectionAuthorityIndex.domainFiltered`, `CollectionAuthority.swift:270`, applied :261)
@@ -478,7 +645,51 @@ curated entries repository-first and make lookup repository-aware for library pa
 casing) off the repository-blind alias step. Unguarded but lower risk, for the record:
 `namedFileSeries` carries no repository at all and can reach a `lot:` cluster.
 
-**N-5 — #372 lot-map consolidation** *(Effort M, architectural)*
+**N-5 — #372 lot-map consolidation** *(Effort M, architectural — now split into two PRs)*
+
+**[2026-08-02] Split it. The repoint is worth 728 documents, needs no harvest and no
+regeneration, and can ship today; the fold is architectural hygiene worth 2.**
+`central-files-index.json` `lotFiles` resolves 661 keys / **8,974** of the 15,340
+lot-citing documents; `volume-sources-index.json` `lots` resolves 524 / **8,246**. The
+delta is **728 documents across 139 central-files-only keys**, plus **+91 volume
+front-matter nodes** (3,024 vs 2,933 of 4,249). Both figures were computable — and the
+two-call-site change executable — before the harvest existed. **PR 1 = the repoint. PR 2 =
+the fold**, which is worth 2 documents on its own (74D267, 78D26 — also inside the harvest
+supplement, so the naive 834 total double-counts them; the correct figure is 832).
+
+**Reachability is narrower than the document count suggests.**
+`CollectionGeneratedBlocks.archivalSourceRows` (:475) calls `archivalResolution` once per
+`(repository, recordGroup, lotFile, seriesName)` **group** — the 220 central-files-only
+lots produce 372 group rows corpus-wide — and only inside the opt-in `.archivalSources`
+block of a user-built collection that is then exported. The always-visible half is
+`VolumeSourcesView` at **+91 of 4,249 nodes (2.1%)**. Source Explorer already reads
+central-files and gains nothing. Nothing is broken today in either surface: the row prints
+its label and merely lacks a hyperlink.
+
+**The harvest supplement is 7–20 documents and carries an owner decision.** 24 new lots /
+106 documents, of which **13 lots / 84 documents (79%) resolve into a different record
+group than the citation names** and fail `isAcceptableLotResolution`
+(`NARACatalogHarvestClient.swift:138`) — see N-3. Two lots previously written off as
+"numeric-collision noise" are genuine and are the two largest RG-compliant matches:
+`428` → naId 2124670 (RG 59, Palestine subject files) and `5226` → naId 2521109 (RG 59,
+ISA/MDAP program management), both carrying an `Agency-Assigned Identifier` whose note
+reads "This is the Department of State Lot File Number." Excluding them leaves **7**;
+keeping the record-group guard and admitting them gives **20**.
+
+**What the harvest genuinely delivers here is validation, worth ~0 documents:** 968 of 971
+bundled lots confirmed, **0 NAID disagreements**; `levelOfDescription: series` + HMS/MLR
+entries for the 7 volume-sources-only lots (64D171 → 40967113 "P 312"; 78D26 → 824653
+"A1 5756"); and proof that **113 bundled lots are control-number-ambiguous** in the catalog
+(RG filtering fixes only 4, leaving **1,710 documents** ambiguous; 64D563 alone rides 245
+docs across 12 candidate series) — which correctly kills any idea of *regenerating* the
+bundle from the harvest. A `VALIDATE_AGAINST_HARVEST=<dir>` tripwire would need the 4.5 GB
+extract on disk, so it cannot run in CI or on a fresh clone; the committable form is a
+~300 KB derived `lot → NAID` artifact over the 7,634 lot-form keys.
+
+**Two stale premises corrected:** `volume-sources` `lots` now has **zero** fileUnit
+entries, and `CentralFilesIndex.untrustworthyNAIDs` is **empty** (0 of 971 flagged), so the
+#351 render guard is currently inert.
+
 After N-0's regen: fold volume-sources' surviving lots into central-files at generation
 (skipping fileUnit-level entries), repoint the readers to
 `CentralFilesIndexStore.lotFile(forRawLot:)`, drop the `lots` map from the volume-sources
@@ -506,9 +717,52 @@ described in older plan docs was never built (`project_nara_analyzer_unbuilt`). 
 candidate-picker card is in the design brief as an optional surface. Natural slot: after
 N-1 (parser rules are what the analyzer runs).
 
-**Parked:** #405 (creator-org similarity dimension) — needs a product decision about
-Related-Documents axis weights and a data-harvest design; revisit after N-2 ships the
-namedFileSeries route it would build on.
+**N-7 — #663 link NARA's digitised scans** *(Effort M; NEW 2026-08-02, the highest-value
+item in the workstream)*
+
+The harvest holds **10,115,572 digital objects across 17,985 records**, each with a live
+`catalog.archives.gov` `objectUrl`. Source Explorer surfaces none of it — the app's
+`NARACatalogResult` (`NARACatalogClient.swift:18`) carries seven fields and a digital-object
+link is not among them. This is a categorically better outcome than a NAID: a PDF of the
+microfilm roll rather than a note about which box to visit in College Park.
+
+**Measured reach:** RG 256 Paris Peace, 537 of 538 file units digitised / 450,105 objects
+(the 1,547 documents of N-2 item c); plus RG 59's *Central Decimal Files* (naId 302021 —
+2,778 digitised units / 1,530,130 objects) and *Decimal Files* (2555709 — 1,469 / 147,295),
+whose file-unit titles are decimal ranges in exactly the form FRUS cites
+(`763.72/1476-1635`). Against the 122,033 decimal citations carrying a parsed
+`decimal_class`: **9,006 documents (7.4%) have a class with any digitised unit** — the
+ceiling — and **7,129 (5.8%) land inside a digitised range** under a partial parser. Call
+it **~7,000–9,000 documents**. For scale, the entire bundled lot index resolves 8,974.
+
+**Coverage is front-loaded onto the early twentieth century and must be presented
+honestly.** NARA's RG 59 digitisation follows the microfilm publications, so the classes
+FRUS cites most have *zero* digitised units — 893 China (10,876 docs), 611 (6,767), 793
+(5,780), 711 (5,289) — while classes 131 and 133 (Visa Division, which FRUS barely touches)
+are the two most heavily digitised. The UI must say **"scanned microfilm for file range
+763.72/1476–1635 (821 pages, PDF)"** — a range, never a document. A wrong range sends the
+researcher into the wrong 700-page roll.
+
+**Three smaller fields ride along free** with any bundle refresh: `accessRestriction`
+(100% of all 751,880 records; series-level Unrestricted 14,544 / Restricted-Fully 2,773 /
+Restricted-Partly 1,904 / Restricted-Possibly 953 — exactly what a researcher planning a
+College Park trip needs *before* booking); `inclusiveStartDate`/`inclusiveEndDate` (100% of
+the 20,188 series — lets a resolution be date-checked against its own citation);
+`findingAids` (3,247 series, 16.1%) and `numberingNote` (385 — NARA's own ordering
+instruction, the difference between a request being fillable and being bounced).
+
+**Sequence behind N-2**, whose RG 256 range parser and curation discipline this inherits.
+The bundle is ~4,800 rows / <100 KB and committable — but its generator inputs
+(`rg_256.json` 170 MB, `rg_59.json` 3.3 GB) are gitignored, so the regeneration path must
+be documented or the resource becomes unmaintainable.
+
+**Parked:** #405 (creator-org similarity dimension) — **[2026-08-02] measured and it does
+not clear the bar.** Creator information reaches only **8,976 of 316,839 corpus documents
+(2.8%)**, which is too thin for a Related-Documents axis; the earlier 58.5% figure used
+lot-keyed documents as its denominator, which is the wrong one for an axis that must apply
+corpus-wide. Separately, a creator gazetteer built from the harvest is actively harmful
+(see the finding above). Keep parked; revisit only if a source of creator attribution
+appears that is not record-group-scoped.
 
 ---
 
@@ -616,10 +870,18 @@ this table. One implementer, so the constraint remains review-and-verify bandwid
 | 3 | N | **N-1** #353 parser session *(the biggest coverage lever)* |
 | 4 | Q | **Q-2** Query Inspector *(consumes Q-3's vocab table for the stem line)* |
 | 5 | Q | **R-1** facets — *carrying the pagination prerequisite* |
-| 6 | N | **N-2** #354 routing (+ **N-3** curation riding along, after the export re-baseline) |
+| 6 | N | **N-2** #354 routing — *now three items, not five* (+ **N-3** curation riding along, after the export re-baseline) |
 | 7 | Q | **R-2** + **R-3** |
-| 8 | N | **N-5** consolidation · **N-4** now unblocked-with-conditions · **N-6** lookup |
-| 9+ | Q · N | M-1 → M-2/M-3; then Q-M3/Q-M5 as appetite allows |
+| 8 | N | **N-7** #663 digitised scans *(inherits N-2's range parser)* |
+| 9 | N | **N-5** consolidation · **N-4** now unblocked-with-conditions · **N-6** lookup |
+| 10+ | Q · N | M-1 → M-2/M-3; then Q-M3/Q-M5 as appetite allows |
+
+**[2026-08-02] Two things can be pulled forward out of order, because the harvest
+measurement detached them from everything else.** **N-5's first half — the repoint — is a
+two-call-site change worth 728 documents with no harvest, no regeneration and no
+prerequisite**; it can ride any slot as a small PR. And **N-3's Conference Files seed
+(~1,425 documents, 22% of the lot gap) needs only one hand-verified row** and does not
+depend on N-0's regen, unlike the rest of N-3's ranked curation.
 
 **Why Q-3 moved to the front [2026-07-28].** The session plan always permitted inverting
 Q-2 and Q-3 ("Prereq: none (Q-2 consumes it, but the order can invert)"). Doing Q-3 first
@@ -679,8 +941,9 @@ it.
 | Issue | Disposition under this plan |
 |---|---|
 | #368 design pass (doc/analytics/settings) | **Closed 2026-07-28.** Settings → superseded by the North Star handoff (Workstream S). Analytics → delivered by Waves A–C + D1 + D3 (#466–#479). Document view → `ResearchStripView` no longer exists; the rail is collapsible via the C2 titlebar toggle, so the minimum-width complaint is structurally addressed (owner sanity-check on a narrow window before closing). |
-| #376 / #353 / #354 / #375 / #355 / #372 / #235 | Scheduled as N-0 … N-6 above. |
-| #405 | Parked pending product decision (see N-parked). |
+| #376 / #353 / #354 / #375 / #355 / #372 / #235 | Scheduled as N-0 … N-6 above. **[2026-08-02] All re-measured against the complete harvest — see the N-wave header. #354 loses two of its five items; #353, #355 and #372's first half lose their harvest dependency entirely.** |
+| #663 digitised-scan links | **New 2026-08-02.** Scheduled as **N-7** — the highest-value item in the workstream (~7,000–9,000 documents, and it delivers an actual page image rather than a NAID). Sequenced behind N-2. |
+| #405 | **[2026-08-02] Measured: creator information reaches 2.8% of the corpus, too thin for a Related-Documents axis.** Stays parked; see N-parked. |
 | #306 in-chart scrubber | **Not mooted** by the analytics redesign — still a valid enhancement; unscheduled. |
 | #268 shared AXChartDescriptor | **Not mooted** — accessibility work, unscheduled here; pairs naturally with any future analytics session. |
 | #266 saved-search freshness | Adjacent to Q-M4 (M-2's log knows last-run hit counts **once `resultCount` records whether the count was exact — see Decision E's defect 2**) — fold into M-2's decision points rather than scheduling separately. |
