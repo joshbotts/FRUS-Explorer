@@ -1949,3 +1949,30 @@ browse/discovery view over semantic space, with generation offloaded to an owner
   assessment's 100-row era-stratified blind panel with pre-1900 as its own kill bucket, and a
   quantization-ladder recall measurement. Sequencing: #645 seven-site fix + missing archival route
   arms land first, then re-measure the 46,234-document zero-candidate market this axis exists for.
+
+### Session 2026-08-03 — Feature & priorities review: what to target after the current slate
+
+Assessment only — no code changes. New `Planning/Feature-Priorities-Review-2026-08.md` reviews
+shipped capabilities and every open plan, then recommends the next priorities once the current
+slate (N lane, R-2b, Q discovery tail, held owner decisions) ships or is refuted.
+
+- **P1 — Sync & data-integrity wave**, anchored on the owner's #665 (background CloudKit
+  integration + workspace notification), folding in the recorded summary-sync defects
+  (last-push-wins `summary_text`, missing `!isHeadnoteDraft` boot filter — with #626 if un-held),
+  a generalized referential-integrity sweep for the #406 defect class, the missing multi-device
+  verification protocol, and R-2b's deploy.
+- **P2 — one Discovery lane** merging the three semantic/similarity designs behind one gate
+  sequence: #645 remainder + route arms + zero-candidate remeasure, the shared "why related"
+  design question, `CSUserQuery` + Spotlight `textContent` pulled forward (available since
+  iOS 18), then the V-0 spike deciding vector vs. lexical-floor; #308 doc-level subjects enter
+  the same blind-panel gate via #261.
+- **P3 — corpus-completeness programs**: the People program (#234/#259/#260, eval-first), the
+  #262 resolved-edge manifest (size/shape design first), #265/#263 as quick wins.
+- **P4 — reach**: one explicit hosting-channel decision (four features have died against its
+  absence), then a 1.0-readiness wave (#106, metadata, accessibility closeout, localization
+  posture).
+- **P5 — scheduled perf/debt**: the measured two-phase fetch session (~10.5 s → ~0.6 s), one
+  batched index-migration event (collect all index-shape wants behind a single multi-hour
+  reindex), dead-code decisions, the unticked export-verification checklist, #270 as trailing
+  hygiene. Non-targets reaffirmed: cross-platform port (post-1.0; spike only), CloudKit sharing,
+  ANN infra, and every measured refutation.
