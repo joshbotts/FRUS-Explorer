@@ -576,11 +576,18 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .crossRefLink(let target, let volumeId, let broken, let children):
             // URL: frusexplorer://doc/{target}/{volumeId} (target first so
             // FRUSURLSchemeHandler can extract it as pathComponents[0]).
+            //
+            // Encoded with `urlComponentEncoded`, NOT `urlEncoded`: `.urlPathAllowed` leaves both
+            // '/' and ':' bare, so an external target arrived at `dispatch(url:)` already split.
+            // `http://would.be` became `frusexplorer://doc/http://would.be`, whose path components
+            // are ["http:", "would.be"] — read as target "http:" in a VOLUME NAMED "would.be", so
+            // tapping an external link offered to download a volume that does not exist. The
+            // broken-ref branch below already guards this; the ordinary branch did not.
             let path: String
             if let vol = volumeId, !vol.isEmpty {
-                path = "\(urlEncoded(target))/\(urlEncoded(vol))"
+                path = "\(urlComponentEncoded(target))/\(urlComponentEncoded(vol))"
             } else {
-                path = urlEncoded(target)
+                path = urlComponentEncoded(target)
             }
             if let broken {
                 // A dead reference (issue #240): still an <a> so the tap is captured, but the
@@ -717,5 +724,17 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// Percent-encodes a string for inclusion in a URL path component.
     private func urlEncoded(_ text: String) -> String {
         text.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? text
+    }
+
+    /// Percent-encodes one path COMPONENT, so a value containing '/' or ':' survives as a single
+    /// component instead of splitting into several.
+    ///
+    /// `.urlPathAllowed` permits both characters — correct for a whole path, wrong for a component
+    /// spliced into one. Only 83 of the corpus's 1,964,788 `<ref target>` values contain either
+    /// (53 `http`, 14 `https`, 16 `mailto`), so this changes the emitted href for those and is a
+    /// no-op for every other cross-reference.
+    private func urlComponentEncoded(_ text: String) -> String {
+        let allowed = CharacterSet.urlPathAllowed.subtracting(CharacterSet(charactersIn: "/:"))
+        return text.addingPercentEncoding(withAllowedCharacters: allowed) ?? text
     }
 }

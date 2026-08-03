@@ -914,3 +914,92 @@ struct HighlightInjectionTests {
         #expect(!out.contains("<mark class=\"hl-green\">Aside"))
     }
 }
+
+// MARK: - ExternalRefTargetRoundTripTests
+
+/// An external `<ref target>` must survive the trip from serializer to tap handler intact.
+///
+/// ## The bug
+/// The cross-ref href was built with `.urlPathAllowed`, which permits **both `/` and `:`**. An
+/// external target therefore arrived at `FRUSURLSchemeHandler.dispatch(url:)` already split:
+/// `http://would.be` became `frusexplorer://doc/http://would.be`, whose path components are
+/// `["http:", "would.be"]` — read as target `"http:"` in a **volume named `would.be`**. Tapping an
+/// external link offered to download a volume that does not exist. The broken-ref branch of the
+/// same function already guarded this and said so in a comment; the ordinary branch did not.
+///
+/// Corpus scale: 83 of 1,964,788 `<ref target>` values contain `/` or `:` — 53 `http`, 14 `https`,
+/// 16 `mailto`. Some are real (`https://history.state.gov/historicaldocuments`,
+/// `mailto:history@state.gov`); the 18 inside document bodies are autolink noise (#659). Both kinds
+/// were broken the same way.
+///
+/// ## Why a round trip
+/// Asserting the emitted string alone would pin an encoding without proving it decodes back, and
+/// asserting the resolver alone would pass while the serializer still split the value. The two
+/// halves are only correct *together*, so the test walks the real path: serialize → parse the href
+/// exactly as `dispatch(url:)` does → resolve.
+///
+/// Version history:
+///   1.0 — build 38: external targets misrouted as volume ids
+@Suite("External ref target round trip")
+struct ExternalRefTargetRoundTripTests {
+
+    private let serializer = FRUSRenderNodeHTMLSerializer()
+
+    /// Extracts the `frusexplorer://` href the serializer emitted for a cross-ref.
+    private func emittedHref(target: String, volumeId: String? = nil) throws -> URL {
+        let node = FRUSRenderNode.crossRefLink(
+            target: target, volumeId: volumeId, broken: nil,
+            children: [.plainText("link")])
+        let html = serializer.serialize(
+            FRUSDocumentRenderModel(documentId: "d303", bodyNodes: [node], footnotes: []))
+        let match = try #require(html.firstMatch(of: /href="(frusexplorer:\/\/[^"]+)"/),
+                                 "no frusexplorer href emitted for \(target)")
+        return try #require(URL(string: String(match.1)), "emitted href is not a URL")
+    }
+
+    /// Reproduces `FRUSURLSchemeHandler.dispatch(url:)`'s parse, then resolves.
+    private func resolve(_ url: URL) -> CrossRefDestination {
+        let parts = url.pathComponents.filter { $0 != "/" }.map { $0.removingPercentEncoding ?? $0 }
+        let target = parts.first ?? ""
+        let volumeId: String? = parts.count >= 2 ? parts[1] : nil
+        return FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId)
+    }
+
+    @Test("An http target round-trips to .external, not to a volume named after its host",
+          arguments: ["http://would.be",
+                      "http://bookstore.gpo.gov",
+                      "https://history.state.gov/historicaldocuments",
+                      "mailto:history@state.gov"])
+    func externalTargetsSurvive(_ target: String) throws {
+        let url = try emittedHref(target: target)
+        guard case .external(let resolved) = resolve(url) else {
+            Issue.record("""
+                \(target) did not resolve to .external — it resolved to \(resolve(url)). Before the \
+                fix this became a document lookup in a volume named after the URL's host, which \
+                offered to download a volume that does not exist.
+                """)
+            return
+        }
+        #expect(resolved.absoluteString == target,
+                "the target was mangled in transit: \(resolved.absoluteString) != \(target)")
+    }
+
+    /// The other 1.96M targets must be unaffected — including the two-component form, where the
+    /// separating slash between target and volume id is structural and must stay literal.
+    @Test("Ordinary cross-references are unchanged")
+    func ordinaryTargetsUnaffected() throws {
+        let sameVolume = try emittedHref(target: "d42")
+        guard case .document(let vol, let doc) = resolve(sameVolume) else {
+            Issue.record("d42 no longer resolves to a document"); return
+        }
+        #expect(vol == nil && doc == "d42")
+
+        let crossVolume = try emittedHref(target: "d42", volumeId: "frus1969-76v01")
+        guard case .document(let vol2, let doc2) = resolve(crossVolume) else {
+            Issue.record("cross-volume target no longer resolves to a document"); return
+        }
+        #expect(doc2 == "d42")
+        #expect(vol2 == "frus1969-76v01",
+                "the separator between target and volume id must stay a literal '/'")
+    }
+}
