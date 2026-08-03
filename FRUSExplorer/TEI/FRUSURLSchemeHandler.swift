@@ -188,7 +188,11 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         volumeId: String?
     ) -> CrossRefDestination {
         let target = rawTarget.trimmingCharacters(in: .whitespaces)
-        if target.hasPrefix("http://") || target.hasPrefix("https://") {
+        // `mailto:` alongside http(s): the corpus carries 16 of them (e.g. the front matter's
+        // "mailto:history@state.gov"). Without this they fell through to the document branch and
+        // were looked up as a document id, so the contact link did nothing at all.
+        if target.hasPrefix("http://") || target.hasPrefix("https://")
+            || target.hasPrefix("mailto:") {
             return URL(string: target).map { .external($0) } ?? .unresolved
         }
 
