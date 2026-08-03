@@ -244,7 +244,97 @@ measurement), after slot 7 (1.0 shippable).
 
 ---
 
+## 5. Beyond the tracker — unplanned capabilities worth considering
+
+Everything in §2 is drawn from the recorded pipeline. This section is the answer to the harder
+question: what could the app do for researchers that **no issue or plan currently names**? Each
+item was checked against the tree and the tracker before being called unplanned (2026-08-03).
+
+### 5a. Complete the archive bridge (the most on-brand cluster)
+
+1. **Declassification-gap explorer.** FRUS's editorial apparatus encodes its own absences:
+   `[text not declassified]` redaction markers, "not printed" references to withheld or omitted
+   documents, editorial notes describing what could not be published. Today the parser renders
+   the markers and nothing more — no feature reads them as *data* ("not declassified" appears
+   only in `FRUSDocumentParser.swift`; "not printed" appears in no Swift file). Surfacing and
+   aggregating them — per-document redaction flags, redaction density by volume/era/topic, a
+   browsable list of documents-referenced-but-not-printed — gives researchers a map of where
+   FRUS is *not* the record, which is exactly where the archive visit, MDR, or FOIA request must
+   go. A natural companion: an **MDR/FOIA request draft generator** seeded from the document's
+   citation and source-note parse. Entirely offline; likely one new indexing pass, so it should
+   board the batched index-migration event (P5.2). This is the app's absence-assertion culture
+   applied to the corpus itself.
+2. **Research-trip packet.** Source Explorer already resolves RG / entry / lot / NAID; exported
+   collections already carry an archival-sources block (`CollectionGeneratedBlocks.
+   archivalSourceRows`); N-7's riders bring `accessRestriction` and `numberingNote` (NARA's own
+   ordering instruction). The missing last step is a per-project **archive visit packet**: a
+   pull-list export grouped repository → record group → entry/box, with restriction status and a
+   citation checklist — the actual College Park paperwork, generated from the documents the
+   researcher has already collected. Small: it is an exporter over resolutions the app already
+   computes.
+3. **Previously-published outbound resolver.** The `previouslyPublished` provenance panel is
+   currently a dead end — it prints the citation and says "Consult the cited publication"
+   (`SourceExplorerView.swift:978`). But the cited publications are overwhelmingly free online:
+   *Department of State Bulletin* (Internet Archive/HathiTrust), *Public Papers of the
+   Presidents* (American Presidency Project, govinfo), UST/TIAS treaties, the Congressional
+   serial set. A small citation grammar over the already-parsed category plus a bundled link
+   table turns a shrug into a deep link. Cheap; reuses the SourceNoteKit parse that already
+   classified the note.
+4. **Parallel-series concordance.** Serious diplomatic historians triangulate FRUS against the
+   foreign equivalents — *DBPO* (UK), *DDF* (France), *AAPD* (Germany), *Dodis* (Switzerland,
+   open API), the Wilson Center Digital Archive — and no tool maps between them. A curated,
+   bundled volume-level concordance ("for this volume's coverage span and region, the parallel
+   published series are…") would be modest to build (the taxonomy already carries era/region
+   tags) and unique to this app. Document-level alignment is a research project; volume-level is
+   a data-curation session.
+
+### 5b. The document web researchers actually follow
+
+5. **Telegram-thread reconstruction.** Diplomatic traffic is conversational — Deptel/Embtel
+   numbers, posts, and dates chain Washington↔post exchanges across documents and volumes — and
+   explicit `<ref>` cross-references capture only a fraction of it. Nothing in the app parses
+   telegram numbers today (one comment in `CitationMatchingEngine` mentions them). A new parsing
+   family in the SourceNoteKit mold (with its own eval baseline, per house discipline) could
+   ship "part of the same exchange" as another Related Documents axis — the axis framework and
+   honest-chip grammar are already built for it. Highest research delight in this list; medium
+   cost; gate it with the same blind-panel protocol as the discovery axes.
+
+### 5c. Method & completeness tooling (absence assertions about one's own work)
+
+6. **Coverage map / systematic-review mode.** The data exists (`ExportHistoryEntry`,
+   `ProjectEngagedDocuments`); the surface does not: "you have opened 43 of the 267 documents in
+   this working corpus — 12 annotated, 224 unread; here they are." Plus an exportable coverage
+   statement for the method appendix, completing what M-2's query log started: the appendix
+   would then record not only what was searched but what was actually *examined*. Small session;
+   no schema change if computed from existing rows.
+7. **Computational dataset export.** Export a working corpus as a clean dataset bundle —
+   per-document plain text + metadata (JSON/CSV) + a provenance manifest recording the query,
+   scope, and app version — for the growing cohort doing topic models and network analysis in
+   Python/R. The TEI is public; the curated, scoped, provenance-stamped subset is the value the
+   app adds. An exporter session; reuses `TEIBodyTextExtractor`-grade plumbing.
+
+### 5d. Consumption modes
+
+8. **Read-aloud.** No speech synthesis exists anywhere in the codebase. `AVSpeechSynthesizer`
+   over the render tree — skipping footnotes, tracking position, honoring the existing
+   read-vs-research mode split — makes hour-long documents commutable and serves low-vision
+   users beyond what VoiceOver's screen-reading posture offers. Small-to-medium; purely
+   additive.
+9. **Collection → static-site publish** *(minor)*: extend the existing HTML export to a
+   self-contained multi-document site bundle (index, documents, notes). Fits the standing
+   "collaboration through exported artifacts" decision exactly.
+
+**Where these slot:** none displaces §2's ordering — the sync wave and discovery gates come
+first. The natural entry points: 5a.1 boards the P5.2 index-migration event; 5a.2/5a.3 extend
+the N lane's own surfaces and could trail N-7; 5c.6/5c.7 and 5d.8 are single sessions that can
+ride any pause point; 5b.5 and 5a.4 deserve their own scoping docs before commitment.
+
+---
+
 ## Version history
 
+- **1.1 (2026-08-03)** — Added §5: unplanned candidate capabilities (archive-bridge cluster,
+  telegram threads, coverage/method tooling, consumption modes), each verified absent from the
+  tracker and tree before inclusion.
 - **1.0 (2026-08-03)** — Initial review: shipped-feature inventory, current-slate summary,
   five prioritized recommendations, non-targets, sequencing sketch.
