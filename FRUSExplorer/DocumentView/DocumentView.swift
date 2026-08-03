@@ -291,8 +291,18 @@ struct DocumentView: View {
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
-    /// Opens external (non-FRUS) cross-reference URLs in the system browser.
-    @Environment(\.openURL) private var openURL
+    // NO `@Environment(\.openURL)` HERE — deliberately, and do not re-add it.
+    //
+    // This view INSTALLS an `OpenURLAction` (see `documentContent`) to route frusexplorer://
+    // links, so reading the same key made it depend on a value it also writes. `OpenURLAction`
+    // wraps a closure and never compares equal to the previous one, so every body evaluation
+    // published a "new" value, invalidating the view that read it, which rebuilt the action.
+    // Measured on iPad with the body counter armed: 750+ `DocumentView.body` evaluations for ONE
+    // document open, accelerating 3/s → 31/s, with `_printChanges` naming `_openURL` each time —
+    // enough main-thread work to trip the 10s scene-update watchdog.
+    //
+    // External (non-FRUS) cross-reference URLs now go straight to `UIApplication.shared.open`
+    // in `handleCrossRefTap`.
     /// `true` only when the platform can actually open a second window — Stage
     /// Manager on iPad; never on iPhone or a non-Stage-Manager iPad. Gates the
     /// "Open in New Window" affordance so it isn't offered where `openWindow`
@@ -910,7 +920,20 @@ struct DocumentView: View {
             resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId)
 
         case .external(let url):
-            openURL(url)
+            // NOT `openURL(url)`. That was `@Environment(\.openURL)` — the very value this view
+            // REPLACES a few lines below, in `documentContent`'s
+            // `.environment(\.openURL, OpenURLAction { … })`. Reading it made DocumentView depend
+            // on an environment key it also writes, and because `OpenURLAction` wraps a closure it
+            // is never equal to the previous one: every body evaluation installed a "new" value,
+            // which invalidated the view that read it, which rebuilt the action. Measured on an
+            // iPad with the body counter armed: 750+ evaluations of `DocumentView.body` for ONE
+            // document open, accelerating 3/s → 31/s, `_printChanges` naming `_openURL` every
+            // time — enough main-thread work to trip the 10s scene-update watchdog.
+            //
+            // Going straight to the system opener also expresses the intent better: this case is
+            // an ordinary http(s) link, and routing it through the app's own frusexplorer://
+            // interceptor only to have it fall through to `.systemAction` was a detour.
+            UIApplication.shared.open(url)
 
         case .unresolved:
             #if DEBUG
