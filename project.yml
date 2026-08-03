@@ -112,6 +112,14 @@ targets:
         # so they can never silently drift out of sync with the macOS target.
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        # Export compliance. Declares that the app uses no NON-EXEMPT encryption, which
+        # is what stops App Store Connect asking on every single TestFlight upload.
+        # Basis, checked rather than assumed: the app's only CryptoKit use is HASHING —
+        # SHA-256 digests for cache keys, scope signatures and the schema inventory, plus
+        # one Insecure.SHA1 in DownloadManager. Hashing is not encryption. Everything else
+        # is Apple-provided and exempt: HTTPS through URLSession, and the Keychain. There
+        # is no symmetric or asymmetric cipher anywhere in the app.
+        ITSAppUsesNonExemptEncryption: false
         # App Store category — kept in sync with the macOS target. (For iOS,
         # App Store Connect's listing metadata is authoritative, but Xcode
         # uses this key to pre-fill that field on first submission, and it
@@ -213,7 +221,7 @@ targets:
         PRODUCT_MODULE_NAME: FRUSExplorer
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         TARGETED_DEVICE_FAMILY: "1,2"
-        CURRENT_PROJECT_VERSION: 38
+        CURRENT_PROJECT_VERSION: 39
         MARKETING_VERSION: "0.2"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-iOS.entitlements"
@@ -269,6 +277,14 @@ targets:
         CFBundleDisplayName: "FRUS Explorer"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        # Export compliance. Declares that the app uses no NON-EXEMPT encryption, which
+        # is what stops App Store Connect asking on every single TestFlight upload.
+        # Basis, checked rather than assumed: the app's only CryptoKit use is HASHING —
+        # SHA-256 digests for cache keys, scope signatures and the schema inventory, plus
+        # one Insecure.SHA1 in DownloadManager. Hashing is not encryption. Everything else
+        # is Apple-provided and exempt: HTTPS through URLSession, and the Keychain. There
+        # is no symmetric or asymmetric cipher anywhere in the app.
+        ITSAppUsesNonExemptEncryption: false
         LSApplicationCategoryType: "public.app-category.reference"
         NSUserActivityTypes:
           - com.joshbotts.frus-explorer.document
@@ -290,7 +306,7 @@ targets:
       base:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
-        CURRENT_PROJECT_VERSION: 38
+        CURRENT_PROJECT_VERSION: 39
         MARKETING_VERSION: "0.2"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
@@ -348,7 +364,7 @@ targets:
         # and CLAUDE.md's build-number bump procedure) — App Store validation
         # rejects extensions whose CFBundleShortVersionString/CFBundleVersion
         # don't match their containing app's.
-        CURRENT_PROJECT_VERSION: 38
+        CURRENT_PROJECT_VERSION: 39
         MARKETING_VERSION: "0.2"
 
   # -------------------------------------------------------------------------
