@@ -1916,3 +1916,36 @@ answers whether a bundled document-level lexical-similarity neighbor index (a
   Six owner decisions queued in the assessment §10.
 - **Not verified** (corpus absent from this container): score distributions, coverage at any
   threshold, APSS wall-clock, non-`"dN"` xml:id share — all measurable in L-1.
+
+### Session 2026-08-03 — Vector embeddings & semantic similarity: recommendations
+
+Assessment only — no code changes. New `Planning/Vector-Embeddings-Semantic-Design.md` answers the
+owner's ask: bundled semantic indexing for a related-documents/leads proximity axis plus a
+browse/discovery view over semantic space, with generation offloaded to an owner-side M1 Mac Studio.
+
+- **Core move: precompute on the Studio, ship vectors not models.** Deletes the OS-27 design's
+  workstream-C headline risk (on-device embedding of 316,839 documents) and replaces it with a
+  distribution problem the repo already solves (17 bundled artifacts; GitHub volume downloads with
+  blob-SHA verification).
+- **Three-tier artifact stack by access pattern:** bundled 2-D map coords + cluster labels +
+  volume/subseries centroids (~3–4 MB); bundled 256-bit binary vectors for corpus-wide zero-download
+  candidate generation (10.1 MB — the one real app-size decision); per-volume int8-256 shards
+  (~149 KB/volume, ~82 MB full corpus) fetched by DownloadManager from an app-owned GitHub repo,
+  mmapped flat, deleted with the volume. No `@Model`, no CloudKit deploy, vectors never in SQLite
+  BLOBs. Retrieval is exact brute force — no ANN at 317k vectors.
+- **Pipeline:** pinned Python embed/UMAP stage writing a raw vector store treated as a harvest
+  cache (the NARA raw-store precedent), then a deterministic SPM `SemanticVectorsGenerator` packer
+  with full provenance pins (model SHA, dims, chunking, pooling, quantization) and the
+  configuration-mismatch refusal promoted to a family rule. Primary model candidate
+  EmbeddingGemma-300M (Matryoshka), Apache-2.0 fallbacks benchmarked in a V-0 spike;
+  `NLContextualEmbedding` rejected for the corpus side (unpinnable revisions).
+- **Feasibility:** axis — smallest lift, must enter the ranker self-normalised (raw cosine) to
+  dodge #643, chips computed at render time from the pair's own texts; leads — OS-27 §5.5 centroid
+  design survives verbatim, plus an off-index "which volume next" tier; discovery map — feasible,
+  precomputed layout + live int8 axis projections for the "slices", but the renderer must be Metal
+  with LOD (317k points; Canvas degrades far below that); free-text semantic search deferred to
+  V-5 (only feature needing an on-device query encoder).
+- **Gates before building (V-0 spike):** cross-reference weak-positive MRR per era, the lexical
+  assessment's 100-row era-stratified blind panel with pre-1900 as its own kill bucket, and a
+  quantization-ladder recall measurement. Sequencing: #645 seven-site fix + missing archival route
+  arms land first, then re-measure the 46,234-document zero-candidate market this axis exists for.
