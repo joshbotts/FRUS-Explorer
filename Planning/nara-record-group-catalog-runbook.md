@@ -637,6 +637,81 @@ Both were mine, both are fixed, and the second one did real damage before it was
    stores, and re-running consolidation restored everything with **zero API calls**, because the raw
    stores are the recovery path the design promises they are.
 
+### 2c. What the harvest was used for, and what it proved (2026-08-02)
+
+The full `seriesAndFileUnits` harvest (**751,880 records** = 20,188 series + 731,692 file
+units, 4.5 GB) was measured against every open NARA-workstream issue and against the
+owner's live index. Recorded here because the negative results are the durable part —
+they close routes that would otherwise be re-attempted.
+
+**The three things the Catalog API itself demonstrated:**
+
+1. **The v2 API is field-complete against the bulk export, and cheap.** The whole 22-group
+   series layer is ~62 calls, a few minutes, a few MB — versus streaming 22 GB. Either
+   source yields a field-complete series index. Bulk remains the only keyless route and the
+   only one carrying `mailCode` and the deeper levels without further paging.
+2. **`variantControlNumber_is` was never the limitation.** Only **5,466 of 20,188 series
+   (27.1%)** carry a lot-type control number *at all*; within RG 59 it is **2,900 of 4,449
+   (65.2%)**. Roughly a third of RG 59's series have no State Department lot number
+   recorded in the catalog under any type. The gap is NARA's cataloguing, not our querying
+   — no re-harvest, no key, and no additional record groups change it.
+3. **Resolution collapses upward.** 199,108 records resolve to NAID 388, the RG 59 node
+   itself. That is why a naive catalog search so often returns the record group rather than
+   the series a citation names.
+
+**The unexpected find: 10.1 million digitised objects.** 17,985 records carry
+`digitalObjects` arrays totalling **10,115,572 individual objects**, each with a live
+`catalog.archives.gov` `objectUrl`. This is a categorically better research outcome than a
+NAID — a PDF of the microfilm roll rather than a note about which box to visit. The
+concentrations that matter to FRUS:
+
+| series | naId | digitised file units | objects |
+|---|---|---|---|
+| Paris Peace Conference (RG 256) | 638859 | 537 of 538 | 450,105 |
+| Numerical Files | 654171 | 1,238 | 1,556,955 |
+| Central Decimal Files | 302021 | 2,778 | 1,530,130 |
+| Name Index to the Central Decimal Files | 581008 | 780 | 1,491,530 |
+| Purport Lists and Cards | 580701 | 653 | 815,808 |
+| Decimal Files | 2555709 | 1,469 | 147,295 |
+
+The decimal-series file-unit titles are ranges in exactly the form FRUS cites
+(`763.72/1476-1635`), so an interval lookup resolves a citation to a roll. Coverage is
+**front-loaded onto the early twentieth century** — NARA digitised along the microfilm
+publications — so the classes FRUS cites most (893, 611, 793, 711) have *zero* digitised
+units while Visa Division classes 131 and 133 are the most heavily digitised in the
+harvest. Measured reach: **9,006 of 122,033 decimal-cited documents (7.4%)** have a class
+with any digitised unit; **7,129 (5.8%)** land inside a digitised range. Tracked as #663.
+
+**Confirmed absent:** the Central Foreign Policy Files subtree (naId 654098 — 1 series +
+69 file units, 1973–79) has **zero** digital objects on every unit. The Electronic
+Telegrams, D/P/N-Reel, Top Secret and Bulkies units are catalog stubs, which is why a
+D-reel deep-link route returns nothing the app does not already ship.
+
+**Four other fields worth knowing are present and unused:** `accessRestriction` on 100% of
+all 751,880 records (series-level: Unrestricted 14,544 / Restricted-Fully 2,773 /
+Restricted-Partly 1,904 / Restricted-Possibly 953); `inclusiveStartDate` and
+`inclusiveEndDate` on 100% of the 20,188 series; `findingAids` on 3,247 series (16.1%);
+and `numberingNote` on 385 — NARA's own ordering instruction, the difference between a
+researcher's request being fillable and being bounced.
+
+**A trap to record.** Building a gazetteer from the harvest's 6,367 creator-name parts and
+matching it against unresolved FRUS lead entities scores 562 documents on 8 exact hits,
+492 of them "National Security Council" — and every one is wrong. The 22 groups are the
+*foreign-affairs* groups, so an agency's own records usually live outside them: the four
+"National Security Council" series are State and USIA records (RG 59/306), not NSC's own
+RG 273; "Department of Defense" resolves to Office of Military Government for Germany
+occupation files; "Department of the Treasury" to the Coast and Geodetic Survey
+(1878–1903). A creator-name match *inside* this harvest is usually a correspondent or a
+custodial accident, not the record creator. Do not build a creator gazetteer from it.
+
+**Validation the harvest did deliver:** 968 of the 971 bundled lots in
+`central-files-index.json` reproduce from the harvest's own control numbers (99.7%) with
+**0 NAID disagreements** — the shipped bundle is correct. It also proves **113 bundled lots
+are control-number-ambiguous** in the catalog (RG filtering fixes only 4, leaving 1,710
+documents ambiguous; 64D563 alone rides 245 documents across 12 candidate series), which
+correctly rules out ever *regenerating* that bundle from the harvest.
+
+
 ---
 
 ## 3. Environment contract
