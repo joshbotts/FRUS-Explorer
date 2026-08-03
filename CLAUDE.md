@@ -159,7 +159,7 @@ Enforced by `CodingStandardsAuditTests` — these fail the test suite:
 
 Conventions with **no** automated check — reviewer's responsibility:
 
-- **Swift 6 strict concurrency**: zero warnings under `SWIFT_STRICT_CONCURRENCY=complete`. This is a build setting, not part of the audit suite. The app targets do currently build with zero *source* warnings; the residue is a SwiftData `@Model` macro-expansion `Sendable` warning plus AppIntents tool notices.
+- **Swift 6 strict concurrency**: zero warnings under `SWIFT_STRICT_CONCURRENCY=complete`. This is a build setting, not part of the audit suite. **Verify with a CLEAN build — an incremental one reports nothing, because it does not recompile the files that would warn.** Measured 2026-08-02 on a clean build of both schemes: **zero source warnings**. Two known non-source residues remain and are not ours to fix: the SwiftData `@Model` macro synthesises a plain `Sendable` for `GeneratedSummary`, which already declares `@unchecked Sendable` (it must — removing it fails `SummarizationServiceTests`), giving ~75/25 "redundant conformance" lines per build; and `appintentsmetadataprocessor` notes there is no AppIntents dependency. Note the `FRUSExplorer` scheme builds **both** app modules, so a `#if os(macOS)` file's warnings surface in an "iOS" build.
 - **Localization**: all user-facing strings use `String(localized:)` — no raw string literals in views.
 - **Doc comments**: every `public`/`internal` type, function, and property requires a doc comment. Nothing verifies that they are *accurate*, either — verify doc claims about runtime behaviour by running the app, not by reading neighbouring comments or commit messages.
 - **Debug logging**: use `#if DEBUG` blocks with `print("[TypeName] ...")` prefix.

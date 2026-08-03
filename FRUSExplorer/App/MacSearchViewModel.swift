@@ -843,7 +843,12 @@ final class MacSearchViewModel {
             // Clamp page index to the new result set.
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
             #if DEBUG
-            print("[MacSearchViewModel] Search returned \(fetched.count)/\(totalMatchCount) results")
+            // `totalMatchCount` is Optional — nil when the whole-query count was not fetched
+            // (see the branch above). Interpolating it directly printed "Optional(1234)", or
+            // the bare word "nil", which is why the compiler flags the debug-description
+            // interpolation: the log line was less readable than it looked.
+            print("[MacSearchViewModel] Search returned \(fetched.count)/"
+                  + "\(totalMatchCount.map(String.init) ?? "not counted") results")
             #endif
         } catch {
             // CancellationError means this task was superseded by a new search trigger.
