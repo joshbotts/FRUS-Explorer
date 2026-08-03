@@ -285,3 +285,117 @@ struct SummarizationErrorSurfacingTests {
         #expect(vm.isSummarizing == false)
     }
 }
+
+// MARK: - EnvironmentSelfReferenceTests
+
+/// A view may not READ an environment key whose value it also INSTALLS, when that value is a
+/// closure-wrapping action.
+///
+/// ## The hang this prevents
+/// `DocumentView` installs an `OpenURLAction` to route `frusexplorer://` links
+/// (`.environment(\.openURL, OpenURLAction { … })`) and *also* declared
+/// `@Environment(\.openURL)`, which its own action's `.external` branch then called.
+/// `OpenURLAction` wraps a closure and — confirmed against the SDK interface — conforms only to
+/// `Sendable`, never `Equatable`. SwiftUI therefore cannot prove a freshly-built one equal to the
+/// last, so **every body evaluation published a "new" `\.openURL`, invalidating the view that read
+/// it, which rebuilt the action.** Self-sustaining.
+///
+/// Measured on an iPad with a body counter armed: **750+ `DocumentView.body` evaluations for one
+/// document open, accelerating 3/s → 31/s**, `_printChanges` naming `_openURL` nearly every time.
+/// Downstream that was 90s of CPU in 101s, SwiftUI's "Update NavigationRequestObserver tried to
+/// update multiple times per frame", and a `0x8BADF00D` scene-update watchdog kill — the app
+/// showing a stale spinner and accepting no touches while the document had in fact loaded.
+///
+/// ## Why a source audit
+/// There is no runtime coverage of the reader: `UIObstructionTests` Scenario 7 was written for
+/// this surface and withdrawn because every XCUI query over the document reader times out after
+/// ~180s (the WKWebView's accessibility tree defeats the query engine). A source rule is what is
+/// available, and the declaration it forbids reads as entirely ordinary — which is exactly why it
+/// survived review.
+///
+/// Version history:
+///   1.0 — build 38: the iPad document-reader render loop
+@Suite("Environment self-reference")
+struct EnvironmentSelfReferenceTests {
+
+    private static func documentViewSource() throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/DocumentView/DocumentView.swift"),
+            encoding: .utf8)
+        #expect(text.count > 10_000, "DocumentView moved?")
+        return text
+    }
+
+    /// The `DocumentView` struct's own source — from its declaration to the next top-level type.
+    ///
+    /// Scoped to the struct on purpose: `DocumentShareMenu`, further down the same file, reads
+    /// `\.openURL` legitimately. It is a CHILD of the installed action, which is the whole point of
+    /// installing one. Only the installing view must not also read it.
+    private static func documentViewStruct(in text: String) throws -> Substring {
+        let start = try #require(text.range(of: "\nstruct DocumentView: View {")).lowerBound
+        let after = text.index(start, offsetBy: 30)
+        let end = text.range(of: "\nstruct ", range: after..<text.endIndex)?.lowerBound
+            ?? text.range(of: "\nprivate struct ", range: after..<text.endIndex)?.lowerBound
+            ?? text.endIndex
+        return text[start..<end]
+    }
+
+    @Test("DocumentView does not read the openURL action it installs")
+    func documentViewDoesNotReadItsOwnOpenURL() throws {
+        let text = try Self.documentViewSource()
+        let view = try Self.documentViewStruct(in: text)
+
+        // Anti-vacuity: if the install ever moves, this test is checking nothing and must say so
+        // rather than passing.
+        //
+        // NON-COMMENT LINES ONLY, and that is not fussiness — the first version of this check was
+        // a plain `contains`, and it passed with the install deleted, because the comment beside
+        // the fix QUOTES `.environment(\.openURL, OpenURLAction { … })` while explaining it. A
+        // guard satisfied by prose about the thing it guards is worse than no guard.
+        let installs = view.split(separator: "\n").contains { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return !trimmed.hasPrefix("//") && !trimmed.hasPrefix("///")
+                && trimmed.contains(".environment(\\.openURL, OpenURLAction")
+        }
+        #expect(installs,
+                """
+                DocumentView no longer installs an OpenURLAction. If frusexplorer:// routing moved, \
+                move this guard with it — as written it now proves nothing.
+                """)
+
+        let reads = view.split(separator: "\n").first { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return trimmed.hasPrefix("@Environment(\\.openURL)") && !trimmed.hasPrefix("//")
+        }
+        #expect(reads == nil,
+                """
+                DocumentView declares `@Environment(\\.openURL)` while also installing an \
+                `OpenURLAction`. OpenURLAction is not Equatable, so each body evaluation publishes \
+                a value SwiftUI must treat as new — invalidating this view, which rebuilds the \
+                action. That loop hung the iPad reader until the watchdog killed it. External links \
+                go to `UIApplication.shared.open`. Offending line: \(reads.map(String.init) ?? "")
+                """)
+    }
+
+    /// The replacement has to still open external links, or the guard above is satisfied by a
+    /// regression that simply drops the behaviour.
+    @Test("External cross-reference links still reach the system opener")
+    func externalLinksStillOpen() throws {
+        let text = try Self.documentViewSource()
+        let handler = try #require(text.range(of: "func handleCrossRefTap")).lowerBound
+        // Slice to the NEXT declaration, not a fixed prefix. A fixed 1,600-character window was
+        // the first thing written here and it failed immediately: the comment explaining why
+        // `UIApplication.shared.open` replaced `openURL` is itself long enough to push the call
+        // out of the window. A test whose reach depends on how much prose sits above the line it
+        // checks is a test that will start lying the next time someone documents something.
+        let after = text.index(handler, offsetBy: 40)
+        let end = text.range(of: "\n    private func ", range: after..<text.endIndex)?.lowerBound
+            ?? text.endIndex
+        let body = text[handler..<end]
+        #expect(body.contains("case .external"), "the external branch is gone")
+        #expect(body.contains("UIApplication.shared.open"),
+                "the .external branch no longer opens the URL — links now go nowhere")
+    }
+}
