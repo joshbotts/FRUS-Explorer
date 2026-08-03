@@ -298,7 +298,13 @@ struct FrameTimeProbe: ViewModifier {
     /// the observed cadence turns out to be half of it.
     static var frameBudgetMilliseconds: Double {
         #if os(iOS)
-        let fps = UIScreen.main.maximumFramesPerSecond
+        // NOT `UIScreen.main` — deprecated in iOS 26, and on an iPad driving an external
+        // display it was never the screen this panel is on. Take the screen from a connected
+        // window scene instead; `nil` (no foreground scene yet) falls back to 60 like the
+        // zero case below rather than guessing.
+        let fps = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.screen.maximumFramesPerSecond ?? 0
         return fps > 0 ? 1000 / Double(fps) : 1000 / 60
         #else
         let fps = NSScreen.main?.maximumFramesPerSecond ?? 60
